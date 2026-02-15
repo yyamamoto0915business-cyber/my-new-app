@@ -1,0 +1,189 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { ChatRoomList } from "@/components/chat/chat-room-list";
+import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
+
+function ParticipantStartChat({ eventId }: { eventId: string }) {
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleStart = async () => {
+    setCreating(true);
+    setError(null);
+    const supabase = createClient();
+    if (!supabase) {
+      setError("Supabase が設定されていません");
+      setCreating(false);
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.replace(`/login?returnTo=${encodeURIComponent(`/events/${eventId}/chat`)}`);
+      return;
+    }
+    const res = await fetch(`/api/events/${eventId}/chat/rooms`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ participantId: user.id }),
+    });
+    if (!res.ok) {
+      setError("チャットの開始に失敗しました");
+      setCreating(false);
+      return;
+    }
+    const room = await res.json();
+    router.replace(`/events/${eventId}/chat/${room.id}`);
+  };
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-8">
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        主催者とチャットを始めますか？
+      </p>
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      <button
+        onClick={handleStart}
+        disabled={creating}
+        className="mt-4 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+      >
+        {creating ? "準備中..." : "チャットを始める"}
+      </button>
+      <Link href={`/events/${eventId}`} className="mt-4 ml-4 text-sm text-zinc-600">
+        ← イベント詳細へ
+      </Link>
+    </div>
+  );
+}
+
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+export default function EventChatPage({ params }: Props) {
+  const router = useRouter();
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [rooms, setRooms] = useState<unknown[]>([]);
+  const [participants, setParticipants] = useState<{ user_id: string; display_name: string | null; email: string | null }[]>([]);
+  const [role, setRole] = useState<"organizer" | "participant" | null>(null);
+  const [participantRoom, setParticipantRoom] = useState<{ id: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { id } = await params;
+      setEventId(id);
+      const supabase = createClient();
+      if (!supabase) {
+        setError("Supabase が設定されていません。チャットは Supabase 連携時にご利用ください。");
+        setLoading(false);
+        return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace(`/login?returnTo=${encodeURIComponent(`/events/${id}/chat`)}`);
+        return;
+      }
+      const res = await fetch(`/api/events/${id}/chat/rooms`);
+      if (!res.ok) {
+        if (res.status === 401) {
+          router.replace(`/login?returnTo=${encodeURIComponent(`/events/${id}/chat`)}`);
+          return;
+        }
+        setError(res.status === 503 ? "Supabase 連携が必要です" : "読み込みに失敗しました");
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      if (cancelled) return;
+      setRooms(data.rooms ?? []);
+      setParticipants(data.participants ?? []);
+      setRole(data.role ?? null);
+      if (data.role === "participant" && data.rooms?.length === 1) {
+        setParticipantRoom(data.rooms[0]);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [params, router]);
+
+  if (loading || !eventId) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-zinc-500">読み込み中...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    const isSupabaseError =
+      error.includes("Supabase が設定されていません") ||
+      error.includes("Supabase 連携が必要です");
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-8">
+        {isSupabaseError ? (
+          <SupabaseSetupGuide
+            backHref={`/events/${eventId}`}
+            backLabel="← イベント詳細へ"
+          />
+        ) : (
+          <>
+            <p className="text-sm text-red-600">{error}</p>
+            <Link
+              href={`/events/${eventId}`}
+              className="mt-4 block text-sm text-zinc-600 hover:underline"
+            >
+              ← イベント詳細へ
+            </Link>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  if (role === "participant" && participantRoom) {
+    router.replace(`/events/${eventId}/chat/${participantRoom.id}`);
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-zinc-500">チャットへ移動中...</p>
+      </div>
+    );
+  }
+
+  if (role === "participant" && !participantRoom) {
+    return (
+      <ParticipantStartChat eventId={eventId} />
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <header className="border-b border-zinc-200/60 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="mx-auto max-w-2xl px-4 py-4">
+          <Link
+            href={`/events/${eventId}`}
+            className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400"
+          >
+            ← イベント詳細へ
+          </Link>
+          <h1 className="mt-2 text-xl font-semibold">参加者とのチャット</h1>
+        </div>
+      </header>
+      <main className="mx-auto max-w-2xl px-4 py-6">
+        <ChatRoomList
+          eventId={eventId}
+          rooms={rooms as { id: string; participant_id: string | null; participant?: { display_name: string | null; email: string | null } | null }[]}
+          participants={participants}
+        />
+      </main>
+    </div>
+  );
+}

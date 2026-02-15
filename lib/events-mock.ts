@@ -1,32 +1,10 @@
-// 型定義
-export type Event = {
-  id: string;
-  title: string;
-  description: string;
-  date: string; // YYYY-MM-DD
-  startTime: string; // HH:mm
-  endTime?: string; // HH:mm
-  location: string;
-  address: string;
-  price: number; // 0 = 無料
-  priceNote?: string;
-  organizerName: string;
-  organizerContact?: string;
-  rainPolicy?: string; // 雨天時対応
-  itemsToBring?: string[]; // 持ち物
-  access?: string; // アクセス情報
-  createdAt: string;
-};
+import type { Event } from "./db/types";
 
-export type EventFormData = Omit<Event, "id" | "createdAt">;
-
-// Mockデータ
 export const mockEvents: Event[] = [
   {
     id: "1",
     title: "春のフリーマーケット",
-    description:
-      "地域住民によるフリーマーケット。掘り出し物が見つかるかも！",
+    description: "地域住民によるフリーマーケット。掘り出し物が見つかるかも！",
     date: "2025-02-12",
     startTime: "10:00",
     endTime: "15:00",
@@ -38,6 +16,9 @@ export const mockEvents: Event[] = [
     rainPolicy: "雨天決行（小雨時）",
     itemsToBring: ["レジャーシート", "飲み物"],
     access: "最寄り駅から徒歩10分",
+    childFriendly: true,
+    latitude: 35.6812,
+    longitude: 139.7671,
     createdAt: "2025-02-01T10:00:00Z",
   },
   {
@@ -55,6 +36,9 @@ export const mockEvents: Event[] = [
     rainPolicy: "屋内開催のため雨天関係なし",
     itemsToBring: ["ヨガマット", "動きやすい服装", "タオル"],
     access: "〇〇駅南口より徒歩5分",
+    childFriendly: true,
+    latitude: 35.665,
+    longitude: 139.712,
     createdAt: "2025-02-05T09:00:00Z",
   },
   {
@@ -72,6 +56,9 @@ export const mockEvents: Event[] = [
     rainPolicy: "屋内開催",
     itemsToBring: ["エプロン", "タオル"],
     access: "◇◇駅からバス15分「工芸館前」下車",
+    childFriendly: false,
+    latitude: 35.691,
+    longitude: 139.785,
     createdAt: "2025-02-08T14:00:00Z",
   },
   {
@@ -88,6 +75,9 @@ export const mockEvents: Event[] = [
     rainPolicy: "雨天・曇天時は翌週に延期",
     itemsToBring: ["防寒着", "懐中電灯"],
     access: "☆☆駅から車で20分（駐車場あり）",
+    childFriendly: true,
+    latitude: 35.6812,
+    longitude: 139.7671,
     createdAt: "2025-02-03T12:00:00Z",
   },
   {
@@ -105,6 +95,9 @@ export const mockEvents: Event[] = [
     rainPolicy: "屋内開催",
     itemsToBring: ["課題本"],
     access: "□□駅西口徒歩2分",
+    childFriendly: false,
+    latitude: 35.658,
+    longitude: 139.742,
     createdAt: "2025-02-10T08:00:00Z",
   },
   {
@@ -121,60 +114,9 @@ export const mockEvents: Event[] = [
     rainPolicy: "屋内開催",
     itemsToBring: ["工作用エプロン", "古着（汚れOK）"],
     access: "××駅北口徒歩8分",
+    childFriendly: true,
+    latitude: 35.672,
+    longitude: 139.758,
     createdAt: "2025-02-07T11:00:00Z",
   },
 ];
-
-// 取得関数
-export function getEvents(): Event[] {
-  return mockEvents;
-}
-
-export function getEventById(id: string): Event | undefined {
-  return mockEvents.find((e) => e.id === id);
-}
-
-export function getEventsByOrganizer(organizerName: string): Event[] {
-  return mockEvents.filter((e) => e.organizerName === organizerName);
-}
-
-// 日付フィルタ用
-export function getEventsByDateRange(
-  events: Event[],
-  range: "today" | "week"
-): Event[] {
-  const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
-
-  if (range === "today") {
-    return events.filter((e) => e.date === todayStr);
-  }
-
-  const weekEnd = new Date(today);
-  weekEnd.setDate(weekEnd.getDate() + 7);
-  const weekEndStr = weekEnd.toISOString().split("T")[0];
-  return events.filter((e) => e.date >= todayStr && e.date <= weekEndStr);
-}
-
-// 料金フィルタ用
-export function filterEventsByPrice(
-  events: Event[],
-  filter: "all" | "free" | "paid"
-): Event[] {
-  if (filter === "all") return events;
-  if (filter === "free") return events.filter((e) => e.price === 0);
-  return events.filter((e) => e.price > 0);
-}
-
-// 検索用
-export function searchEvents(events: Event[], query: string): Event[] {
-  if (!query.trim()) return events;
-  const q = query.toLowerCase();
-  return events.filter(
-    (e) =>
-      e.title.toLowerCase().includes(q) ||
-      e.description.toLowerCase().includes(q) ||
-      e.organizerName.toLowerCase().includes(q) ||
-      e.location.toLowerCase().includes(q)
-  );
-}

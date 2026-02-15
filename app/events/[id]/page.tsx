@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getEventById } from "@/lib/events";
 import { notFound } from "next/navigation";
+import { EventChatButton } from "./event-chat-button";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -15,12 +16,12 @@ export default async function EventDetailPage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/80">
         <div className="mx-auto max-w-3xl px-4 py-4">
           <Link
             href="/events"
-            className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+            className="text-sm text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
           >
             ← イベント一覧へ
           </Link>
@@ -28,7 +29,7 @@ export default async function EventDetailPage({ params }: Props) {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-8">
-        <article className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+        <article className="rounded-2xl border border-zinc-200/60 bg-white/80 p-6 shadow-lg backdrop-blur-sm dark:border-zinc-700/60 dark:bg-zinc-900/80">
           <h1 className="text-2xl font-bold">{event.title}</h1>
           <p className="mt-2 text-zinc-600 dark:text-zinc-400">
             {event.description}
@@ -105,6 +106,9 @@ export default async function EventDetailPage({ params }: Props) {
               </dd>
             </div>
           </dl>
+          <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-700">
+            <EventChatButton eventId={id} />
+          </div>
         </article>
       </main>
     </div>

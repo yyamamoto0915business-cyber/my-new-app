@@ -22,6 +22,7 @@ const initialForm: EventFormData = {
   rainPolicy: "",
   itemsToBring: [],
   access: "",
+  childFriendly: false,
 };
 
 function validateForm(data: EventFormData): FormErrors {
@@ -33,7 +34,7 @@ function validateForm(data: EventFormData): FormErrors {
   if (!data.location.trim()) errors.location = "場所は必須です";
   if (!data.address.trim()) errors.address = "住所は必須です";
   if (data.price < 0) errors.price = "料金は0以上で入力してください";
-  if (!data.organizerName.trim()) errors.organizerName = "主催者名は必須です";
+  if (!data.organizerName?.trim()) errors.organizerName = "主催者名は必須です";
   return errors;
 }
 
@@ -78,7 +79,7 @@ export default function NewEventPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-screen">
       <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto max-w-2xl px-4 py-4">
           <Link
@@ -251,7 +252,7 @@ export default function NewEventPage() {
             <input
               id="organizerName"
               name="organizerName"
-              value={form.organizerName}
+              value={form.organizerName ?? ""}
               onChange={handleChange}
               className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
             />
@@ -267,7 +268,7 @@ export default function NewEventPage() {
             <input
               id="organizerContact"
               name="organizerContact"
-              value={form.organizerContact || ""}
+              value={form.organizerContact ?? ""}
               onChange={handleChange}
               placeholder="例: 03-1234-5678"
               className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"

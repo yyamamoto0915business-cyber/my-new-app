@@ -9,7 +9,7 @@ export default function OrganizerEventsPage() {
   const myEvents = allEvents.filter((e) => e.organizerName === MOCK_ORGANIZER);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-screen">
       <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <Link
@@ -50,28 +50,36 @@ export default function OrganizerEventsPage() {
           ) : (
             myEvents.map((event) => (
               <li key={event.id}>
-                <Link
-                  href={`/events/${event.id}`}
-                  className="block rounded-lg border border-zinc-200 bg-white p-4 transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
-                >
-                  <div className="flex justify-between gap-4">
-                    <div>
-                      <h2 className="font-semibold">{event.title}</h2>
-                      <p className="mt-1 text-sm text-zinc-500">
-                        {event.date} {event.startTime}〜 {event.location}
-                      </p>
+                <div className="flex items-start gap-2 rounded-lg border border-zinc-200 bg-white p-4 transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
+                  <Link
+                    href={`/events/${event.id}`}
+                    className="flex-1"
+                  >
+                    <div className="flex justify-between gap-4">
+                      <div>
+                        <h2 className="font-semibold">{event.title}</h2>
+                        <p className="mt-1 text-sm text-zinc-500">
+                          {event.date} {event.startTime}〜 {event.location}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 self-start rounded px-2 py-1 text-sm ${
+                          event.price === 0
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                            : "bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200"
+                        }`}
+                      >
+                        {event.price === 0 ? "無料" : `¥${event.price}`}
+                      </span>
                     </div>
-                    <span
-                      className={`shrink-0 self-start rounded px-2 py-1 text-sm ${
-                        event.price === 0
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                          : "bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200"
-                      }`}
-                    >
-                      {event.price === 0 ? "無料" : `¥${event.price}`}
-                    </span>
-                  </div>
-                </Link>
+                  </Link>
+                  <Link
+                    href={`/events/${event.id}/chat`}
+                    className="shrink-0 rounded-lg border border-zinc-200/60 px-3 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  >
+                    チャット
+                  </Link>
+                </div>
               </li>
             ))
           )}
