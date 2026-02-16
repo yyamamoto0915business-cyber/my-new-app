@@ -24,27 +24,30 @@ export default function ProfilePage() {
       setLoading(false);
       return;
     }
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        router.replace(`/login?returnTo=${encodeURIComponent("/profile")}`);
-        return;
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          router.replace(`/login?returnTo=${encodeURIComponent("/profile")}`);
+          return;
+        }
+        setEmail(user.email ?? null);
+        setDisplayName((user.user_metadata?.display_name as string) ?? "");
+        const { data } = await supabase
+          .from("profiles")
+          .select("display_name, avatar_url")
+          .eq("id", user.id)
+          .single();
+        if (data) {
+          setDisplayName(data.display_name ?? "");
+          setAvatarUrl(data.avatar_url ?? "");
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
       }
-      setEmail(user.email ?? null);
-      setDisplayName((user.user_metadata?.display_name as string) ?? "");
-      supabase
-        .from("profiles")
-        .select("display_name, avatar_url")
-        .eq("id", user.id)
-        .single()
-        .then(({ data }) => {
-          if (data) {
-            setDisplayName(data.display_name ?? "");
-            setAvatarUrl(data.avatar_url ?? "");
-          }
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    });
+    })();
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
