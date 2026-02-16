@@ -48,6 +48,26 @@ npm run dev
 
 Supabase が未設定の場合、モックデータで動作します。
 
+### 5. ローカル以外からのアクセス
+
+**同じ Wi‑Fi 内のスマホ・他 PC からアクセスする場合**
+
+```bash
+npm run dev:network
+```
+
+起動後、PC の IP アドレスを確認して `http://192.168.x.x:3000` でアクセスしてください。
+（macOS: システム設定 > ネットワーク で確認）
+
+**インターネットからアクセスする場合（デプロイ）**
+
+[Vercel](https://vercel.com) にデプロイするのがおすすめです（無料プランあり）。
+
+1. [Vercel](https://vercel.com) にログイン
+2. GitHub リポジトリをインポート
+3. `.env.local` の `NEXT_PUBLIC_SUPABASE_*` を Vercel の環境変数として設定
+4. デプロイ後、`https://あなたのプロジェクト.vercel.app` のURLが発行されます
+
 ## 今後の拡張（Phase 5）
 
 - **PayPay API**: ポイント交換（事業者審査が必要）

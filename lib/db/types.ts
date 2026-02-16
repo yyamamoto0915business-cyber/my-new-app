@@ -60,6 +60,7 @@ export type EventParticipant = {
 export type Event = {
   id: string;
   title: string;
+  imageUrl?: string;
   description: string;
   date: string;
   startTime: string;

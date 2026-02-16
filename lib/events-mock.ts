@@ -1,9 +1,19 @@
 import type { Event } from "./db/types";
 
+const EVENT_IMAGES = [
+  "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800",
+  "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800",
+  "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800",
+  "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800",
+  "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800",
+  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800",
+];
+
 export const mockEvents: Event[] = [
   {
     id: "1",
     title: "春のフリーマーケット",
+    imageUrl: EVENT_IMAGES[0],
     description: "地域住民によるフリーマーケット。掘り出し物が見つかるかも！",
     date: "2025-02-12",
     startTime: "10:00",
@@ -24,6 +34,7 @@ export const mockEvents: Event[] = [
   {
     id: "2",
     title: "親子で楽しむヨガ教室",
+    imageUrl: EVENT_IMAGES[1],
     description: "お子様と一緒に楽しめるヨガ体験会です。",
     date: "2025-02-13",
     startTime: "09:00",
@@ -44,6 +55,7 @@ export const mockEvents: Event[] = [
   {
     id: "3",
     title: "陶芸体験ワークショップ",
+    imageUrl: EVENT_IMAGES[2],
     description: "初心者でも気軽に参加できる陶芸体験。自分の茶碗を作りましょう。",
     date: "2025-02-14",
     startTime: "14:00",
@@ -64,6 +76,7 @@ export const mockEvents: Event[] = [
   {
     id: "4",
     title: "夜の星空観察会",
+    imageUrl: EVENT_IMAGES[3],
     description: "天体望遠鏡で月や惑星を観察。専門家が解説します。",
     date: "2025-02-15",
     startTime: "19:00",
@@ -83,6 +96,7 @@ export const mockEvents: Event[] = [
   {
     id: "5",
     title: "地域カフェ読書会",
+    imageUrl: EVENT_IMAGES[4],
     description: "課題本を読んで語り合う読書会。コーヒーを飲みながらゆっくりと。",
     date: "2025-02-16",
     startTime: "13:00",
@@ -103,6 +117,7 @@ export const mockEvents: Event[] = [
   {
     id: "6",
     title: "子ども向け工作教室",
+    imageUrl: EVENT_IMAGES[5],
     description: "廃材を使ったエコ工作。小学生向け。",
     date: "2025-02-12",
     startTime: "14:00",

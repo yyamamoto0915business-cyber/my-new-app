@@ -5,8 +5,8 @@
   --foreground: #171717;
   --accent: #0d9488;
   --accent-hover: #0f766e;
-  --bg-gradient-from: #f0fdf4;
-  --bg-gradient-to: #fffbeb;
+  --bg-gradient-from: #f0f9ff;
+  --bg-gradient-to: #f0fdf4;
 }
 
 @theme inline {
@@ -22,6 +22,32 @@
     --foreground: #ededed;
     --bg-gradient-from: #0f172a;
     --bg-gradient-to: #1e293b;
+  }
+}
+
+@keyframes sakura-fall {
+  0% {
+    transform: translateY(-10px) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(100vh) translateX(30px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes sakura-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

@@ -6,8 +6,17 @@ export function BackgroundIllustration() {
       className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden"
       aria-hidden
     >
+      <img
+        src="/hero-festival.jpg"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover opacity-[0.18] dark:opacity-[0.08]"
+      />
+      <div
+        className="absolute inset-0 bg-gradient-to-b from-white/50 via-white/25 to-white/60 dark:from-zinc-950/75 dark:via-zinc-950/60 dark:to-zinc-950/80"
+        aria-hidden
+      />
       <svg
-        className="h-full w-full opacity-[0.08] dark:opacity-[0.05]"
+        className="absolute inset-0 h-full w-full opacity-[0.04] dark:opacity-[0.02]"
         preserveAspectRatio="xMidYMid slice"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 1200 800"

@@ -11,6 +11,7 @@ import {
   calcDistanceKm,
   type Event,
 } from "../../lib/events";
+import { ProfileLink } from "@/components/profile-link";
 
 type EventWithDistance = Event & { distanceKm?: number };
 
@@ -120,12 +121,15 @@ export default function EventsPage() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/80">
         <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6">
-          <Link
-            href="/"
-            className="text-sm text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
-            ← トップへ
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link
+              href="/"
+              className="text-sm text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
+            >
+              ← トップへ
+            </Link>
+            <ProfileLink />
+          </div>
           <h1 className="mt-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
             イベント一覧
           </h1>

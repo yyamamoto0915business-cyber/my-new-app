@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getEventById } from "@/lib/events";
 import { notFound } from "next/navigation";
 import { EventChatButton } from "./event-chat-button";
+import { ShareButton } from "@/components/share-button";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -106,7 +107,11 @@ export default async function EventDetailPage({ params }: Props) {
               </dd>
             </div>
           </dl>
-          <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-700">
+          <div className="mt-6 space-y-6 border-t border-zinc-200 pt-6 dark:border-zinc-700">
+            <ShareButton
+              url={`/events/${id}`}
+              title={`${event.title} - 地域イベント`}
+            />
             <EventChatButton eventId={id} />
           </div>
         </article>
