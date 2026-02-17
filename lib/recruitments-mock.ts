@@ -37,7 +37,7 @@ export const mockRecruitments: Recruitment[] = [
     time_slot: null,
     compensation_type: null,
     compensation_note: null,
-    pay_type: "時給",
+    pay_type: "謝礼",
     pay_amount: 1200,
     work_hours: "10:00-18:00（休憩1h）",
     work_content: "ホール、レジ業務",

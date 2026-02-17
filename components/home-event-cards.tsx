@@ -6,10 +6,13 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import type { Event } from "@/lib/db/types";
 import { getEventsByDateRange } from "@/lib/events";
+import { tagLabels } from "@/lib/i18n";
+import { useLanguage } from "@/components/language-provider";
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800";
 
 function EventCard({ event, index }: { event: Event; index: number }) {
+  const { t, locale } = useLanguage();
   const dateStr = event.date.replace(/-/g, "/");
   const timeStr = event.endTime
     ? `${event.startTime} - ${event.endTime}`
@@ -34,15 +37,27 @@ function EventCard({ event, index }: { event: Event; index: number }) {
           <h2 className="line-clamp-2 font-semibold text-zinc-900 dark:text-zinc-100">
             {event.title}
           </h2>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          {event.tags && event.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {event.tags.map((tagId) => (
+                <span
+                  key={tagId}
+                  className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                >
+                  {tagLabels[locale][tagId] ?? tagId}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             {dateStr} | {timeStr}
           </p>
           <div className="mt-4 flex items-center justify-between">
             <span className="text-sm text-zinc-500 underline-offset-2 hover:underline">
-              More
+              {t.more}
             </span>
             <span className="inline-flex rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90">
-              詳しく見る
+              {t.viewDetails}
             </span>
           </div>
         </div>
@@ -52,6 +67,7 @@ function EventCard({ event, index }: { event: Event; index: number }) {
 }
 
 export function HomeEventCards() {
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +109,7 @@ export function HomeEventCards() {
   if (events.length === 0) {
     return (
       <p className="rounded-2xl bg-white/80 p-8 text-center text-zinc-500 dark:bg-zinc-900/80">
-        近日のイベントはありません
+        {t.noUpcomingEvents}
       </p>
     );
   }

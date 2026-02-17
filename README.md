@@ -64,9 +64,12 @@ npm run dev:network
 [Vercel](https://vercel.com) にデプロイするのがおすすめです（無料プランあり）。
 
 1. [Vercel](https://vercel.com) にログイン
-2. GitHub リポジトリをインポート
-3. `.env.local` の `NEXT_PUBLIC_SUPABASE_*` を Vercel の環境変数として設定
-4. デプロイ後、`https://あなたのプロジェクト.vercel.app` のURLが発行されます
+2. **Add New** → **Project** で GitHub リポジトリをインポート
+3. 対象リポジトリを選択し、**Import** をクリック
+4. `.env.local` の `NEXT_PUBLIC_SUPABASE_*` を Vercel の環境変数として設定
+5. **Deploy** をクリック
+
+**Git 連携による自動デプロイ**: リポジトリを接続すると、`main` ブランチへの `git push` のたびに自動で本番デプロイが実行されます。手動での再デプロイは不要です。
 
 ## 今後の拡張（Phase 5）
 

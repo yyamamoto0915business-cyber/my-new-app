@@ -73,7 +73,16 @@ export const EVENT_TAGS = [
   { id: "rain_ok", label: "雨天OK" },
   { id: "indoor", label: "屋内" },
   { id: "english", label: "英語対応" },
+  { id: "tourist", label: "観光客向け" },
+  { id: "student", label: "学生限定" },
 ] as const;
+
+export const EVENT_TAG_LABELS: Record<string, string> = Object.fromEntries(
+  EVENT_TAGS.map((t) => [t.id, t.label])
+);
+
+export const getTagLabel = (tagId: string): string =>
+  EVENT_TAG_LABELS[tagId] ?? tagId;
 
 export type EventTagId = (typeof EVENT_TAGS)[number]["id"];
 
