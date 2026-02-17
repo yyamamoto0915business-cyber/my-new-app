@@ -82,7 +82,7 @@ export function HomeEventCards() {
     if (city) params.set("city", city);
     if (tags.length) params.set("tags", tags.join(","));
     const qs = params.toString();
-    fetch(`/api/events${qs ? `?${qs}` : ""}`)
+    fetch(`/api/events${qs ? `?${qs}` : ""}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data: Event[]) => {
         const thisWeek = getEventsByDateRange(data, "week");

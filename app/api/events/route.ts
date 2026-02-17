@@ -12,5 +12,9 @@ export async function GET(request: NextRequest) {
   let result = mockEvents;
   result = filterEventsByRegion(result, prefecture, city);
   result = filterEventsByTags(result, tags);
-  return NextResponse.json(result);
+  return NextResponse.json(result, {
+    headers: {
+      "Cache-Control": "no-store, max-age=0",
+    },
+  });
 }
