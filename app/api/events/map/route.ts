@@ -2,7 +2,7 @@ import { createClient } from "../../../../lib/supabase/server";
 import { fetchEvents } from "../../../../lib/db/events";
 import { NextResponse } from "next/server";
 import { mockEvents } from "../../../../lib/events-mock";
-import { calcDistanceKm } from "../../../../lib/events";
+import { calcDistanceKm, filterEventsByRegion, filterEventsByTags } from "../../../../lib/events";
 import type { Event } from "../../../../lib/db/types";
 
 const DEFAULT_LAT = 35.6812;
@@ -71,6 +71,10 @@ export async function GET(request: Request) {
   const end = searchParams.get("end") ?? undefined;
   const price = (searchParams.get("price") as "all" | "free" | "paid") ?? "all";
   const childFriendly = searchParams.get("child_friendly") === "true";
+  const prefecture = searchParams.get("prefecture") ?? undefined;
+  const city = searchParams.get("city") ?? undefined;
+  const tagsParam = searchParams.get("tags");
+  const tags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
   const limit = Math.min(
     parseInt(searchParams.get("limit") ?? "100", 10) || 100,
     MAX_LIMIT
@@ -95,6 +99,8 @@ export async function GET(request: Request) {
   events = filterByDateRange(events, start, end);
   events = filterByPrice(events, price);
   events = filterByChildFriendly(events, childFriendly);
+  events = filterEventsByRegion(events, prefecture, city);
+  events = filterEventsByTags(events, tags);
 
   if (latParam && lngParam) {
     events = filterByRadius(events, lat, lng, radiusKm);

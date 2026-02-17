@@ -4,8 +4,26 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { EventFormData } from "@/lib/events";
+import { EVENT_TAGS } from "@/lib/db/types";
 
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
+
+const PREFECTURES = [
+  "東京都",
+  "大阪府",
+  "北海道",
+  "福岡県",
+  "愛知県",
+  "神奈川県",
+  "埼玉県",
+  "千葉県",
+  "京都府",
+];
+
+const CITIES_BY_PREF: Record<string, string[]> = {
+  東京都: ["渋谷区", "新宿区", "港区", "中央区", "その他"],
+  大阪府: ["大阪市", "その他"],
+};
 
 const initialForm: EventFormData = {
   title: "",
@@ -23,6 +41,15 @@ const initialForm: EventFormData = {
   itemsToBring: [],
   access: "",
   childFriendly: false,
+  prefecture: "",
+  city: "",
+  area: "",
+  tags: [],
+  sponsorTicketPrices: [],
+  sponsorPerks: {},
+  prioritySlots: 0,
+  englishGuideAvailable: false,
+  capacity: undefined,
 };
 
 function validateForm(data: EventFormData): FormErrors {
@@ -50,9 +77,21 @@ export default function NewEventPage() {
     const { name, value } = e.target;
     if (name === "price") {
       setForm((prev) => ({ ...prev, [name]: parseInt(value, 10) || 0 }));
+    } else if (name === "prefecture") {
+      setForm((prev) => ({ ...prev, prefecture: value, city: "" }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleTagToggle = (tagId: string) => {
+    setForm((prev) => {
+      const tags = prev.tags ?? [];
+      if (tags.includes(tagId)) {
+        return { ...prev, tags: tags.filter((t) => t !== tagId) };
+      }
+      return { ...prev, tags: [...tags, tagId] };
+    });
   };
 
   const handleItemsBlur = () => {
@@ -211,6 +250,184 @@ export default function NewEventPage() {
             {errors.address && (
               <p className="mt-1 text-sm text-red-600">{errors.address}</p>
             )}
+          </div>
+
+          <div>
+            <label htmlFor="prefecture" className="block text-sm font-medium">
+              都道府県
+            </label>
+            <select
+              id="prefecture"
+              name="prefecture"
+              value={form.prefecture ?? ""}
+              onChange={handleChange}
+              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+            >
+              <option value="">選択してください</option>
+              {PREFECTURES.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {form.prefecture && (CITIES_BY_PREF[form.prefecture] ?? []).length > 0 && (
+            <div>
+              <label htmlFor="city" className="block text-sm font-medium">
+                市区町村
+              </label>
+              <select
+                id="city"
+                name="city"
+                value={form.city ?? ""}
+                onChange={handleChange}
+                className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              >
+                <option value="">選択してください</option>
+                {CITIES_BY_PREF[form.prefecture]?.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="area" className="block text-sm font-medium">
+              エリア名（任意）
+            </label>
+            <input
+              id="area"
+              name="area"
+              value={form.area ?? ""}
+              onChange={handleChange}
+              placeholder="例: 渋谷エリア"
+              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium">タグ（複数選択可）</label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {EVENT_TAGS.map((tag) => (
+                <label
+                  key={tag.id}
+                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700"
+                >
+                  <input
+                    type="checkbox"
+                    checked={(form.tags ?? []).includes(tag.id)}
+                    onChange={() => handleTagToggle(tag.id)}
+                  />
+                  <span className="text-sm">{tag.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="childFriendly"
+              checked={form.childFriendly ?? false}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, childFriendly: e.target.checked }))
+              }
+            />
+            <label htmlFor="childFriendly" className="text-sm">
+              子連れOK
+            </label>
+          </div>
+
+          <div>
+            <label htmlFor="capacity" className="block text-sm font-medium">
+              定員（任意）
+            </label>
+            <input
+              id="capacity"
+              name="capacity"
+              type="number"
+              min={0}
+              value={form.capacity ?? ""}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  capacity: e.target.value ? Number(e.target.value) : undefined,
+                }))
+              }
+              placeholder="例: 50"
+              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="prioritySlots" className="block text-sm font-medium">
+              優先枠数（任意）
+            </label>
+            <input
+              id="prioritySlots"
+              name="prioritySlots"
+              type="number"
+              min={0}
+              value={form.prioritySlots ?? 0}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  prioritySlots: Math.max(0, Number(e.target.value) || 0),
+                }))
+              }
+              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="englishGuideAvailable"
+              checked={form.englishGuideAvailable ?? false}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  englishGuideAvailable: e.target.checked,
+                }))
+              }
+            />
+            <label htmlFor="englishGuideAvailable" className="text-sm">
+              英語対応
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium">
+              スポンサーチケット（価格を選択）
+            </label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[300, 500, 1000, 3000, 5000].map((p) => (
+                <label key={p} className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={(form.sponsorTicketPrices ?? []).includes(p)}
+                    onChange={(e) => {
+                      const prev = form.sponsorTicketPrices ?? [];
+                      if (e.target.checked) {
+                        setForm((f) => ({
+                          ...f,
+                          sponsorTicketPrices: [...prev, p].sort((a, b) => a - b),
+                        }));
+                      } else {
+                        setForm((f) => ({
+                          ...f,
+                          sponsorTicketPrices: prev.filter((x) => x !== p),
+                        }));
+                      }
+                    }}
+                  />
+                  <span>¥{p.toLocaleString()}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div>

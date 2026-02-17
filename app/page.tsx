@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Suspense } from "react";
 import { HomeEventCards } from "@/components/home-event-cards";
 import { FallingCherryBlossoms } from "@/components/falling-cherry-blossoms";
 import { ProfileLink } from "@/components/profile-link";
@@ -21,6 +22,18 @@ export default function Home() {
               variant="compact"
             />
             <ProfileLink />
+            <Link
+              href="/event-requests"
+              className="text-sm text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
+            >
+              やってほしいイベント
+            </Link>
+            <Link
+              href="/recruitments"
+              className="text-sm text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
+            >
+              募集一覧
+            </Link>
             <Link
               href="/organizer/events"
               className="text-sm text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -53,7 +66,15 @@ export default function Home() {
         </section>
 
         <section className="space-y-4">
-          <HomeEventCards />
+          <Suspense fallback={
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {[1,2,3,4,5,6].map((i) => (
+                <div key={i} className="aspect-[16/10] animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
+              ))}
+            </div>
+          }>
+            <HomeEventCards />
+          </Suspense>
         </section>
 
         <div className="flex justify-center pt-4">

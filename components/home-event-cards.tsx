@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import type { Event } from "@/lib/db/types";
 import { getEventsByDateRange } from "@/lib/events";
@@ -51,11 +52,21 @@ function EventCard({ event, index }: { event: Event; index: number }) {
 }
 
 export function HomeEventCards() {
+  const searchParams = useSearchParams();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const prefecture = searchParams.get("prefecture") ?? "";
+  const city = searchParams.get("city") ?? "";
+  const tagsParam = searchParams.get("tags") ?? "";
+  const tags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
 
   useEffect(() => {
-    fetch("/api/events")
+    const params = new URLSearchParams();
+    if (prefecture) params.set("prefecture", prefecture);
+    if (city) params.set("city", city);
+    if (tags.length) params.set("tags", tags.join(","));
+    const qs = params.toString();
+    fetch(`/api/events${qs ? `?${qs}` : ""}`)
       .then((res) => res.json())
       .then((data: Event[]) => {
         const thisWeek = getEventsByDateRange(data, "week");
@@ -64,7 +75,7 @@ export function HomeEventCards() {
       })
       .catch(() => setEvents([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [prefecture, city, tags.join(",")]);
 
   if (loading) {
     return (

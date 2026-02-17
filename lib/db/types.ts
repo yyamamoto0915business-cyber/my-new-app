@@ -38,6 +38,15 @@ export type DbEvent = {
   child_friendly: boolean;
   latitude: number | null;
   longitude: number | null;
+  prefecture?: string | null;
+  city?: string | null;
+  area?: string | null;
+  tags?: string[] | null;
+  sponsor_ticket_prices?: number[] | null;
+  sponsor_perks?: Record<number, string> | null;
+  priority_slots?: number | null;
+  english_guide_available?: boolean | null;
+  capacity?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -55,6 +64,18 @@ export type EventParticipant = {
   status: EventParticipantStatus;
   created_at: string;
 };
+
+// タグ定数
+export const EVENT_TAGS = [
+  { id: "free", label: "無料" },
+  { id: "kids", label: "子供向け" },
+  { id: "beginner", label: "初心者歓迎" },
+  { id: "rain_ok", label: "雨天OK" },
+  { id: "indoor", label: "屋内" },
+  { id: "english", label: "英語対応" },
+] as const;
+
+export type EventTagId = (typeof EVENT_TAGS)[number]["id"];
 
 // アプリで使うイベント型（organizer情報含む）
 export type Event = {
@@ -77,6 +98,15 @@ export type Event = {
   access?: string;
   latitude?: number;
   longitude?: number;
+  prefecture?: string;
+  city?: string;
+  area?: string;
+  tags?: string[];
+  sponsorTicketPrices?: number[];
+  sponsorPerks?: Record<number, string>;
+  prioritySlots?: number;
+  englishGuideAvailable?: boolean;
+  capacity?: number;
   createdAt: string;
 };
 

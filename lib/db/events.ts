@@ -25,6 +25,15 @@ function dbEventToEvent(
     childFriendly: db.child_friendly ?? false,
     latitude: db.latitude ?? undefined,
     longitude: db.longitude ?? undefined,
+    prefecture: db.prefecture ?? undefined,
+    city: db.city ?? undefined,
+    area: db.area ?? undefined,
+    tags: db.tags ?? undefined,
+    sponsorTicketPrices: db.sponsor_ticket_prices ?? undefined,
+    sponsorPerks: db.sponsor_perks ?? undefined,
+    prioritySlots: db.priority_slots ?? undefined,
+    englishGuideAvailable: db.english_guide_available ?? undefined,
+    capacity: db.capacity ?? undefined,
     createdAt: db.created_at,
   };
 }
@@ -194,6 +203,15 @@ export async function createEvent(
       child_friendly: form.childFriendly ?? false,
       latitude: form.latitude ?? null,
       longitude: form.longitude ?? null,
+      prefecture: form.prefecture || null,
+      city: form.city || null,
+      area: form.area || null,
+      tags: form.tags?.length ? form.tags : null,
+      sponsor_ticket_prices: form.sponsorTicketPrices?.length ? form.sponsorTicketPrices : null,
+      sponsor_perks: form.sponsorPerks && Object.keys(form.sponsorPerks).length ? form.sponsorPerks : null,
+      priority_slots: form.prioritySlots ?? null,
+      english_guide_available: form.englishGuideAvailable ?? false,
+      capacity: form.capacity ?? null,
     })
     .select("id")
     .single();
@@ -221,6 +239,15 @@ function formToDb(form: EventFormData): Record<string, unknown> {
     child_friendly: form.childFriendly ?? false,
     latitude: form.latitude ?? null,
     longitude: form.longitude ?? null,
+    prefecture: form.prefecture || null,
+    city: form.city || null,
+    area: form.area || null,
+    tags: form.tags?.length ? form.tags : null,
+    sponsor_ticket_prices: form.sponsorTicketPrices?.length ? form.sponsorTicketPrices : null,
+    sponsor_perks: form.sponsorPerks && Object.keys(form.sponsorPerks).length ? form.sponsorPerks : null,
+    priority_slots: form.prioritySlots ?? null,
+    english_guide_available: form.englishGuideAvailable ?? false,
+    capacity: form.capacity ?? null,
   };
 }
 

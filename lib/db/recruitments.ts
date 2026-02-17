@@ -3,6 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type RecruitmentType = "volunteer" | "paid_spot" | "job" | "tech_volunteer";
 export type TechSlot = "consultation" | "light" | "project";
 
+export type TechRole = "photo" | "streaming" | "translation" | "web" | "reception";
+
 export type Recruitment = {
   id: string;
   event_id: string | null;
@@ -10,6 +12,7 @@ export type Recruitment = {
   type: RecruitmentType;
   title: string;
   description: string;
+  tech_role?: TechRole | null;
   role: string | null;
   time_slot: string | null;
   compensation_type: string | null;

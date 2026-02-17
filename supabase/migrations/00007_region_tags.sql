@@ -1,0 +1,6 @@
+-- events: 地域・タグカラム追加
+ALTER TABLE public.events
+  ADD COLUMN IF NOT EXISTS prefecture TEXT,
+  ADD COLUMN IF NOT EXISTS city TEXT,
+  ADD COLUMN IF NOT EXISTS area TEXT,
+  ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';

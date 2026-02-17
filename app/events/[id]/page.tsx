@@ -3,6 +3,7 @@ import { getEventById } from "@/lib/events";
 import { notFound } from "next/navigation";
 import { EventChatButton } from "./event-chat-button";
 import { ShareButton } from "@/components/share-button";
+import { SponsorTicketSection } from "./sponsor-ticket-section";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -107,6 +108,14 @@ export default async function EventDetailPage({ params }: Props) {
               </dd>
             </div>
           </dl>
+          {event.sponsorTicketPrices && event.sponsorTicketPrices.length > 0 && (
+            <SponsorTicketSection
+              eventId={id}
+              eventTitle={event.title}
+              prices={event.sponsorTicketPrices}
+              perks={event.sponsorPerks ?? {}}
+            />
+          )}
           <div className="mt-6 space-y-6 border-t border-zinc-200 pt-6 dark:border-zinc-700">
             <ShareButton
               url={`/events/${id}`}

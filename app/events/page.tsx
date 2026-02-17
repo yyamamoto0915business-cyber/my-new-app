@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
   getEventsByDateRange,
@@ -12,6 +13,7 @@ import {
   type Event,
 } from "../../lib/events";
 import { ProfileLink } from "@/components/profile-link";
+import { TagFilter } from "@/components/tag-filter";
 
 type EventWithDistance = Event & { distanceKm?: number };
 
@@ -24,7 +26,14 @@ const EventsMap = dynamic(() => import("../../components/events-map").then((m) =
   ),
 });
 
-export default function EventsPage() {
+function EventsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefecture = searchParams.get("prefecture") ?? "";
+  const city = searchParams.get("city") ?? "";
+  const tagsParam = searchParams.get("tags") ?? "";
+  const selectedTags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
+
   const [view, setView] = useState<"list" | "map">("list");
   const [dateRange, setDateRange] = useState<"today" | "week">("week");
   const [priceFilter, setPriceFilter] = useState<"all" | "free" | "paid">("all");
@@ -37,6 +46,17 @@ export default function EventsPage() {
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
+  const handleTagsChange = useCallback(
+    (tags: string[]) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (tags.length) params.set("tags", tags.join(","));
+      else params.delete("tags");
+      const qs = params.toString();
+      router.push("/events" + (qs ? `?${qs}` : ""));
+    },
+    [router, searchParams]
+  );
+
   const today = new Date().toISOString().split("T")[0];
   const weekEnd = new Date();
   weekEnd.setDate(weekEnd.getDate() + 7);
@@ -45,12 +65,17 @@ export default function EventsPage() {
   const end = dateRange === "today" ? today : weekEndStr;
 
   useEffect(() => {
-    fetch("/api/events")
+    const params = new URLSearchParams();
+    if (prefecture) params.set("prefecture", prefecture);
+    if (city) params.set("city", city);
+    if (selectedTags.length) params.set("tags", selectedTags.join(","));
+    const qs = params.toString();
+    fetch(`/api/events${qs ? `?${qs}` : ""}`)
       .then((res) => res.json())
       .then((data: Event[]) => setEvents(data))
       .catch(() => setEvents([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [prefecture, city, selectedTags.join(",")]);
 
   useEffect(() => {
     if (view !== "map") return;
@@ -67,12 +92,15 @@ export default function EventsPage() {
       child_friendly: String(childFriendlyOnly),
       limit: "100",
     });
+    if (prefecture) params.set("prefecture", prefecture);
+    if (city) params.set("city", city);
+    if (selectedTags.length) params.set("tags", selectedTags.join(","));
     fetch(`/api/events/map?${params}`)
       .then((res) => res.json())
       .then((data) => setMapEvents(data.events ?? []))
       .catch(() => setMapEvents([]))
       .finally(() => setMapLoading(false));
-  }, [view, userPos, start, end, priceFilter, childFriendlyOnly]);
+  }, [view, userPos, start, end, priceFilter, childFriendlyOnly, prefecture, city, selectedTags]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -190,6 +218,11 @@ export default function EventsPage() {
             >
               今週
             </button>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">タグで絞り込み</p>
+            <TagFilter selectedTags={selectedTags} onTagsChange={handleTagsChange} />
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -320,5 +353,13 @@ export default function EventsPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function EventsPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-zinc-500">読み込み中...</div>}>
+      <EventsPageContent />
+    </Suspense>
   );
 }

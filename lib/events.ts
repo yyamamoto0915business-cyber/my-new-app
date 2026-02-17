@@ -58,6 +58,32 @@ export function searchEvents(events: Event[], query: string): Event[] {
   );
 }
 
+export function filterEventsByRegion(
+  events: Event[],
+  prefecture?: string,
+  city?: string
+): Event[] {
+  let result = events;
+  if (prefecture?.trim()) {
+    result = result.filter((e) => e.prefecture === prefecture);
+  }
+  if (city?.trim()) {
+    result = result.filter((e) => e.city === city);
+  }
+  return result;
+}
+
+export function filterEventsByTags(
+  events: Event[],
+  tags: string[]
+): Event[] {
+  if (!tags.length) return events;
+  return events.filter((e) => {
+    const eventTags = e.tags ?? [];
+    return tags.every((t) => eventTags.includes(t));
+  });
+}
+
 // 2点間の距離（km）概算（Haversine 簡易版）
 export function calcDistanceKm(
   lat1: number,
