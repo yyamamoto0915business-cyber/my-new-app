@@ -6,6 +6,7 @@ import { useLanguage } from "./language-provider";
 import { ProfileLink } from "./profile-link";
 import { ShareButton } from "./share-button";
 import { HomeEventCards } from "./home-event-cards";
+import { HomeRecruitmentCards } from "./home-recruitment-cards";
 import { Suspense } from "react";
 
 export function HomePageContent() {
@@ -65,6 +66,9 @@ export function HomePageContent() {
       </section>
 
       <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          {t.sectionEvents}
+        </h2>
         <Suspense
           fallback={
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -79,16 +83,40 @@ export function HomePageContent() {
         >
           <HomeEventCards />
         </Suspense>
+        <div className="flex justify-center pt-2">
+          <Link
+            href="/events"
+            className="rounded-xl bg-[var(--accent)] px-6 py-2.5 text-center text-sm font-medium text-white shadow-md transition-colors hover:bg-[var(--accent-hover)] dark:shadow-zinc-900/50"
+          >
+            {t.viewAllEvents}
+          </Link>
+        </div>
       </section>
 
-      <div className="flex justify-center pt-4">
-        <Link
-          href="/events"
-          className="rounded-xl bg-[var(--accent)] px-8 py-3 text-center font-medium text-white shadow-md transition-colors hover:bg-[var(--accent-hover)] dark:shadow-zinc-900/50"
+      <section className="space-y-4 border-t border-zinc-200/60 pt-8 dark:border-zinc-700/60">
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          {t.sectionRecruitments}
+        </h2>
+        <Suspense
+          fallback={
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-40 animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
+              ))}
+            </div>
+          }
         >
-          {t.viewAllEvents}
-        </Link>
-      </div>
+          <HomeRecruitmentCards />
+        </Suspense>
+        <div className="flex justify-center pt-2">
+          <Link
+            href="/recruitments"
+            className="rounded-xl border-2 border-[var(--accent)] px-6 py-2.5 text-center text-sm font-medium text-[var(--accent)] transition-colors hover:bg-[var(--accent)] hover:text-white dark:border-[var(--accent)] dark:text-[var(--accent)] dark:hover:bg-[var(--accent)] dark:hover:text-white"
+          >
+            {t.viewAllRecruitments}
+          </Link>
+        </div>
+      </section>
     </>
   );
 }

@@ -33,10 +33,14 @@ export const translations: Record<
     recruitments: string;
     forOrganizers: string;
     viewAllEvents: string;
+    viewAllRecruitments: string;
     viewDetails: string;
     more: string;
     noUpcomingEvents: string;
+    noRecruitments: string;
     login: string;
+    sectionEvents: string;
+    sectionRecruitments: string;
   }
 > = {
   ja: {
@@ -47,10 +51,14 @@ export const translations: Record<
     recruitments: "募集一覧",
     forOrganizers: "主催者向け",
     viewAllEvents: "すべてのイベントを見る",
+    viewAllRecruitments: "募集一覧を見る",
     viewDetails: "詳しく見る",
     more: "More",
     noUpcomingEvents: "近日のイベントはありません",
+    noRecruitments: "募集中の案件はありません",
     login: "ログイン",
+    sectionEvents: "イベント",
+    sectionRecruitments: "ボランティア・募集",
   },
   en: {
     event: "Events",
@@ -60,9 +68,13 @@ export const translations: Record<
     recruitments: "Recruitments",
     forOrganizers: "For Organizers",
     viewAllEvents: "View All Events",
+    viewAllRecruitments: "View Recruitments",
     viewDetails: "View Details",
     more: "More",
     noUpcomingEvents: "No upcoming events",
+    noRecruitments: "No recruitments",
     login: "Login",
+    sectionEvents: "Events",
+    sectionRecruitments: "Volunteer & Recruitments",
   },
 };
