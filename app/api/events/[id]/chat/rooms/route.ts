@@ -9,17 +9,37 @@ import {
   fetchEventParticipants,
   isOrganizerOfEvent,
 } from "@/lib/db/events";
+import { getEventById } from "@/lib/events";
+import {
+  MOCK_USER_ID,
+  getMockRoomForParticipant,
+  getMockRoomsByEvent,
+  getOrCreateMockRoom,
+} from "@/lib/chat-mock";
 import { NextResponse } from "next/server";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
   const supabase = await createClient();
+  const { id: eventId } = await params;
+
+  // Supabase 未設定時: モックモード
   if (!supabase) {
-    return NextResponse.json(
-      { error: "チャットは Supabase 連携時にご利用ください" },
-      { status: 503 }
-    );
+    const event = getEventById(eventId);
+    if (!event) {
+      return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
+    }
+    const room = getMockRoomForParticipant(eventId, MOCK_USER_ID);
+    if (!room) {
+      return NextResponse.json({ rooms: [], participants: [], role: "participant" });
+    }
+    const rooms = getMockRoomsByEvent(eventId);
+    return NextResponse.json({
+      rooms: rooms.map((r) => ({ ...r, id: r.id })),
+      participants: [{ user_id: MOCK_USER_ID, display_name: "参加者（デモ）", email: "demo@example.com" }],
+      role: "participant",
+    });
   }
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -27,7 +47,6 @@ export async function GET(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   }
 
-  const { id: eventId } = await params;
   const event = await fetchEventById(supabase, eventId);
   if (!event) {
     return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
@@ -56,21 +75,24 @@ export async function GET(_request: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   const supabase = await createClient();
+  const { id: eventId } = await params;
+  const body = await request.json().catch(() => ({}));
+  const participantId = (body.participantId as string | undefined) ?? "";
+
+  // Supabase 未設定時: モックモード
   if (!supabase) {
-    return NextResponse.json(
-      { error: "チャットは Supabase 連携時にご利用ください" },
-      { status: 503 }
-    );
+    const event = getEventById(eventId);
+    if (!event) {
+      return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
+    }
+    const room = getOrCreateMockRoom(eventId, participantId || MOCK_USER_ID);
+    return NextResponse.json(room);
   }
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   }
-
-  const { id: eventId } = await params;
-  const body = await request.json().catch(() => ({}));
-  const participantId = body.participantId as string | undefined;
 
   if (!participantId) {
     return NextResponse.json(

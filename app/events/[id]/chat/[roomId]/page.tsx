@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ChatRoom } from "@/components/chat/chat-room";
+import { MOCK_USER_ID } from "@/lib/chat-mock";
 
 type Props = {
   params: Promise<{ id: string; roomId: string }>;
@@ -31,7 +32,17 @@ export default function EventChatRoomPage({ params }: Props) {
       setRoomId(rid);
       const supabase = createClient();
       if (!supabase) {
-        setError("Supabase が設定されていません");
+        // モックモード: ログイン不要
+        setCurrentUserId(MOCK_USER_ID);
+        const roomRes = await fetch(`/api/chat/rooms/${rid}`);
+        if (!roomRes.ok) {
+          setError(roomRes.status === 404 ? "ルームが見つかりません" : "読み込みに失敗しました");
+          setLoading(false);
+          return;
+        }
+        const roomData = await roomRes.json();
+        if (cancelled) return;
+        setRoom(roomData);
         setLoading(false);
         return;
       }

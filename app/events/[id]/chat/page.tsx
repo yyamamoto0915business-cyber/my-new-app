@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ChatRoomList } from "@/components/chat/chat-room-list";
 import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
+import { MOCK_USER_ID } from "@/lib/chat-mock";
 
 function ParticipantStartChat({ eventId }: { eventId: string }) {
   const router = useRouter();
@@ -15,29 +16,35 @@ function ParticipantStartChat({ eventId }: { eventId: string }) {
   const handleStart = async () => {
     setCreating(true);
     setError(null);
-    const supabase = createClient();
-    if (!supabase) {
-      setError("Supabase が設定されていません");
-      setCreating(false);
-      return;
-    }
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.replace(`/login?returnTo=${encodeURIComponent(`/events/${eventId}/chat`)}`);
-      return;
-    }
-    const res = await fetch(`/api/events/${eventId}/chat/rooms`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ participantId: user.id }),
-    });
-    if (!res.ok) {
+    try {
+      const supabase = createClient();
+      const participantId = supabase ? (await supabase.auth.getUser()).data.user?.id : MOCK_USER_ID;
+      if (supabase && !participantId) {
+        setCreating(false);
+        router.replace(`/login?returnTo=${encodeURIComponent(`/events/${eventId}/chat`)}`);
+        return;
+      }
+      const res = await fetch(`/api/events/${eventId}/chat/rooms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participantId: participantId ?? MOCK_USER_ID }),
+      });
+      if (!res.ok) {
+        setError("チャットの開始に失敗しました");
+        setCreating(false);
+        return;
+      }
+      const room = await res.json();
+      if (!room?.id) {
+        setError("チャットの開始に失敗しました");
+        setCreating(false);
+        return;
+      }
+      router.replace(`/events/${eventId}/chat/${room.id}`);
+    } catch {
       setError("チャットの開始に失敗しました");
       setCreating(false);
-      return;
     }
-    const room = await res.json();
-    router.replace(`/events/${eventId}/chat/${room.id}`);
   };
 
   return (
@@ -81,7 +88,21 @@ export default function EventChatPage({ params }: Props) {
       setEventId(id);
       const supabase = createClient();
       if (!supabase) {
-        setError("Supabase が設定されていません。チャットは Supabase 連携時にご利用ください。");
+        // モックモード: ログイン不要でチャット利用可能
+        const res = await fetch(`/api/events/${id}/chat/rooms`);
+        if (!res.ok) {
+          setError(res.status === 404 ? "イベントが見つかりません" : "読み込みに失敗しました");
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
+        if (cancelled) return;
+        setRooms(data.rooms ?? []);
+        setParticipants(data.participants ?? []);
+        setRole(data.role ?? "participant");
+        if (data.role === "participant" && data.rooms?.length === 1) {
+          setParticipantRoom(data.rooms[0]);
+        }
         setLoading(false);
         return;
       }
