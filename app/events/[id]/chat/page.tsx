@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ChatRoomList } from "@/components/chat/chat-room-list";
-import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
 import { MOCK_USER_ID } from "@/lib/chat-mock";
 
 function ParticipantStartChat({ eventId }: { eventId: string }) {
@@ -86,38 +85,14 @@ export default function EventChatPage({ params }: Props) {
     (async () => {
       const { id } = await params;
       setEventId(id);
-      const supabase = createClient();
-      if (!supabase) {
-        // モックモード: ログイン不要でチャット利用可能
-        const res = await fetch(`/api/events/${id}/chat/rooms`);
-        if (!res.ok) {
-          setError(res.status === 404 ? "イベントが見つかりません" : "読み込みに失敗しました");
-          setLoading(false);
-          return;
-        }
-        const data = await res.json();
-        if (cancelled) return;
-        setRooms(data.rooms ?? []);
-        setParticipants(data.participants ?? []);
-        setRole(data.role ?? "participant");
-        if (data.role === "participant" && data.rooms?.length === 1) {
-          setParticipantRoom(data.rooms[0]);
-        }
-        setLoading(false);
-        return;
-      }
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // API を先に呼ぶ（サーバー側で Supabase 未設定時はモックを返す）
+      const res = await fetch(`/api/events/${id}/chat/rooms`);
+      if (res.status === 401) {
         router.replace(`/login?returnTo=${encodeURIComponent(`/events/${id}/chat`)}`);
         return;
       }
-      const res = await fetch(`/api/events/${id}/chat/rooms`);
       if (!res.ok) {
-        if (res.status === 401) {
-          router.replace(`/login?returnTo=${encodeURIComponent(`/events/${id}/chat`)}`);
-          return;
-        }
-        setError(res.status === 503 ? "Supabase 連携が必要です" : "読み込みに失敗しました");
+        setError(res.status === 404 ? "イベントが見つかりません" : "読み込みに失敗しました");
         setLoading(false);
         return;
       }
@@ -125,7 +100,7 @@ export default function EventChatPage({ params }: Props) {
       if (cancelled) return;
       setRooms(data.rooms ?? []);
       setParticipants(data.participants ?? []);
-      setRole(data.role ?? null);
+      setRole(data.role ?? "participant");
       if (data.role === "participant" && data.rooms?.length === 1) {
         setParticipantRoom(data.rooms[0]);
       }
@@ -145,27 +120,15 @@ export default function EventChatPage({ params }: Props) {
   }
 
   if (error) {
-    const isSupabaseError =
-      error.includes("Supabase が設定されていません") ||
-      error.includes("Supabase 連携が必要です");
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
-        {isSupabaseError ? (
-          <SupabaseSetupGuide
-            backHref={`/events/${eventId}`}
-            backLabel="← イベント詳細へ"
-          />
-        ) : (
-          <>
-            <p className="text-sm text-red-600">{error}</p>
-            <Link
-              href={`/events/${eventId}`}
-              className="mt-4 block text-sm text-zinc-600 hover:underline"
-            >
-              ← イベント詳細へ
-            </Link>
-          </>
-        )}
+        <p className="text-sm text-red-600">{error}</p>
+        <Link
+          href={`/events/${eventId}`}
+          className="mt-4 block text-sm text-zinc-600 hover:underline"
+        >
+          ← イベント詳細へ
+        </Link>
       </div>
     );
   }
