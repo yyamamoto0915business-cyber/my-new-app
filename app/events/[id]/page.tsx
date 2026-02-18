@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { EventChatButton } from "./event-chat-button";
 import { ShareButton } from "@/components/share-button";
 import { SponsorTicketSection } from "./sponsor-ticket-section";
+import { Breadcrumb } from "@/components/breadcrumb";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -21,12 +22,13 @@ export default async function EventDetailPage({ params }: Props) {
     <div className="min-h-screen">
       <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/80">
         <div className="mx-auto max-w-3xl px-4 py-4">
-          <Link
-            href="/events"
-            className="text-sm text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
-            ← イベント一覧へ
-          </Link>
+          <Breadcrumb
+            items={[
+              { label: "トップ", href: "/" },
+              { label: "イベント一覧", href: "/events" },
+              { label: event.title.length > 24 ? `${event.title.slice(0, 24)}…` : event.title },
+            ]}
+          />
         </div>
       </header>
 

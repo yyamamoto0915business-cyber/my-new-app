@@ -24,22 +24,19 @@ export function ProfileLink() {
 
   if (loggedIn === null) return null;
 
+  const btnClass =
+    "inline-flex items-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700";
+
   if (!loggedIn) {
     return (
-      <Link
-        href={`/login?returnTo=${encodeURIComponent("/profile")}`}
-        className="text-sm text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-      >
+      <Link href={`/login?returnTo=${encodeURIComponent("/profile")}`} className={btnClass}>
         ログイン
       </Link>
     );
   }
 
   return (
-    <Link
-      href="/profile"
-      className="text-sm text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-    >
+    <Link href="/profile" className={btnClass}>
       マイページ
     </Link>
   );

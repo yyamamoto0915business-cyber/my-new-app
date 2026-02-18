@@ -1,51 +1,44 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type Props = {
-  /** 共有するパスまたはURL（例: /events/123。省略時は現在のページ） */
   url?: string;
-  /** 共有時に使うテキスト（SNS投稿用） */
   title?: string;
-  /** ボタンの見た目 */
   variant?: "default" | "compact";
 };
 
+const btnClass =
+  "inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700";
+
 export function ShareButton({ url, title, variant = "default" }: Props) {
   const [copied, setCopied] = useState(false);
-  const [fullUrl, setFullUrl] = useState<string>("");
+  const [open, setOpen] = useState(false);
+  const [fullUrl, setFullUrl] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const u = url
-      ? url.startsWith("http")
-        ? url
-        : `${window.location.origin}${url.startsWith("/") ? url : `/${url}`}`
-      : window.location.href;
+      ? url.startsWith("http") ? url : `${typeof window !== "undefined" ? window.location.origin : ""}${url?.startsWith("/") ? url : `/${url}`}`
+      : typeof window !== "undefined" ? window.location.href : "";
     setFullUrl(u);
   }, [url]);
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    if (open) document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [open]);
 
   const handleCopy = async () => {
     const u = fullUrl || (typeof window !== "undefined" ? window.location.href : "");
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(u);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleNativeShare = async () => {
-    const u = fullUrl || (typeof window !== "undefined" ? window.location.href : "");
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({
-          title: title ?? "イベント",
-          url: u,
-        });
-      } catch {
-        handleCopy();
-      }
-    } else {
-      handleCopy();
+      setTimeout(() => setCopied(false), 1500);
+      setOpen(false);
     }
   };
 
@@ -54,76 +47,53 @@ export function ShareButton({ url, title, variant = "default" }: Props) {
   const twitterUrl = `https://twitter.com/intent/tweet?text=${shareText}&url=${encodedUrl}`;
   const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodedUrl}`;
 
-  const baseClass =
-    "inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700";
-
   if (variant === "compact") {
     return (
-      <div className="flex flex-wrap items-center gap-2">
+      <div ref={ref} className="relative">
         <button
           type="button"
-          onClick={handleCopy}
-          className={`${baseClass} py-1.5`}
+          onClick={() => setOpen(!open)}
+          className={`${btnClass} gap-1.5 py-1.5`}
+          aria-expanded={open}
         >
-          {copied ? "コピーしました" : "リンクをコピー"}
+          共有
+          <span className="text-zinc-400">{open ? "▲" : "▼"}</span>
         </button>
-        <a
-          href={twitterUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${baseClass} py-1.5 no-underline`}
-        >
-          X で共有
-        </a>
-        <a
-          href={lineUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${baseClass} py-1.5 no-underline`}
-        >
-          LINE で共有
-        </a>
+        {open && (
+          <div className="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-600 dark:bg-zinc-800">
+            <button type="button" onClick={handleCopy} className="block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700">
+              {copied ? "✓ コピーしました" : "リンクをコピー"}
+            </button>
+            <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700" onClick={() => setOpen(false)}>
+              X で共有
+            </a>
+            <a href={lineUrl} target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700" onClick={() => setOpen(false)}>
+              LINE で共有
+            </a>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        リンクを共有する
-      </p>
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={handleCopy}
-          className={baseClass}
-        >
-          {copied ? "コピーしました！" : "リンクをコピー"}
-        </button>
-        <button
-          type="button"
-          onClick={handleNativeShare}
-          className={baseClass}
-        >
-          共有
-        </button>
-        <a
-          href={twitterUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${baseClass} no-underline`}
-        >
-          X で共有
-        </a>
-        <a
-          href={lineUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${baseClass} no-underline`}
-        >
-          LINE で共有
-        </a>
-      </div>
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => setOpen(!open)} className={btnClass} aria-expanded={open}>
+        共有 ▼
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-40 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-600 dark:bg-zinc-800">
+          <button type="button" onClick={handleCopy} className="block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700">
+            {copied ? "✓ コピーしました" : "リンクをコピー"}
+          </button>
+          <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700" onClick={() => setOpen(false)}>
+            X で共有
+          </a>
+          <a href={lineUrl} target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700" onClick={() => setOpen(false)}>
+            LINE で共有
+          </a>
+        </div>
+      )}
     </div>
   );
 }

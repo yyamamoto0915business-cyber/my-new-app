@@ -11,35 +11,32 @@ import { Suspense } from "react";
 export function HomePageContent() {
   const { t } = useLanguage();
 
+  const navLinkClass =
+    "inline-flex items-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700";
+
   return (
     <>
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
-          {t.event}
-        </h1>
-        <nav className="flex flex-wrap items-center gap-3">
-          <ShareButton
-            url="/"
-            title={t.platformTitle}
-            variant="compact"
-          />
-          <ProfileLink />
-          <Link
-            href="/event-requests"
-            className="text-sm text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
+      <header className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
+            {t.event}
+          </h1>
+          <div className="flex items-center gap-2">
+            <ShareButton url="/" title={t.platformTitle} variant="compact" />
+            <ProfileLink />
+          </div>
+        </div>
+        <nav className="flex flex-wrap gap-2" aria-label="メインメニュー">
+          <Link href="/events" className={navLinkClass}>
+            イベント一覧
+          </Link>
+          <Link href="/event-requests" className={navLinkClass}>
             {t.eventRequests}
           </Link>
-          <Link
-            href="/recruitments"
-            className="text-sm text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
+          <Link href="/recruitments" className={navLinkClass}>
             {t.recruitments}
           </Link>
-          <Link
-            href="/organizer/events"
-            className="text-sm text-zinc-600 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
+          <Link href="/organizer/events" className={`${navLinkClass} border-zinc-300 dark:border-zinc-500`}>
             {t.forOrganizers}
           </Link>
         </nav>
