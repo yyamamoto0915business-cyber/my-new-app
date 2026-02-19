@@ -27,20 +27,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        name: { label: "Name", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email) return null;
         const email = String(credentials.email).toLowerCase();
-        const password = String(credentials.password ?? "");
-        if (password === "demo" || !password) {
-          if (email === "organizer@demo") {
-            const u = getOrCreateUser(email, "主催者デモ", "o1");
-            return { id: u.id, email: u.email, name: u.name };
-          }
-          const user = getOrCreateUser(email, email.split("@")[0] ?? "User");
-          return { id: user.id, email: user.email, name: user.name };
+        const name = (credentials.name as string) || email.split("@")[0] || "User";
+        if (email === "organizer@demo") {
+          const u = getOrCreateUser(email, "主催者デモ", "o1");
+          return { id: u.id, email: u.email, name: u.name };
         }
-        return null;
+        const user = getOrCreateUser(email, name);
+        return { id: user.id, email: user.email, name: user.name };
       },
     }),
   ],

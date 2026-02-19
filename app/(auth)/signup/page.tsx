@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getOrCreateUser } from "@/lib/auth-users";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -11,59 +12,38 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const supabase = createClient();
-    if (!supabase) {
-      setError("Supabase が設定されていません");
+    try {
+      getOrCreateUser(email.trim().toLowerCase(), displayName.trim() || email.split("@")[0] || "User");
+      const res = await signIn("credentials", {
+        email: email.trim().toLowerCase(),
+        password: password || "signup",
+        name: displayName.trim() || undefined,
+        redirect: false,
+      });
       setLoading(false);
-      return;
+      if (res?.error) {
+        setError(res.error);
+        return;
+      }
+      if (res?.ok) {
+        router.push("/");
+        router.refresh();
+        return;
+      }
+    } catch {
+      setError("登録に失敗しました");
+      setLoading(false);
     }
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { display_name: displayName || undefined },
-      },
-    });
-    setLoading(false);
-    if (signUpError) {
-      setError(signUpError.message);
-      return;
-    }
-    setSuccess(true);
-    router.refresh();
   };
 
-  if (success) {
-    return (
-      <div className="flex min-h-screen items-center justify-center ">
-        <div className="w-full max-w-sm space-y-4 rounded-xl border border-zinc-200/60 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-          <h1 className="text-xl font-semibold">登録完了</h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            確認メールを送信しました。メール内のリンクからアカウントを有効化してください。
-          </p>
-          <Link
-            href="/login"
-            className="block rounded-lg bg-[var(--accent)] px-4 py-2 text-center font-medium text-white"
-          >
-            ログインへ
-          </Link>
-          <Link href="/" className="block text-center text-sm text-zinc-500">
-            ← トップへ
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen items-center justify-center ">
+    <div className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-sm space-y-6 rounded-xl border border-zinc-200/60 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         <h1 className="text-xl font-semibold">新規登録</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
