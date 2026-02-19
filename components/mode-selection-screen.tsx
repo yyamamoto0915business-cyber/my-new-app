@@ -14,35 +14,17 @@ import {
 export function ModeSelectionScreen() {
   const router = useRouter();
   const { t } = useLanguage();
-  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     try {
       const mode = getModeFromCookie();
       if (mode) {
         router.replace(getRedirectPathForMode(mode));
-        const fallback = setTimeout(() => setChecking(false), 2500);
-        return () => clearTimeout(fallback);
       }
-      setChecking(false);
     } catch {
-      setChecking(false);
+      // クッキー読み取りエラー時はそのままモード選択を表示
     }
   }, [router]);
-
-  // 安全策: ハイドレーション遅延やVercel環境でuseEffectが遅れる場合に備え、必ずUIを表示
-  useEffect(() => {
-    const safety = setTimeout(() => setChecking(false), 3500);
-    return () => clearTimeout(safety);
-  }, []);
-
-  if (checking) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-zinc-500">読み込み中...</p>
-      </div>
-    );
-  }
 
   const handleSelect = (mode: "EVENT" | "VOLUNTEER" | "ORGANIZER") => {
     setModeCookie(mode);
