@@ -20,7 +20,6 @@ export function ModeSelectionScreen() {
     const mode = getModeFromCookie();
     if (mode) {
       router.replace(getRedirectPathForMode(mode));
-      // リダイレクトが完了しない場合に備え、一定時間でフォールバック
       const fallback = setTimeout(() => setChecking(false), 2500);
       return () => clearTimeout(fallback);
     }

@@ -1,12 +1,24 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { VOLUNTEER_ROLE_LABELS } from "@/lib/volunteer-roles-mock";
+
+/** useSearchParamsの代替（Suspenseなし）。クライアントでURLを読み取りサスペンドを防ぐ */
+function useSearchParamsNoSuspend(): URLSearchParams {
+  const pathname = usePathname();
+  const [params, setParams] = useState<URLSearchParams>(() =>
+    typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search)
+  );
+  useEffect(() => {
+    setParams(new URLSearchParams(window.location.search));
+  }, [pathname]);
+  return params;
+}
 
 type VolunteerRoleWithEvent = {
   id: string;
@@ -24,8 +36,8 @@ type VolunteerRoleWithEvent = {
 };
 
 function VolunteerPageContent() {
-  const { data: session, status } = useSession();
-  const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const searchParams = useSearchParamsNoSuspend();
   const prefecture = searchParams.get("prefecture") ?? "";
   const roleType = searchParams.get("roleType") ?? "";
   const [roles, setRoles] = useState<VolunteerRoleWithEvent[]>([]);
@@ -196,9 +208,5 @@ function VolunteerPageContent() {
 }
 
 export default function VolunteerPage() {
-  return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-zinc-500">読み込み中...</div>}>
-      <VolunteerPageContent />
-    </Suspense>
-  );
+  return <VolunteerPageContent />;
 }

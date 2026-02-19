@@ -106,24 +106,19 @@ export function BackgroundIllustration() {
             height="200"
             patternUnits="userSpaceOnUse"
           >
-            <ellipse
-              cx="40"
-              cy="80"
-              rx="12"
-              ry="20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            />
-            <ellipse
-              cx="160"
-              cy="120"
-              rx="10"
-              ry="16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            />
+            {/* 提灯シルエット（横線で骨を表現し「0」に見えないように） */}
+            <g opacity="0.06" stroke="currentColor" fill="none" strokeWidth="1">
+              <ellipse cx="40" cy="80" rx="12" ry="20" />
+              <line x1="28" y1="75" x2="52" y2="75" />
+              <line x1="28" y1="80" x2="52" y2="80" />
+              <line x1="28" y1="85" x2="52" y2="85" />
+            </g>
+            <g opacity="0.05" stroke="currentColor" fill="none" strokeWidth="1">
+              <ellipse cx="160" cy="120" rx="10" ry="16" />
+              <line x1="150" y1="116" x2="170" y2="116" />
+              <line x1="150" y1="120" x2="170" y2="120" />
+              <line x1="150" y1="124" x2="170" y2="124" />
+            </g>
           </pattern>
           <pattern
             id="sakura"
