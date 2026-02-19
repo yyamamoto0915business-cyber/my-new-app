@@ -20,12 +20,20 @@ export default function OrganizerEventsPage() {
           </Link>
           <div className="mt-2 flex items-center justify-between">
             <h1 className="text-2xl font-bold">主催イベント一覧</h1>
-            <Link
-              href="/organizer/events/new"
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              新規作成
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href="/organizer/inbox"
+                className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              >
+                受信トレイ
+              </Link>
+              <Link
+                href="/organizer/events/new"
+                className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+              >
+                新規作成
+              </Link>
+            </div>
           </div>
           <p className="mt-1 text-sm text-zinc-500">
             主催者: {MOCK_ORGANIZER} として表示中

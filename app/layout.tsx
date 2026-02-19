@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { BackgroundIllustration } from "@/components/background-illustration";
 import { LanguageProvider } from "@/components/language-provider";
+import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { RegionFilterBar } from "@/components/region-filter-bar";
 import "./globals.css";
 
@@ -31,13 +32,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen`}
       >
-        <LanguageProvider>
-          <BackgroundIllustration />
+        <AuthSessionProvider>
+          <LanguageProvider>
+            <BackgroundIllustration />
           <Suspense fallback={null}>
             <RegionFilterBar />
           </Suspense>
-          {children}
-        </LanguageProvider>
+            {children}
+          </LanguageProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );

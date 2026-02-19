@@ -100,3 +100,8 @@ export function getVolunteerRolesByEvent(eventId: string): VolunteerRole[] {
   seedRoles();
   return rolesByEvent.get(eventId) ?? [];
 }
+
+export function getAllVolunteerRoles(): VolunteerRole[] {
+  seedRoles();
+  return Array.from(rolesByEvent.values()).flat();
+}
