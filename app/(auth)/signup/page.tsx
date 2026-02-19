@@ -104,7 +104,7 @@ export default function SignupPage() {
             ログイン
           </Link>
         </p>
-        <Link href="/" className="block text-center text-sm text-zinc-500">
+        <Link href="/?mode=select" className="block text-center text-sm text-zinc-500">
           ← トップへ
         </Link>
       </div>

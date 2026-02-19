@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "./language-provider";
@@ -10,13 +10,20 @@ import {
   setModeCookie,
   getRedirectPathForMode,
 } from "@/lib/mode-preference";
+import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
 
 export function ModeSelectionScreen() {
   const router = useRouter();
   const { t } = useLanguage();
+  const searchParams = useSearchParamsNoSuspend();
+  const forceSelect = searchParams.get("mode") === "select";
 
   useEffect(() => {
     try {
+      if (forceSelect) {
+        setModeCookie(null);
+        return;
+      }
       const mode = getModeFromCookie();
       if (mode) {
         router.replace(getRedirectPathForMode(mode));
@@ -24,7 +31,7 @@ export function ModeSelectionScreen() {
     } catch {
       // クッキー読み取りエラー時はそのままモード選択を表示
     }
-  }, [router]);
+  }, [router, forceSelect]);
 
   const handleSelect = (mode: "EVENT" | "VOLUNTEER" | "ORGANIZER") => {
     setModeCookie(mode);

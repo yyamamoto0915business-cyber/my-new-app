@@ -129,7 +129,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
         >
           再読み込み
         </button>
-        <Link href="/" className="ml-4 text-sm text-zinc-600 underline">
+        <Link href="/?mode=select" className="ml-4 text-sm text-zinc-600 underline">
           ← トップへ
         </Link>
       </div>

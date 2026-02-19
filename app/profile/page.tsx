@@ -101,7 +101,7 @@ export default function ProfilePage() {
   if (noSupabase) {
     return (
       <div className="mx-auto max-w-xl px-4 py-8">
-        <SupabaseSetupGuide backHref="/" backLabel="← トップへ" />
+        <SupabaseSetupGuide backHref="/?mode=select" backLabel="← トップへ" />
       </div>
     );
   }
@@ -109,7 +109,7 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-md px-4 py-8">
       <Link
-        href="/"
+        href="/?mode=select"
         className="mb-6 inline-block text-sm text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
       >
         ← トップへ

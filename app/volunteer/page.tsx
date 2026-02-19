@@ -85,7 +85,7 @@ function VolunteerPageContent() {
       <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/80">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <Breadcrumb
-            items={[{ label: "トップ", href: "/" }, { label: "ボランティア募集" }]}
+            items={[{ label: "トップ", href: "/?mode=select" }, { label: "ボランティア募集" }]}
           />
           <h1 className="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
             ボランティア募集

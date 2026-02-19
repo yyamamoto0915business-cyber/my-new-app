@@ -27,7 +27,7 @@ export default async function EventDetailPage({ params }: Props) {
         <div className="mx-auto max-w-3xl px-4 py-4">
           <Breadcrumb
             items={[
-              { label: "トップ", href: "/" },
+              { label: "トップ", href: "/?mode=select" },
               { label: "イベント一覧", href: "/events" },
               { label: event.title.length > 24 ? `${event.title.slice(0, 24)}…` : event.title },
             ]}

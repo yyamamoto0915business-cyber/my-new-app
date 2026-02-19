@@ -31,7 +31,7 @@ export default function Error({
           再試行
         </button>
         <Link
-          href="/"
+          href="/?mode=select"
           className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium dark:border-zinc-700"
         >
           トップへ

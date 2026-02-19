@@ -77,7 +77,7 @@ function RecruitmentsPageContent() {
     <div className="min-h-screen">
       <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto max-w-4xl px-4 py-4">
-          <Breadcrumb items={[{ label: "トップ", href: "/" }, { label: "募集一覧" }]} />
+          <Breadcrumb items={[{ label: "トップ", href: "/?mode=select" }, { label: "募集一覧" }]} />
           <h1 className="mt-2 text-2xl font-bold">募集一覧</h1>
         </div>
       </header>

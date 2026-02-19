@@ -2,6 +2,9 @@
 
 export type ModePreference = "EVENT" | "VOLUNTEER" | "ORGANIZER" | null;
 
+/** 最初のページ（モード選択）へのURL。クッキーを無視して戻れる */
+export const MODE_SELECT_URL = "/?mode=select";
+
 const COOKIE_NAME = "app_mode";
 
 export function getModeFromCookie(): ModePreference {

@@ -158,7 +158,7 @@ function EventsPageContent() {
       <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/80">
         <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Breadcrumb items={[{ label: "トップ", href: "/" }, { label: "イベント一覧" }]} />
+            <Breadcrumb items={[{ label: "トップ", href: "/?mode=select" }, { label: "イベント一覧" }]} />
             <ProfileLink />
           </div>
           <h1 className="mt-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">

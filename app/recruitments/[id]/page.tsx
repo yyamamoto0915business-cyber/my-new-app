@@ -34,7 +34,7 @@ export default async function RecruitmentDetailPage({ params }: Props) {
         <div className="mx-auto max-w-3xl px-4 py-4">
           <Breadcrumb
             items={[
-              { label: "トップ", href: "/" },
+              { label: "トップ", href: "/?mode=select" },
               { label: "募集一覧", href: "/recruitments" },
               { label: shortTitle },
             ]}
