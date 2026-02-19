@@ -99,28 +99,6 @@ export function BackgroundIllustration() {
             />
           </pattern>
           <pattern
-            id="lanterns"
-            x="0"
-            y="0"
-            width="200"
-            height="200"
-            patternUnits="userSpaceOnUse"
-          >
-            {/* 提灯シルエット（横線で骨を表現し「0」に見えないように） */}
-            <g opacity="0.06" stroke="currentColor" fill="none" strokeWidth="1">
-              <ellipse cx="40" cy="80" rx="12" ry="20" />
-              <line x1="28" y1="75" x2="52" y2="75" />
-              <line x1="28" y1="80" x2="52" y2="80" />
-              <line x1="28" y1="85" x2="52" y2="85" />
-            </g>
-            <g opacity="0.05" stroke="currentColor" fill="none" strokeWidth="1">
-              <ellipse cx="160" cy="120" rx="10" ry="16" />
-              <line x1="150" y1="116" x2="170" y2="116" />
-              <line x1="150" y1="120" x2="170" y2="120" />
-              <line x1="150" y1="124" x2="170" y2="124" />
-            </g>
-          </pattern>
-          <pattern
             id="sakura"
             x="0"
             y="0"
@@ -157,7 +135,6 @@ export function BackgroundIllustration() {
         <rect width="100%" height="100%" fill="url(#clouds)" />
         {/* 葉パターン */}
         <rect width="100%" height="100%" fill="url(#leaves)" />
-        <rect width="100%" height="100%" fill="url(#lanterns)" />
         <rect width="100%" height="100%" fill="url(#sakura)" />
         {/* 波 */}
         <path
