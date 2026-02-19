@@ -20,6 +20,7 @@ export function BackgroundIllustration() {
         preserveAspectRatio="xMidYMid slice"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 1200 800"
+        style={{ color: "#737373" }}
       >
         <defs>
           <pattern

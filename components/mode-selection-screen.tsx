@@ -17,14 +17,24 @@ export function ModeSelectionScreen() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const mode = getModeFromCookie();
-    if (mode) {
-      router.replace(getRedirectPathForMode(mode));
-      const fallback = setTimeout(() => setChecking(false), 2500);
-      return () => clearTimeout(fallback);
+    try {
+      const mode = getModeFromCookie();
+      if (mode) {
+        router.replace(getRedirectPathForMode(mode));
+        const fallback = setTimeout(() => setChecking(false), 2500);
+        return () => clearTimeout(fallback);
+      }
+      setChecking(false);
+    } catch {
+      setChecking(false);
     }
-    setChecking(false);
   }, [router]);
+
+  // 安全策: ハイドレーション遅延やVercel環境でuseEffectが遅れる場合に備え、必ずUIを表示
+  useEffect(() => {
+    const safety = setTimeout(() => setChecking(false), 3500);
+    return () => clearTimeout(safety);
+  }, []);
 
   if (checking) {
     return (
