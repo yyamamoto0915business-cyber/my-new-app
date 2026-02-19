@@ -41,6 +41,13 @@ export const translations: Record<
     login: string;
     sectionEvents: string;
     sectionRecruitments: string;
+    modeEvent: string;
+    modeEventDesc: string;
+    modeVolunteer: string;
+    modeVolunteerDesc: string;
+    modeOrganizer: string;
+    modeOrganizerDesc: string;
+    selectMode: string;
   }
 > = {
   ja: {
@@ -59,6 +66,13 @@ export const translations: Record<
     login: "ログイン",
     sectionEvents: "イベント",
     sectionRecruitments: "ボランティア・募集",
+    modeEvent: "イベント参加",
+    modeEventDesc: "イベントを探して参加する",
+    modeVolunteer: "ボランティア参加",
+    modeVolunteerDesc: "ボランティア・スポットバイトに応募する",
+    modeOrganizer: "主催者",
+    modeOrganizerDesc: "イベントや募集を登録・管理する",
+    selectMode: "どのモードで使いますか？",
   },
   en: {
     event: "Events",
@@ -76,5 +90,12 @@ export const translations: Record<
     login: "Login",
     sectionEvents: "Events",
     sectionRecruitments: "Volunteer & Recruitments",
+    modeEvent: "Join Events",
+    modeEventDesc: "Find and participate in events",
+    modeVolunteer: "Volunteer",
+    modeVolunteerDesc: "Apply for volunteer and spot work",
+    modeOrganizer: "Organizer",
+    modeOrganizerDesc: "Register and manage events & recruitments",
+    selectMode: "How would you like to use this?",
   },
 };
