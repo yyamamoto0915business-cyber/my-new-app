@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -71,26 +72,36 @@ export function HomeEventCards() {
   const searchParams = useSearchParams();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const prefecture = searchParams.get("prefecture") ?? "";
   const city = searchParams.get("city") ?? "";
   const tagsParam = searchParams.get("tags") ?? "";
   const tags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
+    setError(null);
     const params = new URLSearchParams();
     if (prefecture) params.set("prefecture", prefecture);
     if (city) params.set("city", city);
     if (tags.length) params.set("tags", tags.join(","));
     const qs = params.toString();
-    fetch(`/api/events${qs ? `?${qs}` : ""}`, { cache: "no-store" })
+    fetchWithTimeout(`/api/events${qs ? `?${qs}` : ""}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data: Event[]) => {
         const thisWeek = getEventsByDateRange(data, "week");
         const toShow = thisWeek.length > 0 ? thisWeek : data;
-        setEvents(toShow);
+        setEvents(Array.isArray(data) ? toShow : []);
       })
-      .catch(() => setEvents([]))
+      .catch(() => {
+        setEvents([]);
+        setError("読み込みに失敗しました");
+      })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, [prefecture, city, tags.join(",")]);
 
   if (loading) {
@@ -102,6 +113,21 @@ export function HomeEventCards() {
             className="aspect-[16/10] animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-800"
           />
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl bg-white/80 p-6 text-center dark:bg-zinc-900/80">
+        <p className="text-sm text-red-600">{error}</p>
+        <button
+          type="button"
+          onClick={load}
+          className="mt-2 text-sm text-[var(--accent)] underline"
+        >
+          再読み込み
+        </button>
       </div>
     );
   }

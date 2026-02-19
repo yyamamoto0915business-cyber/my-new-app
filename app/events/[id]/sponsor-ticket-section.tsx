@@ -3,6 +3,15 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+const DEFAULT_PRICES = [300, 500, 1000, 3000, 5000];
+const DEFAULT_PERKS: Record<number, string> = {
+  300: "応援バッジ",
+  500: "応援メッセージ",
+  1000: "限定特典",
+  3000: "限定体験枠",
+  5000: "優先枠・特典パック",
+};
+
 type Props = {
   eventId: string;
   eventTitle: string;
@@ -13,15 +22,16 @@ type Props = {
 export function SponsorTicketSection({
   eventId,
   eventTitle,
-  prices,
-  perks,
+  prices: pricesProp,
+  perks: perksProp,
 }: Props) {
+  const prices = pricesProp.length ? pricesProp : DEFAULT_PRICES;
+  const perks = Object.keys(perksProp).length ? perksProp : DEFAULT_PERKS;
   const [selectedAmount, setSelectedAmount] = useState(prices[0] ?? 300);
   const [message, setMessage] = useState("");
+  const [addOns, setAddOns] = useState({ enGuide: false, priority: false, volunteerExperience: false });
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-
-  if (!prices.length) return null;
 
   const handlePurchase = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,12 +63,12 @@ export function SponsorTicketSection({
         スポンサーチケットで応援する
       </h2>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-        イベントを応援して、特典を受け取りましょう
+        地域貢献・限定体験の特典を受け取りましょう
       </p>
       {!done ? (
         <form onSubmit={handlePurchase} className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium">価格を選択</label>
+            <label className="block text-sm font-medium">価格を選択（¥300〜¥5,000）</label>
             <div className="mt-2 flex flex-wrap gap-2">
               {prices.map((p) => (
                 <button
@@ -79,6 +89,37 @@ export function SponsorTicketSection({
                   )}
                 </button>
               ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              追加オプション（任意）
+            </label>
+            <div className="mt-2 space-y-2">
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={addOns.enGuide}
+                  onChange={(e) => setAddOns((o) => ({ ...o, enGuide: e.target.checked }))}
+                />
+                ENガイド（参加サポート）
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={addOns.priority}
+                  onChange={(e) => setAddOns((o) => ({ ...o, priority: e.target.checked }))}
+                />
+                優先枠（参加保証・満席回避）
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={addOns.volunteerExperience}
+                  onChange={(e) => setAddOns((o) => ({ ...o, volunteerExperience: e.target.checked }))}
+                />
+                短時間ボランティア体験
+              </label>
             </div>
           </div>
           <div>

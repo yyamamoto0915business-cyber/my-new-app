@@ -13,7 +13,7 @@ function getRecruitment(id: string): Recruitment | null {
 
 const TYPE_LABELS: Record<string, string> = {
   volunteer: "ボランティア",
-  paid_spot: "スポットバイト",
+  paid_spot: "謝礼あり",
   job: "求人",
   tech_volunteer: "テックボランティア",
 };

@@ -69,7 +69,7 @@ export const translations: Record<
     modeEvent: "イベント参加",
     modeEventDesc: "イベントを探して参加する",
     modeVolunteer: "ボランティア参加",
-    modeVolunteerDesc: "ボランティア・スポットバイトに応募する",
+    modeVolunteerDesc: "ボランティア・謝礼あり案件に応募する",
     modeOrganizer: "主催者",
     modeOrganizerDesc: "イベントや募集を登録・管理する",
     selectMode: "どのモードで使いますか？",

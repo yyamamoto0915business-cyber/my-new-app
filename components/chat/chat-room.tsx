@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { createClient } from "@/lib/supabase/client";
 
 type Message = {
@@ -41,9 +42,9 @@ export function ChatRoom({
     let channel: { unsubscribe: () => void } | null = null;
 
     const fetchMessages = async () => {
-      const res = await fetch(`/api/chat/rooms/${roomId}/messages`);
+      const res = await fetchWithTimeout(`/api/chat/rooms/${roomId}/messages`);
       if (!res.ok) {
-        setError(res.status === 503 ? "Supabase 連携が必要です" : "読み込みに失敗しました");
+        setError(res.status === 503 ? "Supabase 連携が必要です" : "読み込みに失敗しました。通信環境を確認してください。");
         setLoading(false);
         return;
       }
@@ -107,8 +108,26 @@ export function ChatRoom({
 
   if (error) {
     return (
-      <div className="flex h-96 items-center justify-center">
+      <div className="flex h-96 flex-col items-center justify-center gap-2">
         <p className="text-sm text-red-600">{error}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setLoading(true);
+            fetchWithTimeout(`/api/chat/rooms/${roomId}/messages`)
+              .then((r) => {
+                if (!r.ok) throw new Error("failed");
+                return r.json();
+              })
+              .then((data) => setMessages(Array.isArray(data) ? data : []))
+              .catch(() => setError("通信に失敗しました"))
+              .finally(() => setLoading(false));
+          }}
+          className="text-sm text-[var(--accent)] underline"
+        >
+          再読み込み
+        </button>
       </div>
     );
   }

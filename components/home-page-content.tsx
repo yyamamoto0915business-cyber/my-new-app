@@ -224,7 +224,7 @@ export function HomePageContent() {
                   募集を新規登録
                 </span>
                 <span className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  ボランティア・スポットバイトを募集する
+                  ボランティア募集を登録する
                 </span>
               </Link>
               <Link

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { createClient } from "@/lib/supabase/client";
 import { ChatRoom } from "@/components/chat/chat-room";
 import { MOCK_USER_ID } from "@/lib/chat-mock";
@@ -32,17 +33,21 @@ export default function EventChatRoomPage({ params }: Props) {
       setRoomId(rid);
       const supabase = createClient();
       if (!supabase) {
-        // モックモード: ログイン不要
         setCurrentUserId(MOCK_USER_ID);
-        const roomRes = await fetch(`/api/chat/rooms/${rid}`);
-        if (!roomRes.ok) {
-          setError(roomRes.status === 404 ? "ルームが見つかりません" : "読み込みに失敗しました");
-          setLoading(false);
-          return;
+        try {
+          const roomRes = await fetchWithTimeout(`/api/chat/rooms/${rid}`);
+          if (cancelled) return;
+          if (!roomRes.ok) {
+            setError(roomRes.status === 404 ? "ルームが見つかりません" : "読み込みに失敗しました");
+            setLoading(false);
+            return;
+          }
+          const roomData = await roomRes.json();
+          if (cancelled) return;
+          setRoom(roomData);
+        } catch {
+          setError("通信に失敗しました");
         }
-        const roomData = await roomRes.json();
-        if (cancelled) return;
-        setRoom(roomData);
         setLoading(false);
         return;
       }
@@ -52,15 +57,20 @@ export default function EventChatRoomPage({ params }: Props) {
         return;
       }
       setCurrentUserId(user.id);
-      const roomRes = await fetch(`/api/chat/rooms/${rid}`);
-      if (!roomRes.ok) {
-        setError(roomRes.status === 404 ? "ルームが見つかりません" : "読み込みに失敗しました");
-        setLoading(false);
-        return;
+      try {
+        const roomRes = await fetchWithTimeout(`/api/chat/rooms/${rid}`);
+        if (cancelled) return;
+        if (!roomRes.ok) {
+          setError(roomRes.status === 404 ? "ルームが見つかりません" : "通信に失敗しました");
+          setLoading(false);
+          return;
+        }
+        const roomData = await roomRes.json();
+        if (cancelled) return;
+        setRoom(roomData);
+      } catch {
+        setError("通信に失敗しました");
       }
-      const roomData = await roomRes.json();
-      if (cancelled) return;
-      setRoom(roomData);
       setLoading(false);
     })();
     return () => {
@@ -80,7 +90,14 @@ export default function EventChatRoomPage({ params }: Props) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
         <p className="text-sm text-red-600">{error}</p>
-        <Link href={`/events/${eventId}`} className="mt-4 block text-sm text-zinc-600">
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-4 mr-4 text-sm text-[var(--accent)] underline"
+        >
+          再読み込み
+        </button>
+        <Link href={`/events/${eventId}`} className="text-sm text-zinc-600 underline">
           ← イベント詳細へ
         </Link>
       </div>
@@ -100,10 +117,10 @@ export default function EventChatRoomPage({ params }: Props) {
             href={`/events/${eventId}/chat`}
             className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400"
           >
-            ← チャット一覧へ
+            ← 質問一覧へ
           </Link>
           <h1 className="mt-2 text-xl font-semibold">
-            {room?.event?.title ?? "チャット"} - {otherPartyName}
+            {room?.event?.title ?? "Q&A"} - {otherPartyName}
           </h1>
         </div>
       </header>

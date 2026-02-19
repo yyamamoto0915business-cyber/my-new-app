@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/components/language-provider";
 
 const TYPE_LABELS: Record<string, string> = {
   volunteer: "ボランティア",
-  paid_spot: "有償",
+  paid_spot: "謝礼あり",
   job: "求人",
   tech_volunteer: "技術ボラ",
 };
@@ -53,17 +54,27 @@ export function HomeRecruitmentCards() {
   const searchParams = useSearchParams();
   const [recruitments, setRecruitments] = useState<Recruitment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const prefecture = searchParams.get("prefecture") ?? "";
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
+    setError(null);
     const params = new URLSearchParams();
     if (prefecture) params.set("prefecture", prefecture);
     const qs = params.toString();
-    fetch(`/api/recruitments${qs ? `?${qs}` : ""}`, { cache: "no-store" })
+    fetchWithTimeout(`/api/recruitments${qs ? `?${qs}` : ""}`, { cache: "no-store" })
       .then((res) => res.json())
-      .then((data: Recruitment[]) => setRecruitments(data.slice(0, 4)))
-      .catch(() => setRecruitments([]))
+      .then((data) => setRecruitments(Array.isArray(data) ? data.slice(0, 4) : []))
+      .catch(() => {
+        setRecruitments([]);
+        setError("読み込みに失敗しました");
+      })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, [prefecture]);
 
   if (loading) {
@@ -72,6 +83,21 @@ export function HomeRecruitmentCards() {
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="h-40 animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl bg-white/80 p-6 text-center dark:bg-zinc-900/80">
+        <p className="text-sm text-red-600">{error}</p>
+        <button
+          type="button"
+          onClick={load}
+          className="mt-2 text-sm text-[var(--accent)] underline"
+        >
+          再読み込み
+        </button>
       </div>
     );
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -49,7 +50,7 @@ function ParticipantStartChat({ eventId }: { eventId: string }) {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        主催者とチャットを始めますか？
+        主催者への質問を投稿しますか？
       </p>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       <button
@@ -57,7 +58,7 @@ function ParticipantStartChat({ eventId }: { eventId: string }) {
         disabled={creating}
         className="mt-4 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
       >
-        {creating ? "準備中..." : "チャットを始める"}
+        {creating ? "準備中..." : "質問を始める"}
       </button>
       <Link href={`/events/${eventId}`} className="mt-4 ml-4 text-sm text-zinc-600">
         ← イベント詳細へ
@@ -85,8 +86,15 @@ export default function EventChatPage({ params }: Props) {
     (async () => {
       const { id } = await params;
       setEventId(id);
-      // API を先に呼ぶ（サーバー側で Supabase 未設定時はモックを返す）
-      const res = await fetch(`/api/events/${id}/chat/rooms`);
+      let res: Response;
+      try {
+        res = await fetchWithTimeout(`/api/events/${id}/chat/rooms`);
+      } catch {
+        setError("通信に失敗しました");
+        setLoading(false);
+        return;
+      }
+      if (cancelled) return;
       if (res.status === 401) {
         router.replace(`/login?returnTo=${encodeURIComponent(`/events/${id}/chat`)}`);
         return;
@@ -123,9 +131,43 @@ export default function EventChatPage({ params }: Props) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
         <p className="text-sm text-red-600">{error}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setLoading(true);
+            if (eventId) {
+              fetchWithTimeout(`/api/events/${eventId}/chat/rooms`)
+                .then((r) => {
+                  if (r.status === 401) {
+                    router.replace(`/login?returnTo=${encodeURIComponent(`/events/${eventId}/chat`)}`);
+                    return null;
+                  }
+                  return r.ok ? r.json() : null;
+                })
+                .then((data) => {
+                  if (data) {
+                    setRooms(data.rooms ?? []);
+                    setParticipants(data.participants ?? []);
+                    setRole(data.role ?? "participant");
+                    if (data.role === "participant" && data.rooms?.length === 1) {
+                      setParticipantRoom(data.rooms[0]);
+                    }
+                  } else if (eventId) {
+                    setError("読み込みに失敗しました");
+                  }
+                })
+                .catch(() => setError("通信に失敗しました"))
+                .finally(() => setLoading(false));
+            }
+          }}
+          className="mt-4 text-sm text-[var(--accent)] underline"
+        >
+          再読み込み
+        </button>
         <Link
           href={`/events/${eventId}`}
-          className="mt-4 block text-sm text-zinc-600 hover:underline"
+          className="mt-4 ml-4 block text-sm text-zinc-600 hover:underline"
         >
           ← イベント詳細へ
         </Link>
@@ -137,7 +179,7 @@ export default function EventChatPage({ params }: Props) {
     router.replace(`/events/${eventId}/chat/${participantRoom.id}`);
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-zinc-500">チャットへ移動中...</p>
+        <p className="text-sm text-zinc-500">質問画面へ移動中...</p>
       </div>
     );
   }
@@ -158,7 +200,7 @@ export default function EventChatPage({ params }: Props) {
           >
             ← イベント詳細へ
           </Link>
-          <h1 className="mt-2 text-xl font-semibold">参加者とのチャット</h1>
+          <h1 className="mt-2 text-xl font-semibold">主催者への質問（Q&A）</h1>
         </div>
       </header>
       <main className="mx-auto max-w-2xl px-4 py-6">

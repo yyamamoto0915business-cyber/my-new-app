@@ -33,7 +33,7 @@ export function EventChatButton({ eventId }: EventChatButtonProps) {
   if (authState === "no_supabase") {
     return (
       <p className="text-sm text-zinc-500">
-        チャットは Supabase 連携時にご利用ください。{" "}
+        主催者への質問は Supabase 連携時にご利用ください。{" "}
         <Link
           href={`/events/${eventId}/chat`}
           className="text-[var(--accent)] underline-offset-2 hover:underline"
@@ -50,7 +50,7 @@ export function EventChatButton({ eventId }: EventChatButtonProps) {
         href={`/login?returnTo=${encodeURIComponent(`/events/${eventId}/chat`)}`}
         className="inline-flex rounded-lg border border-zinc-200/60 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
       >
-        ログインしてチャット
+        ログインして質問する
       </Link>
     );
   }
@@ -60,7 +60,7 @@ export function EventChatButton({ eventId }: EventChatButtonProps) {
       href={`/events/${eventId}/chat`}
       className="inline-flex rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
     >
-      主催者とチャット
+      主催者への質問（Q&A）
     </Link>
   );
 }

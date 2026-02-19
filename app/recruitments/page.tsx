@@ -21,7 +21,7 @@ type Recruitment = {
 
 const TYPE_LABELS: Record<string, string> = {
   volunteer: "ボランティア",
-  paid_spot: "有償スポット",
+  paid_spot: "謝礼あり",
   job: "求人",
   tech_volunteer: "技術ボランティア",
 };

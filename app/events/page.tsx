@@ -12,6 +12,7 @@ import {
   calcDistanceKm,
   type Event,
 } from "../../lib/events";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { ProfileLink } from "@/components/profile-link";
 import { TagFilter } from "@/components/tag-filter";
 import { Breadcrumb } from "@/components/breadcrumb";
@@ -44,6 +45,7 @@ function EventsPageContent() {
   const [mapEvents, setMapEvents] = useState<EventWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapLoading, setMapLoading] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
@@ -66,15 +68,19 @@ function EventsPageContent() {
   const end = dateRange === "today" ? today : weekEndStr;
 
   useEffect(() => {
+    setListError(null);
     const params = new URLSearchParams();
     if (prefecture) params.set("prefecture", prefecture);
     if (city) params.set("city", city);
     if (selectedTags.length) params.set("tags", selectedTags.join(","));
     const qs = params.toString();
-    fetch(`/api/events${qs ? `?${qs}` : ""}`)
+    fetchWithTimeout(`/api/events${qs ? `?${qs}` : ""}`)
       .then((res) => res.json())
-      .then((data: Event[]) => setEvents(data))
-      .catch(() => setEvents([]))
+      .then((data: Event[]) => setEvents(Array.isArray(data) ? data : []))
+      .catch(() => {
+        setEvents([]);
+        setListError("通信に失敗しました");
+      })
       .finally(() => setLoading(false));
   }, [prefecture, city, selectedTags.join(",")]);
 
@@ -96,9 +102,9 @@ function EventsPageContent() {
     if (prefecture) params.set("prefecture", prefecture);
     if (city) params.set("city", city);
     if (selectedTags.length) params.set("tags", selectedTags.join(","));
-    fetch(`/api/events/map?${params}`)
+    fetchWithTimeout(`/api/events/map?${params}`)
       .then((res) => res.json())
-      .then((data) => setMapEvents(data.events ?? []))
+      .then((data) => setMapEvents(Array.isArray(data?.events) ? data.events : []))
       .catch(() => setMapEvents([]))
       .finally(() => setMapLoading(false));
   }, [view, userPos, start, end, priceFilter, childFriendlyOnly, prefecture, city, selectedTags]);
@@ -250,6 +256,17 @@ function EventsPageContent() {
           <>
             {loading ? (
               <p className="mt-6 text-center text-sm text-zinc-500">読み込み中...</p>
+            ) : listError ? (
+              <div className="mt-6 rounded-2xl border border-zinc-200/60 bg-white/80 p-6 text-center dark:border-zinc-700/60 dark:bg-zinc-900/80">
+                <p className="text-sm text-red-600">{listError}</p>
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="mt-2 text-sm text-[var(--accent)] underline"
+                >
+                  再読み込み
+                </button>
+              </div>
             ) : (
               <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredEvents.length === 0 ? (

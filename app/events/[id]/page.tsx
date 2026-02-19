@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { getEventById } from "@/lib/events";
 import { notFound } from "next/navigation";
+import { getTagLabel } from "@/lib/db/types";
 import { EventChatButton } from "./event-chat-button";
 import { ShareButton } from "@/components/share-button";
 import { SponsorTicketSection } from "./sponsor-ticket-section";
+import { EventQnASection } from "@/components/event-qna-section";
+import { EventVolunteerSection } from "@/components/event-volunteer-section";
 import { Breadcrumb } from "@/components/breadcrumb";
 
 type Props = {
@@ -35,6 +38,18 @@ export default async function EventDetailPage({ params }: Props) {
       <main className="mx-auto max-w-3xl px-4 py-8">
         <article className="rounded-2xl border border-zinc-200/60 bg-white/80 p-6 shadow-lg backdrop-blur-sm dark:border-zinc-700/60 dark:bg-zinc-900/80">
           <h1 className="text-2xl font-bold">{event.title}</h1>
+          {event.tags && event.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {event.tags.map((tagId) => (
+                <span
+                  key={tagId}
+                  className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                >
+                  {getTagLabel(tagId)}
+                </span>
+              ))}
+            </div>
+          )}
           <p className="mt-2 text-zinc-600 dark:text-zinc-400">
             {event.description}
           </p>
@@ -110,14 +125,14 @@ export default async function EventDetailPage({ params }: Props) {
               </dd>
             </div>
           </dl>
-          {event.sponsorTicketPrices && event.sponsorTicketPrices.length > 0 && (
-            <SponsorTicketSection
-              eventId={id}
-              eventTitle={event.title}
-              prices={event.sponsorTicketPrices}
-              perks={event.sponsorPerks ?? {}}
-            />
-          )}
+          <EventVolunteerSection eventId={id} />
+          <SponsorTicketSection
+            eventId={id}
+            eventTitle={event.title}
+            prices={event.sponsorTicketPrices ?? []}
+            perks={event.sponsorPerks ?? {}}
+          />
+          <EventQnASection eventId={id} />
           <div className="mt-6 space-y-6 border-t border-zinc-200 pt-6 dark:border-zinc-700">
             <ShareButton
               url={`/events/${id}`}
