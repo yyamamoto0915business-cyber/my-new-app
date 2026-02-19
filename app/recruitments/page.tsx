@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Breadcrumb } from "@/components/breadcrumb";
@@ -45,8 +46,11 @@ function RecruitmentsPageContent() {
   const [dateTo, setDateTo] = useState(searchParams.get("date_to") ?? "");
   const [recruitments, setRecruitments] = useState<Recruitment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
+    setError(null);
     const params = new URLSearchParams();
     if (prefecture) params.set("prefecture", prefecture);
     if (selectedTags.length) params.set("tags", selectedTags.join(","));
@@ -55,10 +59,18 @@ function RecruitmentsPageContent() {
     if (dateFrom) params.set("date_from", dateFrom);
     if (dateTo) params.set("date_to", dateTo);
     const qs = params.toString();
-    fetch(`/api/recruitments${qs ? `?${qs}` : ""}`)
+    fetchWithTimeout(`/api/recruitments${qs ? `?${qs}` : ""}`)
       .then((r) => r.json())
-      .then((data) => setRecruitments(data))
+      .then((data) => setRecruitments(Array.isArray(data) ? data : []))
+      .catch(() => {
+        setRecruitments([]);
+        setError("読み込みに失敗しました");
+      })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, [prefecture, selectedTags.join(","), typeFilter, techRoleFilter, dateFrom, dateTo]);
 
   return (
@@ -127,6 +139,17 @@ function RecruitmentsPageContent() {
 
         {loading ? (
           <p className="text-zinc-500">読み込み中...</p>
+        ) : error ? (
+          <div>
+            <p className="text-red-600">{error}</p>
+            <button
+              type="button"
+              onClick={load}
+              className="mt-2 text-sm text-[var(--accent)] underline"
+            >
+              再読み込み
+            </button>
+          </div>
         ) : (
           <ul className="space-y-4">
             {recruitments.length === 0 ? (

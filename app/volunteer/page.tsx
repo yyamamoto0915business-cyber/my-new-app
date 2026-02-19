@@ -60,7 +60,7 @@ function VolunteerPageContent() {
     }
     setApplying(volunteerRoleId);
     try {
-      const res = await fetch("/api/volunteer/apply", {
+      const res = await fetchWithTimeout("/api/volunteer/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ volunteerRoleId }),

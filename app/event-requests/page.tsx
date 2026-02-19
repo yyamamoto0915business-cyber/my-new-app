@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Breadcrumb } from "@/components/breadcrumb";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 type EventRequest = {
   id: string;
@@ -23,16 +24,27 @@ function EventRequestsPageContent() {
   const city = searchParams.get("city") ?? "";
   const [requests, setRequests] = useState<EventRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
+    setError(null);
     const params = new URLSearchParams();
     if (prefecture) params.set("prefecture", prefecture);
     if (city) params.set("city", city);
     const qs = params.toString();
-    fetch(`/api/event-requests${qs ? `?${qs}` : ""}`)
+    fetchWithTimeout(`/api/event-requests${qs ? `?${qs}` : ""}`)
       .then((r) => r.json())
-      .then((data) => setRequests(data))
+      .then((data) => setRequests(Array.isArray(data) ? data : []))
+      .catch(() => {
+        setRequests([]);
+        setError("読み込みに失敗しました");
+      })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, [prefecture, city]);
 
   return (
@@ -61,6 +73,17 @@ function EventRequestsPageContent() {
 
         {loading ? (
           <p className="text-zinc-500">読み込み中...</p>
+        ) : error ? (
+          <div>
+            <p className="text-red-600">{error}</p>
+            <button
+              type="button"
+              onClick={load}
+              className="mt-2 text-sm text-[var(--accent)] underline"
+            >
+              再読み込み
+            </button>
+          </div>
         ) : (
           <ul className="space-y-4">
             {requests.length === 0 ? (
