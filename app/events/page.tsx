@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
 import dynamic from "next/dynamic";
 import {
   getEventsByDateRange,
@@ -30,7 +31,7 @@ const EventsMap = dynamic(() => import("../../components/events-map").then((m) =
 
 function EventsPageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParamsNoSuspend();
   const prefecture = searchParams.get("prefecture") ?? "";
   const city = searchParams.get("city") ?? "";
   const tagsParam = searchParams.get("tags") ?? "";
@@ -370,9 +371,5 @@ function EventsPageContent() {
 }
 
 export default function EventsPage() {
-  return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-zinc-500">読み込み中...</div>}>
-      <EventsPageContent />
-    </Suspense>
-  );
+  return <EventsPageContent />;
 }

@@ -3,22 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { usePathname } from "next/navigation";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { VOLUNTEER_ROLE_LABELS } from "@/lib/volunteer-roles-mock";
-
-/** useSearchParamsの代替（Suspenseなし）。クライアントでURLを読み取りサスペンドを防ぐ */
-function useSearchParamsNoSuspend(): URLSearchParams {
-  const pathname = usePathname();
-  const [params, setParams] = useState<URLSearchParams>(() =>
-    typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search)
-  );
-  useEffect(() => {
-    setParams(new URLSearchParams(window.location.search));
-  }, [pathname]);
-  return params;
-}
+import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
 
 type VolunteerRoleWithEvent = {
   id: string;

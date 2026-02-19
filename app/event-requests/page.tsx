@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
@@ -19,7 +19,7 @@ type EventRequest = {
 };
 
 function EventRequestsPageContent() {
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParamsNoSuspend();
   const prefecture = searchParams.get("prefecture") ?? "";
   const city = searchParams.get("city") ?? "";
   const [requests, setRequests] = useState<EventRequest[]>([]);
@@ -125,9 +125,5 @@ function EventRequestsPageContent() {
 }
 
 export default function EventRequestsPage() {
-  return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-zinc-500">読み込み中...</div>}>
-      <EventRequestsPageContent />
-    </Suspense>
-  );
+  return <EventRequestsPageContent />;
 }

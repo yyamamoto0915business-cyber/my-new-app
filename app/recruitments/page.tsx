@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
 import { Breadcrumb } from "@/components/breadcrumb";
 
 type Recruitment = {
@@ -36,7 +36,7 @@ const TECH_ROLE_LABELS: Record<string, string> = {
 };
 
 function RecruitmentsPageContent() {
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParamsNoSuspend();
   const prefecture = searchParams.get("prefecture") ?? "";
   const tagsParam = searchParams.get("tags") ?? "";
   const selectedTags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
@@ -204,9 +204,5 @@ function RecruitmentsPageContent() {
 }
 
 export default function RecruitmentsPage() {
-  return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-zinc-500">読み込み中...</div>}>
-      <RecruitmentsPageContent />
-    </Suspense>
-  );
+  return <RecruitmentsPageContent />;
 }
