@@ -47,21 +47,6 @@ export function BackgroundIllustration() {
             />
           </pattern>
           <pattern
-            id="clouds"
-            x="0"
-            y="0"
-            width="300"
-            height="120"
-            patternUnits="userSpaceOnUse"
-          >
-            <circle cx="40" cy="50" r="25" fill="currentColor" opacity="0.15" />
-            <circle cx="70" cy="45" r="30" fill="currentColor" opacity="0.12" />
-            <circle cx="100" cy="50" r="22" fill="currentColor" opacity="0.1" />
-            <circle cx="200" cy="70" r="20" fill="currentColor" opacity="0.1" />
-            <circle cx="230" cy="65" r="28" fill="currentColor" opacity="0.12" />
-            <circle cx="265" cy="70" r="18" fill="currentColor" opacity="0.08" />
-          </pattern>
-          <pattern
             id="grass"
             x="0"
             y="0"
@@ -131,8 +116,6 @@ export function BackgroundIllustration() {
           fill="currentColor"
           opacity="0.025"
         />
-        {/* 雲パターン */}
-        <rect width="100%" height="100%" fill="url(#clouds)" />
         {/* 葉パターン */}
         <rect width="100%" height="100%" fill="url(#leaves)" />
         <rect width="100%" height="100%" fill="url(#sakura)" />
