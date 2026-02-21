@@ -12,21 +12,75 @@ export function getEventById(id: string): Event | null {
   return mockEvents.find((e) => e.id === id) ?? null;
 }
 
+export type DateRangeFilter = "all" | "today" | "week" | "weekend";
+
 export function getEventsByDateRange(
   events: Event[],
-  range: "today" | "week"
+  range: DateRangeFilter,
+  specificDate?: string | null
 ): Event[] {
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().split("T")[0];
 
+  if (specificDate) {
+    return events.filter((e) => e.date === specificDate);
+  }
+
+  if (range === "all") return events;
   if (range === "today") {
     return events.filter((e) => e.date === todayStr);
+  }
+
+  if (range === "weekend") {
+    return events.filter((e) => {
+      if (e.date < todayStr) return false;
+      const d = new Date(e.date + "T12:00:00");
+      const day = d.getDay();
+      return day === 0 || day === 6;
+    });
   }
 
   const weekEnd = new Date(today);
   weekEnd.setDate(weekEnd.getDate() + 7);
   const weekEndStr = weekEnd.toISOString().split("T")[0];
   return events.filter((e) => e.date >= todayStr && e.date <= weekEndStr);
+}
+
+export type EventStatus = "available" | "full" | "ended";
+
+export function getEventStatus(e: Event): EventStatus {
+  const todayStr = new Date().toISOString().split("T")[0];
+  if (e.date < todayStr) return "ended";
+  if (e.capacity != null && e.capacity <= 0) return "full";
+  return "available";
+}
+
+export function filterEventsByAvailableOnly(
+  events: Event[],
+  availableOnly: boolean
+): Event[] {
+  if (!availableOnly) return events;
+  return events.filter((e) => getEventStatus(e) === "available");
+}
+
+export type EventSort = "date_asc" | "date_desc" | "newest";
+
+export function sortEvents(
+  events: Event[],
+  sort: EventSort
+): Event[] {
+  const copy = [...events];
+  if (sort === "date_asc") {
+    return copy.sort((a, b) => a.date.localeCompare(b.date) || (a.startTime || "").localeCompare(b.startTime || ""));
+  }
+  if (sort === "date_desc") {
+    return copy.sort((a, b) => b.date.localeCompare(a.date) || (b.startTime || "").localeCompare(a.startTime || ""));
+  }
+  if (sort === "newest") {
+    return copy.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  }
+  return copy;
 }
 
 export function filterEventsByPrice(

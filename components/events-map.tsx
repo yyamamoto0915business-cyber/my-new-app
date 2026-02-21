@@ -14,8 +14,8 @@ type EventsMapProps = {
   onCenterChange?: (lat: number, lng: number) => void;
   selectedEventId: string | null;
   onSelectEvent: (id: string | null) => void;
-  dateRange: "today" | "week";
-  priceFilter: "all" | "free" | "paid";
+  dateRange?: string;
+  priceFilter?: "all" | "free" | "paid";
   childFriendlyOnly: boolean;
   height?: number;
   showLegend?: boolean;

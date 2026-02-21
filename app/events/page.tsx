@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
@@ -9,21 +9,27 @@ import {
   getEventsByDateRange,
   filterEventsByPrice,
   filterEventsByChildFriendly,
+  filterEventsByAvailableOnly,
+  filterEventsByTags,
   searchEvents,
-  calcDistanceKm,
+  sortEvents,
   type Event,
+  type DateRangeFilter,
+  type EventSort,
 } from "../../lib/events";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { ProfileLink } from "@/components/profile-link";
-import { TagFilter } from "@/components/tag-filter";
 import { Breadcrumb } from "@/components/breadcrumb";
+import { EventCard } from "./event-card";
+import { EventCardSkeleton } from "./event-card-skeleton";
+import { EventSearchSection } from "./event-search-section";
 
 type EventWithDistance = Event & { distanceKm?: number };
 
 const EventsMap = dynamic(() => import("../../components/events-map").then((m) => m.EventsMap), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[400px] items-center justify-center rounded-2xl border border-zinc-200/60 bg-white/60 dark:border-zinc-700/60 dark:bg-zinc-800/60">
+    <div className="flex h-[400px] items-center justify-center rounded-2xl border border-zinc-200 bg-white/60 dark:border-zinc-700 dark:bg-zinc-800/60">
       <p className="text-sm text-zinc-600">地図を読み込み中...</p>
     </div>
   ),
@@ -35,10 +41,15 @@ function EventsPageContent() {
   const prefecture = searchParams.get("prefecture") ?? "";
   const city = searchParams.get("city") ?? "";
   const tagsParam = searchParams.get("tags") ?? "";
-  const selectedTags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
+  const urlTags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
+
+  const eventListRef = useRef<HTMLElement | null>(null);
 
   const [view, setView] = useState<"list" | "map">("list");
-  const [dateRange, setDateRange] = useState<"today" | "week">("week");
+  const [dateRange, setDateRange] = useState<DateRangeFilter>("all");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<EventSort>("date_asc");
+  const [availableOnly, setAvailableOnly] = useState(false);
   const [priceFilter, setPriceFilter] = useState<"all" | "free" | "paid">("all");
   const [childFriendlyOnly, setChildFriendlyOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,7 +67,7 @@ function EventsPageContent() {
       if (tags.length) params.set("tags", tags.join(","));
       else params.delete("tags");
       const qs = params.toString();
-      router.push("/events" + (qs ? `?${qs}` : ""));
+      router.push("/events" + (qs ? `?${qs}` : ""), { scroll: false });
     },
     [router, searchParams]
   );
@@ -66,14 +77,19 @@ function EventsPageContent() {
   weekEnd.setDate(weekEnd.getDate() + 7);
   const weekEndStr = weekEnd.toISOString().split("T")[0];
   const start = dateRange === "today" ? today : today;
-  const end = dateRange === "today" ? today : weekEndStr;
+  const end =
+    dateRange === "today"
+      ? today
+      : dateRange === "all"
+        ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+        : weekEndStr;
 
   useEffect(() => {
     setListError(null);
     const params = new URLSearchParams();
     if (prefecture) params.set("prefecture", prefecture);
     if (city) params.set("city", city);
-    if (selectedTags.length) params.set("tags", selectedTags.join(","));
+    if (urlTags.length) params.set("tags", urlTags.join(","));
     const qs = params.toString();
     fetchWithTimeout(`/api/events${qs ? `?${qs}` : ""}`)
       .then((res) => res.json())
@@ -83,7 +99,7 @@ function EventsPageContent() {
         setListError("通信に失敗しました");
       })
       .finally(() => setLoading(false));
-  }, [prefecture, city, selectedTags.join(",")]);
+  }, [prefecture, city, tagsParam]);
 
   useEffect(() => {
     if (view !== "map") return;
@@ -102,13 +118,13 @@ function EventsPageContent() {
     });
     if (prefecture) params.set("prefecture", prefecture);
     if (city) params.set("city", city);
-    if (selectedTags.length) params.set("tags", selectedTags.join(","));
+    if (urlTags.length) params.set("tags", urlTags.join(","));
     fetchWithTimeout(`/api/events/map?${params}`)
       .then((res) => res.json())
       .then((data) => setMapEvents(Array.isArray(data?.events) ? data.events : []))
       .catch(() => setMapEvents([]))
       .finally(() => setMapLoading(false));
-  }, [view, userPos, start, end, priceFilter, childFriendlyOnly, prefecture, city, selectedTags]);
+  }, [view, userPos, start, end, priceFilter, childFriendlyOnly, prefecture, city, urlTags]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -122,26 +138,29 @@ function EventsPageContent() {
 
   const filteredEvents = useMemo(() => {
     let result = events;
-    result = getEventsByDateRange(result, dateRange);
+    result = getEventsByDateRange(result, dateRange, selectedDate);
     result = filterEventsByPrice(result, priceFilter);
     result = filterEventsByChildFriendly(result, childFriendlyOnly);
+    result = filterEventsByAvailableOnly(result, availableOnly);
+    result = filterEventsByTags(result, urlTags);
     result = searchEvents(result, searchQuery);
-    if (userPos) {
-      result = [...result]
-        .filter((e) => e.latitude != null && e.longitude != null)
-        .map((e) => ({
-          ...e,
-          distanceKm: calcDistanceKm(
-            userPos.lat,
-            userPos.lng,
-            e.latitude!,
-            e.longitude!
-          ),
-        }))
-        .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
-    }
+    result = sortEvents(result, sortOrder);
     return result;
-  }, [events, dateRange, priceFilter, childFriendlyOnly, searchQuery, userPos]);
+  }, [
+    events,
+    dateRange,
+    selectedDate,
+    priceFilter,
+    childFriendlyOnly,
+    availableOnly,
+    urlTags,
+    searchQuery,
+    sortOrder,
+  ]);
+
+  const handleSearch = useCallback(() => {
+    eventListRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   const handleCenterToCurrentLocation = useCallback(() => {
     if (navigator.geolocation) {
@@ -154,166 +173,183 @@ function EventsPageContent() {
   }, []);
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/80">
-        <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6">
+    <div className="min-h-screen bg-white dark:bg-zinc-950">
+      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Breadcrumb items={[{ label: "トップ", href: "/?mode=select" }, { label: "イベント一覧" }]} />
+            <Breadcrumb
+              items={[
+                { label: "トップ", href: "/?mode=select" },
+                { label: "練馬区のイベント情報", href: "/events" },
+                { label: "イベント検索" },
+              ]}
+            />
             <ProfileLink />
           </div>
-          <h1 className="mt-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-            イベント一覧
+          <h1 className="mt-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+            練馬区で開催予定のイベント
           </h1>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
         <div className="mb-4 flex gap-2">
           <button
             onClick={() => setView("list")}
-            className={`rounded-xl px-4 py-2 text-sm font-medium ${
+            className={`rounded px-4 py-2 text-sm font-medium ${
               view === "list"
                 ? "bg-[var(--accent)] text-white"
-                : "border border-zinc-200/60 dark:border-zinc-700"
+                : "border border-zinc-200 dark:border-zinc-700"
             }`}
           >
             一覧
           </button>
           <button
             onClick={() => setView("map")}
-            className={`rounded-xl px-4 py-2 text-sm font-medium ${
+            className={`rounded px-4 py-2 text-sm font-medium ${
               view === "map"
                 ? "bg-[var(--accent)] text-white"
-                : "border border-zinc-200/60 dark:border-zinc-700"
+                : "border border-zinc-200 dark:border-zinc-700"
             }`}
           >
             地図
           </button>
         </div>
 
-        <div className="space-y-4 rounded-2xl border border-zinc-200/60 bg-white/80 p-4 shadow-lg backdrop-blur-sm dark:border-zinc-700/60 dark:bg-zinc-900/80">
-          <input
-            type="search"
-            placeholder="イベント名・主催者・場所で検索..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-zinc-200/60 px-4 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-          />
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setDateRange("today")}
-              className={`rounded-xl px-4 py-2 text-sm font-medium ${
-                dateRange === "today"
-                  ? "bg-[var(--accent)] text-white"
-                  : "border border-zinc-200/60 bg-white text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-              }`}
-            >
-              今日
-            </button>
-            <button
-              onClick={() => setDateRange("week")}
-              className={`rounded-xl px-4 py-2 text-sm font-medium ${
-                dateRange === "week"
-                  ? "bg-[var(--accent)] text-white"
-                  : "border border-zinc-200/60 bg-white text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-              }`}
-            >
-              今週
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">タグで絞り込み</p>
-            <TagFilter selectedTags={selectedTags} onTagsChange={handleTagsChange} />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {(["all", "free", "paid"] as const).map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setPriceFilter(filter)}
-                className={`rounded-xl px-4 py-2 text-sm ${
-                  priceFilter === filter
-                    ? "bg-[var(--accent)] text-white"
-                    : "border border-zinc-200/60 dark:border-zinc-700"
-                }`}
-              >
-                {filter === "all" ? "すべて" : filter === "free" ? "無料" : "有料"}
-              </button>
-            ))}
-            <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-200/60 px-4 py-2 text-sm dark:border-zinc-700">
-              <input
-                type="checkbox"
-                checked={childFriendlyOnly}
-                onChange={(e) => setChildFriendlyOnly(e.target.checked)}
-              />
-              子連れOKのみ
-            </label>
-          </div>
-        </div>
-
         {view === "list" ? (
           <>
-            {loading ? (
-              <p className="mt-6 text-center text-sm text-zinc-500">読み込み中...</p>
-            ) : listError ? (
-              <div className="mt-6 rounded-2xl border border-zinc-200/60 bg-white/80 p-6 text-center dark:border-zinc-700/60 dark:bg-zinc-900/80">
-                <p className="text-sm text-red-600">{listError}</p>
-                <button
-                  type="button"
-                  onClick={() => window.location.reload()}
-                  className="mt-2 text-sm text-[var(--accent)] underline"
-                >
-                  再読み込み
-                </button>
+            <div className="mb-4 flex flex-wrap items-center gap-3 border-b border-zinc-200 pb-4 text-sm dark:border-zinc-700">
+              <span className="text-zinc-500 dark:text-zinc-400">絞り込み:</span>
+              <select
+                value={dateRange}
+                onChange={(e) => {
+                  setDateRange(e.target.value as DateRangeFilter);
+                  setSelectedDate(null);
+                }}
+                className="rounded border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+              >
+                <option value="all">すべて</option>
+                <option value="today">今日</option>
+                <option value="week">今週</option>
+                <option value="weekend">週末</option>
+              </select>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as EventSort)}
+                className="rounded border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+              >
+                <option value="date_asc">開催日が近い順</option>
+                <option value="date_desc">開催日が遠い順</option>
+                <option value="newest">新着順</option>
+              </select>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={availableOnly}
+                  onChange={(e) => setAvailableOnly(e.target.checked)}
+                  className="rounded border-zinc-300"
+                />
+                <span className="text-zinc-700 dark:text-zinc-300">募集中のみ</span>
+              </label>
+              <div className="flex gap-1">
+                {(["all", "free", "paid"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setPriceFilter(f)}
+                    className={`rounded px-2 py-1 text-xs ${
+                      priceFilter === f
+                        ? "bg-[var(--accent)] text-white"
+                        : "border border-zinc-200 dark:border-zinc-600"
+                    }`}
+                  >
+                    {f === "all" ? "すべて" : f === "free" ? "無料" : "有料"}
+                  </button>
+                ))}
               </div>
-            ) : (
-              <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredEvents.length === 0 ? (
-                  <li className="col-span-full rounded-2xl border border-zinc-200/60 bg-white/80 p-8 text-center text-sm text-zinc-500 shadow-lg backdrop-blur-sm dark:border-zinc-700/60 dark:bg-zinc-900/80">
-                    該当するイベントがありません
-                  </li>
-                ) : (
-                  filteredEvents.map((event) => (
-                    <li key={event.id}>
-                      <Link
-                        href={`/events/${event.id}`}
-                        className="block rounded-2xl border border-zinc-200/60 bg-white/80 p-4 shadow-md backdrop-blur-sm transition-all hover:border-zinc-300 hover:shadow-lg dark:border-zinc-700/60 dark:bg-zinc-900/80 dark:hover:border-zinc-600"
-                      >
-                        <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">
-                          {event.title}
-                        </h2>
-                        <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-400">
-                          {event.date} {event.startTime}〜 {event.location}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {event.childFriendly && (
-                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                              子連れOK
-                            </span>
-                          )}
-                          <span
-                            className={`shrink-0 rounded px-2 py-0.5 text-xs ${
-                              event.price === 0
-                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                                : "bg-zinc-100 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
-                            }`}
-                          >
-                            {event.price === 0 ? "無料" : `¥${event.price}`}
-                          </span>
-                        </div>
-                      </Link>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={childFriendlyOnly}
+                  onChange={(e) => setChildFriendlyOnly(e.target.checked)}
+                />
+                <span className="text-zinc-700 dark:text-zinc-300">子連れOK</span>
+              </label>
+            </div>
+
+            <section ref={eventListRef} className="scroll-mt-4">
+              {loading ? (
+                <ul className="space-y-0">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <li key={i} className="border-b border-zinc-200 dark:border-zinc-700">
+                      <EventCardSkeleton />
                     </li>
-                  ))
-                )}
-              </ul>
-            )}
+                  ))}
+                </ul>
+              ) : listError ? (
+                <div className="rounded border border-zinc-200 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
+                  <p className="text-sm text-red-600">{listError}</p>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="mt-3 text-sm text-[var(--accent)] underline"
+                  >
+                    再読み込み
+                  </button>
+                </div>
+              ) : filteredEvents.length === 0 ? (
+                <div className="rounded border border-zinc-200 bg-white p-10 text-center dark:border-zinc-700 dark:bg-zinc-900">
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    該当するイベントがありません
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateRange("all");
+                      setSelectedDate(null);
+                      setAvailableOnly(false);
+                      setPriceFilter("all");
+                      setChildFriendlyOnly(false);
+                      handleTagsChange([]);
+                      setSearchQuery("");
+                    }}
+                    className="mt-4 rounded bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                  >
+                    条件を緩める
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+                    全{filteredEvents.length}件
+                  </p>
+                  <ul className="space-y-0">
+                    {filteredEvents.map((event) => (
+                      <li
+                        key={event.id}
+                        className="border-b border-zinc-200 dark:border-zinc-700"
+                      >
+                        <EventCard event={event} />
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </section>
+
+            <EventSearchSection
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+              selectedTags={urlTags}
+              onTagsChange={handleTagsChange}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onSearch={handleSearch}
+            />
           </>
         ) : (
           <div className="mt-6">
             {!userPos && (
-              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+              <div className="mb-3 rounded border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
                 位置情報が許可されていません。デフォルトの地域を表示しています。
                 <button
                   type="button"
@@ -326,7 +362,7 @@ function EventsPageContent() {
             )}
             <div className="relative">
               {mapLoading ? (
-                <div className="flex h-[400px] items-center justify-center rounded-2xl border border-zinc-200/60 bg-white/60 dark:border-zinc-700/60 dark:bg-zinc-800/60">
+                <div className="flex h-[400px] items-center justify-center rounded border border-zinc-200 dark:border-zinc-700">
                   <p className="text-sm text-zinc-600">読み込み中...</p>
                 </div>
               ) : (
@@ -343,7 +379,7 @@ function EventsPageContent() {
               <button
                 type="button"
                 onClick={handleCenterToCurrentLocation}
-                className="absolute right-4 top-4 z-[1000] rounded-xl border border-zinc-200/60 bg-white/90 px-3 py-2 text-sm shadow-md backdrop-blur-sm hover:bg-white dark:border-zinc-700/60 dark:bg-zinc-900/90 dark:hover:bg-zinc-800"
+                className="absolute right-4 top-4 z-[1000] rounded border border-zinc-200 bg-white px-3 py-2 text-sm shadow hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700"
                 title="現在地に移動"
               >
                 現在地
@@ -357,10 +393,10 @@ function EventsPageContent() {
           </div>
         )}
 
-        <div className="mt-8">
+        <div className="mt-8 pb-8">
           <Link
             href="/organizer/events"
-            className="text-sm text-zinc-700 underline-offset-4 hover:underline dark:text-zinc-300"
+            className="text-sm text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
           >
             主催者向け：イベント管理 →
           </Link>
