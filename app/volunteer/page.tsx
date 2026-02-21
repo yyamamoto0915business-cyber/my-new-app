@@ -53,8 +53,10 @@ function VolunteerPageContent() {
     load();
   }, [prefecture, roleType]);
 
+  const authDisabled = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
+
   const handleApply = async (volunteerRoleId: string) => {
-    if (!session?.user) {
+    if (!session?.user && !authDisabled) {
       window.location.href = `/login?returnTo=${encodeURIComponent("/volunteer")}`;
       return;
     }

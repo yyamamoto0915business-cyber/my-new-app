@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getAuth } from "@/lib/get-auth";
 import { getThreadsForOrganizer, getThreadsForVolunteer } from "@/lib/dm-mock";
 import { getUserById } from "@/lib/auth-users";
 
 export async function GET(request: Request) {
-  const session = await auth();
+  const session = await getAuth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   }

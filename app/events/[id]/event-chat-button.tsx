@@ -30,6 +30,8 @@ export function EventChatButton({ eventId }: EventChatButtonProps) {
 
   if (authState === "loading") return null;
 
+  const authDisabled = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
+
   if (authState === "no_supabase") {
     return (
       <p className="text-sm text-zinc-500">
@@ -44,7 +46,7 @@ export function EventChatButton({ eventId }: EventChatButtonProps) {
     );
   }
 
-  if (authState === "logged_out") {
+  if (authState === "logged_out" && !authDisabled) {
     return (
       <Link
         href={`/login?returnTo=${encodeURIComponent(`/events/${eventId}/chat`)}`}

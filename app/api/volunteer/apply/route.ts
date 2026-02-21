@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getAuth } from "@/lib/get-auth";
 import { createApplicationAndThread } from "@/lib/dm-mock";
 import { getAllVolunteerRoles } from "@/lib/volunteer-roles-mock";
 import { getOrganizerIdByEventId } from "@/lib/event-organizers";
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await getAuth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   }

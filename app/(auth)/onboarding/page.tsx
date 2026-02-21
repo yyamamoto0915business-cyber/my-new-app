@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 
+const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
+
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
@@ -46,6 +48,10 @@ export default function OnboardingPage() {
   }
 
   if (status === "unauthenticated") {
+    if (AUTH_DISABLED) {
+      router.replace("/");
+      return null;
+    }
     router.replace("/login");
     return null;
   }

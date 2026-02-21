@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getAuth } from "@/lib/get-auth";
 import {
   getThreadById,
   canAccessThread,
@@ -11,7 +11,7 @@ import {
 type Params = { params: Promise<{ threadId: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
-  const session = await auth();
+  const session = await getAuth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   }
@@ -30,7 +30,7 @@ export async function GET(_request: Request, { params }: Params) {
 }
 
 export async function POST(request: Request, { params }: Params) {
-  const session = await auth();
+  const session = await getAuth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   }

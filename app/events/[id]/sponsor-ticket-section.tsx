@@ -36,17 +36,20 @@ export function SponsorTicketSection({
   const handlePurchase = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const authDisabled = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
     const supabase = createClient();
     if (!supabase) {
       setDone(true);
       setLoading(false);
       return;
     }
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      window.location.href = `/login?returnTo=${encodeURIComponent(`/events/${eventId}`)}`;
-      setLoading(false);
-      return;
+    if (!authDisabled) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = `/login?returnTo=${encodeURIComponent(`/events/${eventId}`)}`;
+        setLoading(false);
+        return;
+      }
     }
     const res = await fetch(`/api/events/${eventId}/sponsor-tickets`, {
       method: "POST",

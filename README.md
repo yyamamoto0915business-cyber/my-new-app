@@ -63,13 +63,37 @@ npm run dev:network
 
 [Vercel](https://vercel.com) にデプロイするのがおすすめです（無料プランあり）。
 
-1. [Vercel](https://vercel.com) にログイン
-2. **Add New** → **Project** で GitHub リポジトリをインポート
-3. 対象リポジトリを選択し、**Import** をクリック
-4. `.env.local` の `NEXT_PUBLIC_SUPABASE_*` を Vercel の環境変数として設定
-5. **Deploy** をクリック
+### 初回セットアップ（一度だけ）
 
-**Git 連携による自動デプロイ**: リポジトリを接続すると、`main` ブランチへの `git push` のたびに自動で本番デプロイが実行されます。手動での再デプロイは不要です。
+1. [Vercel](https://vercel.com) にログイン（GitHub アカウントでログイン推奨）
+2. **Add New** → **Project** をクリック
+3. **Import Git Repository** から対象の GitHub リポジトリを選択
+4. **Import** をクリック
+5. 環境変数を設定（下記参照）して **Deploy** をクリック
+
+### 自動デプロイ（設定後）
+
+リポジトリを接続すると、**`main` ブランチへの `git push` のたびに自動で本番デプロイ**が実行されます。
+
+```bash
+git add .
+git commit -m "更新内容"
+git push origin main
+```
+
+Vercel が自動的にビルド・デプロイし、数分で反映されます。手動での再デプロイは不要です。
+
+### Vercel の環境変数
+
+Vercel ダッシュボード: **Project** → **Settings** → **Environment Variables**
+
+| 変数名 | 説明 | 本番の例 |
+|--------|------|----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase プロジェクト URL | `https://xxx.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | （ダッシュボードから取得） |
+| `AUTH_SECRET` | NextAuth の秘密鍵 | 本番ではランダムな文字列 |
+| `AUTH_DISABLED` | 開発中: `true` で認証オフ | 本番では `false` または未設定 |
+| `NEXT_PUBLIC_AUTH_DISABLED` | 同上（クライアント用） | 本番では `false` または未設定 |
 
 ## 今後の拡張（Phase 5）
 

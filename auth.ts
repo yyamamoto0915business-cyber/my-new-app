@@ -77,6 +77,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     authorized({ auth: a, request }) {
+      // 開発中: AUTH_DISABLED のときは全ルート許可
+      if (
+        process.env.AUTH_DISABLED === "true" ||
+        (process.env.NODE_ENV === "development" && process.env.AUTH_DISABLED !== "false")
+      ) {
+        return true;
+      }
       const path = request.nextUrl.pathname;
       if (path.startsWith("/organizer") && path !== "/organizer/register") {
         return !!a?.user;

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
+const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
+
 type Thread = {
   id: string;
   eventId: string;
@@ -21,7 +23,7 @@ export default function OrganizerInboxPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (!AUTH_DISABLED && status !== "authenticated") return;
     setLoading(true);
     setError(null);
     fetchWithTimeout("/api/dm/threads?as=organizer")
@@ -42,7 +44,7 @@ export default function OrganizerInboxPage() {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (status === "unauthenticated" && !AUTH_DISABLED) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
         <p>ログインが必要です</p>

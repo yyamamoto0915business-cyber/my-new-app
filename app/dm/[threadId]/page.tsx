@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
+const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
+
 type Message = {
   id: string;
   senderId: string;
@@ -37,7 +39,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
   }, [params]);
 
   useEffect(() => {
-    if (!threadId || !session?.user) return;
+    if (!threadId || (!session?.user && !AUTH_DISABLED)) return;
     setLoading(true);
     setError(null);
     fetchWithTimeout(`/api/dm/${threadId}`)
@@ -51,7 +53,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [threadId, session?.user]);
+  }, [threadId, session?.user, AUTH_DISABLED]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -99,7 +101,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
     );
   }
 
-  if (status === "unauthenticated") {
+  if (status === "unauthenticated" && !AUTH_DISABLED) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
         <p>ログインが必要です</p>
@@ -136,7 +138,8 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
     );
   }
 
-  const isOrganizer = thread && session?.user?.id === thread.organizerId;
+  const userId = AUTH_DISABLED ? "dev-user" : session?.user?.id;
+  const isOrganizer = thread && userId === thread.organizerId;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -161,7 +164,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-4">
         <div className="flex-1 space-y-3 overflow-y-auto pb-4">
           {messages.map((m) => {
-            const isOwn = m.senderId === session?.user?.id;
+            const isOwn = m.senderId === userId;
             return (
               <div
                 key={m.id}
