@@ -46,7 +46,8 @@ export function EventThumbnail({
     );
   }
 
-  const useNextImage = isAllowedHost(imageUrl);
+  const url = imageUrl as string;
+  const useNextImage = isAllowedHost(url);
   const roundedClass =
     rounded === "xl" ? "rounded-xl" : rounded === "lg" ? "rounded-lg" : "";
 
@@ -56,7 +57,7 @@ export function EventThumbnail({
     >
       {useNextImage ? (
         <Image
-          src={imageUrl}
+          src={url}
           alt={alt}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -71,7 +72,7 @@ export function EventThumbnail({
         /* 未許可ホストは img で表示（next/image は remotePatterns 制限あり） */
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={imageUrl}
+          src={url}
           alt={alt}
           className="h-full w-full object-cover"
           onError={(e) => {
