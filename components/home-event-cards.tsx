@@ -4,13 +4,11 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import Image from "next/image";
 import type { Event } from "@/lib/db/types";
 import { getEventsByDateRange } from "@/lib/events";
 import { tagLabels } from "@/lib/i18n";
 import { useLanguage } from "@/components/language-provider";
-
-const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800";
+import { EventThumbnail } from "@/components/event-thumbnail";
 
 function EventCard({ event, index }: { event: Event; index: number }) {
   const { t, locale } = useLanguage();
@@ -22,15 +20,14 @@ function EventCard({ event, index }: { event: Event; index: number }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-lg dark:border-zinc-700/60 dark:bg-zinc-900">
       <Link href={`/events/${event.id}`} className="block">
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-200 dark:bg-zinc-800">
-          <Image
-            src={event.imageUrl || PLACEHOLDER_IMAGE}
+        <div className="relative">
+          <EventThumbnail
+            imageUrl={event.imageUrl}
             alt={event.title}
-            fill
-            className="object-cover transition-transform hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+            rounded="none"
+            className="rounded-t-2xl"
           />
-          <span className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded bg-red-500 text-xs font-bold text-white">
+          <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded bg-red-500 text-xs font-bold text-white">
             {index + 1}
           </span>
         </div>

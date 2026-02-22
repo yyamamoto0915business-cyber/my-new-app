@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/get-auth";
 import { createApplicationAndThread } from "@/lib/dm-mock";
 import { getAllVolunteerRoles } from "@/lib/volunteer-roles-mock";
+import { getCreatedVolunteerRoles } from "@/lib/created-volunteer-roles-store";
 import { getOrganizerIdByEventId } from "@/lib/event-organizers";
 
 export async function POST(request: Request) {
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const allRoles = getAllVolunteerRoles();
+  const allRoles = [...getAllVolunteerRoles(), ...getCreatedVolunteerRoles()];
   const role = allRoles.find((r) => r.id === volunteerRoleId);
   if (!role) {
     return NextResponse.json({ error: "募集が見つかりません" }, { status: 404 });

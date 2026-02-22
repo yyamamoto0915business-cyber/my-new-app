@@ -18,6 +18,7 @@ import {
   type DateRangeFilter,
   type EventSort,
 } from "../../lib/events";
+import { isPrefecture } from "../../lib/prefectures";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { ProfileLink } from "@/components/profile-link";
 import { Breadcrumb } from "@/components/breadcrumb";
@@ -57,7 +58,9 @@ function EventsPageContent() {
   const [priceFilter, setPriceFilter] = useState<"all" | "free" | "paid">("all");
   const [childFriendlyOnly, setChildFriendlyOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedArea, setSelectedArea] = useState("");
+  const [selectedArea, setSelectedArea] = useState(
+    () => searchParams.get("prefecture") ?? ""
+  );
   const [events, setEvents] = useState<EventWithDistance[]>([]);
   const [mapEvents, setMapEvents] = useState<EventWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +74,19 @@ function EventsPageContent() {
       const params = new URLSearchParams(searchParams.toString());
       if (tags.length) params.set("tags", tags.join(","));
       else params.delete("tags");
+      const qs = params.toString();
+      router.push("/events" + (qs ? `?${qs}` : ""), { scroll: false });
+    },
+    [router, searchParams]
+  );
+
+  const handleAreaChange = useCallback(
+    (area: string) => {
+      setSelectedArea(area);
+      const params = new URLSearchParams(searchParams.toString());
+      if (area) params.set("prefecture", area);
+      else params.delete("prefecture");
+      params.delete("city");
       const qs = params.toString();
       router.push("/events" + (qs ? `?${qs}` : ""), { scroll: false });
     },
@@ -151,7 +167,13 @@ function EventsPageContent() {
   const filteredEvents = useMemo(() => {
     let result = events;
     result = getEventsByDateRange(result, dateRange, selectedDate);
-    result = filterEventsByRegion(result, undefined, selectedArea || undefined);
+    if (selectedArea) {
+      result = filterEventsByRegion(
+        result,
+        isPrefecture(selectedArea) ? selectedArea : undefined,
+        isPrefecture(selectedArea) ? undefined : selectedArea
+      );
+    }
     result = filterEventsByPrice(result, priceFilter);
     result = filterEventsByChildFriendly(result, childFriendlyOnly);
     result = filterEventsByAvailableOnly(result, availableOnly);
@@ -194,14 +216,14 @@ function EventsPageContent() {
             <Breadcrumb
               items={[
                 { label: "トップ", href: "/?mode=select" },
-                { label: "練馬区のイベント情報", href: "/events" },
+                { label: "イベント情報", href: "/events" },
                 { label: "イベント検索" },
               ]}
             />
             <ProfileLink />
           </div>
           <h1 className="mt-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-            練馬区で開催予定のイベント
+            全国のイベント
           </h1>
         </div>
       </header>
@@ -324,8 +346,9 @@ function EventsPageContent() {
                       setAvailableOnly(false);
                       setPriceFilter("all");
                       setChildFriendlyOnly(false);
-                      handleTagsChange([]);
                       setSearchQuery("");
+                      handleTagsChange([]);
+                      router.push("/events", { scroll: false });
                     }}
                     className="mt-4 rounded bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                   >
@@ -354,7 +377,7 @@ function EventsPageContent() {
               selectedTags={urlTags}
               onTagsChange={handleTagsChange}
               selectedArea={selectedArea}
-              onAreaChange={setSelectedArea}
+              onAreaChange={handleAreaChange}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               onSearch={handleSearch}

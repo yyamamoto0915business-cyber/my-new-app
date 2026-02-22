@@ -2,15 +2,9 @@
 
 import { useState } from "react";
 import { EVENT_TAGS } from "@/lib/db/types";
+import { PREFECTURES } from "@/lib/prefectures";
 
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
-
-const AREA_OPTIONS = [
-  { value: "", label: "全てのエリア" },
-  { value: "渋谷区", label: "渋谷区" },
-  { value: "新宿区", label: "新宿区" },
-  { value: "港区", label: "港区" },
-];
 
 type Props = {
   selectedDate: string | null;
@@ -200,25 +194,22 @@ export function EventSearchSection({
         </h3>
         <div className="mt-3 space-y-4">
           <div>
-            <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
-              全てのエリア
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {AREA_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value || "all"}
-                  type="button"
-                  onClick={() => onAreaChange(opt.value)}
-                  className={`rounded px-3 py-1.5 text-sm ${
-                    selectedArea === opt.value
-                      ? "bg-[var(--accent)] text-white"
-                      : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                  }`}
-                >
-                  {opt.label}
-                </button>
+            <label htmlFor="area-select" className="mb-2 block text-xs text-zinc-500 dark:text-zinc-400">
+              地域で絞り込み（都道府県）
+            </label>
+            <select
+              id="area-select"
+              value={selectedArea}
+              onChange={(e) => onAreaChange(e.target.value)}
+              className="w-full max-w-xs rounded border border-zinc-200 px-4 py-2.5 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+            >
+              <option value="">全国</option>
+              {PREFECTURES.map((pref) => (
+                <option key={pref} value={pref}>
+                  {pref}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
           <div>
             <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">

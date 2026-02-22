@@ -146,7 +146,7 @@ export const mockEvents: Event[] = [
   {
     id: "6",
     title: "子ども向け工作教室",
-    imageUrl: EVENT_IMAGES[5],
+    imageUrl: null,
     description: "廃材を使ったエコ工作。小学生向け。",
     date: "2025-02-12",
     startTime: "14:00",

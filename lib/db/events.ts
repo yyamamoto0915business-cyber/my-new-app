@@ -2,13 +2,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DbEvent, Event, EventFormData } from "./types";
 
 function dbEventToEvent(
-  db: DbEvent,
+  db: DbEvent & { image_url?: string | null },
   organizerName: string,
   organizerContact?: string
 ): Event {
   return {
     id: db.id,
     title: db.title,
+    imageUrl: db.image_url?.trim() || null,
     description: db.description,
     date: db.date,
     startTime: db.start_time,

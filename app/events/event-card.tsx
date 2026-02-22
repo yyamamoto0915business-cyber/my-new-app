@@ -5,6 +5,7 @@ import type { Event } from "@/lib/db/types";
 import { getEventStatus } from "@/lib/events";
 import { getTagLabel } from "@/lib/db/types";
 import { formatEventDateTime } from "@/lib/format-date";
+import { EventThumbnail } from "@/components/event-thumbnail";
 
 type Props = { event: Event };
 
@@ -20,11 +21,20 @@ export function EventCard({ event }: Props) {
 
   return (
     <article
-      className={`rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900/50 ${
+      className={`overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900/50 ${
         isEnded ? "opacity-60" : "shadow-sm"
       }`}
     >
-      <div className="flex flex-wrap gap-1.5">
+      <Link href={`/events/${event.id}`} className="block">
+        <EventThumbnail
+          imageUrl={event.imageUrl}
+          alt={event.title}
+          rounded="none"
+          className="rounded-t-lg"
+        />
+      </Link>
+      <div className="p-5">
+        <div className="flex flex-wrap gap-1.5">
         {(event.area || event.city) && (
           <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
             {event.area || event.city}
@@ -98,6 +108,7 @@ export function EventCard({ event }: Props) {
           もっと見る
           <span aria-hidden>→</span>
         </Link>
+      </div>
       </div>
     </article>
   );

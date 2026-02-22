@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { EventFormData } from "@/lib/events";
 import { EVENT_TAGS } from "@/lib/db/types";
+import { EventThumbnail } from "@/components/event-thumbnail";
 
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
 
@@ -27,6 +28,7 @@ const CITIES_BY_PREF: Record<string, string[]> = {
 
 const initialForm: EventFormData = {
   title: "",
+  imageUrl: "",
   description: "",
   date: "",
   startTime: "",
@@ -35,7 +37,7 @@ const initialForm: EventFormData = {
   address: "",
   price: 0,
   priceNote: "",
-  organizerName: "",
+  organizerName: "地域振興会",
   organizerContact: "",
   rainPolicy: "",
   itemsToBring: [],
@@ -105,7 +107,10 @@ export default function NewEventPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const formErrors = validateForm(form);
     if (Object.keys(formErrors).length > 0) {
@@ -113,8 +118,28 @@ export default function NewEventPage() {
       return;
     }
     setErrors({});
-    // Mock: 実際にはAPIに送信。ここでは一覧にリダイレクト
-    router.push("/organizer/events");
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          imageUrl: form.imageUrl?.trim() || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSubmitError(data.error ?? "作成に失敗しました");
+        return;
+      }
+      router.push("/organizer/events");
+    } catch {
+      setSubmitError("通信に失敗しました");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -150,6 +175,31 @@ export default function NewEventPage() {
             {errors.title && (
               <p className="mt-1 text-sm text-red-600">{errors.title}</p>
             )}
+          </div>
+
+          <div>
+            <label htmlFor="imageUrl" className="block text-sm font-medium">
+              イベント画像URL（任意）
+            </label>
+            <input
+              id="imageUrl"
+              name="imageUrl"
+              type="url"
+              value={form.imageUrl ?? ""}
+              onChange={handleChange}
+              placeholder="例: https://images.unsplash.com/photo-xxx?w=800"
+              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              Unsplash等の画像URLを貼り付けてください。未入力の場合はプレースホルダーが表示されます。
+            </p>
+            <div className="mt-2 overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
+              <EventThumbnail
+                imageUrl={form.imageUrl?.trim() || null}
+                alt={form.title || "プレビュー"}
+                rounded="lg"
+              />
+            </div>
           </div>
 
           <div>
@@ -534,12 +584,16 @@ export default function NewEventPage() {
             />
           </div>
 
+          {submitError && (
+            <p className="text-sm text-red-600">{submitError}</p>
+          )}
           <div className="flex gap-4 pt-4">
             <button
               type="submit"
-              className="rounded-lg bg-zinc-900 px-6 py-2 font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+              disabled={submitting}
+              className="rounded-lg bg-zinc-900 px-6 py-2 font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
-              作成する
+              {submitting ? "作成中..." : "作成する"}
             </button>
             <Link
               href="/organizer/events"

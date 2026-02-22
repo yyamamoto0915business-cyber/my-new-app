@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAllVolunteerRoles } from "@/lib/volunteer-roles-mock";
+import { getCreatedVolunteerRoles } from "@/lib/created-volunteer-roles-store";
 import { getEventById } from "@/lib/events";
 import { getOrganizerIdByEventId } from "@/lib/event-organizers";
 
@@ -9,7 +10,7 @@ export async function GET(request: Request) {
   const roleType = searchParams.get("roleType") ?? undefined;
   const eventId = searchParams.get("eventId") ?? undefined;
 
-  let roles = getAllVolunteerRoles();
+  let roles = [...getAllVolunteerRoles(), ...getCreatedVolunteerRoles()];
 
   if (eventId) {
     roles = roles.filter((r) => r.eventId === eventId);

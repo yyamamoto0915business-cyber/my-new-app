@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTagLabel } from "@/lib/db/types";
 import { formatEventDateTime } from "@/lib/format-date";
 import { EventDetailClient } from "./event-detail-client";
+import { EventThumbnail } from "@/components/event-thumbnail";
 import { EventChatButton } from "./event-chat-button";
 import { ShareButton } from "@/components/share-button";
 import { SponsorTicketSection } from "./sponsor-ticket-section";
@@ -41,43 +42,50 @@ export default async function EventDetailPage({ params }: Props) {
 
       <main className="mx-auto max-w-2xl px-4 py-8">
         <article className="space-y-10">
-          <section>
-            <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
-              {event.title}
-            </h1>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              {formatEventDateTime(event.date, event.startTime)}
-              {event.endTime && ` 〜 ${event.endTime}`}
-            </p>
-            <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">
-              {event.location}
-            </p>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              {event.organizerName}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {event.childFriendly && (
-                <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                  子連れOK
-                </span>
-              )}
-              <span
-                className={`rounded px-2 py-0.5 text-xs ${
-                  event.price === 0
-                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                    : "bg-zinc-100 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
-                }`}
-              >
-                {event.price === 0 ? "無料" : `¥${event.price}`}
-              </span>
-              {event.tags?.map((tagId) => (
+          <section className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
+            <EventThumbnail
+              imageUrl={event.imageUrl}
+              alt={event.title}
+              rounded="none"
+            />
+            <div className="bg-white p-6 dark:bg-zinc-900/50">
+              <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
+                {event.title}
+              </h1>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                {formatEventDateTime(event.date, event.startTime)}
+                {event.endTime && ` 〜 ${event.endTime}`}
+              </p>
+              <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">
+                {event.location}
+              </p>
+              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                {event.organizerName}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {event.childFriendly && (
+                  <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                    子連れOK
+                  </span>
+                )}
                 <span
-                  key={tagId}
-                  className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
+                  className={`rounded px-2 py-0.5 text-xs ${
+                    event.price === 0
+                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                      : "bg-zinc-100 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
+                  }`}
                 >
-                  {getTagLabel(tagId)}
+                  {event.price === 0 ? "無料" : `¥${event.price}`}
                 </span>
-              ))}
+                {event.tags?.map((tagId) => (
+                  <span
+                    key={tagId}
+                    className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
+                  >
+                    {getTagLabel(tagId)}
+                  </span>
+                ))}
+              </div>
             </div>
           </section>
 

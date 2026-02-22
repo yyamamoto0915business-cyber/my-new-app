@@ -90,7 +90,7 @@ export type EventTagId = (typeof EVENT_TAGS)[number]["id"];
 export type Event = {
   id: string;
   title: string;
-  imageUrl?: string;
+  imageUrl: string | null;
   description: string;
   date: string;
   startTime: string;

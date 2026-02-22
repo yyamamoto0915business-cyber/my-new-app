@@ -1,15 +1,20 @@
 // フィルタ・検索ユーティリティ（Event[] に対して適用）
 import type { Event } from "./db/types";
 import { mockEvents } from "./events-mock";
+import { getCreatedEvents } from "./created-events-store";
 
 export type { Event, EventFormData } from "./db/types";
 
+function getAllEvents(): Event[] {
+  return [...mockEvents, ...getCreatedEvents()];
+}
+
 export function getEvents(): Event[] {
-  return mockEvents;
+  return getAllEvents();
 }
 
 export function getEventById(id: string): Event | null {
-  return mockEvents.find((e) => e.id === id) ?? null;
+  return getAllEvents().find((e) => e.id === id) ?? null;
 }
 
 export type DateRangeFilter = "all" | "today" | "week" | "weekend";
