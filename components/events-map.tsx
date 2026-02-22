@@ -24,7 +24,6 @@ type EventsMapProps = {
 export function EventsMap({
   events,
   center,
-  onCenterChange,
   selectedEventId,
   onSelectEvent,
   height = 400,
@@ -125,7 +124,7 @@ export function EventsMap({
         markersRef.current = [];
       }
     };
-  }, [events, center?.lat, center?.lng, onSelectEvent, selectedEventId]);
+  }, [events, center, onSelectEvent, selectedEventId]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !center) return;

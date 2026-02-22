@@ -53,7 +53,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [threadId, session?.user, AUTH_DISABLED]);
+  }, [threadId, session?.user]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

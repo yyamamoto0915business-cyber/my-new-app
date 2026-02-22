@@ -85,13 +85,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return true;
       }
       const path = request.nextUrl.pathname;
-      if (path.startsWith("/organizer") && path !== "/organizer/register") {
+      // 主催者・DM はログイン不要
+      if (path.startsWith("/volunteer/inbox")) {
         return !!a?.user;
       }
-      if (path.startsWith("/volunteer/inbox") || path.startsWith("/organizer/inbox")) {
-        return !!a?.user;
-      }
-      if (path.startsWith("/dm/")) return !!a?.user;
       return true;
     },
   },

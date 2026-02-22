@@ -116,6 +116,19 @@ export default function NewEventRequestPage() {
             </select>
           </div>
           <div>
+            <label htmlFor="city" className="block text-sm font-medium">
+              市区町村
+            </label>
+            <input
+              id="city"
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="例: 渋谷区"
+              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+            />
+          </div>
+          <div>
             <label htmlFor="targetAmount" className="block text-sm font-medium">
               目標支援金額（円）
             </label>

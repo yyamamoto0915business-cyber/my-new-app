@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -76,15 +76,18 @@ export function HomeEventCards() {
   const prefecture = searchParams.get("prefecture") ?? "";
   const city = searchParams.get("city") ?? "";
   const tagsParam = searchParams.get("tags") ?? "";
-  const tags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
+  const tagsStr = useMemo(
+    () => (tagsParam ? tagsParam.split(",").filter(Boolean).join(",") : ""),
+    [tagsParam]
+  );
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
     if (prefecture) params.set("prefecture", prefecture);
     if (city) params.set("city", city);
-    if (tags.length) params.set("tags", tags.join(","));
+    if (tagsStr) params.set("tags", tagsStr);
     const qs = params.toString();
     fetchWithTimeout(`/api/events${qs ? `?${qs}` : ""}`, { cache: "no-store" })
       .then((res) => res.json())
@@ -98,11 +101,11 @@ export function HomeEventCards() {
         setError("読み込みに失敗しました");
       })
       .finally(() => setLoading(false));
-  };
+  }, [prefecture, city, tagsStr]);
 
   useEffect(() => {
     load();
-  }, [prefecture, city, tags.join(",")]);
+  }, [load]);
 
   if (loading) {
     return (

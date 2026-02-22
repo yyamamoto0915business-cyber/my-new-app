@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import Link from "next/link";
 import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
@@ -39,7 +39,11 @@ function RecruitmentsPageContent() {
   const searchParams = useSearchParamsNoSuspend();
   const prefecture = searchParams.get("prefecture") ?? "";
   const tagsParam = searchParams.get("tags") ?? "";
-  const selectedTags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
+  const selectedTags = useMemo(
+    () => (tagsParam ? tagsParam.split(",").filter(Boolean) : []),
+    [tagsParam]
+  );
+  const tagsStr = selectedTags.join(",");
   const [typeFilter, setTypeFilter] = useState(searchParams.get("type") ?? "");
   const [techRoleFilter, setTechRoleFilter] = useState(searchParams.get("tech_role") ?? "");
   const [dateFrom, setDateFrom] = useState(searchParams.get("date_from") ?? "");
@@ -48,12 +52,12 @@ function RecruitmentsPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
     if (prefecture) params.set("prefecture", prefecture);
-    if (selectedTags.length) params.set("tags", selectedTags.join(","));
+    if (tagsStr) params.set("tags", tagsStr);
     if (typeFilter) params.set("type", typeFilter);
     if (techRoleFilter) params.set("tech_role", techRoleFilter);
     if (dateFrom) params.set("date_from", dateFrom);
@@ -67,11 +71,11 @@ function RecruitmentsPageContent() {
         setError("読み込みに失敗しました");
       })
       .finally(() => setLoading(false));
-  };
+  }, [prefecture, tagsStr, typeFilter, techRoleFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     load();
-  }, [prefecture, selectedTags.join(","), typeFilter, techRoleFilter, dateFrom, dateTo]);
+  }, [load]);
 
   return (
     <div className="min-h-screen">

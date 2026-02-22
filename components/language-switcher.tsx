@@ -1,7 +1,6 @@
 "use client";
 
 import { useLanguage } from "./language-provider";
-import type { Locale } from "@/lib/i18n";
 
 export function LanguageSwitcher({ className = "" }: { className?: string }) {
   const { locale, setLocale } = useLanguage();

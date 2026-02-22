@@ -1,6 +1,6 @@
 export function EventCardSkeleton() {
   return (
-    <div className="border-b border-zinc-200 py-6 dark:border-zinc-700">
+    <div className="rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900/50">
       <div className="flex gap-2">
         <div className="h-5 w-14 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
         <div className="h-5 w-16 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />

@@ -5,52 +5,128 @@ import { EVENT_TAGS } from "@/lib/db/types";
 
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
 
+const AREA_OPTIONS = [
+  { value: "", label: "全てのエリア" },
+  { value: "渋谷区", label: "渋谷区" },
+  { value: "新宿区", label: "新宿区" },
+  { value: "港区", label: "港区" },
+];
+
 type Props = {
   selectedDate: string | null;
   onDateSelect: (date: string | null) => void;
   selectedTags: string[];
   onTagsChange: (tags: string[]) => void;
+  selectedArea: string;
+  onAreaChange: (area: string) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onSearch: () => void;
 };
+
+function MonthCalendar({
+  year,
+  month,
+  selectedDate,
+  onDateSelect,
+}: {
+  year: number;
+  month: number;
+  selectedDate: string | null;
+  onDateSelect: (d: string | null) => void;
+}) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startPad = firstDay.getDay();
+  const daysInMonth = lastDay.getDate();
+  const today = new Date().toISOString().split("T")[0];
+
+  const days: (string | null)[] = [];
+  for (let i = 0; i < startPad; i++) days.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const m = String(month + 1).padStart(2, "0");
+    const day = String(d).padStart(2, "0");
+    days.push(`${year}-${m}-${day}`);
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <p className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        {year}年 {month + 1}月
+      </p>
+      <table className="w-full min-w-[280px] border-collapse text-sm">
+        <thead>
+          <tr>
+            {WEEKDAY.map((w) => (
+              <th
+                key={w}
+                className="border border-zinc-200 py-1.5 text-center font-medium text-zinc-600 dark:border-zinc-600 dark:text-zinc-400"
+              >
+                {w}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: Math.ceil((startPad + daysInMonth) / 7) }).map((_, rowIdx) => (
+            <tr key={rowIdx}>
+              {WEEKDAY.map((_, colIdx) => {
+                const idx = rowIdx * 7 + colIdx;
+                const d = days[idx];
+                if (!d) {
+                  return (
+                    <td
+                      key={colIdx}
+                      className="border border-zinc-200 p-0 dark:border-zinc-600"
+                    />
+                  );
+                }
+                const isPast = d < today;
+                const isSelected = selectedDate === d;
+                return (
+                  <td
+                    key={colIdx}
+                    className="border border-zinc-200 p-0.5 dark:border-zinc-600"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onDateSelect(isSelected ? null : d)}
+                      disabled={isPast}
+                      className={`flex h-8 w-full items-center justify-center rounded text-center ${
+                        isPast
+                          ? "cursor-not-allowed text-zinc-300 dark:text-zinc-600"
+                          : isSelected
+                            ? "bg-[var(--accent)] text-white"
+                            : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      }`}
+                    >
+                      {d.split("-")[2]}
+                    </button>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export function EventSearchSection({
   selectedDate,
   onDateSelect,
   selectedTags,
   onTagsChange,
+  selectedArea,
+  onAreaChange,
   searchQuery,
   onSearchChange,
   onSearch,
 }: Props) {
-  const [calMonth, setCalMonth] = useState(() => {
-    const d = new Date();
-    return { year: d.getFullYear(), month: d.getMonth() };
-  });
-
-  const firstDay = new Date(calMonth.year, calMonth.month, 1);
-  const lastDay = new Date(calMonth.year, calMonth.month + 1, 0);
-  const startPad = firstDay.getDay();
-  const daysInMonth = lastDay.getDate();
-
-  const today = new Date().toISOString().split("T")[0];
-
-  const handlePrevMonth = () => {
-    if (calMonth.month === 0) {
-      setCalMonth({ year: calMonth.year - 1, month: 11 });
-    } else {
-      setCalMonth({ year: calMonth.year, month: calMonth.month - 1 });
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (calMonth.month === 11) {
-      setCalMonth({ year: calMonth.year + 1, month: 0 });
-    } else {
-      setCalMonth({ year: calMonth.year, month: calMonth.month + 1 });
-    }
-  };
+  const [calOffset, setCalOffset] = useState(0);
+  const baseDate = new Date();
+  const monthsToShow = 3;
 
   const toggleTag = (tagId: string) => {
     if (selectedTags.includes(tagId)) {
@@ -59,15 +135,6 @@ export function EventSearchSection({
       onTagsChange([...selectedTags, tagId]);
     }
   };
-
-  const days: (string | null)[] = [];
-  for (let i = 0; i < startPad; i++) days.push(null);
-  for (let d = 1; d <= daysInMonth; d++) {
-    const y = calMonth.year;
-    const m = String(calMonth.month + 1).padStart(2, "0");
-    const day = String(d).padStart(2, "0");
-    days.push(`${y}-${m}-${day}`);
-  }
 
   return (
     <section className="mt-12 border-t border-zinc-200 pt-10 dark:border-zinc-700">
@@ -85,17 +152,14 @@ export function EventSearchSection({
         <div className="mt-3 flex items-center gap-2">
           <button
             type="button"
-            onClick={handlePrevMonth}
+            onClick={() => setCalOffset((o) => o - 1)}
             className="rounded border border-zinc-200 px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800"
           >
             前月
           </button>
-          <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-            {calMonth.year}年 {calMonth.month + 1}月
-          </span>
           <button
             type="button"
-            onClick={handleNextMonth}
+            onClick={() => setCalOffset((o) => o + 1)}
             className="rounded border border-zinc-200 px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800"
           >
             次月
@@ -110,35 +174,21 @@ export function EventSearchSection({
             </button>
           )}
         </div>
-        <div className="mt-2 grid grid-cols-7 gap-0.5 text-center text-sm">
-          {WEEKDAY.map((w) => (
-            <div
-              key={w}
-              className="py-1 font-medium text-zinc-500 dark:text-zinc-400"
-            >
-              {w}
-            </div>
-          ))}
-          {days.map((d, i) => {
-            if (!d) return <div key={`empty-${i}`} />;
-            const isPast = d < today;
-            const isSelected = selectedDate === d;
+        <div className="mt-3 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: monthsToShow }).map((_, i) => {
+            const d = new Date(
+              baseDate.getFullYear(),
+              baseDate.getMonth() + calOffset + i,
+              1
+            );
             return (
-              <button
-                key={d}
-                type="button"
-                onClick={() => onDateSelect(isSelected ? null : d)}
-                disabled={isPast}
-                className={`py-1.5 text-sm rounded ${
-                  isPast
-                    ? "text-zinc-300 dark:text-zinc-600 cursor-not-allowed"
-                    : isSelected
-                      ? "bg-[var(--accent)] text-white"
-                      : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {d.split("-")[2]}
-              </button>
+              <MonthCalendar
+                key={`${d.getFullYear()}-${d.getMonth()}`}
+                year={d.getFullYear()}
+                month={d.getMonth()}
+                selectedDate={selectedDate}
+                onDateSelect={onDateSelect}
+              />
             );
           })}
         </div>
@@ -148,25 +198,48 @@ export function EventSearchSection({
         <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           条件を指定して検索
         </h3>
-        <div className="mt-3">
-          <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
-            全てのカテゴリ
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {EVENT_TAGS.map((tag) => (
-              <button
-                key={tag.id}
-                type="button"
-                onClick={() => toggleTag(tag.id)}
-                className={`rounded px-3 py-1.5 text-sm ${
-                  selectedTags.includes(tag.id)
-                    ? "bg-[var(--accent)] text-white"
-                    : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                }`}
-              >
-                {tag.label}
-              </button>
-            ))}
+        <div className="mt-3 space-y-4">
+          <div>
+            <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
+              全てのエリア
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {AREA_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value || "all"}
+                  type="button"
+                  onClick={() => onAreaChange(opt.value)}
+                  className={`rounded px-3 py-1.5 text-sm ${
+                    selectedArea === opt.value
+                      ? "bg-[var(--accent)] text-white"
+                      : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
+              全てのカテゴリ
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {EVENT_TAGS.map((tag) => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => toggleTag(tag.id)}
+                  className={`rounded px-3 py-1.5 text-sm ${
+                    selectedTags.includes(tag.id)
+                      ? "bg-[var(--accent)] text-white"
+                      : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  }`}
+                >
+                  {tag.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">

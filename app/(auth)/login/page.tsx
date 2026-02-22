@@ -63,7 +63,7 @@ function LoginForm() {
         {hasResend && (
           <button
             type="button"
-            onClick={() => setEmail(email || "email@example.com")}
+            onClick={handleResend}
             className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
           >
             マジックリンクを送信

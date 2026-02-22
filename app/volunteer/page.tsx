@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Breadcrumb } from "@/components/breadcrumb";
@@ -33,7 +33,7 @@ function VolunteerPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState<string | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
@@ -47,11 +47,11 @@ function VolunteerPageContent() {
         setError("読み込みに失敗しました");
       })
       .finally(() => setLoading(false));
-  };
+  }, [prefecture, roleType]);
 
   useEffect(() => {
     load();
-  }, [prefecture, roleType]);
+  }, [load]);
 
   const authDisabled = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 

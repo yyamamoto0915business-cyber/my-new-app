@@ -6,8 +6,9 @@ export async function getOrCreateEventChatRoom(
   supabase: SupabaseClient,
   eventId: string,
   participantId: string,
-  userId: string
+  _userId: string // 将来のアクセス制御用
 ): Promise<ChatRoom | null> {
+  void _userId;
   const { data: existing } = await supabase
     .from("chat_rooms")
     .select("*")

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { auth } from "@/auth";
 
 function isAuthDisabled(): boolean {
@@ -27,14 +26,6 @@ export default auth((req) => {
     return Response.redirect(new URL("/onboarding", req.url));
   }
 
-  if (
-    (path.startsWith("/organizer") && !path.includes("/organizer/register")) ||
-    path.startsWith("/dm/")
-  ) {
-    if (!isLoggedIn) {
-      return Response.redirect(new URL(`/login?returnTo=${encodeURIComponent(path)}`, req.url));
-    }
-  }
-
+  // 主催者・DM はログイン不要でアクセス可能
   return NextResponse.next();
 });

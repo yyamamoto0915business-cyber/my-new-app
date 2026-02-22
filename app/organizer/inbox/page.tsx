@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
-
-const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 
 type Thread = {
   id: string;
@@ -17,13 +14,11 @@ type Thread = {
 };
 
 export default function OrganizerInboxPage() {
-  const { data: session, status } = useSession();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!AUTH_DISABLED && status !== "authenticated") return;
     setLoading(true);
     setError(null);
     fetchWithTimeout("/api/dm/threads?as=organizer")
@@ -34,26 +29,7 @@ export default function OrganizerInboxPage() {
         setError("読み込みに失敗しました");
       })
       .finally(() => setLoading(false));
-  }, [status]);
-
-  if (status === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-zinc-500">読み込み中...</p>
-      </div>
-    );
-  }
-
-  if (status === "unauthenticated" && !AUTH_DISABLED) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p>ログインが必要です</p>
-        <Link href="/login?returnTo=/organizer/inbox" className="text-[var(--accent)] underline">
-          ログイン
-        </Link>
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <div className="min-h-screen">

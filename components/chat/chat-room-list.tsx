@@ -45,7 +45,7 @@ export function ChatRoomList({
         <ul className="space-y-2">
           {participants.map((p) => {
             const room = roomByParticipant.get(p.user_id);
-            const name = p.display_name?.trim() || p.email || "参加者";
+            const name = displayName(p);
             return (
               <li key={p.user_id}>
                 <Link

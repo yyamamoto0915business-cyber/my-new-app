@@ -11,6 +11,7 @@ import {
   filterEventsByChildFriendly,
   filterEventsByAvailableOnly,
   filterEventsByTags,
+  filterEventsByRegion,
   searchEvents,
   sortEvents,
   type Event,
@@ -41,7 +42,10 @@ function EventsPageContent() {
   const prefecture = searchParams.get("prefecture") ?? "";
   const city = searchParams.get("city") ?? "";
   const tagsParam = searchParams.get("tags") ?? "";
-  const urlTags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
+  const urlTags = useMemo(
+    () => (tagsParam ? tagsParam.split(",").filter(Boolean) : []),
+    [tagsParam]
+  );
 
   const eventListRef = useRef<HTMLElement | null>(null);
 
@@ -53,6 +57,7 @@ function EventsPageContent() {
   const [priceFilter, setPriceFilter] = useState<"all" | "free" | "paid">("all");
   const [childFriendlyOnly, setChildFriendlyOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedArea, setSelectedArea] = useState("");
   const [events, setEvents] = useState<EventWithDistance[]>([]);
   const [mapEvents, setMapEvents] = useState<EventWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,17 +77,24 @@ function EventsPageContent() {
     [router, searchParams]
   );
 
-  const today = new Date().toISOString().split("T")[0];
-  const weekEnd = new Date();
-  weekEnd.setDate(weekEnd.getDate() + 7);
-  const weekEndStr = weekEnd.toISOString().split("T")[0];
-  const start = dateRange === "today" ? today : today;
-  const end =
-    dateRange === "today"
-      ? today
-      : dateRange === "all"
-        ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-        : weekEndStr;
+  const { today, end } = useMemo(() => {
+    const now = new Date();
+    const t = now.toISOString().split("T")[0];
+    const we = new Date(now.getTime());
+    we.setDate(we.getDate() + 7);
+    const wes = we.toISOString().split("T")[0];
+    const future = new Date(now.getTime());
+    future.setDate(future.getDate() + 90);
+    const e =
+      dateRange === "today"
+        ? t
+        : dateRange === "all"
+          ? future.toISOString().split("T")[0]
+          : wes;
+    return { today: t, end: e };
+  }, [dateRange]);
+
+  const start = today;
 
   useEffect(() => {
     setListError(null);
@@ -99,7 +111,7 @@ function EventsPageContent() {
         setListError("通信に失敗しました");
       })
       .finally(() => setLoading(false));
-  }, [prefecture, city, tagsParam]);
+  }, [prefecture, city, tagsParam, urlTags]);
 
   useEffect(() => {
     if (view !== "map") return;
@@ -139,6 +151,7 @@ function EventsPageContent() {
   const filteredEvents = useMemo(() => {
     let result = events;
     result = getEventsByDateRange(result, dateRange, selectedDate);
+    result = filterEventsByRegion(result, undefined, selectedArea || undefined);
     result = filterEventsByPrice(result, priceFilter);
     result = filterEventsByChildFriendly(result, childFriendlyOnly);
     result = filterEventsByAvailableOnly(result, availableOnly);
@@ -150,6 +163,7 @@ function EventsPageContent() {
     events,
     dateRange,
     selectedDate,
+    selectedArea,
     priceFilter,
     childFriendlyOnly,
     availableOnly,
@@ -175,7 +189,7 @@ function EventsPageContent() {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950">
       <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-        <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6">
+        <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Breadcrumb
               items={[
@@ -192,7 +206,7 @@ function EventsPageContent() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <div className="mb-4 flex gap-2">
           <button
             onClick={() => setView("list")}
@@ -278,9 +292,9 @@ function EventsPageContent() {
 
             <section ref={eventListRef} className="scroll-mt-4">
               {loading ? (
-                <ul className="space-y-0">
+                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <li key={i} className="border-b border-zinc-200 dark:border-zinc-700">
+                    <li key={i}>
                       <EventCardSkeleton />
                     </li>
                   ))}
@@ -306,6 +320,7 @@ function EventsPageContent() {
                     onClick={() => {
                       setDateRange("all");
                       setSelectedDate(null);
+                      setSelectedArea("");
                       setAvailableOnly(false);
                       setPriceFilter("all");
                       setChildFriendlyOnly(false);
@@ -322,12 +337,9 @@ function EventsPageContent() {
                   <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
                     全{filteredEvents.length}件
                   </p>
-                  <ul className="space-y-0">
+                  <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredEvents.map((event) => (
-                      <li
-                        key={event.id}
-                        className="border-b border-zinc-200 dark:border-zinc-700"
-                      >
+                      <li key={event.id}>
                         <EventCard event={event} />
                       </li>
                     ))}
@@ -341,6 +353,8 @@ function EventsPageContent() {
               onDateSelect={setSelectedDate}
               selectedTags={urlTags}
               onTagsChange={handleTagsChange}
+              selectedArea={selectedArea}
+              onAreaChange={setSelectedArea}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               onSearch={handleSearch}

@@ -1,7 +1,6 @@
 "use client";
 
 import { EVENT_TAGS } from "@/lib/db/types";
-import { useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
 type Props = {

@@ -25,6 +25,7 @@ export function SponsorTicketSection({
   prices: pricesProp,
   perks: perksProp,
 }: Props) {
+  void eventTitle; // Reserved for future use (e.g. confirmation message)
   const prices = pricesProp.length ? pricesProp : DEFAULT_PRICES;
   const perks = Object.keys(perksProp).length ? perksProp : DEFAULT_PERKS;
   const [selectedAmount, setSelectedAmount] = useState(prices[0] ?? 300);

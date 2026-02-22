@@ -5,7 +5,7 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
+  await params;
   return NextResponse.json([]);
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { QNA_CATEGORY_LABELS, type QnACategory } from "@/lib/qna-mock";
 
@@ -21,7 +21,7 @@ export function EventQnASection({ eventId }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setError(null);
     fetchWithTimeout(`/api/events/${eventId}/qna?public=true`)
@@ -32,11 +32,11 @@ export function EventQnASection({ eventId }: Props) {
         setItems([]);
       })
       .finally(() => setLoading(false));
-  };
+  }, [eventId]);
 
   useEffect(() => {
     load();
-  }, [eventId]);
+  }, [load]);
 
   if (loading) {
     return (

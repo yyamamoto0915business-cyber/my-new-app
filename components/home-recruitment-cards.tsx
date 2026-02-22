@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -57,7 +57,7 @@ export function HomeRecruitmentCards() {
   const [error, setError] = useState<string | null>(null);
   const prefecture = searchParams.get("prefecture") ?? "";
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
@@ -71,11 +71,11 @@ export function HomeRecruitmentCards() {
         setError("読み込みに失敗しました");
       })
       .finally(() => setLoading(false));
-  };
+  }, [prefecture]);
 
   useEffect(() => {
     load();
-  }, [prefecture]);
+  }, [load]);
 
   if (loading) {
     return (

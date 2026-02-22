@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
 import { Breadcrumb } from "@/components/breadcrumb";
@@ -26,7 +26,7 @@ function EventRequestsPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
@@ -41,11 +41,11 @@ function EventRequestsPageContent() {
         setError("読み込みに失敗しました");
       })
       .finally(() => setLoading(false));
-  };
+  }, [prefecture, city]);
 
   useEffect(() => {
     load();
-  }, [prefecture, city]);
+  }, [load]);
 
   return (
     <div className="min-h-screen">
