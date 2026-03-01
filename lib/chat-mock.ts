@@ -10,6 +10,7 @@ type MockRoom = {
   event_id: string;
   participant_id: string;
   type: "event";
+  organizer_memo?: string | null;
   created_at: string;
 };
 
@@ -19,6 +20,7 @@ type MockMessage = {
   sender_id: string;
   content: string;
   pinned: boolean;
+  type?: "user" | "system";
   created_at: string;
   sender?: { display_name: string | null; email: string | null };
 };
@@ -86,6 +88,7 @@ export function getMockMessages(roomId: string): MockMessage[] {
   const list = messages.get(roomId) ?? [];
   return list.map((m) => ({
     ...m,
+    type: m.type ?? "user",
     sender: m.sender_id === MOCK_ORGANIZER_ID
       ? { display_name: "主催者", email: null }
       : { display_name: "自分", email: null },
@@ -102,6 +105,7 @@ export function addMockMessage(roomId: string, senderId: string, content: string
     sender_id: senderId,
     content: content.trim(),
     pinned: false,
+    type: "user",
     created_at: new Date().toISOString(),
   };
   list.push(msg);

@@ -77,6 +77,32 @@ export async function fetchEvents(supabase: SupabaseClient): Promise<Event[]> {
   });
 }
 
+export async function getOrganizerIdByEventId(
+  supabase: SupabaseClient,
+  eventId: string
+): Promise<string | null> {
+  const { data: ev } = await supabase
+    .from("events")
+    .select("organizer_id")
+    .eq("id", eventId)
+    .single();
+  return ev?.organizer_id ?? null;
+}
+
+export async function getOrganizerProfileId(
+  supabase: SupabaseClient,
+  eventId: string
+): Promise<string | null> {
+  const organizerId = await getOrganizerIdByEventId(supabase, eventId);
+  if (!organizerId) return null;
+  const { data: org } = await supabase
+    .from("organizers")
+    .select("profile_id")
+    .eq("id", organizerId)
+    .single();
+  return org?.profile_id ?? null;
+}
+
 export async function isOrganizerOfEvent(
   supabase: SupabaseClient,
   eventId: string,
@@ -320,11 +346,13 @@ export async function fetchEventParticipants(
   });
 }
 
+export type ParticipantStatus = "applied" | "confirmed" | "declined" | "change_requested" | "checked_in" | "completed";
+
 export async function getParticipantStatus(
   supabase: SupabaseClient,
   eventId: string,
   userId: string
-): Promise<"applied" | "confirmed" | "checked_in" | "completed" | null> {
+): Promise<ParticipantStatus | null> {
   const { data } = await supabase
     .from("event_participants")
     .select("status")
@@ -332,4 +360,34 @@ export async function getParticipantStatus(
     .eq("user_id", userId)
     .single();
   return data?.status ?? null;
+}
+
+/** 参加者ステータスを更新（upsert: 存在しなければ作成） */
+export async function updateParticipantStatus(
+  supabase: SupabaseClient,
+  eventId: string,
+  userId: string,
+  status: ParticipantStatus
+): Promise<boolean> {
+  const { data: existing } = await supabase
+    .from("event_participants")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from("event_participants")
+      .update({ status })
+      .eq("event_id", eventId)
+      .eq("user_id", userId);
+    return !error;
+  }
+  const { error } = await supabase.from("event_participants").insert({
+    event_id: eventId,
+    user_id: userId,
+    status,
+  });
+  return !error;
 }

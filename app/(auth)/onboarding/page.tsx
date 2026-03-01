@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { useFormStatus } from "react-dom";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
@@ -21,7 +22,7 @@ function SubmitButton() {
 }
 
 export default function OnboardingPage() {
-  const { data: session, status, update } = useSession();
+  const { user, loading: authLoading } = useSupabaseUser();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
@@ -34,12 +35,19 @@ export default function OnboardingPage() {
       setError("モードを選択してください");
       return;
     }
-    await update({ role });
+
+    const supabase = createClient();
+    if (!supabase || !user) {
+      setError("ログインが必要です");
+      return;
+    }
+
+    await supabase.auth.updateUser({ data: { role } });
     router.push("/");
     router.refresh();
   };
 
-  if (status === "loading") {
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-sm text-zinc-500">読み込み中...</p>
@@ -47,7 +55,7 @@ export default function OnboardingPage() {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!user) {
     if (AUTH_DISABLED) {
       router.replace("/");
       return null;
@@ -56,7 +64,8 @@ export default function OnboardingPage() {
     return null;
   }
 
-  if (session?.user?.role) {
+  const role = user.user_metadata?.role as string | undefined;
+  if (role) {
     router.replace("/");
     return null;
   }

@@ -5,6 +5,10 @@ export type Profile = {
   email: string | null;
   display_name: string | null;
   avatar_url: string | null;
+  phone: string | null;
+  address: string | null;
+  region: string | null;
+  bio: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -54,6 +58,8 @@ export type DbEvent = {
 export type EventParticipantStatus =
   | "applied"
   | "confirmed"
+  | "declined"
+  | "change_requested"
   | "checked_in"
   | "completed";
 
@@ -117,6 +123,9 @@ export type Event = {
   englishGuideAvailable?: boolean;
   capacity?: number;
   createdAt: string;
+  participantCount?: number;
+  avgRating?: number;
+  salonOnly?: boolean;
 };
 
 export type EventFormData = Omit<
@@ -134,8 +143,11 @@ export type ChatRoom = {
   recruitment_id: string | null;
   type: "event" | "recruitment";
   participant_id: string | null;
+  organizer_memo?: string | null;
   created_at: string;
 };
+
+export type ChatMessageType = "user" | "system";
 
 export type ChatMessage = {
   id: string;
@@ -143,6 +155,7 @@ export type ChatMessage = {
   sender_id: string;
   content: string;
   pinned: boolean;
+  type?: ChatMessageType;
   created_at: string;
 };
 

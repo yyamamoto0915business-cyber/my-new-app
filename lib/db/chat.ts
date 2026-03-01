@@ -59,6 +59,82 @@ export async function getEventChatRoomsForOrganizer(
   return (data ?? []) as ChatRoomWithParticipant[];
 }
 
+/** 募集×応募者の1:1ルームを取得 or 作成 */
+export async function getOrCreateRecruitmentChatRoom(
+  supabase: SupabaseClient,
+  recruitmentId: string,
+  participantId: string,
+  _userId: string
+): Promise<ChatRoom | null> {
+  void _userId;
+  const { data: existing } = await supabase
+    .from("chat_rooms")
+    .select("*")
+    .eq("recruitment_id", recruitmentId)
+    .eq("participant_id", participantId)
+    .eq("type", "recruitment")
+    .maybeSingle();
+
+  if (existing) return existing as ChatRoom;
+
+  const { data: inserted, error } = await supabase
+    .from("chat_rooms")
+    .insert({
+      recruitment_id: recruitmentId,
+      type: "recruitment",
+      participant_id: participantId,
+    })
+    .select()
+    .single();
+
+  if (error) return null;
+  return inserted as ChatRoom;
+}
+
+/** 募集×参加者のルームを取得（作成はしない） */
+export async function getRecruitmentChatRoom(
+  supabase: SupabaseClient,
+  recruitmentId: string,
+  participantId: string
+): Promise<ChatRoom | null> {
+  const { data, error } = await supabase
+    .from("chat_rooms")
+    .select("*")
+    .eq("recruitment_id", recruitmentId)
+    .eq("participant_id", participantId)
+    .eq("type", "recruitment")
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as ChatRoom;
+}
+
+/** 主催者向け: 募集の応募者ルーム一覧 */
+export async function getRecruitmentChatRoomsForOrganizer(
+  supabase: SupabaseClient,
+  recruitmentId: string
+): Promise<ChatRoomWithParticipant[]> {
+  const { data, error } = await supabase
+    .from("chat_rooms")
+    .select(
+      `
+      *,
+      participant:profiles (
+        id,
+        email,
+        display_name,
+        avatar_url
+      )
+    `
+    )
+    .eq("recruitment_id", recruitmentId)
+    .eq("type", "recruitment")
+    .order("created_at", { ascending: false });
+
+  if (error) return [];
+  return (data ?? []) as ChatRoomWithParticipant[];
+}
+
 /** 参加者向け: 自分の1ルーム取得 */
 export async function getEventChatRoomForParticipant(
   supabase: SupabaseClient,
@@ -162,6 +238,29 @@ export async function sendMessage(
       room_id: roomId,
       sender_id: senderId,
       content: content.trim(),
+      type: "user",
+    })
+    .select()
+    .single();
+
+  if (error) return null;
+  return data as ChatMessage;
+}
+
+/** システムメッセージ送信 */
+export async function sendSystemMessage(
+  supabase: SupabaseClient,
+  roomId: string,
+  content: string,
+  senderId: string
+): Promise<ChatMessage | null> {
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .insert({
+      room_id: roomId,
+      sender_id: senderId,
+      content,
+      type: "system",
     })
     .select()
     .single();

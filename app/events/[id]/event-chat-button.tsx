@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -9,7 +10,9 @@ type EventChatButtonProps = {
 };
 
 export function EventChatButton({ eventId }: EventChatButtonProps) {
+  const router = useRouter();
   const [authState, setAuthState] = useState<"loading" | "logged_in" | "logged_out" | "no_supabase">("loading");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -20,13 +23,37 @@ export function EventChatButton({ eventId }: EventChatButtonProps) {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setAuthState(!!user ? "logged_in" : "logged_out");
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setAuthState(!!session?.user ? "logged_in" : "logged_out");
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthState(!!session?.user ? "logged_in" : "logged_out");
+    });
     return () => subscription.unsubscribe();
   }, []);
+
+  const handleMessage = async () => {
+    setCreating(true);
+    try {
+      const res = await fetch("/api/messages/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId,
+          kind: "event_inquiry",
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.conversationId) {
+        router.push(`/messages/${data.conversationId}`);
+      } else {
+        router.push("/messages");
+      }
+    } catch {
+      router.push("/messages");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   if (authState === "loading") return null;
 
@@ -49,20 +76,22 @@ export function EventChatButton({ eventId }: EventChatButtonProps) {
   if (authState === "logged_out" && !authDisabled) {
     return (
       <Link
-        href={`/login?returnTo=${encodeURIComponent(`/events/${eventId}/chat`)}`}
+        href={`/login?returnTo=${encodeURIComponent(`/events/${eventId}`)}`}
         className="inline-flex rounded-lg border border-zinc-200/60 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
       >
-        ログインして質問する
+        ログインして主催者にメッセージ
       </Link>
     );
   }
 
   return (
-    <Link
-      href={`/events/${eventId}/chat`}
-      className="inline-flex rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+    <button
+      type="button"
+      onClick={handleMessage}
+      disabled={creating}
+      className="inline-flex rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
     >
-      主催者への質問（Q&A）
-    </Link>
+      {creating ? "作成中..." : "主催者へメッセージ"}
+    </button>
   );
 }

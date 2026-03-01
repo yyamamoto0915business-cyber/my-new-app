@@ -22,23 +22,22 @@ npm install
 
 ### 2. Supabase プロジェクト
 
-1. [Supabase](https://supabase.com) でプロジェクトを作成
-2. `.env.example` を `.env.local` にコピー
-3. Supabase ダッシュボードの Settings > API から URL と anon key を取得し、`.env.local` に設定
+**詳細は [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) を参照してください。**
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```bash
+# 1. .env.local を作成
+npm run supabase:setup
+
+# 2. Supabase ダッシュボードでプロジェクト作成後、URL と anon key を .env.local に設定
+
+# 3. プロジェクトをリンク
+npm run supabase:link
+
+# 4. マイグレーションを適用
+npm run supabase:push
 ```
 
-### 3. マイグレーション実行
-
-Supabase ダッシュボードの SQL Editor で、`supabase/migrations/` 内の SQL を順に実行してください。
-
-1. `00001_initial_schema.sql`
-2. `00002_recruitments.sql`
-3. `00003_chat.sql`
-4. `00004_points_plans.sql`
+または Supabase ダッシュボードの SQL Editor で、`supabase/migrations/` 内の SQL を `00001` から順に実行してください。
 
 ### 4. 開発サーバー起動
 

@@ -22,6 +22,8 @@ import { isPrefecture } from "../../lib/prefectures";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { ProfileLink } from "@/components/profile-link";
 import { Breadcrumb } from "@/components/breadcrumb";
+import { GlyphSectionTitle } from "@/components/glyph/glyph-section-title";
+import { GlyphCardShell } from "@/components/glyph/glyph-card-shell";
 import { EventCard } from "./event-card";
 import { EventCardSkeleton } from "./event-card-skeleton";
 import { EventSearchSection } from "./event-search-section";
@@ -52,7 +54,6 @@ function EventsPageContent() {
 
   const [view, setView] = useState<"list" | "map">("list");
   const [dateRange, setDateRange] = useState<DateRangeFilter>("all");
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<EventSort>("date_asc");
   const [availableOnly, setAvailableOnly] = useState(false);
   const [priceFilter, setPriceFilter] = useState<"all" | "free" | "paid">("all");
@@ -96,17 +97,21 @@ function EventsPageContent() {
   const { today, end } = useMemo(() => {
     const now = new Date();
     const t = now.toISOString().split("T")[0];
-    const we = new Date(now.getTime());
-    we.setDate(we.getDate() + 7);
-    const wes = we.toISOString().split("T")[0];
-    const future = new Date(now.getTime());
-    future.setDate(future.getDate() + 90);
+    const addDays = (d: number) => {
+      const x = new Date(now.getTime());
+      x.setDate(x.getDate() + d);
+      return x.toISOString().split("T")[0];
+    };
     const e =
       dateRange === "today"
         ? t
-        : dateRange === "all"
-          ? future.toISOString().split("T")[0]
-          : wes;
+        : dateRange === "week" || dateRange === "weekend"
+          ? addDays(7)
+          : dateRange === "month"
+            ? addDays(30)
+            : dateRange === "3months"
+              ? addDays(90)
+              : addDays(365);
     return { today: t, end: e };
   }, [dateRange]);
 
@@ -166,7 +171,7 @@ function EventsPageContent() {
 
   const filteredEvents = useMemo(() => {
     let result = events;
-    result = getEventsByDateRange(result, dateRange, selectedDate);
+    result = getEventsByDateRange(result, dateRange);
     if (selectedArea) {
       result = filterEventsByRegion(
         result,
@@ -184,7 +189,6 @@ function EventsPageContent() {
   }, [
     events,
     dateRange,
-    selectedDate,
     selectedArea,
     priceFilter,
     childFriendlyOnly,
@@ -209,22 +213,22 @@ function EventsPageContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950">
-      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div className="min-h-screen bg-[var(--mg-paper)]">
+      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur-sm dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Breadcrumb
               items={[
-                { label: "トップ", href: "/?mode=select" },
+                { label: "トップ", href: "/" },
                 { label: "イベント情報", href: "/events" },
                 { label: "イベント検索" },
               ]}
             />
             <ProfileLink />
           </div>
-          <h1 className="mt-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+          <GlyphSectionTitle as="h1" className="mt-2">
             全国のイベント
-          </h1>
+          </GlyphSectionTitle>
         </div>
       </header>
 
@@ -258,16 +262,15 @@ function EventsPageContent() {
               <span className="text-zinc-500 dark:text-zinc-400">絞り込み:</span>
               <select
                 value={dateRange}
-                onChange={(e) => {
-                  setDateRange(e.target.value as DateRangeFilter);
-                  setSelectedDate(null);
-                }}
+                onChange={(e) => setDateRange(e.target.value as DateRangeFilter)}
                 className="rounded border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
               >
                 <option value="all">すべて</option>
                 <option value="today">今日</option>
                 <option value="week">今週</option>
                 <option value="weekend">週末</option>
+                <option value="month">今月</option>
+                <option value="3months">3ヶ月</option>
               </select>
               <select
                 value={sortOrder}
@@ -317,7 +320,9 @@ function EventsPageContent() {
                 <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <li key={i}>
-                      <EventCardSkeleton />
+                      <GlyphCardShell>
+                        <EventCardSkeleton />
+                      </GlyphCardShell>
                     </li>
                   ))}
                 </ul>
@@ -341,7 +346,6 @@ function EventsPageContent() {
                     type="button"
                     onClick={() => {
                       setDateRange("all");
-                      setSelectedDate(null);
                       setSelectedArea("");
                       setAvailableOnly(false);
                       setPriceFilter("all");
@@ -363,7 +367,9 @@ function EventsPageContent() {
                   <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredEvents.map((event) => (
                       <li key={event.id}>
-                        <EventCard event={event} />
+                        <GlyphCardShell>
+                          <EventCard event={event} />
+                        </GlyphCardShell>
                       </li>
                     ))}
                   </ul>
@@ -372,8 +378,8 @@ function EventsPageContent() {
             </section>
 
             <EventSearchSection
-              selectedDate={selectedDate}
-              onDateSelect={setSelectedDate}
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
               selectedTags={urlTags}
               onTagsChange={handleTagsChange}
               selectedArea={selectedArea}

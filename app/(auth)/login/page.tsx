@@ -2,74 +2,56 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get("returnTo") ?? "/";
+  const returnTo = searchParams.get("returnTo") ?? searchParams.get("redirect") ?? "/";
   const callbackUrl = searchParams.get("callbackUrl") ?? returnTo;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleCredentials = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const res = await signIn("credentials", {
+
+    const supabase = createClient();
+    if (!supabase) {
+      setError("Supabase が設定されていません。環境変数を確認してください。");
+      setLoading(false);
+      return;
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password: password || "demo",
-      redirect: false,
     });
+
     setLoading(false);
-    if (res?.error) {
-      setError(res.error === "CredentialsSignin" ? "メールアドレスまたはパスワードが正しくありません" : res.error);
+
+    if (signInError) {
+      if (signInError.message.includes("Invalid login credentials")) {
+        setError("メールアドレスまたはパスワードが正しくありません");
+      } else {
+        setError(signInError.message);
+      }
       return;
     }
-    if (res?.ok) {
-      router.push(callbackUrl);
-      router.refresh();
-      return;
-    }
-  };
 
-  const handleGoogle = () => {
-    signIn("google", { callbackUrl });
+    router.push(callbackUrl);
+    router.refresh();
   };
-
-  const handleResend = () => {
-    signIn("resend", { email, callbackUrl });
-  };
-
-  const hasGoogle = !!process.env.NEXT_PUBLIC_AUTH_GOOGLE;
-  const hasResend = !!process.env.NEXT_PUBLIC_AUTH_RESEND;
 
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-sm space-y-6 rounded-xl border border-zinc-200/60 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         <h1 className="text-xl font-semibold">ログイン</h1>
-        {hasGoogle && (
-          <button
-            type="button"
-            onClick={handleGoogle}
-            className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-          >
-            Google でログイン
-          </button>
-        )}
-        {hasResend && (
-          <button
-            type="button"
-            onClick={handleResend}
-            className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-          >
-            マジックリンクを送信
-          </button>
-        )}
-        <form onSubmit={handleCredentials} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium">
               メールアドレス

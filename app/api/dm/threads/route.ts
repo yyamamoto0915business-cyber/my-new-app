@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/get-auth";
 import { getThreadsForOrganizer, getThreadsForVolunteer } from "@/lib/dm-mock";
-import { getUserById } from "@/lib/auth-users";
+import { getProfileDisplayName } from "@/lib/get-profile-display-name";
 
 export async function GET(request: Request) {
   const session = await getAuth();
@@ -13,15 +13,14 @@ export async function GET(request: Request) {
     const threads = session?.user?.id
       ? getThreadsForOrganizer(session.user.id)
       : [];
-    const withPartner = threads.map((t) => {
-      const partnerId =
-        session!.user!.id === t.organizerId ? t.volunteerId : t.organizerId;
-      const partner = getUserById(partnerId);
-      return {
-        ...t,
-        partnerName: partner?.name ?? partner?.email ?? "ユーザー",
-      };
-    });
+    const withPartner = await Promise.all(
+      threads.map(async (t) => {
+        const partnerId =
+          session!.user!.id === t.organizerId ? t.volunteerId : t.organizerId;
+        const partnerName = await getProfileDisplayName(partnerId);
+        return { ...t, partnerName };
+      })
+    );
     return NextResponse.json(withPartner);
   }
 
@@ -32,15 +31,14 @@ export async function GET(request: Request) {
 
   const threads = getThreadsForVolunteer(session.user.id);
 
-  const withPartner = threads.map((t) => {
-    const partnerId =
-      session.user!.id === t.organizerId ? t.volunteerId : t.organizerId;
-    const partner = getUserById(partnerId);
-    return {
-      ...t,
-      partnerName: partner?.name ?? partner?.email ?? "ユーザー",
-    };
-  });
+  const withPartner = await Promise.all(
+    threads.map(async (t) => {
+      const partnerId =
+        session.user!.id === t.organizerId ? t.volunteerId : t.organizerId;
+      const partnerName = await getProfileDisplayName(partnerId);
+      return { ...t, partnerName };
+    })
+  );
 
   return NextResponse.json(withPartner);
 }

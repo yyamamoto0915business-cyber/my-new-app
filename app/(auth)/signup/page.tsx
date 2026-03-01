@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { getOrCreateUser } from "@/lib/auth-users";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -18,28 +17,38 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    try {
-      getOrCreateUser(email.trim().toLowerCase(), displayName.trim() || email.split("@")[0] || "User");
-      const res = await signIn("credentials", {
-        email: email.trim().toLowerCase(),
-        password: password || "signup",
-        name: displayName.trim() || undefined,
-        redirect: false,
-      });
+
+    const supabase = createClient();
+    if (!supabase) {
+      setError("Supabase が設定されていません。環境変数を確認してください。");
       setLoading(false);
-      if (res?.error) {
-        setError(res.error);
-        return;
-      }
-      if (res?.ok) {
-        router.push("/");
-        router.refresh();
-        return;
-      }
-    } catch {
-      setError("登録に失敗しました");
-      setLoading(false);
+      return;
     }
+
+    const { error: signUpError } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password: password || "signup",
+      options: {
+        data: {
+          display_name: displayName.trim() || undefined,
+          name: displayName.trim() || email.split("@")[0] || "User",
+        },
+      },
+    });
+
+    setLoading(false);
+
+    if (signUpError) {
+      if (signUpError.message.includes("already registered")) {
+        setError("このメールアドレスはすでに登録されています。ログインしてください。");
+      } else {
+        setError(signUpError.message);
+      }
+      return;
+    }
+
+    router.push("/");
+    router.refresh();
   };
 
   return (

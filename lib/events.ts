@@ -17,7 +17,7 @@ export function getEventById(id: string): Event | null {
   return getAllEvents().find((e) => e.id === id) ?? null;
 }
 
-export type DateRangeFilter = "all" | "today" | "week" | "weekend";
+export type DateRangeFilter = "all" | "today" | "week" | "weekend" | "month" | "3months";
 
 export function getEventsByDateRange(
   events: Event[],
@@ -46,10 +46,22 @@ export function getEventsByDateRange(
     });
   }
 
-  const weekEnd = new Date(today);
-  weekEnd.setDate(weekEnd.getDate() + 7);
-  const weekEndStr = weekEnd.toISOString().split("T")[0];
-  return events.filter((e) => e.date >= todayStr && e.date <= weekEndStr);
+  const getEndDate = (days: number) => {
+    const end = new Date(today);
+    end.setDate(end.getDate() + days);
+    return end.toISOString().split("T")[0];
+  };
+
+  const endStr =
+    range === "week"
+      ? getEndDate(7)
+      : range === "month"
+        ? getEndDate(30)
+        : range === "3months"
+          ? getEndDate(90)
+          : getEndDate(7);
+
+  return events.filter((e) => e.date >= todayStr && e.date <= endStr);
 }
 
 export type EventStatus = "available" | "full" | "ended";
@@ -141,6 +153,45 @@ export function filterEventsByTags(
     const eventTags = e.tags ?? [];
     return tags.every((t) => eventTags.includes(t));
   });
+}
+
+export type RankingType = "newest" | "popular" | "satisfaction";
+
+/**
+ * おすすめイベント（最大3件）
+ * 優先順位: 1) 開催中（今日） 2) 近日（startが近い） 3) isFeatured（あれば）
+ */
+export function getRecommendedEvents(events: Event[], limit = 3): Event[] {
+  const todayStr = new Date().toISOString().split("T")[0];
+  const futureOrToday = events.filter((e) => e.date >= todayStr);
+  const copy = [...futureOrToday];
+  copy.sort((a, b) => {
+    const aToday = a.date === todayStr ? 1 : 0;
+    const bToday = b.date === todayStr ? 1 : 0;
+    if (aToday !== bToday) return bToday - aToday;
+    return a.date.localeCompare(b.date) || (a.startTime || "").localeCompare(b.startTime || "");
+  });
+  return copy.slice(0, limit);
+}
+
+export function getRankedEvents(
+  events: Event[],
+  type: RankingType,
+  limit = 10
+): Event[] {
+  const todayStr = new Date().toISOString().split("T")[0];
+  const futureOrToday = events.filter((e) => e.date >= todayStr);
+  const copy = [...futureOrToday];
+
+  if (type === "newest") {
+    copy.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  } else if (type === "popular") {
+    copy.sort((a, b) => (b.participantCount ?? 0) - (a.participantCount ?? 0));
+  } else {
+    copy.sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0));
+  }
+
+  return copy.slice(0, limit);
 }
 
 // 2点間の距離（km）概算（Haversine 簡易版）

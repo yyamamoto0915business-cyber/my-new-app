@@ -20,7 +20,25 @@ export default function OrganizerEventsPage() {
           </Link>
           <div className="mt-2 flex items-center justify-between">
             <h1 className="text-2xl font-bold">主催イベント一覧</h1>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/organizer/recruitments"
+                className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              >
+                募集管理
+              </Link>
+              <Link
+                href="/organizer/stories"
+                className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              >
+                ストーリー
+              </Link>
+              <Link
+                href="/messages"
+                className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+              >
+                メッセージ
+              </Link>
               <Link
                 href="/organizer/inbox"
                 className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
@@ -81,12 +99,20 @@ export default function OrganizerEventsPage() {
                       </span>
                     </div>
                   </Link>
-                  <Link
-                    href={`/events/${event.id}/chat`}
-                    className="shrink-0 rounded-lg border border-zinc-200/60 px-3 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                  >
-                    チャット
-                  </Link>
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <Link
+                      href={`/organizer/stories/new?eventId=${event.id}`}
+                      className="rounded-lg border border-[var(--accent)]/60 px-3 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-soft)] dark:border-[var(--accent)] dark:hover:bg-[var(--accent-soft)]"
+                    >
+                      ストーリーを書く
+                    </Link>
+                    <Link
+                      href={`/events/${event.id}/chat`}
+                      className="rounded-lg border border-zinc-200/60 px-3 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    >
+                      チャット
+                    </Link>
+                  </div>
                 </div>
               </li>
             ))

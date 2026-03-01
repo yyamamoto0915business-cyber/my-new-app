@@ -41,6 +41,8 @@ export const mockEvents: Event[] = [
     latitude: 35.6812,
     longitude: 139.7671,
     createdAt: "2025-02-01T10:00:00Z",
+    participantCount: 42,
+    avgRating: 4.8,
   },
   {
     id: "2",
@@ -65,6 +67,8 @@ export const mockEvents: Event[] = [
     latitude: 35.665,
     longitude: 139.712,
     createdAt: "2025-02-05T09:00:00Z",
+    participantCount: 18,
+    avgRating: 4.9,
   },
   {
     id: "3",
@@ -95,6 +99,8 @@ export const mockEvents: Event[] = [
     latitude: 35.691,
     longitude: 139.785,
     createdAt: "2025-02-08T14:00:00Z",
+    participantCount: 25,
+    avgRating: 4.6,
   },
   {
     id: "4",
@@ -118,6 +124,8 @@ export const mockEvents: Event[] = [
     latitude: 35.6812,
     longitude: 139.7671,
     createdAt: "2025-02-03T12:00:00Z",
+    participantCount: 30,
+    avgRating: 4.5,
   },
   {
     id: "5",
@@ -142,6 +150,8 @@ export const mockEvents: Event[] = [
     latitude: 35.658,
     longitude: 139.742,
     createdAt: "2025-02-10T08:00:00Z",
+    participantCount: 12,
+    avgRating: 4.7,
   },
   {
     id: "6",
@@ -165,5 +175,7 @@ export const mockEvents: Event[] = [
     latitude: 35.672,
     longitude: 139.758,
     createdAt: "2025-02-07T11:00:00Z",
+    participantCount: 35,
+    avgRating: 4.9,
   },
 ];

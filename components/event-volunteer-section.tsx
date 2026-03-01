@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { getLoginUrl } from "@/lib/auth-utils";
 import { VOLUNTEER_ROLE_LABELS } from "@/lib/volunteer-roles-mock";
 
 type VolunteerRole = {
@@ -20,9 +22,12 @@ type VolunteerRole = {
 
 type Props = {
   eventId: string;
+  /** 未ログイン時の応募ボタン押下で、ログイン後に戻るURL */
+  returnTo?: string;
 };
 
-export function EventVolunteerSection({ eventId }: Props) {
+export function EventVolunteerSection({ eventId, returnTo }: Props) {
+  const { user } = useSupabaseUser();
   const [roles, setRoles] = useState<VolunteerRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +80,13 @@ export function EventVolunteerSection({ eventId }: Props) {
 
   if (roles.length === 0) return null;
 
+  const authDisabled = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
+  const recruitmentsHref = `/recruitments?event=${eventId}`;
+  const applyHref =
+    !user && !authDisabled
+      ? getLoginUrl(returnTo ?? recruitmentsHref)
+      : recruitmentsHref;
+
   return (
     <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-700">
       <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
@@ -123,10 +135,10 @@ export function EventVolunteerSection({ eventId }: Props) {
               )}
             </dl>
             <Link
-              href={`/recruitments?event=${eventId}`}
+              href={applyHref}
               className="mt-3 inline-block rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
             >
-              応募する
+              {!user && !authDisabled ? "ログインして応募する" : "応募する"}
             </Link>
           </li>
         ))}

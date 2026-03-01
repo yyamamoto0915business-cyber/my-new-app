@@ -14,7 +14,7 @@ import {
 import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
 
 const cardClass =
-  "flex flex-col items-start rounded-2xl border-2 border-zinc-200 bg-white p-6 text-left shadow-sm transition-all hover:border-[var(--accent)] hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-[var(--accent)]";
+  "flex flex-col items-start rounded-2xl border-2 border-[var(--border)] bg-white p-6 text-left shadow-sm transition-all hover:border-[var(--accent)] hover:shadow-md dark:bg-[var(--background)] dark:hover:border-[var(--accent)]";
 
 export function ModeSelectionScreen() {
   const router = useRouter();
@@ -60,7 +60,7 @@ export function ModeSelectionScreen() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-4">
-            <h1 className="text-lg font-bold tracking-tight text-white drop-shadow-md sm:text-xl">
+            <h1 className="font-serif text-lg font-semibold tracking-tight text-white drop-shadow-md sm:text-xl">
               ようこそ、地域のイベントを探してみよう
             </h1>
             <p className="mt-0.5 text-xs text-white/90 drop-shadow sm:text-sm">
@@ -172,11 +172,32 @@ export function ModeSelectionScreen() {
           </button>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col gap-3">
+          <Link
+            href="/rankings"
+            onClick={() => setModeCookie(null)}
+            className="block w-full rounded-xl border border-[var(--border)] bg-[var(--accent-soft)]/30 py-3 text-center text-sm font-medium text-[var(--accent)] transition-colors hover:bg-[var(--accent-soft)] dark:bg-[var(--accent-soft)]/20 dark:hover:bg-[var(--accent-soft)]/30"
+          >
+            人気・新着ランキングを見る
+          </Link>
+          <Link
+            href="/collections"
+            onClick={() => setModeCookie(null)}
+            className="block w-full rounded-xl border border-[var(--border)] py-3 text-center text-sm font-medium text-[var(--foreground-muted)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]/20"
+          >
+            特集を見る
+          </Link>
+          <Link
+            href="/articles"
+            onClick={() => setModeCookie(null)}
+            className="block w-full rounded-xl border border-[var(--border)] py-3 text-center text-sm font-medium text-[var(--foreground-muted)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]/20"
+          >
+            ストーリー記事を読む
+          </Link>
           <Link
             href="/events"
             onClick={() => setModeCookie(null)}
-            className="block w-full rounded-xl border-2 border-dashed border-zinc-200 py-3.5 text-center text-sm font-medium text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:bg-zinc-800/50"
+            className="block w-full rounded-xl border-2 border-dashed border-[var(--border)] py-3.5 text-center text-sm font-medium text-[var(--foreground-muted)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] dark:hover:bg-[var(--accent-soft)]/30"
           >
             あとで選ぶ（まずイベントを見る）
           </Link>

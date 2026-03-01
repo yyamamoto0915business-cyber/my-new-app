@@ -1,37 +1,50 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { VOLUNTEER_ROLE_LABELS } from "@/lib/volunteer-roles-mock";
+import {
+  type VolunteerRoleWithEvent,
+  type BenefitFilter,
+  type VolunteerSort,
+  sortEmergencyRoles,
+  sortVolunteerRoles,
+  filterByBenefit,
+} from "@/lib/volunteer-utils";
+import { VolunteerCard } from "@/components/volunteer-card";
+import { VolunteerEmergencySection } from "@/components/volunteer-emergency-section";
+import { GlyphSectionTitle } from "@/components/glyph/glyph-section-title";
+import { GlyphCardShell } from "@/components/glyph/glyph-card-shell";
 import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
 
-type VolunteerRoleWithEvent = {
-  id: string;
-  eventId: string;
-  roleType: string;
-  title: string;
-  description: string;
-  dateTime: string;
-  location: string;
-  capacity: number;
-  perksText?: string;
-  hasTransportSupport: boolean;
-  hasHonorarium: boolean;
-  event?: { id: string; title: string; date: string; prefecture?: string } | null;
-};
+const QUICK_FILTERS: { value: BenefitFilter; label: string }[] = [
+  { value: "EMERGENCY", label: "緊急のみ" },
+  { value: "TRANSPORT", label: "交通費" },
+  { value: "LODGING", label: "宿泊" },
+  { value: "MEAL", label: "食事" },
+  { value: "REWARD", label: "謝礼" },
+  { value: "INSURANCE", label: "保険" },
+  { value: "SHUTTLE", label: "送迎" },
+];
+
+const SORT_OPTIONS: { value: VolunteerSort; label: string }[] = [
+  { value: "recommended", label: "おすすめ" },
+  { value: "newest", label: "新着" },
+  { value: "soonest", label: "日程が近い" },
+];
 
 function VolunteerPageContent() {
-  const { data: session } = useSession();
   const searchParams = useSearchParamsNoSuspend();
-  const prefecture = searchParams.get("prefecture") ?? "";
   const roleType = searchParams.get("roleType") ?? "";
+  const prefecture = searchParams.get("prefecture") ?? "";
+
   const [roles, setRoles] = useState<VolunteerRoleWithEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [applying, setApplying] = useState<string | null>(null);
+  const [benefitFilter, setBenefitFilter] = useState<BenefitFilter | "">("");
+  const [sort, setSort] = useState<VolunteerSort>("recommended");
 
   const load = useCallback(() => {
     setLoading(true);
@@ -53,54 +66,44 @@ function VolunteerPageContent() {
     load();
   }, [load]);
 
-  const authDisabled = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
+  const emergencyRoles = useMemo(() => {
+    const emergency = roles.filter((r) => r.emergency?.isEmergency === true);
+    if (benefitFilter && benefitFilter !== "EMERGENCY") {
+      return filterByBenefit(emergency, benefitFilter);
+    }
+    return sortEmergencyRoles(emergency);
+  }, [roles, benefitFilter]);
 
-  const handleApply = async (volunteerRoleId: string) => {
-    if (!session?.user && !authDisabled) {
-      window.location.href = `/login?returnTo=${encodeURIComponent("/volunteer")}`;
-      return;
+  const normalRoles = useMemo(() => {
+    const normal = roles.filter((r) => r.emergency?.isEmergency !== true);
+    if (benefitFilter === "EMERGENCY") return [];
+    if (benefitFilter) {
+      return filterByBenefit(normal, benefitFilter);
     }
-    setApplying(volunteerRoleId);
-    try {
-      const res = await fetchWithTimeout("/api/volunteer/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ volunteerRoleId }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl;
-        return;
-      }
-      if (!res.ok) {
-        setError(data.error ?? "応募に失敗しました");
-      }
-    } catch {
-      setError("通信に失敗しました");
-    } finally {
-      setApplying(null);
-    }
-  };
+    return sortVolunteerRoles(normal, sort);
+  }, [roles, benefitFilter, sort]);
+
+  const showEmergencySection = emergencyRoles.length > 0;
+  const showMainSection =
+    !benefitFilter || benefitFilter !== "EMERGENCY" ? normalRoles : [];
+  const isEmpty = !showEmergencySection && showMainSection.length === 0;
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/80">
+    <div className="min-h-screen bg-[var(--mg-paper)]">
+      <header className="sticky top-0 z-50 border-b bg-white/95 shadow-sm backdrop-blur-md dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <Breadcrumb
-            items={[{ label: "トップ", href: "/?mode=select" }, { label: "ボランティア募集" }]}
+            items={[{ label: "トップ", href: "/" }, { label: "ボランティア募集" }]}
           />
-          <h1 className="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+          <GlyphSectionTitle as="h1" className="mt-2 text-2xl">
             ボランティア募集
-          </h1>
+          </GlyphSectionTitle>
         </div>
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-6">
-        <div className="mb-6 space-y-4 rounded-xl border border-zinc-200/60 bg-white/80 p-4 dark:border-zinc-700/60 dark:bg-zinc-900/80">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            地域で絞り込みは上部のフィルターをご利用ください
-          </p>
-          <div className="flex flex-wrap gap-4">
+        <section className="mb-6 space-y-4 rounded-xl border border-zinc-200/60 bg-white/80 p-4 dark:border-zinc-700/60 dark:bg-zinc-900/80">
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
             <div>
               <label className="block text-xs text-zinc-500">種別</label>
               <select
@@ -115,12 +118,57 @@ function VolunteerPageContent() {
               >
                 <option value="">すべて</option>
                 {Object.entries(VOLUNTEER_ROLE_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex-1">
+              <span className="block text-xs text-zinc-500">クイックフィルター</span>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {QUICK_FILTERS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() =>
+                      setBenefitFilter((prev) => (prev === value ? "" : value))
+                    }
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                      benefitFilter === value
+                        ? "bg-[var(--accent)] text-white"
+                        : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-600"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-zinc-500">並び替え</label>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as VolunteerSort)}
+                className="mt-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800"
+              >
+                {SORT_OPTIONS.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
-        </div>
+
+          {prefecture && (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              地域: {prefecture} で絞り込み中
+            </p>
+          )}
+        </section>
 
         {loading ? (
           <p className="text-zinc-500">読み込み中...</p>
@@ -135,53 +183,34 @@ function VolunteerPageContent() {
               再読み込み
             </button>
           </div>
-        ) : roles.length === 0 ? (
+        ) : isEmpty ? (
           <p className="rounded-xl border border-zinc-200/60 bg-white/80 p-8 text-center text-zinc-500 dark:border-zinc-700/60 dark:bg-zinc-900/80">
             該当する募集はありません
           </p>
         ) : (
-          <ul className="space-y-4">
-            {roles.map((r) => (
-              <li
-                key={r.id}
-                className="rounded-xl border border-zinc-200/60 bg-white/80 p-4 shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/80"
-              >
-                <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                  {VOLUNTEER_ROLE_LABELS[r.roleType as keyof typeof VOLUNTEER_ROLE_LABELS] ?? r.roleType}
-                </span>
-                <h2 className="mt-2 font-semibold text-zinc-900 dark:text-zinc-100">
-                  {r.title}
-                </h2>
-                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                  {r.description}
-                </p>
-                {r.event && (
-                  <p className="mt-2 text-sm text-zinc-500">
-                    {r.event.title}（{r.event.date}）
-                    {r.event.prefecture && ` · ${r.event.prefecture}`}
-                  </p>
-                )}
-                <p className="mt-1 text-sm">
-                  {r.dateTime} / {r.location} / 定員{r.capacity}名
-                </p>
-                {(r.hasTransportSupport || r.hasHonorarium || r.perksText) && (
-                  <p className="mt-1 text-sm text-zinc-500">
-                    {[r.hasTransportSupport && "交通費支給", r.hasHonorarium && "謝礼あり", r.perksText]
-                      .filter(Boolean)
-                      .join("、")}
-                  </p>
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleApply(r.id)}
-                  disabled={!!applying}
-                  className="mt-3 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {applying === r.id ? "処理中..." : "応募して相談する"}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            {showEmergencySection && (
+              <VolunteerEmergencySection roles={emergencyRoles} maxItems={5} />
+            )}
+
+            {showMainSection.length > 0 && (
+              <section>
+                <GlyphSectionTitle className="mb-4">
+                  {showEmergencySection ? "その他の募集" : "募集一覧"}
+                </GlyphSectionTitle>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {showMainSection.map((r, i) => (
+                    <GlyphCardShell key={r.id}>
+                      <VolunteerCard
+                        role={r}
+                        priority={i < 3}
+                      />
+                    </GlyphCardShell>
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         )}
 
         <div className="mt-8">

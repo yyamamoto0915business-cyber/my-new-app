@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
@@ -24,7 +24,7 @@ type Thread = {
 };
 
 export default function DmPage({ params }: { params: Promise<{ threadId: string }> }) {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading } = useSupabaseUser();
   const [threadId, setThreadId] = useState<string | null>(null);
   const [thread, setThread] = useState<Thread | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -39,7 +39,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
   }, [params]);
 
   useEffect(() => {
-    if (!threadId || (!session?.user && !AUTH_DISABLED)) return;
+    if (!threadId || (!user && !AUTH_DISABLED)) return;
     setLoading(true);
     setError(null);
     fetchWithTimeout(`/api/dm/${threadId}`)
@@ -53,7 +53,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [threadId, session?.user]);
+  }, [threadId, user]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -93,7 +93,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
     if (thread) setThread({ ...thread, status });
   };
 
-  if (status === "loading" || !threadId) {
+  if (authLoading || !threadId) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-sm text-zinc-500">読み込み中...</p>
@@ -101,7 +101,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
     );
   }
 
-  if (status === "unauthenticated" && !AUTH_DISABLED) {
+  if (!user && !AUTH_DISABLED) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
         <p>ログインが必要です</p>
@@ -138,7 +138,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
     );
   }
 
-  const userId = AUTH_DISABLED ? "dev-user" : session?.user?.id;
+  const userId = AUTH_DISABLED ? "dev-user" : user?.id;
   const isOrganizer = thread && userId === thread.organizerId;
 
   return (

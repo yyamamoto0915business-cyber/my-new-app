@@ -12,7 +12,7 @@ export function EventDetailClient({ label, targetId }: Props) {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200 bg-white/95 p-4 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/95">
+    <div className="fixed bottom-20 left-0 right-0 z-40 border-t border-zinc-200 bg-white/95 p-4 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/95 md:bottom-0">
       <div className="mx-auto max-w-2xl">
         <button
           type="button"

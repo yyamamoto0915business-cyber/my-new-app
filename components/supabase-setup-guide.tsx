@@ -33,22 +33,20 @@ export function SupabaseSetupGuide({ backHref, backLabel = "← 戻る" }: Props
             でプロジェクトを作成
           </li>
           <li>
-            ダッシュボードの <strong>Settings → API</strong> から URL と anon key
-            を取得
+            <code className="rounded bg-zinc-200/80 px-1 py-0.5 dark:bg-zinc-700">./scripts/supabase-setup.sh</code> を実行して .env.local を作成
           </li>
           <li>
-            プロジェクトルートに <code className="rounded bg-zinc-200/80 px-1 py-0.5 dark:bg-zinc-700">.env.local</code>{" "}
-            を作成し、以下を記述:
+            ダッシュボードの <strong>Settings → API</strong> から URL と anon key を取得し、.env.local に設定
+          </li>
+          <li>
+            <code className="rounded bg-zinc-200/80 px-1 py-0.5 dark:bg-zinc-700">./scripts/supabase-link.sh</code> でリンク
+          </li>
+          <li>
+            <code className="rounded bg-zinc-200/80 px-1 py-0.5 dark:bg-zinc-700">npm run supabase:push</code> でマイグレーション適用
           </li>
         </ol>
-        <pre className="mx-4 mb-4 overflow-x-auto rounded-lg bg-zinc-900 p-3 text-xs text-zinc-100">
-{`NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key`}
-        </pre>
         <p className="px-4 pb-4 text-sm text-zinc-600 dark:text-zinc-400">
-          4. README の「マイグレーション実行」に従い、SQL を実行
-          <br />
-          5. 開発サーバーを再起動
+          詳しくは <code className="rounded bg-zinc-200/80 px-1 py-0.5 dark:bg-zinc-700">docs/SUPABASE_SETUP.md</code> を参照してください。
         </p>
       </details>
       <Link

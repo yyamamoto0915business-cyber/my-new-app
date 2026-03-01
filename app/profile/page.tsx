@@ -2,19 +2,30 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
+import { ProfileSummaryCard } from "@/components/profile/profile-summary-card";
+import { ProfileRoleTabs, type ProfileRoleTab } from "@/components/profile/profile-role-tabs";
+import { ParticipantTab } from "@/components/profile/tabs/participant-tab";
+import { VolunteerTab } from "@/components/profile/tabs/volunteer-tab";
+import { OrganizerTab } from "@/components/profile/tabs/organizer-tab";
+import { getProfileCompletion } from "@/lib/profile-dashboard-data";
+import { GlyphSectionTitle } from "@/components/glyph/glyph-section-title";
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const [email, setEmail] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
+  const { user, loading: authLoading } = useSupabaseUser();
+  const [activeTab, setActiveTab] = useState<ProfileRoleTab>("participant");
+  const [profile, setProfile] = useState<{
+    displayName: string;
+    region?: string | null;
+    avatarUrl?: string | null;
+    completionPercent: number;
+  }>({
+    displayName: "",
+    completionPercent: 0,
+  });
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [noSupabase, setNoSupabase] = useState(false);
 
   useEffect(() => {
@@ -26,71 +37,60 @@ export default function ProfilePage() {
     }
     (async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          router.replace(`/login?returnTo=${encodeURIComponent("/profile")}`);
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) {
+          setLoading(false);
           return;
         }
-        setEmail(user.email ?? null);
-        setDisplayName((user.user_metadata?.display_name as string) ?? "");
+        const displayName =
+          (authUser.user_metadata?.display_name as string) ??
+          (authUser.user_metadata?.name as string) ??
+          authUser.email?.split("@")[0] ??
+          "";
+        let region: string | null = null;
+        let avatarUrl: string | null = null;
+
         const { data } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url")
-          .eq("id", user.id)
+          .select("display_name, avatar_url, phone, address, region, bio")
+          .eq("id", authUser.id)
           .single();
+
         if (data) {
-          setDisplayName(data.display_name ?? "");
-          setAvatarUrl(data.avatar_url ?? "");
+          const dn = data.display_name ?? displayName;
+          setProfile({
+            displayName: dn,
+            region: data.region,
+            avatarUrl: data.avatar_url,
+            completionPercent: getProfileCompletion({
+              display_name: dn,
+              region: data.region,
+              phone: data.phone,
+              bio: data.bio,
+              avatar_url: data.avatar_url,
+            }),
+          });
+        } else {
+          setProfile({
+            displayName: displayName || "ゲスト",
+            completionPercent: getProfileCompletion({
+              display_name: displayName,
+              region: null,
+              phone: null,
+              bio: null,
+              avatar_url: null,
+            }),
+          });
         }
       } catch {
-        // ignore
+        setProfile((p) => ({ ...p, displayName: "ゲスト", completionPercent: 0 }));
       } finally {
         setLoading(false);
       }
     })();
-  }, [router]);
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(false);
-    setSaving(true);
-    const supabase = createClient();
-    if (!supabase) {
-      setError("Supabase が設定されていません");
-      setSaving(false);
-      return;
-    }
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.replace("/login?returnTo=/profile");
-      setSaving(false);
-      return;
-    }
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .upsert(
-        {
-          id: user.id,
-          email: user.email ?? null,
-          display_name: displayName || null,
-          avatar_url: avatarUrl || null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" }
-      );
-    setSaving(false);
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
-    await supabase.auth.updateUser({
-      data: { display_name: displayName || undefined },
-    });
-    setSuccess(true);
-  };
-
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-sm text-zinc-500">読み込み中...</p>
@@ -98,99 +98,93 @@ export default function ProfilePage() {
     );
   }
 
-  if (noSupabase) {
-    return (
-      <div className="mx-auto max-w-xl px-4 py-8">
-        <SupabaseSetupGuide backHref="/?mode=select" backLabel="← トップへ" />
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto max-w-md px-4 py-8">
-      <Link
-        href="/?mode=select"
-        className="mb-6 inline-block text-sm text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-      >
-        ← トップへ
-      </Link>
-      <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-        マイページ
-      </h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        あなたの情報を登録・更新できます
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            メールアドレス
-          </label>
-          <input
-            type="email"
-            value={email ?? ""}
-            disabled
-            className="mt-1 w-full rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-2 text-zinc-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-          />
-          <p className="mt-1 text-xs text-zinc-500">
-            メールアドレスはログインに使用するため変更できません
-          </p>
-        </div>
-
-        <div>
-          <label htmlFor="displayName" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            表示名
-          </label>
-          <input
-            id="displayName"
-            type="text"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="例: 山田 太郎"
-            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-          />
-          <p className="mt-1 text-xs text-zinc-500">
-            チャットや参加者一覧などで表示されます
-          </p>
-        </div>
-
-        <div>
-          <label htmlFor="avatarUrl" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            アバター画像URL（任意）
-          </label>
-          <input
-            id="avatarUrl"
-            type="url"
-            value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            placeholder="https://..."
-            className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-          />
-        </div>
-
-        {error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-        )}
-        {success && (
-          <p className="text-sm text-green-600 dark:text-green-400">
-            保存しました
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full rounded-lg bg-[var(--accent)] px-4 py-3 font-medium text-white hover:opacity-90 disabled:opacity-50"
+    <div className="relative mx-auto max-w-lg px-4 py-6 pb-24 sm:pb-8 md:pb-8 min-h-screen bg-[var(--mg-paper)]">
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.05] mix-blend-multiply dark:mix-blend-overlay dark:opacity-[0.04]"
+        style={{
+          backgroundImage: `repeating-conic-gradient(var(--mg-ink) 0% 0.25%, transparent 0% 0.5%)`,
+          backgroundSize: "2px 2px",
+        }}
+        aria-hidden
+      />
+      <div className="mb-6 flex items-center justify-between">
+        <GlyphSectionTitle as="h1">
+          マイページ
+        </GlyphSectionTitle>
+        <Link
+          href="/"
+          className="text-sm text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
         >
-          {saving ? "保存中..." : "保存する"}
-        </button>
-      </form>
+          トップへ
+        </Link>
+      </div>
 
-      <div className="mt-8 border-t border-zinc-200 pt-6 dark:border-zinc-700">
-        <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          その他
-        </h2>
-        <ul className="mt-2 space-y-2 text-sm">
+      {noSupabase && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+          <p className="font-medium">プロフィールの保存には Supabase の設定が必要です。</p>
+          <p className="mt-1 text-xs opacity-90">
+            環境変数を設定すると保存できます。
+          </p>
+          <div className="mt-3">
+            <SupabaseSetupGuide backHref="/" backLabel="← トップへ" />
+          </div>
+        </div>
+      )}
+
+      {!user && !noSupabase && (
+        <div className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--accent-soft)]/30 px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300">
+          <p>ログインするとプロフィールや参加予定を確認できます。</p>
+          <Link
+            href="/login?returnTo=/profile"
+            className="mt-2 inline-block font-medium text-[var(--accent)] hover:underline"
+          >
+            ログインはこちら
+          </Link>
+        </div>
+      )}
+
+      {user && (
+        <>
+          {/* プロフィール概要カード */}
+          <section className="mb-6">
+            <ProfileSummaryCard profile={profile} />
+          </section>
+
+          {/* ロール切替タブ */}
+          <section className="mb-6">
+            <ProfileRoleTabs activeTab={activeTab} onTabChange={setActiveTab} />
+          </section>
+
+          {/* タブ内容 */}
+          <section>
+            {activeTab === "participant" && <ParticipantTab userId={user.id} />}
+            {activeTab === "volunteer" && <VolunteerTab userId={user.id} />}
+            {activeTab === "organizer" && <OrganizerTab userId={user.id} />}
+          </section>
+        </>
+      )}
+
+      {!user && !noSupabase && (
+        <div className="space-y-6 text-center">
+          <ProfileRoleTabs activeTab={activeTab} onTabChange={setActiveTab} />
+          {activeTab === "participant" && <ParticipantTab userId={null} />}
+          {activeTab === "volunteer" && <VolunteerTab userId={null} />}
+          {activeTab === "organizer" && <OrganizerTab userId={null} />}
+        </div>
+      )}
+
+      {/* その他リンク */}
+      <div className="mt-8 border-t pt-6 [border-color:var(--mg-line)]">
+        <ul className="space-y-2 text-sm">
+          <li>
+            <Link
+              href="/messages"
+              className="text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-400"
+            >
+              メッセージ
+            </Link>
+          </li>
           <li>
             <Link
               href="/points"

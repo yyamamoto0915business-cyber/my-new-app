@@ -1,25 +1,16 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
-import { BackgroundIllustration } from "@/components/background-illustration";
+import { MapBackground } from "@/components/MapBackground";
+import { BrandIntro } from "@/components/brand-intro";
 import { LanguageProvider } from "@/components/language-provider";
-import { AuthSessionProvider } from "@/components/providers/session-provider";
-import { RegionFilterBar } from "@/components/region-filter-bar";
+import { APP_NAME, APP_SUBTITLE, APP_TAGLINE1 } from "@/lib/brand-copy";
+import { BottomNav } from "@/components/bottom-nav";
+import { NotificationBell } from "@/components/notification-bell";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "地域イベントプラットフォーム",
-  description: "地域のイベントを探して参加しよう",
+  title: `${APP_NAME} - ${APP_SUBTITLE}`,
+  description: APP_TAGLINE1,
 };
 
 export default function RootLayout({
@@ -29,18 +20,28 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen`}
-      >
-        <AuthSessionProvider>
-          <LanguageProvider>
-            <BackgroundIllustration />
-          <Suspense fallback={null}>
-            <RegionFilterBar />
-          </Suspense>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700&family=M+PLUS+1p:wght@300;400;500;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-sans antialiased min-h-screen bg-[var(--mg-paper)]">
+        <LanguageProvider>
+          <BrandIntro />
+          <MapBackground />
+          <div className="fixed right-4 top-4 z-50 md:right-6 md:top-6">
+            <Suspense fallback={null}>
+              <NotificationBell />
+            </Suspense>
+          </div>
+          <div className="min-h-screen pb-20 md:pb-0 md:pl-20">
             {children}
-          </LanguageProvider>
-        </AuthSessionProvider>
+          </div>
+          <Suspense fallback={null}>
+            <BottomNav />
+          </Suspense>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -48,3 +48,7 @@ export function getCreatedVolunteerRoles(): CreatedVolunteerRole[] {
 export function getCreatedVolunteerRolesByEvent(eventId: string): CreatedVolunteerRole[] {
   return createdRoles.filter((r) => r.eventId === eventId);
 }
+
+export function getCreatedVolunteerRoleById(id: string): CreatedVolunteerRole | null {
+  return createdRoles.find((r) => r.id === id) ?? null;
+}

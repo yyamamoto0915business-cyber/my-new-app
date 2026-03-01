@@ -21,7 +21,7 @@ export function EventCard({ event }: Props) {
 
   return (
     <article
-      className={`overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900/50 ${
+      className={`overflow-hidden rounded-xl border border-[var(--border)] bg-white shadow-sm dark:border-[var(--border)] dark:bg-[var(--background)] ${
         isEnded ? "opacity-60" : "shadow-sm"
       }`}
     >
@@ -30,11 +30,16 @@ export function EventCard({ event }: Props) {
           imageUrl={event.imageUrl}
           alt={event.title}
           rounded="none"
-          className="rounded-t-lg"
+          className="rounded-t-xl"
         />
       </Link>
       <div className="p-5">
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+        {event.avgRating != null && event.avgRating > 0 && (
+          <span className="flex items-center gap-0.5 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+            ★ {event.avgRating.toFixed(1)}
+          </span>
+        )}
         {(event.area || event.city) && (
           <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
             {event.area || event.city}
@@ -50,7 +55,7 @@ export function EventCard({ event }: Props) {
         ))}
       </div>
 
-      <h2 className="mt-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+      <h2 className="mt-3 font-serif text-base font-semibold text-zinc-900 dark:text-zinc-100">
         {event.title}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
@@ -93,6 +98,11 @@ export function EventCard({ event }: Props) {
           {status === "ended" && (
             <span className="rounded bg-zinc-200 px-2 py-0.5 text-xs text-zinc-500 dark:bg-zinc-600 dark:text-zinc-400">
               終了
+            </span>
+          )}
+          {event.salonOnly && (
+            <span className="rounded bg-[var(--accent)]/20 px-2 py-0.5 text-xs text-[var(--accent)]">
+              サロン限定
             </span>
           )}
           {event.childFriendly && (

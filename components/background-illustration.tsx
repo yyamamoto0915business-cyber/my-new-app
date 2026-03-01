@@ -18,7 +18,7 @@ export function BackgroundIllustration() {
         />
       </div>
       <div
-        className="absolute inset-0 bg-gradient-to-b from-white/50 via-white/25 to-white/60 dark:from-zinc-950/75 dark:via-zinc-950/60 dark:to-zinc-950/80"
+        className="absolute inset-0 bg-gradient-to-b from-[var(--background)]/50 via-[var(--background)]/25 to-[var(--background)]/60 dark:from-black/75 dark:via-black/60 dark:to-black/80"
         aria-hidden
       />
       <svg

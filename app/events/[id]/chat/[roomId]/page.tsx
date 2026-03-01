@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { createClient } from "@/lib/supabase/client";
 import { ChatRoom } from "@/components/chat/chat-room";
+import { ChatContextPanel } from "@/components/chat/chat-context-panel";
 import { MOCK_USER_ID } from "@/lib/chat-mock";
 
 type Props = {
@@ -20,6 +21,7 @@ export default function EventChatRoomPage({ params }: Props) {
     participant_id?: string | null;
     event?: { title: string };
     participant?: { display_name: string | null };
+    organizer_memo?: string | null;
   } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,11 +126,18 @@ export default function EventChatRoomPage({ params }: Props) {
           </h1>
         </div>
       </header>
-      <main className="mx-auto max-w-2xl px-4 py-6">
+      <main className="mx-auto max-w-2xl px-4 py-6 space-y-6">
+        <ChatContextPanel
+          eventId={eventId}
+          organizerMemo={room?.organizer_memo}
+        />
         <ChatRoom
           roomId={roomId}
+          eventId={eventId}
           currentUserId={currentUserId}
           otherPartyName={otherPartyName}
+          isParticipant={isParticipant}
+          participantId={room?.participant_id ?? null}
         />
       </main>
     </div>
