@@ -1,10 +1,8 @@
 "use client";
 
-import type { CategoryKey } from "@/lib/inferCategory";
-import { CATEGORY_KEYS } from "@/lib/inferCategory";
+import type { CategoryKey } from "@/lib/categories";
+import { CATEGORY_KEYS, CATEGORY_LABELS } from "@/lib/categories";
 import {
-  getCategoryPrefs,
-  setCategoryPrefs,
   toggleCategoryPref,
   clearCategoryPrefs,
 } from "@/lib/category-preference-storage";
@@ -21,24 +19,24 @@ export function CategoryChips({ selected, onChange, className = "" }: Props) {
     onChange([]);
   };
 
-  const handleToggle = (cat: CategoryKey) => {
-    const next = toggleCategoryPref(cat);
+  const handleToggle = (key: CategoryKey) => {
+    const next = toggleCategoryPref(key);
     onChange(next);
   };
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-start gap-2 sm:items-center ${className}`}>
       <span
-        className="shrink-0 text-sm text-[var(--foreground-muted)]"
+        className="mt-2 shrink-0 text-sm text-[var(--foreground-muted)] sm:mt-0"
         aria-hidden="true"
       >
         カテゴリ：
       </span>
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      <div className="flex min-h-[44px] flex-1 gap-2 overflow-x-auto pb-1 scrollbar-hide sm:min-h-0">
         <button
           type="button"
           onClick={handleToggleAll}
-          className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`flex shrink-0 items-center rounded-full px-3 py-2 text-xs font-medium transition-colors active:scale-95 sm:py-1.5 ${
             selected.length === 0
               ? "border-2 border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
               : "border border-[var(--border)] bg-white text-zinc-600 hover:bg-zinc-50 dark:bg-[var(--background)] dark:text-zinc-400 dark:hover:bg-zinc-800"
@@ -46,20 +44,21 @@ export function CategoryChips({ selected, onChange, className = "" }: Props) {
         >
           すべて
         </button>
-        {CATEGORY_KEYS.map((cat) => {
-          const isSelected = selected.includes(cat);
+        {CATEGORY_KEYS.map((key) => {
+          const isSelected = selected.includes(key);
+          const label = CATEGORY_LABELS[key];
           return (
             <button
-              key={cat}
+              key={key}
               type="button"
-              onClick={() => handleToggle(cat)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              onClick={() => handleToggle(key)}
+              className={`flex shrink-0 items-center rounded-full px-3 py-2 text-xs font-medium transition-colors active:scale-95 sm:py-1.5 ${
                 isSelected
                   ? "border-2 border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
                   : "border border-[var(--border)] bg-white text-zinc-600 hover:bg-zinc-50 dark:bg-[var(--background)] dark:text-zinc-400 dark:hover:bg-zinc-800"
               }`}
             >
-              {cat}
+              {label}
             </button>
           );
         })}

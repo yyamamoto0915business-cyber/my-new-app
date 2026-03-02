@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Event } from "@/lib/db/types";
-import type { CategoryKey } from "@/lib/inferCategory";
+import type { CategoryKey } from "@/lib/categories";
 import { eventMatchesCategory } from "@/lib/inferCategory";
 import { addToRecent } from "@/lib/bookmark-storage";
 import { filterEventsByRegion } from "@/lib/events";
@@ -80,7 +80,7 @@ function CollectionCard({
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={(e) => e.key === "Enter" && handleClick()}
-      className="group flex w-[200px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)] sm:w-[220px]"
+      className="group flex w-[168px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md active:scale-[0.98] dark:bg-[var(--background)] sm:w-[220px]"
     >
       <div className="relative aspect-[16/10] overflow-hidden">
         <EventThumbnail
@@ -142,8 +142,8 @@ export function CollectionsShelf({
   const hasCategory = categoryPrefs.length > 0;
 
   return (
-    <section className="py-8" aria-label="テーマ別コレクション">
-      <h2 className="mb-1 font-serif text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+    <section className="py-6 sm:py-8" aria-label="テーマ別コレクション">
+      <h2 className="mb-1 font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">
         テーマ別コレクション
       </h2>
       <p className="mb-4 text-sm text-[var(--foreground-muted)]">

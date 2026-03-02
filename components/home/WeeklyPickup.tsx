@@ -62,11 +62,11 @@ export function WeeklyPickup({
   const [first, ...rest] = items;
 
   return (
-    <section className="py-8" aria-label="今週のまち便り">
-      <h2 className="mb-3 font-serif text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+    <section className="py-6 sm:py-8" aria-label="今週のまち便り">
+      <h2 className="mb-3 font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">
         今週のまち便り
       </h2>
-      <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-2 scrollbar-hide">
+      <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:gap-4">
         {first && (
           <PickupCardFeatured
             key={first.id}
@@ -117,7 +117,7 @@ function PickupCardFeatured({
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={(e) => e.key === "Enter" && handleClick()}
-      className="group flex w-[300px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)] sm:w-[320px]"
+      className="group flex w-[min(300px,88vw)] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md active:scale-[0.995] dark:bg-[var(--background)] sm:w-[320px]"
     >
       <div className="relative aspect-[16/10]">
         <EventThumbnail
@@ -197,7 +197,7 @@ function PickupCard({
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={(e) => e.key === "Enter" && handleClick()}
-      className="group flex w-[280px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)]"
+      className="group flex w-[min(260px,80vw)] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md active:scale-[0.98] dark:bg-[var(--background)] sm:w-[280px]"
     >
       <div className="relative aspect-[16/10]">
         <EventThumbnail

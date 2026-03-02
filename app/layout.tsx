@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { MapBackground } from "@/components/MapBackground";
 import { BrandIntro } from "@/components/brand-intro";
@@ -11,6 +11,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: `${APP_NAME} - ${APP_SUBTITLE}`,
   description: APP_TAGLINE1,
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -35,7 +42,7 @@ export default function RootLayout({
               <NotificationBell />
             </Suspense>
           </div>
-          <div className="min-h-screen pb-20 md:pb-0 md:pl-20">
+          <div className="min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-0 md:pl-20">
             {children}
           </div>
           <Suspense fallback={null}>

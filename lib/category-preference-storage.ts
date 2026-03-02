@@ -1,5 +1,5 @@
-import type { CategoryKey } from "./inferCategory";
-import { CATEGORY_KEYS } from "./inferCategory";
+import type { CategoryKey } from "./categories";
+import { CATEGORY_KEYS } from "./categories";
 
 const STORAGE_KEY = "mg_category_prefs";
 

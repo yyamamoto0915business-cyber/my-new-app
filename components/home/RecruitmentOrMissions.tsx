@@ -25,9 +25,9 @@ export function RecruitmentOrMissions({ recruitments, loading }: Props) {
   const isEmpty = !loading && recruitments.length === 0;
 
   return (
-    <section className="py-8" aria-label="募集一覧">
+    <section className="py-6 sm:py-8" aria-label="募集一覧">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-serif text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+        <h2 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">
           {isEmpty ? "すきまサポート（30分〜）" : "募集一覧"}
         </h2>
         <Link href="/recruitments" className="text-sm text-[var(--accent)] hover:underline">
@@ -50,7 +50,7 @@ export function RecruitmentOrMissions({ recruitments, loading }: Props) {
             <Link
               key={i}
               href={m.href}
-              className="flex w-[140px] shrink-0 flex-col rounded-2xl border border-[var(--border)] p-3 text-left shadow-sm transition-shadow hover:shadow-md dark:bg-white/50 dark:border-zinc-600"
+              className="flex min-h-[72px] w-[140px] shrink-0 flex-col justify-center rounded-2xl border border-[var(--border)] p-3 text-left shadow-sm transition-shadow hover:shadow-md active:scale-[0.98] dark:bg-white/50 dark:border-zinc-600"
             >
               <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                 {m.title}

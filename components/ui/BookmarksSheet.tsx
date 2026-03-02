@@ -55,7 +55,7 @@ export function BookmarksSheet({
       <div
         role="dialog"
         aria-label="保存済みイベント"
-        className="fixed inset-x-0 bottom-0 z-50 max-h-[70vh] overflow-hidden rounded-t-2xl border-t border-[var(--border)] bg-white shadow-lg dark:bg-[var(--background)]"
+        className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-hidden rounded-t-2xl border-t border-[var(--border)] bg-white shadow-lg dark:bg-[var(--background)] pb-[env(safe-area-inset-bottom,0px)]"
       >
         <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
           <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
@@ -111,7 +111,7 @@ export function BookmarksSheet({
                   <li key={e.id}>
                     <Link
                       href={`/events/${e.id}`}
-                      className="flex gap-3 rounded-2xl border border-[var(--border)] p-3 shadow-sm transition-shadow hover:shadow-md dark:bg-white/5"
+                      className="flex min-h-[72px] items-center gap-3 rounded-2xl border border-[var(--border)] p-3 shadow-sm transition-shadow hover:shadow-md active:scale-[0.99] dark:bg-white/5"
                     >
                       <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl">
                         <EventThumbnail

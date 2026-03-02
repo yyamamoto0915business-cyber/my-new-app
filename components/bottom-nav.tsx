@@ -69,8 +69,9 @@ export function BottomNav() {
   return (
     <nav
       className="fixed z-50 flex bg-white/95 backdrop-blur-sm dark:bg-[var(--background)]
-        bottom-0 left-0 right-0 border-t border-[var(--border)] md:border-t-0 md:border-r
-        md:left-0 md:top-0 md:bottom-0 md:right-auto md:w-20 md:flex-col md:items-center md:py-4"
+        bottom-0 left-0 right-0 border-t border-[var(--border)]
+        pb-[env(safe-area-inset-bottom,0px)]
+        md:border-t-0 md:border-r md:pb-0 md:left-0 md:top-0 md:bottom-0 md:right-auto md:w-20 md:flex-col md:items-center md:py-4"
       aria-label="メインナビゲーション"
     >
       <div className="mx-auto flex w-full max-w-lg items-center justify-around md:max-w-none md:flex-col md:justify-start md:gap-0">

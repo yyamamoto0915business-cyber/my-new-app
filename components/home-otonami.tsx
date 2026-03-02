@@ -10,7 +10,7 @@ import { getEventsByDateRange } from "@/lib/events";
 import { getBookmarks, toggleBookmark, addToRecent } from "@/lib/bookmark-storage";
 import { getAreaPreference } from "@/lib/area-preference-storage";
 import { getCategoryPrefs } from "@/lib/category-preference-storage";
-import type { CategoryKey } from "@/lib/inferCategory";
+import type { CategoryKey } from "@/lib/categories";
 import { useLanguage } from "./language-provider";
 import { RegionFilter } from "./region-filter";
 import { EventThumbnail } from "./event-thumbnail";
@@ -40,9 +40,9 @@ function CarouselSection({
   if (events.length === 0 && !loading) return null;
 
   return (
-    <section className="py-8">
+    <section className="py-6 sm:py-8">
       <div className="mb-3">
-        <h2 className="font-serif text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+        <h2 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">
           {title}
         </h2>
       </div>
@@ -69,7 +69,7 @@ function CarouselSection({
               onKeyDown={(ev) =>
                 ev.key === "Enter" && (addToRecent(e.id), router.push(`/events/${e.id}`))
               }
-              className="group relative flex w-[280px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)]"
+              className="group relative flex w-[min(280px,85vw)] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md active:scale-[0.98] dark:bg-[var(--background)]"
             >
               <div className="relative aspect-[16/10]">
                 <EventThumbnail
@@ -221,22 +221,28 @@ export function HomeOtonami() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development" && allEvents.length > 0) {
+      console.log("event sample", allEvents[0]);
+    }
+  }, [allEvents]);
+
   const pickupEvents = getEventsByDateRange(allEvents, "week");
   const displayPickup = pickupEvents.length > 0 ? pickupEvents : allEvents;
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-white/95 backdrop-blur-sm dark:bg-[var(--background)]">
-        <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <h1 className="font-serif text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+      <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-white/95 backdrop-blur-sm dark:bg-[var(--background)] pt-[env(safe-area-inset-top,0px)]">
+        <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+              <h1 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">
                 {t.platformTitle}
               </h1>
               <RegionFilter variant="compact" className="shrink-0" />
               <Link
                 href="/stories"
-                className="flex shrink-0 items-center gap-1 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-soft)] dark:bg-[var(--background)] dark:hover:bg-[var(--accent-soft)]"
+                className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-1 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-soft)] active:bg-[var(--accent-soft)] dark:bg-[var(--background)] dark:hover:bg-[var(--accent-soft)] sm:px-3"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -259,7 +265,7 @@ export function HomeOtonami() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {/* 1) おすすめヒーロー（主役） */}
         <RecommendedHero
           events={allEvents}

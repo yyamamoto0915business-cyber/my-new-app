@@ -25,7 +25,7 @@ export function BookmarkToggle({ eventId, isActive, onToggle, className = "" }: 
       type="button"
       onClick={handleClick}
       aria-label={isActive ? "保存を解除" : "保存する"}
-      className={`rounded-full p-1.5 transition-colors hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 ${className}`}
+      className={`min-h-[44px] min-w-[44px] rounded-full p-2 transition-colors hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 active:bg-white/40 [-webkit-tap-highlight-color:transparent] sm:min-h-0 sm:min-w-0 sm:p-1.5 ${className}`}
     >
       {isActive ? (
         <svg

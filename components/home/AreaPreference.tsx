@@ -25,7 +25,7 @@ export function AreaPreference({ value, onChange, className = "" }: Props) {
           setAreaPreference(v);
           onChange(v);
         }}
-        className="rounded-lg border border-[var(--border)] bg-white px-3 py-1.5 text-sm dark:bg-[var(--background)] dark:border-zinc-600"
+        className="min-h-[44px] rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm dark:bg-[var(--background)] dark:border-zinc-600 sm:min-h-0 sm:py-1.5"
       >
         {AREA_OPTIONS.map((p) => (
           <option key={p.id || "all"} value={p.id}>

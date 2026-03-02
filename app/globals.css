@@ -90,6 +90,7 @@ body {
   font-family: var(--font-body), "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   min-height: 100vh;
   transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.05);
 }
 
 @media (prefers-reduced-motion: reduce) {
