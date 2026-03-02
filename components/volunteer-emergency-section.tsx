@@ -4,8 +4,6 @@ import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
 import { VolunteerCard } from "./volunteer-card";
 import { GlyphBadgeDot } from "./glyph/glyph-badge-dot";
 import { GlyphCardShell } from "./glyph/glyph-card-shell";
-import { GlyphDividerDots } from "./glyph/glyph-divider-dots";
-
 type Props = {
   roles: VolunteerRoleWithEvent[];
   maxItems?: number;
@@ -26,7 +24,6 @@ export function VolunteerEmergencySection({ roles, maxItems = 5 }: Props) {
             緊急募集
           </h2>
         </div>
-        <GlyphDividerDots className="mt-2" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {displayed.map((r) => (

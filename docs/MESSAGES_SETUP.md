@@ -1,5 +1,28 @@
 # メッセージ機能のセットアップ
 
+## おすすめ・募集一覧のデータ表示
+
+### イベント（おすすめ）
+
+- `/api/events` の GET は Supabase の `events` テーブルを優先して取得します
+- DB が空の場合は mock データ（日付を未来に調整済み）を表示
+- 主催者がログインしてイベントを作成すると DB に保存され、おすすめに表示されます
+
+### 募集（募集一覧）
+
+- `/api/recruitments` は Supabase の `recruitments` テーブルから取得
+- 募集が空の場合、以下でシードを投入可能:
+
+```bash
+npx tsx scripts/seed-recruitments-db.ts
+```
+
+※ 主催者（organizers）が1件以上存在する必要があります。主催者登録後、再実行してください。
+
+---
+
+## conversation_members エラー時
+
 「conversation_members が見つからない」「スキーマキャッシュ」というエラーが出る場合、以下のいずれかを実施してください。
 
 ## 方法A: 直接DB接続（推奨・確実）

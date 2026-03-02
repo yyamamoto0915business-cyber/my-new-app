@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const recommended = searchParams.get("recommended") === "true";
   const mine = searchParams.get("mine") === "true";
+  const eventId = searchParams.get("eventId") ?? undefined;
   const limit = Math.min(Number(searchParams.get("limit")) || 50, 100);
 
   const supabase = await createClient();
@@ -36,7 +37,8 @@ export async function GET(request: NextRequest) {
         );
         const organizerId = await getOrganizerIdByProfileId(supabase, user.id);
         if (!organizerId) return NextResponse.json([]);
-        const list = await fetchRecruitmentsByOrganizer(supabase, organizerId);
+        let list = await fetchRecruitmentsByOrganizer(supabase, organizerId);
+        if (eventId) list = list.filter((r) => r.event_id === eventId);
         return NextResponse.json(list);
       }
       if (recommended) {

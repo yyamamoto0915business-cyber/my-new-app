@@ -52,7 +52,7 @@ export const translations: Record<
 > = {
   ja: {
     event: "イベント",
-    platformTitle: "地域イベントプラットフォーム",
+    platformTitle: "MachiGlyph",
     platformSubtitle: "地域のイベントを探して、参加しよう",
     eventRequests: "やってほしいイベント",
     recruitments: "募集一覧",
@@ -76,7 +76,7 @@ export const translations: Record<
   },
   en: {
     event: "Events",
-    platformTitle: "Regional Event Platform",
+    platformTitle: "MachiGlyph",
     platformSubtitle: "Find local events and participate",
     eventRequests: "Event Requests",
     recruitments: "Recruitments",

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
 
 export default function ProfileEditPage() {
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+  const avatarCameraInputRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -58,6 +60,32 @@ export default function ProfileEditPage() {
       }
     })();
   }, []);
+
+  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !file.type.startsWith("image/")) return;
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      setAvatarUrl(urlData.publicUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "アップロードに失敗しました");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,17 +202,51 @@ export default function ProfileEditPage() {
             />
           </div>
           <div>
-            <label htmlFor="avatarUrl" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              アバター画像URL（任意）
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              プロフィール写真（任意）
             </label>
-            <input
-              id="avatarUrl"
-              type="url"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://..."
-              className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-            />
+            <p className="mt-1 text-xs text-[var(--foreground-muted)]">
+              カメラで撮影するか、アルバムから選択できます
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <input
+                ref={avatarFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={handleAvatarFileSelect}
+              />
+              <input
+                ref={avatarCameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleAvatarFileSelect}
+              />
+              <button
+                type="button"
+                onClick={() => avatarFileInputRef.current?.click()}
+                className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
+              >
+                アルバムから選択
+              </button>
+              <button
+                type="button"
+                onClick={() => avatarCameraInputRef.current?.click()}
+                className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
+              >
+                カメラで撮影
+              </button>
+              <input
+                id="avatarUrl"
+                type="url"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="または URL を入力"
+                className="flex-1 min-w-[160px] rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+            </div>
           </div>
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">

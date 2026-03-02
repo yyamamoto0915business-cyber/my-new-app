@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUnreadCount } from "@/hooks/use-unread-count";
 
 const NAV_ITEMS = [
   { href: "/", label: "ホーム", icon: "home" },
@@ -59,14 +59,7 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
 
 export function BottomNav() {
   const pathname = usePathname();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    fetch("/api/messages/unread-count")
-      .then((r) => r.json())
-      .then((data) => setUnreadCount(data?.count ?? 0))
-      .catch(() => {});
-  }, [pathname]); // pathname 変更時（会話画面等）に再取得
+  const unreadCount = useUnreadCount(true);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -84,7 +77,7 @@ export function BottomNav() {
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.href);
           const href = item.href === "/profile" ? "/profile" : item.href;
-          const showBadge = item.icon === "messages" && unreadCount > 0;
+          const showBadge = (item.icon === "messages" || item.icon === "profile") && unreadCount > 0;
           return (
             <Link
               key={item.href}
@@ -96,7 +89,7 @@ export function BottomNav() {
               <span className="relative inline-block">
                 <NavIcon icon={item.icon} active={active} />
                 {showBadge && (
-                  <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium text-white">
+                  <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}

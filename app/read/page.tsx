@@ -3,7 +3,7 @@ import { getPublishedArticles } from "@/lib/read-articles-store";
 import { ArticleCard } from "@/components/read/article-card";
 
 export const metadata = {
-  title: "読みもの | 地域イベントプラットフォーム",
+  title: "読みもの | MachiGlyph",
   description: "特集・インタビュー・参加レポ・街ガイドなど、地域の読みもの記事一覧",
 };
 

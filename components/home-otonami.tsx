@@ -2,97 +2,125 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { Event } from "@/lib/db/types";
 import type { Story } from "@/lib/story-types";
 import { getEventsByDateRange } from "@/lib/events";
+import { getBookmarks, toggleBookmark, addToRecent } from "@/lib/bookmark-storage";
+import { getAreaPreference } from "@/lib/area-preference-storage";
+import { getCategoryPrefs } from "@/lib/category-preference-storage";
+import type { CategoryKey } from "@/lib/inferCategory";
 import { useLanguage } from "./language-provider";
-import { EventThumbnail } from "./event-thumbnail";
 import { RegionFilter } from "./region-filter";
-import { MapHero } from "./MapHero";
-import { MapRecruitmentPins } from "./MapRecruitmentPins";
-import { StoryCard } from "./story/story-card";
-
-const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
-
-function EventCarouselCard({ event }: { event: Event }) {
-  const d = new Date(event.date + "T12:00:00");
-  const dayLabel = WEEKDAY[d.getDay()];
-  const dateStr = event.date.replace(/-/g, "/").replace(/^(\d{4})\/(\d{2})\/(\d{2})$/, "$2/$3");
-  const timeStr = event.endTime ? `${event.startTime}-${event.endTime}` : event.startTime;
-
-  return (
-    <Link
-      href={`/events/${event.id}`}
-      className="block w-[280px] shrink-0 overflow-hidden rounded-xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)]"
-    >
-      <div className="relative aspect-[16/10]">
-        <EventThumbnail
-          imageUrl={event.imageUrl}
-          alt={event.title}
-          rounded="none"
-          className="rounded-t-xl"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        <div className="absolute bottom-2 left-2 right-2 text-white">
-          <p className="text-xs font-medium">{event.organizerName}</p>
-          <h3 className="mt-0.5 line-clamp-2 font-serif text-sm font-semibold">{event.title}</h3>
-        </div>
-        {event.price === 0 && (
-          <span className="absolute right-2 top-2 rounded bg-white/90 px-2 py-0.5 text-xs font-medium text-[var(--accent)]">
-            無料
-          </span>
-        )}
-      </div>
-      <div className="flex items-start justify-between gap-2 p-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs text-[var(--foreground-muted)]">
-            {dayLabel} {dateStr} {timeStr}
-          </p>
-          <p className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">{event.location}</p>
-        </div>
-        <span className="shrink-0 text-sm font-medium text-[var(--accent)]">
-          {event.price === 0 ? "無料" : `¥${event.price}`}
-        </span>
-      </div>
-    </Link>
-  );
-}
+import { EventThumbnail } from "./event-thumbnail";
+import { BookmarkToggle } from "@/components/ui/BookmarkToggle";
+import { CategoryBadge } from "@/components/ui/CategoryBadge";
+import { getPrimaryCategory } from "@/lib/inferCategory";
+import { RecommendedHero } from "./home/RecommendedHero";
+import { CollectionsShelf } from "./home/CollectionsShelf";
+import { BookmarksSheet } from "@/components/ui/BookmarksSheet";
+import { RecruitmentOrMissions } from "./home/RecruitmentOrMissions";
+import { WeeklyPickup } from "./home/WeeklyPickup";
 
 function CarouselSection({
   title,
   events,
   loading,
+  bookmarkIds,
+  onBookmarkToggle,
 }: {
   title: string;
   events: Event[];
   loading: boolean;
+  bookmarkIds: string[];
+  onBookmarkToggle: (id: string) => void;
 }) {
+  const router = useRouter();
+  if (events.length === 0 && !loading) return null;
+
   return (
-    <section className="mb-10">
+    <section className="py-8">
       <div className="mb-3">
-        <h2 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+        <h2 className="font-serif text-xl font-semibold text-zinc-900 dark:text-zinc-100">
           {title}
         </h2>
       </div>
       {loading ? (
-        <div className="flex gap-4 overflow-x-hidden">
+        <div className="-mx-4 flex gap-4 overflow-x-hidden px-4 pb-2">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-48 w-[280px] shrink-0 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700"
+              className="h-48 w-[280px] shrink-0 animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-700"
             />
           ))}
         </div>
-      ) : events.length === 0 ? (
-        <p className="py-8 text-center text-sm text-[var(--foreground-muted)]">
-          該当するイベントがありません
-        </p>
       ) : (
         <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-2 scrollbar-hide">
           {events.map((e) => (
-            <EventCarouselCard key={e.id} event={e} />
+            <div
+              key={e.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                addToRecent(e.id);
+                router.push(`/events/${e.id}`);
+              }}
+              onKeyDown={(ev) =>
+                ev.key === "Enter" && (addToRecent(e.id), router.push(`/events/${e.id}`))
+              }
+              className="group relative flex w-[280px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)]"
+            >
+              <div className="relative aspect-[16/10]">
+                <EventThumbnail
+                  imageUrl={e.imageUrl}
+                  alt={e.title}
+                  rounded="none"
+                  className="rounded-t-2xl"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                {getPrimaryCategory(e) && (
+                  <div className="absolute left-2 top-2 z-10">
+                    <CategoryBadge event={e} />
+                  </div>
+                )}
+                <div
+                  className="absolute right-2 top-2 z-10"
+                  onClick={(ev) => ev.stopPropagation()}
+                >
+                  <BookmarkToggle
+                    eventId={e.id}
+                    isActive={bookmarkIds.includes(e.id)}
+                    onToggle={onBookmarkToggle}
+                  />
+                </div>
+                <div className="absolute bottom-2 left-2 right-2 text-white">
+                  <p className="text-xs font-medium drop-shadow-md">{e.organizerName}</p>
+                  <h3 className="mt-0.5 line-clamp-2 font-serif text-sm font-semibold drop-shadow-md">
+                    {e.title}
+                  </h3>
+                </div>
+                {e.price === 0 && (
+                  <span className="absolute right-12 top-2 rounded bg-white/90 px-2 py-0.5 text-xs font-medium text-[var(--accent)]">
+                    無料
+                  </span>
+                )}
+              </div>
+              <div className="flex items-start justify-between gap-2 p-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-[var(--foreground-muted)]">
+                    {e.date} {e.startTime}
+                    {e.endTime ? `-${e.endTime}` : ""}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">
+                    {e.location}
+                  </p>
+                </div>
+                <span className="shrink-0 text-sm font-medium text-[var(--accent)]">
+                  {e.price === 0 ? "無料" : `¥${e.price}`}
+                </span>
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -107,11 +135,45 @@ export function HomeOtonami() {
   const city = searchParams.get("city") ?? "";
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [rankings, setRankings] = useState<Event[]>([]);
-  const [collections, setCollections] = useState<{ id: string; slug: string; title: string; eventIds: string[] }[]>([]);
+  const [collections, setCollections] = useState<{
+    id: string;
+    slug: string;
+    title: string;
+    eventIds: string[];
+  }[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
-  const [recommendedRecruitments, setRecommendedRecruitments] = useState<{ id: string; title: string; meeting_place: string | null; start_at: string | null; organizers?: { organization_name: string | null } }[]>([]);
-  const [allRecruitments, setAllRecruitments] = useState<{ id: string; title: string; description: string; meeting_place: string | null; organizers?: { organization_name: string | null } }[]>([]);
+  const [recommendedRecruitments, setRecommendedRecruitments] = useState<
+    { id: string; title: string; meeting_place: string | null; start_at: string | null }[]
+  >([]);
+  const [allRecruitments, setAllRecruitments] = useState<
+    {
+      id: string;
+      title: string;
+      description: string;
+      meeting_place: string | null;
+      organizers?: { organization_name: string | null };
+    }[]
+  >([]);
   const [loading, setLoading] = useState(true);
+  const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
+  const [areaPreference, setAreaPreferenceState] = useState("");
+  const [categoryPrefs, setCategoryPrefsState] = useState<CategoryKey[]>([]);
+  const [bookmarksOpen, setBookmarksOpen] = useState(false);
+
+  const handleBookmarkToggle = useCallback((eventId: string) => {
+    toggleBookmark(eventId);
+    setBookmarkIds(getBookmarks());
+  }, []);
+
+  useEffect(() => {
+    setBookmarkIds(getBookmarks());
+    setAreaPreferenceState(getAreaPreference());
+    setCategoryPrefsState(getCategoryPrefs());
+  }, []);
+
+  const handleAreaChange = useCallback((value: string) => {
+    setAreaPreferenceState(value);
+  }, []);
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -124,13 +186,13 @@ export function HomeOtonami() {
       fetchWithTimeout(`/api/events${qs ? `?${qs}` : ""}`, { cache: "no-store" }).then((r) =>
         r.json()
       ),
-      fetchWithTimeout("/api/events/rankings?type=popular&limit=8", { cache: "no-store" }).then((r) =>
-        r.json()
+      fetchWithTimeout("/api/events/rankings?type=popular&limit=8", { cache: "no-store" }).then(
+        (r) => r.json()
       ),
       fetchWithTimeout("/api/collections", { cache: "no-store" }).then((r) => r.json()),
-      fetchWithTimeout("/api/stories?limit=3", { cache: "no-store" }).then((r) => r.json()),
-      fetchWithTimeout("/api/recruitments?recommended=true&limit=3", { cache: "no-store" }).then((r) =>
-        r.json()
+      fetchWithTimeout("/api/stories?limit=5", { cache: "no-store" }).then((r) => r.json()),
+      fetchWithTimeout("/api/recruitments?recommended=true&limit=3", { cache: "no-store" }).then(
+        (r) => r.json()
       ),
       fetchWithTimeout("/api/recruitments?limit=20", { cache: "no-store" }).then((r) =>
         r.json()
@@ -165,7 +227,7 @@ export function HomeOtonami() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-white/95 backdrop-blur-sm dark:bg-[var(--background)]">
-        <div className="mx-auto max-w-5xl px-4 py-4">
+        <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <h1 className="font-serif text-xl font-semibold text-zinc-900 dark:text-zinc-100">
@@ -176,8 +238,19 @@ export function HomeOtonami() {
                 href="/stories"
                 className="flex shrink-0 items-center gap-1 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-soft)] dark:bg-[var(--background)] dark:hover:bg-[var(--accent-soft)]"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                  />
                 </svg>
                 ストーリー
               </Link>
@@ -186,109 +259,69 @@ export function HomeOtonami() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        <MapHero events={allEvents} />
-
-        <MapRecruitmentPins recruitments={recommendedRecruitments} />
-
-        <section className="mb-10">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              募集一覧
-            </h2>
-            <Link
-              href="/recruitments"
-              className="text-sm text-[var(--accent)] hover:underline"
-            >
-              すべて見る →
-            </Link>
-          </div>
-          {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-32 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700"
-                />
-              ))}
-            </div>
-          ) : allRecruitments.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[var(--foreground-muted)]">
-              募集中のスタッフはいません
-            </p>
-          ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {allRecruitments.slice(0, 6).map((r) => (
-                <li key={r.id}>
-                  <Link
-                    href={`/recruitments/${r.id}`}
-                    className="block rounded-xl border border-[var(--border)] bg-white p-4 transition-shadow hover:shadow-md dark:bg-[var(--background)]"
-                  >
-                    <h3 className="line-clamp-2 font-semibold">{r.title}</h3>
-                    <p className="mt-1 line-clamp-2 text-sm text-zinc-500">
-                      {r.description}
-                    </p>
-                    {r.meeting_place && (
-                      <p className="mt-2 truncate text-xs text-zinc-400">
-                        📍 {r.meeting_place}
-                      </p>
-                    )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <CarouselSection
-          title="ピックアップ"
-          events={displayPickup.slice(0, 10)}
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        {/* 1) おすすめヒーロー（主役） */}
+        <RecommendedHero
+          events={allEvents}
           loading={loading}
+          areaPreference={areaPreference}
+          onAreaChange={handleAreaChange}
+          categoryPrefs={categoryPrefs}
+          onCategoryChange={setCategoryPrefsState}
+          bookmarkIds={bookmarkIds}
+          onBookmarkToggle={handleBookmarkToggle}
+          onOpenBookmarks={() => setBookmarksOpen(true)}
         />
 
-        <section className="mb-10">
-          <div className="mb-3">
-            <h2 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              おすすめストーリー
-            </h2>
-          </div>
-          {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-56 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700"
-                />
-              ))}
-            </div>
-          ) : stories.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[var(--foreground-muted)]">
-              ストーリーはまだありません
-            </p>
-          ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {stories.map((s) => (
-                <StoryCard key={s.id} story={s} />
-              ))}
-            </div>
-          )}
-        </section>
+        {/* 2) テーマ別コレクション（棚） */}
+        <CollectionsShelf
+          events={allEvents}
+          areaPreference={areaPreference}
+          categoryPrefs={categoryPrefs}
+          bookmarkIds={bookmarkIds}
+          onBookmarkToggle={handleBookmarkToggle}
+        />
 
+        {/* 3) 募集一覧（空ならすきまサポート） */}
+        <RecruitmentOrMissions recruitments={allRecruitments} loading={loading} />
+
+        {/* 4) 今週のまち便り */}
+        <WeeklyPickup
+          events={displayPickup.slice(0, 10)}
+          loading={loading}
+          bookmarkIds={bookmarkIds}
+          onBookmarkToggle={handleBookmarkToggle}
+        />
+
+        {/* コレクション（既存） */}
         {collections.slice(0, 2).map((c) => (
           <CarouselSection
             key={c.id}
             title={c.title}
             events={allEvents.filter((e) => c.eventIds?.includes(e.id)).slice(0, 8)}
             loading={false}
+            bookmarkIds={bookmarkIds}
+            onBookmarkToggle={handleBookmarkToggle}
           />
         ))}
 
+        {/* 人気ランキング（既存） */}
         <CarouselSection
           title="人気ランキング"
           events={rankings}
           loading={loading}
+          bookmarkIds={bookmarkIds}
+          onBookmarkToggle={handleBookmarkToggle}
         />
       </main>
+
+      <BookmarksSheet
+        isOpen={bookmarksOpen}
+        onClose={() => setBookmarksOpen(false)}
+        events={allEvents}
+        bookmarkIds={bookmarkIds}
+        onBookmarkToggle={handleBookmarkToggle}
+      />
     </div>
   );
 }

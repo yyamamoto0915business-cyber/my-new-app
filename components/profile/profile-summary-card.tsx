@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { AvatarChangeModal } from "./avatar-change-modal";
 
 type ProfileSummary = {
   displayName: string;
@@ -12,29 +14,66 @@ type ProfileSummary = {
 
 type Props = {
   profile: ProfileSummary;
+  unreadCount?: number;
+  userId?: string | null;
+  onAvatarChange?: (newUrl: string | null) => void;
 };
 
-export function ProfileSummaryCard({ profile }: Props) {
+export function ProfileSummaryCard({ profile, unreadCount = 0, userId, onAvatarChange }: Props) {
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+
+  const handleAvatarChange = (newUrl: string | null) => {
+    onAvatarChange?.(newUrl);
+  };
+
   return (
     <div className="mg-card-glow rounded-xl border border-[var(--mg-line)] bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900/90">
       <div className="flex items-start gap-4">
-        {/* アイコン */}
-        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+        {/* アイコン（タップで変更・LINE風） */}
+        <button
+          type="button"
+          onClick={() => userId && setShowAvatarModal(true)}
+          className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700 ${
+            userId ? "cursor-pointer hover:opacity-90 active:opacity-80" : "cursor-default"
+          }`}
+          disabled={!userId}
+          aria-label="アイコンを変更"
+        >
           {profile.avatarUrl ? (
             <Image
               src={profile.avatarUrl}
               alt={profile.displayName || "プロフィール"}
               fill
               className="object-cover"
+              unoptimized={!profile.avatarUrl.includes("supabase.co")}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xl text-[var(--foreground-muted)]">
+            <div className="flex h-full w-full flex-col items-center justify-center text-[var(--foreground-muted)]">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
+              {userId && (
+                <span className="mt-0.5 text-[10px]">タップで追加</span>
+              )}
             </div>
           )}
-        </div>
+          {userId && (
+            <span className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent)] text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+            </span>
+          )}
+        </button>
+        {userId && (
+          <AvatarChangeModal
+            isOpen={showAvatarModal}
+            onClose={() => setShowAvatarModal(false)}
+            currentAvatarUrl={profile.avatarUrl}
+            onAvatarChange={handleAvatarChange}
+            userId={userId}
+          />
+        )}
 
         <div className="min-w-0 flex-1">
           <h2 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100">
@@ -61,26 +100,30 @@ export function ProfileSummaryCard({ profile }: Props) {
             </div>
           </div>
 
-          {/* 通知・設定導線 */}
+          {/* クイックアクション: 主・副ボタンのみ */}
           <div className="mt-3 flex flex-wrap gap-2">
             <Link
               href="/profile/edit"
-              className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 active:opacity-95"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
-              プロフィール編集
+              プロフィールを完成させる
             </Link>
             <Link
-              href="/profile/settings"
-              className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              href="/messages"
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:active:bg-zinc-800"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              通知設定
+              メッセージ
+              {unreadCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-medium text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>

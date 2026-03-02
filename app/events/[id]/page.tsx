@@ -166,7 +166,7 @@ export default async function EventDetailPage({ params }: Props) {
       />
       <EventGiftSection event={event} />
       <div className="space-y-4 border-t border-zinc-200 pt-6 dark:border-zinc-700">
-        <ShareButton url={`/events/${id}`} title={`${event.title} - 地域イベント`} />
+        <ShareButton url={`/events/${id}`} title={`${event.title} - MachiGlyph`} />
         <EventChatButton eventId={id} />
       </div>
     </article>

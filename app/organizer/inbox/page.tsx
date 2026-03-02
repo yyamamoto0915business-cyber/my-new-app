@@ -39,7 +39,7 @@ export default function OrganizerInboxPage() {
             ← 主催者トップ
           </Link>
           <h1 className="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-            受信トレイ（DM一覧）
+            メッセージ
           </h1>
         </div>
       </header>

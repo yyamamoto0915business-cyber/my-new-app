@@ -3,7 +3,7 @@ import { getPublishedStories } from "@/lib/stories-store";
 import { StoryCard } from "@/components/story/story-card";
 
 export const metadata = {
-  title: "ストーリー | 地域イベントプラットフォーム",
+  title: "ストーリー | MachiGlyph",
   description: "主催者ストーリー・参加レポ・運営振り返り。地域のストーリー一覧",
 };
 

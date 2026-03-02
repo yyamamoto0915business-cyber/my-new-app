@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import { mockEvents } from "../../../lib/events-mock";
 import { getCreatedEvents } from "../../../lib/created-events-store";
 import { filterEventsByRegion, filterEventsByTags } from "../../../lib/events";
+import { fetchEvents } from "../../../lib/db/events";
 
-function getAllEvents() {
+function getFallbackEvents() {
   return [...mockEvents, ...getCreatedEvents()];
 }
 
@@ -14,7 +16,21 @@ export async function GET(request: NextRequest) {
   const tagsParam = searchParams.get("tags");
   const tags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
 
-  let result = getAllEvents();
+  const supabase = await createClient();
+  let result;
+
+  if (supabase) {
+    try {
+      const dbEvents = await fetchEvents(supabase);
+      result = dbEvents.length > 0 ? dbEvents : getFallbackEvents();
+    } catch (e) {
+      console.error("events GET:", e);
+      result = getFallbackEvents();
+    }
+  } else {
+    result = getFallbackEvents();
+  }
+
   result = filterEventsByRegion(result, prefecture, city);
   result = filterEventsByTags(result, tags);
   return NextResponse.json(result, {
@@ -62,6 +78,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const supabase = await createClient();
+    const { getApiUser } = await import("../../../lib/api-auth");
+    const { getOrganizerIdByProfileId } = await import("../../../lib/db/recruitments-mvp");
+    const { createEvent } = await import("../../../lib/db/events");
     const { addCreatedEvent } = await import("../../../lib/created-events-store");
     const { addDefaultVolunteerRoleForEvent } = await import(
       "../../../lib/created-volunteer-roles-store"
@@ -69,7 +89,8 @@ export async function POST(request: NextRequest) {
     const { setOrganizerForCreatedEvent } = await import(
       "../../../lib/event-organizers"
     );
-    const event = addCreatedEvent({
+
+    const formData = {
       title: String(title).trim(),
       imageUrl: imageUrl?.trim() || null,
       description: String(description).trim(),
@@ -95,10 +116,21 @@ export async function POST(request: NextRequest) {
       prioritySlots: Number(prioritySlots) || 0,
       englishGuideAvailable: Boolean(englishGuideAvailable),
       capacity: capacity != null ? Number(capacity) : undefined,
-    });
+    };
 
-    setOrganizerForCreatedEvent(event.id);
-    addDefaultVolunteerRoleForEvent(event);
+    let event;
+    if (supabase) {
+      const user = await getApiUser();
+      const organizerId = user ? await getOrganizerIdByProfileId(supabase, user.id) : null;
+      if (organizerId) {
+        event = await createEvent(supabase, organizerId, formData);
+      }
+    }
+    if (!event) {
+      event = addCreatedEvent(formData);
+      setOrganizerForCreatedEvent(event.id);
+      addDefaultVolunteerRoleForEvent(event);
+    }
 
     return NextResponse.json(event, { status: 201 });
   } catch {

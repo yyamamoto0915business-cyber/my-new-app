@@ -239,6 +239,7 @@ export async function createEvent(
       priority_slots: form.prioritySlots ?? null,
       english_guide_available: form.englishGuideAvailable ?? false,
       capacity: form.capacity ?? null,
+      image_url: form.imageUrl?.trim() || null,
     })
     .select("id")
     .single();
