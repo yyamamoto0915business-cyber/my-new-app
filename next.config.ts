@@ -27,15 +27,23 @@ const nextConfig: NextConfig = {
         hostname: "i.imgur.com",
         pathname: "/**",
       },
-      ...(process.env.NEXT_PUBLIC_SUPABASE_URL
-        ? [
+      ...(() => {
+        try {
+          const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+          if (!url || typeof url !== "string" || url.trim() === "") return [];
+          const hostname = new URL(url).hostname;
+          if (!hostname) return [];
+          return [
             {
               protocol: "https" as const,
-              hostname: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname,
+              hostname,
               pathname: "/storage/v1/object/public/**",
             },
-          ]
-        : []),
+          ];
+        } catch {
+          return [];
+        }
+      })(),
     ],
   },
 };
