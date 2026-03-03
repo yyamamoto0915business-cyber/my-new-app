@@ -8,7 +8,7 @@ import type { Event } from "@/lib/db/types";
 import type { Story } from "@/lib/story-types";
 import { getEventsByDateRange } from "@/lib/events";
 import { getBookmarks, toggleBookmark, addToRecent } from "@/lib/bookmark-storage";
-import { getAreaPreference } from "@/lib/area-preference-storage";
+import { getAreaPreference, setAreaPreference } from "@/lib/area-preference-storage";
 import { getCategoryPrefs } from "@/lib/category-preference-storage";
 import type { CategoryKey } from "@/lib/categories";
 import { useLanguage } from "./language-provider";
@@ -78,7 +78,7 @@ function CarouselSection({
                   rounded="none"
                   className="rounded-t-2xl"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
                 {getPrimaryCategory(e) && (
                   <div className="absolute left-2 top-2 z-10">
                     <CategoryBadge event={e} />
@@ -99,26 +99,20 @@ function CarouselSection({
                   <h3 className="mt-0.5 line-clamp-2 font-serif text-sm font-semibold drop-shadow-md">
                     {e.title}
                   </h3>
+                  <p className="mt-0.5 line-clamp-1 text-xs drop-shadow-md opacity-95">
+                    {e.date} {e.startTime}
+                    {e.endTime ? `-${e.endTime}` : ""} ・ {e.location}
+                  </p>
                 </div>
-                {e.price === 0 && (
-                  <span className="absolute right-12 top-2 rounded bg-white/90 px-2 py-0.5 text-xs font-medium text-[var(--accent)]">
+                {e.price === 0 ? (
+                  <span className="absolute right-12 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-[var(--accent)]">
                     無料
                   </span>
+                ) : (
+                  <span className="absolute right-12 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-zinc-800">
+                    ¥{e.price}
+                  </span>
                 )}
-              </div>
-              <div className="flex items-start justify-between gap-2 p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-[var(--foreground-muted)]">
-                    {e.date} {e.startTime}
-                    {e.endTime ? `-${e.endTime}` : ""}
-                  </p>
-                  <p className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">
-                    {e.location}
-                  </p>
-                </div>
-                <span className="shrink-0 text-sm font-medium text-[var(--accent)]">
-                  {e.price === 0 ? "無料" : `¥${e.price}`}
-                </span>
               </div>
             </div>
           ))}
@@ -133,6 +127,8 @@ export function HomeOtonami() {
   const searchParams = useSearchParams();
   const prefecture = searchParams.get("prefecture") ?? "";
   const city = searchParams.get("city") ?? "";
+  // ヘッダーの地域セレクタと同期：URL優先、なければlocalStorage
+  const effectiveArea = prefecture || city || getAreaPreference();
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [rankings, setRankings] = useState<Event[]>([]);
   const [collections, setCollections] = useState<{
@@ -170,10 +166,12 @@ export function HomeOtonami() {
     setAreaPreferenceState(getAreaPreference());
     setCategoryPrefsState(getCategoryPrefs());
   }, []);
-
-  const handleAreaChange = useCallback((value: string) => {
-    setAreaPreferenceState(value);
-  }, []);
+  useEffect(() => {
+    if (prefecture) {
+      setAreaPreference(prefecture);
+      setAreaPreferenceState(prefecture);
+    }
+  }, [prefecture]);
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -232,46 +230,44 @@ export function HomeOtonami() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-white/95 backdrop-blur-sm dark:bg-[var(--background)] pt-[env(safe-area-inset-top,0px)]">
-        <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-              <h1 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">
-                {t.platformTitle}
-              </h1>
-              <RegionFilter variant="compact" className="shrink-0" />
-              <Link
-                href="/stories"
-                className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-1 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-soft)] active:bg-[var(--accent-soft)] dark:bg-[var(--background)] dark:hover:bg-[var(--accent-soft)] sm:px-3"
+      <header className="sticky top-0 z-[100] border-b border-[var(--border)] bg-white/90 backdrop-blur-md dark:bg-[var(--background)] pt-[env(safe-area-inset-top,0px)]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3 pr-14 sm:px-6 sm:py-3 sm:pr-6">
+          <h1 className="min-w-0 shrink font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">
+            {t.platformTitle}
+          </h1>
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <RegionFilter variant="pill" className="shrink-0" />
+            <Link
+              href="/stories"
+              className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-white/90 text-[var(--accent)] transition-colors hover:bg-[var(--accent-soft)] active:bg-[var(--accent-soft)] dark:bg-[var(--background)] dark:hover:bg-[var(--accent-soft)] md:rounded-lg md:px-3"
+              aria-label="ストーリー"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 md:mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                  />
-                </svg>
-                ストーリー
-              </Link>
-            </div>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
+              </svg>
+              <span className="hidden md:inline">ストーリー</span>
+            </Link>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 pb-24 sm:pb-8">
         {/* 1) おすすめヒーロー（主役） */}
         <RecommendedHero
           events={allEvents}
           loading={loading}
-          areaPreference={areaPreference}
-          onAreaChange={handleAreaChange}
+          areaPreference={effectiveArea}
           categoryPrefs={categoryPrefs}
           onCategoryChange={setCategoryPrefsState}
           bookmarkIds={bookmarkIds}
@@ -282,7 +278,7 @@ export function HomeOtonami() {
         {/* 2) テーマ別コレクション（棚） */}
         <CollectionsShelf
           events={allEvents}
-          areaPreference={areaPreference}
+          areaPreference={effectiveArea}
           categoryPrefs={categoryPrefs}
           bookmarkIds={bookmarkIds}
           onBookmarkToggle={handleBookmarkToggle}

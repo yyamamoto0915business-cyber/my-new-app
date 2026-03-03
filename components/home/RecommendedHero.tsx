@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Event } from "@/lib/db/types";
 import type { CategoryKey } from "@/lib/categories";
@@ -10,8 +11,8 @@ import { addToRecent } from "@/lib/bookmark-storage";
 import { EventThumbnail } from "@/components/event-thumbnail";
 import { BookmarkToggle } from "@/components/ui/BookmarkToggle";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
-import { AreaPreference } from "./AreaPreference";
 import { CategoryChips } from "./CategoryChips";
+import { clearCategoryPrefs } from "@/lib/category-preference-storage";
 
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -19,7 +20,6 @@ type Props = {
   events: Event[];
   loading: boolean;
   areaPreference: string;
-  onAreaChange: (value: string) => void;
   categoryPrefs: CategoryKey[];
   onCategoryChange: (prefs: CategoryKey[]) => void;
   bookmarkIds: string[];
@@ -27,11 +27,76 @@ type Props = {
   onOpenBookmarks: () => void;
 };
 
+function FilterBottomSheet({
+  isOpen,
+  onClose,
+  categoryPrefs,
+  onCategoryChange,
+  onReset,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  categoryPrefs: CategoryKey[];
+  onCategoryChange: (prefs: CategoryKey[]) => void;
+  onReset: () => void;
+}) {
+  if (!isOpen) return null;
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        role="dialog"
+        aria-label="絞り込み"
+        className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-hidden rounded-t-2xl border-t border-[var(--border)] bg-white shadow-lg dark:bg-[var(--background)] pb-[env(safe-area-inset-bottom,0px)]"
+      >
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">絞り込み</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-[44px] min-w-[44px] rounded-full p-2 text-[var(--foreground-muted)] hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            aria-label="閉じる"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="overflow-y-auto px-4 py-4">
+          <div className="mb-4">
+            <p className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">カテゴリ</p>
+            <CategoryChips selected={categoryPrefs} onChange={onCategoryChange} wrap />
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onReset}
+              className="min-h-[44px] flex-1 rounded-xl border border-[var(--border)] px-4 text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            >
+              リセット
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-[44px] flex-1 rounded-xl bg-[var(--accent)] px-4 text-sm font-medium text-white hover:opacity-90"
+            >
+              適用
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function RecommendedHero({
   events,
   loading,
   areaPreference,
-  onAreaChange,
   categoryPrefs,
   onCategoryChange,
   bookmarkIds,
@@ -39,6 +104,7 @@ export function RecommendedHero({
   onOpenBookmarks,
 }: Props) {
   const router = useRouter();
+  const [filterOpen, setFilterOpen] = useState(false);
   const heroEvents = getHeroEventsWithFallback(
     events,
     areaPreference,
@@ -97,9 +163,15 @@ export function RecommendedHero({
 
   if (heroEvents.length === 0) return null;
 
+  const handleFilterReset = () => {
+    clearCategoryPrefs();
+    onCategoryChange([]);
+    setFilterOpen(false);
+  };
+
   return (
     <section className="py-6 sm:py-8" aria-label="おすすめ">
-      <div className="mb-4 space-y-3 sm:space-y-0">
+      <div className="mb-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">
             おすすめ
@@ -107,33 +179,57 @@ export function RecommendedHero({
           <button
             type="button"
             onClick={onOpenBookmarks}
-            className="flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center gap-1 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-soft)] active:bg-[var(--accent-soft)] dark:bg-[var(--background)] dark:hover:bg-[var(--accent-soft)]"
+            className="flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[var(--border)] bg-white px-2.5 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-soft)] active:bg-[var(--accent-soft)] dark:bg-[var(--background)] dark:hover:bg-[var(--accent-soft)]"
+            aria-label={`保存済み${bookmarkIds.length > 0 ? `（${bookmarkIds.length}件）` : ""}`}
           >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="h-4 w-4"
-          >
-            <path
-              fillRule="evenodd"
-              d="M6.32 2.577a49.255 49.255 0 0111.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 01-1.085.67L12 18.089l-7.165 3.583A.75.75 0 013.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93z"
-              clipRule="evenodd"
-            />
-          </svg>
-          保存済み
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-4 w-4 shrink-0"
+            >
+              <path
+                fillRule="evenodd"
+                d="M6.32 2.577a49.255 49.255 0 0111.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 01-1.085.67L12 18.089l-7.165 3.583A.75.75 0 013.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>保存</span>
+            {bookmarkIds.length > 0 && (
+              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--accent)]/20 px-1 text-xs font-medium text-[var(--accent)]">
+                {bookmarkIds.length}
+              </span>
+            )}
+          </button>
         </div>
-        <div className="space-y-3 sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:space-y-0">
-          <AreaPreference value={areaPreference} onChange={onAreaChange} />
+        <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
           <CategoryChips
             selected={categoryPrefs}
             onChange={onCategoryChange}
             className="min-w-0 flex-1 sm:flex-initial"
+            hideLabel
           />
+          <button
+            type="button"
+            onClick={() => setFilterOpen(true)}
+            className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-white text-zinc-600 hover:bg-zinc-50 dark:bg-[var(--background)] dark:text-zinc-400 dark:hover:bg-zinc-800"
+            aria-label="絞り込み"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 2v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+          </button>
         </div>
       </div>
       <p className="mb-4 text-sm text-[var(--foreground-muted)] line-clamp-2 sm:line-clamp-none">{subText}</p>
+
+      <FilterBottomSheet
+        isOpen={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        categoryPrefs={categoryPrefs}
+        onCategoryChange={onCategoryChange}
+        onReset={handleFilterReset}
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         {/* 推し：大きいカード */}
@@ -154,7 +250,7 @@ export function RecommendedHero({
                 rounded="none"
                 className="h-full w-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
               {getPrimaryCategory(featured) && (
                 <div className="absolute left-3 top-3 z-10">
                   <CategoryBadge event={featured} />
@@ -220,7 +316,7 @@ export function RecommendedHero({
                     rounded="none"
                     className="h-full w-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
                   {getPrimaryCategory(e) && (
                     <div className="absolute left-1.5 top-1.5 z-10">
                       <CategoryBadge event={e} className="px-1.5 py-0.5 text-[10px]" />

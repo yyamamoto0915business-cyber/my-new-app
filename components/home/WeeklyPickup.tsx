@@ -126,7 +126,7 @@ function PickupCardFeatured({
           rounded="none"
           className="rounded-t-2xl"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
         {getPrimaryCategory(event) && (
           <div className="absolute left-2 top-2 z-10">
             <CategoryBadge event={event} />
@@ -206,7 +206,7 @@ function PickupCard({
           rounded="none"
           className="rounded-t-2xl"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
         {getPrimaryCategory(event) && (
           <div className="absolute left-2 top-2 z-10">
             <CategoryBadge event={event} />

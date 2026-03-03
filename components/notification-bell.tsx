@@ -52,7 +52,7 @@ export function NotificationBell() {
   return (
     <Link
       href="/notifications"
-      className="relative flex items-center justify-center p-2 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+      className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
       aria-label={`お知らせ${unreadCount > 0 ? `（${unreadCount}件未読）` : ""}`}
     >
       <svg
