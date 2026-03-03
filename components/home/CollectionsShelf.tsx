@@ -19,7 +19,8 @@ export function CollectionsShelf({
   bookmarkIds,
   onBookmarkToggle,
 }: Props) {
-  const display = events.slice(0, 8);
+  /** ホームでは1段だけ表示（4件） */
+  const display = events.slice(0, 4);
 
   if (loading) {
     return (

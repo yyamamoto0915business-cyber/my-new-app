@@ -16,11 +16,13 @@ const DESKTOP_NAV_ITEMS = [
   { href: "/profile", label: "マイページ", icon: "profile" },
 ] as const;
 
+type NavItem = { href: string; label: string; icon: string };
+
 /** モバイル用4項目（2番目は主催者モード時のみ主催に差し替え） */
 function getMobileNavItems(
   pathname: string,
   organizerModeFromStorage: boolean
-): typeof DESKTOP_NAV_ITEMS {
+): NavItem[] {
   const isOrganizerMode =
     pathname.startsWith("/organizer") ||
     getModeFromCookie() === "ORGANIZER" ||

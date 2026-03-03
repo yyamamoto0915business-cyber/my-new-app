@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useActionState, useFormStatus, Suspense } from "react";
+import { useState, useEffect, useActionState, Suspense } from "react";
+import { useFormStatus } from "react-dom";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { SponsorTier } from "@/lib/db/types";

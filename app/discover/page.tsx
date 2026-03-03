@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { EventCard } from "@/app/events/event-card";
 import type { Event } from "@/lib/db/types";
@@ -17,9 +18,35 @@ const RANKING_TABS: { id: RankingType; label: string }[] = [
   { id: "satisfaction", label: "満足度" },
 ];
 
-export default function DiscoverPage() {
-  const [contentType, setContentType] = useState<ContentType>("events");
+const TAB_PARAM = "tab";
+const VALID_TABS: ContentType[] = ["events", "volunteer", "story", "ranking"];
+
+function parseTabParam(tab: string | null): ContentType {
+  if (tab && VALID_TABS.includes(tab as ContentType)) return tab as ContentType;
+  return "events";
+}
+
+function DiscoverPageContent() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get(TAB_PARAM);
+  const [contentType, setContentType] = useState<ContentType>(() =>
+    parseTabParam(tabParam)
+  );
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<RankingType>("popular");
+
+  /** URLの tab= と同期（初期・外部リンク用） */
+  useEffect(() => {
+    const parsed = parseTabParam(searchParams.get(TAB_PARAM));
+    setContentType(parsed);
+  }, [searchParams]);
+
+  const setContentTypeWithUrl = (id: ContentType) => {
+    setContentType(id);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set(TAB_PARAM, id);
+    router.replace(`/discover?${params.toString()}`, { scroll: false });
+  };
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,7 +91,7 @@ export default function DiscoverPage() {
           ).map(({ id, label }) => (
             <button
               key={id}
-              onClick={() => setContentType(id)}
+              onClick={() => setContentTypeWithUrl(id)}
               className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
                 contentType === id
                   ? "bg-[var(--accent)] text-white"
@@ -222,5 +249,19 @@ export default function DiscoverPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function DiscoverPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <p className="text-sm text-zinc-500">読み込み中...</p>
+        </div>
+      }
+    >
+      <DiscoverPageContent />
+    </Suspense>
   );
 }

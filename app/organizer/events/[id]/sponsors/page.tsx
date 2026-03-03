@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useActionState, useFormStatus } from "react";
+import { useState, useEffect, useCallback, useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { OrganizerHeader } from "@/components/organizer/organizer-header";
