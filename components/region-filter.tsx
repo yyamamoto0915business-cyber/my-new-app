@@ -30,7 +30,7 @@ const CITIES_BY_PREF: Record<string, { id: string; name: string }[]> = {
 
 type Props = {
   className?: string;
-  variant?: "compact" | "full" | "pill";
+  variant?: "compact" | "full" | "pill" | "chips";
   onRegionChange?: (prefecture: string, city: string) => void;
 };
 
@@ -63,6 +63,30 @@ export function RegionFilter({ className = "", variant = "full", onRegionChange 
   );
 
   const cities = prefecture ? (CITIES_BY_PREF[prefecture] ?? [{ id: "", name: "市区町村を選択" }]) : [];
+
+  if (variant === "chips") {
+    return (
+      <div className={`flex gap-2 overflow-x-auto pb-1 scrollbar-hide ${className}`}>
+        {PREFECTURES.map((p) => {
+          const isSelected = (p.id === "" && !prefecture) || prefecture === p.id;
+          return (
+            <button
+              key={p.id || "all"}
+              type="button"
+              onClick={() => updateParams({ prefecture: p.id })}
+              className={`min-h-[40px] shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                isSelected
+                  ? "border border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                  : "border border-[var(--border)] bg-white text-zinc-600 hover:bg-zinc-50 dark:bg-[var(--background)] dark:text-zinc-400 dark:hover:bg-zinc-800"
+              }`}
+            >
+              {p.name}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
 
   if (variant === "pill") {
     return (

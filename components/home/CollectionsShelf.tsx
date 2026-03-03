@@ -48,6 +48,7 @@ type Props = {
   categoryPrefs?: CategoryKey[];
   bookmarkIds: string[];
   onBookmarkToggle: (eventId: string) => void;
+  loading?: boolean;
 };
 
 function CollectionCard({
@@ -134,6 +135,7 @@ export function CollectionsShelf({
   categoryPrefs = [],
   bookmarkIds,
   onBookmarkToggle,
+  loading = false,
 }: Props) {
   const areaEvents =
     areaPreference.trim().length > 0
@@ -141,14 +143,49 @@ export function CollectionsShelf({
       : events;
   const hasCategory = categoryPrefs.length > 0;
 
+  if (loading) {
+    return (
+      <section className="space-y-6" aria-label="テーマ別コレクション">
+        <div className="flex items-center justify-between">
+          <div className="h-6 w-48 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-700" />
+        </div>
+        <div className="space-y-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i}>
+              <div className="mb-2 h-4 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+              <div className="flex gap-3">
+                {[1, 2, 3].map((j) => (
+                  <div
+                    key={j}
+                    className="h-36 w-[168px] shrink-0 animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-700 sm:w-[220px]"
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="py-6 sm:py-8" aria-label="テーマ別コレクション">
-      <h2 className="mb-1 font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">
-        テーマ別コレクション
-      </h2>
-      <p className="mb-4 text-sm text-[var(--foreground-muted)]">
-        編集された束から選ぶ
-      </p>
+    <section className="space-y-6" aria-label="テーマ別コレクション">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">
+            テーマ別コレクション
+          </h2>
+          <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">
+            編集された束から選ぶ
+          </p>
+        </div>
+        <Link
+          href="/events"
+          className="shrink-0 text-sm font-medium text-[var(--accent)] hover:underline"
+        >
+          すべて見る →
+        </Link>
+      </div>
 
       <div className="space-y-6">
         {LANES.slice(0, 3).map((lane) => {
@@ -190,17 +227,9 @@ export function CollectionsShelf({
 
           return (
             <div key={lane.title}>
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  {lane.title}
-                </h3>
-                <Link
-                  href="/events"
-                  className="text-xs text-[var(--accent)] hover:underline"
-                >
-                  すべて見る →
-                </Link>
-              </div>
+              <h3 className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                {lane.title}
+              </h3>
               <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">
                 {display.map((e) => (
                   <CollectionCard

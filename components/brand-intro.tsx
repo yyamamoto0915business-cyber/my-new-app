@@ -3,17 +3,40 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const BRAND_INTRO_SEEN_KEY = "mg_brand_intro_seen";
+
+function hasSeenBrandIntro(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(BRAND_INTRO_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markBrandIntroSeen(): void {
+  try {
+    localStorage.setItem(BRAND_INTRO_SEEN_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
 type BrandIntroProps = {
   fadeMs?: number;
   showSkip?: boolean;
 };
 
 export function BrandIntro({ fadeMs = 650, showSkip = false }: BrandIntroProps) {
+  const [shouldRender, setShouldRender] = useState(false);
   const [mounted, setMounted] = useState(true);
   const [visible, setVisible] = useState(true);
-  const [enter] = useState(true); // 入場アニメ用（初回マウントでtrue）
   const closingRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    setShouldRender(!hasSeenBrandIntro());
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -24,12 +47,13 @@ export function BrandIntro({ fadeMs = 650, showSkip = false }: BrandIntroProps) 
   const close = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
+    markBrandIntroSeen();
     setVisible(false);
     const t = setTimeout(() => setMounted(false), fadeMs);
     timeoutRef.current = [t];
   }, [fadeMs]);
 
-  if (!mounted) return null;
+  if (!shouldRender || !mounted) return null;
 
   return (
     <>
