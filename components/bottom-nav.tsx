@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUnreadCount } from "@/hooks/use-unread-count";
 import { getModeFromCookie, setModeCookie } from "@/lib/mode-preference";
+import { getOrganizerMode, setOrganizerMode } from "@/lib/organizer-mode";
 
 const DESKTOP_NAV_ITEMS = [
   { href: "/", label: "ホーム", icon: "home" },
@@ -16,9 +17,14 @@ const DESKTOP_NAV_ITEMS = [
 ] as const;
 
 /** モバイル用4項目（2番目は主催者モード時のみ主催に差し替え） */
-function getMobileNavItems(pathname: string): typeof DESKTOP_NAV_ITEMS {
+function getMobileNavItems(
+  pathname: string,
+  organizerModeFromStorage: boolean
+): typeof DESKTOP_NAV_ITEMS {
   const isOrganizerMode =
-    pathname.startsWith("/organizer") || getModeFromCookie() === "ORGANIZER";
+    pathname.startsWith("/organizer") ||
+    getModeFromCookie() === "ORGANIZER" ||
+    organizerModeFromStorage;
   const secondItem = isOrganizerMode
     ? { href: "/organizer/events", label: "主催", icon: "organizer" as const }
     : { href: "/discover", label: "探す", icon: "search" as const };
@@ -87,12 +93,15 @@ function NavLink({
   showBadge,
   unreadCount,
   minTapHeight = true,
+  showActiveIndicator = false,
 }: {
   item: { href: string; label: string; icon: string };
   isActive: boolean;
   showBadge: boolean;
   unreadCount: number;
   minTapHeight?: boolean;
+  /** モバイル用：アクティブ時に上部インジケータを表示 */
+  showActiveIndicator?: boolean;
 }) {
   const href = item.href === "/profile" ? "/profile" : item.href;
   return (
@@ -102,6 +111,12 @@ function NavLink({
         minTapHeight ? "min-h-[44px] justify-center py-3 md:py-2" : "py-3 md:py-2"
       } ${isActive ? "text-[var(--accent)]" : "text-[var(--foreground-muted)]"}`}
     >
+      {showActiveIndicator && isActive && (
+        <span
+          className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[var(--accent)] md:hidden"
+          aria-hidden
+        />
+      )}
       <span className="relative inline-block">
         <NavIcon icon={item.icon} active={isActive} />
         {showBadge && (
@@ -119,18 +134,35 @@ export function BottomNav() {
   const pathname = usePathname();
   const unreadCount = useUnreadCount(true);
   const [mounted, setMounted] = useState(false);
+  const [organizerMode, setOrganizerModeState] = useState(false);
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (pathname.startsWith("/organizer")) setModeCookie("ORGANIZER");
+    if (pathname.startsWith("/organizer")) {
+      setModeCookie("ORGANIZER");
+      setOrganizerMode(true);
+    }
   }, [pathname]);
+
+  useEffect(() => {
+    setOrganizerModeState(getOrganizerMode());
+    const handler = () => setOrganizerModeState(getOrganizerMode());
+    window.addEventListener("storage", handler);
+    window.addEventListener("organizer-mode-change", handler);
+    return () => {
+      window.removeEventListener("storage", handler);
+      window.removeEventListener("organizer-mode-change", handler);
+    };
+  }, []);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
-  const mobileItems = mounted ? getMobileNavItems(pathname) : getMobileNavItems("/");
+  const mobileItems = mounted
+    ? getMobileNavItems(pathname, organizerMode)
+    : getMobileNavItems("/", false);
   const showBadge = (icon: string) =>
     (icon === "messages" || icon === "profile") && unreadCount > 0;
 
@@ -152,6 +184,7 @@ export function BottomNav() {
             showBadge={showBadge(item.icon)}
             unreadCount={unreadCount}
             minTapHeight
+            showActiveIndicator
           />
         ))}
       </div>

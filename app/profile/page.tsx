@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
 import { ProfileSummaryCard } from "@/components/profile/profile-summary-card";
 import { ProfileMenuLink } from "@/components/profile/profile-menu-link";
+import { OrganizerModeToggle } from "@/components/profile/organizer-mode-toggle";
 import { ModeSwitcher, type ProfileMode } from "@/components/profile/mode-switcher";
 import { ModeHeader } from "@/components/profile/mode-header";
 import { ModeStats } from "@/components/profile/mode-stats";
@@ -315,6 +316,9 @@ function ProfileContent() {
                 />
               </div>
               {/* セクションC: 主催者 */}
+              <div className="py-1">
+                <OrganizerModeToggle />
+              </div>
               {profile.isOrganizerRegistered ? (
                 <div className="py-1">
                   <ProfileMenuLink

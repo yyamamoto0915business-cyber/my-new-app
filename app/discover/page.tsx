@@ -8,7 +8,7 @@ import { ProfileLink } from "@/components/profile-link";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { SectionHeader } from "@/components/home/SectionHeader";
 
-type ContentType = "events" | "volunteer";
+type ContentType = "events" | "volunteer" | "story" | "ranking";
 type RankingType = "newest" | "popular" | "satisfaction";
 
 const RANKING_TABS: { id: RankingType; label: string }[] = [
@@ -52,19 +52,26 @@ export default function DiscoverPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:px-6">
-        {/* イベント / ボランティア 切替 */}
-        <div className="mb-6 flex gap-2">
-          {(["events", "volunteer"] as const).map((t) => (
+        {/* イベント / ボランティア / ストーリー / ランキング 切替 */}
+        <div className="mb-6 flex flex-wrap gap-2">
+          {(
+            [
+              { id: "events" as const, label: "イベント" },
+              { id: "volunteer" as const, label: "ボランティア" },
+              { id: "story" as const, label: "ストーリー" },
+              { id: "ranking" as const, label: "ランキング" },
+            ] as const
+          ).map(({ id, label }) => (
             <button
-              key={t}
-              onClick={() => setContentType(t)}
+              key={id}
+              onClick={() => setContentType(id)}
               className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-                contentType === t
+                contentType === id
                   ? "bg-[var(--accent)] text-white"
                   : "border border-[var(--border)] hover:bg-[var(--accent-soft)]/50 dark:hover:bg-[var(--accent-soft)]/20"
               }`}
             >
-              {t === "events" ? "イベント" : "ボランティア"}
+              {label}
             </button>
           ))}
         </div>
@@ -87,8 +94,26 @@ export default function DiscoverPage() {
               <span aria-hidden>→</span>
             </Link>
           </section>
-        ) : (
-          <section className="space-y-4" aria-label="ランキング">
+        ) : contentType === "story" ? (
+          <section className="space-y-4" aria-label="ストーリー">
+            <SectionHeader
+              title="ストーリー"
+              subtitle="地域のストーリーを読む"
+              href="/stories"
+            />
+            <p className="text-sm text-[var(--foreground-muted)]">
+              イベントや地域の魅力が詰まったストーリーを楽しめます。
+            </p>
+            <Link
+              href="/stories"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              ストーリーを見る
+              <span aria-hidden>→</span>
+            </Link>
+          </section>
+        ) : contentType === "ranking" ? (
+          <section className="space-y-4" aria-label="人気ランキング">
             <SectionHeader
               title="人気ランキング"
               subtitle="新着・人気・満足度で探せる"
@@ -96,50 +121,67 @@ export default function DiscoverPage() {
             />
             <div className="mb-4 flex gap-2">
               {RANKING_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? "bg-[var(--accent)] text-white"
-                    : "border border-[var(--border)] hover:bg-[var(--accent-soft)]/50 dark:hover:bg-[var(--accent-soft)]/20"
-                }`}
-              >
-                {tab.label}
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? "bg-[var(--accent)] text-white"
+                      : "border border-[var(--border)] hover:bg-[var(--accent-soft)]/50 dark:hover:bg-[var(--accent-soft)]/20"
+                  }`}
+                >
+                  {tab.label}
                 </button>
               ))}
             </div>
-
             {loading ? (
-            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <li
-                  key={i}
-                  className="h-80 animate-pulse rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--background)]"
-                />
-              ))}
-            </ul>
-          ) : events.length === 0 ? (
-            <div className="rounded-xl border border-[var(--border)] bg-white p-10 text-center dark:bg-[var(--background)]">
-              <p className="text-sm text-[var(--foreground-muted)]">
-                該当するイベントがありません
-              </p>
-            </div>
-          ) : (
-            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {events.map((event, idx) => (
-                <li key={event.id} className="relative">
-                  <span
-                    className="absolute left-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent)] text-sm font-bold text-white"
-                    aria-hidden
-                  >
-                    {idx + 1}
-                  </span>
-                  <EventCard event={event} />
-                </li>
-              ))}
-            </ul>
+              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <li
+                    key={i}
+                    className="h-80 animate-pulse rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--background)]"
+                  />
+                ))}
+              </ul>
+            ) : events.length === 0 ? (
+              <div className="rounded-xl border border-[var(--border)] bg-white p-10 text-center dark:bg-[var(--background)]">
+                <p className="text-sm text-[var(--foreground-muted)]">
+                  該当するイベントがありません
+                </p>
+              </div>
+            ) : (
+              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {events.map((event, idx) => (
+                  <li key={event.id} className="relative">
+                    <span
+                      className="absolute left-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent)] text-sm font-bold text-white"
+                      aria-hidden
+                    >
+                      {idx + 1}
+                    </span>
+                    <EventCard event={event} />
+                  </li>
+                ))}
+              </ul>
             )}
+          </section>
+        ) : (
+          <section className="space-y-4" aria-label="イベント">
+            <SectionHeader
+              title="イベントを探す"
+              subtitle="日付・地域・テーマで検索"
+              href="/events"
+            />
+            <p className="text-sm text-[var(--foreground-muted)]">
+              地域のイベントを日付、地域、無料/有料などで絞り込んで検索できます。
+            </p>
+            <Link
+              href="/events"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              イベント一覧を見る
+              <span aria-hidden>→</span>
+            </Link>
           </section>
         )}
 

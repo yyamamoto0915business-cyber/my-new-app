@@ -42,7 +42,7 @@ export default function RootLayout({
               <NotificationBell />
             </Suspense>
           </div>
-          <div className="min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-0 md:pl-20">
+          <div className="min-h-screen pb-[calc(72px+env(safe-area-inset-bottom,0px))] md:pb-0 md:pl-20">
             {children}
           </div>
           <Suspense fallback={null}>
