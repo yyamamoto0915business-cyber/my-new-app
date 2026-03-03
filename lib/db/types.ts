@@ -51,6 +51,9 @@ export type DbEvent = {
   priority_slots?: number | null;
   english_guide_available?: boolean | null;
   capacity?: number | null;
+  requires_registration?: boolean | null;
+  registration_deadline?: string | null;
+  registration_note?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -122,6 +125,9 @@ export type Event = {
   prioritySlots?: number;
   englishGuideAvailable?: boolean;
   capacity?: number;
+  requiresRegistration?: boolean;
+  registrationDeadline?: string;
+  registrationNote?: string;
   createdAt: string;
   participantCount?: number;
   avgRating?: number;
@@ -162,4 +168,52 @@ export type ChatMessage = {
 export type ChatRoomWithParticipant = ChatRoom & {
   participant?: Profile | null;
   event?: { title: string } | null;
+};
+
+// 応援/スポンサー
+export type SponsorTierType = "individual" | "company";
+
+export type SponsorTier = {
+  id: string;
+  eventId: string;
+  type: SponsorTierType;
+  price: number;
+  name: string;
+  description?: string | null;
+  benefits: string[];
+  sortOrder: number;
+  isActive: boolean;
+};
+
+export type SponsorPurchaseStatus = "pending" | "paid" | "refunded" | "failed";
+
+export type SponsorPurchase = {
+  id: string;
+  eventId: string;
+  tierId: string;
+  amount: number;
+  quantity: number;
+  displayName?: string | null;
+  isAnonymous: boolean;
+  comment?: string | null;
+  status: SponsorPurchaseStatus;
+  stripeSessionId?: string | null;
+  createdAt: string;
+};
+
+export type SponsorApplicationStatus = "pending" | "approved" | "rejected";
+
+export type SponsorApplication = {
+  id: string;
+  eventId: string;
+  tierId: string;
+  companyName: string;
+  personName: string;
+  email: string;
+  phone?: string | null;
+  invoiceInfo?: string | null;
+  message?: string | null;
+  logoUrl?: string | null;
+  status: SponsorApplicationStatus;
+  createdAt: string;
 };

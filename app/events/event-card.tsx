@@ -85,6 +85,15 @@ export function EventCard({ event }: Props) {
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
+          {event.requiresRegistration ? (
+            <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+              参加登録あり
+            </span>
+          ) : (
+            <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
+              登録不要
+            </span>
+          )}
           {status === "available" && (
             <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
               募集中
@@ -115,7 +124,7 @@ export function EventCard({ event }: Props) {
           href={`/events/${event.id}`}
           className="inline-flex items-center gap-1 text-sm font-medium text-[var(--accent)] hover:underline"
         >
-          もっと見る
+          {event.requiresRegistration ? "参加登録へ" : "詳細を見る"}
           <span aria-hidden>→</span>
         </Link>
       </div>

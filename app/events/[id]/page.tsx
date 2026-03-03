@@ -9,7 +9,7 @@ import { OrganizerContactSection } from "./organizer-contact-section";
 import { EventThumbnail } from "@/components/event-thumbnail";
 import { EventChatButton } from "./event-chat-button";
 import { ShareButton } from "@/components/share-button";
-import { SponsorTicketSection } from "./sponsor-ticket-section";
+import { SponsorSection } from "./sponsor-section";
 import { EventVolunteerSection } from "@/components/event-volunteer-section";
 import { EventGiftSection } from "@/components/event-gift-section";
 import { LoginBenefitsBanner } from "@/components/login-benefits-banner";
@@ -55,7 +55,21 @@ export default async function EventDetailPage({ params }: Props) {
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             {event.organizerName}
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {event.requiresRegistration ? (
+              <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                参加登録あり
+              </span>
+            ) : (
+              <>
+                <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
+                  登録不要
+                </span>
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                  当日は会場に直接お越しください
+                </span>
+              </>
+            )}
             {event.salonOnly && (
               <span className="rounded bg-[var(--accent)]/20 px-2 py-0.5 text-xs text-[var(--accent)]">
                 サロン限定
@@ -86,6 +100,47 @@ export default async function EventDetailPage({ params }: Props) {
           </div>
         </div>
       </section>
+
+      {!event.requiresRegistration && (
+        <section className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 dark:border-emerald-800/50 dark:bg-emerald-950/20">
+          <h2 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+            参加方法（登録不要）
+          </h2>
+          <dl className="mt-4 space-y-3 text-sm">
+            <div>
+              <dt className="font-medium text-zinc-600 dark:text-zinc-400">場所</dt>
+              <dd className="mt-0.5 font-medium text-zinc-900 dark:text-zinc-100">
+                {event.location}
+              </dd>
+              <dd className="text-zinc-600 dark:text-zinc-400">{event.address}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-600 dark:text-zinc-400">日時</dt>
+              <dd className="mt-0.5">
+                {event.date} {event.startTime}
+                {event.endTime && ` 〜 ${event.endTime}`}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-600 dark:text-zinc-400">受付</dt>
+              <dd className="mt-0.5">当日会場で受け付け</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-600 dark:text-zinc-400">費用</dt>
+              <dd className="mt-0.5">
+                {event.price === 0 ? "無料" : `¥${event.price}`}
+                {event.priceNote && `（${event.priceNote}）`}
+              </dd>
+            </div>
+            {event.access && (
+              <div>
+                <dt className="font-medium text-zinc-600 dark:text-zinc-400">アクセス</dt>
+                <dd className="mt-0.5">{event.access}</dd>
+              </div>
+            )}
+          </dl>
+        </section>
+      )}
 
       <section>
         <GlyphSectionTitle as="h2" className="[&_h2]:text-base [&_h2]:font-medium [&_h2]:text-[var(--mg-muted)]">
@@ -146,6 +201,23 @@ export default async function EventDetailPage({ params }: Props) {
             <dd className="mt-1 text-sm">{event.rainPolicy}</dd>
           </div>
         )}
+        {event.requiresRegistration && event.registrationDeadline && (
+          <div>
+            <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">申込締切</dt>
+            <dd className="mt-1 text-sm">
+              {new Date(event.registrationDeadline).toLocaleString("ja-JP", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </dd>
+          </div>
+        )}
+        {event.requiresRegistration && event.registrationNote && (
+          <div>
+            <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">申込メモ・注意事項</dt>
+            <dd className="mt-1 text-sm whitespace-pre-wrap">{event.registrationNote}</dd>
+          </div>
+        )}
         <OrganizerContactSection
           organizerName={event.organizerName}
           organizerContact={event.organizerContact}
@@ -158,12 +230,7 @@ export default async function EventDetailPage({ params }: Props) {
       <div id="join">
         <EventVolunteerSection eventId={id} returnTo={`/events/${id}`} />
       </div>
-      <SponsorTicketSection
-        eventId={id}
-        eventTitle={event.title}
-        prices={event.sponsorTicketPrices ?? []}
-        perks={event.sponsorPerks ?? {}}
-      />
+      <SponsorSection eventId={id} />
       <EventGiftSection event={event} />
       <div className="space-y-4 border-t border-zinc-200 pt-6 dark:border-zinc-700">
         <ShareButton url={`/events/${id}`} title={`${event.title} - MachiGlyph`} />
@@ -196,10 +263,21 @@ export default async function EventDetailPage({ params }: Props) {
         />
       </main>
 
-      {isAvailable && (
+      {isAvailable && event.requiresRegistration && (
+        <EventDetailClient requiresRegistration targetId="join" />
+      )}
+      {isAvailable && !event.requiresRegistration && (
         <EventDetailClient
-          label="参加・応援する"
-          targetId="join"
+          requiresRegistration={false}
+          eventId={id}
+          address={event.address}
+          location={event.location}
+          latitude={event.latitude}
+          longitude={event.longitude}
+          title={event.title}
+          date={event.date}
+          startTime={event.startTime}
+          endTime={event.endTime}
         />
       )}
     </div>

@@ -174,7 +174,7 @@ export function ModeSelectionScreen() {
 
         <div className="mt-6 flex flex-col gap-3">
           <Link
-            href="/rankings"
+            href="/discover"
             onClick={() => setModeCookie(null)}
             className="block w-full rounded-xl border border-[var(--border)] bg-[var(--accent-soft)]/30 py-3 text-center text-sm font-medium text-[var(--accent)] transition-colors hover:bg-[var(--accent-soft)] dark:bg-[var(--accent-soft)]/20 dark:hover:bg-[var(--accent-soft)]/30"
           >

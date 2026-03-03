@@ -51,3 +51,23 @@ export function getHeroEventsWithFallback(
 
   return result.slice(0, limit);
 }
+
+/** ヒーロー1枚＋小カード最大2枚用（先頭を主役に） */
+export function getHeroWithSubCards(
+  events: Event[],
+  areaPreference: string,
+  selectedCategoryKeys: CategoryKey[],
+  limit: number
+): { featured: Event | null; subCards: Event[] } {
+  const all = getHeroEventsWithFallback(
+    events,
+    areaPreference,
+    selectedCategoryKeys,
+    Math.min(limit + 1, 4)
+  );
+  const [featured, ...sub] = all;
+  return {
+    featured: featured ?? null,
+    subCards: sub.slice(0, 2),
+  };
+}

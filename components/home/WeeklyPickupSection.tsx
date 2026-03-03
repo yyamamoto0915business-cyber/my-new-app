@@ -5,29 +5,26 @@ import { ShelfCard } from "./ShelfCard";
 import { SectionHeader } from "./SectionHeader";
 
 type Props = {
-  /** 表示するイベント（親で重複排除・テーマ統合済み） */
+  /** 表示するイベント（親で重複排除済み） */
   events: Event[];
   loading: boolean;
   bookmarkIds: string[];
-  onBookmarkToggle: (eventId: string) => void;
+  onBookmarkToggle: (id: string) => void;
 };
 
-/** テーマ別コレクション：1段入口＋すべて見る */
-export function CollectionsShelf({
+/** 今週のピックアップ：今週末×無料（1切り口） */
+export function WeeklyPickupSection({
   events,
-  loading = false,
+  loading,
   bookmarkIds,
   onBookmarkToggle,
 }: Props) {
-  const display = events.slice(0, 8);
+  const available = events.slice(0, 8);
 
   if (loading) {
     return (
-      <section className="space-y-4" aria-label="テーマ別コレクション">
-        <SectionHeader
-          title="テーマ別コレクション"
-          subtitle="無料・親子・体験・文化体験から"
-        />
+      <section className="space-y-4" aria-label="今週のピックアップ">
+        <SectionHeader title="今週のピックアップ" subtitle="今週末×無料" />
         <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">
           {[1, 2, 3, 4, 5].map((i) => (
             <div
@@ -40,17 +37,17 @@ export function CollectionsShelf({
     );
   }
 
-  if (display.length === 0) return null;
+  if (available.length === 0) return null;
 
   return (
-    <section className="space-y-4" aria-label="テーマ別コレクション">
+    <section className="space-y-4" aria-label="今週のピックアップ">
       <SectionHeader
-        title="テーマ別コレクション"
-        subtitle="無料・親子・体験・文化体験から"
-        href="/collections"
+        title="今週のピックアップ"
+        subtitle="今週末×無料"
+        href="/events"
       />
       <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">
-        {display.map((e) => (
+        {available.map((e) => (
           <ShelfCard
             key={e.id}
             event={e}

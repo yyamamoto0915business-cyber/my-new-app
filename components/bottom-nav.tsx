@@ -1,10 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUnreadCount } from "@/hooks/use-unread-count";
+import { getModeFromCookie, setModeCookie } from "@/lib/mode-preference";
 
-const NAV_ITEMS = [
+const DESKTOP_NAV_ITEMS = [
   { href: "/", label: "ホーム", icon: "home" },
   { href: "/stories", label: "ストーリー", icon: "story" },
   { href: "/volunteer", label: "ボランティア", icon: "volunteer" },
@@ -12,6 +14,21 @@ const NAV_ITEMS = [
   { href: "/organizer/events", label: "主催", icon: "organizer" },
   { href: "/profile", label: "マイページ", icon: "profile" },
 ] as const;
+
+/** モバイル用4項目（2番目は主催者モード時のみ主催に差し替え） */
+function getMobileNavItems(pathname: string): typeof DESKTOP_NAV_ITEMS {
+  const isOrganizerMode =
+    pathname.startsWith("/organizer") || getModeFromCookie() === "ORGANIZER";
+  const secondItem = isOrganizerMode
+    ? { href: "/organizer/events", label: "主催", icon: "organizer" as const }
+    : { href: "/discover", label: "探す", icon: "search" as const };
+  return [
+    { href: "/", label: "ホーム", icon: "home" },
+    secondItem,
+    { href: "/messages", label: "メッセージ", icon: "messages" },
+    { href: "/profile", label: "マイ", icon: "profile" },
+  ];
+}
 
 function NavIcon({ icon, active }: { icon: string; active: boolean }) {
   const stroke = active ? "var(--accent)" : "currentColor";
@@ -50,6 +67,13 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
       </svg>
     );
   }
+  if (icon === "search") {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    );
+  }
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -57,14 +81,58 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
   );
 }
 
+function NavLink({
+  item,
+  isActive,
+  showBadge,
+  unreadCount,
+  minTapHeight = true,
+}: {
+  item: { href: string; label: string; icon: string };
+  isActive: boolean;
+  showBadge: boolean;
+  unreadCount: number;
+  minTapHeight?: boolean;
+}) {
+  const href = item.href === "/profile" ? "/profile" : item.href;
+  return (
+    <Link
+      href={href}
+      className={`relative flex flex-1 flex-col items-center gap-1 text-xs transition-colors md:flex-none md:w-full md:px-2 ${
+        minTapHeight ? "min-h-[44px] justify-center py-3 md:py-2" : "py-3 md:py-2"
+      } ${isActive ? "text-[var(--accent)]" : "text-[var(--foreground-muted)]"}`}
+    >
+      <span className="relative inline-block">
+        <NavIcon icon={item.icon} active={isActive} />
+        {showBadge && (
+          <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
+      </span>
+      <span className="text-center leading-tight whitespace-nowrap">{item.label}</span>
+    </Link>
+  );
+}
+
 export function BottomNav() {
   const pathname = usePathname();
   const unreadCount = useUnreadCount(true);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (pathname.startsWith("/organizer")) setModeCookie("ORGANIZER");
+  }, [pathname]);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
+
+  const mobileItems = mounted ? getMobileNavItems(pathname) : getMobileNavItems("/");
+  const showBadge = (icon: string) =>
+    (icon === "messages" || icon === "profile") && unreadCount > 0;
 
   return (
     <nav
@@ -74,31 +142,31 @@ export function BottomNav() {
         md:border-t-0 md:border-r md:pb-0 md:left-0 md:top-0 md:bottom-0 md:right-auto md:w-20 md:flex-col md:items-center md:py-4"
       aria-label="メインナビゲーション"
     >
-      <div className="mx-auto flex w-full max-w-lg items-center justify-around md:max-w-none md:flex-col md:justify-start md:gap-0">
-        {NAV_ITEMS.map((item) => {
-          const active = isActive(item.href);
-          const href = item.href === "/profile" ? "/profile" : item.href;
-          const showBadge = (item.icon === "messages" || item.icon === "profile") && unreadCount > 0;
-          return (
-            <Link
-              key={item.href}
-              href={href}
-              className={`relative flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors md:flex-none md:w-full md:px-2 ${
-                active ? "text-[var(--accent)]" : "text-[var(--foreground-muted)]"
-              }`}
-            >
-              <span className="relative inline-block">
-                <NavIcon icon={item.icon} active={active} />
-                {showBadge && (
-                  <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white">
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
-                )}
-              </span>
-              <span className="text-center leading-tight">{item.label}</span>
-            </Link>
-          );
-        })}
+      {/* モバイル: 4項目（タップ領域44px・ラベル1行） */}
+      <div className="mx-auto flex w-full max-w-lg flex-1 items-center justify-around md:hidden">
+        {mobileItems.map((item) => (
+          <NavLink
+            key={item.href}
+            item={item}
+            isActive={isActive(item.href)}
+            showBadge={showBadge(item.icon)}
+            unreadCount={unreadCount}
+            minTapHeight
+          />
+        ))}
+      </div>
+      {/* PC: 6項目（現状維持） */}
+      <div className="hidden md:flex md:w-full md:flex-col md:items-center md:justify-start md:gap-0">
+        {DESKTOP_NAV_ITEMS.map((item) => (
+          <NavLink
+            key={item.href}
+            item={item}
+            isActive={isActive(item.href)}
+            showBadge={showBadge(item.icon)}
+            unreadCount={unreadCount}
+            minTapHeight={false}
+          />
+        ))}
       </div>
     </nav>
   );

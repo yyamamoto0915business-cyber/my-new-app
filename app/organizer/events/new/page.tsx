@@ -52,6 +52,9 @@ const initialForm: EventFormData = {
   prioritySlots: 0,
   englishGuideAvailable: false,
   capacity: undefined,
+  requiresRegistration: false,
+  registrationDeadline: undefined,
+  registrationNote: undefined,
 };
 
 function validateForm(data: EventFormData): FormErrors {
@@ -391,26 +394,119 @@ export default function NewEventPage() {
             </label>
           </div>
 
-          <div>
-            <label htmlFor="capacity" className="block text-sm font-medium">
-              定員（任意）
-            </label>
-            <input
-              id="capacity"
-              name="capacity"
-              type="number"
-              min={0}
-              value={form.capacity ?? ""}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  capacity: e.target.value ? Number(e.target.value) : undefined,
-                }))
-              }
-              placeholder="例: 50"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-            />
-          </div>
+          {/* 参加登録セクション：ラジオで必ず選択 */}
+          <section className="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700 dark:bg-zinc-800/30">
+            <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+              参加登録
+            </h3>
+            <div className="flex flex-col gap-2">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="requiresRegistration"
+                  checked={(form.requiresRegistration ?? false) === true}
+                  onChange={() =>
+                    setForm((prev) => ({ ...prev, requiresRegistration: true }))
+                  }
+                  className="h-4 w-4 border-zinc-300"
+                />
+                <span className="text-sm">参加登録が必要</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="requiresRegistration"
+                  checked={(form.requiresRegistration ?? false) === false}
+                  onChange={() =>
+                    setForm((prev) => ({ ...prev, requiresRegistration: false }))
+                  }
+                  className="h-4 w-4 border-zinc-300"
+                />
+                <span className="text-sm">登録不要</span>
+              </label>
+            </div>
+            {(form.requiresRegistration ?? false) && (
+              <div className="mt-4 space-y-4 border-t border-zinc-200 pt-4 dark:border-zinc-600">
+                <div>
+                  <label
+                    htmlFor="capacity"
+                    className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  >
+                    定員（任意）
+                  </label>
+                  <input
+                    id="capacity"
+                    name="capacity"
+                    type="number"
+                    min={0}
+                    value={form.capacity ?? ""}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        capacity: e.target.value ? Number(e.target.value) : undefined,
+                      }))
+                    }
+                    placeholder="例: 50"
+                    className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="registrationDeadline"
+                    className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  >
+                    申込締切（任意）
+                  </label>
+                  <input
+                    id="registrationDeadline"
+                    name="registrationDeadline"
+                    type="datetime-local"
+                    value={
+                      form.registrationDeadline
+                        ? (() => {
+                            const d = new Date(form.registrationDeadline!);
+                            const pad = (n: number) =>
+                              String(n).padStart(2, "0");
+                            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                          })()
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        registrationDeadline: e.target.value
+                          ? new Date(e.target.value).toISOString()
+                          : undefined,
+                      }))
+                    }
+                    className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="registrationNote"
+                    className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  >
+                    申込メモ・注意事項（任意）
+                  </label>
+                  <textarea
+                    id="registrationNote"
+                    name="registrationNote"
+                    rows={2}
+                    value={form.registrationNote ?? ""}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        registrationNote: e.target.value || undefined,
+                      }))
+                    }
+                    placeholder="例: 定員に達し次第締め切ります"
+                    className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+                  />
+                </div>
+              </div>
+            )}
+          </section>
 
           <div>
             <label htmlFor="prioritySlots" className="block text-sm font-medium">

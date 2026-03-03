@@ -69,6 +69,9 @@ export async function POST(request: NextRequest) {
       prioritySlots,
       englishGuideAvailable,
       capacity,
+      requiresRegistration,
+      registrationDeadline,
+      registrationNote,
     } = body;
 
     if (!title?.trim() || !description?.trim() || !date || !startTime || !location?.trim() || !address?.trim()) {
@@ -116,6 +119,18 @@ export async function POST(request: NextRequest) {
       prioritySlots: Number(prioritySlots) || 0,
       englishGuideAvailable: Boolean(englishGuideAvailable),
       capacity: capacity != null ? Number(capacity) : undefined,
+      requiresRegistration:
+        requiresRegistration === true ||
+        requiresRegistration === "true" ||
+        String(requiresRegistration).toLowerCase() === "true",
+      registrationDeadline:
+        registrationDeadline && String(registrationDeadline).trim()
+          ? new Date(String(registrationDeadline)).toISOString()
+          : undefined,
+      registrationNote:
+        registrationNote && String(registrationNote).trim()
+          ? String(registrationNote).trim()
+          : undefined,
     };
 
     let event;

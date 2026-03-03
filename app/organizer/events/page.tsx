@@ -329,6 +329,13 @@ function EventCard({ event }: { event: DashboardEvent }) {
                   />
                   <div className="absolute right-0 top-full z-20 mt-1 min-w-[180px] rounded-lg border border-[var(--border)] bg-white py-1 shadow-lg dark:border-zinc-600 dark:bg-zinc-900">
                     <Link
+                      href={`/organizer/events/${event.id}/sponsors`}
+                      className="block px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      スポンサー管理
+                    </Link>
+                    <Link
                       href={`/organizer/stories/new?eventId=${event.id}`}
                       className="block px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
                       onClick={() => setMenuOpen(false)}

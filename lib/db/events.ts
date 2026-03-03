@@ -35,6 +35,9 @@ function dbEventToEvent(
     prioritySlots: db.priority_slots ?? undefined,
     englishGuideAvailable: db.english_guide_available ?? undefined,
     capacity: db.capacity ?? undefined,
+    requiresRegistration: db.requires_registration ?? false,
+    registrationDeadline: db.registration_deadline ?? undefined,
+    registrationNote: db.registration_note ?? undefined,
     createdAt: db.created_at,
   };
 }
@@ -239,12 +242,19 @@ export async function createEvent(
       priority_slots: form.prioritySlots ?? null,
       english_guide_available: form.englishGuideAvailable ?? false,
       capacity: form.capacity ?? null,
+      requires_registration: form.requiresRegistration ?? false,
+      registration_deadline: form.registrationDeadline || null,
+      registration_note: form.registrationNote?.trim() || null,
       image_url: form.imageUrl?.trim() || null,
     })
     .select("id")
     .single();
 
   if (error) throw error;
+
+  const { createSponsorTiersForEvent } = await import("./sponsors");
+  await createSponsorTiersForEvent(supabase, data.id);
+
   const event = await fetchEventById(supabase, data.id);
   if (!event) throw new Error("Failed to fetch created event");
   return event;
@@ -276,6 +286,9 @@ function formToDb(form: EventFormData): Record<string, unknown> {
     priority_slots: form.prioritySlots ?? null,
     english_guide_available: form.englishGuideAvailable ?? false,
     capacity: form.capacity ?? null,
+    requires_registration: form.requiresRegistration ?? false,
+    registration_deadline: form.registrationDeadline || null,
+    registration_note: form.registrationNote?.trim() || null,
   };
 }
 
