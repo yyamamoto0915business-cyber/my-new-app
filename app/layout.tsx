@@ -5,6 +5,7 @@ import { BrandIntro } from "@/components/brand-intro";
 import { LanguageProvider } from "@/components/language-provider";
 import { APP_NAME, APP_SUBTITLE, APP_TAGLINE1 } from "@/lib/brand-copy";
 import { BottomNav } from "@/components/bottom-nav";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { NotificationBell } from "@/components/notification-bell";
 import "./globals.css";
 
@@ -42,10 +43,11 @@ export default function RootLayout({
               <NotificationBell />
             </Suspense>
           </div>
-          <div className="min-h-screen pb-[calc(72px+env(safe-area-inset-bottom,0px))] md:pb-0 md:pl-20">
+          <div className="min-h-screen pb-[calc(72px+env(safe-area-inset-bottom,0px))] sm:pb-0 sm:pl-20">
             {children}
           </div>
           <Suspense fallback={null}>
+            <MobileBottomNav />
             <BottomNav />
           </Suspense>
         </LanguageProvider>

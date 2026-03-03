@@ -113,12 +113,12 @@ export function BookmarksSheet({
                       href={`/events/${e.id}`}
                       className="flex min-h-[72px] items-center gap-3 rounded-2xl border border-[var(--border)] p-3 shadow-sm transition-shadow hover:shadow-md active:scale-[0.99] dark:bg-white/5"
                     >
-                      <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl">
+                      <div className="relative aspect-video w-24 shrink-0 overflow-hidden rounded-xl">
                         <EventThumbnail
                           imageUrl={e.imageUrl}
                           alt={e.title}
                           rounded="none"
-                          className="h-full w-full object-cover"
+                          fill
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                       </div>

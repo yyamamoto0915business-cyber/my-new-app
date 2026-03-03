@@ -41,12 +41,12 @@ function BookmarkShelfCard({
       onKeyDown={(e) => e.key === "Enter" && onClick()}
       className="group flex w-[140px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)] sm:w-[160px]"
     >
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl">
         <EventThumbnail
           imageUrl={event.imageUrl}
           alt={event.title}
           rounded="none"
-          className="rounded-t-xl"
+          fill
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         <div className="absolute right-1 top-1 z-10" onClick={(e) => e.stopPropagation()}>

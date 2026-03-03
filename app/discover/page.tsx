@@ -9,7 +9,7 @@ import { ProfileLink } from "@/components/profile-link";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { SectionHeader } from "@/components/home/SectionHeader";
 
-type ContentType = "events" | "volunteer" | "story" | "ranking";
+type ContentType = "events" | "volunteer" | "story" | "stories" | "ranking";
 type RankingType = "newest" | "popular" | "satisfaction";
 
 const RANKING_TABS: { id: RankingType; label: string }[] = [
@@ -19,10 +19,12 @@ const RANKING_TABS: { id: RankingType; label: string }[] = [
 ];
 
 const TAB_PARAM = "tab";
-const VALID_TABS: ContentType[] = ["events", "volunteer", "story", "ranking"];
+const VALID_TABS: ContentType[] = ["events", "volunteer", "story", "stories", "ranking"];
 
 function parseTabParam(tab: string | null): ContentType {
-  if (tab && VALID_TABS.includes(tab as ContentType)) return tab as ContentType;
+  if (!tab) return "events";
+  if (tab === "stories") return "stories";
+  if (VALID_TABS.includes(tab as ContentType)) return tab as ContentType;
   return "events";
 }
 
@@ -85,7 +87,7 @@ function DiscoverPageContent() {
             [
               { id: "events" as const, label: "イベント" },
               { id: "volunteer" as const, label: "ボランティア" },
-              { id: "story" as const, label: "ストーリー" },
+              { id: "stories" as const, label: "ストーリー" },
               { id: "ranking" as const, label: "ランキング" },
             ] as const
           ).map(({ id, label }) => (
@@ -121,7 +123,7 @@ function DiscoverPageContent() {
               <span aria-hidden>→</span>
             </Link>
           </section>
-        ) : contentType === "story" ? (
+        ) : contentType === "story" || contentType === "stories" ? (
           <section className="space-y-4" aria-label="ストーリー">
             <SectionHeader
               title="ストーリー"

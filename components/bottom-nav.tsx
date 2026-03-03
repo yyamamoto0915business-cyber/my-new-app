@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUnreadCount } from "@/hooks/use-unread-count";
-import { getModeFromCookie, setModeCookie } from "@/lib/mode-preference";
-import { getOrganizerMode, setOrganizerMode } from "@/lib/organizer-mode";
+import { setModeCookie } from "@/lib/mode-preference";
 
 const DESKTOP_NAV_ITEMS = [
   { href: "/", label: "ホーム", icon: "home" },
@@ -15,28 +14,6 @@ const DESKTOP_NAV_ITEMS = [
   { href: "/organizer/events", label: "主催", icon: "organizer" },
   { href: "/profile", label: "マイページ", icon: "profile" },
 ] as const;
-
-type NavItem = { href: string; label: string; icon: string };
-
-/** モバイル用4項目（2番目は主催者モード時のみ主催に差し替え） */
-function getMobileNavItems(
-  pathname: string,
-  organizerModeFromStorage: boolean
-): NavItem[] {
-  const isOrganizerMode =
-    pathname.startsWith("/organizer") ||
-    getModeFromCookie() === "ORGANIZER" ||
-    organizerModeFromStorage;
-  const secondItem = isOrganizerMode
-    ? { href: "/organizer/events", label: "主催", icon: "organizer" as const }
-    : { href: "/discover", label: "探す", icon: "search" as const };
-  return [
-    { href: "/", label: "ホーム", icon: "home" },
-    secondItem,
-    { href: "/messages", label: "メッセージ", icon: "messages" },
-    { href: "/profile", label: "マイ", icon: "profile" },
-  ];
-}
 
 function NavIcon({ icon, active }: { icon: string; active: boolean }) {
   const stroke = active ? "var(--accent)" : "currentColor";
@@ -109,13 +86,13 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`relative flex flex-1 flex-col items-center gap-1 text-xs transition-colors md:flex-none md:w-full md:px-2 ${
-        minTapHeight ? "min-h-[44px] justify-center py-3 md:py-2" : "py-3 md:py-2"
+      className={`relative flex flex-1 flex-col items-center gap-1 text-xs transition-colors sm:flex-none sm:w-full sm:px-2 ${
+        minTapHeight ? "min-h-[44px] justify-center py-3 sm:py-2" : "py-3 sm:py-2"
       } ${isActive ? "text-[var(--accent)]" : "text-[var(--foreground-muted)]"}`}
     >
       {showActiveIndicator && isActive && (
         <span
-          className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[var(--accent)] md:hidden"
+          className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[var(--accent)] sm:hidden"
           aria-hidden
         />
       )}
@@ -132,66 +109,31 @@ function NavLink({
   );
 }
 
+/** PC用6項目サイドナビ（sm以上表示・モバイル時は非表示） */
 export function BottomNav() {
   const pathname = usePathname();
   const unreadCount = useUnreadCount(true);
-  const [mounted, setMounted] = useState(false);
-  const [organizerMode, setOrganizerModeState] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (pathname.startsWith("/organizer")) {
       setModeCookie("ORGANIZER");
-      setOrganizerMode(true);
     }
   }, [pathname]);
-
-  useEffect(() => {
-    setOrganizerModeState(getOrganizerMode());
-    const handler = () => setOrganizerModeState(getOrganizerMode());
-    window.addEventListener("storage", handler);
-    window.addEventListener("organizer-mode-change", handler);
-    return () => {
-      window.removeEventListener("storage", handler);
-      window.removeEventListener("organizer-mode-change", handler);
-    };
-  }, []);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
-  const mobileItems = mounted
-    ? getMobileNavItems(pathname, organizerMode)
-    : getMobileNavItems("/", false);
   const showBadge = (icon: string) =>
     (icon === "messages" || icon === "profile") && unreadCount > 0;
 
   return (
     <nav
-      className="fixed z-50 flex bg-white/95 backdrop-blur-sm dark:bg-[var(--background)]
-        bottom-0 left-0 right-0 border-t border-[var(--border)]
-        pb-[env(safe-area-inset-bottom,0px)]
-        md:border-t-0 md:border-r md:pb-0 md:left-0 md:top-0 md:bottom-0 md:right-auto md:w-20 md:flex-col md:items-center md:py-4"
-      aria-label="メインナビゲーション"
+      className="fixed bottom-0 left-0 top-0 right-auto z-50 hidden w-20 flex-col items-center border-r border-[var(--border)] bg-white/95 py-4 backdrop-blur-sm sm:flex dark:bg-[var(--background)]"
+      aria-label="PCナビゲーション"
     >
-      {/* モバイル: 4項目（タップ領域44px・ラベル1行） */}
-      <div className="mx-auto flex w-full max-w-lg flex-1 items-center justify-around md:hidden">
-        {mobileItems.map((item) => (
-          <NavLink
-            key={item.href}
-            item={item}
-            isActive={isActive(item.href)}
-            showBadge={showBadge(item.icon)}
-            unreadCount={unreadCount}
-            minTapHeight
-            showActiveIndicator
-          />
-        ))}
-      </div>
-      {/* PC: 6項目（現状維持） */}
-      <div className="hidden md:flex md:w-full md:flex-col md:items-center md:justify-start md:gap-0">
+      <div className="flex w-full flex-col items-center justify-start gap-0">
         {DESKTOP_NAV_ITEMS.map((item) => (
           <NavLink
             key={item.href}

@@ -93,12 +93,12 @@ function RecommendedCard({
       onKeyDown={(e) => e.key === "Enter" && handleClick()}
       className="group flex w-[220px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)] sm:w-auto"
     >
-      <div className="relative aspect-[16/10] overflow-hidden">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-t-2xl">
         <EventThumbnail
           imageUrl={event.imageUrl}
           alt={event.title}
           rounded="none"
-          className="rounded-t-2xl"
+          fill
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         <div className="absolute left-2 top-2 flex flex-wrap gap-1">

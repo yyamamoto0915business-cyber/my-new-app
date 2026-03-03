@@ -70,12 +70,12 @@ function HeroEventCard({ event }: { event: Event }) {
       href={`/events/${event.id}`}
       className="group flex min-w-[160px] max-w-[200px] shrink-0 flex-col overflow-hidden rounded-xl border border-[var(--mg-line)] bg-white transition-shadow hover:shadow-md dark:bg-zinc-900/80 dark:border-zinc-700 mg-card-glow"
     >
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl">
         <EventThumbnail
           imageUrl={event.imageUrl}
           alt={event.title}
           rounded="none"
-          className="rounded-t-xl"
+          fill
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         <div className="absolute bottom-1.5 left-2 right-2">
