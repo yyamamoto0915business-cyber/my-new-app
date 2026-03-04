@@ -168,10 +168,10 @@ export function BrandIntro({ fadeMs = 650, showSkip = false }: BrandIntroProps) 
             </button>
           )}
 
-          {/* Left-aligned content */}
-          <div className="relative z-10 mx-6 flex flex-1 flex-col md:mx-12">
-            <div className="max-w-xl md:max-w-2xl">
-              <h1 className="brand-intro-text-reveal brand-intro-neon brand-intro-stretch-x whitespace-nowrap font-serif text-5xl font-bold text-white md:text-6xl lg:text-7xl">
+          {/* Left-aligned content（文字切れ防止のため余白・折り返しを確保） */}
+          <div className="relative z-10 flex flex-1 flex-col px-6 pr-10 md:px-12 md:pr-16">
+            <div className="max-w-xl md:max-w-2xl min-w-0">
+              <h1 className="brand-intro-text-reveal brand-intro-neon brand-intro-stretch-x font-serif text-5xl font-bold text-white md:text-6xl lg:text-7xl">
                 MachiGlyph（マチグリフ）
               </h1>
               <p className="brand-intro-text-reveal-delay-1 brand-intro-neon-subtle mt-4 font-sans text-xl font-medium text-white md:text-2xl">

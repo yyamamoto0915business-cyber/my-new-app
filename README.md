@@ -91,8 +91,16 @@ Vercel ダッシュボード: **Project** → **Settings** → **Environment Var
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase プロジェクト URL | `https://xxx.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | （ダッシュボードから取得） |
 | `AUTH_SECRET` | NextAuth の秘密鍵 | 本番ではランダムな文字列 |
-| `AUTH_DISABLED` | 開発中: `true` で認証オフ | 本番では `false` または未設定 |
-| `NEXT_PUBLIC_AUTH_DISABLED` | 同上（クライアント用） | 本番では `false` または未設定 |
+| `AUTH_DISABLED` | 開発中: `true` で認証オフ | **本番では必ず `false`** |
+| `NEXT_PUBLIC_AUTH_DISABLED` | 同上（クライアント用） | **本番では必ず `false`** |
+
+## 運用フェーズへ
+
+本番運用開始前のチェックリスト → [docs/PRODUCTION_CHECKLIST.md](docs/PRODUCTION_CHECKLIST.md)
+
+- **環境変数**: `AUTH_DISABLED` を `false` に
+- **Supabase**: Site URL / Redirect URLs に本番 URL を設定
+- **マイグレーション**: `npx supabase db push` で本番 DB に適用
 
 ## 今後の拡張（Phase 5）
 
