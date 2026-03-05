@@ -94,18 +94,21 @@ export function BrandIntro({ fadeMs = 650, showSkip = false }: BrandIntroProps) 
         }
         .brand-intro-neon {
           text-shadow:
-            0 2px 4px rgba(0, 0, 0, 0.95),
-            0 4px 12px rgba(0, 0, 0, 0.85),
-            0 0 8px rgba(184, 134, 11, 0.7),
-            0 0 20px rgba(184, 134, 11, 0.5),
-            0 0 40px rgba(184, 134, 11, 0.25);
+            0 0 1px rgba(0, 0, 0, 1),
+            0 1px 3px rgba(0, 0, 0, 1),
+            0 2px 8px rgba(0, 0, 0, 0.95),
+            0 4px 16px rgba(0, 0, 0, 0.9),
+            0 0 10px rgba(184, 134, 11, 0.8),
+            0 0 24px rgba(184, 134, 11, 0.55),
+            0 0 48px rgba(184, 134, 11, 0.3);
         }
         .brand-intro-neon-subtle {
           text-shadow:
-            0 2px 4px rgba(0, 0, 0, 0.9),
-            0 4px 10px rgba(0, 0, 0, 0.75),
-            0 0 6px rgba(184, 134, 11, 0.6),
-            0 0 14px rgba(184, 134, 11, 0.35);
+            0 0 1px rgba(0, 0, 0, 1),
+            0 1px 2px rgba(0, 0, 0, 0.95),
+            0 2px 6px rgba(0, 0, 0, 0.85),
+            0 0 6px rgba(184, 134, 11, 0.65),
+            0 0 14px rgba(184, 134, 11, 0.4);
         }
         .brand-intro-stretch-x {
           display: inline-block;
@@ -144,12 +147,12 @@ export function BrandIntro({ fadeMs = 650, showSkip = false }: BrandIntroProps) 
             </div>
           </div>
 
-          {/* テキスト可読性のための暗幕グラデ（下端は紙色に馴染む） */}
+          {/* テキスト可読性のための暗幕グラデ（タイトル部分は強めに暗く、下端は紙色に馴染む） */}
           <div
             className="pointer-events-none absolute top-0 left-0 right-0 h-[58vh]"
             style={{
               background:
-                "linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.4) 100%), linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.4) 45%, rgba(250,249,246,0.2) 75%, rgba(250,249,246,0.5) 100%)",
+                "linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.65) 35%, rgba(0,0,0,0.45) 65%, rgba(0,0,0,0.5) 100%), linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.3) 75%, rgba(250,249,246,0.5) 100%)",
             }}
           />
 
