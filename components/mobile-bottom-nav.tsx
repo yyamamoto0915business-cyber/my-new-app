@@ -4,14 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useUnreadCount } from "@/hooks/use-unread-count";
-import { getModeFromCookie } from "@/lib/mode-preference";
-import { getOrganizerMode } from "@/lib/organizer-mode";
+import { getActiveMode, getHomeHrefForMode } from "@/components/mode-segment-nav";
 
 const MOBILE_ITEMS = [
-  { href: "/", label: "ホーム", icon: "home" },
-  { href: "/discover", label: "探す", icon: "search" },
-  { href: "/messages", label: "メッセージ", icon: "messages" },
-  { href: "/profile", label: "マイ", icon: "profile" },
+  { id: "home" as const, href: "/", label: "ホーム", icon: "home" },
+  { id: "messages", href: "/messages", label: "メッセージ", icon: "messages" },
+  { id: "saved", href: "/saved", label: "保存", icon: "saved" },
+  { id: "notifications", href: "/notifications", label: "通知", icon: "notifications" },
+  { id: "profile", href: "/profile", label: "マイページ", icon: "profile" },
 ] as const;
 
 function NavIcon({ icon, active }: { icon: string; active: boolean }) {
@@ -23,10 +23,17 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
       </svg>
     );
   }
-  if (icon === "search") {
+  if (icon === "saved") {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+      </svg>
+    );
+  }
+  if (icon === "notifications") {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
       </svg>
     );
   }
@@ -47,45 +54,35 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
   return null;
 }
 
-/** モバイル用4項目ナビ（sm以下表示・タップ44px・ラベル1行） */
+/** モバイル用5項目ナビ（ホーム/メッセージ/保存/通知/マイページ）。役割切替は上部セグメントで行う。ホームはモード別の初期画面へ。 */
 export function MobileBottomNav() {
   const pathname = usePathname();
   const unreadCount = useUnreadCount(true);
   const [mounted, setMounted] = useState(false);
-  const [organizerMode, setOrganizerModeState] = useState(false);
+  const activeMode = getActiveMode(pathname ?? "");
+  const homeHref = getHomeHrefForMode(activeMode);
 
   useEffect(() => setMounted(true), []);
-  useEffect(() => {
-    setOrganizerModeState(getOrganizerMode());
-    const handler = () => setOrganizerModeState(getOrganizerMode());
-    window.addEventListener("storage", handler);
-    window.addEventListener("organizer-mode-change", handler);
-    return () => {
-      window.removeEventListener("storage", handler);
-      window.removeEventListener("organizer-mode-change", handler);
-    };
-  }, []);
 
-  const isOrganizerMode =
-    pathname.startsWith("/organizer") ||
-    getModeFromCookie() === "ORGANIZER" ||
-    organizerMode;
-  const items = isOrganizerMode
-    ? [
-        { href: "/", label: "ホーム", icon: "home" as const },
-        { href: "/organizer/events", label: "主催", icon: "organizer" as const },
-        { href: "/messages", label: "メッセージ", icon: "messages" as const },
-        { href: "/profile", label: "マイ", icon: "profile" as const },
-      ]
-    : MOBILE_ITEMS;
+  const items = MOBILE_ITEMS;
 
-  const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
-    return pathname.startsWith(href);
+  const getHref = (item: (typeof MOBILE_ITEMS)[number]) =>
+    item.id === "home" ? homeHref : item.href;
+
+  const isActive = (item: (typeof MOBILE_ITEMS)[number]) => {
+    const href = getHref(item);
+    if (item.id === "home") {
+      if (activeMode === "organizer")
+        return pathname === "/organizer/events" || pathname === "/organizer/events/";
+      if (activeMode === "volunteer") return pathname === "/volunteer" || pathname === "/volunteer/";
+      return pathname === "/" || pathname === "";
+    }
+    if (item.id === "notifications") return pathname?.startsWith("/notifications");
+    return pathname?.startsWith(item.href) ?? false;
   };
 
   const showBadge = (icon: string) =>
-    (icon === "messages" || icon === "profile") && unreadCount > 0;
+    (icon === "messages" || icon === "profile" || icon === "notifications") && unreadCount > 0;
 
   if (!mounted) return null;
 
@@ -94,29 +91,26 @@ export function MobileBottomNav() {
       className="fixed bottom-0 left-0 right-0 z-50 flex border-t border-[var(--border)] bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom,0px)] sm:hidden dark:bg-[var(--background)]"
       aria-label="モバイルナビゲーション"
     >
-      <div className="mx-auto flex w-full max-w-lg items-center justify-around">
-        {items.map((item) => (
+      <div className="mx-auto flex w-full max-w-lg items-center justify-around gap-0">
+        {items.map((item) => {
+          const href = getHref(item);
+          const active = isActive(item);
+          return (
           <Link
-            key={item.href}
-            href={item.href === "/profile" ? "/profile" : item.href}
+            key={item.id}
+            href={href}
             className={`relative flex min-h-[44px] flex-1 flex-col items-center justify-center gap-1 py-3 text-xs transition-colors ${
-              isActive(item.href) ? "text-[var(--accent)]" : "text-[var(--foreground-muted)]"
+              active ? "text-[var(--accent)]" : "text-[var(--foreground-muted)]"
             }`}
           >
-            {isActive(item.href) && (
+            {active && (
               <span
                 className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[var(--accent)]"
                 aria-hidden
               />
             )}
             <span className="relative inline-block">
-              {item.icon === "organizer" ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke={isActive(item.href) ? "var(--accent)" : "currentColor"} strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-              ) : (
-                <NavIcon icon={item.icon} active={isActive(item.href)} />
-              )}
+              <NavIcon icon={item.icon} active={active} />
               {showBadge(item.icon) && (
                 <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
@@ -125,7 +119,7 @@ export function MobileBottomNav() {
             </span>
             <span className="whitespace-nowrap text-center leading-tight">{item.label}</span>
           </Link>
-        ))}
+        );})}
       </div>
     </nav>
   );

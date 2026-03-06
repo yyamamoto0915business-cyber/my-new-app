@@ -174,7 +174,7 @@ export default function ConversationPage({
           ログインするとメッセージを利用できます
         </p>
         <Link
-          href={`/login?returnTo=/messages/${conversationId}`}
+          href={`/auth?next=/messages/${conversationId}`}
           className="text-[var(--accent)] underline underline-offset-2"
         >
           ログイン

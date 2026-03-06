@@ -72,6 +72,9 @@ export default function OrganizerSponsorsPage() {
   const eventId = String(params.id ?? "");
   const [applications, setApplications] = useState<SponsorApplication[]>([]);
   const [tierMap, setTierMap] = useState<Record<string, SponsorTier>>({});
+  const [sponsorships, setSponsorships] = useState<
+    { id: string; amount_jpy: number; sponsor_name: string | null; sponsor_company: string | null; status: string; created_at: string; receipt_url: string | null }[]
+  >([]);
   const [eventTitle, setEventTitle] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabStatus>("pending");
@@ -81,14 +84,19 @@ export default function OrganizerSponsorsPage() {
     if (!eventId) return;
     setLoading(true);
     try {
-      const [sponsorsRes, eventRes] = await Promise.all([
+      const [sponsorsRes, eventRes, sponsorshipsRes] = await Promise.all([
         fetch(`/api/organizer/events/${eventId}/sponsors`),
         fetch(`/api/events/${eventId}`).catch(() => null),
+        fetch(`/api/organizer/sponsorships?eventId=${eventId}`).catch(() => null),
       ]);
       if (!sponsorsRes.ok) throw new Error("Failed to fetch");
       const sponsorsData = await sponsorsRes.json();
       setApplications(sponsorsData.applications ?? []);
       setTierMap(sponsorsData.tierMap ?? {});
+      if (sponsorshipsRes?.ok) {
+        const s = await sponsorshipsRes.json();
+        setSponsorships(Array.isArray(s) ? s : []);
+      }
       if (eventRes?.ok) {
         const eventData = await eventRes.json();
         setEventTitle(eventData.title ?? "イベント");
@@ -151,6 +159,38 @@ export default function OrganizerSponsorsPage() {
                 {actionState.error}
               </div>
             )}
+            <section className="mb-6 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900/90">
+              <h2 className="font-medium text-zinc-900 dark:text-zinc-100">協賛一覧（10千/3万/5万）</h2>
+              {sponsorships.length === 0 ? (
+                <p className="mt-2 text-sm text-zinc-500">協賛購入はまだありません</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {sponsorships.map((s) => (
+                    <li
+                      key={s.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded border border-zinc-200 py-2 px-3 dark:border-zinc-700"
+                    >
+                      <span className="font-medium">¥{s.amount_jpy.toLocaleString()}</span>
+                      <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                        {s.sponsor_name || s.sponsor_company || "匿名"}　
+                        {new Date(s.created_at).toLocaleDateString("ja-JP")}　{s.status}
+                      </span>
+                      {s.receipt_url && (
+                        <a
+                          href={s.receipt_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[var(--accent)] hover:underline"
+                        >
+                          領収書
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
             <div className="flex gap-2 border-b border-zinc-200 dark:border-zinc-700">
               {(["pending", "approved", "rejected"] as const).map((t) => (
                 <button

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-type IconType = "messages" | "points" | "profile" | "notifications" | "organizer";
+export type IconType = "messages" | "points" | "profile" | "notifications" | "organizer" | "event" | "recruitment" | "saved" | "volunteer";
 
 type Props = {
   href: string;
@@ -49,15 +49,43 @@ function IconSvg({ icon }: { icon: IconType }) {
       </svg>
     );
   }
+  if (icon === "event") {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    );
+  }
+  if (icon === "recruitment") {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+      </svg>
+    );
+  }
+  if (icon === "saved") {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+      </svg>
+    );
+  }
+  if (icon === "volunteer") {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    );
+  }
   return null;
 }
 
-/** メニューリスト行: アイコン + タイトル + 補足 + chevron、hover/active付き */
+/** メニューリスト行: アイコン + タイトル + 補足 + chevron、タップしやすい高さ */
 export function ProfileMenuLink({ href, icon, title, subtitle, badge }: Props) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-zinc-50 active:bg-zinc-100 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800"
+      className="flex min-h-[56px] items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-zinc-50 active:bg-zinc-100 dark:hover:bg-zinc-800/50 dark:active:bg-zinc-800"
     >
       <IconSvg icon={icon} />
       <div className="min-w-0 flex-1">

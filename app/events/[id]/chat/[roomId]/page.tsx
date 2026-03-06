@@ -55,7 +55,7 @@ export default function EventChatRoomPage({ params }: Props) {
       }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.replace(`/login?returnTo=${encodeURIComponent(`/events/${id}/chat/${rid}`)}`);
+        router.replace(`/auth?next=${encodeURIComponent(`/events/${id}/chat/${rid}`)}`);
         return;
       }
       setCurrentUserId(user.id);

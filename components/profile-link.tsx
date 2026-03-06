@@ -20,7 +20,7 @@ export function ProfileLink() {
 
   if (!user) {
     return (
-      <Link href={`/login?returnTo=${encodeURIComponent("/profile")}`} className={btnClass}>
+      <Link href={`/auth?next=${encodeURIComponent("/profile")}`} className={btnClass}>
         ログイン
       </Link>
     );

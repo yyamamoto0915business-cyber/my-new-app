@@ -18,13 +18,13 @@ export function ModeStats({ mode, stat1, stat2, stat3, stat2Breakdown }: Props) 
   const showBreakdown = mode === "organizer" && stat2Breakdown;
 
   return (
-    <section className="mb-6">
+    <section>
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-xl border border-[var(--border)] bg-white p-4 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
+        <div className="rounded-2xl border border-zinc-200/80 bg-white p-4 text-center shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/95">
           <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{stat1}</p>
           <p className="mt-1 text-xs text-[var(--foreground-muted)]">{config.stat1.label}</p>
         </div>
-        <div className="rounded-xl border border-[var(--border)] bg-white p-4 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
+        <div className="rounded-2xl border border-zinc-200/80 bg-white p-4 text-center shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/95">
           <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{stat2}</p>
           <p className="mt-1 text-xs text-[var(--foreground-muted)]">{config.stat2.label}</p>
           {showBreakdown && (stat2Breakdown.volunteer > 0 || stat2Breakdown.participant > 0) && (
@@ -33,7 +33,7 @@ export function ModeStats({ mode, stat1, stat2, stat3, stat2Breakdown }: Props) 
             </p>
           )}
         </div>
-        <div className="rounded-xl border border-[var(--border)] bg-white p-4 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
+        <div className="rounded-2xl border border-zinc-200/80 bg-white p-4 text-center shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/95">
           <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{stat3}</p>
           <p className="mt-1 text-xs text-[var(--foreground-muted)]">{config.stat3.label}</p>
         </div>

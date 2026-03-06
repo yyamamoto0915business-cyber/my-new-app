@@ -45,6 +45,8 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthPage =
     path === "/onboarding" ||
+    path === "/auth" ||
+    path.startsWith("/auth/") ||
     path.startsWith("/login") ||
     path.startsWith("/signup");
 
@@ -52,11 +54,11 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // 未ログインで認証必須ページにアクセス → ログインへリダイレクト
+  // 未ログインで認証必須ページにアクセス → 認証入口へリダイレクト
   if (!user && requiresAuth(path)) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("returnTo", path);
-    return NextResponse.redirect(loginUrl);
+    const authUrl = new URL("/auth", request.url);
+    authUrl.searchParams.set("next", path);
+    return NextResponse.redirect(authUrl);
   }
 
   // ログイン済みでロール未設定 → オンボーディングへ

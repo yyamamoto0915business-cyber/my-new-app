@@ -37,7 +37,7 @@ export default function NewEventRequestPage() {
     }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      window.location.href = "/login?returnTo=/event-requests/new";
+      window.location.href = "/auth?next=/event-requests/new";
       setSubmitting(false);
       return;
     }

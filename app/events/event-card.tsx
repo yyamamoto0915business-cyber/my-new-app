@@ -85,13 +85,19 @@ export function EventCard({ event }: Props) {
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
-          {event.requiresRegistration ? (
+          {(event.participationMode ?? (event.requiresRegistration ? "required" : "none")) === "required" && (
             <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-              参加登録あり
+              申込必須
             </span>
-          ) : (
+          )}
+          {(event.participationMode ?? "none") === "optional" && (
+            <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+              申込任意
+            </span>
+          )}
+          {(event.participationMode ?? "none") === "none" && (
             <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
-              登録不要
+              申込不要
             </span>
           )}
           {status === "available" && (
@@ -124,7 +130,9 @@ export function EventCard({ event }: Props) {
           href={`/events/${event.id}`}
           className="inline-flex items-center gap-1 text-sm font-medium text-[var(--accent)] hover:underline"
         >
-          {event.requiresRegistration ? "参加登録へ" : "詳細を見る"}
+          {(event.participationMode ?? (event.requiresRegistration ? "required" : "none")) === "required"
+            ? "申し込む"
+            : "詳細を見る"}
           <span aria-hidden>→</span>
         </Link>
       </div>

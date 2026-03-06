@@ -60,7 +60,7 @@ export default function OnboardingPage() {
       router.replace("/");
       return null;
     }
-    router.replace("/login");
+    router.replace("/auth");
     return null;
   }
 

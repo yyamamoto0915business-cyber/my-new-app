@@ -16,17 +16,49 @@ export type Profile = {
 export type Organizer = {
   id: string;
   profile_id: string;
-  plan: "free" | "light" | "standard";
+  plan: "free" | "light" | "standard" | "trial" | "starter";
   organization_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
   created_at: string;
   updated_at: string;
+  earlybird_eligible?: boolean;
+  full_feature_trial_end_at?: string | null;
+  founder30_granted_at?: string | null;
+  founder30_end_at?: string | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  subscription_status?: string | null;
+  current_period_end?: string | null;
+  stripe_account_id?: string | null;
+  stripe_account_charges_enabled?: boolean;
+  stripe_account_details_submitted?: boolean;
+};
+
+export type Sponsorship = {
+  id: string;
+  created_at: string;
+  event_id: string;
+  organizer_id: string;
+  amount_jpy: number;
+  platform_fee_jpy: number;
+  organizer_net_jpy: number;
+  currency: string;
+  sponsor_name: string | null;
+  sponsor_company: string | null;
+  sponsor_email: string | null;
+  stripe_checkout_session_id: string | null;
+  stripe_payment_intent_id: string | null;
+  status: "pending" | "paid" | "refunded" | "failed";
+  receipt_url: string | null;
 };
 
 export type DbEvent = {
   id: string;
   organizer_id: string;
+  status?: "draft" | "published";
+  published_at?: string | null;
+  sponsor_enabled?: boolean;
   title: string;
   description: string;
   date: string;
@@ -52,6 +84,7 @@ export type DbEvent = {
   english_guide_available?: boolean | null;
   capacity?: number | null;
   requires_registration?: boolean | null;
+  participation_mode?: "required" | "optional" | "none" | null;
   registration_deadline?: string | null;
   registration_note?: string | null;
   created_at: string;
@@ -98,6 +131,8 @@ export type EventTagId = (typeof EVENT_TAGS)[number]["id"];
 // アプリで使うイベント型（organizer情報含む）
 export type Event = {
   id: string;
+  status?: "draft" | "published";
+  publishedAt?: string | null;
   title: string;
   imageUrl: string | null;
   description: string;
@@ -126,6 +161,8 @@ export type Event = {
   englishGuideAvailable?: boolean;
   capacity?: number;
   requiresRegistration?: boolean;
+  /** 参加方式: 申込必須 / 申込任意 / 申込不要 */
+  participationMode?: "required" | "optional" | "none";
   registrationDeadline?: string;
   registrationNote?: string;
   createdAt: string;

@@ -1,0 +1,117 @@
+# Supabase 認証の本番公開向け設定
+
+本番ドメイン（例: https://www.machiglyph.jp）でログイン・新規登録・確認メールのリダイレクトを正しく動かすための設定です。
+
+**メール確認は SSR フロー**で、リンクの受け口を `/auth/confirm` に統一し、`token_hash` をサーバー側で `verifyOtp()` してから完了画面へ遷移します。
+
+---
+
+## 1. Supabase Dashboard：URL Configuration
+
+1. [Supabase Dashboard](https://supabase.com/dashboard) → 対象プロジェクトを開く
+2. **Authentication** → **URL Configuration**
+
+### Site URL
+
+| 環境   | 推奨値                      |
+|--------|-----------------------------|
+| 本番   | `https://www.machiglyph.jp` |
+| 開発   | `http://localhost:3000`     |
+
+本番公開時は **Site URL を本番ドメインに設定**してください。
+
+### Redirect URLs（許可リスト）
+
+少なくとも以下を **Redirect URLs** に追加してください。
+
+**本番**
+
+- `https://www.machiglyph.jp/auth/confirm`
+- `https://www.machiglyph.jp/auth/verified`
+- `https://www.machiglyph.jp/auth/error`
+
+**開発**
+
+- `http://localhost:3000/auth/confirm`
+- `http://localhost:3000/auth/verified`
+- `http://localhost:3000/auth/error`
+
+パスワード再設定（hash フロー）を使う場合は、従来どおり次も許可してください。
+
+- `https://www.machiglyph.jp/auth/callback`
+- `http://localhost:3000/auth/callback`
+
+プレビュー環境がある場合は、必要に応じて同様のパスを追加してください。
+
+---
+
+## 2. メールテンプレート（RedirectTo ベース）
+
+**Authentication** → **Email Templates** を開きます。
+
+### Confirm signup
+
+メール内の確認リンクを、**RedirectTo ベース**に変更します。
+
+**変更前（例）**
+
+```html
+{{ .ConfirmationURL }}
+```
+
+**変更後**
+
+```html
+{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&type=email
+```
+
+- `signUp` 時に `emailRedirectTo` に**オリジンのみ**（例: `https://www.machiglyph.jp`）を渡しているため、`{{ .RedirectTo }}` がその値になります。
+- 本番では `NEXT_PUBLIC_SITE_URL` を本番ドメインにしておくことで、メール内リンクが必ず本番の `/auth/confirm` を指し、localhost や誤った host に飛びません。
+
+### Magic Link（使う場合）
+
+Magic Link テンプレートも同様にする場合の例です。
+
+```html
+{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink
+```
+
+---
+
+## 3. アプリ側の実装概要
+
+- **受け口**: メール内リンクはすべて **`/auth/confirm`** に飛ばす（上記テンプレートで指定）。
+- **サーバー**: `app/auth/confirm/route.ts` の GET で `token_hash` と `type` をクエリから受け取り、`verifyOtp()` でセッションを確立。成功時は `/auth/verified`、失敗時は `/auth/error` にリダイレクト。
+- **signUp**: `app/auth/actions.ts` のサーバーアクション `signUpWithEmail` で `emailRedirectTo` に **オリジンのみ**（`NEXT_PUBLIC_SITE_URL` または `http://localhost:3000`）を渡しています。
+
+---
+
+## 4. 環境変数
+
+本番（Vercel など）で以下を設定してください。
+
+- `NEXT_PUBLIC_SITE_URL=https://www.machiglyph.jp`  
+  - signUp 時の `emailRedirectTo` とメール内の `{{ .RedirectTo }}` の元になります。
+- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`  
+  - Supabase の本番プロジェクトの値
+
+---
+
+## 5. 本番運用での独自 SMTP（任意）
+
+Supabase 標準のメール送信では、送信元ドメインや到達率に制限があります。  
+本番で安定して確認メールを届けたい場合は、独自 SMTP の利用を検討してください。
+
+1. **Authentication** → **Email**（または **Project Settings** → **Auth**）
+2. **Custom SMTP** を有効化
+3. 利用する SMTP サービス（SendGrid・Resend・AWS SES など）の情報を設定
+
+---
+
+## チェックリスト（本番公開前）
+
+- [ ] Site URL を `https://www.machiglyph.jp` に設定
+- [ ] Redirect URLs に `/auth/confirm`・`/auth/verified`・`/auth/error` を追加
+- [ ] Confirm signup テンプレートを `{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&type=email` に変更
+- [ ] 本番環境変数に `NEXT_PUBLIC_SITE_URL` を設定
+- [ ] （任意）独自 SMTP の検討

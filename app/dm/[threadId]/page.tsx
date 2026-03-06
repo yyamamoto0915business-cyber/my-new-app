@@ -105,7 +105,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
         <p>ログインが必要です</p>
-        <Link href={`/login?returnTo=/dm/${threadId}`} className="text-[var(--accent)] underline">
+        <Link href={`/auth?next=/dm/${threadId}`} className="text-[var(--accent)] underline">
           ログイン
         </Link>
       </div>

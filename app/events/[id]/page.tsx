@@ -1,17 +1,18 @@
-import { getEventById, getEventStatus } from "@/lib/events";
+import { getEventForPublicPage } from "@/lib/get-event-for-page";
+import { getEventStatus } from "@/lib/events";
 import { notFound } from "next/navigation";
 import { getTagLabel } from "@/lib/db/types";
 import { formatEventDateTime } from "@/lib/format-date";
 import { getOrganizerStoryForEvent, getReposForEvent } from "@/lib/stories-store";
 import { EventDetailClient } from "./event-detail-client";
 import { EventDetailTabs } from "./event-detail-tabs";
+import { EventDetailCTABlock } from "./event-detail-cta-block";
 import { OrganizerContactSection } from "./organizer-contact-section";
 import { EventThumbnail } from "@/components/event-thumbnail";
 import { EventChatButton } from "./event-chat-button";
 import { ShareButton } from "@/components/share-button";
-import { SponsorSection } from "./sponsor-section";
+import { EventSupportCard } from "./event-support-card";
 import { EventVolunteerSection } from "@/components/event-volunteer-section";
-import { EventGiftSection } from "@/components/event-gift-section";
 import { LoginBenefitsBanner } from "@/components/login-benefits-banner";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { GlyphSectionTitle } from "@/components/glyph/glyph-section-title";
@@ -22,7 +23,7 @@ type Props = {
 
 export default async function EventDetailPage({ params }: Props) {
   const { id } = await params;
-  const event = getEventById(id);
+  const event = await getEventForPublicPage(id);
 
   if (!event) {
     notFound();
@@ -56,14 +57,20 @@ export default async function EventDetailPage({ params }: Props) {
             {event.organizerName}
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            {event.requiresRegistration ? (
+            {(event.participationMode ?? (event.requiresRegistration ? "required" : "none")) === "required" && (
               <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                参加登録あり
+                申込必須
               </span>
-            ) : (
+            )}
+            {(event.participationMode ?? "none") === "optional" && (
+              <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                申込任意
+              </span>
+            )}
+            {(event.participationMode ?? "none") === "none" && (
               <>
                 <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
-                  登録不要
+                  申込不要
                 </span>
                 <span className="text-sm text-zinc-600 dark:text-zinc-400">
                   当日は会場に直接お越しください
@@ -101,11 +108,31 @@ export default async function EventDetailPage({ params }: Props) {
         </div>
       </section>
 
-      {!event.requiresRegistration && (
+      {/* 主CTA + 補助アクション（参加方式に応じて可変） */}
+      <EventDetailCTABlock
+        eventId={id}
+        participationMode={(event.participationMode ?? (event.requiresRegistration ? "required" : "none")) as "required" | "optional" | "none"}
+        isAvailable={isAvailable}
+        title={event.title}
+        date={event.date}
+        startTime={event.startTime}
+        endTime={event.endTime}
+        address={event.address}
+        location={event.location}
+        latitude={event.latitude}
+        longitude={event.longitude}
+      />
+
+      {((event.participationMode ?? "none") === "optional" || (event.participationMode ?? "none") === "none") && (
         <section className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 dark:border-emerald-800/50 dark:bg-emerald-950/20">
           <h2 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-            参加方法（登録不要）
+            参加方法
           </h2>
+          <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-400/80">
+            {(event.participationMode ?? "none") === "optional"
+              ? "申込なしで当日参加も可能です"
+              : "当日は会場に直接お越しください"}
+          </p>
           <dl className="mt-4 space-y-3 text-sm">
             <div>
               <dt className="font-medium text-zinc-600 dark:text-zinc-400">場所</dt>
@@ -230,8 +257,7 @@ export default async function EventDetailPage({ params }: Props) {
       <div id="join">
         <EventVolunteerSection eventId={id} returnTo={`/events/${id}`} />
       </div>
-      <SponsorSection eventId={id} />
-      <EventGiftSection event={event} />
+      <EventSupportCard eventId={id} />
       <div className="space-y-4 border-t border-zinc-200 pt-6 dark:border-zinc-700">
         <ShareButton url={`/events/${id}`} title={`${event.title} - MachiGlyph`} />
         <EventChatButton eventId={id} />
@@ -263,10 +289,10 @@ export default async function EventDetailPage({ params }: Props) {
         />
       </main>
 
-      {isAvailable && event.requiresRegistration && (
-        <EventDetailClient requiresRegistration targetId="join" />
+      {isAvailable && (event.participationMode ?? (event.requiresRegistration ? "required" : "none")) === "required" && (
+        <EventDetailClient requiresRegistration targetId="event-cta" />
       )}
-      {isAvailable && !event.requiresRegistration && (
+      {isAvailable && (event.participationMode ?? "none") !== "required" && (
         <EventDetailClient
           requiresRegistration={false}
           eventId={id}

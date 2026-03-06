@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
-import { ProfileSummaryCard } from "@/components/profile/profile-summary-card";
 import { ProfileMenuLink } from "@/components/profile/profile-menu-link";
-import { OrganizerModeToggle } from "@/components/profile/organizer-mode-toggle";
-import { ModeSwitcher, type ProfileMode } from "@/components/profile/mode-switcher";
+import { MypageHeader } from "@/components/profile/mypage-header";
+import { MypageQuickGrid } from "@/components/profile/mypage-quick-grid";
+import type { ProfileMode } from "@/components/profile/mode-switcher";
 import { ModeHeader } from "@/components/profile/mode-header";
 import { ModeStats } from "@/components/profile/mode-stats";
 import { ModeLists } from "@/components/profile/mode-lists";
@@ -17,7 +17,6 @@ import { getProfileCompletion } from "@/lib/profile-dashboard-data";
 import { useModeDashboardData } from "@/hooks/use-mode-dashboard-data";
 import { useUnreadCount } from "@/hooks/use-unread-count";
 import { useUnreadBreakdown } from "@/hooks/use-unread-breakdown";
-import { GlyphSectionTitle } from "@/components/glyph/glyph-section-title";
 
 const VALID_MODES: ProfileMode[] = ["participant", "volunteer", "organizer"];
 
@@ -27,6 +26,7 @@ function isValidMode(m: string | null): m is ProfileMode {
 
 function ProfileContent() {
   const { user, loading: authLoading } = useSupabaseUser();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const urlMode = searchParams?.get("mode");
   const [resolvedMode, setResolvedMode] = useState<ProfileMode | null>(null);
@@ -34,6 +34,7 @@ function ProfileContent() {
     displayName: string;
     region?: string | null;
     avatarUrl?: string | null;
+    bio?: string | null;
     completionPercent: number;
     defaultMode?: string | null;
     isOrganizerRegistered?: boolean;
@@ -111,6 +112,7 @@ function ProfileContent() {
             displayName: dn,
             region: data.region,
             avatarUrl: data.avatar_url,
+            bio: data.bio,
             completionPercent: getProfileCompletion({
               display_name: dn,
               region: data.region,
@@ -124,6 +126,9 @@ function ProfileContent() {
         } else {
           setProfile({
             displayName: displayName || "ゲスト",
+            region: null,
+            avatarUrl: null,
+            bio: null,
             completionPercent: getProfileCompletion({
               display_name: displayName,
               region: null,
@@ -155,9 +160,16 @@ function ProfileContent() {
 
   const handleModeChange = useCallback(
     (mode: ProfileMode) => {
+      const next = new URLSearchParams(searchParams?.toString() ?? "");
+      next.set("mode", mode);
+      router.replace(`/profile?${next.toString()}`, { scroll: false });
+      if (typeof window !== "undefined") {
+        localStorage.setItem("mg.profile.mode", mode);
+      }
+      setResolvedMode(mode);
       persistDefaultMode(mode);
     },
-    [persistDefaultMode]
+    [persistDefaultMode, router, searchParams]
   );
 
   if (authLoading || loading || resolvedMode === null) {
@@ -169,182 +181,161 @@ function ProfileContent() {
   }
 
   return (
-    <div className="relative mx-auto max-w-3xl px-4 py-6 pb-24 sm:pb-8 md:pb-8 min-h-screen bg-[var(--mg-paper)]">
+    <div className="relative mx-auto min-h-screen max-w-3xl bg-zinc-50 px-4 py-6 pb-24 dark:bg-zinc-950 sm:pb-8 md:pb-8">
+      {/* やわらかい背景 */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.05] mix-blend-multiply dark:mix-blend-overlay dark:opacity-[0.04]"
+        className="pointer-events-none absolute inset-0 opacity-[0.03] mix-blend-multiply dark:mix-blend-overlay dark:opacity-[0.02]"
         style={{
-          backgroundImage: `repeating-conic-gradient(var(--mg-ink) 0% 0.25%, transparent 0% 0.5%)`,
-          backgroundSize: "2px 2px",
+          backgroundImage: `radial-gradient(circle at 20% 30%, var(--accent) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, var(--accent-soft) 0%, transparent 40%)`,
         }}
         aria-hidden
       />
 
-      <div className="relative mb-6 flex items-center justify-between">
-        <GlyphSectionTitle as="h1">マイページ</GlyphSectionTitle>
-        <Link
-          href="/"
-          className="text-sm text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-        >
-          トップへ
-        </Link>
-      </div>
-
-      {noSupabase && (
-        <div className="relative mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-          <p className="font-medium">プロフィールの保存には Supabase の設定が必要です。</p>
-          <p className="mt-1 text-xs opacity-90">環境変数を設定すると保存できます。</p>
-          <div className="mt-3">
-            <SupabaseSetupGuide backHref="/" backLabel="← トップへ" />
-          </div>
-        </div>
-      )}
-
-      {!user && !noSupabase && (
-        <div className="relative mb-6 rounded-lg border border-[var(--border)] bg-[var(--accent-soft)]/30 px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300">
-          <p>ログインするとプロフィールや参加予定を確認できます。</p>
+      <div className="relative space-y-6">
+        {/* トップへのリンク（控えめ） */}
+        <div className="flex justify-end">
           <Link
-            href="/login?returnTo=/profile"
-            className="mt-2 inline-block font-medium text-[var(--accent)] hover:underline"
+            href="/"
+            className="text-sm text-zinc-500 underline-offset-2 hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
           >
-            ログインはこちら
+            トップへ
           </Link>
         </div>
-      )}
 
-      {/* プロフィールカード（一番上） */}
-      {user && (
-        <div className="relative mb-6">
-          <ProfileSummaryCard
-            profile={profile}
-            unreadCount={unreadCount}
-            userId={user.id}
-            onAvatarChange={(newUrl) =>
-              setProfile((p) => ({ ...p, avatarUrl: newUrl ?? null }))
-            }
-          />
-        </div>
-      )}
-
-      {/* (1) モード切替タブ */}
-      <section className="relative mb-6">
-        <ModeSwitcher activeMode={activeMode} onModeChange={handleModeChange} />
-      </section>
-
-      {user && (
-        <>
-          {/* (2) ヘッダー */}
-          <section className="relative mb-4">
-            <ModeHeader mode={activeMode} unreadCount={unreadCount} />
-          </section>
-
-          {/* (3) ステータスカード */}
-          <section className="relative mb-6">
-            <ModeStats
-              mode={activeMode}
-              stat1={dashboardData.stat1}
-              stat2={dashboardData.stat2}
-              stat3={dashboardData.stat3}
-              stat2Breakdown={activeMode === "organizer" ? stat2Breakdown : undefined}
-            />
-          </section>
-
-          {/* (4) 2カラム一覧 */}
-          <section className="relative">
-            {dataLoading ? (
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="h-48 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700" />
-                <div className="h-48 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700" />
-              </div>
-            ) : (
-              <ModeLists
-                mode={activeMode}
-                list1={dashboardData.list1}
-                list2={dashboardData.list2}
-              />
-            )}
-          </section>
-        </>
-      )}
-
-      {!user && !noSupabase && (
-        <div className="relative space-y-6">
-          <ModeHeader mode={activeMode} unreadCount={0} />
-          <ModeStats mode={activeMode} stat1={0} stat2={0} stat3={0} />
-          <ModeLists mode={activeMode} list1={[]} list2={[]} />
-        </div>
-      )}
-
-      {/* (5) 共通：メニュー */}
-      <div className="relative mt-8 border-t pt-6 [border-color:var(--mg-line)]">
-        {/* メニューセクション */}
-        <div className="rounded-xl border border-[var(--mg-line)] bg-white dark:border-zinc-700 dark:bg-zinc-900/90">
-          <div className="border-b border-[var(--mg-line)] px-4 py-3 dark:border-zinc-700">
-            <h3 className="font-medium text-zinc-900 dark:text-zinc-100">メニュー</h3>
-            <p className="mt-0.5 text-xs text-[var(--foreground-muted)]">設定やメッセージはこちら</p>
+        {noSupabase && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+            <p className="font-medium">プロフィールの保存には Supabase の設定が必要です。</p>
+            <p className="mt-1 text-xs opacity-90">環境変数を設定すると保存できます。</p>
+            <div className="mt-3">
+              <SupabaseSetupGuide backHref="/" backLabel="← トップへ" />
+            </div>
           </div>
-          {user ? (
-            <div className="divide-y divide-[var(--mg-line)] dark:divide-zinc-700">
-              {/* セクションA: やり取り・活動 */}
-              <div className="py-1">
-                <ProfileMenuLink
-                  href="/messages"
-                  icon="messages"
-                  title="メッセージ"
-                  subtitle="主催者との連絡 / 応募・参加のやり取り"
-                  badge={unreadCount > 0 ? unreadCount : undefined}
-                />
-                <ProfileMenuLink
-                  href="/points"
-                  icon="points"
-                  title="マイポイント"
-                  subtitle="保有ポイント・履歴を確認"
-                />
-              </div>
-              {/* セクションB: アカウント・設定 */}
-              <div className="py-1">
-                <ProfileMenuLink
-                  href="/profile/edit"
-                  icon="profile"
-                  title="プロフィール設定"
-                  subtitle="自己紹介・アイコン・基本情報"
-                />
-                <ProfileMenuLink
-                  href="/profile/settings"
-                  icon="notifications"
-                  title="通知設定"
-                  subtitle="メッセージ / イベント更新の通知"
-                />
-              </div>
-              {/* セクションC: 主催者 */}
-              <div className="py-1">
-                <OrganizerModeToggle />
-              </div>
-              {profile.isOrganizerRegistered ? (
-                <div className="py-1">
+        )}
+
+        {!user && !noSupabase && (
+          <div className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-6 text-center shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/95">
+            <p className="text-zinc-700 dark:text-zinc-300">ログインするとプロフィールや参加予定を確認できます。</p>
+            <Link
+              href="/auth?next=/profile"
+              className="mt-3 inline-block rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 active:opacity-95"
+            >
+              ログインはこちら
+            </Link>
+          </div>
+        )}
+
+        {user && (
+          <>
+            {/* 上部プロフィールエリア：マイページ型ヘッダー */}
+            <MypageHeader
+              displayName={profile.displayName}
+              avatarUrl={profile.avatarUrl}
+              bio={profile.bio}
+              region={profile.region}
+              activeMode={activeMode}
+              onModeChange={handleModeChange}
+              userId={user.id}
+              onAvatarChange={(url) => setProfile((p) => ({ ...p, avatarUrl: url ?? null }))}
+            />
+
+            {/* よく使う：2列グリッドカード */}
+            <MypageQuickGrid unreadCount={unreadCount} />
+
+            {/* 設定セクション：リストUI */}
+            <section>
+              <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                設定
+              </h2>
+              <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/95">
+                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                   <ProfileMenuLink
-                    href="/organizer/events"
-                    icon="organizer"
-                    title="主催者ダッシュボード"
-                    subtitle="イベント管理・応募者対応へ"
+                    href="/profile/edit"
+                    icon="profile"
+                    title="プロフィール設定"
+                    subtitle="自己紹介・アイコン・基本情報"
                   />
+                  <ProfileMenuLink
+                    href="/profile/settings"
+                    icon="notifications"
+                    title="通知設定"
+                    subtitle="メッセージ / イベント更新の通知"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* 主催セクション：行動導線 */}
+            <section>
+              <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                主催
+              </h2>
+              <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/95">
+                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                  {profile.isOrganizerRegistered ? (
+                    <>
+                      <ProfileMenuLink
+                        href="/organizer/events"
+                        icon="organizer"
+                        title="主催ダッシュボード"
+                        subtitle="作成中のイベント・募集・応募状況を確認"
+                      />
+                      <ProfileMenuLink
+                        href="/organizer/events/new"
+                        icon="event"
+                        title="イベントを作成"
+                        subtitle="新規イベントを登録する"
+                      />
+                      <ProfileMenuLink
+                        href="/organizer/recruitments/new"
+                        icon="recruitment"
+                        title="募集を作成"
+                        subtitle="ボランティアやスタッフを募集する"
+                      />
+                    </>
+                  ) : (
+                    <ProfileMenuLink
+                      href="/organizer/register"
+                      icon="organizer"
+                      title="主催として始める"
+                      subtitle="イベント作成や募集管理を始める"
+                    />
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* モード別ダッシュボード（参加予定・応募状況など） */}
+            <section className="space-y-4 pt-2">
+              <ModeHeader mode={activeMode} unreadCount={unreadCount} />
+              <ModeStats
+                mode={activeMode}
+                stat1={dashboardData.stat1}
+                stat2={dashboardData.stat2}
+                stat3={dashboardData.stat3}
+                stat2Breakdown={activeMode === "organizer" ? stat2Breakdown : undefined}
+              />
+              {dataLoading ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="h-48 animate-pulse rounded-2xl bg-zinc-200/80 dark:bg-zinc-700/50" />
+                  <div className="h-48 animate-pulse rounded-2xl bg-zinc-200/80 dark:bg-zinc-700/50" />
                 </div>
               ) : (
-                <div className="py-1">
-                  <ProfileMenuLink
-                    href="/organizer/register"
-                    icon="organizer"
-                    title="主催者として始める"
-                    subtitle="イベントを作成して募集を出す"
-                  />
-                </div>
+                <ModeLists
+                  mode={activeMode}
+                  list1={dashboardData.list1}
+                  list2={dashboardData.list2}
+                />
               )}
-            </div>
-          ) : (
-            <div className="px-4 py-6 text-center text-sm text-[var(--foreground-muted)]">
-              ログインするとメニューが表示されます
-            </div>
-          )}
-        </div>
+            </section>
+          </>
+        )}
+
+        {!user && !noSupabase && (
+          <div className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700/60 dark:bg-zinc-900/95 dark:text-zinc-400">
+            ログインするとメニューが表示されます
+          </div>
+        )}
       </div>
     </div>
   );

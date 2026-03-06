@@ -167,7 +167,7 @@ export default function ProfileEditPage() {
         <div className="mt-6 rounded-lg border border-[var(--border)] bg-[var(--accent-soft)]/30 px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300">
           <p>ログインするとプロフィールを編集・保存できます。</p>
           <Link
-            href="/login?returnTo=/profile/edit"
+            href="/auth?next=/profile/edit"
             className="mt-2 inline-block font-medium text-[var(--accent)] hover:underline"
           >
             ログインはこちら

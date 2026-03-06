@@ -53,6 +53,7 @@ const initialForm: EventFormData = {
   englishGuideAvailable: false,
   capacity: undefined,
   requiresRegistration: false,
+  participationMode: "none",
   registrationDeadline: undefined,
   registrationNote: undefined,
 };
@@ -394,38 +395,65 @@ export default function NewEventPage() {
             </label>
           </div>
 
-          {/* 参加登録セクション：ラジオで必ず選択 */}
+          {/* 参加方式セクション：申込必須 / 申込任意 / 申込不要 */}
           <section className="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700 dark:bg-zinc-800/30">
             <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-              参加登録
+              参加方式
             </h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              参加の届け方で主CTAが変わります。申込不要でも「参加予定」で関心度を把握できます。
+            </p>
             <div className="flex flex-col gap-2">
               <label className="flex cursor-pointer items-center gap-2">
                 <input
                   type="radio"
-                  name="requiresRegistration"
-                  checked={(form.requiresRegistration ?? false) === true}
+                  name="participationMode"
+                  checked={(form.participationMode ?? "none") === "required"}
                   onChange={() =>
-                    setForm((prev) => ({ ...prev, requiresRegistration: true }))
+                    setForm((prev) => ({
+                      ...prev,
+                      participationMode: "required",
+                      requiresRegistration: true,
+                    }))
                   }
                   className="h-4 w-4 border-zinc-300"
                 />
-                <span className="text-sm">参加登録が必要</span>
+                <span className="text-sm">申込必須（主CTA: 申し込む）</span>
               </label>
               <label className="flex cursor-pointer items-center gap-2">
                 <input
                   type="radio"
-                  name="requiresRegistration"
-                  checked={(form.requiresRegistration ?? false) === false}
+                  name="participationMode"
+                  checked={(form.participationMode ?? "none") === "optional"}
                   onChange={() =>
-                    setForm((prev) => ({ ...prev, requiresRegistration: false }))
+                    setForm((prev) => ({
+                      ...prev,
+                      participationMode: "optional",
+                      requiresRegistration: false,
+                    }))
                   }
                   className="h-4 w-4 border-zinc-300"
                 />
-                <span className="text-sm">登録不要</span>
+                <span className="text-sm">申込任意（主CTA: 参加予定にする）</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="participationMode"
+                  checked={(form.participationMode ?? "none") === "none"}
+                  onChange={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      participationMode: "none",
+                      requiresRegistration: false,
+                    }))
+                  }
+                  className="h-4 w-4 border-zinc-300"
+                />
+                <span className="text-sm">申込不要（主CTA: 気になる / 参加予定）</span>
               </label>
             </div>
-            {(form.requiresRegistration ?? false) && (
+            {(form.participationMode ?? "none") === "required" && (
               <div className="mt-4 space-y-4 border-t border-zinc-200 pt-4 dark:border-zinc-600">
                 <div>
                   <label
@@ -543,37 +571,6 @@ export default function NewEventPage() {
             <label htmlFor="englishGuideAvailable" className="text-sm">
               英語対応
             </label>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">
-              スポンサーチケット（価格を選択）
-            </label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {[300, 500, 1000, 3000, 5000].map((p) => (
-                <label key={p} className="flex cursor-pointer items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={(form.sponsorTicketPrices ?? []).includes(p)}
-                    onChange={(e) => {
-                      const prev = form.sponsorTicketPrices ?? [];
-                      if (e.target.checked) {
-                        setForm((f) => ({
-                          ...f,
-                          sponsorTicketPrices: [...prev, p].sort((a, b) => a - b),
-                        }));
-                      } else {
-                        setForm((f) => ({
-                          ...f,
-                          sponsorTicketPrices: prev.filter((x) => x !== p),
-                        }));
-                      }
-                    }}
-                  />
-                  <span>¥{p.toLocaleString()}</span>
-                </label>
-              ))}
-            </div>
           </div>
 
           <div>

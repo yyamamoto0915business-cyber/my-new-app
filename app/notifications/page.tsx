@@ -32,13 +32,13 @@ export default function NotificationsPage() {
     }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      router.replace("/login?returnTo=/notifications");
+      router.replace("/auth?next=/notifications");
       return;
     }
     try {
       const res = await fetchWithTimeout("/api/notifications");
       if (res.status === 401) {
-        router.replace("/login?returnTo=/notifications");
+        router.replace("/auth?next=/notifications");
         return;
       }
       if (res.ok) {

@@ -18,21 +18,21 @@ export const MODE_CONFIG: Record<
 > = {
   participant: {
     title: "参加する",
-    description: "参加予定・申込状況・主催者との連絡",
+    description: "参加予定・気になるイベント・主催者との連絡",
     ctaLabel: "イベントを探す",
     ctaHref: "/events",
     stat1: { label: "参加予定", key: "upcoming" },
-    stat2: { label: "申込中", key: "pending" },
+    stat2: { label: "あとで見る", key: "interested" },
     stat3: { label: "未読", key: "unread" },
     list1: { title: "参加予定のイベント", key: "upcoming" },
-    list2: { title: "申込中/キャンセル待ち", key: "pending" },
+    list2: { title: "あとで見るイベント", key: "interested" },
     empty1: {
-      title: "まだ参加予定はありません。気になるイベントを1つ見つけてみましょう",
+      title: "まだ参加予定はありません。イベント詳細で「参加予定にする」を押すとここに表示されます",
       ctaLabel: "イベントを探す",
       ctaHref: "/events",
     },
     empty2: {
-      title: "まだ参加予定はありません。気になるイベントを1つ見つけてみましょう",
+      title: "まだあとで見るはありません。気になるイベントで「あとで見る」を押すとここに表示されます",
       ctaLabel: "イベントを探す",
       ctaHref: "/events",
     },

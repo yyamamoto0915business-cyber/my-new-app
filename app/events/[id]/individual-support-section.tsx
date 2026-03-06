@@ -62,11 +62,9 @@ export function IndividualSupportSection({ eventId, onPurchaseSuccess }: Props) 
 
   if (loading || !data) {
     return (
-      <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-700">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          応援する（個人）
-        </h2>
-        <p className="mt-2 text-sm text-zinc-500">読み込み中...</p>
+      <div className="border-t border-[var(--mg-line)] pt-6">
+        <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">個人で応援する</h3>
+        <p className="mt-2 text-xs text-[var(--mg-muted)]">読み込み中...</p>
       </div>
     );
   }
@@ -76,15 +74,12 @@ export function IndividualSupportSection({ eventId, onPurchaseSuccess }: Props) 
   const totalAmount = data.totalAmount ?? 0;
 
   return (
-    <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-700">
-      <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-        応援チケット（個人）
-      </h2>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        このイベントを続けていくための運営サポートです。※参加権ではありません／匿名OK
-      </p>
-      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-500">
-        応援金の使い道：備品・保険・広報・運営交通費など
+    <div className="border-t border-[var(--mg-line)] pt-6">
+      <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        個人で応援する
+      </h3>
+      <p className="mt-2 text-xs text-[var(--mg-muted)]">
+        運営サポートとして使われます。※参加権ではありません／匿名OK
       </p>
 
       {supporterCount > 0 && (

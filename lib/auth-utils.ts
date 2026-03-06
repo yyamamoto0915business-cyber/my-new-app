@@ -24,11 +24,11 @@ export function requiresAuth(path: string): boolean {
 }
 
 /**
- * ログイン誘導URLを生成（returnTo付き）
+ * ログイン誘導URLを生成（next パラメータで戻り先を保持）
  */
 export function getLoginUrl(returnTo?: string): string {
-  if (!returnTo || returnTo === "/login" || returnTo.startsWith("/login?")) {
-    return "/login";
+  if (!returnTo || returnTo === "/auth" || returnTo.startsWith("/auth")) {
+    return "/auth";
   }
-  return `/login?returnTo=${encodeURIComponent(returnTo)}`;
+  return `/auth?next=${encodeURIComponent(returnTo)}`;
 }

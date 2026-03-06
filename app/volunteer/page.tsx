@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import Link from "next/link";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { VOLUNTEER_ROLE_LABELS } from "@/lib/volunteer-roles-mock";
@@ -46,20 +45,29 @@ function VolunteerPageContent() {
   const [benefitFilter, setBenefitFilter] = useState<BenefitFilter | "">("");
   const [sort, setSort] = useState<VolunteerSort>("recommended");
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
     if (prefecture) params.set("prefecture", prefecture);
     if (roleType) params.set("roleType", roleType);
-    fetchWithTimeout(`/api/volunteer/roles?${params}`)
-      .then((r) => r.json())
-      .then((data) => setRoles(Array.isArray(data) ? data : []))
-      .catch(() => {
+    try {
+      const res = await fetchWithTimeout(`/api/volunteer/roles?${params}`);
+      if (!res.ok) {
+        console.error(`[volunteer] API error: ${res.status} ${res.statusText}`);
         setRoles([]);
         setError("読み込みに失敗しました");
-      })
-      .finally(() => setLoading(false));
+        return;
+      }
+      const data = await res.json();
+      setRoles(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("[volunteer] fetch error:", err);
+      setRoles([]);
+      setError("読み込みに失敗しました");
+    } finally {
+      setLoading(false);
+    }
   }, [prefecture, roleType]);
 
   useEffect(() => {
@@ -90,7 +98,7 @@ function VolunteerPageContent() {
 
   return (
     <div className="min-h-screen bg-[var(--mg-paper)]">
-      <header className="sticky top-0 z-50 border-b bg-white/95 shadow-sm backdrop-blur-md dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
+      <header className="sticky top-12 z-50 border-b bg-white/95 shadow-sm backdrop-blur-md sm:top-0 dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <Breadcrumb
             items={[{ label: "トップ", href: "/" }, { label: "ボランティア募集" }]}
@@ -185,7 +193,9 @@ function VolunteerPageContent() {
           </div>
         ) : isEmpty ? (
           <p className="rounded-xl border border-zinc-200/60 bg-white/80 p-8 text-center text-zinc-500 dark:border-zinc-700/60 dark:bg-zinc-900/80">
-            該当する募集はありません
+            {roles.length === 0 && !benefitFilter
+              ? "募集がまだありません"
+              : "該当する募集はありません"}
           </p>
         ) : (
           <>
@@ -213,14 +223,6 @@ function VolunteerPageContent() {
           </>
         )}
 
-        <div className="mt-8">
-          <Link
-            href="/recruitments"
-            className="text-sm text-zinc-500 underline hover:text-zinc-700"
-          >
-            募集一覧（旧） →
-          </Link>
-        </div>
       </main>
     </div>
   );

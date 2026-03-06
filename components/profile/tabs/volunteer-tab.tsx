@@ -37,7 +37,7 @@ export function VolunteerTab({ userId }: Props) {
             title="ログインが必要です"
             description="ボランティアの稼働予定を表示するにはログインしてください"
             ctaLabel="ログイン"
-            ctaHref="/login?returnTo=/profile"
+            ctaHref="/auth?next=/profile"
           />
         ) : !nextShift ? (
           <ProfileEmptyCard

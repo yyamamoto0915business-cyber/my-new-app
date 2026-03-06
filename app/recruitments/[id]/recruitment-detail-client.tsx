@@ -214,7 +214,7 @@ export function RecruitmentDetailClient({
           <div className="mt-8 space-y-4">
             {!currentUserId ? (
               <Link
-                href={`/login?returnTo=/recruitments/${recruitmentId}`}
+                href={`/auth?next=/recruitments/${recruitmentId}`}
                 className="inline-block rounded-lg bg-[var(--accent)] px-6 py-3 font-medium text-white hover:opacity-90"
               >
                 ログインして応募する

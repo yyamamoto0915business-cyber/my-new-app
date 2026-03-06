@@ -50,7 +50,7 @@ export default function EventRequestDetailPage() {
     }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      window.location.href = `/login?returnTo=${encodeURIComponent(`/event-requests/${id}`)}`;
+      window.location.href = `/auth?next=${encodeURIComponent(`/event-requests/${id}`)}`;
       setSupporting(false);
       return;
     }

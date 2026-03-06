@@ -57,25 +57,52 @@ export function useModeDashboardData(
     }
 
     if (mode === "participant") {
-      const upcoming = getUpcomingParticipations(userId);
-      const pending = getSavedEvents(userId); // 申込中は保存イベントで代用（実際は event_participants から取得が望ましい）
-      setData({
-        stat1: upcoming.length,
-        stat2: pending.length,
-        stat3: unreadCount,
-        list1: upcoming.slice(0, 5).map((e) => ({
-          id: e.id,
-          title: e.title,
-          href: `/events/${e.id}`,
-          subText: formatDate(e.date, e.startTime, e.endTime),
-        })),
-        list2: pending.slice(0, 5).map((e) => ({
-          id: e.id,
-          title: e.title,
-          href: `/events/${e.id}`,
-          subText: formatDate(e.date, e.startTime, e.endTime),
-        })),
-      });
+      fetch("/api/me/event-reactions")
+        .then((r) => (r.ok ? r.json() : { planned: [], interested: [] }))
+        .then((body: { planned?: Event[]; interested?: Event[] }) => {
+          const planned = body.planned ?? [];
+          const interested = body.interested ?? [];
+          setData({
+            stat1: planned.length,
+            stat2: interested.length,
+            stat3: unreadCount,
+            list1: planned.slice(0, 5).map((e) => ({
+              id: e.id,
+              title: e.title,
+              href: `/events/${e.id}`,
+              subText: formatDate(e.date, e.startTime, e.endTime),
+            })),
+            list2: interested.slice(0, 5).map((e) => ({
+              id: e.id,
+              title: e.title,
+              href: `/events/${e.id}`,
+              subText: formatDate(e.date, e.startTime, e.endTime),
+            })),
+          });
+        })
+        .catch(() => {
+          const upcoming = getUpcomingParticipations(userId);
+          const pending = getSavedEvents(userId);
+          setData({
+            stat1: upcoming.length,
+            stat2: pending.length,
+            stat3: unreadCount,
+            list1: upcoming.slice(0, 5).map((e) => ({
+              id: e.id,
+              title: e.title,
+              href: `/events/${e.id}`,
+              subText: formatDate(e.date, e.startTime, e.endTime),
+            })),
+            list2: pending.slice(0, 5).map((e) => ({
+              id: e.id,
+              title: e.title,
+              href: `/events/${e.id}`,
+              subText: formatDate(e.date, e.startTime, e.endTime),
+            })),
+          });
+        })
+        .finally(() => setLoading(false));
+      return;
     } else if (mode === "volunteer") {
       const applications = getVolunteerApplications(userId);
       const confirmed = applications.filter((a) => a.status === "確定");

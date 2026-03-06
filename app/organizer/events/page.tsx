@@ -67,7 +67,16 @@ export default function OrganizerEventsPage() {
 
   return (
     <div className="min-h-screen bg-[var(--mg-paper)]">
-      <OrganizerHeader title="主催イベント一覧" backHref="/events" backLabel="← イベント一覧へ" />
+      <OrganizerHeader
+        title="主催ダッシュボード"
+        description="今日の対応事項・イベント・募集の管理"
+        backHref="/"
+        backLabel="← 探すへ"
+        primaryCtaLabel="イベント作成"
+        primaryCtaHref="/organizer/events/new"
+        secondaryCtaLabel="募集作成"
+        secondaryCtaHref="/organizer/recruitments/new"
+      />
 
       <main className="mx-auto max-w-6xl px-4 py-6 pb-24">
         {loading ? (
@@ -227,7 +236,7 @@ export default function OrganizerEventsPage() {
               ) : (
                 <ul className="space-y-4">
                   {filteredEvents.map((event) => (
-                    <EventCard key={event.id} event={event} />
+                    <EventCard key={event.id} event={event} onRefresh={fetchDashboard} />
                   ))}
                 </ul>
               )}
@@ -239,9 +248,34 @@ export default function OrganizerEventsPage() {
   );
 }
 
-function EventCard({ event }: { event: DashboardEvent }) {
+function EventCard({ event, onRefresh }: { event: DashboardEvent; onRefresh?: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [publishLoading, setPublishLoading] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [showBillingModal, setShowBillingModal] = useState(false);
   const mainRecruitmentId = event.recruitmentIds?.[0];
+
+  const handlePublish = async () => {
+    setPublishError(null);
+    setPublishLoading(true);
+    try {
+      const res = await fetch(`/api/events/${event.id}/publish`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        if (res.status === 402) {
+          setShowBillingModal(true);
+        } else {
+          setPublishError(json.error ?? "公開に失敗しました");
+        }
+        return;
+      }
+      onRefresh?.();
+    } catch {
+      setPublishError("公開に失敗しました");
+    } finally {
+      setPublishLoading(false);
+    }
+  };
   const recruitmentHref = mainRecruitmentId
     ? `/organizer/recruitments/${mainRecruitmentId}`
     : `/organizer/recruitments/new?eventId=${event.id}`;
@@ -280,7 +314,13 @@ function EventCard({ event }: { event: DashboardEvent }) {
             <p className="mt-2 text-xs text-[var(--foreground-muted)]">
               {event.capacity != null && (
                 <>
-                  <span>参加 {event.participantCount ?? 0}/{event.capacity}</span>
+                  <span>参加 {event.participantCount ?? 0}/{event.capacity ?? "—"}</span>
+                  <span className="mx-1.5 opacity-60">・</span>
+                </>
+              )}
+              {((event.plannedCount ?? 0) > 0 || (event.interestedCount ?? 0) > 0) && (
+                <>
+                  <span>参加予定{event.plannedCount ?? 0}・関心あり{event.interestedCount ?? 0}</span>
                   <span className="mx-1.5 opacity-60">・</span>
                 </>
               )}
@@ -292,6 +332,17 @@ function EventCard({ event }: { event: DashboardEvent }) {
 
           {/* アクション: 募集管理 + チャット + … */}
           <div className="flex flex-wrap items-center gap-2">
+            {event.status === "draft" && (
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={publishLoading}
+                className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {publishLoading ? "公開中..." : "公開する"}
+              </button>
+            )}
+            {publishError && <span className="text-xs text-red-600">{publishError}</span>}
             <Link
               href={recruitmentHref}
               className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
@@ -382,6 +433,39 @@ function EventCard({ event }: { event: DashboardEvent }) {
               )}
             </div>
           </div>
+          {showBillingModal && (
+            <>
+              <div
+                className="fixed inset-0 z-40 bg-black/50"
+                onClick={() => setShowBillingModal(false)}
+                aria-hidden
+              />
+              <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--border)] bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+                <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                  今月の公開枠を超えています
+                </p>
+                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  月980円のStarterプランで無制限に公開できます。
+                </p>
+                <div className="mt-4 flex gap-2">
+                  <Link
+                    href="/organizer/settings/billing"
+                    className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                    onClick={() => setShowBillingModal(false)}
+                  >
+                    課金設定へ
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setShowBillingModal(false)}
+                    className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-600"
+                  >
+                    閉じる
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </li>

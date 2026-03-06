@@ -13,17 +13,22 @@
   --bg-gradient-from: #f5f4f0;
   --bg-gradient-to: #ebe8e2;
 
-  /* MachiGlyph デザイントークン（紙×インク×真鍮×ネオン）白い高級紙 */
+  /* MachiGlyph デザイントークン
+   * 方針: 直感的・地域の温かさ・上質さ。余白・写真・言葉づかいで表現。
+   * 配色: やわらかく、清潔感と落ち着き。
+   */
   --mg-paper: #faf9f6;
-  --map-footprint-duration: 350ms;
   --mg-ink: #2c2a28;
   --mg-muted: #6b6762;
   --mg-line: rgba(44, 42, 40, 0.12);
   --mg-accent: #b8860b;
+  --mg-accent-soft: rgba(184, 134, 11, 0.12);
   --mg-shadow: 0 1px 3px rgba(44, 42, 40, 0.06);
   --mg-radius: 8px;
   --mg-space: 1rem;
-  /* ネオン演出（控えめなグロー・真鍮色） */
+  --mg-section-gap: 2rem;
+  --mg-touch-min: 44px;
+  --map-footprint-duration: 350ms;
   --mg-glow: 0 0 12px rgba(184, 134, 11, 0.22);
   --mg-glow-strong: 0 0 20px rgba(184, 134, 11, 0.32);
 }
@@ -52,6 +57,7 @@
     --mg-muted: #9a9691;
     --mg-line: rgba(232, 230, 227, 0.12);
     --mg-accent: #c9a227;
+    --mg-accent-soft: rgba(201, 162, 39, 0.18);
     --mg-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     --mg-glow: 0 0 14px rgba(201, 162, 39, 0.18);
     --mg-glow-strong: 0 0 24px rgba(201, 162, 39, 0.26);

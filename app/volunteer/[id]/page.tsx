@@ -40,7 +40,7 @@ export default function VolunteerDetailPage() {
   const handleApply = async () => {
     if (!role) return;
     if (!user && !authDisabled) {
-      router.push(`/login?returnTo=${encodeURIComponent(`/volunteer/${id}`)}`);
+      router.push(`/auth?next=${encodeURIComponent(`/volunteer/${id}`)}`);
       return;
     }
     setApplying(true);

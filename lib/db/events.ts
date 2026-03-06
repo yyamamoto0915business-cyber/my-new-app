@@ -1,13 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DbEvent, Event, EventFormData } from "./types";
 
+function participationModeFromDb(
+  db: DbEvent & { participation_mode?: string | null }
+): "required" | "optional" | "none" {
+  const mode = db.participation_mode;
+  if (mode === "required" || mode === "optional" || mode === "none")
+    return mode;
+  return db.requires_registration ? "required" : "none";
+}
+
 function dbEventToEvent(
-  db: DbEvent & { image_url?: string | null },
+  db: DbEvent & { image_url?: string | null; participation_mode?: string | null },
   organizerName: string,
   organizerContact?: string
 ): Event {
+  const participationMode = participationModeFromDb(db);
   return {
     id: db.id,
+    status: db.status as "draft" | "published" | undefined,
+    publishedAt: db.published_at ?? undefined,
     title: db.title,
     imageUrl: db.image_url?.trim() || null,
     description: db.description,
@@ -35,7 +47,8 @@ function dbEventToEvent(
     prioritySlots: db.priority_slots ?? undefined,
     englishGuideAvailable: db.english_guide_available ?? undefined,
     capacity: db.capacity ?? undefined,
-    requiresRegistration: db.requires_registration ?? false,
+    requiresRegistration: participationMode === "required",
+    participationMode,
     registrationDeadline: db.registration_deadline ?? undefined,
     registrationNote: db.registration_note ?? undefined,
     createdAt: db.created_at,
@@ -59,6 +72,7 @@ export async function fetchEvents(supabase: SupabaseClient): Promise<Event[]> {
       )
     `
     )
+    .eq("status", "published")
     .order("date", { ascending: true });
 
   if (error) throw error;
@@ -167,6 +181,96 @@ export async function fetchEventById(
   return dbEventToEvent(data as unknown as DbEvent, name, contact);
 }
 
+/** 公開イベント1件取得（status=published のみ。公開詳細ページ用） */
+export async function fetchPublishedEventById(
+  supabase: SupabaseClient,
+  id: string
+): Promise<Event | null> {
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      `
+      *,
+      organizers (
+        organization_name,
+        contact_email,
+        contact_phone,
+        profiles (
+          display_name,
+          email
+        )
+      )
+    `
+    )
+    .eq("id", id)
+    .eq("status", "published")
+    .single();
+
+  if (error || !data) return null;
+
+  const org = (data as Record<string, unknown>).organizers as {
+    organization_name: string | null;
+    contact_email: string | null;
+    contact_phone: string | null;
+    profiles: { display_name: string | null; email: string | null };
+  } | null;
+  const name =
+    org?.organization_name ??
+    org?.profiles?.display_name ??
+    org?.profiles?.email ??
+    "主催者";
+  const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+
+  return dbEventToEvent(data as unknown as DbEvent, name, contact);
+}
+
+/** 公開イベントをIDリストで取得（マイページの参加予定・気になる一覧用） */
+export async function fetchPublishedEventsByIds(
+  supabase: SupabaseClient,
+  ids: string[]
+): Promise<Event[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      `
+      *,
+      organizers (
+        organization_name,
+        contact_email,
+        contact_phone,
+        profiles (
+          display_name,
+          email
+        )
+      )
+    `
+    )
+    .in("id", ids)
+    .eq("status", "published");
+
+  if (error) return [];
+  const today = new Date().toISOString().split("T")[0];
+  return (data ?? [])
+    .map((row: Record<string, unknown>) => {
+      const org = row.organizers as {
+        organization_name: string | null;
+        contact_email: string | null;
+        contact_phone: string | null;
+        profiles: { display_name: string | null; email: string | null };
+      } | null;
+      const name =
+        org?.organization_name ??
+        org?.profiles?.display_name ??
+        org?.profiles?.email ??
+        "主催者";
+      const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+      return dbEventToEvent(row as unknown as DbEvent, name, contact);
+    })
+    .filter((e) => e.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime || "").localeCompare(b.startTime || ""));
+}
+
 export async function fetchEventsByOrganizer(
   supabase: SupabaseClient,
   organizerId: string
@@ -218,6 +322,7 @@ export async function createEvent(
     .from("events")
     .insert({
       organizer_id: organizerId,
+      status: "draft",
       title: form.title,
       description: form.description,
       date: form.date,
@@ -242,7 +347,8 @@ export async function createEvent(
       priority_slots: form.prioritySlots ?? null,
       english_guide_available: form.englishGuideAvailable ?? false,
       capacity: form.capacity ?? null,
-      requires_registration: form.requiresRegistration ?? false,
+      requires_registration: (form.participationMode ?? (form.requiresRegistration ? "required" : "none")) === "required",
+      participation_mode: form.participationMode ?? (form.requiresRegistration ? "required" : "none"),
       registration_deadline: form.registrationDeadline || null,
       registration_note: form.registrationNote?.trim() || null,
       image_url: form.imageUrl?.trim() || null,
@@ -286,7 +392,8 @@ function formToDb(form: EventFormData): Record<string, unknown> {
     priority_slots: form.prioritySlots ?? null,
     english_guide_available: form.englishGuideAvailable ?? false,
     capacity: form.capacity ?? null,
-    requires_registration: form.requiresRegistration ?? false,
+    requires_registration: (form.participationMode ?? (form.requiresRegistration ? "required" : "none")) === "required",
+    participation_mode: form.participationMode ?? (form.requiresRegistration ? "required" : "none"),
     registration_deadline: form.registrationDeadline || null,
     registration_note: form.registrationNote?.trim() || null,
   };
@@ -301,6 +408,20 @@ export async function updateEvent(
     .from("events")
     .update({ ...formToDb(form), updated_at: new Date().toISOString() })
     .eq("id", id);
+
+  if (error) throw error;
+}
+
+/** イベントを公開（status=published, published_at=now） */
+export async function publishEvent(
+  supabase: SupabaseClient,
+  eventId: string
+): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("events")
+    .update({ status: "published", published_at: now, updated_at: now })
+    .eq("id", eventId);
 
   if (error) throw error;
 }

@@ -76,7 +76,7 @@ export function EventChatButton({ eventId }: EventChatButtonProps) {
   if (authState === "logged_out" && !authDisabled) {
     return (
       <Link
-        href={`/login?returnTo=${encodeURIComponent(`/events/${eventId}`)}`}
+        href={`/auth?next=${encodeURIComponent(`/events/${eventId}`)}`}
         className="inline-flex rounded-lg border border-zinc-200/60 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
       >
         ログインして主催者にメッセージ

@@ -71,7 +71,7 @@ export function EventDetailClient(props: Props) {
             onClick={scrollTo}
             className="w-full rounded-xl bg-[var(--accent)] py-3 font-medium text-white transition-opacity hover:opacity-90"
           >
-            参加登録へ
+            申し込む
           </button>
         </div>
       </div>
@@ -105,7 +105,7 @@ export function EventDetailClient(props: Props) {
         <button
           type="button"
           onClick={handleOpenMaps}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] py-3 font-medium text-white transition-opacity hover:opacity-90"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] py-3 font-medium text-[var(--mg-ink)] transition hover:bg-zinc-50 dark:hover:bg-zinc-800"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

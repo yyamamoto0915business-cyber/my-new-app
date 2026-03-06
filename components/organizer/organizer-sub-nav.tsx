@@ -4,12 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const SUB_NAV_ITEMS = [
+  { href: "/organizer/events", label: "イベント", exact: true },
   { href: "/organizer/recruitments", label: "募集管理" },
   { href: "/organizer/stories", label: "ストーリー" },
+  { href: "/organizer/settings/billing", label: "課金・請求" },
 ] as const;
 
-function isActive(pathname: string | null, href: string): boolean {
+function isActive(pathname: string | null, href: string, exact?: boolean): boolean {
   if (!pathname) return false;
+  if (exact) return pathname === href || pathname === `${href}/`;
   return pathname.startsWith(href);
 }
 
@@ -24,7 +27,7 @@ export function OrganizerSubNav() {
     >
       <div className="flex min-w-0 gap-2 py-2">
         {SUB_NAV_ITEMS.map((item) => {
-          const active = isActive(pathname, item.href);
+          const active = isActive(pathname, item.href, "exact" in item && item.exact);
           return (
             <Link
               key={item.href}

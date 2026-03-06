@@ -51,7 +51,7 @@ export function ParticipantTab({ userId }: Props) {
             title="ログインが必要です"
             description="参加予定のイベントを表示するにはログインしてください"
             ctaLabel="ログイン"
-            ctaHref="/login?returnTo=/profile"
+            ctaHref="/auth?next=/profile"
           />
         ) : upcoming.length === 0 ? (
           <ProfileEmptyCard

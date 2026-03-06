@@ -11,33 +11,30 @@ export type SponsorTierInput = {
   sortOrder: number;
 };
 
-/** 個人応援プラン 3件（300円 / 1,000円 / 3,000円） */
+/** 個人応援プラン 3件（500円 / 1,000円 / 3,000円） */
 export const DEFAULT_INDIVIDUAL_TIERS: SponsorTierInput[] = [
   {
     type: "individual",
-    price: 300,
-    name: "ひとくち応援",
-    description: "気軽にできるサポート",
-    benefits: ["お礼メッセージ（匿名OK）"],
+    price: 500,
+    name: "応援",
+    description: "会場費や備品代の支援",
+    benefits: [],
     sortOrder: 1,
   },
   {
     type: "individual",
     price: 1000,
-    name: "しっかり応援",
-    description: "続ける力になります",
-    benefits: ["支援者一覧にお名前掲載（匿名OK）"],
+    name: "応援",
+    description: "開催の支援",
+    benefits: [],
     sortOrder: 2,
   },
   {
     type: "individual",
     price: 3000,
-    name: "全力応援",
-    description: "運営を強く支える応援",
-    benefits: [
-      "支援者一覧に掲載（匿名OK）",
-      "活動レポ（開催後）を優先でお届け",
-    ],
+    name: "応援",
+    description: "開催の支援",
+    benefits: [],
     sortOrder: 3,
   },
 ];

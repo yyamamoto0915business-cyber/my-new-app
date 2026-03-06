@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
       englishGuideAvailable,
       capacity,
       requiresRegistration,
+      participationMode,
       registrationDeadline,
       registrationNote,
     } = body;
@@ -120,9 +121,18 @@ export async function POST(request: NextRequest) {
       englishGuideAvailable: Boolean(englishGuideAvailable),
       capacity: capacity != null ? Number(capacity) : undefined,
       requiresRegistration:
-        requiresRegistration === true ||
-        requiresRegistration === "true" ||
-        String(requiresRegistration).toLowerCase() === "true",
+        (participationMode === "required" ||
+          requiresRegistration === true ||
+          requiresRegistration === "true" ||
+          String(requiresRegistration).toLowerCase() === "true"),
+      participationMode:
+        participationMode === "required" ||
+        participationMode === "optional" ||
+        participationMode === "none"
+          ? participationMode
+          : requiresRegistration
+            ? "required"
+            : "none",
       registrationDeadline:
         registrationDeadline && String(registrationDeadline).trim()
           ? new Date(String(registrationDeadline)).toISOString()

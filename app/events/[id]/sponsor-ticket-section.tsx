@@ -47,7 +47,7 @@ export function SponsorTicketSection({
     if (!authDisabled) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        window.location.href = `/login?returnTo=${encodeURIComponent(`/events/${eventId}`)}`;
+        window.location.href = `/auth?next=${encodeURIComponent(`/events/${eventId}`)}`;
         setLoading(false);
         return;
       }

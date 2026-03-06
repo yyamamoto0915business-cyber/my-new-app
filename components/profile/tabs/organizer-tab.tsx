@@ -40,7 +40,7 @@ export function OrganizerTab({ userId }: Props) {
             title="ログインが必要です"
             description="主催者としてイベントを管理するにはログインしてください"
             ctaLabel="ログイン"
-            ctaHref="/login?returnTo=/profile"
+            ctaHref="/auth?next=/profile"
           />
         ) : !nextEvent ? (
           <ProfileEmptyCard

@@ -5,6 +5,7 @@ import {
   fetchEventsByOrganizer,
   fetchEventParticipants,
 } from "@/lib/db/events";
+import { getEventReactionCounts } from "@/lib/db/event-reactions";
 import {
   getOrganizerIdByProfileId,
   fetchRecruitmentsByOrganizer,
@@ -15,14 +16,17 @@ import type { Event } from "@/lib/db/types";
 
 const MOCK_ORGANIZER_NAME = "地域振興会";
 
-function getEventStatus(event: { date: string }): "public" | "ended" {
+function getEventStatus(event: { date: string; status?: string }): "public" | "draft" | "ended" {
+  if (event.status === "draft") return "draft";
   const today = new Date().toISOString().split("T")[0];
   return event.date >= today ? "public" : "ended";
 }
 
-export type DashboardEvent = Event & {
+export type DashboardEvent = Omit<Event, "status"> & {
   status: "public" | "draft" | "ended";
   participantCount: number;
+  plannedCount: number;
+  interestedCount: number;
   applicationCount: number;
   unreadCount: number;
   recruitmentIds: string[];
@@ -60,6 +64,8 @@ async function buildMockDashboard(): Promise<DashboardResponse> {
     ...e,
     status: getEventStatus(e),
     participantCount: e.participantCount ?? 0,
+    plannedCount: 0,
+    interestedCount: 0,
     applicationCount: 0,
     unreadCount: 0,
     recruitmentIds: [],
@@ -192,8 +198,11 @@ async function buildSupabaseDashboard(
 
   const events: DashboardEvent[] = await Promise.all(
     eventsData.map(async (e) => {
-      const participants = await fetchEventParticipants(supabase, e.id);
-      const recruitmentsForEvent = recruitmentsData.filter((r) => r.event_id === e.id);
+      const [participants, reactionCounts, recruitmentsForEvent] = await Promise.all([
+        fetchEventParticipants(supabase, e.id),
+        getEventReactionCounts(supabase, e.id).catch(() => ({ planned: 0, interested: 0 })),
+        recruitmentsData.filter((r) => r.event_id === e.id),
+      ]);
       const applicationCount = recruitmentsForEvent.reduce(
         (sum, r) => sum + (appCountByRecruitment[r.id] ?? 0),
         0
@@ -203,6 +212,8 @@ async function buildSupabaseDashboard(
         ...e,
         status: getEventStatus(e),
         participantCount: participants.length,
+        plannedCount: reactionCounts.planned,
+        interestedCount: reactionCounts.interested,
         applicationCount,
         unreadCount: 0,
         recruitmentIds: recruitmentsForEvent.map((r) => r.id),

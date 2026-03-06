@@ -6,12 +6,32 @@ import { LanguageProvider } from "@/components/language-provider";
 import { APP_NAME, APP_SUBTITLE, APP_TAGLINE1 } from "@/lib/brand-copy";
 import { BottomNav } from "@/components/bottom-nav";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { ModeSegmentNav } from "@/components/mode-segment-nav";
 import { NotificationBell } from "@/components/notification-bell";
 import "./globals.css";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://my-new-app-self-iota.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: `${APP_NAME} - ${APP_SUBTITLE}`,
   description: APP_TAGLINE1,
+  openGraph: {
+    title: `${APP_NAME} - ${APP_SUBTITLE}`,
+    description: APP_TAGLINE1,
+    siteName: APP_NAME,
+    type: "website",
+    locale: "ja_JP",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${APP_NAME} - ${APP_SUBTITLE}`,
+    description: APP_TAGLINE1,
+  },
+  alternates: {
+    canonical: "./",
+  },
 };
 
 export const viewport: Viewport = {
@@ -43,7 +63,10 @@ export default function RootLayout({
               <NotificationBell />
             </Suspense>
           </div>
-          <div className="min-h-screen pb-[calc(72px+env(safe-area-inset-bottom,0px))] sm:pb-0 sm:pl-20">
+          <Suspense fallback={null}>
+            <ModeSegmentNav />
+          </Suspense>
+          <div className="min-h-screen pb-[calc(72px+env(safe-area-inset-bottom,0px))] pt-[calc(48px+env(safe-area-inset-top,0px))] sm:pb-0 sm:pl-20 sm:pt-0">
             {children}
           </div>
           <Suspense fallback={null}>

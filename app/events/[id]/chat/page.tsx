@@ -21,7 +21,7 @@ function ParticipantStartChat({ eventId }: { eventId: string }) {
       const participantId = supabase ? (await supabase.auth.getUser()).data.user?.id : MOCK_USER_ID;
       if (supabase && !participantId) {
         setCreating(false);
-        router.replace(`/login?returnTo=${encodeURIComponent(`/events/${eventId}/chat`)}`);
+        router.replace(`/auth?next=${encodeURIComponent(`/events/${eventId}/chat`)}`);
         return;
       }
       const res = await fetch(`/api/events/${eventId}/chat/rooms`, {
@@ -96,7 +96,7 @@ export default function EventChatPage({ params }: Props) {
       }
       if (cancelled) return;
       if (res.status === 401) {
-        router.replace(`/login?returnTo=${encodeURIComponent(`/events/${id}/chat`)}`);
+        router.replace(`/auth?next=${encodeURIComponent(`/events/${id}/chat`)}`);
         return;
       }
       if (!res.ok) {
@@ -140,7 +140,7 @@ export default function EventChatPage({ params }: Props) {
               fetchWithTimeout(`/api/events/${eventId}/chat/rooms`)
                 .then((r) => {
                   if (r.status === 401) {
-                    router.replace(`/login?returnTo=${encodeURIComponent(`/events/${eventId}/chat`)}`);
+                    router.replace(`/auth?next=${encodeURIComponent(`/events/${eventId}/chat`)}`);
                     return null;
                   }
                   return r.ok ? r.json() : null;

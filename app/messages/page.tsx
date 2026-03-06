@@ -23,7 +23,7 @@ export default function MessagesPage() {
           ログインするとメッセージを利用できます
         </p>
         <Link
-          href={`/login?returnTo=/messages`}
+          href={`/auth?next=/messages`}
           className="text-[var(--accent)] underline underline-offset-2"
         >
           ログイン

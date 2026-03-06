@@ -36,12 +36,12 @@ export function ModeLists({ mode, list1, list2 }: Props) {
             ctaHref={config.empty1.ctaHref}
           />
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {list1.map((item) => (
               <li key={item.id}>
                 <Link
                   href={item.href}
-                  className="block rounded-xl border border-[var(--border)] bg-white p-3 transition-shadow hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900/50"
+                  className="block rounded-2xl border border-zinc-200/80 bg-white p-4 transition-shadow hover:shadow-md dark:border-zinc-700/60 dark:bg-zinc-900/95"
                 >
                   <p className="font-medium">{item.title}</p>
                   {item.subText && (
@@ -66,12 +66,12 @@ export function ModeLists({ mode, list1, list2 }: Props) {
             ctaHref={config.empty2.ctaHref}
           />
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {list2.map((item) => (
               <li key={item.id}>
                 <Link
                   href={item.href}
-                  className="block rounded-xl border border-[var(--border)] bg-white p-3 transition-shadow hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900/50"
+                  className="block rounded-2xl border border-zinc-200/80 bg-white p-4 transition-shadow hover:shadow-md dark:border-zinc-700/60 dark:bg-zinc-900/95"
                 >
                   <p className="font-medium">{item.title}</p>
                   {item.subText && (
