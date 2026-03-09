@@ -58,6 +58,8 @@ npx supabase db push
 
 または SQL Editor で `supabase/migrations/` 内の SQL を 00001 から順に実行。
 
+**主催者登録・Stripe 利用時**: `00028_billing_sponsorship.sql`（organizers の earlybird_eligible 等）と `00030_stripe_checkout_tables.sql` が未適用だと登録や決済でエラーになります。本番で初めてデプロイする場合は必ず適用してください。
+
 ---
 
 ## 4. 運用前の動作確認
