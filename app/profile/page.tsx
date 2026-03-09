@@ -266,43 +266,65 @@ function ProfileContent() {
             </section>
 
             {/* 主催セクション：行動導線 */}
-            <section>
+            <section className={!profile.isOrganizerRegistered ? "mb-4" : ""}>
               <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                主催
+                {profile.isOrganizerRegistered ? "主催" : "イベントを開きたい方"}
               </h2>
-              <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/95">
-                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {profile.isOrganizerRegistered ? (
-                    <>
-                      <ProfileMenuLink
-                        href="/organizer/events"
-                        icon="organizer"
-                        title="主催ダッシュボード"
-                        subtitle="作成中のイベント・募集・応募状況を確認"
-                      />
-                      <ProfileMenuLink
-                        href="/organizer/events/new"
-                        icon="event"
-                        title="イベントを作成"
-                        subtitle="新規イベントを登録する"
-                      />
-                      <ProfileMenuLink
-                        href="/organizer/recruitments/new"
-                        icon="recruitment"
-                        title="募集を作成"
-                        subtitle="ボランティアやスタッフを募集する"
-                      />
-                    </>
-                  ) : (
+              {profile.isOrganizerRegistered ? (
+                <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/95">
+                  <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                     <ProfileMenuLink
-                      href="/organizer/register"
+                      href="/organizer/events"
                       icon="organizer"
-                      title="主催として始める"
-                      subtitle="イベント作成や募集管理を始める"
+                      title="主催ダッシュボード"
+                      subtitle="作成中のイベント・募集・応募状況を確認"
                     />
-                  )}
+                    <ProfileMenuLink
+                      href="/organizer/events/new"
+                      icon="event"
+                      title="イベントを作成"
+                      subtitle="新規イベントを登録する"
+                    />
+                    <ProfileMenuLink
+                      href="/organizer/recruitments/new"
+                      icon="recruitment"
+                      title="募集を作成"
+                      subtitle="ボランティアやスタッフを募集する"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <Link
+                  href="/organizer/register"
+                  className="group block rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-[box-shadow,border-color,background-color] hover:border-zinc-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:bg-zinc-50/50 active:border-zinc-300 active:bg-zinc-100/80 dark:border-zinc-600 dark:bg-zinc-900/95 dark:shadow-[0_2px_12px_rgba(0,0,0,0.15)] dark:hover:border-zinc-500 dark:hover:bg-zinc-800/80 dark:hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)] dark:active:bg-zinc-800"
+                  style={{ borderLeftWidth: 4, borderLeftColor: "var(--accent)" }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                        個人でもOK
+                      </span>
+                      <h3 className="mt-2 font-semibold text-zinc-900 dark:text-zinc-100">
+                        主催登録をはじめる
+                      </h3>
+                      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                        個人でも団体でも、イベント作成や募集管理を始められます。
+                      </p>
+                      <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--accent)] group-hover:underline">
+                        登録に進む
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              )}
             </section>
 
             {/* モード別ダッシュボード（参加予定・応募状況など） */}
