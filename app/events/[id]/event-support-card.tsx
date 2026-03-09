@@ -1,16 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import type { SponsorTier } from "@/lib/db/types";
+import { useState } from "react";
 
 const SUPPORT_AMOUNTS = [500, 1000, 3000] as const;
 
 type Props = { eventId: string };
 
-/** ページ下部の小さめ応援カード（常時表示・シンプル） */
+/** ページ下部の小さめ応援カード（常時表示・シンプル）Stripe Checkout で決済 */
 export function EventSupportCard({ eventId }: Props) {
-  const [tiers, setTiers] = useState<SponsorTier[]>([]);
-  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState<number | null>(null);
   const [comment, setComment] = useState("");
@@ -18,73 +15,24 @@ export function EventSupportCard({ eventId }: Props) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadTiers = useCallback(() => {
-    setLoading(true);
-    fetch(`/api/events/${eventId}/sponsor-tiers`)
-      .then((r) => r.json())
-      .then((data) => {
-        const individual = (data.tiers?.individual ?? []) as SponsorTier[];
-        const byPrice = individual.filter((t) =>
-          SUPPORT_AMOUNTS.includes(t.price as (typeof SUPPORT_AMOUNTS)[number])
-        );
-        const ordered = SUPPORT_AMOUNTS.map(
-          (p) => byPrice.find((t) => t.price === p) ?? { id: `f-ind-${p}`, eventId, price: p, name: "応援", type: "individual" as const, description: null, benefits: [], sortOrder: 0, isActive: true }
-        ).filter((t): t is SponsorTier => !!t.id);
-        setTiers(ordered.length > 0 ? ordered : SUPPORT_AMOUNTS.map((p, i) => ({
-          id: `f-ind-${p}`,
-          eventId,
-          price: p,
-          name: "応援",
-          type: "individual" as const,
-          description: null,
-          benefits: [],
-          sortOrder: i,
-          isActive: true,
-        })));
-      })
-      .catch(() => setTiers(SUPPORT_AMOUNTS.map((p, i) => ({
-        id: `f-ind-${p}`,
-        eventId,
-        price: p,
-        name: "応援",
-        type: "individual" as const,
-        description: null,
-        benefits: [],
-        sortOrder: i,
-        isActive: true,
-      }))))
-      .finally(() => setLoading(false));
-  }, [eventId]);
-
-  useEffect(() => {
-    loadTiers();
-  }, [loadTiers]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (amount == null) return;
     setError(null);
     setSubmitting(true);
     try {
-      const tier = tiers.find((t) => t.price === amount);
-      const tierId = tier?.id ?? `f-ind-${amount}`;
-      const res = await fetch(`/api/events/${eventId}/sponsor-purchase`, {
+      const res = await fetch("/api/stripe/checkout/support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tierId,
-          amount,
-          quantity: 1,
-          isAnonymous: true,
-          comment: comment.trim() || undefined,
-        }),
+        body: JSON.stringify({ eventId, amount }),
       });
       const json = await res.json();
-      if (res.ok && json.success) {
-        setDone(true);
-        setOpen(false);
-        setAmount(null);
-        setComment("");
+      if (res.ok && json.url) {
+        window.location.href = json.url;
+        return;
+      }
+      if (res.ok && !json.url) {
+        setError("決済の準備ができません。しばらくしてからお試しください。");
       } else {
         setError(json.error ?? "送信できませんでした");
       }
@@ -112,10 +60,9 @@ export function EventSupportCard({ eventId }: Props) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          disabled={loading}
           className="mt-3 w-full rounded-lg border border-[var(--border)] bg-white py-2.5 text-sm font-medium text-[var(--mg-ink)] transition hover:bg-zinc-50 dark:bg-zinc-800/50 dark:hover:bg-zinc-800"
         >
-          {loading ? "読み込み中..." : "応援する"}
+          応援する
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">

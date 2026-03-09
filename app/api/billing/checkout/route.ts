@@ -6,7 +6,7 @@ import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerByProfileId } from "@/lib/db/organizers";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY;
-const priceId = process.env.STRIPE_PRICE_STARTER_980;
+const priceId = process.env.STRIPE_PRICE_ORGANIZER_980 ?? process.env.STRIPE_PRICE_STARTER_980;
 const appUrl = process.env.APP_URL || "http://localhost:3000";
 
 /**
@@ -63,10 +63,10 @@ export async function POST(request: NextRequest) {
     mode: "subscription",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${appUrl}/organizer/settings/billing?checkout=success`,
+    success_url: `${appUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/organizer/settings/billing?checkout=cancel`,
     subscription_data: {
-      metadata: { organizer_id: organizerId },
+      metadata: { organizer_id: organizerId, user_id: user.id },
     },
   });
 

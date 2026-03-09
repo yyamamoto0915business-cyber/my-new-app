@@ -14,6 +14,9 @@ async function updateOrganizerSubscription(
   organizerId: string,
   subscription: Stripe.Subscription | null
 ) {
+  const userId = subscription?.metadata?.user_id as string | undefined;
+  const now = new Date().toISOString();
+
   if (!subscription) {
     await supabase
       .from("organizers")
@@ -22,9 +25,18 @@ async function updateOrganizerSubscription(
         stripe_subscription_id: null,
         current_period_end: null,
         plan: "free",
-        updated_at: new Date().toISOString(),
+        updated_at: now,
       })
       .eq("id", organizerId);
+    if (userId) {
+      await supabase
+        .from("organizer_subscriptions")
+        .update({
+          status: "canceled",
+          updated_at: now,
+        })
+        .eq("organizer_id", organizerId);
+    }
     return;
   }
 
@@ -32,20 +44,37 @@ async function updateOrganizerSubscription(
   const items = subscription.items;
   const firstItem = Array.isArray(items?.data) ? items.data[0] : null;
   const periodEndTs = firstItem?.current_period_end ?? (subscription as { current_period_end?: number }).current_period_end;
-  const periodEnd = periodEndTs
-    ? new Date(periodEndTs * 1000).toISOString()
-    : null;
+  const periodEnd = periodEndTs ? new Date(periodEndTs * 1000).toISOString() : null;
+  const priceId = firstItem?.price?.id ?? null;
 
   await supabase
     .from("organizers")
     .update({
       subscription_status: status,
       stripe_subscription_id: subscription.id,
+      stripe_customer_id: subscription.customer as string,
       current_period_end: periodEnd,
       plan: status === "active" ? "starter" : "free",
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     })
     .eq("id", organizerId);
+
+  if (userId) {
+    const subStatus = status === "active" ? "active" : status === "past_due" ? "past_due" : status === "canceled" || status === "unpaid" ? "canceled" : "incomplete";
+    await supabase.from("organizer_subscriptions").upsert(
+      {
+        user_id: userId,
+        organizer_id: organizerId,
+        stripe_customer_id: subscription.customer as string,
+        stripe_subscription_id: subscription.id,
+        stripe_price_id: priceId,
+        status: subStatus,
+        current_period_end: periodEnd,
+        updated_at: now,
+      },
+      { onConflict: "organizer_id" }
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -85,45 +114,95 @@ export async function POST(request: NextRequest) {
           }
         }
         if (session.mode === "payment" && session.payment_intent) {
-          const pi = await stripe.paymentIntents.retrieve(session.payment_intent as string);
-          const eventId = pi.metadata?.eventId as string;
-          const organizerId = pi.metadata?.organizerId as string;
-          const platformFeeJpy = parseInt(pi.metadata?.platformFeeJpy ?? "0", 10);
-          if (eventId && organizerId) {
-            const amountJpy = session.amount_total ?? 0;
-            const organizerNetJpy = amountJpy - platformFeeJpy;
-            const { data: existing } = await supabase
-              .from("sponsorships")
-              .select("id")
-              .eq("stripe_checkout_session_id", session.id)
-              .maybeSingle();
-            if (existing) {
-              await supabase
-                .from("sponsorships")
-                .update({
+          const meta = session.metadata ?? {};
+          const type = meta.type as string;
+          const amountJpy = session.amount_total ?? 0;
+          const piId = typeof session.payment_intent === "string" ? session.payment_intent : null;
+
+          if (type === "support") {
+            const eventId = meta.eventId as string;
+            const userId = meta.userId as string;
+            if (eventId && userId) {
+              const { data: existing } = await supabase
+                .from("support_payments")
+                .select("id")
+                .eq("stripe_checkout_session_id", session.id)
+                .maybeSingle();
+              if (!existing) {
+                await supabase.from("support_payments").insert({
+                  user_id: userId,
+                  event_id: eventId,
+                  stripe_checkout_session_id: session.id,
+                  stripe_payment_intent_id: piId,
+                  amount: amountJpy,
                   status: "paid",
+                });
+              }
+            }
+          } else if (type === "event") {
+            const eventId = meta.eventId as string;
+            const userId = meta.userId as string;
+            if (eventId && userId) {
+              const { data: existingOrder } = await supabase
+                .from("event_orders")
+                .select("id")
+                .eq("stripe_checkout_session_id", session.id)
+                .maybeSingle();
+              if (!existingOrder) {
+                await supabase.from("event_orders").insert({
+                  user_id: userId,
+                  event_id: eventId,
+                  stripe_checkout_session_id: session.id,
+                  stripe_payment_intent_id: piId,
+                  amount: amountJpy,
+                  status: "paid",
+                });
+                await supabase.from("event_participants").upsert(
+                  { event_id: eventId, user_id: userId, status: "confirmed" },
+                  { onConflict: "event_id,user_id" }
+                );
+              }
+            }
+          } else {
+            const pi = await stripe.paymentIntents.retrieve(session.payment_intent as string);
+            const eventId = pi.metadata?.eventId as string;
+            const organizerId = pi.metadata?.organizerId as string;
+            const platformFeeJpy = parseInt(pi.metadata?.platformFeeJpy ?? "0", 10);
+            if (eventId && organizerId) {
+              const organizerNetJpy = amountJpy - platformFeeJpy;
+              const { data: existing } = await supabase
+                .from("sponsorships")
+                .select("id")
+                .eq("stripe_checkout_session_id", session.id)
+                .maybeSingle();
+              if (existing) {
+                await supabase
+                  .from("sponsorships")
+                  .update({
+                    status: "paid",
+                    amount_jpy: amountJpy,
+                    platform_fee_jpy: platformFeeJpy,
+                    organizer_net_jpy: organizerNetJpy,
+                    receipt_url: session.url ?? null,
+                    stripe_payment_intent_id: piId,
+                  })
+                  .eq("id", existing.id);
+              } else {
+                await supabase.from("sponsorships").insert({
+                  event_id: eventId,
+                  organizer_id: organizerId,
                   amount_jpy: amountJpy,
                   platform_fee_jpy: platformFeeJpy,
                   organizer_net_jpy: organizerNetJpy,
+                  currency: "jpy",
+                  sponsor_name: session.customer_details?.name ?? null,
+                  sponsor_email: session.customer_details?.email ?? null,
+                  stripe_checkout_session_id: session.id,
+                  stripe_payment_intent_id: piId,
+                  status: "paid",
                   receipt_url: session.url ?? null,
-                  stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
-                })
-                .eq("id", existing.id);
-            } else {
-              await supabase.from("sponsorships").insert({
-                event_id: eventId,
-                organizer_id: organizerId,
-                amount_jpy: amountJpy,
-                platform_fee_jpy: platformFeeJpy,
-                organizer_net_jpy: organizerNetJpy,
-                currency: "jpy",
-                sponsor_name: session.customer_details?.name ?? null,
-                sponsor_email: session.customer_details?.email ?? null,
-                stripe_checkout_session_id: session.id,
-                stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
-                status: "paid",
-                receipt_url: session.url ?? null,
-              });
+                });
+              }
             }
           }
         }
@@ -196,10 +275,19 @@ export async function POST(request: NextRequest) {
       case "charge.refunded": {
         const charge = event.data.object as Stripe.Charge;
         const piId = charge.payment_intent as string;
+        const now = new Date().toISOString();
         if (piId) {
           await supabase
             .from("sponsorships")
-            .update({ status: "refunded", updated_at: new Date().toISOString() })
+            .update({ status: "refunded", updated_at: now })
+            .eq("stripe_payment_intent_id", piId);
+          await supabase
+            .from("support_payments")
+            .update({ status: "refunded", updated_at: now })
+            .eq("stripe_payment_intent_id", piId);
+          await supabase
+            .from("event_orders")
+            .update({ status: "refunded", updated_at: now })
             .eq("stripe_payment_intent_id", piId);
         }
         break;

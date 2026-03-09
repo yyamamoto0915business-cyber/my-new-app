@@ -30,11 +30,11 @@ export default function BillingPage() {
   const fetchBilling = async () => {
     try {
       const res = await fetch("/api/organizer/billing");
-      if (!res.ok) throw new Error("取得に失敗しました");
-      const d = await res.json();
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((d as { error?: string }).error ?? "取得に失敗しました");
       setData(d);
-    } catch {
-      setError("課金情報を取得できませんでした");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "課金情報を取得できませんでした");
     } finally {
       setLoading(false);
     }

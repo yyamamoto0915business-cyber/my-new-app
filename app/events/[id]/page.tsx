@@ -112,6 +112,7 @@ export default async function EventDetailPage({ params }: Props) {
       <EventDetailCTABlock
         eventId={id}
         participationMode={(event.participationMode ?? (event.requiresRegistration ? "required" : "none")) as "required" | "optional" | "none"}
+        price={event.price ?? 0}
         isAvailable={isAvailable}
         title={event.title}
         date={event.date}

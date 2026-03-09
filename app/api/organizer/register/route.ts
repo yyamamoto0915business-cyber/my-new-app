@@ -23,6 +23,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "既に主催者登録済みです" }, { status: 400 });
   }
 
+  // RLS で organizers の INSERT は「profiles に id = auth.uid() の行があること」が条件。
+  // トリガで自動作成されない環境ではプロフィールが無いため、ここで 1 件だけ作成する。
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!profileRow) {
+    const { error: profileErr } = await supabase.from("profiles").insert({
+      id: user.id,
+      email: user.email ?? undefined,
+      display_name: user.name ?? user.email ?? undefined,
+    });
+    if (profileErr) {
+      console.error("organizer register: profile ensure failed", profileErr);
+      return NextResponse.json(
+        { error: "プロフィールの準備に失敗しました。一度マイページを開いて保存してから再度お試しください。" },
+        { status: 500 }
+      );
+    }
+  }
+
   let body: { organizationName?: string; contactEmail?: string; contactPhone?: string };
   try {
     body = await request.json();
@@ -45,6 +67,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(organizer, { status: 201 });
   } catch (e) {
     console.error("organizer register:", e);
-    return NextResponse.json({ error: "登録に失敗しました" }, { status: 500 });
+    const err = e && typeof e === "object" ? (e as Record<string, unknown>) : null;
+    const message =
+      typeof err?.message === "string"
+        ? err.message
+        : typeof err?.details === "string"
+          ? err.details
+          : typeof err?.hint === "string"
+            ? err.hint
+            : "登録に失敗しました";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

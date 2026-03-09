@@ -33,6 +33,7 @@ type ParticipationMode = "required" | "optional" | "none";
 type Props = {
   eventId: string;
   participationMode: ParticipationMode;
+  price?: number;
   isAvailable: boolean;
   title: string;
   date: string;
@@ -47,6 +48,7 @@ type Props = {
 export function EventDetailCTABlock({
   eventId,
   participationMode,
+  price = 0,
   isAvailable,
   title,
   date,
@@ -102,20 +104,34 @@ export function EventDetailCTABlock({
     }
     setJoining(true);
     try {
-      const res = await fetchWithTimeout(`/api/events/${eventId}/join`, {
-        method: "POST",
-      });
-      if (res.ok) setApplied(true);
-      else {
+      if (price > 0) {
+        const res = await fetchWithTimeout("/api/stripe/checkout/event", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventId }),
+        });
         const j = await res.json();
+        if (res.ok && j.url) {
+          window.location.href = j.url;
+          return;
+        }
         alert(j.error ?? "申し込みに失敗しました");
+      } else {
+        const res = await fetchWithTimeout(`/api/events/${eventId}/join`, {
+          method: "POST",
+        });
+        if (res.ok) setApplied(true);
+        else {
+          const j = await res.json();
+          alert(j.error ?? "申し込みに失敗しました");
+        }
       }
     } catch {
       alert("申し込みに失敗しました");
     } finally {
       setJoining(false);
     }
-  }, [eventId, user]);
+  }, [eventId, user, price]);
 
   const handleReaction = useCallback(
     async (type: "planned" | "interested") => {
