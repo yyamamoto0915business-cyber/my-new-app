@@ -7,7 +7,7 @@ const SUB_NAV_ITEMS = [
   { href: "/organizer/events", label: "イベント", exact: true },
   { href: "/organizer/recruitments", label: "募集管理" },
   { href: "/organizer/stories", label: "ストーリー" },
-  { href: "/organizer/settings/billing", label: "課金・請求" },
+  { href: "/organizer/settings/billing", label: "プラン・決済設定" },
 ] as const;
 
 function isActive(pathname: string | null, href: string, exact?: boolean): boolean {

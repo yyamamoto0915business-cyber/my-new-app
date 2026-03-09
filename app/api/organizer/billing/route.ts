@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
-import { getMonthlyPublishedCount } from "@/lib/billing";
+import { getMonthlyPublishedCount, FREE_PLAN_NORMAL_SLOTS, FOUNDER_BONUS_SLOTS } from "@/lib/billing";
 
 /**
  * GET: 主催者の課金・特典・公開枠情報
@@ -34,11 +34,15 @@ export async function GET(request: NextRequest) {
   }
 
   const monthlyPublished = await getMonthlyPublishedCount(supabase, organizerId);
-  const limit = organizer.subscription_status === "active"
-    ? null
-    : organizer.founder30_end_at && new Date(organizer.founder30_end_at) >= new Date()
-      ? 3
-      : 1;
+  const founderActive = !!(
+    organizer.founder30_end_at && new Date(organizer.founder30_end_at) >= new Date()
+  );
+  const publishLimit =
+    organizer.subscription_status === "active"
+      ? null
+      : founderActive
+        ? FREE_PLAN_NORMAL_SLOTS + FOUNDER_BONUS_SLOTS // 4
+        : FREE_PLAN_NORMAL_SLOTS; // 1
 
   return NextResponse.json({
     organizer: {
@@ -51,8 +55,9 @@ export async function GET(request: NextRequest) {
       subscription_status: organizer.subscription_status,
       current_period_end: organizer.current_period_end,
       stripe_account_charges_enabled: organizer.stripe_account_charges_enabled,
+      stripe_account_details_submitted: organizer.stripe_account_details_submitted ?? false,
     },
     monthlyPublished,
-    publishLimit: limit,
+    publishLimit,
   });
 }

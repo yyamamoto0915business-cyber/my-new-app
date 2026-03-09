@@ -3,7 +3,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { OrganizerHeader } from "@/components/organizer/organizer-header";
-import type { DashboardKpis, DashboardTodo, DashboardEvent } from "@/app/api/organizer/dashboard/route";
+import type {
+  DashboardKpis,
+  DashboardTodo,
+  DashboardEvent,
+  BillingSummary,
+} from "@/app/api/organizer/dashboard/route";
+
+const BILLING_HREF = "/organizer/settings/billing";
 
 const STATUS_LABELS: Record<string, string> = {
   public: "公開中",
@@ -22,6 +29,7 @@ export default function OrganizerEventsPage() {
   });
   const [todos, setTodos] = useState<DashboardTodo[]>([]);
   const [events, setEvents] = useState<DashboardEvent[]>([]);
+  const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<EventFilter>("all");
@@ -40,10 +48,12 @@ export default function OrganizerEventsPage() {
       setKpis(data.kpis ?? kpis);
       setTodos(data.todos ?? []);
       setEvents(data.events ?? []);
+      setBillingSummary(data.billingSummary ?? null);
     } catch {
       setKpis({ hosting: 0, needsAction: 0, pendingApplications: 0, unreadMessages: 0 });
       setTodos([]);
       setEvents([]);
+      setBillingSummary(null);
     } finally {
       setLoading(false);
     }
@@ -76,13 +86,15 @@ export default function OrganizerEventsPage() {
         primaryCtaHref="/organizer/events/new"
         secondaryCtaLabel="募集作成"
         secondaryCtaHref="/organizer/recruitments/new"
+        tertiaryCtaHref={BILLING_HREF}
+        tertiaryCtaHighlight={billingSummary?.paymentSetupStatus !== "ok"}
       />
 
       <main className="mx-auto max-w-6xl px-4 py-6 pb-24">
         {loading ? (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[1, 2, 3, 4].map((i) => (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                 <div key={i} className="h-20 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700" />
               ))}
             </div>
@@ -91,9 +103,26 @@ export default function OrganizerEventsPage() {
           </div>
         ) : (
           <>
+            {/* 初回ガイドバナー：決済未設定時のみ */}
+            {billingSummary && billingSummary.paymentSetupStatus !== "ok" && (
+              <section className="mb-4">
+                <div className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 dark:border-amber-800/60 dark:bg-amber-950/30">
+                  <p className="text-sm text-amber-900 dark:text-amber-200">
+                    イベントで参加費を集めるには、先に決済設定が必要です
+                  </p>
+                  <Link
+                    href={BILLING_HREF}
+                    className="mt-2 inline-block rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+                  >
+                    設定する
+                  </Link>
+                </div>
+              </section>
+            )}
+
             {/* KPIカード（カード全体クリック・hoverで押せることが分かる） */}
             <section className="mb-6">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 overflow-x-auto pb-1 sm:grid-cols-4 lg:grid-cols-7 sm:overflow-visible sm:pb-0">
                 <button
                   type="button"
                   onClick={() => setStatusFilter("public")}
@@ -148,6 +177,54 @@ export default function OrganizerEventsPage() {
                   </p>
                   <p className="mt-1 text-xs text-[var(--foreground-muted)]">未読メッセージ</p>
                 </Link>
+                <Link
+                  href={BILLING_HREF}
+                  className="flex min-w-[140px] shrink-0 cursor-pointer flex-col justify-center rounded-xl border border-[var(--border)] bg-white p-4 text-center shadow-sm transition-[box-shadow,border-color,background-color] hover:border-zinc-300 hover:bg-zinc-50/80 hover:shadow-md active:border-zinc-400 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:hover:shadow-md dark:active:bg-zinc-800 sm:min-w-0"
+                  aria-label="売上合計"
+                >
+                  <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    ¥{(billingSummary?.totalSales ?? 0).toLocaleString()}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--foreground-muted)]">売上合計</p>
+                </Link>
+                <Link
+                  href={BILLING_HREF}
+                  className="flex min-w-[140px] shrink-0 cursor-pointer flex-col justify-center rounded-xl border border-[var(--border)] bg-white p-4 text-center shadow-sm transition-[box-shadow,border-color,background-color] hover:border-zinc-300 hover:bg-zinc-50/80 hover:shadow-md active:border-zinc-400 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:hover:shadow-md dark:active:bg-zinc-800 sm:min-w-0"
+                  aria-label="未入金"
+                >
+                  <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    ¥{(billingSummary?.pendingPayout ?? 0).toLocaleString()}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--foreground-muted)]">未入金</p>
+                </Link>
+                <Link
+                  href={BILLING_HREF}
+                  className={`flex min-w-[140px] shrink-0 cursor-pointer flex-col justify-center rounded-xl border p-4 text-center shadow-sm transition-[box-shadow,border-color,background-color] sm:min-w-0 ${
+                    billingSummary && billingSummary.paymentSetupStatus !== "ok"
+                      ? "border-amber-400/80 bg-amber-50/80 hover:border-amber-500 hover:bg-amber-100/80 active:bg-amber-200/80 dark:border-amber-600/60 dark:bg-amber-950/40 dark:hover:bg-amber-900/50"
+                      : "border-[var(--border)] bg-white hover:border-zinc-300 hover:bg-zinc-50/80 hover:shadow-md active:border-zinc-400 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:hover:shadow-md dark:active:bg-zinc-800"
+                  }`}
+                  aria-label="決済設定状況"
+                >
+                  <p
+                    className={`text-lg font-bold sm:text-2xl ${
+                      billingSummary && billingSummary.paymentSetupStatus !== "ok"
+                        ? "text-amber-800 dark:text-amber-300"
+                        : "text-zinc-900 dark:text-zinc-100"
+                    }`}
+                  >
+                    {billingSummary && billingSummary.paymentSetupStatus !== "ok" ? "未設定" : "設定済み"}
+                  </p>
+                  <p
+                    className={`mt-1 text-xs ${
+                      billingSummary && billingSummary.paymentSetupStatus !== "ok"
+                        ? "text-amber-700 dark:text-amber-400"
+                        : "text-[var(--foreground-muted)]"
+                    }`}
+                  >
+                    決済設定
+                  </p>
+                </Link>
               </div>
             </section>
 
@@ -180,10 +257,18 @@ export default function OrganizerEventsPage() {
               </section>
             )}
 
-            {/* 要対応=0のときの次の一手案内（空白を作らない） */}
-            {todos.length === 0 && (
+            {/* 次の一手案内（要対応=0のとき、または決済未設定時） */}
+            {(todos.length === 0 || (billingSummary && billingSummary.paymentSetupStatus !== "ok")) && (
               <p className="mb-4 text-center text-xs text-[var(--foreground-muted)]">
                 次にやること：
+                {billingSummary && billingSummary.paymentSetupStatus !== "ok" && (
+                  <>
+                    <Link href={BILLING_HREF} className="mx-1 font-medium text-amber-600 hover:underline dark:text-amber-400">
+                      決済を設定する
+                    </Link>
+                    <span className="mx-1">/</span>
+                  </>
+                )}
                 <Link href="/organizer/stories/new" className="mx-1 text-[var(--accent)] hover:underline">
                   ストーリーを書く
                 </Link>
@@ -236,7 +321,12 @@ export default function OrganizerEventsPage() {
               ) : (
                 <ul className="space-y-4">
                   {filteredEvents.map((event) => (
-                    <EventCard key={event.id} event={event} onRefresh={fetchDashboard} />
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      billingSummary={billingSummary}
+                      onRefresh={fetchDashboard}
+                    />
                   ))}
                 </ul>
               )}
@@ -248,7 +338,32 @@ export default function OrganizerEventsPage() {
   );
 }
 
-function EventCard({ event, onRefresh }: { event: DashboardEvent; onRefresh?: () => void }) {
+function getBillingTag(
+  event: DashboardEvent,
+  chargesEnabled: boolean
+): { label: string; className: string } {
+  const hasSponsor = (event.sponsorTicketPrices?.length ?? 0) > 0;
+  if (event.price === 0) {
+    return { label: "無料イベント", className: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400" };
+  }
+  if (!chargesEnabled) {
+    return { label: "決済未設定", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" };
+  }
+  if (hasSponsor) {
+    return { label: "スポンサー受付中", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" };
+  }
+  return { label: "有料チケットあり", className: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400" };
+}
+
+function EventCard({
+  event,
+  billingSummary,
+  onRefresh,
+}: {
+  event: DashboardEvent;
+  billingSummary: BillingSummary | null;
+  onRefresh?: () => void;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [publishLoading, setPublishLoading] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
@@ -280,6 +395,10 @@ function EventCard({ event, onRefresh }: { event: DashboardEvent; onRefresh?: ()
     ? `/organizer/recruitments/${mainRecruitmentId}`
     : `/organizer/recruitments/new?eventId=${event.id}`;
 
+  const chargesEnabled = billingSummary?.stripeAccountChargesEnabled ?? false;
+  const billingTag = getBillingTag(event, chargesEnabled);
+  const hasPaidContent = event.price > 0 || (event.sponsorTicketPrices?.length ?? 0) > 0;
+
   return (
     <li className="rounded-xl border border-[var(--border)] bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90">
       <div className="p-4">
@@ -302,6 +421,9 @@ function EventCard({ event, onRefresh }: { event: DashboardEvent; onRefresh?: ()
                 }`}
               >
                 {STATUS_LABELS[event.status] ?? event.status}
+              </span>
+              <span className={`shrink-0 rounded px-2 py-0.5 text-xs ${billingTag.className}`}>
+                {billingTag.label}
               </span>
               <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
                 {event.price === 0 ? "無料" : `¥${event.price}`}
@@ -348,6 +470,16 @@ function EventCard({ event, onRefresh }: { event: DashboardEvent; onRefresh?: ()
               className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
             >
               募集管理
+            </Link>
+            <Link
+              href={hasPaidContent && chargesEnabled ? `/organizer/events/${event.id}/sponsors` : BILLING_HREF}
+              className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                !chargesEnabled
+                  ? "border border-amber-400/80 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-600/60 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-900/40"
+                  : "border border-[var(--border)] hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
+              }`}
+            >
+              {!chargesEnabled ? "決済設定" : hasPaidContent ? "売上確認" : "売上・支払い"}
             </Link>
             <Link
               href={`/events/${event.id}/chat`}

@@ -48,10 +48,18 @@ export type DashboardKpis = {
   unreadMessages: number;
 };
 
+export type BillingSummary = {
+  totalSales: number;
+  pendingPayout: number;
+  paymentSetupStatus: "unset" | "partial" | "ok";
+  stripeAccountChargesEnabled: boolean;
+};
+
 export type DashboardResponse = {
   kpis: DashboardKpis;
   todos: DashboardTodo[];
   events: DashboardEvent[];
+  billingSummary?: BillingSummary;
 };
 
 /** フォールバック: モックデータでダッシュボードを構築 */
@@ -84,6 +92,12 @@ async function buildMockDashboard(): Promise<DashboardResponse> {
     },
     todos,
     events: events.sort((a, b) => (a.date >= today && b.date >= today ? a.date.localeCompare(b.date) : a.date > b.date ? 1 : -1)),
+    billingSummary: {
+      totalSales: 0,
+      pendingPayout: 0,
+      paymentSetupStatus: "unset",
+      stripeAccountChargesEnabled: false,
+    },
   };
 }
 
@@ -94,7 +108,7 @@ async function buildSupabaseDashboard(
   profileId: string,
   unreadTotal: number
 ): Promise<DashboardResponse> {
-  const [eventsData, recruitmentsData, unreadResult] = await Promise.all([
+  const [eventsData, recruitmentsData, unreadResult, organizerRow] = await Promise.all([
     fetchEventsByOrganizer(supabase, organizerId),
     fetchRecruitmentsByOrganizer(supabase, organizerId),
     (async () => {
@@ -104,6 +118,7 @@ async function buildSupabaseDashboard(
         return { data: 0, error: null };
       }
     })(),
+    supabase.from("organizers").select("stripe_account_charges_enabled").eq("id", organizerId).single(),
   ]);
 
   const unreadMessages = typeof unreadResult.data === "bigint"
@@ -233,6 +248,12 @@ async function buildSupabaseDashboard(
   const hosting = events.filter((e) => e.status === "public").length;
   const needsAction = Math.min(todos.length, 99);
 
+  const chargesEnabled =
+    organizerRow?.data && !organizerRow.error
+      ? organizerRow.data.stripe_account_charges_enabled === true
+      : false;
+  const paymentSetupStatus: "unset" | "partial" | "ok" = chargesEnabled ? "ok" : "unset";
+
   return {
     kpis: {
       hosting,
@@ -242,6 +263,12 @@ async function buildSupabaseDashboard(
     },
     todos,
     events: events.sort((a, b) => (a.date >= today && b.date >= today ? a.date.localeCompare(b.date) : a.date > b.date ? 1 : -1)),
+    billingSummary: {
+      totalSales: 0,
+      pendingPayout: 0,
+      paymentSetupStatus,
+      stripeAccountChargesEnabled: chargesEnabled,
+    },
   };
 }
 

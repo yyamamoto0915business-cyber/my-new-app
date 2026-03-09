@@ -184,6 +184,7 @@ function OrganizerRecruitmentsContent() {
         backLabel="← イベント一覧へ"
         primaryCtaLabel="募集を作成"
         primaryCtaHref="/organizer/recruitments/new"
+        tertiaryCtaHref="/organizer/settings/billing"
       />
 
       <main className="mx-auto max-w-6xl px-4 py-6 pb-24">

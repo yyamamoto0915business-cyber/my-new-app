@@ -58,6 +58,12 @@ export function canUseFullFeatures(organizer: {
   return organizer.subscription_status === "active";
 }
 
+/** 無料プランの通常公開枠（毎月） */
+export const FREE_PLAN_NORMAL_SLOTS = 1;
+
+/** 先着特典の追加公開枠（毎月） */
+export const FOUNDER_BONUS_SLOTS = 3;
+
 /** イベント公開の月間上限 */
 export function getPublishLimit(organizer: {
   subscription_status?: string | null;
@@ -65,8 +71,10 @@ export function getPublishLimit(organizer: {
 }): number {
   if (organizer.subscription_status === "active") return Infinity;
   const founder30End = organizer.founder30_end_at;
-  if (founder30End && new Date(founder30End) >= new Date()) return 3;
-  return 1;
+  if (founder30End && new Date(founder30End) >= new Date()) {
+    return FREE_PLAN_NORMAL_SLOTS + FOUNDER_BONUS_SLOTS; // 1 + 3 = 4
+  }
+  return FREE_PLAN_NORMAL_SLOTS; // 1
 }
 
 /** 公開可否チェック（上限含む） */

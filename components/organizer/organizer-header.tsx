@@ -10,6 +10,10 @@ type Props = {
   title: string;
   /** タイトル直下の説明文（任意） */
   description?: string;
+  /** タイトルの追加クラス（任意） */
+  titleClassName?: string;
+  /** 説明文の追加クラス（任意） */
+  descriptionClassName?: string;
   backHref?: string;
   backLabel?: string;
   /** プライマリCTA（未指定時はイベント用：新規作成） */
@@ -18,6 +22,10 @@ type Props = {
   /** セカンダリCTA（例：募集作成） */
   secondaryCtaLabel?: string;
   secondaryCtaHref?: string;
+  /** 決済設定ボタン（主催ダッシュボード用） */
+  tertiaryCtaHref?: string;
+  /** 決済未設定時はやや目立つスタイルにする */
+  tertiaryCtaHighlight?: boolean;
 };
 
 /** 主催者ダッシュボード用ヘッダー：主要CTA2つ + サブナビ */
@@ -30,6 +38,10 @@ export function OrganizerHeader({
   primaryCtaHref = "/organizer/events/new",
   secondaryCtaLabel,
   secondaryCtaHref,
+  tertiaryCtaHref,
+  tertiaryCtaHighlight,
+  titleClassName,
+  descriptionClassName,
 }: Props) {
   const unreadCount = useUnreadCount(true);
 
@@ -47,11 +59,11 @@ export function OrganizerHeader({
         )}
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
+            <h1 className={`text-xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl ${titleClassName ?? ""}`}>
               {title}
             </h1>
             {description && (
-              <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+              <p className={`mt-1 text-sm text-[var(--foreground-muted)] ${descriptionClassName ?? ""}`}>
                 {description}
               </p>
             )}
@@ -68,6 +80,18 @@ export function OrganizerHeader({
                 </span>
               )}
             </Link>
+            {tertiaryCtaHref && (
+              <Link
+                href={tertiaryCtaHref}
+                className={`inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  tertiaryCtaHighlight
+                    ? "border border-amber-400/80 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-600/60 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-900/40"
+                    : "border border-[var(--border)] bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                }`}
+              >
+                決済設定
+              </Link>
+            )}
             {secondaryCtaHref && secondaryCtaLabel && (
               <Link
                 href={secondaryCtaHref}
