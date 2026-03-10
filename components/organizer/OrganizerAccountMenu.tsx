@@ -1,10 +1,19 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { LogOut, User, Shield } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const ORGANIZER_STORAGE_KEYS = [
   "user",
@@ -29,134 +38,132 @@ function clearOrganizerStorage() {
   });
 }
 
-/** 主催者用アカウントメニュー（右上プロフィールメニュー内にログアウト） */
+/** 主催者用アカウントメニュー（MachiGlyph 風・上品でやわらかいUI） */
 export function OrganizerAccountMenu() {
   const router = useRouter();
   const { user } = useSupabaseUser();
-  const [open, setOpen] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  const displayName =
-    (user?.user_metadata?.display_name as string) ??
-    (user?.user_metadata?.name as string) ??
-    user?.email?.split("@")[0] ??
-    "アカウント";
-  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
+  const [loading, setLoading] = useState(false);
+  const [isDeveloperAdmin, setIsDeveloperAdmin] = useState(false);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false);
+    if (!user) {
+      setIsDeveloperAdmin(false);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setIsDeveloperAdmin(Boolean(data.isDeveloperAdmin));
+        }
+      } catch {
+        if (!cancelled) setIsDeveloperAdmin(false);
       }
     };
-    if (open) {
-      document.addEventListener("click", handleClickOutside);
-    }
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, [open]);
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const displayEmail = user?.email ?? null;
 
   const handleLogout = async () => {
     try {
-      setLoggingOut(true);
+      setLoading(true);
       const supabase = createClient();
       if (!supabase) throw new Error("Supabase not configured");
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       clearOrganizerStorage();
-      setOpen(false);
       router.replace("/login");
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error("Logout failed:", err);
       alert("ログアウトに失敗しました");
     } finally {
-      setLoggingOut(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="relative" ref={menuRef}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex min-h-[44px] items-center gap-2 rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        aria-expanded={open}
-        aria-haspopup="true"
-        aria-label="アカウントメニュー"
-      >
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt=""
-            className="h-8 w-8 shrink-0 rounded-full object-cover"
-          />
-        ) : (
-          <span
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-600 dark:bg-zinc-600 dark:text-zinc-300"
-            aria-hidden
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-          </span>
-        )}
-        <span className="hidden max-w-[120px] truncate sm:inline">{displayName}</span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {open && (
-        <div
-          className="absolute right-0 top-full z-50 mt-1 min-w-[200px] rounded-xl border border-[var(--border)] bg-white py-1 shadow-lg dark:border-zinc-600 dark:bg-zinc-900"
-          role="menu"
-        >
-          <div className="px-3 py-2">
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">アカウント情報</p>
-            <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-              {displayName}
-            </p>
-            {user?.email && (
-              <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{user.email}</p>
-            )}
-          </div>
-          <Link
-            href="/profile"
-            onClick={() => setOpen(false)}
-            className="flex min-h-[44px] items-center px-3 py-2.5 text-sm text-zinc-700 transition hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            role="menuitem"
-          >
-            マイページへ
-          </Link>
-          <div className="my-1 border-t border-[var(--border)] dark:border-zinc-600" />
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
           <button
             type="button"
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="flex min-h-[44px] w-full items-center px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/40"
-            role="menuitem"
+            className="inline-flex h-9 min-h-[40px] shrink-0 items-center gap-2 rounded-full border border-zinc-200/90 bg-white/95 px-2.5 py-1.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:border-zinc-300/80 hover:bg-zinc-50 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mg-accent)]/30 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:border-zinc-600/90 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:border-zinc-500/80 dark:hover:bg-zinc-700/80 dark:hover:text-zinc-100 sm:h-10 sm:min-h-0 sm:px-3"
+            aria-label="アカウントメニュー"
           >
-            {loggingOut ? "ログアウト中..." : "ログアウト"}
+            <span
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-100/90 text-xs font-semibold text-zinc-600 dark:bg-zinc-700/90 dark:text-zinc-300"
+              aria-hidden
+            >
+              主
+            </span>
+            <span className="hidden max-w-[100px] truncate sm:inline">アカウント</span>
           </button>
-        </div>
-      )}
-    </div>
+        }
+      />
+
+      <DropdownMenuContent
+        align="end"
+        className="w-[240px] rounded-2xl border border-zinc-200/90 bg-white p-2.5 py-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+        sideOffset={8}
+      >
+        <DropdownMenuLabel className="cursor-default border-0 px-3 py-2">
+          <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+            主催者アカウント
+          </div>
+          <div className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
+            {displayEmail ?? "イベント管理メニュー"}
+          </div>
+        </DropdownMenuLabel>
+
+        <DropdownMenuSeparator className="my-1.5" />
+
+        {isDeveloperAdmin && (
+          <>
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                router.push("/admin");
+              }}
+              className="min-h-[44px] cursor-pointer gap-2 rounded-xl px-3 py-2.5 text-zinc-700 focus:bg-zinc-100 focus:text-zinc-900 dark:text-zinc-300 dark:focus:bg-zinc-800 dark:focus:text-zinc-100"
+            >
+              <Shield className="h-4 w-4" />
+              <span>開発者管理画面</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="my-1.5" />
+          </>
+        )}
+
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            router.push("/profile");
+          }}
+          className="min-h-[44px] cursor-pointer gap-2 rounded-xl px-3 py-2.5 text-zinc-700 focus:bg-zinc-100 focus:text-zinc-900 dark:text-zinc-300 dark:focus:bg-zinc-800 dark:focus:text-zinc-100"
+        >
+          <User className="h-4 w-4" />
+          <span>アカウント</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator className="my-1.5" />
+
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={handleLogout}
+          disabled={loading}
+          className="min-h-[44px] cursor-pointer rounded-xl px-3 py-2.5 text-red-600 focus:bg-red-50 focus:text-red-600 dark:text-red-400 dark:focus:bg-red-950/40 dark:focus:text-red-400"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>{loading ? "ログアウト中..." : "ログアウト"}</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

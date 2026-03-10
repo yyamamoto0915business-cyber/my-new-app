@@ -16,8 +16,8 @@ export default function LoginRedirectPage() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--mg-paper)]">
-      <p className="text-sm text-[var(--mg-muted)]">読み込み中...</p>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#FFFCF7] via-white to-[#F8FAFC]">
+      <p className="text-sm text-slate-500">読み込み中...</p>
     </div>
   );
 }

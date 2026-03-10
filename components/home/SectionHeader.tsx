@@ -4,15 +4,17 @@ import Link from "next/link";
 
 type Props = {
   title: string;
-  /** 右上「すべて見る→」のhref（続きがある棚だけ表示） */
+  /** 右上のリンクhref（続きがある棚だけ表示） */
   href?: string;
+  /** リンクラベル（省略時は「すべて見る」） */
+  linkLabel?: string;
   /** サブテキスト */
   subtitle?: string;
   /** 見出し横の小バッジ（例：選択中カテゴリ） */
   badge?: string;
 };
 
-export function SectionHeader({ title, href, subtitle, badge }: Props) {
+export function SectionHeader({ title, href, subtitle, badge, linkLabel }: Props) {
   return (
     <div className="flex items-start justify-between gap-3">
       <div>
@@ -35,7 +37,7 @@ export function SectionHeader({ title, href, subtitle, badge }: Props) {
           href={href}
           className="shrink-0 pt-0.5 text-sm font-medium text-[var(--accent)] hover:underline"
         >
-          すべて見る →
+          {linkLabel ?? "すべて見る"} →
         </Link>
       )}
     </div>

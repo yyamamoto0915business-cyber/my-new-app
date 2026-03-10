@@ -24,7 +24,10 @@ export function WeeklyPickupSection({
   if (loading) {
     return (
       <section className="space-y-4" aria-label="今週のピックアップ">
-        <SectionHeader title="今週のピックアップ" subtitle="今週末×無料" />
+        <SectionHeader
+          title="今週のピックアップ"
+          subtitle="今週末×無料で参加できるイベント"
+        />
         <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">
           {[1, 2, 3, 4, 5].map((i) => (
             <div
@@ -43,7 +46,7 @@ export function WeeklyPickupSection({
     <section className="space-y-4" aria-label="今週のピックアップ">
       <SectionHeader
         title="今週のピックアップ"
-        subtitle="今週末×無料"
+        subtitle="今週末×無料で参加できるイベント"
         href="/events"
       />
       <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">

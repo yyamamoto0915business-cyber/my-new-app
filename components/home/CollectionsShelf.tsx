@@ -27,7 +27,7 @@ export function CollectionsShelf({
       <section className="space-y-4" aria-label="テーマ別コレクション">
         <SectionHeader
           title="テーマ別コレクション"
-          subtitle="無料・親子・体験・文化体験から"
+          subtitle="無料・親子・体験・文化体験などテーマ別に"
         />
         <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -47,7 +47,7 @@ export function CollectionsShelf({
     <section className="space-y-4" aria-label="テーマ別コレクション">
       <SectionHeader
         title="テーマ別コレクション"
-        subtitle="無料・親子・体験・文化体験から"
+        subtitle="無料・親子・体験・文化体験などテーマ別に"
         href="/collections"
       />
       <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">

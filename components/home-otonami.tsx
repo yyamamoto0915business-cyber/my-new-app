@@ -13,11 +13,14 @@ import { eventMatchesCategory } from "@/lib/inferCategory";
 import { takeWithoutSeen } from "@/lib/utils";
 import { useLanguage } from "./language-provider";
 import { HomeHeader } from "./home/HomeHeader";
+import { HeroSection } from "./home/HeroSection";
+import { HomeFooter } from "./home/HomeFooter";
 import { RecommendedHero } from "./home/RecommendedHero";
 import { WeeklyPickupSection } from "./home/WeeklyPickupSection";
 import { CollectionsShelf } from "./home/CollectionsShelf";
 import { RecruitmentOrMissions } from "./home/RecruitmentOrMissions";
 import { MachiBinyoriPreview } from "./home/MachiBinyoriPreview";
+import { FeaturedOrganizersSection } from "./home/FeaturedOrganizersSection";
 import { BookmarksSheet } from "@/components/ui/BookmarksSheet";
 
 const THEME_FILTERS = [
@@ -77,10 +80,13 @@ export function HomeOtonami() {
   const [allRecruitments, setAllRecruitments] = useState<
     {
       id: string;
+      organizer_id?: string;
       title: string;
       description: string;
       meeting_place: string | null;
+      start_at?: string | null;
       organizers?: { organization_name: string | null };
+      events?: { title: string; date: string } | null;
     }[]
   >([]);
   const [loading, setLoading] = useState(true);
@@ -184,7 +190,10 @@ export function HomeOtonami() {
       />
 
       <main className="mx-auto max-w-5xl space-y-8 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-8 sm:pb-8">
-        {/* 1) おすすめ */}
+        {/* ファーストビュー */}
+        <HeroSection />
+
+        {/* 1) おすすめイベント */}
         <RecommendedHero
           events={allEvents}
           loading={loading}
@@ -211,19 +220,25 @@ export function HomeOtonami() {
           onBookmarkToggle={handleBookmarkToggle}
         />
 
-        {/* 4) すきまサポート */}
+        {/* 4) 注目の主催者 */}
+        <FeaturedOrganizersSection />
+
+        {/* 5) すきまサポート */}
         <RecruitmentOrMissions
           recruitments={allRecruitments}
           loading={loading}
         />
 
-        {/* 5) 今週のまち便り */}
+        {/* 6) 今週のまち便り */}
         <MachiBinyoriPreview
           events={machiEvents}
           loading={loading}
           bookmarkIds={bookmarkIds}
           onBookmarkToggle={handleBookmarkToggle}
         />
+
+        {/* MachiGlyph案内と3軸への再導線 */}
+        <HomeFooter />
       </main>
 
       <BookmarksSheet

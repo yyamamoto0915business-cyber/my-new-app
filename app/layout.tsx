@@ -8,6 +8,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { ModeSegmentNav } from "@/components/mode-segment-nav";
 import { NotificationBell } from "@/components/notification-bell";
+import { UserMenu } from "@/components/header/UserMenu";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -62,9 +63,12 @@ export default function RootLayout({
         <LanguageProvider>
           <BrandIntro />
           <MapBackground />
-          <div className="fixed right-4 top-4 z-50 md:right-6 md:top-6">
+          <div className="fixed right-4 top-4 z-50 flex items-center gap-2 md:right-6 md:top-6">
             <Suspense fallback={null}>
               <NotificationBell />
+            </Suspense>
+            <Suspense fallback={null}>
+              <UserMenu />
             </Suspense>
           </div>
           <Suspense fallback={null}>

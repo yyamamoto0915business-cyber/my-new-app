@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useUnreadCount } from "@/hooks/use-unread-count";
-import { OrganizerSubNav } from "./organizer-sub-nav";
 
 const MESSAGES_HREF = "/messages";
 
@@ -46,7 +45,7 @@ export function OrganizerHeader({
   const unreadCount = useUnreadCount(true);
 
   return (
-    <header className="sticky top-12 z-40 border-b border-[var(--border)] bg-white/95 shadow-sm backdrop-blur-sm sm:top-0 dark:bg-[var(--background)]">
+    <header className="sticky top-16 z-30 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/95 dark:supports-[backdrop-filter]:dark:bg-slate-900/90">
       <div className="mx-auto max-w-6xl px-4 py-4 pr-14 md:pr-16">
         {/* 上段: 戻る ＋ タイトル ＋ 主要CTA2つ */}
         {backHref && (
@@ -108,8 +107,6 @@ export function OrganizerHeader({
             </Link>
           </div>
         </div>
-        {/* 下段: サブナビ */}
-        <OrganizerSubNav />
       </div>
     </header>
   );

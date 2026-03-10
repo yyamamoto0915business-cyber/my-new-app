@@ -1,6 +1,7 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { requiresAuth } from "@/lib/auth-utils";
+import { isDeveloperAdminFromSupabaseUser } from "@/lib/admin-auth";
+import { createProxySupabaseClient } from "@/lib/supabase/proxy";
 
 function isAuthDisabled(): boolean {
   return (
@@ -10,29 +11,12 @@ function isAuthDisabled(): boolean {
 }
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const response = NextResponse.next({ request });
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !key) {
+  const supabase = createProxySupabaseClient(request, response);
+  if (!supabase) {
     return response;
   }
-
-  const supabase = createServerClient(url, key, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
 
   const {
     data: { user },
@@ -43,6 +27,10 @@ export async function proxy(request: NextRequest) {
   }
 
   const path = request.nextUrl.pathname;
+  const isAdminAppPage =
+    path === "/admin" || path.startsWith("/admin/");
+  const isAdminApiRoute = path.startsWith("/api/admin/");
+
   const isAuthPage =
     path === "/onboarding" ||
     path === "/auth" ||
@@ -51,6 +39,48 @@ export async function proxy(request: NextRequest) {
     path.startsWith("/signup");
 
   if (isAuthPage) {
+    return response;
+  }
+
+  // /admin 配下（ページ）の保護
+  if (isAdminAppPage) {
+    // 未ログイン → ログインへ
+    if (!user) {
+      const authUrl = new URL("/auth", request.url);
+      authUrl.searchParams.set("next", path);
+      return NextResponse.redirect(authUrl);
+    }
+
+    // ログイン済みだが developer_admin ではない → 権限なしページへ
+    if (!isDeveloperAdminFromSupabaseUser(user)) {
+      return NextResponse.redirect(new URL("/forbidden", request.url));
+    }
+
+    return response;
+  }
+
+  // /api/admin/* の保護（API レスポンス）
+  if (isAdminApiRoute) {
+    if (!user) {
+      return new NextResponse(
+        JSON.stringify({ ok: false, error: { code: "UNAUTHORIZED", message: "ログインが必要です" } }),
+        {
+          status: 401,
+          headers: { "content-type": "application/json; charset=utf-8" },
+        }
+      );
+    }
+
+    if (!isDeveloperAdminFromSupabaseUser(user)) {
+      return new NextResponse(
+        JSON.stringify({ ok: false, error: { code: "FORBIDDEN", message: "開発者権限が必要です" } }),
+        {
+          status: 403,
+          headers: { "content-type": "application/json; charset=utf-8" },
+        }
+      );
+    }
+
     return response;
   }
 

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { EventFormData } from "@/lib/events";
 import { EVENT_TAGS } from "@/lib/db/types";
 import { EventThumbnail } from "@/components/event-thumbnail";
+import { EventFormSection } from "@/components/organizer/events/EventFormSection";
 
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
 
@@ -60,25 +61,76 @@ const initialForm: EventFormData = {
 
 function validateForm(data: EventFormData): FormErrors {
   const errors: FormErrors = {};
-  if (!data.title.trim()) errors.title = "タイトルは必須です";
-  if (!data.description.trim()) errors.description = "説明は必須です";
-  if (!data.date) errors.date = "日付は必須です";
-  if (!data.startTime) errors.startTime = "開始時刻は必須です";
-  if (!data.location.trim()) errors.location = "場所は必須です";
-  if (!data.address.trim()) errors.address = "住所は必須です";
+  if (!data.title.trim()) errors.title = "イベント名を入力してください";
+  if (!data.description.trim())
+    errors.description = "イベント概要を入力してください";
+  if (!data.date) errors.date = "開催日を選択してください";
+  if (!data.startTime) errors.startTime = "開始時刻を入力してください";
+  if (data.endTime && data.startTime) {
+    const [sh, sm] = data.startTime.split(":").map(Number);
+    const [eh, em] = data.endTime.split(":").map(Number);
+    if (eh < sh || (eh === sh && em <= sm))
+      errors.endTime = "終了時刻は開始時刻より後にしてください";
+  }
+  if (!data.location.trim()) errors.location = "開催場所を入力してください";
+  if (!data.address.trim()) errors.address = "住所を入力してください";
   if (data.price < 0) errors.price = "料金は0以上で入力してください";
-  if (!data.organizerName?.trim()) errors.organizerName = "主催者名は必須です";
+  if (!data.organizerName?.trim())
+    errors.organizerName = "主催者名を入力してください";
   return errors;
+}
+
+const inputBase =
+  "mt-2 w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/50";
+const inputError = "border-red-300 focus:border-red-400 focus:ring-red-200/50";
+
+function FormField({
+  id,
+  label,
+  required,
+  error,
+  hint,
+  children,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  error?: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+        {label}
+        {required && (
+          <span className="ml-1.5 text-xs text-amber-600">必須</span>
+        )}
+      </label>
+      {children}
+      {hint && <p className="mt-1.5 text-xs text-slate-500">{hint}</p>}
+      {error && (
+        <p className="mt-1.5 text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function NewEventPage() {
   const router = useRouter();
+  const formTopRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState<EventFormData>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const [itemsInput, setItemsInput] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     if (name === "price") {
@@ -111,14 +163,13 @@ export default function NewEventPage() {
     }
   };
 
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const formErrors = validateForm(form);
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
+      setSubmitError("入力内容をご確認ください");
+      formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
     setErrors({});
@@ -136,275 +187,362 @@ export default function NewEventPage() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setSubmitError(data.error ?? "作成に失敗しました");
+        formTopRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
         return;
       }
       router.push("/organizer/events");
     } catch {
       setSubmitError("通信に失敗しました");
+      formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     } finally {
       setSubmitting(false);
     }
   };
 
+  const hasRequired =
+    form.participationMode === "required" ||
+    form.participationMode === "optional";
+
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto max-w-2xl px-4 py-4">
+    <div className="space-y-6 pb-24 sm:pb-8" ref={formTopRef}>
+      {/* ページヘッダー */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
           <Link
             href="/organizer/events"
-            className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+            className="text-sm text-slate-500 hover:text-slate-700 hover:underline"
           >
             ← イベント一覧へ
           </Link>
-          <h1 className="mt-2 text-2xl font-bold">新規イベント作成</h1>
+          <h1 className="mt-2 text-xl font-bold text-slate-800 sm:text-2xl">
+            新しいイベントを作成
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            イベントの基本情報や開催情報を入力して作成できます。作成後は下書きとして保存され、一覧から公開できます。
+          </p>
         </div>
-      </header>
+        <div className="flex shrink-0 flex-wrap gap-3">
+          <Link
+            href="/organizer/events"
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            キャンセル
+          </Link>
+          <button
+            type="submit"
+            form="event-form"
+            disabled={submitting}
+            className="inline-flex items-center justify-center rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
+          >
+            {submitting ? "作成中..." : "作成する"}
+          </button>
+        </div>
+      </div>
 
-      <main className="mx-auto max-w-2xl px-4 py-8">
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900"
+      {submitError && (
+        <div
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          role="alert"
         >
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium">
-              タイトル *
-            </label>
+          {submitError}
+        </div>
+      )}
+
+      <form
+        id="event-form"
+        onSubmit={handleSubmit}
+        className="space-y-6"
+      >
+        {/* A. 基本情報 */}
+        <EventFormSection
+          title="基本情報"
+          description="イベントの名前や概要、見た目を設定します"
+        >
+          <FormField
+            id="title"
+            label="イベント名"
+            required
+            error={errors.title}
+          >
             <input
               id="title"
               name="title"
               value={form.title}
               onChange={handleChange}
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              placeholder="例：春の地域マルシェ"
+              className={`${inputBase} ${errors.title ? inputError : ""}`}
             />
-            {errors.title && (
-              <p className="mt-1 text-sm text-red-600">{errors.title}</p>
-            )}
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="imageUrl" className="block text-sm font-medium">
-              イベント画像URL（任意）
-            </label>
+          <FormField
+            id="description"
+            label="イベント概要"
+            required
+            error={errors.description}
+            hint="参加者に伝えたい内容を入力してください"
+          >
+            <textarea
+              id="description"
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              rows={4}
+              placeholder="イベントの内容や魅力を簡潔に紹介してください"
+              className={`${inputBase} resize-y min-h-[100px] ${errors.description ? inputError : ""}`}
+            />
+          </FormField>
+
+          <FormField
+            id="imageUrl"
+            label="アイキャッチ画像"
+            hint="画像URLを貼り付けてください。Unsplash・placehold.coなど。未入力の場合はプレースホルダーが表示されます。"
+          >
             <input
               id="imageUrl"
               name="imageUrl"
               type="url"
               value={form.imageUrl ?? ""}
               onChange={handleChange}
-              placeholder="例: https://images.unsplash.com/photo-xxx?w=800"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              placeholder="https://images.unsplash.com/photo-xxx?w=800"
+              className={inputBase}
             />
-            <p className="mt-1 text-xs text-zinc-500">
-              Unsplash等の画像URLを貼り付けてください。未入力の場合はプレースホルダーが表示されます。
-            </p>
-            <div className="mt-2 overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
+            <div className="mt-3 overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50/50">
               <EventThumbnail
                 imageUrl={form.imageUrl?.trim() || null}
                 alt={form.title || "プレビュー"}
                 rounded="lg"
               />
             </div>
-          </div>
+          </FormField>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium">
-              説明 *
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              rows={3}
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-            />
-            {errors.description && (
-              <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-            )}
+            <p className="text-sm font-medium text-slate-700">
+              カテゴリー・特徴タグ
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              複数選択できます。該当するものを選んでください
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {EVENT_TAGS.map((tag) => (
+                <label
+                  key={tag.id}
+                  className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 text-sm shadow-sm transition hover:border-slate-300 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/80"
+                >
+                  <input
+                    type="checkbox"
+                    checked={(form.tags ?? []).includes(tag.id)}
+                    onChange={() => handleTagToggle(tag.id)}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
+                  <span>{tag.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="date" className="block text-sm font-medium">
-                日付 *
-              </label>
+          <div className="flex flex-wrap gap-6">
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={form.childFriendly ?? false}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, childFriendly: e.target.checked }))
+                }
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              <span className="text-sm text-slate-700">子連れOK</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={form.englishGuideAvailable ?? false}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    englishGuideAvailable: e.target.checked,
+                  }))
+                }
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              <span className="text-sm text-slate-700">英語対応あり</span>
+            </label>
+          </div>
+        </EventFormSection>
+
+        {/* B. 開催情報 */}
+        <EventFormSection
+          title="開催情報"
+          description="日時と場所を入力してください"
+        >
+          <div className="grid gap-5 sm:grid-cols-3">
+            <FormField id="date" label="開催日" required error={errors.date}>
               <input
                 id="date"
                 name="date"
                 type="date"
                 value={form.date}
                 onChange={handleChange}
-                className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+                className={`${inputBase} ${errors.date ? inputError : ""}`}
               />
-              {errors.date && (
-                <p className="mt-1 text-sm text-red-600">{errors.date}</p>
-              )}
-            </div>
-            <div>
-              <label htmlFor="startTime" className="block text-sm font-medium">
-                開始時刻 *
-              </label>
+            </FormField>
+            <FormField
+              id="startTime"
+              label="開始時刻"
+              required
+              error={errors.startTime}
+            >
               <input
                 id="startTime"
                 name="startTime"
                 type="time"
                 value={form.startTime}
                 onChange={handleChange}
-                className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+                className={`${inputBase} ${errors.startTime ? inputError : ""}`}
               />
-              {errors.startTime && (
-                <p className="mt-1 text-sm text-red-600">{errors.startTime}</p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="endTime" className="block text-sm font-medium">
-              終了時刻
-            </label>
-            <input
+            </FormField>
+            <FormField
               id="endTime"
-              name="endTime"
-              type="time"
-              value={form.endTime || ""}
-              onChange={handleChange}
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-            />
+              label="終了時刻"
+              error={errors.endTime}
+              hint="任意。開始時刻より後にしてください"
+            >
+              <input
+                id="endTime"
+                name="endTime"
+                type="time"
+                value={form.endTime || ""}
+                onChange={handleChange}
+                className={`${inputBase} ${errors.endTime ? inputError : ""}`}
+              />
+            </FormField>
           </div>
 
-          <div>
-            <label htmlFor="location" className="block text-sm font-medium">
-              場所 *
-            </label>
+          <FormField
+            id="location"
+            label="開催場所"
+            required
+            error={errors.location}
+            hint="会場名や施設名を入力"
+          >
             <input
               id="location"
               name="location"
               value={form.location}
               onChange={handleChange}
-              placeholder="例: 中央公園"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              placeholder="例：市民ホール 多目的室 / オンライン開催"
+              className={`${inputBase} ${errors.location ? inputError : ""}`}
             />
-            {errors.location && (
-              <p className="mt-1 text-sm text-red-600">{errors.location}</p>
-            )}
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="address" className="block text-sm font-medium">
-              住所 *
-            </label>
+          <FormField
+            id="address"
+            label="住所"
+            required
+            error={errors.address}
+          >
             <input
               id="address"
               name="address"
               value={form.address}
               onChange={handleChange}
-              placeholder="例: 東京都〇〇区〇〇町1-2-3"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              placeholder="例：東京都渋谷区〇〇町1-2-3"
+              className={`${inputBase} ${errors.address ? inputError : ""}`}
             />
-            {errors.address && (
-              <p className="mt-1 text-sm text-red-600">{errors.address}</p>
-            )}
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="prefecture" className="block text-sm font-medium">
-              都道府県
-            </label>
-            <select
-              id="prefecture"
-              name="prefecture"
-              value={form.prefecture ?? ""}
-              onChange={handleChange}
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-            >
-              <option value="">選択してください</option>
-              {PREFECTURES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {form.prefecture && (CITIES_BY_PREF[form.prefecture] ?? []).length > 0 && (
-            <div>
-              <label htmlFor="city" className="block text-sm font-medium">
-                市区町村
-              </label>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField id="prefecture" label="都道府県">
               <select
-                id="city"
-                name="city"
-                value={form.city ?? ""}
+                id="prefecture"
+                name="prefecture"
+                value={form.prefecture ?? ""}
                 onChange={handleChange}
-                className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+                className={inputBase}
               >
                 <option value="">選択してください</option>
-                {CITIES_BY_PREF[form.prefecture]?.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {PREFECTURES.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
                   </option>
                 ))}
               </select>
-            </div>
-          )}
+            </FormField>
+            {form.prefecture &&
+              (CITIES_BY_PREF[form.prefecture] ?? []).length > 0 && (
+                <FormField id="city" label="市区町村">
+                  <select
+                    id="city"
+                    name="city"
+                    value={form.city ?? ""}
+                    onChange={handleChange}
+                    className={inputBase}
+                  >
+                    <option value="">選択してください</option>
+                    {CITIES_BY_PREF[form.prefecture]?.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+              )}
+          </div>
 
-          <div>
-            <label htmlFor="area" className="block text-sm font-medium">
-              エリア名（任意）
-            </label>
+          <FormField id="access" label="アクセス" hint="最寄り駅や目印など">
             <input
-              id="area"
-              name="area"
-              value={form.area ?? ""}
+              id="access"
+              name="access"
+              value={form.access || ""}
               onChange={handleChange}
-              placeholder="例: 渋谷エリア"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              placeholder="例：最寄り駅から徒歩10分"
+              className={inputBase}
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label className="block text-sm font-medium">タグ（複数選択可）</label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {EVENT_TAGS.map((tag) => (
-                <label
-                  key={tag.id}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700"
-                >
-                  <input
-                    type="checkbox"
-                    checked={(form.tags ?? []).includes(tag.id)}
-                    onChange={() => handleTagToggle(tag.id)}
-                  />
-                  <span className="text-sm">{tag.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
+          <FormField id="rainPolicy" label="雨天時対応">
             <input
-              type="checkbox"
-              id="childFriendly"
-              checked={form.childFriendly ?? false}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, childFriendly: e.target.checked }))
-              }
+              id="rainPolicy"
+              name="rainPolicy"
+              value={form.rainPolicy || ""}
+              onChange={handleChange}
+              placeholder="例：雨天決行 / 小雨決行・荒天中止"
+              className={inputBase}
             />
-            <label htmlFor="childFriendly" className="text-sm">
-              子連れOK
-            </label>
-          </div>
+          </FormField>
 
-          {/* 参加方式セクション：申込必須 / 申込任意 / 申込不要 */}
-          <section className="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700 dark:bg-zinc-800/30">
-            <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-              参加方式
-            </h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              参加の届け方で主CTAが変わります。申込不要でも「参加予定」で関心度を把握できます。
+          <FormField
+            id="itemsToBring"
+            label="持ち物"
+            hint="カンマまたは改行で区切って入力"
+          >
+            <input
+              id="itemsToBring"
+              value={itemsInput}
+              onChange={(e) => setItemsInput(e.target.value)}
+              onBlur={handleItemsBlur}
+              placeholder="例：レジャーシート、飲み物"
+              className={inputBase}
+            />
+          </FormField>
+        </EventFormSection>
+
+        {/* C. 参加設定 */}
+        <EventFormSection
+          title="参加設定"
+          description="参加登録が必要なイベントかどうかで設定が変わります"
+        >
+          <div>
+            <p className="text-sm font-medium text-slate-700">
+              参加登録 <span className="text-xs text-amber-600">設定</span>
             </p>
-            <div className="flex flex-col gap-2">
-              <label className="flex cursor-pointer items-center gap-2">
+            <p className="mt-1 text-xs text-slate-500">
+              参加申込が必要なイベントのときだけ「参加登録あり」を選んでください
+            </p>
+            <div className="mt-4 space-y-3">
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/50">
                 <input
                   type="radio"
                   name="participationMode"
@@ -416,11 +554,18 @@ export default function NewEventPage() {
                       requiresRegistration: true,
                     }))
                   }
-                  className="h-4 w-4 border-zinc-300"
+                  className="mt-0.5 h-4 w-4"
                 />
-                <span className="text-sm">申込必須（主CTA: 申し込む）</span>
+                <div>
+                  <span className="text-sm font-medium text-slate-800">
+                    参加登録あり
+                  </span>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    申込必須。参加者は「申し込む」から応募します
+                  </p>
+                </div>
               </label>
-              <label className="flex cursor-pointer items-center gap-2">
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/50">
                 <input
                   type="radio"
                   name="participationMode"
@@ -432,11 +577,18 @@ export default function NewEventPage() {
                       requiresRegistration: false,
                     }))
                   }
-                  className="h-4 w-4 border-zinc-300"
+                  className="mt-0.5 h-4 w-4"
                 />
-                <span className="text-sm">申込任意（主CTA: 参加予定にする）</span>
+                <div>
+                  <span className="text-sm font-medium text-slate-800">
+                    参加登録任意
+                  </span>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    「参加予定にする」で関心を表明。申込も可能
+                  </p>
+                </div>
               </label>
-              <label className="flex cursor-pointer items-center gap-2">
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/50">
                 <input
                   type="radio"
                   name="participationMode"
@@ -448,135 +600,101 @@ export default function NewEventPage() {
                       requiresRegistration: false,
                     }))
                   }
-                  className="h-4 w-4 border-zinc-300"
+                  className="mt-0.5 h-4 w-4"
                 />
-                <span className="text-sm">申込不要（主CTA: 気になる / 参加予定）</span>
+                <div>
+                  <span className="text-sm font-medium text-slate-800">
+                    参加登録なし
+                  </span>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    自由参加。参加予定・気になるボタンのみ
+                  </p>
+                </div>
               </label>
             </div>
-            {(form.participationMode ?? "none") === "required" && (
-              <div className="mt-4 space-y-4 border-t border-zinc-200 pt-4 dark:border-zinc-600">
-                <div>
-                  <label
-                    htmlFor="capacity"
-                    className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                  >
-                    定員（任意）
-                  </label>
-                  <input
-                    id="capacity"
-                    name="capacity"
-                    type="number"
-                    min={0}
-                    value={form.capacity ?? ""}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        capacity: e.target.value ? Number(e.target.value) : undefined,
-                      }))
-                    }
-                    placeholder="例: 50"
-                    className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="registrationDeadline"
-                    className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                  >
-                    申込締切（任意）
-                  </label>
-                  <input
-                    id="registrationDeadline"
-                    name="registrationDeadline"
-                    type="datetime-local"
-                    value={
-                      form.registrationDeadline
-                        ? (() => {
-                            const d = new Date(form.registrationDeadline!);
-                            const pad = (n: number) =>
-                              String(n).padStart(2, "0");
-                            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                          })()
-                        : ""
-                    }
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        registrationDeadline: e.target.value
-                          ? new Date(e.target.value).toISOString()
-                          : undefined,
-                      }))
-                    }
-                    className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="registrationNote"
-                    className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                  >
-                    申込メモ・注意事項（任意）
-                  </label>
-                  <textarea
-                    id="registrationNote"
-                    name="registrationNote"
-                    rows={2}
-                    value={form.registrationNote ?? ""}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        registrationNote: e.target.value || undefined,
-                      }))
-                    }
-                    placeholder="例: 定員に達し次第締め切ります"
-                    className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-                  />
-                </div>
-              </div>
-            )}
-          </section>
-
-          <div>
-            <label htmlFor="prioritySlots" className="block text-sm font-medium">
-              優先枠数（任意）
-            </label>
-            <input
-              id="prioritySlots"
-              name="prioritySlots"
-              type="number"
-              min={0}
-              value={form.prioritySlots ?? 0}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  prioritySlots: Math.max(0, Number(e.target.value) || 0),
-                }))
-              }
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-            />
           </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="englishGuideAvailable"
-              checked={form.englishGuideAvailable ?? false}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  englishGuideAvailable: e.target.checked,
-                }))
-              }
-            />
-            <label htmlFor="englishGuideAvailable" className="text-sm">
-              英語対応
-            </label>
-          </div>
+          {(form.participationMode ?? "none") === "required" && (
+            <div className="space-y-5 border-t border-slate-100 pt-5">
+              <FormField id="capacity" label="定員" hint="任意">
+                <input
+                  id="capacity"
+                  name="capacity"
+                  type="number"
+                  min={0}
+                  value={form.capacity ?? ""}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      capacity: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
+                    }))
+                  }
+                  placeholder="例：50"
+                  className={inputBase}
+                />
+              </FormField>
+              <FormField
+                id="registrationDeadline"
+                label="申込締切"
+                hint="任意。締切日時を指定"
+              >
+                <input
+                  id="registrationDeadline"
+                  name="registrationDeadline"
+                  type="datetime-local"
+                  value={
+                    form.registrationDeadline
+                      ? (() => {
+                          const d = new Date(form.registrationDeadline);
+                          const pad = (n: number) =>
+                            String(n).padStart(2, "0");
+                          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                        })()
+                      : ""
+                  }
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      registrationDeadline: e.target.value
+                        ? new Date(e.target.value).toISOString()
+                        : undefined,
+                    }))
+                  }
+                  className={inputBase}
+                />
+              </FormField>
+              <FormField
+                id="registrationNote"
+                label="申込メモ・注意事項"
+                hint="例：定員に達し次第締め切ります"
+              >
+                <textarea
+                  id="registrationNote"
+                  name="registrationNote"
+                  rows={2}
+                  value={form.registrationNote ?? ""}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      registrationNote: e.target.value || undefined,
+                    }))
+                  }
+                  placeholder="参加者への連絡事項や注意書き"
+                  className={`${inputBase} resize-y min-h-[60px]`}
+                />
+              </FormField>
+            </div>
+          )}
 
-          <div>
-            <label htmlFor="price" className="block text-sm font-medium">
-              料金（円）*
-            </label>
+          <FormField
+            id="price"
+            label="参加費（円）"
+            required
+            error={errors.price}
+            hint="0で無料イベント"
+          >
             <input
               id="price"
               name="price"
@@ -584,119 +702,108 @@ export default function NewEventPage() {
               min={0}
               value={form.price}
               onChange={handleChange}
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              placeholder="0"
+              className={`${inputBase} ${errors.price ? inputError : ""}`}
             />
-            {errors.price && (
-              <p className="mt-1 text-sm text-red-600">{errors.price}</p>
-            )}
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="priceNote" className="block text-sm font-medium">
-              料金補足
-            </label>
+          <FormField id="priceNote" label="料金補足">
             <input
               id="priceNote"
               name="priceNote"
               value={form.priceNote || ""}
               onChange={handleChange}
-              placeholder="例: 材料費込み"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              placeholder="例：材料費込み"
+              className={inputBase}
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="organizerName" className="block text-sm font-medium">
-              主催者名 *
-            </label>
+          {hasRequired && (
+            <FormField id="prioritySlots" label="優先枠数" hint="任意">
+              <input
+                id="prioritySlots"
+                name="prioritySlots"
+                type="number"
+                min={0}
+                value={form.prioritySlots ?? 0}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    prioritySlots: Math.max(0, Number(e.target.value) || 0),
+                  }))
+                }
+                className={inputBase}
+              />
+            </FormField>
+          )}
+        </EventFormSection>
+
+        {/* D. 主催者・補足 */}
+        <EventFormSection
+          title="主催者情報"
+          description="イベントの主催者として表示される情報です"
+        >
+          <FormField
+            id="organizerName"
+            label="主催者名"
+            required
+            error={errors.organizerName}
+          >
             <input
               id="organizerName"
               name="organizerName"
               value={form.organizerName ?? ""}
               onChange={handleChange}
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              placeholder="例：〇〇実行委員会"
+              className={`${inputBase} ${errors.organizerName ? inputError : ""}`}
             />
-            {errors.organizerName && (
-              <p className="mt-1 text-sm text-red-600">{errors.organizerName}</p>
-            )}
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="organizerContact" className="block text-sm font-medium">
-              連絡先
-            </label>
+          <FormField id="organizerContact" label="連絡先" hint="電話番号やメールアドレス">
             <input
               id="organizerContact"
               name="organizerContact"
               value={form.organizerContact ?? ""}
               onChange={handleChange}
-              placeholder="例: 03-1234-5678"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              placeholder="例：03-1234-5678"
+              className={inputBase}
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label htmlFor="rainPolicy" className="block text-sm font-medium">
-              雨天時対応
-            </label>
+          <FormField id="area" label="エリア名">
             <input
-              id="rainPolicy"
-              name="rainPolicy"
-              value={form.rainPolicy || ""}
+              id="area"
+              name="area"
+              value={form.area ?? ""}
               onChange={handleChange}
-              placeholder="例: 雨天決行"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              placeholder="例：渋谷エリア"
+              className={inputBase}
             />
-          </div>
+          </FormField>
+        </EventFormSection>
 
-          <div>
-            <label htmlFor="itemsToBring" className="block text-sm font-medium">
-              持ち物（カンマ区切り）
-            </label>
-            <input
-              id="itemsToBring"
-              value={itemsInput}
-              onChange={(e) => setItemsInput(e.target.value)}
-              onBlur={handleItemsBlur}
-              placeholder="例: レジャーシート、飲み物"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="access" className="block text-sm font-medium">
-              アクセス
-            </label>
-            <input
-              id="access"
-              name="access"
-              value={form.access || ""}
-              onChange={handleChange}
-              placeholder="例: 最寄り駅から徒歩10分"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-            />
-          </div>
-
-          {submitError && (
-            <p className="text-sm text-red-600">{submitError}</p>
-          )}
-          <div className="flex gap-4 pt-4">
+        {/* 保存エリア */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+          <p className="text-sm text-slate-500">
+            作成後は下書きとして保存されます。イベント一覧から確認し、公開できます。
+          </p>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg bg-zinc-900 px-6 py-2 font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="inline-flex items-center justify-center rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? "作成中..." : "作成する"}
             </button>
             <Link
               href="/organizer/events"
-              className="rounded-lg border border-zinc-300 px-6 py-2 dark:border-zinc-700"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 px-6 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               キャンセル
             </Link>
           </div>
-        </form>
-      </main>
+        </div>
+      </form>
     </div>
   );
 }

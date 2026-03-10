@@ -160,7 +160,10 @@ export function RecommendedHero({
   if (loading) {
     return (
       <section className="space-y-6" aria-label="おすすめ">
-        <SectionHeader title="おすすめ（あなた向け）" />
+        <SectionHeader
+          title="おすすめイベント"
+          subtitle="いま注目されている地域のイベントです"
+        />
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="h-[200px] animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-700 sm:col-span-2" />
           <div className="space-y-4">
@@ -174,7 +177,11 @@ export function RecommendedHero({
 
   return (
     <section className="space-y-6" aria-label="おすすめ">
-      <SectionHeader title="おすすめ（あなた向け）" badge={categoryBadge} />
+      <SectionHeader
+          title="おすすめイベント"
+          subtitle="いま注目されている地域のイベントです"
+          badge={categoryBadge}
+        />
       <CategoryChips
         selected={categoryPrefs}
         onChange={onCategoryChange}

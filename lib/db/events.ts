@@ -78,6 +78,7 @@ export async function fetchEvents(supabase: SupabaseClient): Promise<Event[]> {
   if (error) throw error;
 
   return (data ?? []).map((row: Record<string, unknown>) => {
+    const dbRow = row as unknown as DbEvent & { organizer_id?: string };
     const org = row.organizers as {
       organization_name: string | null;
       contact_email: string | null;
@@ -90,7 +91,8 @@ export async function fetchEvents(supabase: SupabaseClient): Promise<Event[]> {
       org?.profiles?.email ??
       "主催者";
     const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
-    return dbEventToEvent(row as unknown as DbEvent, name, contact);
+    const event = dbEventToEvent(row as unknown as DbEvent, name, contact);
+    return { ...event, organizerId: dbRow.organizer_id ?? null };
   });
 }
 
@@ -224,6 +226,126 @@ export async function fetchPublishedEventById(
   return dbEventToEvent(data as unknown as DbEvent, name, contact);
 }
 
+export type EventWithOrganizerInfo = Event & {
+  organizerId?: string | null;
+  organizerAvatarUrl?: string | null;
+  organizerRegion?: string | null;
+  organizerBio?: string | null;
+};
+
+/** 公開イベント1件 + 主催者情報（イベント詳細ページ用） */
+export async function fetchPublishedEventWithOrganizerInfo(
+  supabase: SupabaseClient,
+  id: string
+): Promise<EventWithOrganizerInfo | null> {
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      `
+      *,
+      organizers (
+        id,
+        organization_name,
+        contact_email,
+        contact_phone,
+        profiles (
+          display_name,
+          email,
+          avatar_url,
+          region,
+          bio
+        )
+      )
+    `
+    )
+    .eq("id", id)
+    .eq("status", "published")
+    .single();
+
+  if (error || !data) return null;
+
+  const row = data as Record<string, unknown>;
+  const org = row.organizers as {
+    id?: string;
+    organization_name: string | null;
+    contact_email: string | null;
+    contact_phone: string | null;
+    profiles?: {
+      display_name: string | null;
+      email: string | null;
+      avatar_url?: string | null;
+      region?: string | null;
+      bio?: string | null;
+    };
+  } | null;
+
+  const name =
+    org?.organization_name ??
+    org?.profiles?.display_name ??
+    org?.profiles?.email ??
+    "主催者";
+  const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+
+  const event = dbEventToEvent(row as unknown as DbEvent, name, contact);
+  return {
+    ...event,
+    organizerId: org?.id ?? null,
+    organizerAvatarUrl: org?.profiles?.avatar_url ?? null,
+    organizerRegion: org?.profiles?.region ?? null,
+    organizerBio: org?.profiles?.bio ?? null,
+  };
+}
+
+/** 同じ主催者の他の公開イベント（指定件数・現在のイベント除外） */
+export async function fetchOtherPublishedEventsByOrganizer(
+  supabase: SupabaseClient,
+  organizerId: string,
+  excludeEventId: string,
+  limit: number = 3
+): Promise<Event[]> {
+  const today = new Date().toISOString().split("T")[0];
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      `
+      *,
+      organizers!inner (
+        organization_name,
+        contact_email,
+        contact_phone,
+        profiles (
+          display_name,
+          email
+        )
+      )
+    `
+    )
+    .eq("organizer_id", organizerId)
+    .eq("status", "published")
+    .neq("id", excludeEventId)
+    .gte("date", today)
+    .order("date", { ascending: true })
+    .limit(limit);
+
+  if (error) return [];
+
+  return (data ?? []).map((r: Record<string, unknown>) => {
+    const org = r.organizers as {
+      organization_name: string | null;
+      contact_email: string | null;
+      contact_phone: string | null;
+      profiles: { display_name: string | null; email: string | null };
+    };
+    const name =
+      org?.organization_name ??
+      org?.profiles?.display_name ??
+      org?.profiles?.email ??
+      "主催者";
+    const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+    return dbEventToEvent(r as unknown as DbEvent, name, contact);
+  });
+}
+
 /** 公開イベントをIDリストで取得（マイページの参加予定・気になる一覧用） */
 export async function fetchPublishedEventsByIds(
   supabase: SupabaseClient,
@@ -269,6 +391,53 @@ export async function fetchPublishedEventsByIds(
     })
     .filter((e) => e.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime || "").localeCompare(b.startTime || ""));
+}
+
+/** 主催者の公開イベント一覧（公開プロフィールページ用・未来のイベント優先） */
+export async function fetchPublishedEventsByOrganizer(
+  supabase: SupabaseClient,
+  organizerId: string,
+  limit: number = 20
+): Promise<Event[]> {
+  const today = new Date().toISOString().split("T")[0];
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      `
+      *,
+      organizers!inner (
+        organization_name,
+        contact_email,
+        contact_phone,
+        profiles (
+          display_name,
+          email
+        )
+      )
+    `
+    )
+    .eq("organizer_id", organizerId)
+    .eq("status", "published")
+    .order("date", { ascending: true })
+    .limit(limit);
+
+  if (error) return [];
+
+  return (data ?? []).map((row: Record<string, unknown>) => {
+    const org = row.organizers as {
+      organization_name: string | null;
+      contact_email: string | null;
+      contact_phone: string | null;
+      profiles: { display_name: string | null; email: string | null };
+    };
+    const name =
+      org?.organization_name ??
+      org?.profiles?.display_name ??
+      org?.profiles?.email ??
+      "主催者";
+    const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+    return dbEventToEvent(row as unknown as DbEvent, name, contact);
+  });
 }
 
 export async function fetchEventsByOrganizer(
@@ -370,6 +539,7 @@ function formToDb(form: EventFormData): Record<string, unknown> {
   return {
     title: form.title,
     description: form.description,
+    image_url: form.imageUrl?.trim() || null,
     date: form.date,
     start_time: form.startTime,
     end_time: form.endTime || null,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Event } from "@/lib/db/types";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import { getPrimaryCategory } from "@/lib/inferCategory";
@@ -98,6 +99,21 @@ export function ShelfCard({
         <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">
           {event.location}
         </p>
+        {event.organizerName && (
+          <p className="mt-0.5 truncate text-[10px] text-zinc-500 dark:text-zinc-500">
+            {event.organizerId ? (
+              <Link
+                href={`/organizers/${event.organizerId}`}
+                onClick={(e) => e.stopPropagation()}
+                className="hover:underline"
+              >
+                by {event.organizerName}
+              </Link>
+            ) : (
+              <>by {event.organizerName}</>
+            )}
+          </p>
+        )}
       </div>
     </div>
   );

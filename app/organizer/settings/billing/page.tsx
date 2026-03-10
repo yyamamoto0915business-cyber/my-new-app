@@ -142,8 +142,8 @@ export default function BillingPage() {
         description="主催者プランの確認、アップグレード、売上の受取設定ができます"
         titleClassName="text-[22px] font-bold sm:text-[28px]"
         descriptionClassName="text-[13px] sm:text-sm"
-        backHref="/organizer/events"
-        backLabel="← 主催イベントへ"
+        backHref="/organizer/settings"
+        backLabel="← 設定へ"
       />
       <main className="mx-auto max-w-[960px] px-4 pb-24 pt-6 sm:px-6">
         {loading ? (

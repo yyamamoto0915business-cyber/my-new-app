@@ -1,5 +1,7 @@
 // DB型定義（Supabase のテーブルに対応）
 
+export type ProfileRole = "user" | "organizer" | "developer_admin";
+
 export type Profile = {
   id: string;
   email: string | null;
@@ -9,6 +11,7 @@ export type Profile = {
   address: string | null;
   region: string | null;
   bio: string | null;
+  role?: ProfileRole | null;
   created_at: string;
   updated_at: string;
 };
@@ -33,6 +36,13 @@ export type Organizer = {
   stripe_account_id?: string | null;
   stripe_account_charges_enabled?: boolean;
   stripe_account_details_submitted?: boolean;
+  // 開発者管理画面用の手動付与情報・課金ソース
+  manual_grant_active?: boolean;
+  manual_grant_plan?: string | null;
+  manual_grant_expires_at?: string | null;
+  manual_grant_reason?: string | null;
+  billing_source?: string | null;
+  updated_by_admin?: string | null;
 };
 
 export type Sponsorship = {
@@ -145,6 +155,8 @@ export type Event = {
   priceNote?: string;
   organizerName: string;
   organizerContact?: string;
+  /** 主催者プロフィールへのリンク用（APIレスポンスで付与） */
+  organizerId?: string | null;
   childFriendly: boolean;
   rainPolicy?: string;
   itemsToBring?: string[];

@@ -1,4 +1,5 @@
-import Link from "next/link";
+import OrganizerSidebar from "@/components/organizer/OrganizerSidebar";
+import OrganizerMobileNav from "@/components/organizer/OrganizerMobileNav";
 import { OrganizerAccountMenu } from "@/components/organizer/OrganizerAccountMenu";
 
 export default function OrganizerLayout({
@@ -7,18 +8,34 @@ export default function OrganizerLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="organizer-layout min-h-screen bg-[var(--mg-paper)]">
-      {/* 共通ヘッダー：主催管理＋プロフィールメニュー（右上） */}
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-[var(--border)] bg-white/95 px-4 py-3 backdrop-blur-sm dark:bg-[var(--background)] sm:px-6">
-        <Link
-          href="/organizer/events"
-          className="text-base font-semibold text-zinc-900 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300"
-        >
-          主催管理
-        </Link>
-        <OrganizerAccountMenu />
+    <div className="min-h-screen bg-slate-50/50">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/85">
+        <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <OrganizerMobileNav />
+            <div className="min-w-0">
+              <div className="truncate text-base font-semibold text-slate-800 sm:text-lg">
+                主催者管理
+              </div>
+              <div className="hidden truncate text-xs text-slate-500 sm:block">
+                イベントの作成・編集・管理ができます
+              </div>
+            </div>
+          </div>
+
+          <div className="shrink-0">
+            <OrganizerAccountMenu />
+          </div>
+        </div>
       </header>
-      {children}
+
+      <div className="flex min-h-[calc(100vh-4rem)]">
+        <OrganizerSidebar />
+
+        <main className="min-w-0 flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

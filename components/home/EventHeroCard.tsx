@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Event } from "@/lib/db/types";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import { getPrimaryCategory } from "@/lib/inferCategory";
@@ -77,7 +78,19 @@ export function EventHeroCard({
           />
         </div>
         <div className="absolute bottom-2 left-2 right-2 text-white">
-          <p className="text-xs font-medium drop-shadow-md">{event.organizerName}</p>
+          {event.organizerName && (
+            event.organizerId ? (
+              <Link
+                href={`/organizers/${event.organizerId}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs font-medium drop-shadow-md hover:underline"
+              >
+                by {event.organizerName}
+              </Link>
+            ) : (
+              <p className="text-xs font-medium drop-shadow-md">by {event.organizerName}</p>
+            )
+          )}
           <h3 className="mt-0.5 line-clamp-2 font-serif text-sm font-semibold drop-shadow-md">
             {event.title}
           </h3>

@@ -5,6 +5,18 @@ import Link from "next/link";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { RecruitmentForm } from "@/components/recruitment-form";
 import { ChatRoom } from "@/components/chat/chat-room";
+import { ApplicationSummaryCards } from "@/components/organizer/applications/ApplicationSummaryCards";
+import {
+  ApplicationToolbar,
+  type StatusFilter,
+  type SortOption,
+} from "@/components/organizer/applications/ApplicationToolbar";
+import {
+  ApplicationCard,
+  type Application,
+} from "@/components/organizer/applications/ApplicationCard";
+import { ApplicationsEmptyState } from "@/components/organizer/applications/ApplicationsEmptyState";
+import { ApplicationDetailSheet } from "@/components/organizer/applications/ApplicationDetailSheet";
 
 type Recruitment = {
   id: string;
@@ -18,35 +30,11 @@ type Recruitment = {
   roles: { name: string; count: number }[];
 };
 
-type Application = {
-  id: string;
-  user_id: string;
-  status: string;
-  message: string | null;
-  role_assigned: string | null;
-  checked_in_at: string | null;
-  created_at?: string;
-  user?: { display_name: string | null; email: string | null };
-};
-
 const RECRUITMENT_STATUS_LABELS: Record<string, string> = {
   draft: "下書き",
   public: "募集中",
   closed: "終了",
 };
-
-const APP_STATUS_LABELS: Record<string, string> = {
-  pending: "承認待ち",
-  accepted: "承認済み",
-  rejected: "却下",
-  canceled: "キャンセル",
-  confirmed: "承認済み",
-  applied: "申請中",
-  checked_in: "チェックイン済",
-  completed: "完了",
-};
-
-type AppTab = "pending" | "accepted" | "rejected" | "all";
 
 function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -58,17 +46,6 @@ function formatDateTime(iso: string | null | undefined): string {
   });
   const time = iso.length > 10 ? iso.slice(11, 16) : "";
   return time ? `${date} ${time}` : date;
-}
-
-function formatApplicationDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString("ja-JP", {
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 export default function OrganizerRecruitmentDetailPage({
@@ -85,7 +62,10 @@ export default function OrganizerRecruitmentDetailPage({
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkTemplate, setBulkTemplate] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [appTab, setAppTab] = useState<AppTab>("pending");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("created_desc");
+  const [detailApp, setDetailApp] = useState<Application | null>(null);
   const [contentOpen, setContentOpen] = useState(false);
   const [resolvedId, setResolvedId] = useState<string | null>(null);
 
@@ -195,11 +175,31 @@ export default function OrganizerRecruitmentDetailPage({
   const rejectedCount = applications.filter((a) => a.status === "rejected").length;
 
   const filteredApplications = useMemo(() => {
-    if (appTab === "pending") return applications.filter((a) => a.status === "pending");
-    if (appTab === "accepted") return applications.filter((a) => a.status === "accepted" || a.status === "confirmed");
-    if (appTab === "rejected") return applications.filter((a) => a.status === "rejected");
-    return applications;
-  }, [applications, appTab]);
+    let list = applications;
+    if (statusFilter === "pending") list = list.filter((a) => a.status === "pending");
+    else if (statusFilter === "accepted")
+      list = list.filter((a) => a.status === "accepted" || a.status === "confirmed");
+    else if (statusFilter === "rejected") list = list.filter((a) => a.status === "rejected");
+
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (a) =>
+          (a.user?.display_name ?? "").toLowerCase().includes(q) ||
+          (a.user?.email ?? "").toLowerCase().includes(q) ||
+          (a.message ?? "").toLowerCase().includes(q)
+      );
+    }
+
+    const sorted = [...list];
+    if (sortBy === "created_asc") sorted.sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""));
+    else if (sortBy === "created_desc") sorted.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+    else if (sortBy === "name_asc")
+      sorted.sort((a, b) =>
+        (a.user?.display_name ?? "").localeCompare(b.user?.display_name ?? "", "ja")
+      );
+    return sorted;
+  }, [applications, statusFilter, searchQuery, sortBy]);
 
   if (!resolvedId || loading) {
     return (
@@ -277,272 +277,138 @@ export default function OrganizerRecruitmentDetailPage({
   return (
     <div className="min-h-screen bg-[var(--mg-paper)]">
       {/* (1) ヘッダー sticky */}
-      <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-white/95 backdrop-blur-sm shadow-sm dark:bg-[var(--background)]">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-sm shadow-sm">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <Link
             href="/organizer/recruitments"
-            className="text-sm text-[var(--foreground-muted)] hover:underline"
+            className="text-sm text-slate-500 hover:underline"
           >
             ← 募集管理へ
           </Link>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
-                  {recruitment.title}
-                </h1>
-                <span
-                  className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass}`}
-                >
-                  {RECRUITMENT_STATUS_LABELS[recruitment.status] ?? recruitment.status}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href="/messages"
-                className="text-sm text-[var(--foreground-muted)] hover:underline"
-              >
-                メッセージ
-              </Link>
-              <button
-                type="button"
-                onClick={() => setEditing(true)}
-                className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
-              >
-                編集
-              </button>
-              <Link
-                href={`/organizer/recruitments/${resolvedId}/day-of`}
-                className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-              >
-                当日管理へ
-              </Link>
-            </div>
+          <h1 className="mt-2 text-lg font-semibold text-slate-800">応募管理</h1>
+          <p className="mt-1 text-base font-medium text-slate-900">{recruitment.title}</p>
+          <p className="mt-0.5 text-sm text-slate-500">
+            参加者情報や応募状況を確認・対応できます
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-sm font-medium text-slate-600 hover:text-slate-900"
+            >
+              編集
+            </button>
+            <Link
+              href={`/organizer/recruitments/${resolvedId}/day-of`}
+              className="rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90"
+            >
+              当日管理へ
+            </Link>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-6 pb-24 space-y-6">
-        {/* (2) サマリーカード */}
-        <section className="rounded-xl border border-[var(--border)] bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90">
+        {/* (2) 募集概要（コンパクト） */}
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
           <h2 className="sr-only">募集概要</h2>
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-medium text-[var(--foreground-muted)]">日時</dt>
-              <dd className="mt-0.5 text-sm text-zinc-900 dark:text-zinc-100">
-                {formatDateTime(recruitment.start_at)}
-                {recruitment.end_at && ` ～ ${formatDateTime(recruitment.end_at)}`}
-              </dd>
-            </div>
-            {recruitment.meeting_place && (
-              <div>
-                <dt className="text-xs font-medium text-[var(--foreground-muted)]">集合場所</dt>
-                <dd className="mt-0.5 text-sm text-zinc-900 dark:text-zinc-100">
-                  {recruitment.meeting_place}
-                </dd>
-              </div>
-            )}
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium ${statusBadgeClass}`}
+            >
+              {RECRUITMENT_STATUS_LABELS[recruitment.status] ?? recruitment.status}
+            </span>
+            <span className="text-sm text-slate-600">
+              {formatDateTime(recruitment.start_at)}
+              {recruitment.end_at && ` ～ ${formatDateTime(recruitment.end_at)}`}
+            </span>
             {recruitment.capacity != null && recruitment.capacity > 0 && (
-              <div>
-                <dt className="text-xs font-medium text-[var(--foreground-muted)]">定員</dt>
-                <dd className="mt-0.5 text-sm text-zinc-900 dark:text-zinc-100">
-                  {recruitment.capacity}名
-                </dd>
-              </div>
+              <span className="text-sm text-slate-500">定員 {recruitment.capacity}名</span>
             )}
-            {recruitment.roles?.length > 0 && (
-              <div className="sm:col-span-2">
-                <dt className="text-xs font-medium text-[var(--foreground-muted)]">役割</dt>
-                <dd className="mt-0.5 text-sm text-zinc-900 dark:text-zinc-100">
-                  <ul className="list-inside list-disc space-y-0.5">
-                    {recruitment.roles.map((r, i) => (
-                      <li key={i}>
-                        {r.name} × {r.count}名
-                      </li>
-                    ))}
-                  </ul>
-                </dd>
-              </div>
-            )}
-          </dl>
-          <div className="mt-4 flex flex-wrap gap-4 border-t border-[var(--border)] pt-4 dark:border-zinc-700">
-            <span className="text-sm">
-              <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                {applications.length}
-              </span>
-              <span className="text-[var(--foreground-muted)]"> 応募</span>
-            </span>
-            <span className="text-sm">
-              <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                {acceptedCount}
-              </span>
-              <span className="text-[var(--foreground-muted)]"> 承認済み</span>
-            </span>
-            <span className="text-sm">
-              <span className="font-medium text-amber-600 dark:text-amber-400">
-                {pendingCount}
-              </span>
-              <span className="text-[var(--foreground-muted)]"> 承認待ち</span>
-            </span>
           </div>
         </section>
 
-        {/* (3) 応募者パネル（主役） */}
-        <section className="rounded-xl border border-[var(--border)] bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3 dark:border-zinc-700">
-            <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">応募者</h2>
-            {acceptedCount > 0 && (
-              <div className="flex items-center gap-2">
-                <select
-                  value={bulkTemplate}
-                  onChange={(e) => setBulkTemplate(e.target.value)}
-                  className="rounded-lg border border-[var(--border)] bg-white px-2.5 py-1.5 text-xs dark:border-zinc-600 dark:bg-zinc-900/50"
-                >
-                  <option value="">カスタム</option>
-                  <option value="reminder">前日リマインド</option>
-                  <option value="venue_change">集合場所変更</option>
-                  <option value="thanks">お礼メッセージ</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={handleBulkMessage}
-                  disabled={bulkSending}
-                  className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {bulkSending ? "送信中..." : `一斉送信（${acceptedCount}名）`}
-                </button>
-              </div>
-            )}
-          </div>
+        {/* (3) サマリーカード */}
+        <ApplicationSummaryCards
+          total={applications.length}
+          pendingCount={pendingCount}
+          acceptedCount={acceptedCount}
+          rejectedCount={rejectedCount}
+          capacity={recruitment.capacity ?? null}
+        />
 
-          {/* タブ切替 */}
-          <div className="flex gap-0 border-b border-[var(--border)] dark:border-zinc-700">
-            {(
-              [
-                ["pending", "承認待ち", pendingCount],
-                ["accepted", "承認済み", acceptedCount],
-                ["rejected", "却下", rejectedCount],
-                ["all", "すべて", applications.length],
-              ] as const
-            ).map(([tab, label, count]) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setAppTab(tab)}
-                className={`px-4 py-3 text-sm font-medium transition-colors ${
-                  appTab === tab
-                    ? "border-b-2 border-[var(--accent)] text-[var(--accent)]"
-                    : "text-[var(--foreground-muted)] hover:text-zinc-700 dark:hover:text-zinc-300"
-                }`}
-              >
-                {label}
-                {count > 0 && (
-                  <span
-                    className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs ${
-                      appTab === tab
-                        ? "bg-[var(--accent)]/20 text-[var(--accent)]"
-                        : "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            ))}
+        {/* (4) 一斉送信（承認済みがある場合） */}
+        {acceptedCount > 0 && (
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
+            <select
+              value={bulkTemplate}
+              onChange={(e) => setBulkTemplate(e.target.value)}
+              className="rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm"
+              aria-label="メッセージテンプレート"
+            >
+              <option value="">カスタム</option>
+              <option value="reminder">前日リマインド</option>
+              <option value="venue_change">集合場所変更</option>
+              <option value="thanks">お礼メッセージ</option>
+            </select>
+            <button
+              type="button"
+              onClick={handleBulkMessage}
+              disabled={bulkSending}
+              className="rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90 disabled:opacity-50"
+            >
+              {bulkSending ? "送信中..." : `一斉送信（${acceptedCount}名）`}
+            </button>
           </div>
+        )}
 
-          <div className="divide-y divide-[var(--border)] dark:divide-zinc-700">
-            {filteredApplications.length === 0 ? (
-              <div className="px-4 py-8 text-center">
-                <p className="text-sm text-[var(--foreground-muted)]">
-                  {appTab === "pending" && "承認待ちはありません"}
-                  {appTab === "accepted" && "承認済みはありません"}
-                  {appTab === "rejected" && "却下はありません"}
-                  {appTab === "all" && "応募はまだありません"}
-                </p>
-              </div>
-            ) : (
-              filteredApplications.map((app) => (
-                <div
+        {/* (5) 検索・絞り込み・並び替え */}
+        <ApplicationToolbar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+        />
+
+        {/* (6) 応募者一覧 */}
+        <section>
+          {filteredApplications.length === 0 ? (
+            <ApplicationsEmptyState
+              hasFilter={!!searchQuery.trim() || statusFilter !== "all"}
+              recruitmentId={resolvedId!}
+            />
+          ) : (
+            <div className="space-y-4">
+              {filteredApplications.map((app) => (
+                <ApplicationCard
                   key={app.id}
-                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {app.user?.display_name ?? app.user_id.slice(0, 8)}
-                    </p>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                      <span className="text-xs text-[var(--foreground-muted)]">
-                        {formatApplicationDate(app.created_at)}
-                      </span>
-                      <span
-                        className={`rounded px-2 py-0.5 text-xs ${
-                          app.status === "accepted" || app.status === "confirmed"
-                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
-                            : app.status === "rejected"
-                              ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                              : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-                        }`}
-                      >
-                        {APP_STATUS_LABELS[app.status] ?? app.status}
-                      </span>
-                    </div>
-                    {app.message && (
-                      <p className="mt-1 line-clamp-2 text-xs text-[var(--foreground-muted)]">
-                        {app.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {app.status === "pending" && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleAccept(app.id)}
-                          className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-                        >
-                          承認
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleReject(app.id)}
-                          className="rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:hover:bg-red-950/30"
-                        >
-                          却下
-                        </button>
-                      </>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setChatParticipantId(app.user_id)}
-                      className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
-                    >
-                      チャット
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                  application={app}
+                  onAccept={handleAccept}
+                  onReject={handleReject}
+                  onChat={setChatParticipantId}
+                  onDetail={setDetailApp}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* (4) 募集内容（折りたたみ） */}
+        {/* (7) 募集内容（折りたたみ） */}
         {recruitment.description && (
-          <section className="rounded-xl border border-[var(--border)] bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90">
+          <section className="rounded-2xl border border-slate-200/80 bg-white shadow-sm">
             <button
               type="button"
               onClick={() => setContentOpen((o) => !o)}
               className="flex w-full items-center justify-between px-4 py-3 text-left"
             >
-              <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">募集内容</h2>
-              <span className="text-[var(--foreground-muted)]">
-                {contentOpen ? "閉じる" : "開く"}
-              </span>
+              <h2 className="font-semibold text-slate-900">募集内容</h2>
+              <span className="text-sm text-slate-500">{contentOpen ? "閉じる" : "開く"}</span>
             </button>
             {contentOpen && (
-              <div className="border-t border-[var(--border)] px-4 py-4 dark:border-zinc-700">
-                <div className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-p:mb-3">
+              <div className="border-t border-slate-100 px-4 py-4">
+                <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-p:mb-3">
                   {recruitment.description.split(/\n\n+/).map((p, i) => (
                     <p key={i}>{p}</p>
                   ))}
@@ -552,6 +418,9 @@ export default function OrganizerRecruitmentDetailPage({
           </section>
         )}
       </main>
+
+      {/* 応募者詳細スライドオーバー */}
+      <ApplicationDetailSheet application={detailApp} onClose={() => setDetailApp(null)} />
 
       {/* チャットモーダル */}
       {chatParticipantId && roomId && (

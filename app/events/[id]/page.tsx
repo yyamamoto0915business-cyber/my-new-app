@@ -1,4 +1,6 @@
 import { getEventForPublicPage } from "@/lib/get-event-for-page";
+import { EventOrganizerCard } from "@/components/events/EventOrganizerCard";
+import { OrganizerOtherEventsSection } from "@/components/events/OrganizerOtherEventsSection";
 import { getEventStatus } from "@/lib/events";
 import { notFound } from "next/navigation";
 import { getTagLabel } from "@/lib/db/types";
@@ -33,6 +35,11 @@ export default async function EventDetailPage({ params }: Props) {
   const isAvailable = status === "available";
   const organizerStory = getOrganizerStoryForEvent(id);
   const repos = getReposForEvent(id, 3);
+  const organizerId = "organizerId" in event ? event.organizerId : null;
+  const organizerAvatarUrl = "organizerAvatarUrl" in event ? event.organizerAvatarUrl : null;
+  const organizerRegion = "organizerRegion" in event ? event.organizerRegion : null;
+  const organizerBio = "organizerBio" in event ? event.organizerBio : null;
+  const otherEvents = "otherEvents" in event ? (event.otherEvents ?? []) : [];
 
   const overviewContent = (
     <article className="space-y-10">
@@ -179,6 +186,15 @@ export default async function EventDetailPage({ params }: Props) {
         </p>
       </section>
 
+      <EventOrganizerCard
+        organizerName={event.organizerName}
+        organizerId={organizerId ?? undefined}
+        organizerAvatarUrl={organizerAvatarUrl ?? undefined}
+        organizerRegion={organizerRegion ?? undefined}
+        organizerBio={organizerBio ?? undefined}
+        eventCount={otherEvents.length}
+      />
+
       <section className="space-y-5 rounded-xl border p-6 [border-color:var(--mg-line)] bg-white dark:bg-zinc-900/50">
         <dl className="space-y-5">
         <div>
@@ -259,6 +275,15 @@ export default async function EventDetailPage({ params }: Props) {
         <EventVolunteerSection eventId={id} returnTo={`/events/${id}`} />
       </div>
       <EventSupportCard eventId={id} />
+
+      {otherEvents.length > 0 && (
+        <OrganizerOtherEventsSection
+          events={otherEvents}
+          organizerName={event.organizerName}
+          organizerId={organizerId ?? undefined}
+        />
+      )}
+
       <div className="space-y-4 border-t border-zinc-200 pt-6 dark:border-zinc-700">
         <ShareButton url={`/events/${id}`} title={`${event.title} - MachiGlyph`} />
         <EventChatButton eventId={id} />

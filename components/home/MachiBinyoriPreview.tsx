@@ -24,7 +24,10 @@ export function MachiBinyoriPreview({
   if (loading) {
     return (
       <section className="space-y-4" aria-label="今週のまち便り">
-        <SectionHeader title="今週のまち便り" />
+        <SectionHeader
+          title="今週のまち便り"
+          subtitle="地域のトピックをちょっと紹介"
+        />
         <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">
           {[1, 2, 3].map((i) => (
             <div
@@ -41,7 +44,11 @@ export function MachiBinyoriPreview({
 
   return (
     <section className="space-y-4" aria-label="今週のまち便り">
-      <SectionHeader title="今週のまち便り" href="/events" />
+      <SectionHeader
+        title="今週のまち便り"
+        subtitle="地域のトピックをちょっと紹介"
+        href="/events"
+      />
       <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">
         {available.map((e) => (
           <ShelfCard

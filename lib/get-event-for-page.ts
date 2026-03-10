@@ -3,19 +3,39 @@
  */
 import type { Event } from "./db/types";
 import { createClient } from "@/lib/supabase/server";
-import { fetchPublishedEventById } from "./db/events";
+import {
+  fetchPublishedEventWithOrganizerInfo,
+  fetchOtherPublishedEventsByOrganizer,
+  type EventWithOrganizerInfo,
+} from "./db/events";
 import { getEventById } from "./events";
 
-/** 公開イベント1件取得（DB優先、status=published のみ） */
-export async function getEventForPublicPage(id: string): Promise<Event | null> {
+export type EventForPublicPage = EventWithOrganizerInfo & {
+  otherEvents?: Event[];
+};
+
+/** 公開イベント1件取得 + 主催者情報 + 他イベント（DB優先） */
+export async function getEventForPublicPage(id: string): Promise<EventForPublicPage | null> {
   const supabase = await createClient();
   if (supabase) {
     try {
-      const dbEvent = await fetchPublishedEventById(supabase, id);
-      if (dbEvent) return dbEvent;
+      const eventWithOrg = await fetchPublishedEventWithOrganizerInfo(supabase, id);
+      if (eventWithOrg) {
+        const otherEvents =
+          eventWithOrg.organizerId != null
+            ? await fetchOtherPublishedEventsByOrganizer(
+                supabase,
+                eventWithOrg.organizerId,
+                id,
+                3
+              )
+            : [];
+        return { ...eventWithOrg, otherEvents };
+      }
     } catch {
       // DB未接続 or スキーマ未適用時はフォールバック
     }
   }
-  return getEventById(id);
+  const fallback = getEventById(id);
+  return fallback ? { ...fallback } : null;
 }

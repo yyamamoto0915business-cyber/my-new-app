@@ -95,182 +95,203 @@ function AuthPageContent() {
     router.push(`/auth/check-email?email=${encodeURIComponent(signupEmail.trim().toLowerCase())}`);
   };
 
+  const isLogin = tab === "login";
+
   return (
-    <div
-      className="min-h-screen bg-[var(--mg-paper)] px-4 py-6 sm:py-10"
-      style={{ fontFamily: "var(--font-body)" }}
-    >
-      <header className="mx-auto mb-6 max-w-sm sm:mb-8">
-        <Link
-          href="/?mode=select"
-          className="inline-flex items-center text-sm text-[var(--mg-muted)] hover:text-[var(--mg-ink)]"
-        >
-          ← トップへ
-        </Link>
-        <h1
-          className="mt-3 text-xl font-semibold tracking-tight text-[var(--mg-ink)] sm:text-2xl"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          MachiGlyph
-        </h1>
-        <p className="mt-0.5 text-sm text-[var(--mg-muted)] leading-relaxed">
-          まちの出来事に出会う
-        </p>
-      </header>
+    <div className="min-h-screen bg-gradient-to-b from-[#FFFCF7] via-white to-[#F8FAFC] px-4 py-8 sm:py-12">
+      <div className="mx-auto flex w-full max-w-md items-center justify-center">
+        <section className="w-full">
+          <div className="relative overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+            <div className="pointer-events-none absolute inset-0" aria-hidden>
+              <div className="absolute left-[-40px] top-[40px] h-32 w-32 rounded-full bg-amber-100/40 blur-3xl" />
+              <div className="absolute right-[-32px] top-[16px] h-28 w-28 rounded-full bg-sky-100/40 blur-3xl" />
+            </div>
 
-      <div className="mx-auto max-w-sm rounded-2xl border border-[var(--mg-line)] bg-white shadow-[var(--mg-shadow)] overflow-hidden">
-        <div className="flex border-b border-[var(--mg-line)]">
-          <button
-            type="button"
-            onClick={() => switchTab("login")}
-            className="flex-1 py-4 text-sm font-medium transition-colors min-h-[var(--mg-touch-min)] flex items-center justify-center"
-            style={{
-              color: tab === "login" ? "var(--mg-ink)" : "var(--mg-muted)",
-              borderBottom: tab === "login" ? "2px solid var(--mg-accent)" : "2px solid transparent",
-            }}
-          >
-            ログイン
-          </button>
-          <button
-            type="button"
-            onClick={() => switchTab("signup")}
-            className="flex-1 py-4 text-sm font-medium transition-colors min-h-[var(--mg-touch-min)] flex items-center justify-center"
-            style={{
-              color: tab === "signup" ? "var(--mg-ink)" : "var(--mg-muted)",
-              borderBottom: tab === "signup" ? "2px solid var(--mg-accent)" : "2px solid transparent",
-            }}
-          >
-            新規登録
-          </button>
-        </div>
-
-        <div className="p-6 sm:p-8">
-          {tab === "login" ? (
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div>
-                <label htmlFor="auth-email" className="block text-sm font-medium text-[var(--mg-ink)]">
-                  メールアドレス
-                </label>
-                <input
-                  id="auth-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="メールアドレスを入力"
-                  autoComplete="email"
-                  className="mt-2 h-12 w-full min-h-[var(--mg-touch-min)] rounded-xl border border-[var(--mg-line)] bg-[var(--mg-paper)] px-4 text-base text-[var(--mg-ink)] placeholder:text-[var(--mg-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--mg-accent)]/40"
-                />
-              </div>
-              <div>
-                <label htmlFor="auth-password" className="block text-sm font-medium text-[var(--mg-ink)]">
-                  パスワード
-                </label>
-                <input
-                  id="auth-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="パスワードを入力"
-                  autoComplete="current-password"
-                  className="mt-2 h-12 w-full min-h-[var(--mg-touch-min)] rounded-xl border border-[var(--mg-line)] bg-[var(--mg-paper)] px-4 text-base text-[var(--mg-ink)] placeholder:text-[var(--mg-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--mg-accent)]/40"
-                />
-              </div>
-              {error && (
-                <p className="text-sm text-red-600 dark:text-red-400 leading-relaxed">{error}</p>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex h-12 w-full min-h-[var(--mg-touch-min)] items-center justify-center rounded-xl bg-[var(--mg-accent)] px-4 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-              >
-                {loading ? "ログイン中..." : "ログイン"}
-              </button>
-              <p className="text-center text-sm text-[var(--mg-muted)] leading-relaxed">
-                <Link href="/auth/reset-password" className="underline hover:text-[var(--mg-ink)]">
-                  パスワードを忘れた方はこちら
-                </Link>
-              </p>
-            </form>
-          ) : (
-            <form onSubmit={handleSignup} className="space-y-5">
-              <div>
-                <label htmlFor="signup-email" className="block text-sm font-medium text-[var(--mg-ink)]">
-                  メールアドレス
-                </label>
-                <input
-                  id="signup-email"
-                  type="email"
-                  value={signupEmail}
-                  onChange={(e) => setSignupEmail(e.target.value)}
-                  required
-                  placeholder="メールアドレスを入力"
-                  autoComplete="email"
-                  className="mt-2 h-12 w-full min-h-[var(--mg-touch-min)] rounded-xl border border-[var(--mg-line)] bg-[var(--mg-paper)] px-4 text-base text-[var(--mg-ink)] placeholder:text-[var(--mg-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--mg-accent)]/40"
-                />
-              </div>
-              <div>
-                <label htmlFor="signup-password" className="block text-sm font-medium text-[var(--mg-ink)]">
-                  パスワード
-                </label>
-                <input
-                  id="signup-password"
-                  type="password"
-                  value={signupPassword}
-                  onChange={(e) => setSignupPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  placeholder="8文字以上で入力"
-                  autoComplete="new-password"
-                  className="mt-2 h-12 w-full min-h-[var(--mg-touch-min)] rounded-xl border border-[var(--mg-line)] bg-[var(--mg-paper)] px-4 text-base text-[var(--mg-ink)] placeholder:text-[var(--mg-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--mg-accent)]/40"
-                />
-                <p className="mt-1.5 text-xs text-[var(--mg-muted)] leading-relaxed">
-                  登録後、確認メールをお送りします
+            <div className="relative space-y-6">
+              <header>
+                <span className="inline-flex items-center rounded-full border border-slate-200/80 bg-white px-3 py-1 text-xs font-medium tracking-wide text-slate-600 shadow-sm">
+                  MachiGlyph
+                </span>
+                <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                  {isLogin ? "ログイン" : "はじめて利用する"}
+                </h1>
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  {isLogin
+                    ? "続きから、地域のイベントや活動を見つけられます"
+                    : "イベント参加も、活動の主催も、ここから始められます"}
                 </p>
-              </div>
-              <div>
-                <label htmlFor="signup-name" className="block text-sm font-medium text-[var(--mg-ink)]">
-                  表示名（任意）
-                </label>
-                <input
-                  id="signup-name"
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="例: 山田 太郎"
-                  className="mt-2 h-12 w-full min-h-[var(--mg-touch-min)] rounded-xl border border-[var(--mg-line)] bg-[var(--mg-paper)] px-4 text-base text-[var(--mg-ink)] placeholder:text-[var(--mg-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--mg-accent)]/40"
-                />
-              </div>
-              {signupError && (
-                <p className="text-sm text-red-600 dark:text-red-400 leading-relaxed">{signupError}</p>
-              )}
-              <button
-                type="submit"
-                disabled={signupLoading}
-                className="flex h-12 w-full min-h-[var(--mg-touch-min)] items-center justify-center rounded-xl bg-[var(--mg-accent)] px-4 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-              >
-                {signupLoading ? "送信中..." : "確認メールを送る"}
-              </button>
-              <p className="text-center text-sm text-[var(--mg-muted)] leading-relaxed">
-                <button
-                  type="button"
-                  onClick={() => switchTab("login")}
-                  className="underline hover:text-[var(--mg-ink)]"
-                >
-                  すでに登録済みの方はこちら
-                </button>
-              </p>
-            </form>
-          )}
-        </div>
-      </div>
+              </header>
 
-      <p className="mx-auto mt-6 max-w-sm text-center text-sm text-[var(--mg-muted)]">
-        <Link href="/?mode=select" className="underline hover:text-[var(--mg-ink)]">
-          ← トップへ
-        </Link>
-      </p>
+              <div className="rounded-full border border-slate-200 bg-slate-50 p-1 text-sm font-medium text-slate-600">
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => switchTab("login")}
+                    className={`flex h-9 items-center justify-center rounded-full transition-colors ${
+                      isLogin ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    ログイン
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchTab("signup")}
+                    className={`flex h-9 items-center justify-center rounded-full transition-colors ${
+                      !isLogin ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    はじめて利用する
+                  </button>
+                </div>
+              </div>
+
+              {isLogin ? (
+                <form onSubmit={handleLogin} className="space-y-5">
+                  <div>
+                    <label htmlFor="auth-email" className="block text-sm font-medium text-slate-900">
+                      メールアドレス
+                    </label>
+                    <input
+                      id="auth-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder="メールアドレスを入力"
+                      autoComplete="email"
+                      className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="auth-password" className="block text-sm font-medium text-slate-900">
+                      パスワード
+                    </label>
+                    <input
+                      id="auth-password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder="パスワードを入力"
+                      autoComplete="current-password"
+                      className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200"
+                    />
+                  </div>
+                  {error && (
+                    <p className="text-sm leading-relaxed text-red-600">{error}</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex h-12 w-full items-center justify-center rounded-2xl bg-[var(--mg-accent)] px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                  >
+                    {loading ? "ログイン中..." : "ログインする"}
+                  </button>
+                  <div className="space-y-2 pt-1 text-center text-sm">
+                    <p className="text-slate-600">
+                      はじめての方はこちら{" "}
+                      <button
+                        type="button"
+                        onClick={() => switchTab("signup")}
+                        className="font-medium text-slate-800 underline underline-offset-2 hover:text-slate-900"
+                      >
+                        新規登録へ
+                      </button>
+                    </p>
+                    <p className="text-slate-500">
+                      <Link
+                        href="/auth/reset-password"
+                        className="underline underline-offset-2 hover:text-slate-700"
+                      >
+                        パスワードを忘れた方はこちら
+                      </Link>
+                    </p>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleSignup} className="space-y-5">
+                  <div>
+                    <label htmlFor="signup-name" className="block text-sm font-medium text-slate-900">
+                      表示名（任意）
+                    </label>
+                    <input
+                      id="signup-name"
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="表示名を入力"
+                      className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="signup-email" className="block text-sm font-medium text-slate-900">
+                      メールアドレス
+                    </label>
+                    <input
+                      id="signup-email"
+                      type="email"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      required
+                      placeholder="メールアドレスを入力"
+                      autoComplete="email"
+                      className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="signup-password" className="block text-sm font-medium text-slate-900">
+                      パスワード
+                    </label>
+                    <input
+                      id="signup-password"
+                      type="password"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      placeholder="パスワードを設定"
+                      autoComplete="new-password"
+                      className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200"
+                    />
+                    <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                      登録後、確認メールをお送りします。
+                    </p>
+                  </div>
+                  {signupError && (
+                    <p className="text-sm leading-relaxed text-red-600">{signupError}</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={signupLoading}
+                    className="flex h-12 w-full items-center justify-center rounded-2xl bg-[var(--mg-accent)] px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                  >
+                    {signupLoading ? "登録中..." : "登録してはじめる"}
+                  </button>
+                  <div className="pt-1 text-center text-sm text-slate-600">
+                    すでにアカウントをお持ちの方はこちら{" "}
+                    <button
+                      type="button"
+                      onClick={() => switchTab("login")}
+                      className="font-medium text-slate-800 underline underline-offset-2 hover:text-slate-900"
+                    >
+                      ログインへ
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+
+          <p className="mt-6 text-center text-sm text-slate-500">
+            <Link
+              href="/welcome"
+              className="underline underline-offset-2 hover:text-slate-700"
+            >
+              welcome に戻る
+            </Link>
+          </p>
+        </section>
+      </div>
     </div>
   );
 }
