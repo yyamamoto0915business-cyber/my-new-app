@@ -59,6 +59,7 @@ export default async function AdminOrganizerDetailPage({
           profile_id,
           organization_name,
           contact_email,
+          contact_phone,
           plan,
           manual_grant_active,
           manual_grant_plan,
@@ -105,7 +106,7 @@ export default async function AdminOrganizerDetailPage({
     );
   }
 
-  const organizer = organizerRow as Organizer & {
+  const organizer = organizerRow as unknown as Organizer & {
     manual_grant_plan?: string | null;
     manual_grant_reason?: string | null;
     billing_source?: string | null;

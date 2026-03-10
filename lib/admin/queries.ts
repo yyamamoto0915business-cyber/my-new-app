@@ -168,7 +168,7 @@ export async function getAdminOrganizers(
     `)
     .order("created_at", { ascending: true });
 
-  const organizers = (orgRows ?? []) as Array<
+  const organizers = (orgRows ?? []) as unknown as Array<
     OrganizerRow & {
       profile?: { display_name?: string | null; email?: string | null; role?: string | null } | null;
     }
@@ -345,7 +345,7 @@ export async function getAdminOrganizerDetail(
       .limit(20),
   ]);
 
-  const org = organizer as OrganizerRow & {
+  const org = organizer as unknown as OrganizerRow & {
     profile?: {
       display_name?: string | null;
       email?: string | null;

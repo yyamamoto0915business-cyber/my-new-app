@@ -139,7 +139,7 @@ export async function requireAdminPageAccess(): Promise<{
     const { redirect } = await import("next/navigation");
     redirect("/forbidden");
   }
-  return { ok: true, profile };
+  return { ok: true, profile: profile! };
 }
 
 /**

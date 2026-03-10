@@ -39,7 +39,7 @@ export default async function AdminOrganizersPage() {
 
   const rows: OrganizerRow[] =
     (data ?? []).map((row: any) => {
-      const organizer = row as Organizer & {
+      const organizer = row as unknown as Organizer & {
         manual_grant_plan?: string | null;
         manual_grant_reason?: string | null;
         billing_source?: string | null;
