@@ -25,10 +25,48 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(errorUrl);
   }
 
+  // #region agent log
+  fetch("http://127.0.0.1:7242/ingest/089f2869-4b0b-45dc-b221-b1a3b9e2669a", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "6ef341",
+    },
+    body: JSON.stringify({
+      sessionId: "6ef341",
+      runId: "pre-fix",
+      hypothesisId: "H1-H3",
+      location: "app/auth/confirm/route.ts:before-verifyOtp",
+      message: "About to verify email OTP",
+      data: { token_hash_present: !!token_hash, type },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion agent log
+
   const { error } = await supabase.auth.verifyOtp({
     token_hash,
     type: type as EmailOtpType,
   });
+
+  // #region agent log
+  fetch("http://127.0.0.1:7242/ingest/089f2869-4b0b-45dc-b221-b1a3b9e2669a", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "6ef341",
+    },
+    body: JSON.stringify({
+      sessionId: "6ef341",
+      runId: "pre-fix",
+      hypothesisId: "H1-H3",
+      location: "app/auth/confirm/route.ts:after-verifyOtp",
+      message: "Result of verifyOtp in confirm route",
+      data: { hasError: !!error, errorMessage: error?.message, errorStatus: (error as any)?.status },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion agent log
 
   if (error) {
     return NextResponse.redirect(errorUrl);

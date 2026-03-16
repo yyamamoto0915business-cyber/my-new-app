@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 export type RecruitmentFormValues = {
@@ -54,6 +55,7 @@ export function RecruitmentForm({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const update = <K extends keyof RecruitmentFormValues>(
     key: K,
@@ -317,10 +319,31 @@ export function RecruitmentForm({
         </select>
       </div>
 
+      {form.status === "public" && (
+        <div className="rounded-xl border border-zinc-100 bg-zinc-50/60 p-4 space-y-3 dark:border-zinc-700 dark:bg-zinc-800/40">
+          <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+            公開にあたり、掲載内容の責任は主催者が負うものとします。
+          </p>
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded border-zinc-300 dark:border-zinc-600"
+            />
+            <span className="text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
+              掲載内容の責任を理解し、
+              <Link href="/terms" target="_blank" className="font-medium text-zinc-800 underline underline-offset-2 hover:text-[var(--mg-accent)] dark:text-zinc-200">利用規約</Link>
+              に同意する
+            </span>
+          </label>
+        </div>
+      )}
+
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || (form.status === "public" && !agreedToTerms)}
           className="rounded-lg bg-[var(--accent)] px-4 py-2 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {saving ? "保存中..." : recruitmentId ? "更新" : "作成"}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { EventFormData } from "@/lib/events";
@@ -126,6 +126,7 @@ export default function NewEventPage() {
   const [itemsInput, setItemsInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -787,10 +788,30 @@ export default function NewEventPage() {
           <p className="text-sm text-slate-500">
             作成後は下書きとして保存されます。イベント一覧から確認し、公開できます。
           </p>
+
+          <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/60 p-4 space-y-3">
+            <p className="text-xs leading-relaxed text-slate-500">
+              公開にあたり、掲載内容の責任は主催者が負うものとします。
+            </p>
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded border-slate-300"
+              />
+              <span className="text-[13px] leading-relaxed text-slate-700">
+                掲載内容の責任を理解し、
+                <Link href="/terms" target="_blank" className="font-medium text-slate-800 underline underline-offset-2 hover:text-[var(--mg-accent)]">利用規約</Link>
+                に同意する
+              </span>
+            </label>
+          </div>
+
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !agreedToTerms}
               className="inline-flex items-center justify-center rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? "作成中..." : "作成する"}

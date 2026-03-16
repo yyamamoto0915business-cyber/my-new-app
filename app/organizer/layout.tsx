@@ -1,6 +1,7 @@
 import OrganizerSidebar from "@/components/organizer/OrganizerSidebar";
 import OrganizerMobileNav from "@/components/organizer/OrganizerMobileNav";
 import { OrganizerAccountMenu } from "@/components/organizer/OrganizerAccountMenu";
+import { SiteFooter } from "@/components/site-footer";
 
 export default function OrganizerLayout({
   children,
@@ -32,9 +33,12 @@ export default function OrganizerLayout({
       <div className="flex min-h-[calc(100vh-4rem)]">
         <OrganizerSidebar />
 
-        <main className="min-w-0 flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-          {children}
-        </main>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+            {children}
+          </main>
+          <SiteFooter />
+        </div>
       </div>
     </div>
   );

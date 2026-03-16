@@ -77,6 +77,8 @@ export function OrganizerEventCard({
   const [publishLoading, setPublishLoading] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [showBillingModal, setShowBillingModal] = useState(false);
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const [publishAgreed, setPublishAgreed] = useState(false);
 
   const nav = (href: string) => {
     router.push(href);
@@ -264,7 +266,7 @@ export function OrganizerEventCard({
             {event.status === "draft" && (
               <button
                 type="button"
-                onClick={handlePublish}
+                onClick={() => setShowPublishConfirm(true)}
                 disabled={publishLoading}
                 className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
               >
@@ -397,6 +399,62 @@ export function OrganizerEventCard({
           </div>
         </div>
       </div>
+
+      {showPublishConfirm && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={() => {
+              setShowPublishConfirm(false);
+              setPublishAgreed(false);
+            }}
+            aria-hidden
+          />
+          <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl">
+            <p className="font-medium text-slate-900">イベントを公開しますか？</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
+              公開にあたり、掲載内容の責任は主催者が負うものとします。
+            </p>
+            <label className="mt-4 flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={publishAgreed}
+                onChange={(e) => setPublishAgreed(e.target.checked)}
+                className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded border-slate-300"
+              />
+              <span className="text-[13px] leading-relaxed text-slate-700">
+                掲載内容の責任を理解し、
+                <Link href="/terms" target="_blank" className="font-medium text-slate-800 underline underline-offset-2 hover:text-[var(--mg-accent)]">利用規約</Link>
+                に同意する
+              </span>
+            </label>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPublishConfirm(false);
+                  setPublishAgreed(false);
+                  handlePublish();
+                }}
+                disabled={!publishAgreed || publishLoading}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {publishLoading ? "公開中..." : "公開する"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPublishConfirm(false);
+                  setPublishAgreed(false);
+                }}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {showBillingModal && (
         <>

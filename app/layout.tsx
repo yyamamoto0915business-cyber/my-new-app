@@ -7,8 +7,8 @@ import { APP_NAME, APP_SUBTITLE, APP_TAGLINE1 } from "@/lib/brand-copy";
 import { BottomNav } from "@/components/bottom-nav";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { ModeSegmentNav } from "@/components/mode-segment-nav";
-import { NotificationBell } from "@/components/notification-bell";
 import { UserMenu } from "@/components/header/UserMenu";
+import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -63,10 +63,7 @@ export default function RootLayout({
         <LanguageProvider>
           <BrandIntro />
           <MapBackground />
-          <div className="fixed right-4 top-4 z-50 flex items-center gap-2 md:right-6 md:top-6">
-            <Suspense fallback={null}>
-              <NotificationBell />
-            </Suspense>
+          <div className="fixed right-4 top-4 z-50 flex items-center justify-end gap-2 md:right-6 md:top-6">
             <Suspense fallback={null}>
               <UserMenu />
             </Suspense>
@@ -74,8 +71,11 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <ModeSegmentNav />
           </Suspense>
-          <div className="min-h-screen pb-[calc(72px+env(safe-area-inset-bottom,0px))] pt-[calc(48px+env(safe-area-inset-top,0px))] sm:pb-0 sm:pl-20 sm:pt-0">
-            {children}
+          <div className="flex min-h-screen flex-col pb-[calc(72px+env(safe-area-inset-bottom,0px))] pt-[calc(48px+env(safe-area-inset-top,0px))] sm:pb-0 sm:pl-20 sm:pt-0">
+            <div className="flex-1">{children}</div>
+            <div className="sm:block">
+              <SiteFooter />
+            </div>
           </div>
           <Suspense fallback={null}>
             <MobileBottomNav />

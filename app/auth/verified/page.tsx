@@ -13,6 +13,9 @@ export default function VerifiedPage() {
       <Link href="/" className={authResultButtonClass.primary}>
         ホームへ進む
       </Link>
+      <Link href="/organizer/events" className={authResultButtonClass.secondary}>
+        イベントを主催する
+      </Link>
       <Link href="/profile" className={authResultButtonClass.secondary}>
         マイページへ進む
       </Link>

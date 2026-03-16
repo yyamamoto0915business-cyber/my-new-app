@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { OrganizerHeader } from "@/components/organizer/organizer-header";
 
 type BillingData = {
@@ -65,6 +66,7 @@ export default function BillingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [billingAgreed, setBillingAgreed] = useState(false);
 
   const fetchBilling = async () => {
     try {
@@ -329,21 +331,50 @@ export default function BillingPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                    <button
-                      type="button"
-                      onClick={handleCheckout}
-                      disabled={checkoutLoading}
-                      className="flex h-11 w-full items-center justify-center rounded-[10px] bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 sm:w-auto"
-                    >
-                      {checkoutLoading ? "処理中..." : "Starterプランに加入する"}
-                    </button>
-                    <a
-                      href="#plan-detail"
-                      className="flex items-center justify-center text-sm font-semibold text-[var(--mg-accent)] underline hover:no-underline sm:w-auto"
-                    >
-                      プラン比較を見る
-                    </a>
+                  <div className="mt-6 space-y-3">
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 space-y-3">
+                      <p className="text-xs leading-relaxed text-slate-500">
+                        申込み前に、
+                        <Link href="/terms" target="_blank" className="text-slate-700 underline underline-offset-2 hover:text-[var(--mg-accent)]">利用規約</Link>
+                        、
+                        <Link href="/commerce" target="_blank" className="text-slate-700 underline underline-offset-2 hover:text-[var(--mg-accent)]">特定商取引法に基づく表記</Link>
+                        、
+                        <Link href="/terms#cancellation" target="_blank" className="text-slate-700 underline underline-offset-2 hover:text-[var(--mg-accent)]">キャンセル条件</Link>
+                        をご確認ください。
+                      </p>
+                      <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={billingAgreed}
+                          onChange={(e) => setBillingAgreed(e.target.checked)}
+                          className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded border-slate-300"
+                        />
+                        <span className="text-[13px] leading-relaxed text-slate-700">
+                          <Link href="/terms" target="_blank" className="font-medium text-[var(--mg-ink)] underline underline-offset-2 hover:text-[var(--mg-accent)]">利用規約</Link>
+                          ・
+                          <Link href="/commerce" target="_blank" className="font-medium text-[var(--mg-ink)] underline underline-offset-2 hover:text-[var(--mg-accent)]">特定商取引法に基づく表記</Link>
+                          ・
+                          <Link href="/terms#cancellation" target="_blank" className="font-medium text-[var(--mg-ink)] underline underline-offset-2 hover:text-[var(--mg-accent)]">キャンセル条件</Link>
+                          を確認し、同意します
+                        </span>
+                      </label>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                      <button
+                        type="button"
+                        onClick={handleCheckout}
+                        disabled={checkoutLoading || !billingAgreed}
+                        className="flex h-11 w-full items-center justify-center rounded-[10px] bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 sm:w-auto"
+                      >
+                        {checkoutLoading ? "処理中..." : "Starterプランに加入する"}
+                      </button>
+                      <a
+                        href="#plan-detail"
+                        className="flex items-center justify-center text-sm font-semibold text-[var(--mg-accent)] underline hover:no-underline sm:w-auto"
+                      >
+                        プラン比較を見る
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>

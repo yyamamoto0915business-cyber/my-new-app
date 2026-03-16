@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
-export function NotificationBell() {
+type Props = { className?: string };
+
+export function NotificationBell({ className }: Props) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +55,10 @@ export function NotificationBell() {
   return (
     <Link
       href="/notifications"
-      className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+      className={cn(
+        "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100",
+        className
+      )}
       aria-label={`お知らせ${unreadCount > 0 ? `（${unreadCount}件未読）` : ""}`}
     >
       <svg

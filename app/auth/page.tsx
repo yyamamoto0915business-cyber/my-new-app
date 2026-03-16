@@ -73,9 +73,14 @@ function AuthPageContent() {
   const [displayName, setDisplayName] = useState("");
   const [signupError, setSignupError] = useState<string | null>(null);
   const [signupLoading, setSignupLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agreedToTerms) {
+      setSignupError("利用規約とプライバシーポリシーへの同意が必要です。");
+      return;
+    }
     setSignupError(null);
     setSignupLoading(true);
 
@@ -260,9 +265,34 @@ function AuthPageContent() {
                   {signupError && (
                     <p className="text-sm leading-relaxed text-red-600">{signupError}</p>
                   )}
+
+                  <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 space-y-3">
+                    <p className="text-xs leading-relaxed text-slate-500">
+                      アカウントを作成することで、
+                      <Link href="/terms" target="_blank" className="text-slate-700 underline underline-offset-2 hover:text-[var(--mg-accent)]">利用規約</Link>
+                      および
+                      <Link href="/privacy" target="_blank" className="text-slate-700 underline underline-offset-2 hover:text-[var(--mg-accent)]">プライバシーポリシー</Link>
+                      に同意したものとみなします。
+                    </p>
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={agreedToTerms}
+                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                        className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded border-slate-300"
+                      />
+                      <span className="text-[13px] leading-relaxed text-slate-700">
+                        <Link href="/terms" target="_blank" className="font-medium text-slate-800 underline underline-offset-2 hover:text-[var(--mg-accent)]">利用規約</Link>
+                        と
+                        <Link href="/privacy" target="_blank" className="font-medium text-slate-800 underline underline-offset-2 hover:text-[var(--mg-accent)]">プライバシーポリシー</Link>
+                        に同意する
+                      </span>
+                    </label>
+                  </div>
+
                   <button
                     type="submit"
-                    disabled={signupLoading}
+                    disabled={signupLoading || !agreedToTerms}
                     className="flex h-12 w-full items-center justify-center rounded-2xl bg-[var(--mg-accent)] px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
                   >
                     {signupLoading ? "登録中..." : "登録してはじめる"}
