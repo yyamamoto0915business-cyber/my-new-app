@@ -69,8 +69,10 @@ async function main() {
     process.exit(1);
   }
 
+  const adminClient = admin;
+
   async function countAll(table: string, column: string = "id"): Promise<number> {
-    const { count, error } = await admin
+    const { count, error } = await adminClient
       .from(table)
       .select(column, { count: "exact", head: true });
     if (error) {
@@ -81,7 +83,7 @@ async function main() {
   }
 
   async function countPublishedEvents(): Promise<number> {
-    const { count, error } = await admin
+    const { count, error } = await adminClient
       .from("events")
       .select("id", { count: "exact", head: true })
       .eq("status", "published");
@@ -151,7 +153,7 @@ async function main() {
   let from = 0;
   const allIds: string[] = [];
   while (true) {
-    const { data, error } = await admin
+    const { data, error } = await adminClient
       .from("events")
       .select("id")
       .range(from, from + pageSize - 1);
@@ -171,7 +173,7 @@ async function main() {
   const chunkSize = 200;
   for (let i = 0; i < allIds.length; i += chunkSize) {
     const chunk = allIds.slice(i, i + chunkSize);
-    const { error } = await admin.from("events").delete().in("id", chunk);
+    const { error } = await adminClient.from("events").delete().in("id", chunk);
     if (error) {
       console.error("events 削除中にエラーが発生しました:", error);
       process.exit(1);

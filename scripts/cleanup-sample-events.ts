@@ -43,8 +43,10 @@ async function main() {
     process.exit(1);
   }
 
+  const adminClient = admin;
+
   // 1. 現在の公開イベント件数
-  const { count: beforePublicCount } = await admin
+  const { count: beforePublicCount } = await adminClient
     .from("events")
     .select("id", { count: "exact", head: true })
     .eq("status", "published");
@@ -52,7 +54,7 @@ async function main() {
   console.log(`現在の公開イベント件数 (status='published'): ${beforePublicCount ?? 0}`);
 
   // 2. 全イベントからサンプルっぽいものを抽出
-  const { data: allEvents, error } = await admin
+  const { data: allEvents, error } = await adminClient
     .from("events")
     .select("*");
 
@@ -100,7 +102,7 @@ async function main() {
   const eventIds = sampleEvents.map((e) => e.id);
 
   async function count(table: string): Promise<number> {
-    const { count, error: cError } = await admin
+    const { count, error: cError } = await adminClient
       .from(table)
       .select("id", { count: "exact", head: true })
       .in("event_id", eventIds);
@@ -142,7 +144,7 @@ async function main() {
 
   console.log("\nAPPLY モードでサンプルイベントを削除します...");
 
-  const { error: deleteError } = await admin
+  const { error: deleteError } = await adminClient
     .from("events")
     .delete()
     .in("id", eventIds);
@@ -154,7 +156,7 @@ async function main() {
 
   console.log(`events から ${sampleEvents.length} 件のサンプルイベントを削除しました。`);
 
-  const { count: afterPublicCount } = await admin
+  const { count: afterPublicCount } = await adminClient
     .from("events")
     .select("id", { count: "exact", head: true })
     .eq("status", "published");
