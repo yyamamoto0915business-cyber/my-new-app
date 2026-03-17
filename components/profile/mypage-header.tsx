@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type { ProfileMode } from "./mode-switcher";
 import { AvatarChangeModal } from "./avatar-change-modal";
-import { useState } from "react";
 
 const MODE_CHIPS: { id: ProfileMode; label: string }[] = [
   { id: "participant", label: "探す" },
@@ -34,12 +36,30 @@ export function MypageHeader({
   userId,
   onAvatarChange,
 }: Props) {
+  const router = useRouter();
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const shortIntro = bio?.slice(0, 60) ?? region ?? "地域のイベントに参加してみよう";
 
   const handleAvatarChange = (newUrl: string | null) => {
     onAvatarChange?.(newUrl);
+  };
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    try {
+      setLoggingOut(true);
+      const supabase = createClient();
+      if (!supabase) throw new Error("Supabase not configured");
+      await supabase.auth.signOut();
+      router.replace("/auth");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -91,8 +111,8 @@ export function MypageHeader({
             {bio && bio.length > 60 ? "…" : ""}
           </p>
 
-          {/* モードチップ */}
-          <div className="mt-3 flex flex-wrap gap-1.5" role="tablist">
+          {/* モードチップ + ログアウト */}
+          <div className="mt-3 flex flex-wrap items-center gap-1.5" role="tablist">
             {MODE_CHIPS.map((chip) => (
               <button
                 key={chip.id}
@@ -109,6 +129,15 @@ export function MypageHeader({
                 {chip.label}
               </button>
             ))}
+            {userId && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="ml-1 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 shadow-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              >
+                {loggingOut ? "ログアウト中..." : "ログアウト"}
+              </button>
+            )}
           </div>
         </div>
       </div>

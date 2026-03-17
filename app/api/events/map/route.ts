@@ -85,15 +85,16 @@ export async function GET(request: Request) {
   const lng = lngParam ? parseFloat(lngParam) : DEFAULT_LNG;
 
   let events: EventWithDistance[] = [];
+  const isProduction = process.env.NODE_ENV === "production";
   try {
     const supabase = await createClient();
     if (supabase) {
       events = await fetchEvents(supabase);
     } else {
-      events = mockEvents as EventWithDistance[];
+      events = isProduction ? [] : (mockEvents as EventWithDistance[]);
     }
   } catch {
-    events = mockEvents as EventWithDistance[];
+    events = isProduction ? [] : (mockEvents as EventWithDistance[]);
   }
 
   events = filterByDateRange(events, start, end);

@@ -19,16 +19,23 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   let result;
 
+  const isProduction = process.env.NODE_ENV === "production";
+
   if (supabase) {
     try {
       const dbEvents = await fetchEvents(supabase);
-      result = dbEvents.length > 0 ? dbEvents : getFallbackEvents();
+      // 本番環境では mock / created ストアには絶対にフォールバックしない
+      if (isProduction) {
+        result = dbEvents;
+      } else {
+        result = dbEvents.length > 0 ? dbEvents : getFallbackEvents();
+      }
     } catch (e) {
       console.error("events GET:", e);
-      result = getFallbackEvents();
+      result = isProduction ? [] : getFallbackEvents();
     }
   } else {
-    result = getFallbackEvents();
+    result = isProduction ? [] : getFallbackEvents();
   }
 
   result = filterEventsByRegion(result, prefecture, city);

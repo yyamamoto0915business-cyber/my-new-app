@@ -6,6 +6,8 @@ import { getCreatedEvents } from "./created-events-store";
 export type { Event, EventFormData } from "./db/types";
 
 function getAllEvents(): Event[] {
+  // 本番環境ではモック/ストアイベントは絶対に公開面に出さない
+  if (process.env.NODE_ENV === "production") return [];
   return [...mockEvents, ...getCreatedEvents()];
 }
 

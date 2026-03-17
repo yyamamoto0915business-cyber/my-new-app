@@ -66,8 +66,15 @@ export type Sponsorship = {
 export type DbEvent = {
   id: string;
   organizer_id: string;
-  status?: "draft" | "published";
+  /** イベントの公開状態（下書き / 公開中 / アーカイブ） */
+  status?: "draft" | "published" | "archived";
   published_at?: string | null;
+  /** 公開可否（将来の制御用 / NULL は公開扱い） */
+  is_public?: boolean | null;
+  /** サンプル / シードデータ判定用フラグ（NULL は false 扱い） */
+  is_sample?: boolean | null;
+  /** シード由来かどうかのメタデータ（"seed" など） */
+  seed_source?: string | null;
   sponsor_enabled?: boolean;
   title: string;
   description: string;
@@ -141,7 +148,8 @@ export type EventTagId = (typeof EVENT_TAGS)[number]["id"];
 // アプリで使うイベント型（organizer情報含む）
 export type Event = {
   id: string;
-  status?: "draft" | "published";
+  /** イベントの公開状態（下書き / 公開中 / アーカイブ） */
+  status?: "draft" | "published" | "archived";
   publishedAt?: string | null;
   title: string;
   imageUrl: string | null;
@@ -180,7 +188,12 @@ export type Event = {
   createdAt: string;
   participantCount?: number;
   avgRating?: number;
+  /** 一般公開から除外したい内部イベント（サロン限定など） */
   salonOnly?: boolean;
+  /** 公開可否（NULL は公開扱い・公開APIでは false を除外） */
+  isPublic?: boolean | null;
+  /** サンプル/テンプレ/seed データを示すフラグ（NULL は false 扱い） */
+  isSample?: boolean | null;
 };
 
 export type EventFormData = Omit<

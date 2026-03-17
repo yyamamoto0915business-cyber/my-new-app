@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getModeFromCookie } from "@/lib/mode-preference";
 
@@ -39,7 +40,15 @@ export function getHomeHrefForMode(mode: ModeId): string {
  */
 export function ModeSegmentNav() {
   const pathname = usePathname();
-  const activeMode = getActiveMode(pathname ?? "");
+  // 初期レンダリング時は SSR と確実に一致するように "discover" に固定し、
+  // クライアント側でのみ cookie を参照してモードを上書きする
+  const [activeMode, setActiveMode] = useState<ModeId>("discover");
+
+  useEffect(() => {
+    // cookie はクライアントでのみ読まれるため、hydration 後にモードを決定する
+    const initial = getActiveMode(pathname ?? "");
+    setActiveMode(initial);
+  }, [pathname]);
 
   return (
     <nav

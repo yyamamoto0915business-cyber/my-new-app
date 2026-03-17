@@ -5,8 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import type { Event, EventFormData } from "@/lib/events";
 import { EVENT_TAGS } from "@/lib/db/types";
-import { EventThumbnail } from "@/components/event-thumbnail";
 import { EventFormSection } from "@/components/organizer/events/EventFormSection";
+import { EventImageInput } from "@/components/organizer/events/EventImageInput";
 
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
 
@@ -407,24 +407,15 @@ export default function EditEventPage() {
           <FormField
             id="imageUrl"
             label="アイキャッチ画像"
-            hint="画像URLを貼り付けてください。未入力の場合はプレースホルダーが表示されます"
+            hint="画像URLを貼り付けるか、「ファイルから選ぶ」「写真を撮る」からアップロードできます。未入力の場合はプレースホルダーが表示されます。"
           >
-            <input
-              id="imageUrl"
-              name="imageUrl"
-              type="url"
-              value={form.imageUrl ?? ""}
-              onChange={handleChange}
-              placeholder="https://images.unsplash.com/photo-xxx?w=800"
-              className={inputBase}
+            <EventImageInput
+              url={form.imageUrl ?? ""}
+              onChangeUrl={(url) =>
+                setForm((prev) => (prev ? { ...prev, imageUrl: url } : prev))
+              }
+              alt={form.title || "プレビュー"}
             />
-            <div className="mt-3 overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50/50">
-              <EventThumbnail
-                imageUrl={form.imageUrl?.trim() || null}
-                alt={form.title || "プレビュー"}
-                rounded="lg"
-              />
-            </div>
           </FormField>
 
           <div>

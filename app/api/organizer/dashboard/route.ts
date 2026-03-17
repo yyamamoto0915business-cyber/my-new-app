@@ -279,15 +279,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   }
 
+  const isProduction = process.env.NODE_ENV === "production";
   const supabase = await createClient();
   if (!supabase) {
-    return NextResponse.json(await buildMockDashboard());
+    // 本番環境ではモックダッシュボードにフォールバックしない
+    return NextResponse.json(
+      isProduction
+        ? { error: "Supabase が未設定です" }
+        : await buildMockDashboard(),
+      { status: isProduction ? 500 : 200 }
+    );
   }
 
   try {
     const organizerId = await getOrganizerIdByProfileId(supabase, user.id);
     if (!organizerId) {
-      return NextResponse.json(await buildMockDashboard());
+      // 本番環境ではモックダッシュボードにフォールバックしない
+      return NextResponse.json(
+        isProduction
+          ? { error: "主催者アカウントが見つかりません" }
+          : await buildMockDashboard(),
+        { status: isProduction ? 404 : 200 }
+      );
     }
     const unreadResult = await supabase.rpc("get_unread_total");
     const unreadTotal = typeof unreadResult.data === "bigint"
@@ -297,6 +310,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data);
   } catch (e) {
     console.error("organizer dashboard GET:", e);
-    return NextResponse.json(await buildMockDashboard());
+    return NextResponse.json(
+      isProduction
+        ? { error: "ダッシュボードの取得に失敗しました" }
+        : await buildMockDashboard(),
+      { status: isProduction ? 500 : 200 }
+    );
   }
 }

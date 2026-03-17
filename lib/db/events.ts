@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DbEvent, Event, EventFormData } from "./types";
+import { filterOutSampleEvents, isPublicEventLike } from "../sample-events";
 
 function participationModeFromDb(
   db: DbEvent & { participation_mode?: string | null }
@@ -52,6 +53,8 @@ function dbEventToEvent(
     registrationDeadline: db.registration_deadline ?? undefined,
     registrationNote: db.registration_note ?? undefined,
     createdAt: db.created_at,
+    isPublic: db.is_public ?? null,
+    isSample: db.is_sample ?? null,
   };
 }
 
@@ -77,7 +80,7 @@ export async function fetchEvents(supabase: SupabaseClient): Promise<Event[]> {
 
   if (error) throw error;
 
-  return (data ?? []).map((row: Record<string, unknown>) => {
+  const events = (data ?? []).map((row: Record<string, unknown>) => {
     const dbRow = row as unknown as DbEvent & { organizer_id?: string };
     const org = row.organizers as {
       organization_name: string | null;
@@ -94,6 +97,9 @@ export async function fetchEvents(supabase: SupabaseClient): Promise<Event[]> {
     const event = dbEventToEvent(row as unknown as DbEvent, name, contact);
     return { ...event, organizerId: dbRow.organizer_id ?? null };
   });
+
+  // 公開API用: status=published かつ isPublic / isSample 判定でフィルタ
+  return filterOutSampleEvents(events).filter((e) => isPublicEventLike(e));
 }
 
 export async function getOrganizerIdByEventId(
@@ -210,7 +216,8 @@ export async function fetchPublishedEventById(
 
   if (error || !data) return null;
 
-  const org = (data as Record<string, unknown>).organizers as {
+  const row = data as Record<string, unknown>;
+  const org = row.organizers as {
     organization_name: string | null;
     contact_email: string | null;
     contact_phone: string | null;
@@ -222,8 +229,12 @@ export async function fetchPublishedEventById(
     org?.profiles?.email ??
     "主催者";
   const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+  const event = dbEventToEvent(row as unknown as DbEvent, name, contact);
 
-  return dbEventToEvent(data as unknown as DbEvent, name, contact);
+  // 公開詳細: サンプル/非公開イベントは 404 扱い
+  if (!isPublicEventLike(event)) return null;
+
+  return event;
 }
 
 export type EventWithOrganizerInfo = Event & {
@@ -287,6 +298,10 @@ export async function fetchPublishedEventWithOrganizerInfo(
   const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
 
   const event = dbEventToEvent(row as unknown as DbEvent, name, contact);
+
+  // 公開詳細: サンプル/非公開イベントは 404 扱い
+  if (!isPublicEventLike(event)) return null;
+
   return {
     ...event,
     organizerId: org?.id ?? null,
@@ -329,7 +344,7 @@ export async function fetchOtherPublishedEventsByOrganizer(
 
   if (error) return [];
 
-  return (data ?? []).map((r: Record<string, unknown>) => {
+  const events = (data ?? []).map((r: Record<string, unknown>) => {
     const org = r.organizers as {
       organization_name: string | null;
       contact_email: string | null;
@@ -344,6 +359,9 @@ export async function fetchOtherPublishedEventsByOrganizer(
     const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
     return dbEventToEvent(r as unknown as DbEvent, name, contact);
   });
+
+  // 関連イベントもサンプル/非公開は除外
+  return filterOutSampleEvents(events).filter((e) => isPublicEventLike(e));
 }
 
 /** 公開イベントをIDリストで取得（マイページの参加予定・気になる一覧用） */
@@ -373,7 +391,7 @@ export async function fetchPublishedEventsByIds(
 
   if (error) return [];
   const today = new Date().toISOString().split("T")[0];
-  return (data ?? [])
+  const events = (data ?? [])
     .map((row: Record<string, unknown>) => {
       const org = row.organizers as {
         organization_name: string | null;
@@ -388,9 +406,17 @@ export async function fetchPublishedEventsByIds(
         "主催者";
       const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
       return dbEventToEvent(row as unknown as DbEvent, name, contact);
-    })
+    });
+
+  const publicEvents = filterOutSampleEvents(events).filter((e) => isPublicEventLike(e));
+
+  return publicEvents
     .filter((e) => e.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime || "").localeCompare(b.startTime || ""));
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) ||
+        (a.startTime || "").localeCompare(b.startTime || "")
+    );
 }
 
 /** 主催者の公開イベント一覧（公開プロフィールページ用・未来のイベント優先） */
@@ -423,7 +449,7 @@ export async function fetchPublishedEventsByOrganizer(
 
   if (error) return [];
 
-  return (data ?? []).map((row: Record<string, unknown>) => {
+  const events = (data ?? []).map((row: Record<string, unknown>) => {
     const org = row.organizers as {
       organization_name: string | null;
       contact_email: string | null;
@@ -438,6 +464,9 @@ export async function fetchPublishedEventsByOrganizer(
     const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
     return dbEventToEvent(row as unknown as DbEvent, name, contact);
   });
+
+  // 主催者公開ページもサンプル/非公開除外
+  return filterOutSampleEvents(events).filter((e) => isPublicEventLike(e));
 }
 
 export async function fetchEventsByOrganizer(

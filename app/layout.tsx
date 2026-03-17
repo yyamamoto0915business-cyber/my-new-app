@@ -7,7 +7,6 @@ import { APP_NAME, APP_SUBTITLE, APP_TAGLINE1 } from "@/lib/brand-copy";
 import { BottomNav } from "@/components/bottom-nav";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { ModeSegmentNav } from "@/components/mode-segment-nav";
-import { FloatingUserMenuFab } from "@/components/header/FloatingUserMenuFab";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
 import { Geist } from "next/font/google";
@@ -63,9 +62,6 @@ export default function RootLayout({
         <LanguageProvider>
           <BrandIntro />
           <MapBackground />
-          <Suspense fallback={null}>
-            <FloatingUserMenuFab />
-          </Suspense>
           <Suspense fallback={null}>
             <ModeSegmentNav />
           </Suspense>
