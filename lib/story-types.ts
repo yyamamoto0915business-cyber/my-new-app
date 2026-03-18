@@ -36,6 +36,8 @@ export type Story = {
   role: StoryRole;
   purpose: StoryPurpose;
   status: StoryStatus;
+  /** seed/初期投入データ（公開面では除外する） */
+  isSeed?: boolean;
   authorId: string;
   authorName: string;
   eventId: string | null;

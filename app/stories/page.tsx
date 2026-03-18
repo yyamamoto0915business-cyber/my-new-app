@@ -26,7 +26,7 @@ export default function StoriesListPage() {
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         {stories.length === 0 ? (
           <div className="rounded-xl border border-[var(--border)] bg-white p-12 text-center dark:bg-[var(--background)]">
-            <p className="text-[var(--foreground-muted)]">まだストーリーがありません</p>
+            <p className="text-[var(--foreground-muted)]">現在公開中のストーリーはありません</p>
             <Link
               href="/events"
               className="mt-4 inline-block text-sm font-medium text-[var(--accent)] hover:underline"

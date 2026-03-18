@@ -22,6 +22,7 @@ const stories: Story[] = [
     role: "organizer",
     purpose: "promotion",
     status: "published",
+    isSeed: true,
     authorId: "org-1",
     authorName: "地域振興会",
     eventId: "1",
@@ -51,6 +52,7 @@ const stories: Story[] = [
     role: "organizer",
     purpose: "promotion",
     status: "published",
+    isSeed: true,
     authorId: "org-1",
     authorName: "地域振興会",
     eventId: "1",
@@ -74,6 +76,7 @@ const stories: Story[] = [
     role: "participant",
     purpose: "report",
     status: "published",
+    isSeed: true,
     authorId: "user-1",
     authorName: "参加者",
     eventId: "3",
@@ -107,17 +110,18 @@ function ensureUniqueSlug(slug: string, excludeId?: string): string {
 
 export function getPublishedStories(limit?: number): Story[] {
   const list = stories
-    .filter((s) => s.status === "published")
+    .filter((s) => s.status === "published" && s.isSeed !== true)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   return limit ? list.slice(0, limit) : list;
 }
 
 export function getStoryBySlug(
   slug: string,
-  options?: { includeDraftForAuthorId?: string }
+  options?: { includeDraftForAuthorId?: string; includeSeed?: boolean }
 ): Story | null {
   const s = stories.find((x) => x.slug === slug);
   if (!s) return null;
+  if (s.isSeed === true && options?.includeSeed !== true) return null;
   if (s.status === "published") return s;
   if (options?.includeDraftForAuthorId && s.authorId === options.includeDraftForAuthorId)
     return s;
@@ -140,7 +144,7 @@ export function getStoriesByEventId(
   options?: { role?: StoryRole; limit?: number }
 ): Story[] {
   let list = stories.filter(
-    (s) => s.status === "published" && s.eventId === eventId
+    (s) => s.status === "published" && s.eventId === eventId && s.isSeed !== true
   );
   if (options?.role) list = list.filter((s) => s.role === options.role);
   list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -187,6 +191,7 @@ export function createStory(data: {
     role: data.role,
     purpose: data.purpose,
     status: data.status ?? "draft",
+    isSeed: false,
     authorId: data.authorId,
     authorName: data.authorName,
     eventId: data.eventId ?? null,
