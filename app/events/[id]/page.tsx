@@ -11,8 +11,7 @@ import { EventDetailTabs } from "./event-detail-tabs";
 import { EventDetailCTABlock } from "./event-detail-cta-block";
 import { OrganizerContactSection } from "./organizer-contact-section";
 import { EventThumbnail } from "@/components/event-thumbnail";
-import { EventChatButton } from "./event-chat-button";
-import { ShareButton } from "@/components/share-button";
+import { EventConsultationCard } from "./event-consultation-card";
 import { EventSupportCard } from "./event-support-card";
 import { EventVolunteerSection } from "@/components/event-volunteer-section";
 import { LoginBenefitsBanner } from "@/components/login-benefits-banner";
@@ -114,6 +113,13 @@ export default async function EventDetailPage({ params }: Props) {
           </div>
         </div>
       </section>
+
+      {/* 主催者に相談する（メインCTAとして強調） */}
+      <EventConsultationCard
+        eventId={id}
+        eventTitle={event.title}
+        organizerName={event.organizerName}
+      />
 
       {/* 主CTA + 補助アクション（参加方式に応じて可変） */}
       <EventDetailCTABlock
@@ -283,11 +289,6 @@ export default async function EventDetailPage({ params }: Props) {
           organizerId={organizerId ?? undefined}
         />
       )}
-
-      <div className="space-y-4 border-t border-zinc-200 pt-6 dark:border-zinc-700">
-        <ShareButton url={`/events/${id}`} title={`${event.title} - MachiGlyph`} />
-        <EventChatButton eventId={id} />
-      </div>
     </article>
   );
 

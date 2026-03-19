@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MachiGlyph app icon">
+  <defs>
+    <linearGradient id="pinFillApp" x1="120" y1="40" x2="420" y2="490" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF8A3D"/>
+      <stop offset="1" stop-color="#D34A1E"/>
+    </linearGradient>
+    <linearGradient id="pinInnerApp" x1="180" y1="110" x2="350" y2="460" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF3D7" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#FDE7A8" stop-opacity="0.98"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Map pin base -->
+  <path
+    d="M256 26C153 26 78 112 78 224C78 312 124 366 203 438L256 490L309 438C388 366 434 312 434 224C434 112 359 26 256 26Z"
+    fill="url(#pinFillApp)"
+  />
+  <path
+    d="M256 84C190 84 142 140 142 209C142 260 170 304 221 352L256 384L291 352C342 304 370 260 370 209C370 140 322 84 256 84Z"
+    fill="url(#pinInnerApp)"
+  />
+
+  <!-- Festival flags (lightweight, readable) -->
+  <g opacity="0.9">
+    <path d="M192 182L210 172L228 182L210 192Z" fill="#FFE7A6"/>
+    <path d="M228 182L246 172L264 182L246 192Z" fill="#C73A18" opacity="0.85"/>
+    <path d="M264 182L282 172L300 182L282 192Z" fill="#FFE7A6"/>
+  </g>
+
+  <!-- Torii (cultural background) -->
+  <g fill="#C73A18">
+    <rect x="206" y="238" width="22" height="80" rx="8"/>
+    <rect x="284" y="238" width="22" height="80" rx="8"/>
+    <rect x="192" y="222" width="148" height="30" rx="10"/>
+    <rect x="214" y="308" width="84" height="18" rx="7"/>
+  </g>
+
+  <!-- Lantern (1 additional element) -->
+  <g>
+    <path
+      d="M319 200C319 170 295 146 265 146C235 146 211 170 211 200C211 200 231 224 240 232C250 241 260 246 265 246C270 246 280 241 290 232C299 224 319 200 319 200Z"
+      fill="#FFE7A6"
+      opacity="0.95"
+    />
+    <path
+      d="M240 158C240 158 255 144 270 144C295 144 304 160 304 160"
+      stroke="#C73A18"
+      stroke-width="10"
+      stroke-linecap="round"
+      fill="none"
+      opacity="0.35"
+    />
+    <g fill="#C73A18" opacity="0.95">
+      <rect x="236" y="202" width="58" height="56" rx="18"/>
+      <rect x="248" y="214" width="34" height="10" rx="5" opacity="0.7"/>
+      <rect x="252" y="234" width="26" height="8" rx="4" opacity="0.55"/>
+    </g>
+  </g>
+
+  <!-- Town bustle (simplified skyline) -->
+  <g opacity="0.95">
+    <g>
+      <rect x="178" y="332" width="96" height="58" rx="20" fill="#C73A18" opacity="0.93"/>
+      <rect x="206" y="356" width="18" height="18" rx="4" fill="#FFE7A6" opacity="0.95"/>
+      <rect x="234" y="356" width="18" height="18" rx="4" fill="#FFE7A6" opacity="0.85"/>
+    </g>
+    <g>
+      <rect x="292" y="332" width="96" height="58" rx="20" fill="#C73A18" opacity="0.9"/>
+      <rect x="320" y="356" width="18" height="18" rx="4" fill="#FFE7A6" opacity="0.95"/>
+      <rect x="348" y="356" width="18" height="18" rx="4" fill="#FFE7A6" opacity="0.85"/>
+    </g>
+    <g>
+      <rect x="406" y="332" width="96" height="58" rx="20" fill="#C73A18" opacity="0.85"/>
+      <rect x="434" y="356" width="18" height="18" rx="4" fill="#FFE7A6" opacity="0.95"/>
+      <rect x="462" y="356" width="18" height="18" rx="4" fill="#FFE7A6" opacity="0.85"/>
+    </g>
+  </g>
+
+  <!-- Warm spark accents -->
+  <g fill="#FFB35C">
+    <circle cx="188" cy="210" r="7" opacity="0.9"/>
+    <circle cx="350" cy="238" r="5.5" opacity="0.85"/>
+    <circle cx="314" cy="320" r="6.5" opacity="0.8"/>
+  </g>
+</svg>
+

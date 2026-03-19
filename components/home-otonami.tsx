@@ -22,6 +22,8 @@ import { RecruitmentOrMissions } from "./home/RecruitmentOrMissions";
 import { MachiBinyoriPreview } from "./home/MachiBinyoriPreview";
 import { FeaturedOrganizersSection } from "./home/FeaturedOrganizersSection";
 import { BookmarksSheet } from "@/components/ui/BookmarksSheet";
+import { RegionFilter } from "@/components/region-filter";
+import Link from "next/link";
 
 const THEME_FILTERS = [
   (e: Event) =>
@@ -75,6 +77,14 @@ export function HomeOtonami() {
   const prefecture = searchParams.get("prefecture") ?? "";
   const city = searchParams.get("city") ?? "";
   const effectiveArea = prefecture || city || getAreaPreference();
+
+  // ファーストビュー直下（モバイルのみ）に置く簡易チップ
+  const heroCategoryTags = [
+    { label: "無料", tags: "free" },
+    { label: "親子", tags: "kids" },
+    { label: "体験", tags: "beginner" },
+    { label: "交流会", tags: "indoor" },
+  ];
 
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [allRecruitments, setAllRecruitments] = useState<
@@ -192,6 +202,30 @@ export function HomeOtonami() {
       <main className="mx-auto max-w-5xl space-y-8 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-8 sm:pb-8">
         {/* ファーストビュー */}
         <HeroSection />
+
+        {/* 地域・カテゴリ：モバイルではファーストビューの直下から“少し下”に配置 */}
+        <div className="space-y-3 sm:hidden">
+          <div>
+            <p className="text-xs font-medium text-slate-500">地域で探す</p>
+            <div className="mt-2">
+              <RegionFilter variant="chips" />
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500">カテゴリから探す</p>
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {heroCategoryTags.map(({ label, tags }) => (
+                <Link
+                  key={tags}
+                  href={`/events?tags=${tags}`}
+                  className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* 1) おすすめイベント */}
         <RecommendedHero

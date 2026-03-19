@@ -1,0 +1,23 @@
+{
+  "name": "MachiGlyph",
+  "short_name": "MachiGlyph",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#D94A1F",
+  "background_color": "#FFF8E7",
+  "icons": [
+    {
+      "src": "/brand/icon-favicon.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/brand/icon-app.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

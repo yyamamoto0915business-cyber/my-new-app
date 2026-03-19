@@ -58,6 +58,16 @@ export function EventDetailClient(props: Props) {
     }
   }, [props]);
 
+  const handleOpenMaps = useCallback(() => {
+    if (props.requiresRegistration) return;
+    openMaps({
+      address: props.address,
+      venueName: props.location,
+      latitude: props.latitude,
+      longitude: props.longitude,
+    });
+  }, [props]);
+
   if (props.requiresRegistration) {
     const scrollTo = () => {
       const el = document.getElementById(props.targetId);
@@ -77,15 +87,6 @@ export function EventDetailClient(props: Props) {
       </div>
     );
   }
-
-  const handleOpenMaps = useCallback(() => {
-    openMaps({
-      address: props.address,
-      venueName: props.location,
-      latitude: props.latitude,
-      longitude: props.longitude,
-    });
-  }, [props.address, props.location, props.latitude, props.longitude]);
 
   const calendarLocation =
     props.location && props.address

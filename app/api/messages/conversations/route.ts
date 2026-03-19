@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { createOrGetConversation } from "@/lib/db/messages";
-import { getOrganizerIdByEventId } from "@/lib/db/events";
+import { getOrganizerIdByEventId, getOrganizerProfileId } from "@/lib/db/events";
 
 /**
- * POST: 会話を作成/取得（eventId + kind + organizerId + otherUserId で一意）
- * Body: { eventId?: string, kind?: string, organizerId?: string, otherUserId?: string }
- * - eventId がある場合: organizerId を events から取得
- * - ない場合: organizerId, otherUserId 必須
- * - 呼び出し者は organizer または otherUserId のどちらかであること
+ * POST: 会話を作成/取得（event_id + organizer_user_id + participant_user_id で一意）
+ * Body: { eventId: string, kind?: string }
+ * - 未ログイン: 401
+ * - ログイン済みなら:
+ *   1) 既存conversationを検索
+ *   2) 無ければ作成（membersも登録）
+ *   3) conversationId を返す
  */
 export async function POST(request: NextRequest) {
   const user = await getApiUser();
@@ -42,18 +44,23 @@ export async function POST(request: NextRequest) {
 
   const eventId = body.eventId ?? null;
   const kind = body.kind ?? "event_inquiry";
+  // participant_user_id は常に current user
+  const participantUserId = body.otherUserId ?? user.id;
+  // organizer_user_id は event の主催者 profile_id
+  const organizerUserIdFromEvent = eventId ? await getOrganizerProfileId(supabase, eventId) : null;
+
   let organizerId = body.organizerId ?? null;
-  const otherUserId = body.otherUserId ?? user.id;
+  if (!organizerId && eventId) {
+    organizerId = await getOrganizerIdByEventId(supabase, eventId);
+  }
 
   if (eventId) {
-    const oid = await getOrganizerIdByEventId(supabase, eventId);
-    if (!oid) {
+    if (!organizerId || !organizerUserIdFromEvent) {
       return NextResponse.json(
         { error: "イベントまたは主催者が見つかりません" },
         { status: 404 }
       );
     }
-    organizerId = oid;
   }
 
   if (!organizerId) {
@@ -63,7 +70,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 呼び出し者は organizer または other のどちらか
+  // 呼び出し者は organizer(profile) または participant のどちらかであること
   const { data: org } = await supabase
     .from("organizers")
     .select("profile_id")
@@ -72,7 +79,7 @@ export async function POST(request: NextRequest) {
   const organizerProfileId = org?.profile_id ?? null;
   if (
     organizerProfileId !== user.id &&
-    otherUserId !== user.id
+    participantUserId !== user.id
   ) {
     return NextResponse.json(
       { error: "この会話を作成する権限がありません" },
@@ -81,12 +88,49 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (!eventId) {
+      // 互換性: eventId が無いケースは既存の createOrGetConversation を利用
+      const conversationId = await createOrGetConversation(supabase, {
+        eventId,
+        kind,
+        organizerId,
+        otherUserId: participantUserId,
+      });
+      return NextResponse.json({ conversationId });
+    }
+
+    // 1) existing を event_id + organizer_user_id + participant_user_id で検索
+    // organizer_user_id は organizers.profile_id に対応するので organizerId を使って突合
+    const { data: existing, error: existingError } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("event_id", eventId)
+      .eq("kind", kind)
+      .eq("organizer_id", organizerId)
+      .eq("other_user_id", participantUserId)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+    if (existing?.id) {
+      // 既存が見つかっても、過去の失敗で conversation_members が欠けている可能性があるため
+      // createOrGetConversation で members 登録も再試行する（会話自体は upsert なので新規作成されない）
+      const conversationId = await createOrGetConversation(supabase, {
+        eventId,
+        kind,
+        organizerId,
+        otherUserId: participantUserId,
+      });
+      return NextResponse.json({ conversationId });
+    }
+
+    // 2) 無ければ新規作成（membersも2人分登録）
     const conversationId = await createOrGetConversation(supabase, {
       eventId,
       kind,
       organizerId,
-      otherUserId,
+      otherUserId: participantUserId,
     });
+
     return NextResponse.json({ conversationId });
   } catch (e) {
     console.error("createOrGetConversation error:", e);

@@ -10,6 +10,7 @@ import type { FeaturedOrganizer } from "@/lib/db/organizers";
 export function FeaturedOrganizersSection() {
   const [organizers, setOrganizers] = useState<FeaturedOrganizer[]>([]);
   const [loading, setLoading] = useState(true);
+  const mobileDisplay = organizers.slice(0, 3);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -31,7 +32,15 @@ export function FeaturedOrganizersSection() {
         title="注目の主催者"
         subtitle="地域で活動する主催者を見つけられます"
       />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:hidden">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-[140px] animate-pulse rounded-2xl bg-zinc-200/80 dark:bg-zinc-700/50"
+            />
+          ))}
+        </div>
+        <div className="hidden sm:grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
@@ -74,9 +83,14 @@ export function FeaturedOrganizersSection() {
         title="注目の主催者"
         subtitle="地域で活動する主催者を見つけられます"
         href="/organizers"
-        linkLabel="主催者をもっと見る"
+        linkLabel="もっと見る"
       />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="sm:hidden grid gap-4">
+        {mobileDisplay.map((org) => (
+          <OrganizerCard key={org.id} organizer={org} />
+        ))}
+      </div>
+      <div className="hidden sm:grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {organizers.map((org) => (
           <OrganizerCard key={org.id} organizer={org} />
         ))}

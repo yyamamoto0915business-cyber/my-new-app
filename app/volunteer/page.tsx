@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { VOLUNTEER_ROLE_LABELS } from "@/lib/volunteer-roles-mock";
@@ -8,24 +9,30 @@ import {
   type VolunteerRoleWithEvent,
   type BenefitFilter,
   type VolunteerSort,
+  resolveBenefits,
+  getCategoryLabel,
+  getDisplayBenefits,
   sortEmergencyRoles,
   sortVolunteerRoles,
   filterByBenefit,
 } from "@/lib/volunteer-utils";
-import { VolunteerCard } from "@/components/volunteer-card";
-import { VolunteerEmergencySection } from "@/components/volunteer-emergency-section";
-import { GlyphSectionTitle } from "@/components/glyph/glyph-section-title";
-import { GlyphCardShell } from "@/components/glyph/glyph-card-shell";
+import { VolunteerHero } from "@/components/VolunteerHero";
+import { VolunteerTrustSection } from "@/components/VolunteerTrustSection";
+import { VolunteerFilters } from "@/components/VolunteerFilters";
+import { VolunteerCard } from "@/components/VolunteerCard";
+import { VolunteerCardSkeleton } from "@/components/VolunteerCardSkeleton";
+import { VolunteerEmptyState } from "@/components/VolunteerEmptyState";
 import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
+import { PREFECTURES } from "@/lib/prefectures";
 
-const QUICK_FILTERS: { value: BenefitFilter; label: string }[] = [
-  { value: "EMERGENCY", label: "緊急のみ" },
-  { value: "TRANSPORT", label: "交通費" },
-  { value: "LODGING", label: "宿泊" },
-  { value: "MEAL", label: "食事" },
-  { value: "REWARD", label: "謝礼" },
-  { value: "INSURANCE", label: "保険" },
-  { value: "SHUTTLE", label: "送迎" },
+const QUICK_FILTERS: { value: BenefitFilter; label: string; icon: string }[] = [
+  { value: "EMERGENCY", label: "緊急のみ", icon: "⚡" },
+  { value: "TRANSPORT", label: "交通費", icon: "🚃" },
+  { value: "LODGING", label: "宿泊", icon: "🏨" },
+  { value: "MEAL", label: "食事", icon: "🍱" },
+  { value: "REWARD", label: "謝礼", icon: "🎁" },
+  { value: "INSURANCE", label: "保険", icon: "🛡️" },
+  { value: "SHUTTLE", label: "送迎", icon: "🚌" },
 ];
 
 const SORT_OPTIONS: { value: VolunteerSort; label: string }[] = [
@@ -34,8 +41,31 @@ const SORT_OPTIONS: { value: VolunteerSort; label: string }[] = [
   { value: "soonest", label: "日程が近い" },
 ];
 
+function parseDateStart(dateTime: string): Date | null {
+  const match = dateTime.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (!match) return null;
+  const d = new Date(`${match[1]}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function getWeekRange(now: Date): { start: Date; end: Date } {
+  // 月曜開始の今週（日本の感覚に寄せる）
+  const d = new Date(now);
+  const day = d.getDay(); // 0:日曜, 1:月曜...
+  const diffToMonday = (day + 6) % 7; // 月曜までの差分
+  const start = new Date(d);
+  start.setDate(d.getDate() - diffToMonday);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
 function VolunteerPageContent() {
   const searchParams = useSearchParamsNoSuspend();
+  const router = useRouter();
   const roleType = searchParams.get("roleType") ?? "";
   const prefecture = searchParams.get("prefecture") ?? "";
 
@@ -44,6 +74,23 @@ function VolunteerPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [benefitFilter, setBenefitFilter] = useState<BenefitFilter | "">("");
   const [sort, setSort] = useState<VolunteerSort>("recommended");
+
+  const pushQuery = useCallback(
+    (updates: { roleType?: string; prefecture?: string }) => {
+      const p = new URLSearchParams(searchParams.toString());
+      if (updates.roleType !== undefined) {
+        if (updates.roleType) p.set("roleType", updates.roleType);
+        else p.delete("roleType");
+      }
+      if (updates.prefecture !== undefined) {
+        if (updates.prefecture) p.set("prefecture", updates.prefecture);
+        else p.delete("prefecture");
+      }
+      const qs = p.toString();
+      router.push(`/volunteer${qs ? `?${qs}` : ""}`, { scroll: false });
+    },
+    [router, searchParams]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -91,10 +138,39 @@ function VolunteerPageContent() {
     return sortVolunteerRoles(normal, sort);
   }, [roles, benefitFilter, sort]);
 
-  const showEmergencySection = emergencyRoles.length > 0;
-  const showMainSection =
-    !benefitFilter || benefitFilter !== "EMERGENCY" ? normalRoles : [];
-  const isEmpty = !showEmergencySection && showMainSection.length === 0;
+  const items = useMemo(() => {
+    if (benefitFilter === "EMERGENCY") return emergencyRoles;
+    return [...emergencyRoles, ...normalRoles];
+  }, [benefitFilter, emergencyRoles, normalRoles]);
+  const isEmpty = items.length === 0;
+
+  const now = useMemo(() => new Date(), []);
+  const weekRange = useMemo(() => getWeekRange(now), [now]);
+
+  const summary = useMemo(() => {
+    const total = roles.length;
+    const thisWeek = roles.filter((r) => {
+      const d = parseDateStart(r.dateTime);
+      if (!d) return false;
+      return d >= weekRange.start && d <= weekRange.end;
+    }).length;
+
+    const transport = roles.filter((r) => resolveBenefits(r).includes("TRANSPORT")).length;
+    const beginner = roles.filter((r) => r.beginnerFriendly === true).length;
+
+    return { total, thisWeek, transport, beginner };
+  }, [roles, weekRange]);
+
+  const recommendedRoleTypes = useMemo(() => {
+    const counts = new Map<string, number>();
+    roles.forEach((r) => {
+      counts.set(r.roleType, (counts.get(r.roleType) ?? 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([roleType]) => roleType);
+  }, [roles]);
 
   return (
     <div className="min-h-screen bg-[var(--mg-paper)]">
@@ -103,83 +179,61 @@ function VolunteerPageContent() {
           <Breadcrumb
             items={[{ label: "トップ", href: "/" }, { label: "ボランティア募集" }]}
           />
-          <GlyphSectionTitle as="h1" className="mt-2 text-2xl">
-            ボランティア募集
-          </GlyphSectionTitle>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-6">
-        <section className="mb-6 space-y-4 rounded-xl border border-zinc-200/60 bg-white/80 p-4 dark:border-zinc-700/60 dark:bg-zinc-900/80">
-          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-            <div>
-              <label className="block text-xs text-zinc-500">種別</label>
-              <select
-                value={roleType}
-                onChange={(e) => {
-                  const p = new URLSearchParams(searchParams.toString());
-                  if (e.target.value) p.set("roleType", e.target.value);
-                  else p.delete("roleType");
-                  window.location.search = p.toString();
-                }}
-                className="mt-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800"
-              >
-                <option value="">すべて</option>
-                {Object.entries(VOLUNTEER_ROLE_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <main className="mx-auto max-w-4xl px-4 py-6 pb-24 sm:pb-6">
+        <VolunteerHero
+          totalCount={summary.total}
+          thisWeekCount={summary.thisWeek}
+          beginnerFriendlyCount={summary.beginner}
+          travelSupportCount={summary.transport}
+          isLoading={loading}
+        />
 
-            <div className="flex-1">
-              <span className="block text-xs text-zinc-500">クイックフィルター</span>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {QUICK_FILTERS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() =>
-                      setBenefitFilter((prev) => (prev === value ? "" : value))
-                    }
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                      benefitFilter === value
-                        ? "bg-[var(--accent)] text-white"
-                        : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-600"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+        <VolunteerTrustSection
+          beginnerFriendlyCount={summary.beginner}
+          isLoading={loading}
+        />
 
-            <div>
-              <label className="block text-xs text-zinc-500">並び替え</label>
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value as VolunteerSort)}
-                className="mt-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800"
-              >
-                {SORT_OPTIONS.map(({ value, label }) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {prefecture && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              地域: {prefecture} で絞り込み中
-            </p>
-          )}
-        </section>
+        <VolunteerFilters
+          category={roleType}
+          prefecture={prefecture}
+          quickFilters={{
+            urgentOnly: benefitFilter === "EMERGENCY",
+            travelFee: benefitFilter === "TRANSPORT",
+            lodging: benefitFilter === "LODGING",
+            meal: benefitFilter === "MEAL",
+            reward: benefitFilter === "REWARD",
+            insurance: benefitFilter === "INSURANCE",
+            pickup: benefitFilter === "SHUTTLE",
+          }}
+          sort={sort}
+          onChangeCategory={(v) => pushQuery({ roleType: v })}
+          onChangePrefecture={(v) => pushQuery({ prefecture: v })}
+          onToggleQuickFilter={(key) => {
+            const map: Record<string, BenefitFilter> = {
+              urgentOnly: "EMERGENCY",
+              travelFee: "TRANSPORT",
+              lodging: "LODGING",
+              meal: "MEAL",
+              reward: "REWARD",
+              insurance: "INSURANCE",
+              pickup: "SHUTTLE",
+            };
+            const next = map[key];
+            setBenefitFilter((prev) => (prev === next ? "" : next));
+          }}
+          onChangeSort={(v) => setSort(v)}
+          onReset={() => {
+            setBenefitFilter("");
+            setSort("recommended");
+            pushQuery({ roleType: "", prefecture: "" });
+          }}
+        />
 
         {loading ? (
-          <p className="text-zinc-500">読み込み中...</p>
+          <VolunteerCardSkeleton count={6} />
         ) : error ? (
           <div>
             <p className="text-red-600">{error}</p>
@@ -192,35 +246,69 @@ function VolunteerPageContent() {
             </button>
           </div>
         ) : isEmpty ? (
-          <p className="rounded-xl border border-zinc-200/60 bg-white/80 p-8 text-center text-zinc-500 dark:border-zinc-700/60 dark:bg-zinc-900/80">
-            {roles.length === 0 && !benefitFilter
-              ? "募集がまだありません"
-              : "該当する募集はありません"}
-          </p>
+          <VolunteerEmptyState
+            onReset={() => {
+              setBenefitFilter("");
+              setSort("recommended");
+              pushQuery({ roleType: "", prefecture: "" });
+            }}
+            onViewNewest={() => {
+              setBenefitFilter("");
+              setSort("newest");
+            }}
+            onViewRecommended={() => {
+              const rt = recommendedRoleTypes[0];
+              if (!rt) return;
+              setBenefitFilter("");
+              setSort("recommended");
+              pushQuery({ roleType: rt, prefecture });
+            }}
+          />
         ) : (
-          <>
-            {showEmergencySection && (
-              <VolunteerEmergencySection roles={emergencyRoles} maxItems={5} />
-            )}
+          <section>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {items.map((r) => {
+                const { chips, overflowCount } = getDisplayBenefits(r);
+                const badges = [
+                  ...chips.map((c) => c.label),
+                  ...(overflowCount > 0 ? [`+${overflowCount}`] : []),
+                ];
+                const trustBadges = [
+                  r.beginnerFriendly ? "初心者歓迎" : null,
+                  r.oneDayOk ? "1日だけOK" : null,
+                  r.organizerVerified ? "主催者確認済み" : null,
+                  r.contactAvailable ? "問い合わせ可" : null,
+                ].filter(Boolean) as string[];
 
-            {showMainSection.length > 0 && (
-              <section>
-                <GlyphSectionTitle className="mb-4">
-                  {showEmergencySection ? "その他の募集" : "募集一覧"}
-                </GlyphSectionTitle>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {showMainSection.map((r, i) => (
-                    <GlyphCardShell key={r.id}>
-                      <VolunteerCard
-                        role={r}
-                        priority={i < 3}
-                      />
-                    </GlyphCardShell>
-                  ))}
-                </div>
-              </section>
-            )}
-          </>
+                const d = parseDateStart(r.dateTime);
+                const dateLabel = d
+                  ? d.toLocaleDateString("ja-JP", {
+                      month: "numeric",
+                      day: "numeric",
+                      weekday: "short",
+                    })
+                  : r.dateTime;
+
+                const areaLabel = r.event?.prefecture ?? r.location;
+
+                return (
+                  <VolunteerCard
+                    key={r.id}
+                    id={r.id}
+                    title={r.title}
+                    imageUrl={r.thumbnailUrl}
+                    dateLabel={dateLabel}
+                    areaLabel={areaLabel}
+                    roleLabel={`${getCategoryLabel(r.roleType)}・定員${r.capacity}名`}
+                    shortDescription={r.description}
+                    badges={badges}
+                    trustBadges={trustBadges}
+                    href={`/volunteer/${r.id}`}
+                  />
+                );
+              })}
+            </div>
+          </section>
         )}
 
       </main>

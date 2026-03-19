@@ -52,6 +52,14 @@ export type VolunteerRole = {
   hasTransportSupport: boolean;
   hasHonorarium: boolean;
   createdAt: string;
+  /** 初心者でも参加しやすいか（一覧UI用） */
+  beginnerFriendly?: boolean;
+  /** 1日完結で参加できるか（一覧UI用） */
+  oneDayOk?: boolean;
+  /** 主催者確認が取れているか（一覧UI用） */
+  organizerVerified?: boolean;
+  /** 問い合わせが可能か（一覧UI用） */
+  contactAvailable?: boolean;
   /** サムネイル（16:9推奨） */
   thumbnailUrl?: string;
   /** 一覧の待遇チップ用 */
@@ -125,6 +133,10 @@ function seedRoles() {
     perksText: "昼食提供、記念品",
     hasTransportSupport: true,
     hasHonorarium: false,
+    beginnerFriendly: true,
+    oneDayOk: true,
+    organizerVerified: true,
+    contactAvailable: true,
     createdAt: "2025-02-01T10:00:00Z",
     thumbnailUrl: VOLUNTEER_IMAGES[0],
     benefits: ["TRANSPORT", "MEAL"],
@@ -146,6 +158,10 @@ function seedRoles() {
     perksText: "交通費支給、謝礼あり",
     hasTransportSupport: true,
     hasHonorarium: true,
+    beginnerFriendly: false,
+    oneDayOk: true,
+    organizerVerified: true,
+    contactAvailable: true,
     createdAt: "2025-02-01T10:00:00Z",
     thumbnailUrl: VOLUNTEER_IMAGES[1],
     benefits: ["TRANSPORT", "REWARD"],
@@ -166,6 +182,10 @@ function seedRoles() {
     perksText: "交通費支給、特典あり",
     hasTransportSupport: true,
     hasHonorarium: false,
+    beginnerFriendly: true,
+    oneDayOk: true,
+    organizerVerified: true,
+    contactAvailable: true,
     createdAt: "2025-02-08T14:00:00Z",
     thumbnailUrl: VOLUNTEER_IMAGES[2],
     benefits: ["TRANSPORT"],
@@ -185,6 +205,10 @@ function seedRoles() {
     perksText: "宿泊・交通費・食事・保険",
     hasTransportSupport: true,
     hasHonorarium: false,
+    beginnerFriendly: true,
+    oneDayOk: true,
+    organizerVerified: true,
+    contactAvailable: true,
     createdAt: "2025-02-20T09:00:00Z",
     thumbnailUrl: VOLUNTEER_IMAGES[3],
     benefits: ["LODGING", "TRANSPORT", "MEAL", "INSURANCE"],

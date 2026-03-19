@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabaseUser } from "@/hooks/use-supabase-user";
+import { ProfileEmptyCard } from "@/components/profile/profile-empty-card";
+import { getLoginUrl } from "@/lib/auth-utils";
 
 type Notification = {
   id: string;
@@ -18,27 +19,25 @@ type Notification = {
 };
 
 export default function NotificationsPage() {
-  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+  const [authRequired, setAuthRequired] = useState(false);
+  const { user, loading: authLoading } = useSupabaseUser();
+
+  const loginHref = getLoginUrl("/notifications");
 
   const load = async () => {
-    const supabase = createClient();
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      router.replace("/auth?next=/notifications");
+      setAuthRequired(true);
+      setLoading(false);
       return;
     }
     try {
       const res = await fetchWithTimeout("/api/notifications");
       if (res.status === 401) {
-        router.replace("/auth?next=/notifications");
+        setAuthRequired(true);
         return;
       }
       if (res.ok) {
@@ -54,8 +53,11 @@ export default function NotificationsPage() {
   };
 
   useEffect(() => {
+    setAuthRequired(false);
+    setLoading(true);
     load();
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleMarkAsRead = async (id: string) => {
     const res = await fetch(`/api/notifications/${id}/read`, { method: "PATCH" });
@@ -93,10 +95,25 @@ export default function NotificationsPage() {
     return d.toLocaleDateString("ja-JP");
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-sm text-zinc-500">読み込み中...</p>
+      </div>
+    );
+  }
+
+  if (authRequired) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] px-4">
+        <div className="mx-auto max-w-md pt-12">
+          <ProfileEmptyCard
+            title="ログインが必要です"
+            description="お知らせを利用するにはログインしてください"
+            ctaLabel="ログイン"
+            ctaHref={loginHref}
+          />
+        </div>
       </div>
     );
   }
@@ -124,7 +141,20 @@ export default function NotificationsPage() {
       </header>
       <main className="mx-auto max-w-2xl px-4 py-6">
         {notifications.length === 0 ? (
-          <p className="text-center text-sm text-zinc-500">お知らせはありません</p>
+          <div className="rounded-2xl border border-[var(--border)] bg-white p-8 text-center dark:border-zinc-800/50 dark:bg-zinc-900/50">
+            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              お知らせはありません
+            </p>
+            <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+              イベントを探して、参加やチャットを始めましょう
+            </p>
+            <Link
+              href="/events"
+              className="mt-4 inline-block rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            >
+              イベント一覧を見る
+            </Link>
+          </div>
         ) : (
           <ul className="space-y-2">
             {notifications.map((n) => (

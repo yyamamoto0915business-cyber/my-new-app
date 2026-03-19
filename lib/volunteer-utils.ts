@@ -17,6 +17,14 @@ export type VolunteerRoleWithEvent = {
   perksText?: string;
   hasTransportSupport?: boolean;
   hasHonorarium?: boolean;
+  /** 初心者でも参加しやすいか（一覧UI用） */
+  beginnerFriendly?: boolean;
+  /** 1日完結で参加できるか（一覧UI用） */
+  oneDayOk?: boolean;
+  /** 主催者確認が取れているか（一覧UI用） */
+  organizerVerified?: boolean;
+  /** 問い合わせが可能か（一覧UI用） */
+  contactAvailable?: boolean;
   benefits?: Benefit[];
   thumbnailUrl?: string;
   emergency?: { isEmergency?: boolean; urgencyLevel?: number; activeTo?: string };

@@ -16,13 +16,6 @@ type Message = {
   created_at: string;
 };
 
-type InboxItem = {
-  conversation_id: string;
-  other_user_id: string;
-  other_display_name: string | null;
-  other_avatar_url: string | null;
-};
-
 export default function ConversationPage({
   params,
 }: {
@@ -30,19 +23,52 @@ export default function ConversationPage({
 }) {
   const { user, loading: authLoading } = useSupabaseUser();
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [otherUser, setOtherUser] = useState<InboxItem | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [eventTitle, setEventTitle] = useState<string | null>(null);
+  const [organizerDisplayName, setOrganizerDisplayName] = useState<string | null>(null);
+  const [organizerAvatarUrl, setOrganizerAvatarUrl] = useState<string | null>(null);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const suggestionChips = [
+    { label: "質問したい", value: "イベントについて質問したいです。" },
+    { label: "参加を相談したい", value: "参加について相談したいです。" },
+    { label: "ボランティアについて聞きたい", value: "ボランティア参加は可能でしょうか。" },
+    { label: "キャンセルを相談したい", value: "キャンセル方法について確認したいです。" },
+  ] as const;
 
   useEffect(() => {
     params.then((p) => setConversationId(p.conversationId));
   }, [params]);
 
   const currentUserId = user?.id ?? (AUTH_DISABLED ? "dev-user" : null);
+
+  // 会話のメタ情報（イベント名 / 主催者名）
+  useEffect(() => {
+    if (!conversationId) return;
+    setEventId(null);
+    setEventTitle(null);
+    setOrganizerDisplayName(null);
+    setOrganizerAvatarUrl(null);
+
+    fetchWithTimeout(`/api/messages/conversations/${conversationId}/meta`)
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data?.error ?? "メタ情報の取得に失敗しました");
+        setEventId(data?.eventId ?? null);
+        setEventTitle(data?.eventTitle ?? null);
+        setOrganizerDisplayName(data?.organizerDisplayName ?? null);
+        setOrganizerAvatarUrl(data?.organizerAvatarUrl ?? null);
+      })
+      .catch(() => {
+        // 表示だけなら最低限で成立するので、失敗しても会話UIは出す
+      });
+  }, [conversationId]);
 
   // メッセージ取得・既読・Realtime 購読
   useEffect(() => {
@@ -58,14 +84,6 @@ export default function ConversationPage({
 
     (async () => {
       try {
-        // 相手情報を inbox から取得
-        const inboxRes = await fetchWithTimeout("/api/messages/inbox");
-        if (inboxRes.ok) {
-          const items: InboxItem[] = await inboxRes.json();
-          const found = items.find((i) => i.conversation_id === conversationId);
-          if (found) setOtherUser(found);
-        }
-
         // メッセージ取得
         const msgRes = await fetchWithTimeout(
           `/api/messages/conversations/${conversationId}/messages`
@@ -81,7 +99,7 @@ export default function ConversationPage({
         await fetch(`/api/messages/conversations/${conversationId}/read`, {
           method: "POST",
         });
-      } catch (e) {
+      } catch {
         setError("通信に失敗しました");
       } finally {
         setLoading(false);
@@ -183,20 +201,12 @@ export default function ConversationPage({
     );
   }
 
-  if (loading && messages.length === 0) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-sm text-zinc-500">読み込み中...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col md:h-[calc(100vh-0px)]">
+    <div className="flex min-h-screen flex-col">
       {/* ヘッダー */}
-      <header className="flex shrink-0 items-center gap-3 border-b border-[var(--border)] bg-white px-4 py-3 dark:bg-zinc-900">
+      <header className="sticky top-0 z-50 flex shrink-0 items-center gap-3 border-b border-[var(--border)] bg-white/90 px-4 py-2 backdrop-blur-md dark:bg-zinc-900/80">
         <Link
-          href="/messages"
+          href={eventId ? `/events/${eventId}` : "/messages"}
           className="flex items-center text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-400 md:hidden"
         >
           <svg
@@ -213,52 +223,111 @@ export default function ConversationPage({
               d="M15 19l-7-7 7-7"
             />
           </svg>
+          <span className="ml-1 text-sm font-medium">戻る</span>
         </Link>
-        <div className="flex h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
-          {otherUser?.other_avatar_url ? (
-            <img
-              src={otherUser.other_avatar_url}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="flex h-full w-full items-center justify-center text-sm font-medium text-zinc-500">
-              {(otherUser?.other_display_name || "?")[0]}
+
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-[var(--accent)]/10">
+              {organizerAvatarUrl ? (
+                <img src={organizerAvatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 text-[var(--accent)]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5a8.5 8.5 0 0 1 17 0z" />
+                </svg>
+              )}
             </span>
-          )}
+            <div className="min-w-0">
+              <p className="line-clamp-2 text-base font-semibold leading-snug text-zinc-900 dark:text-zinc-100">
+                {eventTitle ?? "イベント"}
+              </p>
+              <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-300">
+                主催者: {organizerDisplayName ?? "主催者"}
+              </p>
+            </div>
+          </div>
         </div>
-        <p className="font-medium">
-          {otherUser?.other_display_name || "ユーザー"}
-        </p>
       </header>
 
       {/* メッセージ一覧 */}
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pb-32">
         {error && (
           <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
             {error}
           </div>
         )}
-        {messages.map((m) => {
+        {loading && messages.length === 0 && (
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className={`h-10 w-full animate-pulse rounded-2xl ${
+                  i % 2 === 0 ? "bg-zinc-100 dark:bg-zinc-800" : "bg-zinc-50 dark:bg-zinc-900"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+        {!loading && !error && messages.length === 0 && (
+          <div className="rounded-2xl border border-[var(--border)] bg-white/70 p-5 text-center dark:bg-zinc-900/30">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent)]/10">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-[var(--accent)]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              主催者にメッセージを送ってみましょう
+            </p>
+            <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+              イベントについての質問や相談ができます。
+            </p>
+            <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">
+              参加前の確認にも使えます。
+            </p>
+          </div>
+        )}
+        {messages.map((m, idx) => {
           const isOwn = m.sender_id === currentUserId;
+          const prev = idx > 0 ? messages[idx - 1] : null;
+          const isSameSender = prev?.sender_id === m.sender_id;
           return (
             <div
               key={m.id}
-              className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+              className={`flex ${isOwn ? "justify-end" : "justify-start"} ${
+                idx === 0 ? "" : isSameSender ? "mt-1" : "mt-3"
+              }`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                className={`max-w-[86%] rounded-2xl px-4 py-3 ${
                   isOwn
                     ? "rounded-br-md bg-[var(--accent)] text-white"
-                    : "rounded-bl-md bg-zinc-200 dark:bg-zinc-700"
+                    : "rounded-bl-md bg-white text-zinc-900 border border-zinc-200/70 dark:bg-zinc-800 dark:text-zinc-50"
                 }`}
               >
-                <p className="whitespace-pre-wrap break-words text-sm">
+                <p className="whitespace-pre-wrap break-all break-words text-sm">
                   {m.content}
                 </p>
                 <p
-                  className={`mt-1 text-xs ${
-                    isOwn ? "text-white/80" : "text-zinc-500"
+                  className={`mt-1 text-[11px] leading-none ${
+                    isOwn ? "text-white/70" : "text-zinc-500/90"
                   }`}
                 >
                   {new Date(m.created_at).toLocaleTimeString("ja-JP", {
@@ -274,13 +343,38 @@ export default function ConversationPage({
       </div>
 
       {/* 入力欄: Enter送信 / Shift+Enter改行 */}
-      <div className="shrink-0 border-t border-[var(--border)] bg-white p-4 dark:bg-zinc-900">
+      <div
+        className="sticky bottom-0 z-40 shrink-0 border-t border-[var(--border)] bg-white px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] dark:bg-zinc-900"
+      >
+        {!loading && error && (
+          <p className="mb-2 text-xs text-red-600">{error}</p>
+        )}
+        <div className="mb-3 flex flex-wrap gap-2">
+          {suggestionChips.map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              onClick={() => {
+                setContent(chip.value);
+                setError(null);
+                requestAnimationFrame(() => inputRef.current?.focus());
+              }}
+              className="rounded-full border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
         <div className="flex gap-2">
           <textarea
+            ref={inputRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value);
+              if (error) setError(null);
+            }}
             onKeyDown={handleKeyDown}
-            placeholder="メッセージを入力... (Enterで送信)"
+            placeholder="イベントについて質問したいです"
             rows={1}
             className="min-h-[44px] max-h-32 flex-1 resize-none rounded-xl border border-[var(--border)] bg-zinc-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 dark:bg-zinc-800"
           />
@@ -290,20 +384,37 @@ export default function ConversationPage({
             disabled={sending || !content.trim()}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-white hover:opacity-90 disabled:opacity-50"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
+            {sending ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 2v4m0 16v-4m10-6h-4M6 12H2m15.364-7.364l-2.828 2.828M9.464 14.536l-2.828 2.828m12.728 0l-2.828-2.828M9.464 9.464L6.636 6.636"
+                />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
+              </svg>
+            )}
           </button>
         </div>
       </div>

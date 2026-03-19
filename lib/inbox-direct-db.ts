@@ -56,6 +56,7 @@ export async function fetchInboxDirectDb(
       convs_with_org AS (
         SELECT
           c.id,
+          c.event_id,
           c.organizer_id,
           c.other_user_id,
           o.profile_id AS organizer_profile_id
@@ -66,6 +67,7 @@ export async function fetchInboxDirectDb(
       other_users AS (
         SELECT
           cwo.id AS conv_id,
+          cwo.event_id,
           CASE
             WHEN cwo.organizer_profile_id = $1 THEN cwo.other_user_id
             ELSE cwo.organizer_profile_id
@@ -94,6 +96,8 @@ export async function fetchInboxDirectDb(
       )
       SELECT
         ou.conv_id AS conversation_id,
+        ou.event_id AS event_id,
+        ev.title AS event_title,
         ou.other_id AS other_user_id,
         p.display_name AS other_display_name,
         p.avatar_url AS other_avatar_url,
@@ -101,6 +105,7 @@ export async function fetchInboxDirectDb(
         lm.created_at AS last_message_at,
         COALESCE(uc.cnt, 0) AS unread_count
       FROM other_users ou
+      LEFT JOIN public.events ev ON ev.id = ou.event_id
       JOIN public.profiles p ON p.id = ou.other_id
       LEFT JOIN last_msgs lm ON lm.conversation_id = ou.conv_id
       LEFT JOIN unread_cnt uc ON uc.conversation_id = ou.conv_id
@@ -112,6 +117,8 @@ export async function fetchInboxDirectDb(
 
     return (result.rows ?? []).map((row) => ({
       conversation_id: row.conversation_id,
+      event_id: row.event_id ?? null,
+      event_title: row.event_title ?? null,
       other_user_id: row.other_user_id,
       other_display_name: row.other_display_name ?? null,
       other_avatar_url: row.other_avatar_url ?? null,

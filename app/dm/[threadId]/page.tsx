@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { ProfileEmptyCard } from "@/components/profile/profile-empty-card";
+import { getLoginUrl } from "@/lib/auth-utils";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 
@@ -103,11 +105,15 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
 
   if (!user && !AUTH_DISABLED) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p>ログインが必要です</p>
-        <Link href={`/auth?next=/dm/${threadId}`} className="text-[var(--accent)] underline">
-          ログイン
-        </Link>
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <ProfileEmptyCard
+            title="ログインが必要です"
+            description="DMを利用するにはログインしてください"
+            ctaLabel="ログイン"
+            ctaHref={getLoginUrl(`/dm/${threadId}`)}
+          />
+        </div>
       </div>
     );
   }

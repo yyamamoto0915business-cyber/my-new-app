@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type InboxItem = {
   conversation_id: string;
+  event_id: string | null;
+  event_title: string | null;
   other_user_id: string;
   other_display_name: string | null;
   other_avatar_url: string | null;
@@ -39,6 +41,7 @@ export async function fetchInboxByQueries(
     .select(
       `
       id,
+      event_id,
       organizer_id,
       other_user_id,
       organizers (profile_id)
@@ -52,6 +55,7 @@ export async function fetchInboxByQueries(
   // 3. 各会話の「相手」user_id を決定
   type ConvRow = {
     id: string;
+    event_id: string | null;
     organizer_id: string;
     other_user_id: string;
     organizers: { profile_id: string } | { profile_id: string }[] | null;
@@ -64,6 +68,19 @@ export async function fetchInboxByQueries(
     return orgProfileId === currentUserId ? c.other_user_id : orgProfileId;
   });
   const uniqueOtherIds = [...new Set(otherUserIds)].filter(Boolean);
+
+  // 4b. イベントタイトル取得（event_id -> events.title）
+  const eventIds = (convs as ConvRow[])
+    .map((c) => c.event_id)
+    .filter((id): id is string => !!id);
+  const uniqueEventIds = [...new Set(eventIds)];
+  const { data: events } = uniqueEventIds.length
+    ? await supabase.from("events").select("id, title").in("id", uniqueEventIds)
+    : { data: [] as { id: string; title: string }[] };
+
+  const eventMap = new Map(
+    (events ?? []).map((e) => [e.id, e.title] as const)
+  );
 
   // 4. 相手の profiles を取得
   const { data: profiles } = await supabase
@@ -120,6 +137,8 @@ export async function fetchInboxByQueries(
     const lastMsg = lastMsgMap.get(c.id);
     return {
       conversation_id: c.id,
+      event_id: c.event_id ?? null,
+      event_title: c.event_id ? eventMap.get(c.event_id) ?? null : null,
       other_user_id: otherId,
       other_display_name: prof?.display_name ?? null,
       other_avatar_url: prof?.avatar_url ?? null,

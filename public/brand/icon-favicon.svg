@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="MachiGlyph favicon">
+  <defs>
+    <linearGradient id="pinFill" x1="16" y1="6" x2="48" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF7A3A"/>
+      <stop offset="1" stop-color="#D94A1F"/>
+    </linearGradient>
+    <linearGradient id="pinInner" x1="22" y1="12" x2="42" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF3D6" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#FDE7A8" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+  <!-- Map pin -->
+  <path
+    d="M32 4C21.5 4 13 12.8 13 23.8C13 34.1 19 40.6 26.1 47.9L32 54l5.9-6.1C45 40.6 51 34.1 51 23.8C51 12.8 42.5 4 32 4Z"
+    fill="url(#pinFill)"
+  />
+  <!-- Inner warmth -->
+  <path
+    d="M32 10C25.1 10 19.4 15.9 19.4 23.2C19.4 31 23.9 35.7 29.2 41.2L32 44l2.8-2.8C40.1 35.7 44.6 31 44.6 23.2C44.6 15.9 38.9 10 32 10Z"
+    fill="url(#pinInner)"
+  />
+  <!-- Torii (minimal, readable at 16-32px) -->
+  <g fill="#C73A18">
+    <rect x="20.2" y="26.4" width="5.2" height="16.8" rx="2.2"/>
+    <rect x="38.6" y="26.4" width="5.2" height="16.8" rx="2.2"/>
+    <rect x="18.5" y="24.6" width="27.8" height="6.6" rx="3.3"/>
+    <rect x="24" y="40.8" width="16.4" height="4.2" rx="2.1"/>
+  </g>
+
+  <!-- Lantern (simplified) -->
+  <g>
+    <rect x="26.4" y="33.6" width="11.2" height="16.8" rx="4.4" fill="#FFE7A6" opacity="0.98"/>
+    <rect x="27.4" y="29.6" width="9.2" height="4.6" rx="2.3" fill="#C73A18" opacity="0.95"/>
+    <circle cx="32" cy="42.2" r="2.1" fill="#FFB35C" opacity="0.95"/>
+  </g>
+</svg>
+

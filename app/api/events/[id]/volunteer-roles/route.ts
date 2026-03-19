@@ -6,8 +6,9 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
   const { id: eventId } = await params;
+  const isProduction = process.env.NODE_ENV === "production";
   const roles = [
-    ...getVolunteerRolesByEvent(eventId),
+    ...(isProduction ? [] : getVolunteerRolesByEvent(eventId)),
     ...getCreatedVolunteerRolesByEvent(eventId),
   ];
   return NextResponse.json(roles);

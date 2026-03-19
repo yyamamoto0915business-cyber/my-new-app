@@ -19,7 +19,17 @@ export async function fetchWithTimeout(
     // ランタイム例外を投げずに擬似的なレスポンスを返す。
     // 各呼び出し元では status や ok を見てハンドリングするか、
     // そのまま json() を読んでも空オブジェクトになる。
-    if (err instanceof Error && err.name === "AbortError") {
+    const isAbortLike =
+      (err instanceof DOMException && err.name === "AbortError") ||
+      (err instanceof Error &&
+        (err.name === "AbortError" || /aborted/i.test(err.message) || /operation was aborted/i.test(err.message))) ||
+      (typeof err === "object" &&
+        err != null &&
+        "name" in err &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (String((err as any).name) === "AbortError" || String((err as any).name) === "AbortError" ));
+
+    if (isAbortLike) {
       return new Response("{}", {
         status: 499,
         statusText: "Client Timeout",

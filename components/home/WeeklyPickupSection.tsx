@@ -19,7 +19,7 @@ export function WeeklyPickupSection({
   bookmarkIds,
   onBookmarkToggle,
 }: Props) {
-  const available = events.slice(0, 8);
+  const available = events.slice(0, 3);
 
   if (loading) {
     return (
@@ -48,6 +48,7 @@ export function WeeklyPickupSection({
         title="今週のピックアップ"
         subtitle="今週末×無料で参加できるイベント"
         href="/events"
+        linkLabel="もっと見る"
       />
       <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">
         {available.map((e) => (

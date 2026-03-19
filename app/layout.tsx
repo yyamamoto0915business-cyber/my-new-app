@@ -21,17 +21,32 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: `${APP_NAME} - ${APP_SUBTITLE}`,
   description: APP_TAGLINE1,
+  manifest: "/site.webmanifest",
+  icons: {
+    icon: "/brand/icon-favicon.svg",
+    apple: "/brand/icon-app.svg",
+    shortcut: "/brand/icon-favicon.svg",
+  },
   openGraph: {
     title: `${APP_NAME} - ${APP_SUBTITLE}`,
     description: APP_TAGLINE1,
     siteName: APP_NAME,
     type: "website",
     locale: "ja_JP",
+    images: [
+      {
+        url: "/brand/icon-ogp.svg",
+        width: 1200,
+        height: 630,
+        alt: `${APP_NAME} - ${APP_SUBTITLE}`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${APP_NAME} - ${APP_SUBTITLE}`,
     description: APP_TAGLINE1,
+    images: ["/brand/icon-ogp.svg"],
   },
   alternates: {
     canonical: "./",
@@ -43,6 +58,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
+  themeColor: "#D94A1F",
 };
 
 export default function RootLayout({

@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="MachiGlyph OGP icon">
+  <defs>
+    <linearGradient id="bg" x1="160" y1="80" x2="1040" y2="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2A1320"/>
+      <stop offset="0.35" stop-color="#B74A22"/>
+      <stop offset="1" stop-color="#FFB35C"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.65">
+      <stop offset="0" stop-color="#FFEFD3" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#FFEFD3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="pinFillOgp" x1="330" y1="45" x2="870" y2="610" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF8A3D"/>
+      <stop offset="1" stop-color="#D34A1E"/>
+    </linearGradient>
+    <linearGradient id="pinInnerOgp" x1="400" y1="160" x2="800" y2="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF3D7" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#FDE7A8" stop-opacity="0.98"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer festival background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- Subtle star dust -->
+  <g fill="#FFE7B3" opacity="0.65">
+    <circle cx="140" cy="110" r="3"/>
+    <circle cx="220" cy="210" r="2.2"/>
+    <circle cx="980" cy="120" r="3.4"/>
+    <circle cx="1050" cy="250" r="2.2"/>
+    <circle cx="900" cy="520" r="3"/>
+  </g>
+
+  <!-- Flags (background detail) -->
+  <g opacity="0.9">
+    <path d="M420 110L450 94L480 110L450 126Z" fill="#FFE7A6"/>
+    <path d="M475 110L505 94L535 110L505 126Z" fill="#C73A18" opacity="0.85"/>
+    <path d="M530 110L560 94L590 110L560 126Z" fill="#FFE7A6"/>
+  </g>
+
+  <!-- Pin (center) -->
+  <g>
+    <path
+      d="M600 40C480 40 390 130 390 255C390 350 450 420 532 500L600 575L668 500C750 420 810 350 810 255C810 130 720 40 600 40Z"
+      fill="url(#pinFillOgp)"
+    />
+    <path
+      d="M600 120C525 120 470 180 470 255C470 310 505 356 555 400L600 446L645 400C695 356 730 310 730 255C730 180 675 120 600 120Z"
+      fill="url(#pinInnerOgp)"
+    />
+
+    <!-- Torii -->
+    <g fill="#C73A18">
+      <rect x="495" y="280" width="28" height="120" rx="10"/>
+      <rect x="577" y="280" width="28" height="120" rx="10"/>
+      <rect x="472" y="255" width="156" height="44" rx="14"/>
+      <rect x="514" y="390" width="72" height="22" rx="10"/>
+    </g>
+
+    <!-- Lantern -->
+    <g>
+      <path
+        d="M645 250C645 215 617 187 582 187C547 187 519 215 519 250C519 250 546 283 557 292C569 302 596 302 607 292C618 283 645 250 645 250Z"
+        fill="#FFE7A6"
+        opacity="0.95"
+      />
+      <g fill="#C73A18" opacity="0.95">
+        <rect x="545" y="216" width="74" height="76" rx="26"/>
+        <rect x="556" y="230" width="52" height="10" rx="5" opacity="0.75"/>
+        <rect x="560" y="246" width="44" height="10" rx="5" opacity="0.6"/>
+      </g>
+      <path d="M582 160C582 160 602 176 602 176" stroke="#C73A18" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.35"/>
+    </g>
+
+    <!-- Town bustle (more detailed skyline) -->
+    <g opacity="0.95">
+      <rect x="430" y="458" width="135" height="82" rx="30" fill="#C73A18" opacity="0.82"/>
+      <rect x="588" y="458" width="135" height="82" rx="30" fill="#C73A18" opacity="0.78"/>
+      <rect x="746" y="458" width="135" height="82" rx="30" fill="#C73A18" opacity="0.72"/>
+
+      <g fill="#FFE7A6">
+        <rect x="460" y="492" width="20" height="20" rx="6" opacity="0.95"/>
+        <rect x="494" y="492" width="20" height="20" rx="6" opacity="0.85"/>
+        <rect x="618" y="492" width="20" height="20" rx="6" opacity="0.95"/>
+        <rect x="652" y="492" width="20" height="20" rx="6" opacity="0.85"/>
+        <rect x="776" y="492" width="20" height="20" rx="6" opacity="0.95"/>
+        <rect x="810" y="492" width="20" height="20" rx="6" opacity="0.85"/>
+      </g>
+    </g>
+
+    <!-- Inner spark accents -->
+    <g fill="#FFB35C">
+      <circle cx="460" cy="300" r="9" opacity="0.9"/>
+      <circle cx="735" cy="330" r="7" opacity="0.85"/>
+      <circle cx="650" cy="430" r="10" opacity="0.75"/>
+      <circle cx="540" cy="440" r="8" opacity="0.7"/>
+    </g>
+  </g>
+</svg>
+

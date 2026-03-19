@@ -91,7 +91,7 @@ function RecruitmentCard({ recruitment: r }: { recruitment: Recruitment }) {
 
 export function RecruitmentOrMissions({ recruitments, loading }: Props) {
   const isEmpty = !loading && recruitments.length === 0;
-  const display = recruitments.slice(0, 6);
+  const display = recruitments.slice(0, 3);
 
   if (loading) {
     return (

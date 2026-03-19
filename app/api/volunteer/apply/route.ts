@@ -20,7 +20,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const allRoles = [...getAllVolunteerRoles(), ...getCreatedVolunteerRoles()];
+  const isProduction = process.env.NODE_ENV === "production";
+  const allRoles = [
+    ...(isProduction ? [] : getAllVolunteerRoles()),
+    ...getCreatedVolunteerRoles(),
+  ];
   const role = allRoles.find((r) => r.id === volunteerRoleId);
   if (!role) {
     return NextResponse.json({ error: "募集が見つかりません" }, { status: 404 });

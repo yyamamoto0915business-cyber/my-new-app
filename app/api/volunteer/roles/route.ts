@@ -10,7 +10,12 @@ export async function GET(request: Request) {
   const roleType = searchParams.get("roleType") ?? undefined;
   const eventId = searchParams.get("eventId") ?? undefined;
 
-  let roles = [...getAllVolunteerRoles(), ...getCreatedVolunteerRoles()];
+  const isProduction = process.env.NODE_ENV === "production";
+  // 本番では初期シード（モック）を公開しない
+  let roles = [
+    ...(isProduction ? [] : getAllVolunteerRoles()),
+    ...getCreatedVolunteerRoles(),
+  ];
 
   if (eventId) {
     roles = roles.filter((r) => r.eventId === eventId);

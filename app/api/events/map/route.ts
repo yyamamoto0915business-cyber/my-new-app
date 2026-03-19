@@ -42,6 +42,22 @@ function filterByDateRange(
   );
 }
 
+function filterByBounds(
+  events: EventWithDistance[],
+  north: number,
+  south: number,
+  west: number,
+  east: number
+): EventWithDistance[] {
+  return events
+    .filter((e) => e.latitude != null && e.longitude != null)
+    .filter((e) => {
+      const lat = e.latitude!;
+      const lng = e.longitude!;
+      return lat <= north && lat >= south && lng >= west && lng <= east;
+    });
+}
+
 function filterByPrice(
   events: EventWithDistance[],
   price: "all" | "free" | "paid"
@@ -67,6 +83,10 @@ export async function GET(request: Request) {
     parseInt(searchParams.get("radius") ?? String(DEFAULT_RADIUS_KM), 10) || DEFAULT_RADIUS_KM,
     DEFAULT_RADIUS_KM
   );
+  const northParam = searchParams.get("north");
+  const southParam = searchParams.get("south");
+  const westParam = searchParams.get("west");
+  const eastParam = searchParams.get("east");
   const start = searchParams.get("start") ?? undefined;
   const end = searchParams.get("end") ?? undefined;
   const price = (searchParams.get("price") as "all" | "free" | "paid") ?? "all";
@@ -83,6 +103,8 @@ export async function GET(request: Request) {
 
   const lat = latParam ? parseFloat(latParam) : DEFAULT_LAT;
   const lng = lngParam ? parseFloat(lngParam) : DEFAULT_LNG;
+  const hasBounds =
+    northParam != null && southParam != null && westParam != null && eastParam != null;
 
   let events: EventWithDistance[] = [];
   const isProduction = process.env.NODE_ENV === "production";
@@ -103,7 +125,19 @@ export async function GET(request: Request) {
   events = filterEventsByRegion(events, prefecture, city);
   events = filterEventsByTags(events, tags);
 
-  if (latParam && lngParam) {
+  if (hasBounds) {
+    const north = parseFloat(northParam!);
+    const south = parseFloat(southParam!);
+    const west = parseFloat(westParam!);
+    const east = parseFloat(eastParam!);
+
+    events = filterByBounds(events, north, south, west, east).map((e) => ({
+      ...e,
+      distanceKm: calcDistanceKm(lat, lng, e.latitude!, e.longitude!),
+    }));
+
+    events = events.sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
+  } else if (latParam && lngParam) {
     events = filterByRadius(events, lat, lng, radiusKm);
   } else {
     events = events

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { getModeFromCookie } from "@/lib/mode-preference";
+import { getModeFromCookie, setModeCookie } from "@/lib/mode-preference";
 
 const MODE_ITEMS = [
   { id: "discover" as const, label: "探す", href: "/" },
@@ -62,6 +62,13 @@ export function ModeSegmentNav() {
             <Link
               key={item.id}
               href={item.href}
+              onClick={() => {
+                // クリックしたモードを即時反映し、遷移後もライン位置がズレないようにする
+                setActiveMode(item.id);
+                const cookieMode =
+                  item.id === "organizer" ? "ORGANIZER" : item.id === "volunteer" ? "VOLUNTEER" : "EVENT";
+                setModeCookie(cookieMode);
+              }}
               className={`flex min-h-[48px] min-w-[80px] flex-1 items-center justify-center py-3 text-sm font-medium transition-colors active:opacity-80 ${
                 isActive
                   ? "border-b-2 border-[var(--accent)] text-[var(--accent)]"

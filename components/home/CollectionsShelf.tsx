@@ -19,8 +19,8 @@ export function CollectionsShelf({
   bookmarkIds,
   onBookmarkToggle,
 }: Props) {
-  /** ホームでは1段だけ表示（4件） */
-  const display = events.slice(0, 4);
+  /** ホームでは1段だけ表示（モバイル2〜3件想定） */
+  const display = events.slice(0, 3);
 
   if (loading) {
     return (
@@ -49,6 +49,7 @@ export function CollectionsShelf({
         title="テーマ別コレクション"
         subtitle="無料・親子・体験・文化体験などテーマ別に"
         href="/collections"
+        linkLabel="もっと見る"
       />
       <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">
         {display.map((e) => (

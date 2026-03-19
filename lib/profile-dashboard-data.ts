@@ -47,7 +47,12 @@ export type VolunteerApplication = {
 
 export function getVolunteerApplications(userId: string): VolunteerApplication[] {
   const threads = getThreadsForVolunteer(userId);
-  const roles = [...getAllVolunteerRoles(), ...getCreatedVolunteerRoles()];
+  const isProduction = process.env.NODE_ENV === "production";
+  // 本番では初期シード（モック）のボランティア募集を混ぜない
+  const roles = [
+    ...(isProduction ? [] : getAllVolunteerRoles()),
+    ...getCreatedVolunteerRoles(),
+  ];
 
   return threads.map((t) => {
     const role = roles.find((r) => r.id === t.volunteerRoleId);

@@ -13,7 +13,8 @@ export async function GET(
     return NextResponse.json({ error: "ID required" }, { status: 400 });
   }
 
-  const mockRole = getVolunteerRoleById(id);
+  const isProduction = process.env.NODE_ENV === "production";
+  const mockRole = isProduction ? null : getVolunteerRoleById(id);
   const createdRole = getCreatedVolunteerRoleById(id);
   const role = mockRole ?? createdRole;
 

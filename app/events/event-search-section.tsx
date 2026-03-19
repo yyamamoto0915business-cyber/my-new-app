@@ -14,6 +14,11 @@ type Props = {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onSearch: () => void;
+  /**
+   * full: 日付/地域/カテゴリ/キーワード全部を表示
+   * drawer: カテゴリ/キーワードだけを表示
+   */
+  variant?: "full" | "drawer";
 };
 
 const DATE_RANGE_OPTIONS: { value: DateRangeFilter; label: string }[] = [
@@ -35,6 +40,7 @@ export function EventSearchSection({
   searchQuery,
   onSearchChange,
   onSearch,
+  variant = "full",
 }: Props) {
   const toggleTag = (tagId: string) => {
     if (selectedTags.includes(tagId)) {
@@ -45,43 +51,35 @@ export function EventSearchSection({
   };
 
   return (
-    <section className="mt-12 border-t border-zinc-200 pt-10 dark:border-zinc-700">
-      <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-        イベント検索
-      </h2>
+    <section className="space-y-5">
+      {variant !== "drawer" && (
+        <>
+          <div>
+            <h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+              日付
+            </h3>
+            <select
+              value={dateRange}
+              onChange={(e) => onDateRangeChange(e.target.value as DateRangeFilter)}
+              className="mt-2 w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2.5 text-sm dark:bg-zinc-800 dark:text-zinc-100"
+            >
+              {DATE_RANGE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <div className="mt-6 space-y-6">
-        <div>
-          <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            日付範囲
-          </h3>
-          <select
-            value={dateRange}
-            onChange={(e) => onDateRangeChange(e.target.value as DateRangeFilter)}
-            className="mt-2 rounded border border-[var(--border)] bg-white px-4 py-2.5 text-sm dark:bg-zinc-800 dark:text-zinc-100"
-          >
-            {DATE_RANGE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            条件を指定して検索
-          </h3>
-          <div className="mt-3 space-y-4">
-            <div>
-              <label htmlFor="area-select" className="mb-2 block text-xs text-zinc-500 dark:text-zinc-400">
-                地域で絞り込み（都道府県）
-              </label>
+          <div>
+            <h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+              地域
+            </h3>
+            <div className="mt-2 space-y-3">
               <select
-                id="area-select"
                 value={selectedArea}
                 onChange={(e) => onAreaChange(e.target.value)}
-                className="w-full max-w-xs rounded border border-[var(--border)] px-4 py-2.5 text-sm dark:bg-zinc-800 dark:text-zinc-100"
+                className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2.5 text-sm dark:bg-zinc-800 dark:text-zinc-100"
               >
                 <option value="">全国</option>
                 {PREFECTURES.map((pref) => (
@@ -91,45 +89,58 @@ export function EventSearchSection({
                 ))}
               </select>
             </div>
-            <div>
-              <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
-                カテゴリ
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {EVENT_TAGS.map((tag) => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={() => toggleTag(tag.id)}
-                    className={`rounded px-3 py-1.5 text-sm ${
-                      selectedTags.includes(tag.id)
-                        ? "bg-[var(--accent)] text-white"
-                        : "border border-[var(--border)] bg-white text-zinc-700 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                    }`}
-                  >
-                    {tag.label}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <input
-              type="search"
-              placeholder="イベント名・主催者・場所で検索..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onSearch()}
-              className="flex-1 rounded border border-[var(--border)] px-4 py-2.5 text-sm dark:bg-zinc-800 dark:text-zinc-100"
-            />
+        </>
+      )}
+
+      <div>
+        <h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+          カテゴリ
+        </h3>
+        <div
+          className={`mt-2 -mx-4 flex gap-2 px-4 pb-1 ${
+            variant === "drawer"
+              ? "overflow-x-auto scrollbar-hide"
+              : "flex-wrap overflow-x-visible"
+          }`}
+        >
+          {EVENT_TAGS.map((tag) => (
             <button
+              key={tag.id}
               type="button"
-              onClick={onSearch}
-              className="rounded bg-[var(--accent)] px-6 py-2.5 text-sm font-medium text-white hover:opacity-90"
+              onClick={() => toggleTag(tag.id)}
+              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs ${
+                selectedTags.includes(tag.id)
+                  ? "bg-[var(--accent)] text-white"
+                  : "border border-[var(--border)] bg-white text-zinc-700 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              }`}
             >
-              検索する
+              {tag.label}
             </button>
-          </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+          キーワード
+        </h3>
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input
+            type="search"
+            placeholder="イベント名・主催者・場所で検索..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && onSearch()}
+            className="flex-1 rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm dark:bg-zinc-800 dark:text-zinc-100"
+          />
+          <button
+            type="button"
+            onClick={onSearch}
+            className="rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-white hover:opacity-90"
+          >
+            検索する
+          </button>
         </div>
       </div>
     </section>
