@@ -7,15 +7,15 @@
   "background_color": "#FFF8E7",
   "icons": [
     {
-      "src": "/brand/icon-favicon.svg",
+      "src": "/brand/favicon-32.png",
       "sizes": "32x32",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/brand/icon-app.svg",
+      "src": "/brand/icon-app.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
