@@ -23,9 +23,12 @@ export const metadata: Metadata = {
   description: APP_TAGLINE1,
   manifest: "/site.webmanifest",
   icons: {
-    icon: "/brand/favicon-32-v2.png",
+    icon: [
+      { url: "/brand/favicon-32-v3.png", sizes: "32x32" },
+      { url: "/brand/favicon-48-v3.png", sizes: "48x48" },
+    ],
     apple: "/brand/apple-touch-icon-v2.png",
-    shortcut: "/brand/favicon-32-v2.png",
+    shortcut: "/brand/favicon-32-v3.png",
   },
   openGraph: {
     title: `${APP_NAME} - ${APP_SUBTITLE}`,
