@@ -47,6 +47,7 @@ export function EventThumbnail({
   priority = false,
   fill = false,
 }: Props) {
+  const [hasError, setHasError] = useState(false);
   const filteredClass = filterNgClasses(className);
   const roundedClass =
     rounded === "xl" ? "rounded-xl" : rounded === "lg" ? "rounded-lg" : "";
@@ -71,7 +72,6 @@ export function EventThumbnail({
 
   const url = imageUrl.trim();
   const useNextImage = isAllowedHost(url);
-  const [hasError, setHasError] = useState(false);
 
   if (hasError) {
     return (

@@ -194,6 +194,7 @@ export default function NewEventPage() {
         });
         return;
       }
+      router.refresh();
       router.push("/organizer/events");
     } catch {
       setSubmitError("通信に失敗しました");

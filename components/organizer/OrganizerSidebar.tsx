@@ -40,8 +40,7 @@ export default function OrganizerSidebar() {
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-slate-200/80 md:bg-white">
       <div className="px-4 py-4">
-        <div className="text-sm font-semibold text-slate-800">主催者管理</div>
-        <div className="mt-1 text-xs text-slate-500">イベント運営メニュー</div>
+        <div className="text-sm font-semibold text-slate-800">イベント運営メニュー</div>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 pb-4" aria-label="主催者メニュー">

@@ -63,8 +63,11 @@ Supabase 標準のメールは届きにくいことがあるため、Resend の 
 
 ### 4.2 Supabase の Sender を変更
 
-- **Sender email** を認証済みドメインのアドレスに変更（例: `noreply@machiglyph.jp`）
-- その他の設定（Host, Port, Username, Password）は同じ
+1. [Supabase Dashboard](https://supabase.com/dashboard) → 対象プロジェクト → **Project Settings** → **Auth** → **SMTP Settings**（セクション 3 と同じ画面）
+2. **Sender email** を、Resend で **Verified** になっているドメインのメールアドレスに変更する（例: `noreply@machiglyph.jp`）。  
+   - ドメインに `machiglyph.jp` を追加した場合は `@machiglyph.jp` のアドレスにする（`www` だけ認証している場合はそのサブドメインに合わせる）
+3. **Host** `smtp.resend.com`、**Port** `465`、**Username** `resend`、**Password**（Resend の API キー）はセクション 3 のまま変更不要
+4. **Save** をクリック
 
 ---
 

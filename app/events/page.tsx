@@ -157,13 +157,12 @@ function EventsPageContent() {
   }, [view, userPos, start, end, priceFilter, childFriendlyOnly, prefecture, city, urlTags]);
 
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (p) => setUserPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => {},
-        { enableHighAccuracy: false }
-      );
-    }
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (p) => setUserPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: false }
+    );
   }, []);
 
   const filteredEvents = useMemo(() => {
@@ -200,13 +199,12 @@ function EventsPageContent() {
   }, []);
 
   const handleCenterToCurrentLocation = useCallback(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (p) => setUserPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => {},
-        { enableHighAccuracy: false }
-      );
-    }
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (p) => setUserPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: false }
+    );
   }, []);
 
   const handleSearchInBounds = useCallback(
@@ -562,15 +560,47 @@ function EventsPageContent() {
               </div>
             )}
 
-            <MapPageContainer
-              mapEvents={mapEvents}
-              mapLoading={mapLoading}
-              userPos={userPos}
-              availableOnly={availableOnly}
-              sortOrder={sortOrder}
-              onCenterToCurrentLocation={handleCenterToCurrentLocation}
-              onSearchInBounds={handleSearchInBounds}
-            />
+            {mapLoading ? (
+              <div
+                className="flex items-center justify-center rounded-2xl border border-zinc-200/60 bg-white/60 dark:border-zinc-700/60 dark:bg-zinc-800/60"
+                style={{ height: "60vh", minHeight: "60vh" }}
+              >
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">地図データを読み込み中...</p>
+              </div>
+            ) : mapEvents.length === 0 ? (
+              <div className="rounded-2xl border border-zinc-200 bg-white p-10 text-center dark:border-zinc-700 dark:bg-zinc-900">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  この条件に合うイベントはまだありません
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setView("list");
+                    setDateRange("all");
+                    setSelectedArea("");
+                    setAvailableOnly(false);
+                    setPriceFilter("all");
+                    setChildFriendlyOnly(false);
+                    setSearchQuery("");
+                    handleTagsChange([]);
+                    router.push("/events", { scroll: false });
+                  }}
+                  className="mt-4 rounded bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                >
+                  条件を緩める
+                </button>
+              </div>
+            ) : (
+              <MapPageContainer
+                mapEvents={mapEvents}
+                mapLoading={mapLoading}
+                userPos={userPos}
+                availableOnly={availableOnly}
+                sortOrder={sortOrder}
+                onCenterToCurrentLocation={handleCenterToCurrentLocation}
+                onSearchInBounds={handleSearchInBounds}
+              />
+            )}
           </div>
         )}
 

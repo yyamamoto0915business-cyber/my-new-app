@@ -50,8 +50,7 @@ export default function OrganizerMobileNav() {
           showCloseButton={true}
         >
           <div className="border-b border-slate-200/80 px-4 py-4">
-            <div className="text-sm font-semibold text-slate-800">主催者管理</div>
-            <div className="mt-1 text-xs text-slate-500">イベント運営メニュー</div>
+            <div className="text-sm font-semibold text-slate-800">イベント運営メニュー</div>
           </div>
 
           <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="主催者メニュー">

@@ -133,13 +133,24 @@ async function buildSupabaseDashboard(
   let pendingApplications = 0;
 
   const eventIds = eventsData.map((e) => e.id);
-  const { data: appliedParticipants } = eventIds.length > 0
-    ? await supabase
-        .from("event_participants")
-        .select("event_id")
-        .in("event_id", eventIds)
-        .eq("status", "applied")
-    : { data: [] };
+  const recruitmentIds = recruitmentsData.map((r) => r.id);
+
+  // イベント参加申請とボランティア応募を一括取得（N+1クエリを排除）
+  const [{ data: appliedParticipants }, { data: allRecruitmentApps }] = await Promise.all([
+    eventIds.length > 0
+      ? supabase
+          .from("event_participants")
+          .select("event_id")
+          .in("event_id", eventIds)
+          .eq("status", "applied")
+      : { data: [] as { event_id: string }[] },
+    recruitmentIds.length > 0
+      ? supabase
+          .from("recruitment_applications")
+          .select("id, status, recruitment_id")
+          .in("recruitment_id", recruitmentIds)
+      : { data: [] as { id: string; status: string; recruitment_id: string }[] },
+  ]);
 
   const appliedCountByEvent: Record<string, number> = {};
   for (const p of appliedParticipants ?? []) {
@@ -165,13 +176,17 @@ async function buildSupabaseDashboard(
 
   const pendingEventParticipants = Object.values(appliedCountByEvent).reduce((a, b) => a + b, 0);
 
-  for (const r of recruitmentsData) {
-    const { data: apps } = await supabase
-      .from("recruitment_applications")
-      .select("id, status")
-      .eq("recruitment_id", r.id);
+  // 一括取得済みのデータを recruitment_id でグループ化
+  const appsByRecruitment = new Map<string, { id: string; status: string }[]>();
+  for (const app of allRecruitmentApps ?? []) {
+    const existing = appsByRecruitment.get(app.recruitment_id) ?? [];
+    existing.push({ id: app.id, status: app.status });
+    appsByRecruitment.set(app.recruitment_id, existing);
+  }
 
-    const pending = (apps ?? []).filter((a) => a.status === "pending").length;
+  for (const r of recruitmentsData) {
+    const apps = appsByRecruitment.get(r.id) ?? [];
+    const pending = apps.filter((a) => a.status === "pending").length;
     pendingApplications += pending;
 
     if (pending > 0) {
@@ -198,17 +213,9 @@ async function buildSupabaseDashboard(
     }
   }
 
-  const recruitmentIds = recruitmentsData.map((r) => r.id);
-  const { data: allApps } = recruitmentIds.length > 0
-    ? await supabase
-        .from("recruitment_applications")
-        .select("recruitment_id")
-        .in("recruitment_id", recruitmentIds)
-    : { data: [] };
-
   const appCountByRecruitment: Record<string, number> = {};
-  for (const a of allApps ?? []) {
-    appCountByRecruitment[a.recruitment_id] = (appCountByRecruitment[a.recruitment_id] ?? 0) + 1;
+  for (const [recruitmentId, apps] of appsByRecruitment) {
+    appCountByRecruitment[recruitmentId] = apps.length;
   }
 
   const events: DashboardEvent[] = await Promise.all(
@@ -273,7 +280,7 @@ async function buildSupabaseDashboard(
 }
 
 /** GET: 主催者ダッシュボードデータ */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const user = await getApiUser();
   if (!user) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });

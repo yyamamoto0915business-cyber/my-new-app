@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AuthResultScreen, authResultButtonClass } from "@/components/auth/auth-result-screen";
+import { getSignupEmailRedirectTo } from "@/lib/site-url";
 
 function CheckEmailContent() {
   const searchParams = useSearchParams();
@@ -34,6 +35,9 @@ function CheckEmailContent() {
     const { error: resendError } = await supabase.auth.resend({
       type: "signup",
       email,
+      options: {
+        emailRedirectTo: getSignupEmailRedirectTo(),
+      },
     });
     setResendLoading(false);
     if (resendError) {

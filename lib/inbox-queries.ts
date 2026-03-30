@@ -92,38 +92,41 @@ export async function fetchInboxByQueries(
     (profiles ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
   );
 
-  // 5. 各会話の最終メッセージを取得（サブクエリ代わりに messages を conversation_id で取得してクライアントで集約）
-  const { data: allMessages } = await supabase
-    .from("messages")
-    .select("id, conversation_id, content, created_at, sender_id")
-    .in("conversation_id", convIds)
-    .order("created_at", { ascending: false });
+  // 5. 各会話の最終メッセージと未読数を並行取得（会話ごとに最小限のクエリ）
+  const messageResults = await Promise.all(
+    convIds.map(async (convId) => {
+      const lastReadAt = lastReadMap.get(convId);
+      const [lastMsgResult, unreadResult] = await Promise.all([
+        supabase
+          .from("messages")
+          .select("content, created_at")
+          .eq("conversation_id", convId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("conversation_id", convId)
+          .neq("sender_id", currentUserId)
+          .gt("created_at", lastReadAt ?? "1970-01-01T00:00:00.000Z"),
+      ]);
+      return {
+        convId,
+        lastMsg: lastMsgResult.data
+          ? { content: lastMsgResult.data.content, created_at: lastMsgResult.data.created_at }
+          : null,
+        unreadCount: unreadResult.count ?? 0,
+      };
+    })
+  );
 
-  const lastMsgMap = new Map<
-    string,
-    { content: string; created_at: string }
-  >();
-  const unreadMap = new Map<string, number>();
-
-  for (const m of allMessages ?? []) {
-    if (!lastMsgMap.has(m.conversation_id)) {
-      lastMsgMap.set(m.conversation_id, {
-        content: m.content,
-        created_at: m.created_at,
-      });
-    }
-    // 未読: 相手からのメッセージで、last_read_at より新しい
-    if (m.sender_id !== currentUserId) {
-      const lastRead = lastReadMap.get(m.conversation_id);
-      const isUnread = !lastRead || m.created_at > lastRead;
-      if (isUnread) {
-        unreadMap.set(
-          m.conversation_id,
-          (unreadMap.get(m.conversation_id) ?? 0) + 1
-        );
-      }
-    }
-  }
+  const lastMsgMap = new Map(
+    messageResults.map((r) => [r.convId, r.lastMsg])
+  );
+  const unreadMap = new Map(
+    messageResults.map((r) => [r.convId, r.unreadCount])
+  );
 
   // 6. 結果を組み立て（last_message_at 降順）
   const items: InboxItem[] = (convs as ConvRow[]).map((c) => {

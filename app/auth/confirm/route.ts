@@ -4,8 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 
 /**
  * メール確認リンクの受け口（SSR フロー）。
- * メールテンプレートの {{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&type=email から遷移する。
+ *
+ * Supabase メールテンプレ例（emailRedirectTo はオリジンのみ）:
+ * `{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup`
+ * または `type=email`（プロジェクトのテンプレに合わせる）
+ *
  * token_hash をサーバー側で verifyOtp し、セッションを確立してから完了/エラー画面へリダイレクトする。
+ * Confirm signup ではリンクの type が `signup` と `email` のどちらかになることがあるため、
+ * 失敗時はもう一方でも一度試す。
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -44,10 +50,22 @@ export async function GET(request: NextRequest) {
   }).catch(() => {});
   // #endregion agent log
 
-  const { error } = await supabase.auth.verifyOtp({
-    token_hash,
-    type: type as EmailOtpType,
-  });
+  let error = (
+    await supabase.auth.verifyOtp({
+      token_hash,
+      type: type as EmailOtpType,
+    })
+  ).error;
+
+  if (error && (type === "email" || type === "signup")) {
+    const alternate: EmailOtpType = type === "email" ? "signup" : "email";
+    error = (
+      await supabase.auth.verifyOtp({
+        token_hash,
+        type: alternate,
+      })
+    ).error;
+  }
 
   // #region agent log
   fetch("http://127.0.0.1:7242/ingest/089f2869-4b0b-45dc-b221-b1a3b9e2669a", {
@@ -62,7 +80,11 @@ export async function GET(request: NextRequest) {
       hypothesisId: "H1-H3",
       location: "app/auth/confirm/route.ts:after-verifyOtp",
       message: "Result of verifyOtp in confirm route",
-      data: { hasError: !!error, errorMessage: error?.message, errorStatus: (error as any)?.status },
+      data: {
+        hasError: !!error,
+        errorMessage: error?.message,
+        errorStatus: (error as { status?: number } | undefined)?.status,
+      },
       timestamp: Date.now(),
     }),
   }).catch(() => {});

@@ -24,23 +24,33 @@ export function EventImageInput({ url, onChangeUrl, alt }: Props) {
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     e.target.value = "";
-    if (!file || !file.type.startsWith("image/")) return;
+    if (!file) return;
+
+    // MIMEタイプの確認
+    if (!["image/jpeg", "image/png", "image/gif", "image/webp"].includes(file.type)) {
+      setError("対応していないファイル形式です（JPEG・PNG・GIF・WebP のみ）");
+      return;
+    }
 
     const supabase = createClient();
     if (!supabase) {
-      setError("画像ストレージが利用できませんでした");
+      setError("画像ストレージが利用できません");
       return;
     }
 
     setUploading(true);
     setError(null);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const id =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const path = `event-images/${id}.${ext}`;
+      // ユーザーIDを取得してパスに含める（RLSポリシーが uid フォルダを要求）
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id ?? "anonymous";
+
+      const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase();
+      const safeName = file.name
+        .replace(/\.[^.]+$/, "")
+        .replace(/[^a-zA-Z0-9_-]/g, "_")
+        .slice(0, 40);
+      const path = `${userId}/${Date.now()}-${safeName}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("event-images")
@@ -52,8 +62,11 @@ export function EventImageInput({ url, onChangeUrl, alt }: Props) {
         .from("event-images")
         .getPublicUrl(path);
 
+      if (!urlData?.publicUrl) throw new Error("公開URLの取得に失敗しました");
+
       onChangeUrl(urlData.publicUrl);
     } catch (err) {
+      console.error("EventImageInput upload error:", err);
       setError(
         err instanceof Error
           ? err.message

@@ -1,12 +1,15 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getSignupEmailRedirectTo } from "@/lib/site-url";
 
 /**
  * 新規登録（メール確認フロー）。
- * emailRedirectTo にオリジンのみを渡し、Supabase のメールテンプレートで
- * {{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&type=email となるようにする。
- * 本番では NEXT_PUBLIC_SITE_URL を使い、localhost や誤った host に飛ばないようにする。
+ *
+ * emailRedirectTo はオリジンのみ（getSignupEmailRedirectTo）。メールテンプレで
+ * {{ .RedirectTo }}/auth/confirm?token_hash=...&type=signup 等と組み合わせる。
+ *
+ * Supabase「Site URL」は本番で https://www.machiglyph.jp を推奨。
  */
 export async function signUpWithEmail(formData: {
   email: string;
@@ -22,8 +25,7 @@ export async function signUpWithEmail(formData: {
   const password = String(formData.password || "");
   const displayName = String(formData.displayName || "").trim();
 
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "http://localhost:3000";
+  const emailRedirectTo = getSignupEmailRedirectTo();
 
   // #region agent log
   fetch("http://127.0.0.1:7242/ingest/089f2869-4b0b-45dc-b221-b1a3b9e2669a", {
@@ -40,7 +42,7 @@ export async function signUpWithEmail(formData: {
       message: "About to call supabase.auth.signUp",
       data: {
         hasSupabase: !!supabase,
-        origin,
+        emailRedirectTo,
         emailLength: email.length,
       },
       timestamp: Date.now(),
@@ -52,7 +54,7 @@ export async function signUpWithEmail(formData: {
     email,
     password,
     options: {
-      emailRedirectTo: origin,
+      emailRedirectTo,
       data: {
         display_name: displayName || undefined,
         name: displayName || email.split("@")[0] || "User",

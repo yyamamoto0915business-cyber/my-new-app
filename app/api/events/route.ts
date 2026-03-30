@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   result = filterEventsByTags(result, tags);
   return NextResponse.json(result, {
     headers: {
-      "Cache-Control": "no-store, max-age=0",
+      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
     },
   });
 }
@@ -150,20 +150,32 @@ export async function POST(request: NextRequest) {
           : undefined,
     };
 
-    let event;
+    const isProduction = process.env.NODE_ENV === "production";
+
     if (supabase) {
+      // supabase 利用可能な環境では必ずDBに保存する
       const user = await getApiUser();
-      const organizerId = user ? await getOrganizerIdByProfileId(supabase, user.id) : null;
-      if (organizerId) {
-        event = await createEvent(supabase, organizerId, formData);
+      if (!user) {
+        return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
       }
-    }
-    if (!event) {
-      event = addCreatedEvent(formData);
-      setOrganizerForCreatedEvent(event.id);
-      addDefaultVolunteerRoleForEvent(event);
+      const organizerId = await getOrganizerIdByProfileId(supabase, user.id);
+      if (!organizerId) {
+        return NextResponse.json(
+          { error: "主催者登録が必要です。主催者ページから主催者登録を行ってから再度お試しください。" },
+          { status: 403 }
+        );
+      }
+      const event = await createEvent(supabase, organizerId, formData);
+      return NextResponse.json(event, { status: 201 });
     }
 
+    // supabase 未設定: 本番環境ではエラー、開発環境のみフォールバック
+    if (isProduction) {
+      return NextResponse.json({ error: "データベースに接続できません" }, { status: 503 });
+    }
+    const event = addCreatedEvent(formData);
+    setOrganizerForCreatedEvent(event.id);
+    addDefaultVolunteerRoleForEvent(event);
     return NextResponse.json(event, { status: 201 });
   } catch {
     return NextResponse.json(
