@@ -13,25 +13,55 @@ ON CONFLICT (id) DO UPDATE SET
   allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 -- RLS: 認証ユーザーは自分のフォルダ（uid）にのみアップロード可能
-CREATE POLICY IF NOT EXISTS "event_images_upload_own"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (
-  bucket_id = 'event-images'
-  AND (storage.foldername(name))[1] = auth.uid()::text
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'event_images_upload_own'
+  ) THEN
+    CREATE POLICY "event_images_upload_own"
+    ON storage.objects FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      bucket_id = 'event-images'
+      AND (storage.foldername(name))[1] = (auth.jwt()->>'sub')
+    );
+  END IF;
+END $$;
 
 -- RLS: 公開バケットなので誰でも参照可能
-CREATE POLICY IF NOT EXISTS "event_images_select_public"
-ON storage.objects FOR SELECT
-TO public
-USING (bucket_id = 'event-images');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'event_images_select_public'
+  ) THEN
+    CREATE POLICY "event_images_select_public"
+    ON storage.objects FOR SELECT
+    TO public
+    USING (bucket_id = 'event-images');
+  END IF;
+END $$;
 
 -- RLS: 自分のファイルのみ削除可能
-CREATE POLICY IF NOT EXISTS "event_images_delete_own"
-ON storage.objects FOR DELETE
-TO authenticated
-USING (
-  bucket_id = 'event-images'
-  AND owner_id = auth.uid()
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'event_images_delete_own'
+  ) THEN
+    CREATE POLICY "event_images_delete_own"
+    ON storage.objects FOR DELETE
+    TO authenticated
+    USING (
+      bucket_id = 'event-images'
+      AND owner_id = (auth.jwt()->>'sub')
+    );
+  END IF;
+END $$;

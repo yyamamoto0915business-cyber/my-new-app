@@ -52,6 +52,7 @@ export function AdminOrganizerActions({
           };
       const res = await fetch(url, {
         method: "POST",
+        credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });

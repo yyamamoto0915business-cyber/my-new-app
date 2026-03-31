@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Organizer } from "@/lib/db/types";
 import { resolveEffectivePlan } from "@/lib/admin-organizer-plan";
 import { OrganizersTable, type OrganizerRow } from "./OrganizersTable";
 
 export default async function AdminOrganizersPage() {
-  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+  const supabase = adminSupabase ?? (await createClient());
   if (!supabase) {
     return (
       <div className="space-y-4">
@@ -16,7 +18,7 @@ export default async function AdminOrganizersPage() {
     );
   }
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("organizers")
     .select(
       `
@@ -37,8 +39,39 @@ export default async function AdminOrganizersPage() {
     )
     .order("created_at", { ascending: true });
 
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">主催者一覧</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            主催者情報の取得に失敗しました。
+          </p>
+        </div>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+          <div className="font-semibold">取得エラー</div>
+          <div className="mt-1 text-xs text-red-800">
+            {error.message ?? "Unknown error"}
+          </div>
+          {!adminSupabase && (
+            <div className="mt-2 text-xs text-red-800">
+              管理画面では通常、Service Role（`SUPABASE_SERVICE_ROLE_KEY`）が必要です。
+              設定されていない場合、RLS により一覧が取得できないことがあります。
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const isUuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    );
+
   const rows: OrganizerRow[] =
-    (data ?? []).map((row: any) => {
+    (data ?? [])
+      .map((row: any) => {
       const organizer = row as unknown as Organizer & {
         manual_grant_plan?: string | null;
         manual_grant_reason?: string | null;
@@ -58,7 +91,8 @@ export default async function AdminOrganizersPage() {
         eventCount: organizer.events?.length ?? 0,
         updatedAt: organizer.updated_at ?? null,
       };
-    }) ?? [];
+      })
+      .filter((r) => typeof r.id === "string" && isUuid(r.id)) ?? [];
 
   return <OrganizersTable organizers={rows} />;
 }

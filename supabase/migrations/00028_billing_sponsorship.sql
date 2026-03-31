@@ -53,9 +53,19 @@ CREATE INDEX IF NOT EXISTS idx_sponsorships_organizer ON public.sponsorships(org
 CREATE INDEX IF NOT EXISTS idx_sponsorships_status ON public.sponsorships(status);
 
 ALTER TABLE public.sponsorships ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "sponsorships_select_organizer" ON public.sponsorships FOR SELECT USING (
-  organizer_id IN (SELECT id FROM public.organizers WHERE profile_id = auth.uid())
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'sponsorships'
+      AND policyname = 'sponsorships_select_organizer'
+  ) THEN
+    CREATE POLICY "sponsorships_select_organizer" ON public.sponsorships FOR SELECT USING (
+      organizer_id IN (SELECT id FROM public.organizers WHERE profile_id = auth.uid())
+    );
+  END IF;
+END $$;
 
 -- Founder30: 先着30団体に月3本公開枠（1年間）を付与。競合対策で advisory lock 使用
 CREATE OR REPLACE FUNCTION public.maybe_grant_founder30(p_organizer_id UUID)

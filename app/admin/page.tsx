@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Organizer } from "@/lib/db/types";
 import { resolveEffectivePlan } from "@/lib/admin-organizer-plan";
 
@@ -73,7 +74,8 @@ function LogRow({ log }: { log: AdminLogRow }) {
 }
 
 export default async function AdminDashboardPage() {
-  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+  const supabase = adminSupabase ?? (await createClient());
   if (!supabase) {
     return (
       <div className="space-y-6">

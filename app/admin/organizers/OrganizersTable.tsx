@@ -43,6 +43,10 @@ function Badge({
 export function OrganizersTable({ organizers }: { organizers: OrganizerRow[] }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterTab>("all");
+  const isUuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -171,6 +175,8 @@ export function OrganizersTable({ organizers }: { organizers: OrganizerRow[] }) 
             </thead>
             <tbody>
               {filtered.map((o) => {
+                const canOpenDetail =
+                  typeof o.id === "string" && o.id.length > 0 && isUuid(o.id);
                 const planTone =
                   o.currentPlan === "free" ? "neutral" : "primary";
                 const now = new Date();
@@ -262,12 +268,18 @@ export function OrganizersTable({ organizers }: { organizers: OrganizerRow[] }) 
                         : "-"}
                     </td>
                     <td className="px-3 py-2 align-top text-right">
-                      <Link
-                        href={`/admin/organizers/${o.id}`}
-                        className="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white hover:bg-slate-800"
-                      >
-                        詳細
-                      </Link>
+                      {canOpenDetail ? (
+                        <Link
+                          href={`/admin/organizers/${o.id}`}
+                          className="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white hover:bg-slate-800"
+                        >
+                          詳細
+                        </Link>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">
+                          -
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );

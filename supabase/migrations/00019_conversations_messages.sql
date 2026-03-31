@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.conversations (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX conversations_unique_key ON public.conversations (
+CREATE UNIQUE INDEX IF NOT EXISTS conversations_unique_key ON public.conversations (
   COALESCE(event_id, '00000000-0000-0000-0000-000000000000'::uuid),
   kind,
   organizer_id,
@@ -36,68 +36,138 @@ CREATE TABLE IF NOT EXISTS public.messages (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX messages_conversation_id_created_at ON public.messages (conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS messages_conversation_id_created_at ON public.messages (conversation_id, created_at);
 
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.conversation_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
 -- RLS: 会話メンバーのみアクセス可能
--- conversations: メンバーのみ SELECT
-CREATE POLICY "conversations_select_member" ON public.conversations FOR SELECT USING (
-  id IN (
-    SELECT conversation_id FROM public.conversation_members WHERE user_id = auth.uid()
-  )
-);
+-- conversations: メンバーのみ SELECT（冪等化）
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'conversations'
+      AND policyname = 'conversations_select_member'
+  ) THEN
+    CREATE POLICY "conversations_select_member" ON public.conversations FOR SELECT USING (
+      id IN (
+        SELECT conversation_id FROM public.conversation_members WHERE user_id = auth.uid()
+      )
+    );
+  END IF;
+END $$;
 
 -- conversations: INSERT は組織者が作成時のみ（upsert API 経由で service role を使う想定、または INSERT policy）
 -- アプリでは API 経由で upsert するため、RLS の INSERT は許可しない（service role または RPC で実行）
--- ここでは「自分がメンバーになる会話」のみ INSERT 許可（conversation_members 経由でメンバーになる）
-CREATE POLICY "conversations_insert_member" ON public.conversations FOR INSERT WITH CHECK (
-  -- organizer の profile_id か other_user_id のどちらかが auth.uid() であること
-  (
-    organizer_id IN (SELECT id FROM public.organizers WHERE profile_id = auth.uid())
-    OR other_user_id = auth.uid()
-  )
-);
+-- ここでは「自分がメンバーになる会話」のみ INSERT 許可（conversation_members 経由でメンバーになる）（冪等化）
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'conversations'
+      AND policyname = 'conversations_insert_member'
+  ) THEN
+    CREATE POLICY "conversations_insert_member" ON public.conversations FOR INSERT WITH CHECK (
+      -- organizer の profile_id か other_user_id のどちらかが auth.uid() であること
+      (
+        organizer_id IN (SELECT id FROM public.organizers WHERE profile_id = auth.uid())
+        OR other_user_id = auth.uid()
+      )
+    );
+  END IF;
+END $$;
 
--- conversation_members: メンバーのみ SELECT、自分の行のみ UPDATE
-CREATE POLICY "conversation_members_select_member" ON public.conversation_members FOR SELECT USING (
-  conversation_id IN (
-    SELECT id FROM public.conversations
-    WHERE organizer_id IN (SELECT id FROM public.organizers WHERE profile_id = auth.uid())
-    OR other_user_id = auth.uid()
-  )
-);
+-- conversation_members: メンバーのみ SELECT、自分の行のみ UPDATE（冪等化）
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'conversation_members'
+      AND policyname = 'conversation_members_select_member'
+  ) THEN
+    CREATE POLICY "conversation_members_select_member" ON public.conversation_members FOR SELECT USING (
+      conversation_id IN (
+        SELECT id FROM public.conversations
+        WHERE organizer_id IN (SELECT id FROM public.organizers WHERE profile_id = auth.uid())
+        OR other_user_id = auth.uid()
+      )
+    );
+  END IF;
+END $$;
 
-CREATE POLICY "conversation_members_insert_member" ON public.conversation_members FOR INSERT WITH CHECK (
-  user_id = auth.uid()
-  AND conversation_id IN (
-    SELECT id FROM public.conversations
-    WHERE organizer_id IN (SELECT id FROM public.organizers WHERE profile_id = auth.uid())
-    OR other_user_id = auth.uid()
-  )
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'conversation_members'
+      AND policyname = 'conversation_members_insert_member'
+  ) THEN
+    CREATE POLICY "conversation_members_insert_member" ON public.conversation_members FOR INSERT WITH CHECK (
+      user_id = auth.uid()
+      AND conversation_id IN (
+        SELECT id FROM public.conversations
+        WHERE organizer_id IN (SELECT id FROM public.organizers WHERE profile_id = auth.uid())
+        OR other_user_id = auth.uid()
+      )
+    );
+  END IF;
+END $$;
 
-CREATE POLICY "conversation_members_update_own" ON public.conversation_members FOR UPDATE USING (
-  user_id = auth.uid()
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'conversation_members'
+      AND policyname = 'conversation_members_update_own'
+  ) THEN
+    CREATE POLICY "conversation_members_update_own" ON public.conversation_members FOR UPDATE USING (
+      user_id = auth.uid()
+    );
+  END IF;
+END $$;
 
--- messages: 会話メンバーのみ SELECT、本人のみ INSERT
-CREATE POLICY "messages_select_member" ON public.messages FOR SELECT USING (
-  conversation_id IN (
-    SELECT cm.conversation_id FROM public.conversation_members cm
-    WHERE cm.user_id = auth.uid()
-  )
-);
+-- messages: 会話メンバーのみ SELECT、本人のみ INSERT（冪等化）
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'messages'
+      AND policyname = 'messages_select_member'
+  ) THEN
+    CREATE POLICY "messages_select_member" ON public.messages FOR SELECT USING (
+      conversation_id IN (
+        SELECT cm.conversation_id FROM public.conversation_members cm
+        WHERE cm.user_id = auth.uid()
+      )
+    );
+  END IF;
+END $$;
 
-CREATE POLICY "messages_insert_own" ON public.messages FOR INSERT WITH CHECK (
-  auth.uid() = sender_id
-  AND conversation_id IN (
-    SELECT cm.conversation_id FROM public.conversation_members cm
-    WHERE cm.user_id = auth.uid()
-  )
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'messages'
+      AND policyname = 'messages_insert_own'
+  ) THEN
+    CREATE POLICY "messages_insert_own" ON public.messages FOR INSERT WITH CHECK (
+      auth.uid() = sender_id
+      AND conversation_id IN (
+        SELECT cm.conversation_id FROM public.conversation_members cm
+        WHERE cm.user_id = auth.uid()
+      )
+    );
+  END IF;
+END $$;
 
 -- Realtime: messages の INSERT を購読可能に
 DO $$

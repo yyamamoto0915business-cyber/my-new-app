@@ -18,7 +18,18 @@ CREATE INDEX IF NOT EXISTS idx_support_payments_user ON public.support_payments(
 CREATE INDEX IF NOT EXISTS idx_support_payments_status ON public.support_payments(status);
 
 ALTER TABLE public.support_payments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "support_payments_select_own" ON public.support_payments FOR SELECT USING (user_id = auth.uid());
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'support_payments'
+      AND policyname = 'support_payments_select_own'
+  ) THEN
+    CREATE POLICY "support_payments_select_own" ON public.support_payments
+      FOR SELECT USING (user_id = auth.uid());
+  END IF;
+END $$;
 
 -- event_orders: 有料イベント参加費決済
 CREATE TABLE IF NOT EXISTS public.event_orders (
@@ -37,10 +48,34 @@ CREATE INDEX IF NOT EXISTS idx_event_orders_user ON public.event_orders(user_id)
 CREATE INDEX IF NOT EXISTS idx_event_orders_status ON public.event_orders(status);
 
 ALTER TABLE public.event_orders ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "event_orders_select_participant" ON public.event_orders FOR SELECT USING (user_id = auth.uid());
-CREATE POLICY "event_orders_select_organizer" ON public.event_orders FOR SELECT USING (
-  event_id IN (SELECT id FROM public.events WHERE organizer_id IN (SELECT id FROM public.organizers WHERE profile_id = auth.uid()))
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'event_orders'
+      AND policyname = 'event_orders_select_participant'
+  ) THEN
+    CREATE POLICY "event_orders_select_participant" ON public.event_orders
+      FOR SELECT USING (user_id = auth.uid());
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'event_orders'
+      AND policyname = 'event_orders_select_organizer'
+  ) THEN
+    CREATE POLICY "event_orders_select_organizer" ON public.event_orders FOR SELECT USING (
+      event_id IN (
+        SELECT id FROM public.events
+        WHERE organizer_id IN (
+          SELECT id FROM public.organizers WHERE profile_id = auth.uid()
+        )
+      )
+    );
+  END IF;
+END $$;
 
 -- organizer_subscriptions: 主催者月額プラン
 CREATE TABLE IF NOT EXISTS public.organizer_subscriptions (
@@ -62,9 +97,20 @@ CREATE INDEX IF NOT EXISTS idx_organizer_subscriptions_organizer ON public.organ
 CREATE INDEX IF NOT EXISTS idx_organizer_subscriptions_status ON public.organizer_subscriptions(status);
 
 ALTER TABLE public.organizer_subscriptions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "organizer_subscriptions_select_own" ON public.organizer_subscriptions FOR SELECT USING (
-  user_id = auth.uid() OR organizer_id IN (SELECT id FROM public.organizers WHERE profile_id = auth.uid())
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'organizer_subscriptions'
+      AND policyname = 'organizer_subscriptions_select_own'
+  ) THEN
+    CREATE POLICY "organizer_subscriptions_select_own" ON public.organizer_subscriptions FOR SELECT USING (
+      user_id = auth.uid()
+      OR organizer_id IN (SELECT id FROM public.organizers WHERE profile_id = auth.uid())
+    );
+  END IF;
+END $$;
 
 -- events: 有料イベント用 stripe_price_id（オプション、設定時はこれを優先）
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS stripe_price_id TEXT;

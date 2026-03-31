@@ -31,10 +31,36 @@ CREATE INDEX IF NOT EXISTS idx_event_reactions_profile ON public.event_reactions
 
 ALTER TABLE public.event_reactions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "event_reactions_select" ON public.event_reactions FOR SELECT USING (
-  true
-);
-CREATE POLICY "event_reactions_insert_own" ON public.event_reactions FOR INSERT
-  WITH CHECK (profile_id = auth.uid());
-CREATE POLICY "event_reactions_delete_own" ON public.event_reactions FOR DELETE
-  USING (profile_id = auth.uid());
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'event_reactions'
+      AND policyname = 'event_reactions_select'
+  ) THEN
+    CREATE POLICY "event_reactions_select" ON public.event_reactions FOR SELECT USING (
+      true
+    );
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'event_reactions'
+      AND policyname = 'event_reactions_insert_own'
+  ) THEN
+    CREATE POLICY "event_reactions_insert_own" ON public.event_reactions FOR INSERT
+      WITH CHECK (profile_id = auth.uid());
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'event_reactions'
+      AND policyname = 'event_reactions_delete_own'
+  ) THEN
+    CREATE POLICY "event_reactions_delete_own" ON public.event_reactions FOR DELETE
+      USING (profile_id = auth.uid());
+  END IF;
+END $$;

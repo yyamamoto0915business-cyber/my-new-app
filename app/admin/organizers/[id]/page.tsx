@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Organizer } from "@/lib/db/types";
 import { resolveEffectivePlan } from "@/lib/admin-organizer-plan";
 import { AdminOrganizerActions } from "@/components/admin/AdminOrganizerActions";
+import { redirect } from "next/navigation";
 
 type OrganizerDetail = {
   id: string;
@@ -33,9 +35,10 @@ type LogRow = {
 export default async function AdminOrganizerDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+  const supabase = adminSupabase ?? (await createClient());
   if (!supabase) {
     return (
       <div className="space-y-4">
@@ -47,55 +50,88 @@ export default async function AdminOrganizerDetailPage({
     );
   }
 
-  const organizerId = params.id;
+  const { id: organizerId } = await params;
+  const isUuid =
+    typeof organizerId === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      organizerId
+    );
+  if (!isUuid) {
+    redirect("/admin/organizers");
+  }
 
-  const [{ data: organizerRow }, { data: events }, { data: logsRaw }] =
-    await Promise.all([
-      supabase
-        .from("organizers")
-        .select(
-          `
-          id,
-          profile_id,
-          organization_name,
-          contact_email,
-          contact_phone,
-          plan,
-          manual_grant_active,
-          manual_grant_plan,
-          manual_grant_expires_at,
-          manual_grant_reason,
-          billing_source,
-          subscription_status,
-          current_period_end,
-          created_at,
-          updated_at,
-          profile:profile_id ( created_at, role )
+  const [organizerRes, eventsRes, logsRes] = await Promise.all([
+    supabase
+      .from("organizers")
+      .select(
         `
-        )
-        .eq("id", organizerId)
-        .single(),
-      supabase
-        .from("events")
-        .select("id, status")
-        .eq("organizer_id", organizerId),
-      supabase
-        .from("admin_logs")
-        .select(
-          `
-          id,
-          created_at,
-          action_type,
-          reason,
-          before_value,
-          after_value,
-          admin:admin_user_id ( display_name, email )
+        id,
+        profile_id,
+        organization_name,
+        contact_email,
+        contact_phone,
+        plan,
+        manual_grant_active,
+        manual_grant_plan,
+        manual_grant_expires_at,
+        manual_grant_reason,
+        billing_source,
+        subscription_status,
+        current_period_end,
+        created_at,
+        updated_at,
+        profile:profile_id ( created_at, role )
+      `
+      )
+      .eq("id", organizerId)
+      .single(),
+    supabase.from("events").select("id, status").eq("organizer_id", organizerId),
+    supabase
+      .from("admin_logs")
+      .select(
         `
-        )
-        .eq("target_organizer_id", organizerId)
-        .order("created_at", { ascending: false })
-        .limit(20),
-    ]);
+        id,
+        created_at,
+        action_type,
+        reason,
+        before_value,
+        after_value,
+        admin:admin_user_id ( display_name, email )
+      `
+      )
+      .eq("target_organizer_id", organizerId)
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
+
+  if (organizerRes.error) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">主催者詳細</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            主催者情報の取得に失敗しました。
+          </p>
+        </div>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+          <div className="font-semibold">取得エラー</div>
+          <div className="mt-1 text-xs text-red-800">
+            {organizerRes.error.message ?? "Unknown error"}
+          </div>
+          {!adminSupabase && (
+            <div className="mt-2 text-xs text-red-800">
+              管理画面では通常、Service Role（`SUPABASE_SERVICE_ROLE_KEY`）が必要です。
+              設定されていない場合、RLS により詳細が取得できないことがあります。
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const organizerRow = organizerRes.data;
+  const events = eventsRes.data;
+  const logsRaw = logsRes.data;
 
   if (!organizerRow) {
     return (
