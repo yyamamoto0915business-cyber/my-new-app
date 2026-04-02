@@ -55,9 +55,13 @@ export async function POST(request: NextRequest) {
   const rawEventId = eventId;
   const safeEventId = rawEventId && isUuid(rawEventId) ? rawEventId : null;
 
-  let organizerId = body.organizerId ?? null;
-  if (!organizerId && safeEventId) {
+  // eventId があるときは必ず DB の events.organizer_id を正とする（クライアントの誤値・改ざんを防ぐ）
+  let organizerId: string | null = null;
+  if (safeEventId) {
     organizerId = await getOrganizerIdByEventId(supabase, safeEventId);
+  } else {
+    const fromBody = typeof body.organizerId === "string" ? body.organizerId.trim() : "";
+    organizerId = fromBody && isUuid(fromBody) ? fromBody : null;
   }
 
   // 既存挙動に合わせ、eventId が来ているのに organizerId が引けない場合は 404
@@ -76,21 +80,22 @@ export async function POST(request: NextRequest) {
 
   const eventIdForConversation = safeEventId;
 
-  // 呼び出し者は organizer(profile) または participant のどちらかであること
-  const { data: org } = await supabase
-    .from("organizers")
-    .select("profile_id")
-    .eq("id", organizerId)
-    .single();
-  const organizerProfileId = org?.profile_id ?? null;
-  if (
-    organizerProfileId !== user.id &&
-    participantUserId !== user.id
-  ) {
-    return NextResponse.json(
-      { error: "この会話を作成する権限がありません" },
-      { status: 403 }
-    );
+  // 参加者は他主催者の organizers 行を RLS で読めないため、profile_id で突合しない。
+  // 参加者本人 or 当該主催者本人のみ許可する。
+  const isParticipant = participantUserId === user.id;
+  if (!isParticipant) {
+    const { data: ownOrg } = await supabase
+      .from("organizers")
+      .select("id")
+      .eq("id", organizerId)
+      .eq("profile_id", user.id)
+      .maybeSingle();
+    if (!ownOrg) {
+      return NextResponse.json(
+        { error: "この会話を作成する権限がありません" },
+        { status: 403 }
+      );
+    }
   }
 
   try {

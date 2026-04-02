@@ -129,12 +129,17 @@ export async function getOrganizerIdByEventId(
   supabase: SupabaseClient,
   eventId: string
 ): Promise<string | null> {
-  const { data: ev } = await supabase
+  const { data: ev, error } = await supabase
     .from("events")
     .select("organizer_id")
     .eq("id", eventId)
-    .single();
-  return ev?.organizer_id ?? null;
+    .maybeSingle();
+  if (error) {
+    console.warn("[getOrganizerIdByEventId]", eventId, error.message);
+    return null;
+  }
+  const oid = ev?.organizer_id;
+  return typeof oid === "string" && oid.length > 0 ? oid : null;
 }
 
 export async function getOrganizerProfileId(
