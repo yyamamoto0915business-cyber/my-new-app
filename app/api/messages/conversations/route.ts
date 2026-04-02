@@ -4,6 +4,7 @@ import { getApiUser } from "@/lib/api-auth";
 import { createOrGetConversation } from "@/lib/db/messages";
 import { getOrganizerIdByEventId } from "@/lib/db/events";
 import { ensureProfileRowForUser } from "@/lib/ensure-profile";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function extractSupabaseErrorText(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -92,6 +93,8 @@ export async function POST(request: NextRequest) {
   }
 
   const eventIdForConversation = safeEventId;
+  const admin = createAdminClient();
+  const writer = admin ?? supabase;
 
   // 参加者は他主催者の organizers 行を RLS で読めないため、profile_id で突合しない。
   // 参加者本人 or 当該主催者本人のみ許可する。
@@ -119,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     if (!eventIdForConversation) {
       // 互換性: eventId が無いケースは既存の createOrGetConversation を利用
-      const conversationId = await createOrGetConversation(supabase, {
+      const conversationId = await createOrGetConversation(writer, {
         eventId: eventIdForConversation,
         kind,
         organizerId,
@@ -130,7 +133,7 @@ export async function POST(request: NextRequest) {
 
     // 1) existing を event_id + organizer_user_id + participant_user_id で検索
     // organizer_user_id は organizers.profile_id に対応するので organizerId を使って突合
-    const { data: existing, error: existingError } = await supabase
+    const { data: existing, error: existingError } = await writer
       .from("conversations")
       .select("id")
       .eq("event_id", eventIdForConversation)
@@ -143,7 +146,7 @@ export async function POST(request: NextRequest) {
     if (existing?.id) {
       // 既存が見つかっても、過去の失敗で conversation_members が欠けている可能性があるため
       // createOrGetConversation で members 登録も再試行する（会話自体は upsert なので新規作成されない）
-      const conversationId = await createOrGetConversation(supabase, {
+      const conversationId = await createOrGetConversation(writer, {
         eventId: eventIdForConversation,
         kind,
         organizerId,
@@ -153,7 +156,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2) 無ければ新規作成（membersも2人分登録）
-    const conversationId = await createOrGetConversation(supabase, {
+    const conversationId = await createOrGetConversation(writer, {
       eventId: eventIdForConversation,
       kind,
       organizerId,
