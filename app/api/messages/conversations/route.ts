@@ -3,6 +3,19 @@ import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { createOrGetConversation } from "@/lib/db/messages";
 import { getOrganizerIdByEventId } from "@/lib/db/events";
+import { ensureProfileRowForUser } from "@/lib/ensure-profile";
+
+function extractSupabaseErrorText(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === "object") {
+    const o = e as { message?: string; details?: string; hint?: string; code?: string };
+    const parts = [o.message, o.details, o.hint, o.code].filter(
+      (x): x is string => typeof x === "string" && x.length > 0
+    );
+    if (parts.length) return parts.join(" ");
+  }
+  return String(e);
+}
 
 /**
  * POST: 会話を作成/取得（event_id + organizer_user_id + participant_user_id で一意）
@@ -99,6 +112,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // other_user_id → profiles(id) の FK 用。profiles 欠損だと create_or_get_conversation が失敗する。
+    if (participantUserId === user.id) {
+      await ensureProfileRowForUser(supabase, user);
+    }
+
     if (!eventIdForConversation) {
       // 互換性: eventId が無いケースは既存の createOrGetConversation を利用
       const conversationId = await createOrGetConversation(supabase, {
@@ -146,9 +164,8 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     console.error("createOrGetConversation error:", e);
 
-    const message =
-      e instanceof Error ? e.message : (e as { message?: unknown })?.message;
-    const errorMessage = typeof message === "string" ? message : String(e);
+    const errorText = extractSupabaseErrorText(e);
+    const errorMessage = errorText.toLowerCase();
 
     if (/organizer not found/i.test(errorMessage)) {
       return NextResponse.json(
@@ -167,6 +184,22 @@ export async function POST(request: NextRequest) {
     if (/invalid input syntax for type uuid/i.test(errorMessage)) {
       return NextResponse.json(
         { error: "イベントIDの形式が不正です" },
+        { status: 400 }
+      );
+    }
+
+    if (
+      /foreign key|violates foreign key|23503/.test(errorMessage) ||
+      (e &&
+        typeof e === "object" &&
+        "code" in e &&
+        String((e as { code: string }).code) === "23503")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "プロフィールまたは主催者情報の参照に失敗しました。マイページを開いて保存してから、再度お試しください。",
+        },
         { status: 400 }
       );
     }
