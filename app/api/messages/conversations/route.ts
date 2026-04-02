@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { createOrGetConversation } from "@/lib/db/messages";
-import { getOrganizerIdByEventId, getOrganizerProfileId } from "@/lib/db/events";
+import { getOrganizerIdByEventId } from "@/lib/db/events";
 
 /**
  * POST: 会話を作成/取得（event_id + organizer_user_id + participant_user_id で一意）
@@ -46,29 +46,35 @@ export async function POST(request: NextRequest) {
   const kind = body.kind ?? "event_inquiry";
   // participant_user_id は常に current user
   const participantUserId = body.otherUserId ?? user.id;
-  // organizer_user_id は event の主催者 profile_id
-  const organizerUserIdFromEvent = eventId ? await getOrganizerProfileId(supabase, eventId) : null;
+  const isUuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    );
+
+  // Supabase の UUID カラムに無効な値を投げないため、イベントIDは UUID 形式なら採用する
+  const rawEventId = eventId;
+  const safeEventId = rawEventId && isUuid(rawEventId) ? rawEventId : null;
 
   let organizerId = body.organizerId ?? null;
-  if (!organizerId && eventId) {
-    organizerId = await getOrganizerIdByEventId(supabase, eventId);
+  if (!organizerId && safeEventId) {
+    organizerId = await getOrganizerIdByEventId(supabase, safeEventId);
   }
 
-  if (eventId) {
-    if (!organizerId || !organizerUserIdFromEvent) {
+  // 既存挙動に合わせ、eventId が来ているのに organizerId が引けない場合は 404
+  if (!organizerId) {
+    if (rawEventId) {
       return NextResponse.json(
         { error: "イベントまたは主催者が見つかりません" },
         { status: 404 }
       );
     }
-  }
-
-  if (!organizerId) {
     return NextResponse.json(
       { error: "organizerId が必要です（eventId がない場合）" },
       { status: 400 }
     );
   }
+
+  const eventIdForConversation = safeEventId;
 
   // 呼び出し者は organizer(profile) または participant のどちらかであること
   const { data: org } = await supabase
@@ -88,10 +94,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    if (!eventId) {
+    if (!eventIdForConversation) {
       // 互換性: eventId が無いケースは既存の createOrGetConversation を利用
       const conversationId = await createOrGetConversation(supabase, {
-        eventId,
+        eventId: eventIdForConversation,
         kind,
         organizerId,
         otherUserId: participantUserId,
@@ -104,7 +110,7 @@ export async function POST(request: NextRequest) {
     const { data: existing, error: existingError } = await supabase
       .from("conversations")
       .select("id")
-      .eq("event_id", eventId)
+      .eq("event_id", eventIdForConversation)
       .eq("kind", kind)
       .eq("organizer_id", organizerId)
       .eq("other_user_id", participantUserId)
@@ -115,7 +121,7 @@ export async function POST(request: NextRequest) {
       // 既存が見つかっても、過去の失敗で conversation_members が欠けている可能性があるため
       // createOrGetConversation で members 登録も再試行する（会話自体は upsert なので新規作成されない）
       const conversationId = await createOrGetConversation(supabase, {
-        eventId,
+        eventId: eventIdForConversation,
         kind,
         organizerId,
         otherUserId: participantUserId,
@@ -125,7 +131,7 @@ export async function POST(request: NextRequest) {
 
     // 2) 無ければ新規作成（membersも2人分登録）
     const conversationId = await createOrGetConversation(supabase, {
-      eventId,
+      eventId: eventIdForConversation,
       kind,
       organizerId,
       otherUserId: participantUserId,
@@ -134,6 +140,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ conversationId });
   } catch (e) {
     console.error("createOrGetConversation error:", e);
+
+    const message =
+      e instanceof Error ? e.message : (e as { message?: unknown })?.message;
+    const errorMessage = typeof message === "string" ? message : String(e);
+
+    if (/organizer not found/i.test(errorMessage)) {
+      return NextResponse.json(
+        { error: "イベントまたは主催者が見つかりません" },
+        { status: 404 }
+      );
+    }
+
+    if (/not allowed to create this conversation/i.test(errorMessage)) {
+      return NextResponse.json(
+        { error: "この会話を作成する権限がありません" },
+        { status: 403 }
+      );
+    }
+
+    if (/invalid input syntax for type uuid/i.test(errorMessage)) {
+      return NextResponse.json(
+        { error: "イベントIDの形式が不正です" },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "会話の作成に失敗しました" },
       { status: 500 }

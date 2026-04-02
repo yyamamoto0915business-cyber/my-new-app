@@ -7,12 +7,18 @@ import { EventChatButton } from "./event-chat-button";
 type Props = {
   eventId: string;
   eventTitle: string;
+  organizerId?: string | null;
   organizerName?: string | null;
 };
 
 const CHIP_TEXTS = ["持ち物", "集合場所", "参加相談", "雨天時", "ボランティア"] as const;
 
-export function EventConsultationCard({ eventId, eventTitle, organizerName }: Props) {
+export function EventConsultationCard({
+  eventId,
+  eventTitle,
+  organizerId,
+  organizerName,
+}: Props) {
   const [openSignal, setOpenSignal] = useState(0);
   const [openIntentId, setOpenIntentId] = useState<string | undefined>(undefined);
 
@@ -69,6 +75,7 @@ export function EventConsultationCard({ eventId, eventTitle, organizerName }: Pr
         <EventChatButton
           eventId={eventId}
           eventTitle={eventTitle}
+          organizerId={organizerId ?? undefined}
           organizerName={organizerName ?? undefined}
           ctaLabel="主催者にメッセージを送る"
           ctaHelper="送信後はチャット形式でやり取りできます"

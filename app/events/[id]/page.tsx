@@ -69,6 +69,7 @@ export default async function EventDetailPage({ params }: Props) {
       <EventConsultationCard
         eventId={id}
         eventTitle={event.title}
+        organizerId={organizerId}
         organizerName={event.organizerName}
       />
 

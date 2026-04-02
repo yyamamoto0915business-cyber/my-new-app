@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 type EventChatButtonProps = {
   eventId: string;
   eventTitle?: string;
+  organizerId?: string | null;
   organizerName?: string;
   ctaLabel?: string;
   ctaHelper?: string;
@@ -35,6 +36,7 @@ const INTENTS: IntentOption[] = [
 export function EventChatButton({
   eventId,
   eventTitle,
+  organizerId,
   organizerName,
   ctaLabel = "このイベントについて相談する",
   ctaHelper = "参加前の質問や相談ができます。主催者へ直接確認できます。",
@@ -82,7 +84,11 @@ export function EventChatButton({
       const res = await fetch("/api/messages/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId, kind: "event_inquiry" }),
+        body: JSON.stringify({
+          eventId,
+          organizerId: organizerId ?? undefined,
+          kind: "event_inquiry",
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error ?? "会話の準備に失敗しました");
