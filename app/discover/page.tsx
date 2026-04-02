@@ -63,7 +63,7 @@ function DiscoverPageContent() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <header className="sticky top-12 z-50 border-b border-[var(--border)] bg-white sm:top-0 dark:bg-[var(--background)]">
+      <header className="sticky top-[var(--mg-mobile-top-header-h)] z-50 border-b border-[var(--border)] bg-white sm:top-0 dark:bg-[var(--background)]">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Breadcrumb

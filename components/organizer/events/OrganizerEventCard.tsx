@@ -4,10 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Archive,
   ChevronDown,
+  Copy,
   Edit3,
   Eye,
   FileText,
+  Globe,
+  GlobeLock,
+  Loader2,
   MoreHorizontal,
   Users,
 } from "lucide-react";
@@ -19,7 +24,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { DashboardEvent, BillingSummary } from "@/app/api/organizer/dashboard/route";
 
-const BILLING_HREF = "/organizer/settings/billing";
+const PLAN_HREF = "/organizer/settings/plan";
+const PAYOUTS_HREF = "/organizer/settings/payouts";
 
 const STATUS_LABELS: Record<string, string> = {
   public: "公開中",
@@ -78,22 +84,54 @@ export function OrganizerEventCard({
   const [publishError, setPublishError] = useState<string | null>(null);
   const [showBillingModal, setShowBillingModal] = useState(false);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
   const [publishAgreed, setPublishAgreed] = useState(false);
+  const [menuOpenDesktop, setMenuOpenDesktop] = useState(false);
+  const [menuOpenMobile, setMenuOpenMobile] = useState(false);
+  const [actionLoading, setActionLoading] = useState<null | "toggle" | "archive">(null);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [toast, setToast] = useState<null | { type: "success" | "error"; message: string }>(
+    null
+  );
 
   const nav = (href: string) => {
     router.push(href);
   };
+  const closeAllMenus = () => {
+    setMenuOpenDesktop(false);
+    setMenuOpenMobile(false);
+  };
+  const showToast = (type: "success" | "error", message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 2600);
+  };
 
   const mainRecruitmentId = event.recruitmentIds?.[0];
+  const hasRecruitment = (event.recruitmentIds?.length ?? 0) > 0;
   const recruitmentHref = mainRecruitmentId
     ? `/organizer/recruitments/${mainRecruitmentId}`
     : `/organizer/recruitments/new?eventId=${event.id}`;
   const chargesEnabled = billingSummary?.stripeAccountChargesEnabled ?? false;
   const billingTag = getBillingTag(event, chargesEnabled);
+  const isVisible = event.visibilityStatus === "published";
   const hasPaidContent =
     event.price > 0 || (event.sponsorTicketPrices?.length ?? 0) > 0;
+  const nextActions: Array<{ label: string; href: string }> = [];
+  if (hasPaidContent && !chargesEnabled) {
+    nextActions.push({ label: "売上受取を設定する", href: PAYOUTS_HREF });
+  }
+  if (!hasRecruitment) {
+    nextActions.push({
+      label: "スタッフ募集を作る",
+      href: `/organizer/recruitments/new?eventId=${event.id}`,
+    });
+  }
+  if (event.status === "draft") {
+    nextActions.push({ label: "公開設定を完了する", href: `/organizer/events/${event.id}` });
+  }
+  nextActions.push({ label: "ストーリーを書く", href: `/organizer/stories/new?eventId=${event.id}` });
 
-  const handlePublish = async () => {
+  const handlePublish = async (): Promise<boolean> => {
     setPublishError(null);
     setPublishLoading(true);
     try {
@@ -104,13 +142,72 @@ export function OrganizerEventCard({
       if (!res.ok) {
         if (res.status === 402) setShowBillingModal(true);
         else setPublishError(json.error ?? "公開に失敗しました");
-        return;
+        return false;
       }
       onRefresh?.();
+      return true;
     } catch {
       setPublishError("公開に失敗しました");
+      return false;
     } finally {
       setPublishLoading(false);
+    }
+  };
+
+  const patchStatus = async (status: "draft" | "published" | "archived") => {
+    const res = await fetch(`/api/events/${event.id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if (res.status === 402) setShowBillingModal(true);
+      throw new Error((json as { error?: string }).error ?? "更新に失敗しました");
+    }
+  };
+
+  const handleTogglePublish = async () => {
+    closeAllMenus();
+    if (isVisible) {
+      setShowUnpublishConfirm(true);
+      return;
+    }
+    setShowPublishConfirm(true);
+  };
+
+  const handleConfirmUnpublish = async () => {
+    setShowUnpublishConfirm(false);
+    setActionLoading("toggle");
+    setPublishError(null);
+    try {
+      await patchStatus("draft");
+      showToast("success", "非公開にしました");
+      onRefresh?.();
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "更新に失敗しました";
+      setPublishError(message);
+      showToast("error", message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleArchive = async () => {
+    closeAllMenus();
+    setActionLoading("archive");
+    setShowArchiveConfirm(false);
+    try {
+      await patchStatus("archived");
+      showToast("success", "アーカイブしました");
+      onRefresh?.();
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "アーカイブに失敗しました";
+      showToast("error", message);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -150,7 +247,7 @@ export function OrganizerEventCard({
           </div>
           {/* PC: メニューボタン */}
           <div className="hidden shrink-0 sm:block">
-            <DropdownMenu>
+            <DropdownMenu open={menuOpenDesktop} onOpenChange={setMenuOpenDesktop}>
               <DropdownMenuTrigger
                 render={
                   <button
@@ -162,71 +259,81 @@ export function OrganizerEventCard({
                   </button>
                 }
               />
-              <DropdownMenuContent align="end" className="w-56" sideOffset={8}>
+              <DropdownMenuContent align="end" className="z-[70] w-56" sideOffset={8}>
                 <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
+                    closeAllMenus();
                     nav(`/events/${event.id}`);
                   }}
-                  className="gap-2"
+                  className="min-h-10 cursor-pointer gap-2 px-3 py-2"
                 >
                   <Eye className="h-4 w-4" />
                   詳細を見る
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
+                    closeAllMenus();
                     nav(`/organizer/events/${event.id}`);
                   }}
-                  className="gap-2"
+                  className="min-h-10 cursor-pointer gap-2 px-3 py-2"
                 >
                   <Edit3 className="h-4 w-4" />
                   編集
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
+                    closeAllMenus();
                     nav(`/organizer/stories/new?eventId=${event.id}`);
                   }}
-                  className="gap-2"
+                  className="min-h-10 cursor-pointer gap-2 px-3 py-2"
                 >
                   <FileText className="h-4 w-4" />
                   ストーリーを書く
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
+                    closeAllMenus();
                     nav(`/organizer/events/${event.id}/sponsors`);
                   }}
-                  className="gap-2"
+                  className="min-h-10 cursor-pointer gap-2 px-3 py-2"
                 >
+                  <Users className="h-4 w-4" />
                   スポンサー管理
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    nav(`/organizer/events/${event.id}&section=status`);
-                  }}
-                  className="gap-2"
+                  onClick={handleTogglePublish}
+                  disabled={actionLoading === "toggle" || publishLoading}
+                  className="min-h-10 cursor-pointer gap-2 px-3 py-2"
                 >
-                  公開/非公開切替
+                  {actionLoading === "toggle" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isVisible ? (
+                    <GlobeLock className="h-4 w-4" />
+                  ) : (
+                    <Globe className="h-4 w-4" />
+                  )}
+                  {isVisible ? "公開中 → 非公開にする" : "非公開 → 公開する"}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
+                    closeAllMenus();
                     nav(`/organizer/events/new?copyFrom=${event.id}`);
                   }}
-                  className="gap-2"
+                  className="min-h-10 cursor-pointer gap-2 px-3 py-2"
                 >
+                  <Copy className="h-4 w-4" />
                   複製
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    nav(`/organizer/events/${event.id}&section=archive`);
+                  onClick={() => {
+                    closeAllMenus();
+                    setShowArchiveConfirm(true);
                   }}
-                  className="gap-2"
+                  disabled={actionLoading === "archive"}
+                  variant="destructive"
+                  className="min-h-10 cursor-pointer gap-2 px-3 py-2"
                 >
+                  <Archive className="h-4 w-4" />
                   アーカイブ
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -243,35 +350,75 @@ export function OrganizerEventCard({
 
         {/* 下段: 補助情報 + アクション */}
         <div className="mt-4 flex flex-col gap-4 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-            {event.capacity != null && (
-              <span>
-                参加 {event.participantCount ?? 0}/{event.capacity}
-              </span>
-            )}
-            {((event.plannedCount ?? 0) > 0 || (event.interestedCount ?? 0) > 0) && (
-              <span>
-                参加予定 {event.plannedCount ?? 0} ・ 関心あり {event.interestedCount ?? 0}
-              </span>
-            )}
-            <span>応募 {event.applicationCount ?? 0}</span>
-            {(event.unreadCount ?? 0) > 0 && (
-              <span className="font-medium text-amber-600">
-                未読 {event.unreadCount}
-              </span>
-            )}
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+              {event.capacity != null && (
+                <span>
+                  参加 {event.participantCount ?? 0}/{event.capacity}
+                </span>
+              )}
+              {((event.plannedCount ?? 0) > 0 || (event.interestedCount ?? 0) > 0) && (
+                <span>
+                  参加予定 {event.plannedCount ?? 0} ・ 関心あり {event.interestedCount ?? 0}
+                </span>
+              )}
+              <span>応募 {event.applicationCount ?? 0}</span>
+              {(event.unreadCount ?? 0) > 0 && (
+                <span className="font-medium text-amber-600">
+                  未読 {event.unreadCount}
+                </span>
+              )}
+            </div>
+            <p className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600">
+              <span className="font-medium text-slate-700">次にやること:</span>
+              {nextActions.slice(0, 3).map((action) => (
+                <Link
+                  key={`${event.id}-${action.label}`}
+                  href={action.href}
+                  className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 transition hover:border-slate-300 hover:bg-slate-100"
+                >
+                  {action.label}
+                </Link>
+              ))}
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {event.status === "draft" && (
+            {event.visibilityStatus === "draft" && (
               <button
                 type="button"
-                onClick={() => setShowPublishConfirm(true)}
+                onClick={() => {
+                  setShowPublishConfirm(true);
+                }}
                 disabled={publishLoading}
                 className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
               >
                 {publishLoading ? "公開中..." : "公開する"}
               </button>
+            )}
+            {isVisible && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUnpublishConfirm(true);
+                }}
+                disabled={actionLoading === "toggle" || publishLoading}
+                className="rounded-xl border border-slate-200/80 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                非公開にする
+              </button>
+            )}
+            {toast && (
+              <span
+                className={`rounded-lg border px-3 py-1 text-xs font-medium ${
+                  toast.type === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "border-red-200 bg-red-50 text-red-700"
+                }`}
+                role="status"
+              >
+                {toast.message}
+              </span>
             )}
             {publishError && (
               <span className="text-xs text-red-600">{publishError}</span>
@@ -281,13 +428,13 @@ export function OrganizerEventCard({
               className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:opacity-90"
             >
               <Users className="h-4 w-4" aria-hidden />
-              募集管理
+              スタッフ募集を管理
             </Link>
             <Link
               href={
                 hasPaidContent && chargesEnabled
                   ? `/organizer/events/${event.id}/sponsors`
-                  : BILLING_HREF
+                  : PAYOUTS_HREF
               }
               className={`inline-flex rounded-xl px-4 py-2 text-sm font-medium transition ${
                 !chargesEnabled
@@ -296,7 +443,7 @@ export function OrganizerEventCard({
               }`}
             >
               {!chargesEnabled
-                ? "決済設定"
+                ? "売上受取設定"
                 : hasPaidContent
                   ? "売上確認"
                   : "売上"}
@@ -314,7 +461,7 @@ export function OrganizerEventCard({
             </Link>
             {/* スマホ: メニューボタン */}
             <div className="sm:hidden">
-              <DropdownMenu>
+              <DropdownMenu open={menuOpenMobile} onOpenChange={setMenuOpenMobile}>
                 <DropdownMenuTrigger
                   render={
                     <button
@@ -326,71 +473,81 @@ export function OrganizerEventCard({
                     </button>
                   }
                 />
-                <DropdownMenuContent align="end" className="w-56" sideOffset={8}>
+                <DropdownMenuContent align="end" className="z-[70] w-56" sideOffset={8}>
                   <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault();
+                    onClick={() => {
+                      closeAllMenus();
                       nav(`/events/${event.id}`);
                     }}
-                    className="gap-2"
+                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
                   >
                     <Eye className="h-4 w-4" />
                     詳細を見る
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault();
+                    onClick={() => {
+                      closeAllMenus();
                       nav(`/organizer/events/${event.id}`);
                     }}
-                    className="gap-2"
+                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
                   >
                     <Edit3 className="h-4 w-4" />
                     編集
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault();
+                    onClick={() => {
+                      closeAllMenus();
                       nav(`/organizer/stories/new?eventId=${event.id}`);
                     }}
-                    className="gap-2"
+                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
                   >
                     <FileText className="h-4 w-4" />
                     ストーリーを書く
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault();
+                    onClick={() => {
+                      closeAllMenus();
                       nav(`/organizer/events/${event.id}/sponsors`);
                     }}
-                    className="gap-2"
+                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
                   >
+                    <Users className="h-4 w-4" />
                     スポンサー管理
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      nav(`/organizer/events/${event.id}`);
-                    }}
-                    className="gap-2"
+                    onClick={handleTogglePublish}
+                    disabled={actionLoading === "toggle" || publishLoading}
+                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
                   >
-                    公開/非公開切替
+                    {actionLoading === "toggle" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : isVisible ? (
+                      <GlobeLock className="h-4 w-4" />
+                    ) : (
+                      <Globe className="h-4 w-4" />
+                    )}
+                    {isVisible ? "公開中 → 非公開にする" : "非公開 → 公開する"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault();
+                    onClick={() => {
+                      closeAllMenus();
                       nav(`/organizer/events/new?copyFrom=${event.id}`);
                     }}
-                    className="gap-2"
+                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
                   >
+                    <Copy className="h-4 w-4" />
                     複製
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      nav(`/organizer/events/${event.id}`);
+                    onClick={() => {
+                      closeAllMenus();
+                      setShowArchiveConfirm(true);
                     }}
-                    className="gap-2"
+                    disabled={actionLoading === "archive"}
+                    variant="destructive"
+                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
                   >
+                    <Archive className="h-4 w-4" />
                     アーカイブ
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -434,7 +591,9 @@ export function OrganizerEventCard({
                 onClick={() => {
                   setShowPublishConfirm(false);
                   setPublishAgreed(false);
-                  handlePublish();
+                  handlePublish().then((ok) => {
+                    if (ok) showToast("success", "公開しました");
+                  });
                 }}
                 disabled={!publishAgreed || publishLoading}
                 className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
@@ -447,6 +606,72 @@ export function OrganizerEventCard({
                   setShowPublishConfirm(false);
                   setPublishAgreed(false);
                 }}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {showUnpublishConfirm && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={() => setShowUnpublishConfirm(false)}
+            aria-hidden
+          />
+          <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl">
+            <p className="font-medium text-slate-900">イベントを非公開にしますか？</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
+              非公開にすると、イベント一覧（探す）から見えなくなります。内容は下書きとして残ります。
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={handleConfirmUnpublish}
+                disabled={actionLoading === "toggle" || publishLoading}
+                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                {actionLoading === "toggle" ? "処理中..." : "非公開にする"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowUnpublishConfirm(false)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {showArchiveConfirm && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={() => setShowArchiveConfirm(false)}
+            aria-hidden
+          />
+          <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl">
+            <p className="font-medium text-slate-900">このイベントをアーカイブしますか？</p>
+            <p className="mt-2 text-sm text-slate-600">
+              アーカイブ後は公開一覧に表示されなくなります。
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={handleArchive}
+                disabled={actionLoading === "archive"}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {actionLoading === "archive" ? "処理中..." : "アーカイブする"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowArchiveConfirm(false)}
                 className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700"
               >
                 キャンセル
@@ -472,11 +697,11 @@ export function OrganizerEventCard({
             </p>
             <div className="mt-4 flex gap-2">
               <Link
-                href="/organizer/settings/billing"
+                href={PLAN_HREF}
                 className="rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                 onClick={() => setShowBillingModal(false)}
               >
-                課金設定へ
+                プラン変更へ
               </Link>
               <button
                 type="button"

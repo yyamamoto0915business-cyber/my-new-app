@@ -60,13 +60,12 @@ export async function GET(
 
     const { data: organizer, error: organizerError } = await supabase
       .from("organizers")
-      .select("profiles(display_name, avatar_url)")
+      .select("profile:profile_id(display_name, avatar_url)")
       .eq("id", conv.organizer_id)
       .single();
 
     type ProfileRel = { display_name: string | null; avatar_url: string | null };
-    const rel = organizer?.profiles as ProfileRel | ProfileRel[] | null | undefined;
-    const profile = Array.isArray(rel) ? rel[0] : rel;
+    const profile = organizer?.profile as ProfileRel | null | undefined;
     const organizerName = profile?.display_name ?? null;
     const organizerAvatarUrl = profile?.avatar_url ?? null;
 

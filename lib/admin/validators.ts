@@ -26,6 +26,15 @@ export const revokeActionBodySchema = z.object({
   reason: z.string().max(1000).optional().default(""),
 });
 
+export const featuredUpdateBodySchema = z.object({
+  isFeatured: z.boolean(),
+  featuredRank: z
+    .union([z.coerce.number().int().min(1).max(9999), z.null()])
+    .optional()
+    .default(null),
+  reason: z.string().max(1000).optional().default(""),
+});
+
 export const reasonUpdateSchema = z.object({
   reason: z.string().max(1000),
 });

@@ -8,7 +8,7 @@ import {
 } from "@/lib/category-preference-storage";
 
 const CHIP_BASE =
-  "flex min-h-[40px] shrink-0 items-center rounded-full px-4 py-2 text-sm font-medium transition-colors active:scale-95 whitespace-nowrap";
+  "inline-flex h-10 shrink-0 items-center rounded-full px-4 text-sm font-medium border transition-all whitespace-nowrap active:scale-[0.99]";
 
 type Props = {
   selected: CategoryKey[];
@@ -52,8 +52,8 @@ export function CategoryChips({
         onClick={handleToggleAll}
         className={`${CHIP_BASE} ${
             selected.length === 0
-              ? "border border-zinc-300 bg-zinc-100/80 text-zinc-700 dark:border-zinc-600 dark:bg-zinc-700/50 dark:text-zinc-300"
-              : "border border-[var(--border)] bg-white/80 text-zinc-600 hover:bg-zinc-50 dark:bg-[var(--background)] dark:text-zinc-400 dark:hover:bg-zinc-800"
+              ? "border-green-100 bg-green-50 text-green-700"
+              : "border-slate-200 bg-white text-slate-600 active:bg-slate-50"
           }`}
         >
           すべて
@@ -68,8 +68,8 @@ export function CategoryChips({
               onClick={() => handleToggle(key)}
               className={`${CHIP_BASE} ${
                 isSelected
-                  ? "border border-zinc-300 bg-zinc-100/80 text-zinc-700 dark:border-zinc-600 dark:bg-zinc-700/50 dark:text-zinc-300"
-                  : "border border-[var(--border)] bg-white/80 text-zinc-600 hover:bg-zinc-50 dark:bg-[var(--background)] dark:text-zinc-400 dark:hover:bg-zinc-800"
+                  ? "border-green-100 bg-green-50 text-green-700"
+                  : "border-slate-200 bg-white text-slate-600 active:bg-slate-50"
               }`}
             >
               {label}
@@ -82,8 +82,8 @@ export function CategoryChips({
             onClick={() => onSavedOnlyChange(!savedOnly)}
             className={`${CHIP_BASE} ${
               savedOnly
-                ? "border border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                : "border border-[var(--border)] bg-white/80 text-zinc-600 hover:bg-zinc-50 dark:bg-[var(--background)] dark:text-zinc-400 dark:hover:bg-zinc-800"
+                ? "border-rose-100 bg-rose-50 text-rose-700"
+                : "border-slate-200 bg-white text-slate-600 active:bg-slate-50"
             }`}
           >
             保存済み
@@ -93,7 +93,7 @@ export function CategoryChips({
         <button
           type="button"
           onClick={onFilterClick}
-          className={`${CHIP_BASE} border border-[var(--border)] bg-white/80 text-zinc-600 hover:bg-zinc-50 dark:bg-[var(--background)] dark:text-zinc-400 dark:hover:bg-zinc-800`}
+          className={`${CHIP_BASE} border-slate-200 bg-white text-slate-600 active:bg-slate-50`}
           aria-label="絞り込み"
         >
           絞り込み

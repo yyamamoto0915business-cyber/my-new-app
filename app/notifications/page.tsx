@@ -120,7 +120,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      <header className="sticky top-[var(--mg-mobile-top-header-h)] z-50 border-b border-zinc-200/60 bg-white sm:top-0 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto max-w-2xl px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">

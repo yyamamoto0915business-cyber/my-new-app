@@ -82,37 +82,44 @@ export function EventImageInput({ url, onChangeUrl, alt }: Props) {
 
   return (
     <div className="space-y-3">
-      <input
-        id="imageUrl"
-        name="imageUrl"
-        type="url"
-        value={url}
-        onChange={handleUrlChange}
-        placeholder="https://images.unsplash.com/photo-xxx?w=800"
-        className="mt-2 w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/50"
-      />
+      <div className="space-y-2">
+        <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50/50">
+          <EventThumbnail
+            imageUrl={url.trim() || null}
+            alt={alt || "イベント画像"}
+            rounded="lg"
+          />
+        </div>
+        <p className="text-xs text-slate-500">イベント一覧で表示される画像です（16:9）</p>
+        {!url.trim() && (
+          <p className="text-xs text-slate-500">
+            まだ未設定です。あとで変更しても大丈夫です。
+          </p>
+        )}
+      </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <button
           type="button"
           onClick={openGallery}
           disabled={uploading}
-          className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
         >
-          ファイルから選ぶ
+          画像をアップロード
         </button>
         <button
           type="button"
           onClick={openCamera}
           disabled={uploading}
-          className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
         >
           写真を撮る
         </button>
-        {uploading && (
-          <span className="text-xs text-slate-500">アップロード中...</span>
-        )}
       </div>
+
+      {uploading && (
+        <p className="text-xs text-slate-500">アップロード中...</p>
+      )}
 
       {error && (
         <p className="text-xs text-red-600" role="alert">
@@ -120,13 +127,20 @@ export function EventImageInput({ url, onChangeUrl, alt }: Props) {
         </p>
       )}
 
-      <div className="mt-1 overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50/50">
-        <EventThumbnail
-          imageUrl={url.trim() || null}
-          alt={alt || "プレビュー"}
-          rounded="lg"
+      <details className="rounded-xl border border-slate-200/80 bg-slate-50/40 p-3">
+        <summary className="cursor-pointer text-xs font-medium text-slate-600">
+          URLから設定する（必要なときだけ）
+        </summary>
+        <input
+          id="imageUrl"
+          name="imageUrl"
+          type="url"
+          value={url}
+          onChange={handleUrlChange}
+          placeholder="https://images.unsplash.com/photo-xxx?w=800"
+          className="mt-3 w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/50"
         />
-      </div>
+      </details>
 
       <input
         ref={fileInputRef}

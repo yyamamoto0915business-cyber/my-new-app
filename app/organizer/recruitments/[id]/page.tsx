@@ -229,7 +229,7 @@ export default function OrganizerRecruitmentDetailPage({
               href={`/organizer/recruitments/${resolvedId}`}
               className="text-sm text-[var(--foreground-muted)] hover:underline"
             >
-              ← 募集管理へ
+              ← スタッフ募集管理へ
             </Link>
             <h1 className="mt-2 text-xl font-bold text-zinc-900 dark:text-zinc-100">
               募集を編集
@@ -283,7 +283,7 @@ export default function OrganizerRecruitmentDetailPage({
             href="/organizer/recruitments"
             className="text-sm text-slate-500 hover:underline"
           >
-            ← 募集管理へ
+            ← スタッフ募集管理へ
           </Link>
           <h1 className="mt-2 text-lg font-semibold text-slate-800">応募管理</h1>
           <p className="mt-1 text-base font-medium text-slate-900">{recruitment.title}</p>

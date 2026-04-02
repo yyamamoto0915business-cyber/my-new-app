@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { FeaturedOrganizer } from "@/lib/db/organizers";
+import { CATEGORY_LABELS } from "@/lib/categories";
 
 type OrganizerCardProps = {
   organizer: FeaturedOrganizer;
@@ -12,6 +13,7 @@ type OrganizerCardProps = {
 export function OrganizerCard({ organizer }: OrganizerCardProps) {
   const [avatarError, setAvatarError] = useState(false);
   const showAvatar = organizer.avatarUrl && !avatarError;
+  const tags = organizer.categories.slice(0, 3);
 
   return (
     <Link
@@ -45,21 +47,38 @@ export function OrganizerCard({ organizer }: OrganizerCardProps) {
             <h3 className="font-semibold text-slate-900 group-hover:text-slate-700">
               {organizer.organizationName}
             </h3>
-            {organizer.region && (
-              <p className="mt-0.5 text-xs text-slate-500">{organizer.region}</p>
+            {organizer.activityArea && (
+              <p className="mt-0.5 text-xs text-slate-500">{organizer.activityArea}</p>
             )}
-            {organizer.bio && (
+            {tags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {tags.map((key) => (
+                  <span
+                    key={key}
+                    className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700"
+                  >
+                    {CATEGORY_LABELS[key]}
+                  </span>
+                ))}
+              </div>
+            )}
+            {organizer.shortBio && (
               <p className="mt-2 line-clamp-2 text-sm text-slate-600">
-                {organizer.bio}
+                {organizer.shortBio}
               </p>
             )}
           </div>
         </div>
-        {organizer.eventCount > 0 && (
-          <p className="mt-2 text-xs text-slate-500">
-            開催イベント {organizer.eventCount}件
-          </p>
-        )}
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+          {organizer.eventCount > 0 && (
+            <span>開催イベント {organizer.eventCount}件</span>
+          )}
+          {organizer.nextEvent && (
+            <span className="text-slate-600">
+              次回: {organizer.nextEvent.title}
+            </span>
+          )}
+        </div>
         <span className="mt-4 inline-flex items-center text-sm font-medium text-slate-600 group-hover:text-slate-800">
           プロフィールを見る
           <span className="ml-1" aria-hidden>→</span>

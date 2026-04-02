@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DbEvent, Event, EventFormData } from "./types";
 import { filterOutSampleEvents, isPublicEventLike } from "../sample-events";
+import { getJstTodayYmd } from "../jst-date";
+import { normalizeEventStatus, PUBLIC_EVENT_STATUSES } from "../public-events";
 
 function participationModeFromDb(
   db: DbEvent & { participation_mode?: string | null }
@@ -11,6 +13,23 @@ function participationModeFromDb(
   return db.requires_registration ? "required" : "none";
 }
 
+/** organizers 結合済みの行 → Event（fetchEventById / createEvent 共通） */
+function mapJoinedEventRowToEvent(row: Record<string, unknown>): Event {
+  const org = row.organizers as {
+    organization_name: string | null;
+    contact_email: string | null;
+    contact_phone: string | null;
+    profile: { display_name: string | null; email: string | null };
+  } | null;
+  const name =
+    org?.organization_name ??
+    org?.profile?.display_name ??
+    org?.profile?.email ??
+    "主催者";
+  const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+  return dbEventToEvent(row as unknown as DbEvent, name, contact);
+}
+
 function dbEventToEvent(
   db: DbEvent & { image_url?: string | null; participation_mode?: string | null },
   organizerName: string,
@@ -19,7 +38,7 @@ function dbEventToEvent(
   const participationMode = participationModeFromDb(db);
   return {
     id: db.id,
-    status: db.status as "draft" | "published" | undefined,
+    status: normalizeEventStatus(db.status),
     publishedAt: db.published_at ?? undefined,
     title: db.title,
     imageUrl: db.image_url?.trim() || null,
@@ -68,14 +87,15 @@ export async function fetchEvents(supabase: SupabaseClient): Promise<Event[]> {
         organization_name,
         contact_email,
         contact_phone,
-        profiles (
+        profile:profile_id (
           display_name,
           email
         )
       )
     `
     )
-    .eq("status", "published")
+    // Legacy compatibility: older rows may use status="public"
+    .in("status", [...PUBLIC_EVENT_STATUSES])
     .order("date", { ascending: true });
 
   if (error) throw error;
@@ -86,20 +106,23 @@ export async function fetchEvents(supabase: SupabaseClient): Promise<Event[]> {
       organization_name: string | null;
       contact_email: string | null;
       contact_phone: string | null;
-      profiles: { display_name: string | null; email: string | null };
+      profile: { display_name: string | null; email: string | null };
     } | null;
     const name =
       org?.organization_name ??
-      org?.profiles?.display_name ??
-      org?.profiles?.email ??
+      org?.profile?.display_name ??
+      org?.profile?.email ??
       "主催者";
     const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
     const event = dbEventToEvent(row as unknown as DbEvent, name, contact);
     return { ...event, organizerId: dbRow.organizer_id ?? null };
   });
 
-  // 公開API用: status=published かつ isPublic / isSample 判定でフィルタ
-  return filterOutSampleEvents(events).filter((e) => isPublicEventLike(e));
+  const withoutSample = filterOutSampleEvents(events);
+  const publicEvents = withoutSample.filter((e) => isPublicEventLike(e));
+
+  // 公開API用: status / isPublic / isSample 判定でフィルタ
+  return publicEvents;
 }
 
 export async function getOrganizerIdByEventId(
@@ -161,7 +184,7 @@ export async function fetchEventById(
         organization_name,
         contact_email,
         contact_phone,
-        profiles (
+        profile:profile_id (
           display_name,
           email
         )
@@ -173,20 +196,7 @@ export async function fetchEventById(
 
   if (error || !data) return null;
 
-  const org = (data as Record<string, unknown>).organizers as {
-    organization_name: string | null;
-    contact_email: string | null;
-    contact_phone: string | null;
-    profiles: { display_name: string | null; email: string | null };
-  } | null;
-  const name =
-    org?.organization_name ??
-    org?.profiles?.display_name ??
-    org?.profiles?.email ??
-    "主催者";
-  const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
-
-  return dbEventToEvent(data as unknown as DbEvent, name, contact);
+  return mapJoinedEventRowToEvent(data as Record<string, unknown>);
 }
 
 /** 公開イベント1件取得（status=published のみ。公開詳細ページ用） */
@@ -203,7 +213,7 @@ export async function fetchPublishedEventById(
         organization_name,
         contact_email,
         contact_phone,
-        profiles (
+        profile:profile_id (
           display_name,
           email
         )
@@ -211,7 +221,7 @@ export async function fetchPublishedEventById(
     `
     )
     .eq("id", id)
-    .eq("status", "published")
+    .in("status", [...PUBLIC_EVENT_STATUSES])
     .single();
 
   if (error || !data) return null;
@@ -221,12 +231,12 @@ export async function fetchPublishedEventById(
     organization_name: string | null;
     contact_email: string | null;
     contact_phone: string | null;
-    profiles: { display_name: string | null; email: string | null };
+    profile: { display_name: string | null; email: string | null };
   } | null;
   const name =
     org?.organization_name ??
-    org?.profiles?.display_name ??
-    org?.profiles?.email ??
+    org?.profile?.display_name ??
+    org?.profile?.email ??
     "主催者";
   const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
   const event = dbEventToEvent(row as unknown as DbEvent, name, contact);
@@ -259,7 +269,7 @@ export async function fetchPublishedEventWithOrganizerInfo(
         organization_name,
         contact_email,
         contact_phone,
-        profiles (
+        profile:profile_id (
           display_name,
           email,
           avatar_url,
@@ -270,7 +280,7 @@ export async function fetchPublishedEventWithOrganizerInfo(
     `
     )
     .eq("id", id)
-    .eq("status", "published")
+    .in("status", [...PUBLIC_EVENT_STATUSES])
     .single();
 
   if (error || !data) return null;
@@ -281,7 +291,7 @@ export async function fetchPublishedEventWithOrganizerInfo(
     organization_name: string | null;
     contact_email: string | null;
     contact_phone: string | null;
-    profiles?: {
+    profile?: {
       display_name: string | null;
       email: string | null;
       avatar_url?: string | null;
@@ -292,8 +302,8 @@ export async function fetchPublishedEventWithOrganizerInfo(
 
   const name =
     org?.organization_name ??
-    org?.profiles?.display_name ??
-    org?.profiles?.email ??
+    org?.profile?.display_name ??
+    org?.profile?.email ??
     "主催者";
   const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
 
@@ -305,9 +315,9 @@ export async function fetchPublishedEventWithOrganizerInfo(
   return {
     ...event,
     organizerId: org?.id ?? null,
-    organizerAvatarUrl: org?.profiles?.avatar_url ?? null,
-    organizerRegion: org?.profiles?.region ?? null,
-    organizerBio: org?.profiles?.bio ?? null,
+    organizerAvatarUrl: org?.profile?.avatar_url ?? null,
+    organizerRegion: org?.profile?.region ?? null,
+    organizerBio: org?.profile?.bio ?? null,
   };
 }
 
@@ -318,7 +328,7 @@ export async function fetchOtherPublishedEventsByOrganizer(
   excludeEventId: string,
   limit: number = 3
 ): Promise<Event[]> {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getJstTodayYmd();
   const { data, error } = await supabase
     .from("events")
     .select(
@@ -328,7 +338,7 @@ export async function fetchOtherPublishedEventsByOrganizer(
         organization_name,
         contact_email,
         contact_phone,
-        profiles (
+        profile:profile_id (
           display_name,
           email
         )
@@ -336,7 +346,7 @@ export async function fetchOtherPublishedEventsByOrganizer(
     `
     )
     .eq("organizer_id", organizerId)
-    .eq("status", "published")
+    .in("status", [...PUBLIC_EVENT_STATUSES])
     .neq("id", excludeEventId)
     .gte("date", today)
     .order("date", { ascending: true })
@@ -349,12 +359,12 @@ export async function fetchOtherPublishedEventsByOrganizer(
       organization_name: string | null;
       contact_email: string | null;
       contact_phone: string | null;
-      profiles: { display_name: string | null; email: string | null };
+      profile: { display_name: string | null; email: string | null };
     };
     const name =
       org?.organization_name ??
-      org?.profiles?.display_name ??
-      org?.profiles?.email ??
+      org?.profile?.display_name ??
+      org?.profile?.email ??
       "主催者";
     const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
     return dbEventToEvent(r as unknown as DbEvent, name, contact);
@@ -362,6 +372,104 @@ export async function fetchOtherPublishedEventsByOrganizer(
 
   // 関連イベントもサンプル/非公開は除外
   return filterOutSampleEvents(events).filter((e) => isPublicEventLike(e));
+}
+
+/** 関連する公開イベント（同タグ優先→同都道府県フォールバック） */
+export async function fetchRelatedPublishedEvents(
+  supabase: SupabaseClient,
+  base: Pick<Event, "id" | "tags" | "prefecture">,
+  limit: number = 4
+): Promise<Event[]> {
+  const today = getJstTodayYmd();
+  const seen = new Set<string>([base.id]);
+  const result: Event[] = [];
+
+  const pushUnique = (events: Event[]) => {
+    for (const e of events) {
+      if (seen.has(e.id)) continue;
+      seen.add(e.id);
+      result.push(e);
+      if (result.length >= limit) break;
+    }
+  };
+
+  const selectJoin = `
+      *,
+      organizers!inner (
+        organization_name,
+        contact_email,
+        contact_phone,
+        profile:profile_id (
+          display_name,
+          email
+        )
+      )
+    `;
+
+  // 1) タグ一致（先頭タグで軽く関連付け）
+  const firstTag = base.tags?.[0];
+  if (firstTag) {
+    const { data, error } = await supabase
+      .from("events")
+      .select(selectJoin)
+      .in("status", [...PUBLIC_EVENT_STATUSES])
+      .neq("id", base.id)
+      .gte("date", today)
+      .contains("tags", [firstTag])
+      .order("date", { ascending: true })
+      .limit(limit);
+    if (!error && data) {
+      const byTag = (data ?? []).map((r: Record<string, unknown>) => {
+        const org = r.organizers as {
+          organization_name: string | null;
+          contact_email: string | null;
+          contact_phone: string | null;
+          profile: { display_name: string | null; email: string | null };
+        };
+        const name =
+          org?.organization_name ??
+          org?.profile?.display_name ??
+          org?.profile?.email ??
+          "主催者";
+        const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+        return dbEventToEvent(r as unknown as DbEvent, name, contact);
+      });
+      pushUnique(filterOutSampleEvents(byTag).filter((e) => isPublicEventLike(e)));
+    }
+  }
+
+  // 2) 都道府県一致（足りない場合のフォールバック）
+  if (result.length < limit && base.prefecture) {
+    const { data, error } = await supabase
+      .from("events")
+      .select(selectJoin)
+      .in("status", [...PUBLIC_EVENT_STATUSES])
+      .neq("id", base.id)
+      .gte("date", today)
+      .eq("prefecture", base.prefecture)
+      .order("date", { ascending: true })
+      .limit(limit);
+    if (!error && data) {
+      const byPref = (data ?? []).map((r: Record<string, unknown>) => {
+        const org = r.organizers as {
+          organization_name: string | null;
+          contact_email: string | null;
+          contact_phone: string | null;
+          profile: { display_name: string | null; email: string | null };
+        };
+        const name =
+          org?.organization_name ??
+          org?.profile?.display_name ??
+          org?.profile?.email ??
+          "主催者";
+        const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+        return dbEventToEvent(r as unknown as DbEvent, name, contact);
+      });
+      pushUnique(filterOutSampleEvents(byPref).filter((e) => isPublicEventLike(e)));
+    }
+  }
+
+  return result.slice(0, limit);
 }
 
 /** 公開イベントをIDリストで取得（マイページの参加予定・気になる一覧用） */
@@ -379,7 +487,7 @@ export async function fetchPublishedEventsByIds(
         organization_name,
         contact_email,
         contact_phone,
-        profiles (
+        profile:profile_id (
           display_name,
           email
         )
@@ -387,22 +495,22 @@ export async function fetchPublishedEventsByIds(
     `
     )
     .in("id", ids)
-    .eq("status", "published");
+    .in("status", [...PUBLIC_EVENT_STATUSES]);
 
   if (error) return [];
-  const today = new Date().toISOString().split("T")[0];
+  const today = getJstTodayYmd();
   const events = (data ?? [])
     .map((row: Record<string, unknown>) => {
       const org = row.organizers as {
         organization_name: string | null;
         contact_email: string | null;
         contact_phone: string | null;
-        profiles: { display_name: string | null; email: string | null };
+        profile: { display_name: string | null; email: string | null };
       } | null;
       const name =
         org?.organization_name ??
-        org?.profiles?.display_name ??
-        org?.profiles?.email ??
+        org?.profile?.display_name ??
+        org?.profile?.email ??
         "主催者";
       const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
       return dbEventToEvent(row as unknown as DbEvent, name, contact);
@@ -425,7 +533,6 @@ export async function fetchPublishedEventsByOrganizer(
   organizerId: string,
   limit: number = 20
 ): Promise<Event[]> {
-  const today = new Date().toISOString().split("T")[0];
   const { data, error } = await supabase
     .from("events")
     .select(
@@ -435,7 +542,7 @@ export async function fetchPublishedEventsByOrganizer(
         organization_name,
         contact_email,
         contact_phone,
-        profiles (
+        profile:profile_id (
           display_name,
           email
         )
@@ -443,7 +550,7 @@ export async function fetchPublishedEventsByOrganizer(
     `
     )
     .eq("organizer_id", organizerId)
-    .eq("status", "published")
+    .in("status", [...PUBLIC_EVENT_STATUSES])
     .order("date", { ascending: true })
     .limit(limit);
 
@@ -454,12 +561,12 @@ export async function fetchPublishedEventsByOrganizer(
       organization_name: string | null;
       contact_email: string | null;
       contact_phone: string | null;
-      profiles: { display_name: string | null; email: string | null };
+      profile: { display_name: string | null; email: string | null };
     };
     const name =
       org?.organization_name ??
-      org?.profiles?.display_name ??
-      org?.profiles?.email ??
+      org?.profile?.display_name ??
+      org?.profile?.email ??
       "主催者";
     const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
     return dbEventToEvent(row as unknown as DbEvent, name, contact);
@@ -482,7 +589,7 @@ export async function fetchEventsByOrganizer(
         organization_name,
         contact_email,
         contact_phone,
-        profiles (
+        profile:profile_id (
           display_name,
           email
         )
@@ -499,16 +606,24 @@ export async function fetchEventsByOrganizer(
       organization_name: string | null;
       contact_email: string | null;
       contact_phone: string | null;
-      profiles: { display_name: string | null; email: string | null };
+      profile: { display_name: string | null; email: string | null };
     };
     const name =
       org?.organization_name ??
-      org?.profiles?.display_name ??
-      org?.profiles?.email ??
+      org?.profile?.display_name ??
+      org?.profile?.email ??
       "主催者";
     const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
     return dbEventToEvent(row as unknown as DbEvent, name, contact);
   });
+}
+
+function isMissingEventsColumnError(err: unknown): boolean {
+  const m = err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : String(err);
+  return (
+    m.includes("schema cache") ||
+    (m.includes("Could not find") && m.includes("column") && m.includes("events"))
+  );
 }
 
 export async function createEvent(
@@ -516,51 +631,81 @@ export async function createEvent(
   organizerId: string,
   form: EventFormData
 ): Promise<Event> {
-  const { data, error } = await supabase
-    .from("events")
-    .insert({
-      organizer_id: organizerId,
-      status: "draft",
-      title: form.title,
-      description: form.description,
-      date: form.date,
-      start_time: form.startTime,
-      end_time: form.endTime || null,
-      location: form.location,
-      address: form.address,
-      price: form.price,
-      price_note: form.priceNote || null,
-      rain_policy: form.rainPolicy || null,
-      items_to_bring: form.itemsToBring?.length ? form.itemsToBring : null,
-      access: form.access || null,
-      child_friendly: form.childFriendly ?? false,
-      latitude: form.latitude ?? null,
-      longitude: form.longitude ?? null,
-      prefecture: form.prefecture || null,
-      city: form.city || null,
-      area: form.area || null,
-      tags: form.tags?.length ? form.tags : null,
-      sponsor_ticket_prices: form.sponsorTicketPrices?.length ? form.sponsorTicketPrices : null,
-      sponsor_perks: form.sponsorPerks && Object.keys(form.sponsorPerks).length ? form.sponsorPerks : null,
-      priority_slots: form.prioritySlots ?? null,
-      english_guide_available: form.englishGuideAvailable ?? false,
-      capacity: form.capacity ?? null,
-      requires_registration: (form.participationMode ?? (form.requiresRegistration ? "required" : "none")) === "required",
-      participation_mode: form.participationMode ?? (form.requiresRegistration ? "required" : "none"),
-      registration_deadline: form.registrationDeadline || null,
-      registration_note: form.registrationNote?.trim() || null,
-      image_url: form.imageUrl?.trim() || null,
-    })
-    .select("id")
-    .single();
+  const selectJoin = `
+      *,
+      organizers (
+        organization_name,
+        contact_email,
+        contact_phone,
+        profile:profile_id (
+          display_name,
+          email
+        )
+      )
+    `;
+
+  const fullPayload = {
+    organizer_id: organizerId,
+    status: "draft" as const,
+    title: form.title,
+    description: form.description,
+    date: form.date,
+    start_time: form.startTime,
+    end_time: form.endTime || null,
+    location: form.location,
+    address: form.address,
+    price: form.price,
+    price_note: form.priceNote || null,
+    rain_policy: form.rainPolicy || null,
+    items_to_bring: form.itemsToBring?.length ? form.itemsToBring : null,
+    access: form.access || null,
+    child_friendly: form.childFriendly ?? false,
+    latitude: form.latitude ?? null,
+    longitude: form.longitude ?? null,
+    prefecture: form.prefecture || null,
+    city: form.city || null,
+    area: form.area || null,
+    tags: form.tags?.length ? form.tags : null,
+    sponsor_ticket_prices: form.sponsorTicketPrices?.length ? form.sponsorTicketPrices : null,
+    sponsor_perks: form.sponsorPerks && Object.keys(form.sponsorPerks).length ? form.sponsorPerks : null,
+    priority_slots: form.prioritySlots ?? null,
+    english_guide_available: form.englishGuideAvailable ?? false,
+    capacity: form.capacity ?? null,
+    requires_registration:
+      (form.participationMode ?? (form.requiresRegistration ? "required" : "none")) === "required",
+    participation_mode: form.participationMode ?? (form.requiresRegistration ? "required" : "none"),
+    registration_deadline: form.registrationDeadline || null,
+    registration_note: form.registrationNote?.trim() || null,
+    image_url: form.imageUrl?.trim() || null,
+  };
+
+  let { data, error } = await supabase.from("events").insert(fullPayload).select(selectJoin).single();
+
+  if (error && isMissingEventsColumnError(error)) {
+    const rest = { ...fullPayload };
+    delete (rest as { requires_registration?: unknown }).requires_registration;
+    delete (rest as { participation_mode?: unknown }).participation_mode;
+    delete (rest as { registration_deadline?: unknown }).registration_deadline;
+    delete (rest as { registration_note?: unknown }).registration_note;
+    console.warn(
+      "[createEvent] Retrying without registration/participation columns (DB migration may be pending)"
+    );
+    ({ data, error } = await supabase.from("events").insert(rest).select(selectJoin).single());
+  }
 
   if (error) throw error;
+  if (!data) throw new Error("イベントの保存結果を取得できませんでした");
 
-  const { createSponsorTiersForEvent } = await import("./sponsors");
-  await createSponsorTiersForEvent(supabase, data.id);
+  const row = data as Record<string, unknown>;
+  const event = mapJoinedEventRowToEvent(row);
 
-  const event = await fetchEventById(supabase, data.id);
-  if (!event) throw new Error("Failed to fetch created event");
+  try {
+    const { createSponsorTiersForEvent } = await import("./sponsors");
+    await createSponsorTiersForEvent(supabase, event.id);
+  } catch (tierErr) {
+    console.error("createSponsorTiersForEvent failed (event was saved):", tierErr);
+  }
+
   return event;
 }
 
@@ -617,11 +762,52 @@ export async function publishEvent(
   eventId: string
 ): Promise<void> {
   const now = new Date().toISOString();
+  const { data: existing, error: existingError } = await supabase
+    .from("events")
+    .select("published_at")
+    .eq("id", eventId)
+    .single();
+  if (existingError) throw existingError;
+
+  const publishedAt =
+    existing?.published_at && typeof existing.published_at === "string"
+      ? existing.published_at
+      : now;
+
   const { error } = await supabase
     .from("events")
-    .update({ status: "published", published_at: now, updated_at: now })
+    .update({ status: "published", published_at: publishedAt, updated_at: now })
     .eq("id", eventId);
 
+  if (error) throw error;
+}
+
+/** イベント公開状態を更新（draft / published / archived） */
+export async function updateEventStatus(
+  supabase: SupabaseClient,
+  eventId: string,
+  status: "draft" | "published" | "archived"
+): Promise<void> {
+  const now = new Date().toISOString();
+  const payload: Record<string, string | null> = {
+    status,
+    updated_at: now,
+  };
+  // published_at は「初回公開日時」として保持する（非公開化で消さない）
+  if (status === "published") {
+    const { data: existing, error: existingError } = await supabase
+      .from("events")
+      .select("published_at")
+      .eq("id", eventId)
+      .single();
+    if (existingError) throw existingError;
+    payload.published_at =
+      existing?.published_at && typeof existing.published_at === "string"
+        ? existing.published_at
+        : now;
+  }
+
+  const { error } = await supabase.from("events").update(payload).eq("id", eventId);
   if (error) throw error;
 }
 

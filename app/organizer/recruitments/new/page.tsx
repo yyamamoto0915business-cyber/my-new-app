@@ -15,11 +15,11 @@ export default function NewRecruitmentPage() {
             items={[
               { label: "トップ", href: "/" },
               { label: "主催", href: "/organizer/events" },
-              { label: "募集管理", href: "/organizer/recruitments" },
+              { label: "スタッフ募集管理", href: "/organizer/recruitments" },
               { label: "新規作成" },
             ]}
           />
-          <h1 className="mt-2 text-xl font-bold">募集を新規作成</h1>
+          <h1 className="mt-2 text-xl font-bold">スタッフ募集を新規作成</h1>
         </div>
       </header>
 

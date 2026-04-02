@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "rea
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { OrganizerHeader } from "@/components/organizer/organizer-header";
+import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import type {
   RecruitmentDashboardKpis,
   RecruitmentDashboardTodo,
@@ -178,13 +179,13 @@ function OrganizerRecruitmentsContent() {
   return (
     <div className="min-h-screen bg-[var(--mg-paper)]">
       <OrganizerHeader
-        title="募集管理"
-        description="応募の確認・承認・当日管理を行います"
+        title="スタッフ募集管理"
+        description="イベント当日の受付・誘導・設営など、運営スタッフ募集を管理します"
         backHref="/organizer/events"
         backLabel="← イベント一覧へ"
-        primaryCtaLabel="募集を作成"
+        primaryCtaLabel="スタッフ募集を作成"
         primaryCtaHref="/organizer/recruitments/new"
-        tertiaryCtaHref="/organizer/settings/billing"
+        tertiaryCtaHref="/organizer/settings/payouts"
       />
 
       <main className="mx-auto max-w-6xl px-4 py-6 pb-24">
@@ -200,6 +201,13 @@ function OrganizerRecruitmentsContent() {
           </div>
         ) : (
           <>
+            <section className="mb-6 rounded-2xl border border-sky-200/80 bg-sky-50/70 px-4 py-3 sm:px-5">
+              <p className="text-sm text-sky-900">
+                このページではイベントごとの運営スタッフ募集を管理します。
+                受付・誘導・設営など役割ごとに募集を作成し、応募確認や承認、当日管理まで行えます。
+              </p>
+            </section>
+
             {/* KPIカード（応募対応中心・クリックでフィルタ・選択中は濃いスタイル） */}
             <section className="mb-6 overflow-x-auto">
               <div className="grid min-w-[280px] grid-cols-2 gap-3 sm:grid-cols-4 sm:min-w-0">
@@ -300,7 +308,7 @@ function OrganizerRecruitmentsContent() {
                 </Link>
                 <span className="mx-1">/</span>
                 <Link href="/organizer/recruitments/new" className="text-[var(--accent)] hover:underline">
-                  募集を作る
+                  スタッフ募集を作る
                 </Link>
               </p>
             )}
@@ -401,14 +409,14 @@ function OrganizerRecruitmentsContent() {
                           募集がまだありません
                         </h2>
                         <p className="mt-2 text-sm text-[var(--foreground-muted)]">
-                          『受付』『誘導』『設営』など役割ごとに募集を作れます
+                          『受付』『誘導』『設営』など役割ごとにスタッフ募集を作れます
                         </p>
                         <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                           <Link
                             href="/organizer/recruitments/new"
                             className="inline-block rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                           >
-                            募集を作成する
+                            スタッフ募集を作成する
                           </Link>
                           <Link
                             href="/organizer/events"
@@ -447,15 +455,17 @@ function OrganizerRecruitmentsContent() {
 
 export default function OrganizerRecruitmentsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[200px] items-center justify-center text-sm text-zinc-500">
-          読み込み中…
-        </div>
-      }
-    >
-      <OrganizerRecruitmentsContent />
-    </Suspense>
+    <OrganizerRegistrationGate>
+      <Suspense
+        fallback={
+          <div className="flex min-h-[200px] items-center justify-center text-sm text-zinc-500">
+            読み込み中…
+          </div>
+        }
+      >
+        <OrganizerRecruitmentsContent />
+      </Suspense>
+    </OrganizerRegistrationGate>
   );
 }
 

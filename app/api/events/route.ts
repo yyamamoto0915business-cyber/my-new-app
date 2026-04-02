@@ -9,6 +9,47 @@ function getFallbackEvents() {
   return [...mockEvents, ...getCreatedEvents()];
 }
 
+/** クライアントから来る日付文字列を ISO に正規化。不正値は undefined（例外にしない） */
+function safeRegistrationDeadlineIso(v: unknown): string | undefined {
+  if (v == null) return undefined;
+  const s = String(v).trim();
+  if (!s) return undefined;
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toISOString();
+}
+
+/** API レスポンス用にユーザー向けメッセージへ変換（詳細はサーバーログへ） */
+function toPublicEventCreateError(err: unknown): string {
+  const raw =
+    err && typeof err === "object" && "message" in err
+      ? String((err as { message: string }).message)
+      : String(err);
+  const lower = raw.toLowerCase();
+  if (lower.includes("permission denied") || lower.includes("rls") || lower.includes("row-level security")) {
+    return "保存が許可されませんでした。ログインし直してからお試しください。";
+  }
+  if (lower.includes("foreign key") || lower.includes("violates foreign key")) {
+    return "主催者データとの関連付けに失敗しました。主催者登録を確認してください。";
+  }
+  if (lower.includes("duplicate") || lower.includes("unique")) {
+    return "同じ内容の登録が既に存在する可能性があります。";
+  }
+  if (lower.includes("null value") || lower.includes("not null")) {
+    return "必須項目がデータベースで満たされていません。入力内容を確認してください。";
+  }
+  return raw.length > 200 ? `${raw.slice(0, 200)}…` : raw;
+}
+
+function toJstTimestamp(dateYmd: string, timeHm: string): number | null {
+  const d = String(dateYmd ?? "").trim();
+  const t = String(timeHm ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+  if (!/^\d{2}:\d{2}$/.test(t)) return null;
+  const ts = Date.parse(`${d}T${t}:00+09:00`);
+  return Number.isNaN(ts) ? null : ts;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const prefecture = searchParams.get("prefecture") ?? undefined;
@@ -89,6 +130,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const startTs = toJstTimestamp(String(date), String(startTime));
+    if (startTs == null) {
+      return NextResponse.json(
+        { error: "日付または開始時刻の形式が正しくありません" },
+        { status: 400 }
+      );
+    }
+    if (startTs < Date.now()) {
+      return NextResponse.json(
+        { error: "過去の日時のイベントは作成できません" },
+        { status: 400 }
+      );
+    }
+
     const supabase = await createClient();
     const { getApiUser } = await import("../../../lib/api-auth");
     const { getOrganizerIdByProfileId } = await import("../../../lib/db/recruitments-mvp");
@@ -140,10 +195,7 @@ export async function POST(request: NextRequest) {
           : requiresRegistration
             ? "required"
             : "none",
-      registrationDeadline:
-        registrationDeadline && String(registrationDeadline).trim()
-          ? new Date(String(registrationDeadline)).toISOString()
-          : undefined,
+      registrationDeadline: safeRegistrationDeadlineIso(registrationDeadline),
       registrationNote:
         registrationNote && String(registrationNote).trim()
           ? String(registrationNote).trim()
@@ -177,9 +229,15 @@ export async function POST(request: NextRequest) {
     setOrganizerForCreatedEvent(event.id);
     addDefaultVolunteerRoleForEvent(event);
     return NextResponse.json(event, { status: 201 });
-  } catch {
+  } catch (e) {
+    console.error("[POST /api/events]", e);
+    const publicMessage = toPublicEventCreateError(e);
+    const isDev = process.env.NODE_ENV === "development";
     return NextResponse.json(
-      { error: "リクエストの処理に失敗しました" },
+      {
+        error: publicMessage,
+        ...(isDev && e instanceof Error ? { debug: e.message } : {}),
+      },
       { status: 500 }
     );
   }

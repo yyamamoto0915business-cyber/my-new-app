@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
 
   const link = await stripe.accountLinks.create({
     account: organizer.stripe_account_id,
-    refresh_url: `${appUrl}/organizer/settings/billing?refresh=1`,
-    return_url: `${appUrl}/organizer/settings/billing?connected=1`,
+    refresh_url: `${appUrl}/organizer/settings/payouts?refresh=1`,
+    return_url: `${appUrl}/organizer/settings/payouts?connected=1`,
     type: "account_onboarding",
   });
 

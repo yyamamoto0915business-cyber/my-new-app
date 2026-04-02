@@ -19,14 +19,18 @@ import {
 } from "../../lib/events";
 import { isPrefecture, PREFECTURES } from "../../lib/prefectures";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { getJstTodayYmd } from "@/lib/jst-date";
 import { ProfileLink } from "@/components/profile-link";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { GlyphSectionTitle } from "@/components/glyph/glyph-section-title";
-import { GlyphCardShell } from "@/components/glyph/glyph-card-shell";
 import { EventCard } from "./event-card";
 import { EventCardSkeleton } from "./event-card-skeleton";
 import { EventSearchSection } from "./event-search-section";
 import { MapPageContainer } from "@/components/events-map/MapPageContainer";
+import {
+  MobileSearchPanel,
+  type MobileSearchPanelDateRange,
+} from "@/components/search/mobile-search-panel";
 
 type EventWithDistance = Event & { distanceKm?: number };
 
@@ -93,11 +97,11 @@ function EventsPageContent() {
 
   const { today, end } = useMemo(() => {
     const now = new Date();
-    const t = now.toISOString().split("T")[0];
+    const t = getJstTodayYmd(now);
     const addDays = (d: number) => {
       const x = new Date(now.getTime());
       x.setDate(x.getDate() + d);
-      return x.toISOString().split("T")[0];
+      return getJstTodayYmd(x);
     };
     const e =
       dateRange === "today"
@@ -250,7 +254,7 @@ function EventsPageContent() {
 
   return (
     <div className="min-h-screen bg-[var(--mg-paper)]">
-      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur-sm dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
+      <header className="sticky top-[var(--mg-mobile-top-header-h)] z-50 border-b bg-white/95 backdrop-blur-sm sm:top-0 dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Breadcrumb
@@ -296,65 +300,17 @@ function EventsPageContent() {
         {view === "list" ? (
           <>
             {/* モバイル：重要な条件だけ＋絞り込みボタン */}
-            <div className="mb-4 flex flex-col gap-3 border-b border-zinc-200 pb-4 text-sm dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <select
-                  value={dateRange}
-                  onChange={(e) => setDateRange(e.target.value as DateRangeFilter)}
-                  className="min-h-[40px] rounded-lg border border-zinc-200 px-3 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-                >
-                  <option value="all">日付：すべて</option>
-                  <option value="today">日付：今日</option>
-                  <option value="week">日付：今週</option>
-                  <option value="weekend">日付：週末</option>
-                  <option value="month">日付：今月</option>
-                  <option value="3months">日付：3ヶ月</option>
-                </select>
-                <details className="relative">
-                  <summary className="min-h-[40px] cursor-pointer list-none rounded-lg border border-zinc-200 px-3 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100">
-                    地域：
-                    <span className="font-medium">
-                      {selectedArea ? selectedArea : "全国"}
-                    </span>
-                  </summary>
-                  <div className="mt-2 rounded-xl border border-zinc-200 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900">
-                    <select
-                      value={selectedArea}
-                      onChange={(e) => handleAreaChange(e.target.value)}
-                      className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                    >
-                      <option value="">全国</option>
-                      {PREFECTURES.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </details>
-                <div className="inline-flex overflow-hidden rounded-full border border-zinc-200 text-xs dark:border-zinc-600">
-                  {(["all", "free", "paid"] as const).map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setPriceFilter(f)}
-                      className={`px-3 py-1 ${
-                        priceFilter === f
-                          ? "bg-[var(--accent)] text-white"
-                          : "bg-white text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
-                      }`}
-                    >
-                      {f === "all" ? "料金：すべて" : f === "free" ? "料金：無料" : "料金：有料"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setFiltersOpen(true)}
-                className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-800 sm:w-auto"
-              >
-                絞り込み
-              </button>
+            <div className="-mx-4 sm:mx-0">
+              <MobileSearchPanel
+                searchQuery={searchQuery}
+                onSearchQueryChange={setSearchQuery}
+                regionLabel={selectedArea ? selectedArea : "全国"}
+                dateRange={dateRange as MobileSearchPanelDateRange}
+                categoryLabel={urlTags.length ? `カテゴリ：${urlTags.length}件` : "カテゴリ：すべて"}
+                onOpenFilters={() => setFiltersOpen(true)}
+                onToggleMap={() => setView("map")}
+                isMap={false}
+              />
             </div>
 
             <section ref={eventListRef} className="scroll-mt-4">
@@ -362,9 +318,7 @@ function EventsPageContent() {
                 <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <li key={i}>
-                      <GlyphCardShell>
-                        <EventCardSkeleton />
-                      </GlyphCardShell>
+                      <EventCardSkeleton />
                     </li>
                   ))}
                 </ul>
@@ -409,9 +363,7 @@ function EventsPageContent() {
                   <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredEvents.map((event) => (
                       <li key={event.id}>
-                        <GlyphCardShell>
-                          <EventCard event={event} />
-                        </GlyphCardShell>
+                        <EventCard event={event} />
                       </li>
                     ))}
                   </ul>
@@ -443,14 +395,14 @@ function EventsPageContent() {
                   aria-hidden="true"
                 />
                 <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-hidden rounded-t-2xl border-t border-[var(--border)] bg-white pb-[env(safe-area-inset-bottom,0px)] shadow-xl dark:bg-[var(--background)] sm:hidden">
-                  <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
-                    <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 px-4 py-3">
+                    <h2 className="text-[15px] font-semibold text-slate-900 dark:text-zinc-100">
                       絞り込み
                     </h2>
                     <button
                       type="button"
                       onClick={() => setFiltersOpen(false)}
-                      className="min-h-[40px] min-w-[40px] rounded-full p-2 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      className="h-11 w-11 rounded-full border border-slate-200 bg-white/80 p-2 text-slate-600 transition-colors active:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                       aria-label="閉じる"
                     >
                       ✕
@@ -470,15 +422,15 @@ function EventsPageContent() {
                       variant="drawer"
                     />
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between rounded-xl bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-900">
+                      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
                         <label className="flex items-center gap-2">
                           <input
                             type="checkbox"
                             checked={availableOnly}
                             onChange={(e) => setAvailableOnly(e.target.checked)}
-                            className="rounded border-zinc-300"
+                            className="rounded border-slate-300"
                           />
-                          <span className="text-zinc-700 dark:text-zinc-200">
+                          <span className="text-slate-700">
                             募集中のみ
                           </span>
                         </label>
@@ -487,21 +439,21 @@ function EventsPageContent() {
                             type="checkbox"
                             checked={childFriendlyOnly}
                             onChange={(e) => setChildFriendlyOnly(e.target.checked)}
-                            className="rounded border-zinc-300"
+                            className="rounded border-slate-300"
                           />
-                          <span className="text-zinc-700 dark:text-zinc-200">
+                          <span className="text-slate-700">
                             親子歓迎
                           </span>
                         </label>
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs text-zinc-500 dark:text-zinc-400">
+                        <label className="mb-1 block text-xs text-slate-500">
                           並び替え
                         </label>
                         <select
                           value={sortOrder}
                           onChange={(e) => setSortOrder(e.target.value as EventSort)}
-                          className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:bg-zinc-800 dark:text-zinc-100"
+                          className="w-full h-11 rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-700"
                         >
                           <option value="date_asc">開催日が近い順</option>
                           <option value="date_desc">開催日が遠い順</option>
@@ -510,7 +462,7 @@ function EventsPageContent() {
                       </div>
                     </div>
                   </div>
-                  <div className="border-t border-[var(--border)] bg-white px-4 py-3 dark:bg-[var(--background)]">
+                  <div className="border-t border-slate-200/80 bg-white/95 px-4 py-3">
                     <div className="flex gap-3">
                       <button
                         type="button"
@@ -525,7 +477,7 @@ function EventsPageContent() {
                           router.push("/events", { scroll: false });
                           setFiltersOpen(false);
                         }}
-                        className="min-h-[44px] flex-1 rounded-xl border border-[var(--border)] text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                        className="h-11 flex-1 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-colors active:bg-slate-50"
                       >
                         条件をクリア
                       </button>
@@ -535,7 +487,7 @@ function EventsPageContent() {
                           setFiltersOpen(false);
                           handleSearch();
                         }}
-                        className="min-h-[44px] flex-1 rounded-xl bg-[var(--accent)] text-sm font-medium text-white hover:opacity-90"
+                        className="h-11 flex-1 rounded-full bg-[var(--accent)] text-sm font-semibold text-white active:scale-[0.99]"
                       >
                         適用する
                       </button>

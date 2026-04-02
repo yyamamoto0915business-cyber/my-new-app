@@ -27,12 +27,12 @@ export function EventOrganizerCard({
 
   return (
     <aside
-      className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5"
+      className="rounded-[24px] border border-slate-200/90 bg-white/95 p-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)] sm:p-5"
       aria-labelledby="organizer-card-heading"
     >
       <h2
         id="organizer-card-heading"
-        className="text-xs font-medium text-slate-500 sm:text-sm"
+        className="text-[16px] font-semibold text-slate-900"
       >
         このイベントの主催者
       </h2>
@@ -83,7 +83,7 @@ export function EventOrganizerCard({
       {profileHref && (
         <Link
           href={profileHref}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-colors active:bg-slate-50"
         >
           主催者プロフィールを見る
         </Link>

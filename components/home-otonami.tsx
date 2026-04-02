@@ -204,28 +204,35 @@ export function HomeOtonami() {
         <HeroSection />
 
         {/* 地域・カテゴリ：モバイルではファーストビューの直下から“少し下”に配置 */}
-        <div className="space-y-3 sm:hidden">
-          <div>
-            <p className="text-xs font-medium text-slate-500">地域で探す</p>
-            <div className="mt-2">
-              <RegionFilter variant="chips" />
+        <section
+          className="sm:hidden mt-2 rounded-[24px] border border-slate-200/90 bg-white/95 p-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)]"
+          aria-label="検索と絞り込み"
+        >
+          <div className="space-y-4">
+            <div>
+              <p className="text-[15px] font-semibold text-slate-900">地域で探す</p>
+              <p className="mt-0.5 text-xs text-slate-500">よく使う地域だけ、まずはここから</p>
+              <div className="mt-3">
+                <RegionFilter variant="chips" />
+              </div>
+            </div>
+            <div>
+              <p className="text-[15px] font-semibold text-slate-900">カテゴリから探す</p>
+              <p className="mt-0.5 text-xs text-slate-500">気分に合わせて、軽く絞り込み</p>
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {heroCategoryTags.map(({ label, tags }) => (
+                  <Link
+                    key={tags}
+                    href={`/events?tags=${tags}`}
+                    className="shrink-0 h-10 inline-flex items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition-colors active:bg-slate-50"
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
-          <div>
-            <p className="text-xs font-medium text-slate-500">カテゴリから探す</p>
-            <div className="mt-2 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {heroCategoryTags.map(({ label, tags }) => (
-                <Link
-                  key={tags}
-                  href={`/events?tags=${tags}`}
-                  className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
+        </section>
 
         {/* 1) おすすめイベント */}
         <RecommendedHero

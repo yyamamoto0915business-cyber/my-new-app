@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   User,
   Building2,
-  CreditCard,
   Bell,
   Shield,
   ChevronRight,
@@ -14,6 +13,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { SettingsSectionCard } from "@/components/organizer/settings/SettingsSectionCard";
+import { OrganizerSettingsPlanPayoutCards } from "@/components/organizer/settings/OrganizerSettingsPlanPayoutCards";
 
 export default function OrganizerSettingsPage() {
   const { user } = useSupabaseUser();
@@ -69,6 +69,13 @@ export default function OrganizerSettingsPage() {
         </header>
 
         <div className="space-y-6 sm:space-y-8">
+          <section aria-labelledby="plan-payout-heading" className="space-y-3">
+            <h2 id="plan-payout-heading" className="sr-only">
+              料金プランと売上受取
+            </h2>
+            <OrganizerSettingsPlanPayoutCards />
+          </section>
+
           {/* アカウント情報セクション */}
           <section
             className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5"
@@ -149,16 +156,6 @@ export default function OrganizerSettingsPage() {
                 </Link>
               </>
             )}
-          </section>
-
-          {/* プラン・決済設定 */}
-          <section aria-labelledby="billing-heading">
-            <SettingsSectionCard
-              title="プラン・決済設定"
-              description="主催者プランの確認、アップグレード、売上の受取設定ができます"
-              href="/organizer/settings/billing"
-              icon={CreditCard}
-            />
           </section>
 
           {/* 公開情報・表示設定（将来用のプレースホルダー） */}

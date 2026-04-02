@@ -15,7 +15,7 @@ export function HeroSection() {
 
   return (
     <section
-      className="rounded-2xl border border-slate-200/60 bg-white px-5 py-5 shadow-sm sm:px-8 sm:py-7 md:flex md:items-start md:justify-between md:gap-10"
+      className="rounded-[24px] border border-slate-200/90 bg-white/95 px-5 py-5 shadow-[0_4px_14px_rgba(15,23,42,0.05)] sm:px-8 sm:py-7 md:flex md:items-start md:justify-between md:gap-10"
       aria-label="MachiGlyphのご紹介"
     >
       <div className="flex-1 min-w-0">
@@ -39,11 +39,12 @@ export function HeroSection() {
         {/* 検索導線：横幅いっぱい・角丸大きめ・余白広め */}
         <Link
           href="/events"
-          className="mt-4 flex min-h-[56px] items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/95 px-4 text-left shadow-xs transition-colors hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]"
+          className="mt-4 flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left transition-colors hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]"
+          aria-label="地域やイベント名で探す"
         >
-          <Search className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />
-          <span className="text-sm text-slate-500">
-            イベント名・地域・キーワードで探す
+          <Search className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+          <span className="text-sm text-slate-700/90">
+            地域やイベント名で探す
           </span>
         </Link>
 

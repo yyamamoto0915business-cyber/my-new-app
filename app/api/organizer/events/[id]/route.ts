@@ -18,6 +18,22 @@ import type { EventFormData } from "@/lib/db/types";
 
 type Params = { params: Promise<{ id: string }> };
 
+function toJstTimestamp(dateYmd: string, timeHm: string): number | null {
+  const d = String(dateYmd ?? "").trim();
+  const t = String(timeHm ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+  if (!/^\d{2}:\d{2}$/.test(t)) return null;
+  const ts = Date.parse(`${d}T${t}:00+09:00`);
+  return Number.isNaN(ts) ? null : ts;
+}
+
+function isEventEndedJst(event: { date?: string; startTime?: string; endTime?: string | null | undefined }): boolean {
+  const endTime = (event.endTime && String(event.endTime).trim()) || (event.startTime ? String(event.startTime) : "00:00");
+  const ts = toJstTimestamp(String(event.date ?? ""), endTime);
+  if (ts == null) return false;
+  return Date.now() > ts;
+}
+
 /** GET: 主催者用イベント1件取得（下書き含む） */
 export async function GET(_request: NextRequest, { params }: Params) {
   const { id } = await params;
@@ -173,6 +189,46 @@ export async function PATCH(request: NextRequest, { params }: Params) {
           { status: 404 }
         );
       }
+
+      const existing = await fetchEventById(supabase, id);
+      if (!existing) {
+        return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
+      }
+
+      const scheduleChanged =
+        String(existing.date ?? "") !== String(formData.date ?? "") ||
+        String(existing.startTime ?? "") !== String(formData.startTime ?? "") ||
+        String(existing.endTime ?? "") !== String(formData.endTime ?? "");
+
+      if (scheduleChanged) {
+        const existingWasPublished = Boolean(existing.publishedAt);
+        const ended = isEventEndedJst(existing);
+        if (existingWasPublished || ended) {
+          return NextResponse.json(
+            {
+              error:
+                "公開済み、または終了したイベントの日程は変更できません。新しいイベントとして複製・作成してください。",
+              code: "SCHEDULE_CHANGE_NOT_ALLOWED",
+            },
+            { status: 400 }
+          );
+        }
+
+        const newStartTs = toJstTimestamp(formData.date, formData.startTime);
+        if (newStartTs == null) {
+          return NextResponse.json(
+            { error: "日付または開始時刻の形式が正しくありません" },
+            { status: 400 }
+          );
+        }
+        if (newStartTs < Date.now()) {
+          return NextResponse.json(
+            { error: "過去の日時には設定できません" },
+            { status: 400 }
+          );
+        }
+      }
+
       await updateEvent(supabase, id, formData);
       const updated = await fetchEventById(supabase, id);
       return NextResponse.json(updated ?? { id, ...formData });

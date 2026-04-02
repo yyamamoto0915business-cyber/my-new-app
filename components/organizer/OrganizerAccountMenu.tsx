@@ -67,11 +67,11 @@ export function OrganizerAccountMenu() {
     <button
       type="button"
       onClick={() => router.push("/admin")}
-      className="inline-flex h-9 min-h-[40px] shrink-0 items-center gap-2 rounded-full border border-zinc-200/90 bg-white/95 px-2.5 py-1.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:border-zinc-300/80 hover:bg-zinc-50 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mg-accent)]/30 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:border-zinc-600/90 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:border-zinc-500/80 dark:hover:bg-zinc-700/80 dark:hover:text-zinc-100 sm:h-10 sm:min-h-0 sm:px-3"
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200/80 bg-slate-50/80 text-slate-700 shadow-[0_6px_16px_rgba(15,23,42,0.06)] transition-all duration-200 ease-out hover:bg-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mg-accent)]/30 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-700/70 dark:hover:text-slate-100 sm:h-11 sm:w-auto sm:gap-2 sm:px-3"
       aria-label="開発者管理画面を開く"
     >
-      <span className="hidden max-w-[140px] truncate sm:inline">developer</span>
-      <Shield className="h-4 w-4 shrink-0 text-zinc-500 dark:text-zinc-400" aria-hidden />
+      <span className="hidden max-w-[140px] truncate text-sm font-medium sm:inline">developer</span>
+      <Shield className="h-5 w-5 shrink-0 text-slate-700 dark:text-slate-300" strokeWidth={2.2} aria-hidden />
     </button>
   );
 }

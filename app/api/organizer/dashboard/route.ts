@@ -13,17 +13,33 @@ import {
 import { mockEvents } from "@/lib/events-mock";
 import { getCreatedEvents } from "@/lib/created-events-store";
 import type { Event } from "@/lib/db/types";
+import { getJstTodayYmd } from "@/lib/jst-date";
+import { isPublicEventStatus } from "@/lib/public-events";
+import { getMonthlyPublishedCount } from "@/lib/billing";
+import { buildPlanSummary, type PlanSummary } from "@/lib/organizer-plan-summary";
 
 const MOCK_ORGANIZER_NAME = "地域振興会";
 
-function getEventStatus(event: { date: string; status?: string }): "public" | "draft" | "ended" {
+function getEventEndAtJst(date: string, endTime?: string | null): Date {
+  const t = endTime && endTime.trim() ? endTime : "23:59";
+  return new Date(`${date}T${t}:00+09:00`);
+}
+
+function getEventStatus(event: {
+  date: string;
+  status?: string;
+  endTime?: string | null;
+}): "public" | "draft" | "ended" {
   if (event.status === "draft") return "draft";
-  const today = new Date().toISOString().split("T")[0];
-  return event.date >= today ? "public" : "ended";
+  if (event.status && !isPublicEventStatus(event.status)) return "ended";
+  const endAtJst = getEventEndAtJst(event.date, event.endTime);
+  return endAtJst.getTime() >= Date.now() ? "public" : "ended";
 }
 
 export type DashboardEvent = Omit<Event, "status"> & {
   status: "public" | "draft" | "ended";
+  /** DB上の公開状態（公開/非公開の実体） */
+  visibilityStatus: "draft" | "published" | "archived";
   participantCount: number;
   plannedCount: number;
   interestedCount: number;
@@ -55,22 +71,33 @@ export type BillingSummary = {
   stripeAccountChargesEnabled: boolean;
 };
 
+export type { PlanSummary };
+
 export type DashboardResponse = {
   kpis: DashboardKpis;
   todos: DashboardTodo[];
   events: DashboardEvent[];
   billingSummary?: BillingSummary;
+  planSummary?: PlanSummary;
 };
 
 /** フォールバック: モックデータでダッシュボードを構築 */
 async function buildMockDashboard(): Promise<DashboardResponse> {
   const allEvents = [...mockEvents, ...getCreatedEvents()];
   const myEvents = allEvents.filter((e) => e.organizerName === MOCK_ORGANIZER_NAME);
-  const today = new Date().toISOString().split("T")[0];
+  const today = getJstTodayYmd();
 
   const events: DashboardEvent[] = myEvents.map((e) => ({
     ...e,
-    status: getEventStatus(e),
+    status: getEventStatus({
+      date: e.date,
+      status: (e as unknown as { status?: string }).status,
+      endTime: (e as unknown as { endTime?: string | null }).endTime ?? null,
+    }),
+    visibilityStatus: ((e as unknown as { status?: string }).status ?? "draft") as
+      | "draft"
+      | "published"
+      | "archived",
     participantCount: e.participantCount ?? 0,
     plannedCount: 0,
     interestedCount: 0,
@@ -98,6 +125,10 @@ async function buildMockDashboard(): Promise<DashboardResponse> {
       paymentSetupStatus: "unset",
       stripeAccountChargesEnabled: false,
     },
+    planSummary: buildPlanSummary(
+      { subscription_status: null, founder30_end_at: null },
+      0
+    ),
   };
 }
 
@@ -108,6 +139,18 @@ async function buildSupabaseDashboard(
   profileId: string,
   unreadTotal: number
 ): Promise<DashboardResponse> {
+  type SbResult<T> = { data: T | null; error: unknown };
+  type OrgRow = {
+    stripe_account_charges_enabled?: boolean | null;
+    subscription_status?: string | null;
+    founder30_end_at?: string | null;
+  };
+  type PlanStateRow = {
+    stripe_status?: string | null;
+    manual_grant_active?: boolean | null;
+    manual_grant_expires_at?: string | null;
+  };
+
   const [eventsData, recruitmentsData, unreadResult, organizerRow] = await Promise.all([
     fetchEventsByOrganizer(supabase, organizerId),
     fetchRecruitmentsByOrganizer(supabase, organizerId),
@@ -118,7 +161,18 @@ async function buildSupabaseDashboard(
         return { data: 0, error: null };
       }
     })(),
-    supabase.from("organizers").select("stripe_account_charges_enabled").eq("id", organizerId).single(),
+    Promise.all([
+      supabase
+        .from("organizers")
+        .select("stripe_account_charges_enabled, subscription_status, founder30_end_at")
+        .eq("id", organizerId)
+        .single(),
+      supabase
+        .from("organizer_plan_state")
+        .select("stripe_status, manual_grant_active, manual_grant_expires_at")
+        .eq("organizer_id", organizerId)
+        .maybeSingle(),
+    ]),
   ]);
 
   const unreadMessages = typeof unreadResult.data === "bigint"
@@ -127,7 +181,7 @@ async function buildSupabaseDashboard(
       ? unreadResult.data
       : Number(unreadResult.data ?? 0) || 0;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getJstTodayYmd();
 
   const todos: DashboardTodo[] = [];
   let pendingApplications = 0;
@@ -232,7 +286,8 @@ async function buildSupabaseDashboard(
 
       return {
         ...e,
-        status: getEventStatus(e),
+        status: getEventStatus({ date: e.date, status: e.status, endTime: e.endTime ?? null }),
+        visibilityStatus: (e.status ?? "draft") as "draft" | "published" | "archived",
         participantCount: participants.length,
         plannedCount: reactionCounts.planned,
         interestedCount: reactionCounts.interested,
@@ -255,11 +310,23 @@ async function buildSupabaseDashboard(
   const hosting = events.filter((e) => e.status === "public").length;
   const needsAction = Math.min(todos.length, 99);
 
-  const chargesEnabled =
-    organizerRow?.data && !organizerRow.error
-      ? organizerRow.data.stripe_account_charges_enabled === true
-      : false;
+  const [orgRes, planRes] = organizerRow as unknown as [SbResult<OrgRow>, SbResult<PlanStateRow>];
+  const orgRow = orgRes?.data && !orgRes.error ? orgRes.data : null;
+  const planRow = planRes?.data && !planRes.error ? planRes.data : null;
+  const chargesEnabled = orgRow ? orgRow.stripe_account_charges_enabled === true : false;
   const paymentSetupStatus: "unset" | "partial" | "ok" = chargesEnabled ? "ok" : "unset";
+
+  const monthlyPublished = await getMonthlyPublishedCount(supabase, organizerId);
+  const planSummary = buildPlanSummary(
+    {
+      subscription_status: orgRow?.subscription_status ?? null,
+      stripe_status: planRow?.stripe_status ?? null,
+      founder30_end_at: orgRow?.founder30_end_at ?? null,
+      manual_grant_active: planRow?.manual_grant_active ?? false,
+      manual_grant_expires_at: planRow?.manual_grant_expires_at ?? null,
+    },
+    monthlyPublished
+  );
 
   return {
     kpis: {
@@ -276,6 +343,7 @@ async function buildSupabaseDashboard(
       paymentSetupStatus,
       stripeAccountChargesEnabled: chargesEnabled,
     },
+    planSummary,
   };
 }
 
@@ -309,11 +377,8 @@ export async function GET(_request: NextRequest) {
         { status: isProduction ? 404 : 200 }
       );
     }
-    const unreadResult = await supabase.rpc("get_unread_total");
-    const unreadTotal = typeof unreadResult.data === "bigint"
-      ? Number(unreadResult.data)
-      : Number(unreadResult.data ?? 0) || 0;
-    const data = await buildSupabaseDashboard(supabase, organizerId, user.id, unreadTotal);
+    // unread は buildSupabaseDashboard 内で安全に取得する
+    const data = await buildSupabaseDashboard(supabase, organizerId, user.id, 0);
     return NextResponse.json(data);
   } catch (e) {
     console.error("organizer dashboard GET:", e);

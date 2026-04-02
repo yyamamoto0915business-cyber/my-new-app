@@ -174,7 +174,7 @@ function VolunteerPageContent() {
 
   return (
     <div className="min-h-screen bg-[var(--mg-paper)]">
-      <header className="sticky top-12 z-50 border-b bg-white/95 shadow-sm backdrop-blur-md sm:top-0 dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
+      <header className="sticky top-[calc(var(--mg-mobile-top-header-h)+env(safe-area-inset-top,0px))] z-30 border-b bg-white/95 shadow-sm backdrop-blur-md sm:top-0 sm:z-50 dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <Breadcrumb
             items={[{ label: "トップ", href: "/" }, { label: "ボランティア募集" }]}

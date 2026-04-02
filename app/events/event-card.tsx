@@ -1,11 +1,16 @@
 "use client";
 
-import Link from "next/link";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Event } from "@/lib/db/types";
 import { getEventStatus } from "@/lib/events";
-import { getTagLabel } from "@/lib/db/types";
 import { formatEventDateTime } from "@/lib/format-date";
 import { EventThumbnail } from "@/components/event-thumbnail";
+import { BookmarkToggle } from "@/components/ui/BookmarkToggle";
+import { addToRecent, isBookmarked, toggleBookmark } from "@/lib/bookmark-storage";
+import { getPrimaryCategory } from "@/lib/inferCategory";
+import { CATEGORY_LABELS } from "@/lib/categories";
+import { CalendarDays, MapPin, UserRound } from "lucide-react";
 
 type Props = { event: Event };
 
@@ -16,132 +21,127 @@ function truncate(str: string, max: number): string {
 }
 
 export function EventCard({ event }: Props) {
+  const router = useRouter();
   const status = getEventStatus(event);
   const isEnded = status === "ended";
 
-  const featureBadges: { label: string; className: string }[] = [];
-  if (event.price === 0) {
-    featureBadges.push({
-      label: "無料",
-      className:
-        "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
-    });
-  }
-  if (status === "available") {
-    featureBadges.push({
-      label: "募集中",
-      className:
-        "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300",
-    });
-  } else if (status === "full") {
-    featureBadges.push({
-      label: "満員",
-      className: "bg-zinc-200 text-zinc-700 dark:bg-zinc-600 dark:text-zinc-200",
-    });
-  } else if (status === "ended") {
-    featureBadges.push({
-      label: "終了",
-      className:
-        "bg-zinc-200 text-zinc-600 dark:bg-zinc-600 dark:text-zinc-300",
-    });
-  }
-  if (event.childFriendly) {
-    featureBadges.push({
-      label: "親子歓迎",
-      className:
-        "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-    });
-  }
+  const category = getPrimaryCategory(event);
+  const categoryLabel = category ? CATEGORY_LABELS[category] : undefined;
+
+  const [saved, setSaved] = useState(() => isBookmarked(event.id));
+
+  const statusBadge = useMemo(() => {
+    if (status === "available") return { label: "参加受付中", className: "bg-green-50 text-green-700 border-green-100" };
+    if (status === "full") return { label: "満員", className: "bg-slate-100 text-slate-600 border-slate-200" };
+    if (status === "ended") return { label: "終了", className: "bg-slate-100 text-slate-500 border-slate-200" };
+    return null;
+  }, [status]);
+
+  const priceBadge = useMemo(() => {
+    if (event.price === 0) return { label: "無料", className: "bg-emerald-50 text-emerald-700 border-emerald-100" };
+    return { label: `¥${event.price}`, className: "bg-slate-50 text-slate-700 border-slate-200" };
+  }, [event.price]);
+
+  const handleOpen = () => {
+    addToRecent(event.id);
+    router.push(`/events/${event.id}`);
+  };
 
   return (
-    <Link
-      href={`/events/${event.id}`}
-      className={`block overflow-hidden rounded-xl border border-[var(--border)] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-[var(--border)] dark:bg-[var(--background)] ${
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={handleOpen}
+      onKeyDown={(e) => e.key === "Enter" && handleOpen()}
+      className={`overflow-hidden rounded-[24px] border border-slate-200/90 bg-white shadow-[0_4px_14px_rgba(15,23,42,0.05)] transition active:scale-[0.995] ${
         isEnded ? "opacity-60" : ""
       }`}
+      aria-label={`${event.title}の詳細を見る`}
     >
-      <article>
-        <EventThumbnail
-          imageUrl={event.imageUrl}
-          alt={event.title}
-          rounded="none"
-          className="rounded-t-xl"
-        />
-        <div className="p-4 sm:p-5">
-          {/* タイトル */}
-          <h2 className="font-serif text-base font-semibold leading-snug text-zinc-900 dark:text-zinc-100 line-clamp-2">
-            {event.title}
-          </h2>
+      <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
+        <EventThumbnail imageUrl={event.imageUrl} alt={event.title} rounded="none" fill />
 
-          {/* 日時・地域・料金 */}
-          <dl className="mt-2 space-y-1.5 text-sm">
-            <div>
-              <dt className="inline font-medium text-zinc-500 dark:text-zinc-400">
-                日時{" "}
-              </dt>
-              <dd className="inline">
-                {formatEventDateTime(event.date, event.startTime)}
-                {event.endTime && <span>〜{event.endTime}</span>}
-              </dd>
-            </div>
-            {(event.area || event.city) && (
-              <div>
-                <dt className="inline font-medium text-zinc-500 dark:text-zinc-400">
-                  地域{" "}
-                </dt>
-                <dd className="inline">
-                  {event.area || event.city}
-                </dd>
-              </div>
-            )}
-            <div>
-              <dt className="inline font-medium text-zinc-500 dark:text-zinc-400">
-                料金{" "}
-              </dt>
-              <dd className="inline">
-                {event.price === 0 ? "無料" : `¥${event.price}`}
-                {event.priceNote && (
-                  <span className="text-zinc-500">
-                    （{event.priceNote}）
-                  </span>
-                )}
-              </dd>
-            </div>
-          </dl>
+        {categoryLabel && (
+          <span className="absolute left-3 top-3 inline-flex h-8 items-center rounded-full border border-white/40 bg-white/85 px-3 text-xs font-semibold text-slate-700 backdrop-blur-sm">
+            {categoryLabel}
+          </span>
+        )}
 
-          {/* 説明文（2行まで） */}
-          {event.description && (
-            <p className="mt-2 text-sm leading-relaxed text-zinc-600 line-clamp-2 dark:text-zinc-400">
-              {truncate(event.description, 80)}
-            </p>
-          )}
-
-          {/* タグ・バッジ類 */}
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            {event.tags?.slice(0, 2).map((tagId) => (
-              <span
-                key={tagId}
-                className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-              >
-                {getTagLabel(tagId)}
-              </span>
-            ))}
-            {featureBadges.slice(0, 2).map((b) => (
-              <span
-                key={b.label}
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${b.className}`}
-              >
-                {b.label}
-              </span>
-            ))}
-            {event.salonOnly && featureBadges.length < 2 && (
-              <span className="rounded-full bg-[var(--accent)]/15 px-2.5 py-0.5 text-xs font-medium text-[var(--accent)]">
-                サロン限定
-              </span>
-            )}
-          </div>
+        <div
+          className="absolute right-2 top-2 z-10 flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full bg-black/30 backdrop-blur-sm"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <BookmarkToggle
+            eventId={event.id}
+            isActive={saved}
+            onToggle={() => {
+              const nowSaved = toggleBookmark(event.id);
+              setSaved(nowSaved);
+            }}
+          />
         </div>
-      </article>
-    </Link>
+      </div>
+
+      <div className="p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-semibold ${priceBadge.className}`}>
+            {priceBadge.label}
+          </span>
+          {statusBadge && (
+            <span className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-semibold ${statusBadge.className}`}>
+              {statusBadge.label}
+            </span>
+          )}
+          {event.salonOnly && (
+            <span className="inline-flex h-8 items-center rounded-full border border-amber-100 bg-amber-50 px-3 text-xs font-semibold text-amber-800">
+              サロン限定
+            </span>
+          )}
+        </div>
+
+        <h3 className="mt-3 text-[17px] font-semibold leading-6 text-slate-900 line-clamp-2">
+          {event.title}
+        </h3>
+
+        {event.description && (
+          <p className="mt-2 text-sm leading-relaxed text-slate-600 line-clamp-2">
+            {truncate(event.description, 72)}
+          </p>
+        )}
+
+        <div className="mt-3 space-y-2">
+          <div className="flex items-start gap-2 text-sm text-slate-600">
+            <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+            <span className="min-w-0">
+              {formatEventDateTime(event.date, event.startTime)}
+              {event.endTime ? `〜${event.endTime}` : ""}
+            </span>
+          </div>
+          <div className="flex items-start gap-2 text-sm text-slate-600">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+            <span className="min-w-0 line-clamp-1">
+              {event.location}
+            </span>
+          </div>
+          {event.organizerName && (
+            <div className="flex items-start gap-2 text-sm text-slate-600">
+              <UserRound className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+              <span className="min-w-0 line-clamp-1">
+                {event.organizerName}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="inline-flex h-11 flex-1 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700">
+            詳細を見る
+          </span>
+          <span className="text-xs text-slate-500">
+            タップで開く
+          </span>
+        </div>
+      </div>
+    </article>
   );
 }

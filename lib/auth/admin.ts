@@ -4,6 +4,8 @@
  */
 import { createClient } from "@/lib/supabase/server";
 import { getAuth } from "@/lib/get-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type AdminProfile = {
   id: string;
@@ -37,6 +39,24 @@ function parseList(value: string | undefined | null): Set<string> {
 const ADMIN_EMAILS = parseList(ADMIN_EMAILS_ENV);
 const ADMIN_IDS = parseList(ADMIN_IDS_ENV);
 
+async function ensureDbDeveloperAdminRole(profile: AdminProfile) {
+  // DB 側の is_developer_admin() は profiles.role のみで判定するため、
+  // env 許可（ID/メール）で admin と認めたユーザーは profiles.role も同期しておく。
+  if (profile.role === "developer_admin") return;
+  const allowedByEnv =
+    (profile.id && ADMIN_IDS.has(profile.id)) ||
+    (profile.email && ADMIN_EMAILS.has(profile.email));
+  if (!allowedByEnv) return;
+
+  const admin = createAdminClient();
+  if (!admin) return;
+
+  await admin
+    .from("profiles")
+    .update({ role: "developer_admin" })
+    .eq("id", profile.id);
+}
+
 /**
  * ログインユーザーの profile（role, email, display_name）を取得
  */
@@ -44,6 +64,12 @@ export async function getCurrentUserProfile(): Promise<AdminProfile | null> {
   const supabase = await createClient();
   if (!supabase) return null;
 
+  return await getCurrentUserProfileWithSupabase(supabase);
+}
+
+async function getCurrentUserProfileWithSupabase(
+  supabase: SupabaseClient
+): Promise<AdminProfile | null> {
   const {
     data: { user },
     error,
@@ -117,6 +143,21 @@ export async function requireDeveloperAdmin(): Promise<
   if (!isDeveloperAdmin(profile)) {
     return { ok: false, status: 403 };
   }
+  await ensureDbDeveloperAdminRole(profile);
+  return { ok: true, profile };
+}
+
+/**
+ * Route Handler などで、呼び出し元が用意した SupabaseClient を使って developer_admin を要求。
+ * （cookie コンテキスト付き createServerClient を渡す用途）
+ */
+export async function requireDeveloperAdminWithSupabase(
+  supabase: SupabaseClient
+): Promise<{ ok: true; profile: AdminProfile } | { ok: false; status: 401 | 403 }> {
+  const profile = await getCurrentUserProfileWithSupabase(supabase);
+  if (!profile) return { ok: false, status: 401 };
+  if (!isDeveloperAdmin(profile)) return { ok: false, status: 403 };
+  await ensureDbDeveloperAdminRole(profile);
   return { ok: true, profile };
 }
 

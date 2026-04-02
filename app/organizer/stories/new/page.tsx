@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import type { Story, StoryBlock } from "@/lib/story-types";
 import { STORY_TEMPLATE_HEADINGS } from "@/lib/story-types";
 import { StoryBlockRenderer } from "@/components/story/story-block-renderer";
@@ -515,8 +516,16 @@ function NewStoryForm() {
 
 export default function OrganizerStoriesNewPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[var(--background)]"><p className="text-[var(--foreground-muted)]">読み込み中…</p></div>}>
-      <NewStoryForm />
-    </Suspense>
+    <OrganizerRegistrationGate>
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+            <p className="text-[var(--foreground-muted)]">読み込み中…</p>
+          </div>
+        }
+      >
+        <NewStoryForm />
+      </Suspense>
+    </OrganizerRegistrationGate>
   );
 }

@@ -10,13 +10,16 @@ import { EventDetailClient } from "./event-detail-client";
 import { EventDetailTabs } from "./event-detail-tabs";
 import { EventDetailCTABlock } from "./event-detail-cta-block";
 import { OrganizerContactSection } from "./organizer-contact-section";
-import { EventThumbnail } from "@/components/event-thumbnail";
 import { EventConsultationCard } from "./event-consultation-card";
 import { EventSupportCard } from "./event-support-card";
 import { EventVolunteerSection } from "@/components/event-volunteer-section";
 import { LoginBenefitsBanner } from "@/components/login-benefits-banner";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { GlyphSectionTitle } from "@/components/glyph/glyph-section-title";
+import { EventDetailHero } from "@/components/events/EventDetailHero";
+import { getMapsUrl } from "@/lib/maps-url";
+import { Backpack, Route as RouteIcon, FileText, MapPinned } from "lucide-react";
+import { CompactEventListSection } from "@/components/events/CompactEventListSection";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -39,87 +42,11 @@ export default async function EventDetailPage({ params }: Props) {
   const organizerRegion = "organizerRegion" in event ? event.organizerRegion : null;
   const organizerBio = "organizerBio" in event ? event.organizerBio : null;
   const otherEvents = "otherEvents" in event ? (event.otherEvents ?? []) : [];
+  const relatedEvents = "relatedEvents" in event ? (event.relatedEvents ?? []) : [];
 
   const overviewContent = (
     <article className="space-y-10">
-      <section className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
-        <EventThumbnail
-          imageUrl={event.imageUrl}
-          alt={event.title}
-          rounded="none"
-        />
-        <div className="bg-white p-6 dark:bg-zinc-900/50">
-          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
-            {event.title}
-          </h1>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            {formatEventDateTime(event.date, event.startTime)}
-            {event.endTime && ` 〜 ${event.endTime}`}
-          </p>
-          <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">
-            {event.location}
-          </p>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            {event.organizerName}
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {(event.participationMode ?? (event.requiresRegistration ? "required" : "none")) === "required" && (
-              <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                申込必須
-              </span>
-            )}
-            {(event.participationMode ?? "none") === "optional" && (
-              <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                申込任意
-              </span>
-            )}
-            {(event.participationMode ?? "none") === "none" && (
-              <>
-                <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
-                  申込不要
-                </span>
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                  当日は会場に直接お越しください
-                </span>
-              </>
-            )}
-            {event.salonOnly && (
-              <span className="rounded bg-[var(--accent)]/20 px-2 py-0.5 text-xs text-[var(--accent)]">
-                サロン限定
-              </span>
-            )}
-            {event.childFriendly && (
-              <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                子連れOK
-              </span>
-            )}
-            <span
-              className={`rounded px-2 py-0.5 text-xs ${
-                event.price === 0
-                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                  : "bg-zinc-100 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
-              }`}
-            >
-              {event.price === 0 ? "無料" : `¥${event.price}`}
-            </span>
-            {event.tags?.map((tagId) => (
-              <span
-                key={tagId}
-                className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-              >
-                {getTagLabel(tagId)}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 主催者に相談する（メインCTAとして強調） */}
-      <EventConsultationCard
-        eventId={id}
-        eventTitle={event.title}
-        organizerName={event.organizerName}
-      />
+      <EventDetailHero event={event} />
 
       {/* 主CTA + 補助アクション（参加方式に応じて可変） */}
       <EventDetailCTABlock
@@ -135,6 +62,14 @@ export default async function EventDetailPage({ params }: Props) {
         location={event.location}
         latitude={event.latitude}
         longitude={event.longitude}
+        hideSave
+      />
+
+      {/* 主催者に相談する */}
+      <EventConsultationCard
+        eventId={id}
+        eventTitle={event.title}
+        organizerName={event.organizerName}
       />
 
       {((event.participationMode ?? "none") === "optional" || (event.participationMode ?? "none") === "none") && (
@@ -183,97 +118,103 @@ export default async function EventDetailPage({ params }: Props) {
         </section>
       )}
 
-      <section>
-        <GlyphSectionTitle as="h2" className="[&_h2]:text-base [&_h2]:font-medium [&_h2]:text-[var(--mg-muted)]">
-          説明
-        </GlyphSectionTitle>
-        <p className="mt-2 leading-relaxed text-zinc-700 dark:text-zinc-300">
-          {event.description}
-        </p>
-      </section>
+      <section className="space-y-4">
+        {event.description && (
+          <section className="rounded-[24px] border border-slate-200/90 bg-white p-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-slate-400" aria-hidden />
+              <h2 className="text-[16px] font-semibold text-slate-900">概要</h2>
+            </div>
+            <div className="mt-3 text-sm leading-7 text-slate-600 whitespace-pre-wrap">
+              {event.description}
+            </div>
+          </section>
+        )}
 
-      <EventOrganizerCard
-        organizerName={event.organizerName}
-        organizerId={organizerId ?? undefined}
-        organizerAvatarUrl={organizerAvatarUrl ?? undefined}
-        organizerRegion={organizerRegion ?? undefined}
-        organizerBio={organizerBio ?? undefined}
-        eventCount={otherEvents.length}
-      />
+        {(event.itemsToBring?.length || event.rainPolicy || event.registrationNote) ? (
+          <section className="rounded-[24px] border border-slate-200/90 bg-white p-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+            <div className="flex items-center gap-2">
+              <Backpack className="h-4 w-4 text-slate-400" aria-hidden />
+              <h2 className="text-[16px] font-semibold text-slate-900">持ち物・参加条件</h2>
+            </div>
+            <div className="mt-3 space-y-2">
+              {event.itemsToBring && event.itemsToBring.length > 0 && (
+                <ul className="space-y-2">
+                  {event.itemsToBring.map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" aria-hidden />
+                      <span className="min-w-0">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {event.rainPolicy && (
+                <div className="flex items-start gap-2 text-sm text-slate-600">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" aria-hidden />
+                  <span className="min-w-0">雨天時：{event.rainPolicy}</span>
+                </div>
+              )}
+              {event.requiresRegistration && event.registrationNote && (
+                <div className="flex items-start gap-2 text-sm text-slate-600">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" aria-hidden />
+                  <span className="min-w-0 whitespace-pre-wrap">注意事項：{event.registrationNote}</span>
+                </div>
+              )}
+            </div>
+          </section>
+        ) : null}
 
-      <section className="space-y-5 rounded-xl border p-6 [border-color:var(--mg-line)] bg-white dark:bg-zinc-900/50">
-        <dl className="space-y-5">
-        <div>
-          <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">日時</dt>
-          <dd className="mt-1">
-            {event.date} {event.startTime}
-            {event.endTime && ` 〜 ${event.endTime}`}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">場所</dt>
-          <dd className="mt-1">
-            <span className="font-medium">{event.location}</span>
-            <br />
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">{event.address}</span>
-          </dd>
-        </div>
-        {event.access && (
-          <div>
-            <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">アクセス</dt>
-            <dd className="mt-1 text-sm">{event.access}</dd>
-          </div>
+        {(event.location || event.address || event.access) && (
+          <section className="rounded-[24px] border border-slate-200/90 bg-white p-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <MapPinned className="h-4 w-4 text-slate-400" aria-hidden />
+                <h2 className="text-[16px] font-semibold text-slate-900">アクセス</h2>
+              </div>
+              <a
+                href={getMapsUrl({
+                  address: event.address || event.location || "",
+                  venueName: event.location,
+                  latitude: event.latitude,
+                  longitude: event.longitude,
+                })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-11 inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors active:bg-slate-50"
+              >
+                地図を開く
+              </a>
+            </div>
+            <div className="mt-3 space-y-2">
+              {event.location && (
+                <div className="flex items-start gap-2 text-sm text-slate-600">
+                  <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                  <span className="min-w-0">{event.location}</span>
+                </div>
+              )}
+              {event.address && (
+                <div className="flex items-start gap-2 text-sm text-slate-600">
+                  <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                  <span className="min-w-0">{event.address}</span>
+                </div>
+              )}
+              {event.access && (
+                <div className="mt-1 text-sm leading-7 text-slate-600 whitespace-pre-wrap">
+                  {event.access}
+                </div>
+              )}
+            </div>
+          </section>
         )}
-        <div>
-          <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">料金</dt>
-          <dd className="mt-1">
-            {event.price === 0 ? "無料" : `¥${event.price}`}
-            {event.priceNote && (
-              <span className="ml-1 text-sm text-zinc-500">（{event.priceNote}）</span>
-            )}
-          </dd>
-        </div>
-        {event.itemsToBring && event.itemsToBring.length > 0 && (
-          <div>
-            <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">持ち物</dt>
-            <dd className="mt-1">
-              <ul className="list-inside list-disc text-sm">
-                {event.itemsToBring.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </dd>
-          </div>
-        )}
-        {event.rainPolicy && (
-          <div>
-            <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">雨天時</dt>
-            <dd className="mt-1 text-sm">{event.rainPolicy}</dd>
-          </div>
-        )}
-        {event.requiresRegistration && event.registrationDeadline && (
-          <div>
-            <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">申込締切</dt>
-            <dd className="mt-1 text-sm">
-              {new Date(event.registrationDeadline).toLocaleString("ja-JP", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
-            </dd>
-          </div>
-        )}
-        {event.requiresRegistration && event.registrationNote && (
-          <div>
-            <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">申込メモ・注意事項</dt>
-            <dd className="mt-1 text-sm whitespace-pre-wrap">{event.registrationNote}</dd>
-          </div>
-        )}
-        <OrganizerContactSection
+
+        <EventOrganizerCard
           organizerName={event.organizerName}
-          organizerContact={event.organizerContact}
-          currentPath={`/events/${id}`}
+          organizerId={organizerId ?? undefined}
+          organizerAvatarUrl={organizerAvatarUrl ?? undefined}
+          organizerRegion={organizerRegion ?? undefined}
+          organizerBio={organizerBio ?? undefined}
+          eventCount={otherEvents.length}
         />
-        </dl>
       </section>
 
       <LoginBenefitsBanner returnTo={`/events/${id}`} />
@@ -281,6 +222,17 @@ export default async function EventDetailPage({ params }: Props) {
         <EventVolunteerSection eventId={id} returnTo={`/events/${id}`} />
       </div>
       <EventSupportCard eventId={id} />
+
+      {relatedEvents.length > 0 && (
+        <CompactEventListSection
+          title="関連イベント"
+          subtitle="同じテーマや近い地域のイベントです。"
+          events={relatedEvents.slice(0, 4)}
+          moreHref="/events"
+          moreLabel="イベント一覧へ"
+          showOrganizerName
+        />
+      )}
 
       {otherEvents.length > 0 && (
         <OrganizerOtherEventsSection
@@ -294,7 +246,7 @@ export default async function EventDetailPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[var(--mg-paper)]">
-      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur-sm dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
+      <header className="sticky top-[var(--mg-mobile-top-header-h)] z-50 border-b bg-white/95 backdrop-blur-sm sm:top-0 dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
         <div className="mx-auto max-w-2xl px-4 py-4">
           <Breadcrumb
             items={[

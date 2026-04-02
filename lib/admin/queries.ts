@@ -85,17 +85,24 @@ export async function getAdminDashboard(
     }
   }
 
-  const recentLogs: RecentLogItem[] = (logRes.data ?? []).map((row: any) => ({
-    id: row.id as string,
-    createdAt: row.created_at as string,
-    actionType: row.action_type as string,
-    reason: (row.reason as string | null) ?? null,
-    adminName:
-      (row.admin?.display_name as string | null) ??
-      (row.admin?.email as string | null) ??
-      null,
-    organizerName: (row.organizer?.organization_name as string | null) ?? null,
-  }));
+  const recentLogs: RecentLogItem[] = (logRes.data ?? []).map((row) => {
+    const r = row as Record<string, unknown> & {
+      admin?: { display_name?: string | null; email?: string | null } | null;
+      organizer?: { organization_name?: string | null } | null;
+    };
+    return {
+      id: r.id as string,
+      createdAt: r.created_at as string,
+      actionType: r.action_type as string,
+      reason: (r.reason as string | null) ?? null,
+      adminName:
+        (r.admin?.display_name as string | null) ??
+        (r.admin?.email as string | null) ??
+        null,
+      organizerName:
+        (r.organizer?.organization_name as string | null) ?? null,
+    };
+  });
 
   return {
     totalOrganizers: organizers.length,
@@ -218,10 +225,10 @@ export async function getAdminOrganizers(
       billingSource: info.billingSource,
       manualGrantActive: info.manualGrantActive,
       manualGrantExpiresAt: info.manualGrantExpiresAt,
-      grantReason: (o as any).manual_grant_reason ?? null,
+      grantReason: o.manual_grant_reason ?? null,
       eventCount: eventCountByOrg[o.id] ?? 0,
       publishedEventCount: publishedCountByOrg[o.id] ?? 0,
-      updatedAt: (o as any).updated_at ?? null,
+      updatedAt: (o as { updated_at?: string | null }).updated_at ?? null,
       isExpiringSoon,
       isExpired: !!info.manualGrantActive && isExpired,
       planStatusLabel: planStatusLabel(
@@ -380,18 +387,23 @@ export async function getAdminOrganizerDetail(
     createdBy: n.created_by as string | null,
   }));
 
-  const recentLogs = (logsRes.data ?? []).map((row: any) => ({
-    id: row.id as string,
-    createdAt: row.created_at as string,
-    actionType: row.action_type as string,
-    reason: (row.reason as string | null) ?? null,
-    adminName:
-      (row.admin?.display_name as string | null) ??
-      (row.admin?.email as string | null) ??
-      null,
-    beforeValue: row.before_value,
-    afterValue: row.after_value,
-  }));
+  const recentLogs = (logsRes.data ?? []).map((row) => {
+    const r = row as Record<string, unknown> & {
+      admin?: { display_name?: string | null; email?: string | null } | null;
+    };
+    return {
+      id: r.id as string,
+      createdAt: r.created_at as string,
+      actionType: r.action_type as string,
+      reason: (r.reason as string | null) ?? null,
+      adminName:
+        (r.admin?.display_name as string | null) ??
+        (r.admin?.email as string | null) ??
+        null,
+      beforeValue: r.before_value,
+      afterValue: r.after_value,
+    };
+  });
 
   return {
     profile: {
@@ -487,10 +499,14 @@ export async function getAdminLogs(
     query = query.or(`action_type.ilike.%${q}%,reason.ilike.%${q}%`);
   }
 
-  const { data, count } = await query.range(
+  const { data, count, error } = await query.range(
     (page - 1) * pageSize,
     page * pageSize - 1
   );
+
+  if (error) {
+    throw new Error(error.message ?? "管理ログの取得に失敗しました");
+  }
 
   const items = (data ?? []).map((row: Record<string, unknown>) => {
     const admin = row.admin as { email?: string | null; display_name?: string | null } | null;

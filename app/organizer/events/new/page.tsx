@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
+import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import type { Event, EventFormData } from "@/lib/events";
 import { eventToForm } from "@/lib/organizer-event-to-form";
 import { EVENT_TAGS } from "@/lib/db/types";
@@ -12,6 +14,9 @@ import { EventFormActions } from "@/components/organizer/events/EventFormActions
 import { buildPlanSummary, type PlanSummary } from "@/lib/organizer-plan-summary";
 import { OrganizerPlanInlineHint } from "@/components/organizer/OrganizerPlanInlineHint";
 import { OrganizerFreePlanBanner } from "@/components/organizer/OrganizerFreePlanBanner";
+import { getJstNowHm, getJstTodayYmd, toJstTimestamp } from "@/lib/jst-date";
+import { createClient } from "@/lib/supabase/client";
+import { useSupabaseUser } from "@/hooks/use-supabase-user";
 
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
 
@@ -43,7 +48,7 @@ const initialForm: EventFormData = {
   address: "",
   price: 0,
   priceNote: "",
-  organizerName: "地域振興会",
+  organizerName: "",
   organizerContact: "",
   rainPolicy: "",
   itemsToBring: [],
@@ -71,6 +76,14 @@ function validateForm(data: EventFormData): FormErrors {
     errors.description = "イベント概要を入力してください";
   if (!data.date) errors.date = "開催日を選択してください";
   if (!data.startTime) errors.startTime = "開始時刻を入力してください";
+  if (data.date && data.startTime) {
+    const startTs = toJstTimestamp(data.date, data.startTime);
+    if (startTs == null) {
+      errors.startTime = "開始時刻の形式が正しくありません";
+    } else if (startTs < Date.now()) {
+      errors.startTime = "開始日時が過去になっています";
+    }
+  }
   if (data.endTime && data.startTime) {
     const [sh, sm] = data.startTime.split(":").map(Number);
     const [eh, em] = data.endTime.split(":").map(Number);
@@ -152,6 +165,7 @@ function NewEventPageContent() {
     null
   );
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const { user } = useSupabaseUser();
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -196,6 +210,49 @@ function NewEventPageContent() {
   }, [copyFromId]);
 
   useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      if (!supabase) return;
+      try {
+        const { data } = await supabase
+          .from("organizers")
+          .select("organization_name, contact_email, contact_phone")
+          .eq("profile_id", user.id)
+          .maybeSingle();
+        if (cancelled || !data) return;
+
+        const orgName =
+          typeof (data as { organization_name?: unknown }).organization_name === "string"
+            ? (data as { organization_name: string }).organization_name.trim()
+            : "";
+        const email =
+          typeof (data as { contact_email?: unknown }).contact_email === "string"
+            ? (data as { contact_email: string }).contact_email.trim()
+            : "";
+        const phone =
+          typeof (data as { contact_phone?: unknown }).contact_phone === "string"
+            ? (data as { contact_phone: string }).contact_phone.trim()
+            : "";
+
+        setForm((prev) => ({
+          ...prev,
+          organizerName: prev.organizerName?.trim() ? prev.organizerName : orgName,
+          organizerContact: prev.organizerContact?.trim()
+            ? prev.organizerContact
+            : email || phone || prev.organizerContact,
+        }));
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
@@ -206,7 +263,10 @@ function NewEventPageContent() {
           buildPlanSummary(
             {
               subscription_status: d.organizer?.subscription_status ?? null,
+              stripe_status: d.organizer?.stripe_status ?? null,
               founder30_end_at: d.organizer?.founder30_end_at ?? null,
+              manual_grant_active: d.organizer?.manual_grant_active ?? false,
+              manual_grant_expires_at: d.organizer?.manual_grant_expires_at ?? null,
             },
             typeof d.monthlyPublished === "number" ? d.monthlyPublished : 0
           )
@@ -355,7 +415,9 @@ function NewEventPageContent() {
         if (pubRes.status === 402) {
           showToast(
             "error",
-            typeof pubJson?.error === "string" ? pubJson.error : "公開枠がありません"
+            typeof pubJson?.error === "string"
+              ? pubJson.error
+              : "今月の公開枠を使い切っています"
           );
           return;
         }
@@ -391,6 +453,10 @@ function NewEventPageContent() {
     return null;
   })();
 
+  const todayJst = getJstTodayYmd();
+  const nowJstHm = getJstNowHm();
+  const startTimeMin = form.date === todayJst ? nowJstHm : undefined;
+
   return (
     <div className="min-h-screen bg-[var(--mg-paper)] px-4 py-6 sm:px-6 sm:py-10">
       <div className="space-y-6 pb-24 sm:pb-8" ref={formTopRef}>
@@ -423,53 +489,59 @@ function NewEventPageContent() {
         </span>
       </div>
       {/* ページヘッダー */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+      <div className="flex flex-col gap-4">
+        <div className="min-w-0">
           <Link
             href="/organizer/events"
             className="text-sm text-slate-500 hover:text-slate-700 hover:underline"
           >
             ← イベント一覧へ
           </Link>
-          <h1 className="mt-2 text-xl font-bold text-slate-800 sm:text-2xl">
+          <h1 className="mt-2 text-xl font-bold text-slate-800 sm:text-2xl break-words text-balance">
             新しいイベントを作成
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 break-words leading-relaxed">
             必須項目だけ入力して、下書きを保存していきましょう。あとで編集・公開できます。
           </p>
         </div>
-        <EventFormActions
-          submitting={submitting}
-          canSubmit={agreedToTerms}
-          publishDisabledReason={publishDisabledReason}
-          onClickPublish={() => {
-            if (submitting) return;
-            if (!agreedToTerms) {
-              showToast("error", "利用規約への同意が必要です");
-              return;
-            }
-            if (publishDisabledReason === "no_slots") {
-              showToast("error", "公開枠がありません");
-              return;
-            }
-            if (publishDisabledReason === "required_missing") {
-              const formErrors = validateForm(form);
-              setErrors(formErrors);
-              setSubmitError("必須項目をご確認ください");
-              formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-              return;
-            }
-            setShowPublishConfirm(true);
-          }}
-          compact
-        />
+        <div className="w-full">
+          <EventFormActions
+            submitting={submitting}
+            canSubmit={agreedToTerms}
+            publishDisabledReason={publishDisabledReason}
+            onClickPublish={() => {
+              if (submitting) return;
+              if (!agreedToTerms) {
+                showToast("error", "利用規約への同意が必要です");
+                return;
+              }
+              if (publishDisabledReason === "no_slots") {
+                showToast("error", "今月の公開枠を使い切っています");
+                return;
+              }
+              if (publishDisabledReason === "required_missing") {
+                const formErrors = validateForm(form);
+                setErrors(formErrors);
+                setSubmitError("必須項目をご確認ください");
+                formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                return;
+              }
+              setShowPublishConfirm(true);
+            }}
+            compact
+          />
+        </div>
       </div>
 
       <div className="space-y-3">
-        {planSummary?.isFreePlan && (
+        {planSummary?.isFreePlan && hasPublishSlot && (
           <OrganizerFreePlanBanner planSummary={planSummary} variant="soft" />
         )}
-        <OrganizerPlanInlineHint planSummary={planSummary} />
+        <OrganizerPlanInlineHint
+          planSummary={planSummary}
+          hideUpgradeCta={!hasPublishSlot}
+          hideSlots={!hasPublishSlot}
+        />
       </div>
 
       {submitError && (
@@ -482,15 +554,47 @@ function NewEventPageContent() {
       )}
 
       {!hasPublishSlot && (
-        <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-900 sm:px-5">
-          <p>今月の公開枠を使い切りました。プランを変更すると公開枠を増やせます。</p>
-          <Link
-            href="/organizer/settings/plan"
-            className="mt-2 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
-          >
-            プラン変更
-          </Link>
-        </div>
+        <aside
+          className="rounded-2xl border border-amber-200/80 bg-amber-50/70 px-4 py-4 text-amber-950 shadow-sm sm:px-5"
+          aria-label="公開枠不足の案内"
+        >
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100/70 text-amber-700">
+              <AlertTriangle className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-900">
+                今月の公開枠を使い切っています
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-amber-950/90">
+                このイベントは下書き保存できますが、公開するにはプラン変更が必要です。
+              </p>
+              <p className="mt-1 text-xs font-medium text-amber-900/90">
+                下書き保存はいつでもできます。
+              </p>
+              <p className="mt-2 text-xs font-medium text-amber-900/90">
+                現在の利用状況：
+                <span className="ml-1 font-semibold text-amber-950">
+                  {(planSummary?.monthlyPublished ?? 0)} / {(planSummary?.publishLimit ?? 0)}件
+                </span>
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Link
+                  href="/organizer/settings/plan"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:opacity-90"
+                >
+                  プラン変更して公開枠を増やす
+                </Link>
+                <Link
+                  href="/organizer/settings/plan"
+                  className="text-xs text-amber-900/85 underline underline-offset-2 hover:text-amber-950 hover:no-underline"
+                >
+                  料金プランを見る
+                </Link>
+              </div>
+            </div>
+          </div>
+        </aside>
       )}
 
       <form
@@ -655,6 +759,7 @@ function NewEventPageContent() {
                 type="date"
                 value={form.date}
                 onChange={handleChange}
+                min={todayJst}
                 className={`${inputBase} ${errors.date ? inputError : ""}`}
               />
             </FormField>
@@ -670,6 +775,7 @@ function NewEventPageContent() {
                 type="time"
                 value={form.startTime}
                 onChange={handleChange}
+                min={startTimeMin}
                 className={`${inputBase} ${errors.startTime ? inputError : ""}`}
               />
             </FormField>
@@ -1002,7 +1108,7 @@ function NewEventPageContent() {
                 return;
               }
               if (publishDisabledReason === "no_slots") {
-                showToast("error", "公開枠がありません");
+                showToast("error", "今月の公開枠を使い切っています");
                 return;
               }
               if (publishDisabledReason === "required_missing") {
@@ -1060,8 +1166,10 @@ function NewEventPageContent() {
 
 export default function NewEventPage() {
   return (
-    <Suspense fallback={<NewEventPageSkeleton />}>
-      <NewEventPageContent />
-    </Suspense>
+    <OrganizerRegistrationGate>
+      <Suspense fallback={<NewEventPageSkeleton />}>
+        <NewEventPageContent />
+      </Suspense>
+    </OrganizerRegistrationGate>
   );
 }

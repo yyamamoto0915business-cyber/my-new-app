@@ -128,6 +128,8 @@ export default function EventChatPage({ params }: Props) {
   }
 
   if (error) {
+    const eventDetailHref =
+      role === "organizer" ? `/organizer/events/${eventId}` : `/events/${eventId}`;
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
         <p className="text-sm text-red-600">{error}</p>
@@ -166,7 +168,7 @@ export default function EventChatPage({ params }: Props) {
           再読み込み
         </button>
         <Link
-          href={`/events/${eventId}`}
+          href={eventDetailHref}
           className="mt-4 ml-4 block text-sm text-zinc-600 hover:underline"
         >
           ← イベント詳細へ
@@ -190,12 +192,15 @@ export default function EventChatPage({ params }: Props) {
     );
   }
 
+  const eventDetailHref =
+    role === "organizer" ? `/organizer/events/${eventId}` : `/events/${eventId}`;
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-zinc-200/60 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto max-w-2xl px-4 py-4">
           <Link
-            href={`/events/${eventId}`}
+            href={eventDetailHref}
             className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400"
           >
             ← イベント詳細へ

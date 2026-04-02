@@ -17,7 +17,7 @@ export function HomeHeader({
   bookmarkCount = 0,
 }: Props) {
   return (
-    <header className="sticky top-0 z-[100] border-b border-slate-200/80 bg-white/90 backdrop-blur-md pt-[env(safe-area-inset-top,0px)]">
+    <header className="sticky top-0 z-[100] border-b border-slate-200/80 bg-white/90 backdrop-blur-md hidden sm:block">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
         <h1 className="min-w-0 shrink font-serif text-lg font-semibold text-slate-900 sm:text-xl">
           {platformTitle}

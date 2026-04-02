@@ -74,10 +74,10 @@ export function RegionFilter({ className = "", variant = "full", onRegionChange 
               key={p.id || "all"}
               type="button"
               onClick={() => updateParams({ prefecture: p.id })}
-              className={`min-h-[40px] shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`h-10 shrink-0 rounded-full px-4 text-sm font-medium transition-all whitespace-nowrap border ${
                 isSelected
-                  ? "border border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                  : "border border-[var(--border)] bg-white text-zinc-600 hover:bg-zinc-50 dark:bg-[var(--background)] dark:text-zinc-400 dark:hover:bg-zinc-800"
+                  ? "border-green-100 bg-green-50 text-green-700"
+                  : "border-slate-200 bg-white text-slate-600 active:bg-slate-50"
               }`}
             >
               {p.name}

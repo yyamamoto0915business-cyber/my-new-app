@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
-import { getMonthlyPublishedCount, FREE_PLAN_NORMAL_SLOTS, FOUNDER_BONUS_SLOTS } from "@/lib/billing";
+import {
+  getMonthlyPublishedCount,
+  FREE_PLAN_NORMAL_SLOTS,
+  FOUNDER_BONUS_SLOTS,
+  isPaidOrganizer,
+} from "@/lib/billing";
 
 /**
  * GET: 主催者の課金・特典・公開枠情報
@@ -33,12 +38,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "主催者情報を取得できません" }, { status: 500 });
   }
 
+  const { data: planState } = await supabase
+    .from("organizer_plan_state")
+    .select("stripe_status, manual_grant_active, manual_grant_expires_at")
+    .eq("organizer_id", organizerId)
+    .maybeSingle();
+
   const monthlyPublished = await getMonthlyPublishedCount(supabase, organizerId);
   const founderActive = !!(
     organizer.founder30_end_at && new Date(organizer.founder30_end_at) >= new Date()
   );
   const publishLimit =
-    organizer.subscription_status === "active"
+    isPaidOrganizer({
+      subscription_status: organizer.subscription_status ?? null,
+      stripe_status: planState?.stripe_status ?? null,
+      manual_grant_active: planState?.manual_grant_active ?? organizer.manual_grant_active ?? false,
+      manual_grant_expires_at:
+        planState?.manual_grant_expires_at ?? organizer.manual_grant_expires_at ?? null,
+    })
       ? null
       : founderActive
         ? FREE_PLAN_NORMAL_SLOTS + FOUNDER_BONUS_SLOTS // 4
@@ -53,7 +70,12 @@ export async function GET(request: NextRequest) {
       founder30_granted_at: organizer.founder30_granted_at,
       founder30_end_at: organizer.founder30_end_at,
       subscription_status: organizer.subscription_status,
+      stripe_status: planState?.stripe_status ?? null,
       current_period_end: organizer.current_period_end,
+      manual_grant_active:
+        planState?.manual_grant_active ?? organizer.manual_grant_active ?? false,
+      manual_grant_expires_at:
+        planState?.manual_grant_expires_at ?? organizer.manual_grant_expires_at,
       stripe_account_charges_enabled: organizer.stripe_account_charges_enabled,
       stripe_account_details_submitted: organizer.stripe_account_details_submitted ?? false,
     },

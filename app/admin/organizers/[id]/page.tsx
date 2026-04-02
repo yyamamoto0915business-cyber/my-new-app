@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Organizer } from "@/lib/db/types";
 import { resolveEffectivePlan } from "@/lib/admin-organizer-plan";
 import { AdminOrganizerActions } from "@/components/admin/AdminOrganizerActions";
+import { AdminOrganizerFeaturedControls } from "@/components/admin/AdminOrganizerFeaturedControls";
 import { redirect } from "next/navigation";
 
 type OrganizerDetail = {
@@ -20,6 +21,8 @@ type OrganizerDetail = {
   manualGrantPlan: string | null;
   manualGrantExpiresAt: string | null;
   manualGrantReason: string | null;
+  isFeatured: boolean;
+  featuredRank: number | null;
 };
 
 type LogRow = {
@@ -154,6 +157,12 @@ export default async function AdminOrganizerDetailPage({
   const publishedEvents =
     events?.filter((e: any) => e.status === "published").length ?? 0;
 
+  const { data: profileRow } = await supabase
+    .from("organizer_profiles")
+    .select("is_featured, featured_rank")
+    .eq("organizer_id", organizerId)
+    .maybeSingle();
+
   const detail: OrganizerDetail = {
     id: organizer.id,
     organizationName: organizer.organization_name,
@@ -169,6 +178,13 @@ export default async function AdminOrganizerDetailPage({
     manualGrantPlan: organizer.manual_grant_plan ?? null,
     manualGrantExpiresAt: planInfo.manualGrantExpiresAt,
     manualGrantReason: organizer.manual_grant_reason ?? null,
+    isFeatured: Boolean(profileRow?.is_featured),
+    featuredRank:
+      typeof profileRow?.featured_rank === "number"
+        ? profileRow.featured_rank
+        : profileRow?.featured_rank != null
+        ? Number(profileRow.featured_rank)
+        : null,
   };
 
   const logs: LogRow[] =
@@ -369,6 +385,18 @@ export default async function AdminOrganizerDetailPage({
           管理操作（手動付与・取消）
         </h3>
         <AdminOrganizerActions organizerId={detail.id} currentReason={detail.manualGrantReason ?? ""} />
+      </section>
+
+      {/* 3.5 注目主催者設定 */}
+      <section className="rounded-xl border border-slate-200 bg-white/90 p-4">
+        <h3 className="mb-3 text-sm font-semibold text-slate-900">
+          注目主催者設定
+        </h3>
+        <AdminOrganizerFeaturedControls
+          organizerId={detail.id}
+          initialIsFeatured={detail.isFeatured}
+          initialFeaturedRank={detail.featuredRank}
+        />
       </section>
 
       {/* 4. 操作履歴カード */}

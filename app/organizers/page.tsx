@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchFeaturedOrganizers } from "@/lib/db/organizers";
+import { fetchOrganizersForListing } from "@/lib/db/organizers";
 import Link from "next/link";
 import Image from "next/image";
 import { Breadcrumb } from "@/components/breadcrumb";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function OrganizersPage() {
   const supabase = await createClient();
   const organizers = supabase
-    ? await fetchFeaturedOrganizers(supabase, 24)
+    ? await fetchOrganizersForListing(supabase, 24)
     : [];
 
   return (
@@ -80,14 +80,14 @@ export default async function OrganizersPage() {
                     <h2 className="font-semibold text-slate-900 group-hover:text-slate-700">
                       {org.organizationName}
                     </h2>
-                    {org.region && (
+                    {org.activityArea && (
                       <p className="mt-0.5 text-xs text-slate-500">
-                        {org.region}
+                        {org.activityArea}
                       </p>
                     )}
-                    {org.bio && (
+                    {org.shortBio && (
                       <p className="mt-2 line-clamp-2 text-sm text-slate-600">
-                        {org.bio}
+                        {org.shortBio}
                       </p>
                     )}
                   </div>

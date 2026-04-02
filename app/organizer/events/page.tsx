@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { OrganizerHeader } from "@/components/organizer/organizer-header";
+import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import { EventSummaryCards } from "@/components/organizer/events/EventSummaryCards";
 import {
   EventListToolbar,
@@ -17,8 +18,11 @@ import type {
   DashboardEvent,
   BillingSummary,
 } from "@/app/api/organizer/dashboard/route";
+import type { PlanSummary } from "@/lib/organizer-plan-summary";
+import { OrganizerFreePlanBanner } from "@/components/organizer/OrganizerFreePlanBanner";
+import { OrganizerPlanInlineHint } from "@/components/organizer/OrganizerPlanInlineHint";
 
-const BILLING_HREF = "/organizer/settings/billing";
+const PAYOUTS_HREF = "/organizer/settings/payouts";
 
 export default function OrganizerEventsPage() {
   const [kpis, setKpis] = useState<DashboardKpis>({
@@ -30,6 +34,7 @@ export default function OrganizerEventsPage() {
   const [todos, setTodos] = useState<DashboardTodo[]>([]);
   const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
+  const [planSummary, setPlanSummary] = useState<PlanSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -43,18 +48,20 @@ export default function OrganizerEventsPage() {
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/organizer/dashboard");
+      const res = await fetch("/api/organizer/dashboard", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setKpis(data.kpis ?? kpis);
       setTodos(data.todos ?? []);
       setEvents(data.events ?? []);
       setBillingSummary(data.billingSummary ?? null);
+      setPlanSummary(data.planSummary ?? null);
     } catch {
       setKpis({ hosting: 0, needsAction: 0, pendingApplications: 0, unreadMessages: 0 });
       setTodos([]);
       setEvents([]);
       setBillingSummary(null);
+      setPlanSummary(null);
     } finally {
       setLoading(false);
     }
@@ -100,18 +107,17 @@ export default function OrganizerEventsPage() {
   }, [events, searchQuery, statusFilter, sortBy]);
 
   return (
-    <div className="space-y-6">
+    <OrganizerRegistrationGate>
+      <div className="space-y-6">
       {/* ページヘッダー */}
       <OrganizerHeader
         title="イベント管理"
-        description="作成したイベントの確認・編集・公開管理ができます"
+        description="作成したイベントの確認・編集・公開設定を行います"
         backHref="/"
         backLabel="← 探すへ"
         primaryCtaLabel="新しいイベントを作成"
         primaryCtaHref="/organizer/events/new"
-        secondaryCtaLabel="募集を作成"
-        secondaryCtaHref="/organizer/recruitments/new"
-        tertiaryCtaHref={BILLING_HREF}
+        tertiaryCtaHref={PAYOUTS_HREF}
         tertiaryCtaHighlight={billingSummary?.paymentSetupStatus !== "ok"}
       />
 
@@ -137,18 +143,23 @@ export default function OrganizerEventsPage() {
         </div>
       ) : (
         <>
-          {/* 決済未設定バナー */}
+          {planSummary?.isFreePlan && (
+            <OrganizerFreePlanBanner planSummary={planSummary} variant="soft" />
+          )}
+          <OrganizerPlanInlineHint planSummary={planSummary} />
+
+          {/* 売上受取未設定 */}
           {billingSummary && billingSummary.paymentSetupStatus !== "ok" && (
             <section>
               <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 sm:px-5">
                 <p className="text-sm text-amber-900">
-                  イベントで参加費を集めるには、先に決済設定が必要です
+                  イベントで参加費を集めるには、先に売上受取設定（Stripe）が必要です
                 </p>
                 <Link
-                  href={BILLING_HREF}
+                  href={PAYOUTS_HREF}
                   className="mt-2 inline-block rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
                 >
-                  設定する
+                  売上受取を設定する
                 </Link>
               </div>
             </section>
@@ -164,6 +175,13 @@ export default function OrganizerEventsPage() {
               onStatusClick={setStatusFilter}
               activeFilter={statusFilter}
             />
+          </section>
+
+          <section>
+            <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm sm:px-5">
+              このページでは、イベント本体の作成・編集・公開・決済設定を管理します。
+              スタッフ募集は各イベントカードの「スタッフ募集を管理」から設定できます。
+            </div>
           </section>
 
           {/* 要対応パネル */}
@@ -204,10 +222,10 @@ export default function OrganizerEventsPage() {
                 billingSummary.paymentSetupStatus !== "ok" && (
                   <>
                     <Link
-                      href={BILLING_HREF}
+                      href={PAYOUTS_HREF}
                       className="mx-1 font-medium text-amber-600 hover:underline"
                     >
-                      決済を設定する
+                      売上受取を設定する
                     </Link>
                     <span className="mx-1">/</span>
                   </>
@@ -223,7 +241,7 @@ export default function OrganizerEventsPage() {
                 href="/organizer/recruitments/new"
                 className="text-amber-600 hover:underline"
               >
-                募集を作る
+                スタッフ募集を作る
               </Link>
             </p>
           )}
@@ -260,6 +278,7 @@ export default function OrganizerEventsPage() {
           </section>
         </>
       )}
-    </div>
+      </div>
+    </OrganizerRegistrationGate>
   );
 }

@@ -2,6 +2,7 @@
 import type { Event } from "./db/types";
 import { mockEvents } from "./events-mock";
 import { getCreatedEvents } from "./created-events-store";
+import { getJstTodayYmd } from "./jst-date";
 
 export type { Event, EventFormData } from "./db/types";
 
@@ -27,8 +28,7 @@ export function getEventsByDateRange(
   specificDate?: string | null
 ): Event[] {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = getJstTodayYmd(today);
 
   if (specificDate) {
     return events.filter((e) => e.date === specificDate);
@@ -49,9 +49,9 @@ export function getEventsByDateRange(
   }
 
   const getEndDate = (days: number) => {
-    const end = new Date(today);
+    const end = new Date(today.getTime());
     end.setDate(end.getDate() + days);
-    return end.toISOString().split("T")[0];
+    return getJstTodayYmd(end);
   };
 
   const endStr =
@@ -69,7 +69,7 @@ export function getEventsByDateRange(
 export type EventStatus = "available" | "full" | "ended";
 
 export function getEventStatus(e: Event): EventStatus {
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getJstTodayYmd();
   if (e.date < todayStr) return "ended";
   if (e.capacity != null && e.capacity <= 0) return "full";
   return "available";
@@ -164,7 +164,7 @@ export type RankingType = "newest" | "popular" | "satisfaction";
  * 優先順位: 1) 開催中（今日） 2) 近日（startが近い） 3) isFeatured（あれば）
  */
 export function getRecommendedEvents(events: Event[], limit = 3): Event[] {
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getJstTodayYmd();
   const futureOrToday = events.filter((e) => e.date >= todayStr);
   const copy = [...futureOrToday];
   copy.sort((a, b) => {
@@ -181,7 +181,7 @@ export function getRankedEvents(
   type: RankingType,
   limit = 10
 ): Event[] {
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getJstTodayYmd();
   const futureOrToday = events.filter((e) => e.date >= todayStr);
   const copy = [...futureOrToday];
 

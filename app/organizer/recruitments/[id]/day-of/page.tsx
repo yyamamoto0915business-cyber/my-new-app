@@ -146,7 +146,7 @@ export default function DayOfModePage({
           <Breadcrumb
             items={[
               { label: "トップ", href: "/" },
-              { label: "募集管理", href: "/organizer/recruitments" },
+              { label: "スタッフ募集管理", href: "/organizer/recruitments" },
               { label: recruitment.title, href: `/organizer/recruitments/${resolvedId}` },
               { label: "当日モード" },
             ]}
@@ -297,7 +297,7 @@ export default function DayOfModePage({
             href={`/organizer/recruitments/${resolvedId}`}
             className="text-sm text-[var(--accent)] hover:underline"
           >
-            ← 募集管理に戻る
+            ← スタッフ募集管理に戻る
           </Link>
         </div>
       </main>

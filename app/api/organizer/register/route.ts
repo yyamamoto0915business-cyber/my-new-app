@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { createOrganizerWithGrants } from "@/lib/db/organizers-with-grants";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * POST: 主催者登録（Earlybird/Founder30付与付き）
@@ -31,11 +32,18 @@ export async function POST(request: NextRequest) {
     .eq("id", user.id)
     .maybeSingle();
   if (!profileRow) {
-    const { error: profileErr } = await supabase.from("profiles").insert({
-      id: user.id,
-      email: user.email ?? undefined,
-      display_name: user.name ?? user.email ?? undefined,
-    });
+    // profiles の INSERT は RLS で弾かれることがあるため、サーバー側では Service Role で補完する。
+    const admin = createAdminClient();
+    const writer = admin ?? supabase;
+
+    const { error: profileErr } = await writer.from("profiles").upsert(
+      {
+        id: user.id,
+        email: user.email ?? undefined,
+        display_name: user.name ?? user.email ?? undefined,
+      },
+      { onConflict: "id" }
+    );
     if (profileErr) {
       console.error("organizer register: profile ensure failed", profileErr);
       return NextResponse.json(

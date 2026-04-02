@@ -4,7 +4,7 @@ import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerByProfileId } from "@/lib/db/organizers";
 import { publishEvent, getOrganizerIdByEventId } from "@/lib/db/events";
-import { canPublishEvent } from "@/lib/billing";
+import { canPublishEvent, isEventPublishedThisMonthJst } from "@/lib/billing";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -41,12 +41,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "主催者情報を取得できません" }, { status: 500 });
   }
 
-  const check = await canPublishEvent(supabase, organizerId, organizer);
-  if (!check.ok) {
-    return NextResponse.json(
-      { error: check.message, code: "PUBLISH_LIMIT_EXCEEDED", limit: check.limit, current: check.current },
-      { status: 402 }
-    );
+  // 同月内に一度公開済みのイベントは「再公開」扱いにして枠チェックをスキップ
+  const alreadyPublishedThisMonth = await isEventPublishedThisMonthJst(supabase, eventId);
+  if (!alreadyPublishedThisMonth) {
+    const check = await canPublishEvent(supabase, organizerId, organizer);
+    if (!check.ok) {
+      return NextResponse.json(
+        { error: check.message, code: "PUBLISH_LIMIT_EXCEEDED", limit: check.limit, current: check.current },
+        { status: 402 }
+      );
+    }
   }
 
   try {

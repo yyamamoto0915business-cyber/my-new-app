@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Story } from "@/lib/story-types";
+import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 
 const MOCK_ORGANIZER_ID = "org-1";
 const MOCK_ORGANIZER_NAME = "地域振興会";
@@ -29,7 +30,8 @@ export default function OrganizerStoriesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <OrganizerRegistrationGate>
+      <div className="min-h-screen bg-[var(--background)]">
       <header className="border-b border-[var(--border)] bg-white dark:bg-[var(--background)]">
         <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6">
           <Link
@@ -136,6 +138,7 @@ export default function OrganizerStoriesPage() {
           </Link>
         </div>
       </main>
-    </div>
+      </div>
+    </OrganizerRegistrationGate>
   );
 }

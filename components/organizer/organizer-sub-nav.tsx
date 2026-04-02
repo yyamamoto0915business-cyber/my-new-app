@@ -5,13 +5,28 @@ import { usePathname } from "next/navigation";
 
 const SUB_NAV_ITEMS = [
   { href: "/organizer/events", label: "イベント", exact: true },
-  { href: "/organizer/recruitments", label: "募集管理" },
+  { href: "/organizer/recruitments", label: "スタッフ募集管理" },
   { href: "/organizer/stories", label: "ストーリー" },
+  { href: "/organizer/settings/plan", label: "主催者プラン（公開枠）" },
+  { href: "/organizer/settings/payouts", label: "売上受取" },
   { href: "/organizer/settings", label: "設定" },
 ] as const;
 
 function isActive(pathname: string | null, href: string, exact?: boolean): boolean {
   if (!pathname) return false;
+  if (href === "/organizer/settings/plan") {
+    return pathname === "/organizer/settings/plan" || pathname.startsWith("/organizer/settings/plan/");
+  }
+  if (href === "/organizer/settings/payouts") {
+    return (
+      pathname === "/organizer/settings/payouts" || pathname.startsWith("/organizer/settings/payouts/")
+    );
+  }
+  if (href === "/organizer/settings") {
+    if (pathname.startsWith("/organizer/settings/plan")) return false;
+    if (pathname.startsWith("/organizer/settings/payouts")) return false;
+    return pathname === "/organizer/settings" || pathname.startsWith("/organizer/settings/");
+  }
   if (exact) return pathname === href || pathname === `${href}/`;
   return pathname.startsWith(href);
 }

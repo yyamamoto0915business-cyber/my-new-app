@@ -46,7 +46,7 @@ export default function SavedPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <header className="sticky top-[48px] z-30 border-b border-[var(--border)] bg-white/95 px-4 py-3 backdrop-blur-sm sm:top-0 dark:bg-[var(--background)]">
+      <header className="sticky top-[var(--mg-mobile-top-header-h)] z-30 border-b border-[var(--border)] bg-white/95 px-4 py-3 backdrop-blur-sm sm:top-0 dark:bg-[var(--background)]">
         <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
           保存したイベント
         </h1>

@@ -6,12 +6,14 @@ import { createClient } from "@/lib/supabase/server";
 import {
   fetchPublishedEventWithOrganizerInfo,
   fetchOtherPublishedEventsByOrganizer,
+  fetchRelatedPublishedEvents,
   type EventWithOrganizerInfo,
 } from "./db/events";
 import { getEventById } from "./events";
 
 export type EventForPublicPage = EventWithOrganizerInfo & {
   otherEvents?: Event[];
+  relatedEvents?: Event[];
 };
 
 /** 公開イベント1件取得 + 主催者情報 + 他イベント（DB優先） */
@@ -30,7 +32,16 @@ export async function getEventForPublicPage(id: string): Promise<EventForPublicP
                 3
               )
             : [];
-        return { ...eventWithOrg, otherEvents };
+        const relatedEvents = await fetchRelatedPublishedEvents(
+          supabase,
+          {
+            id,
+            tags: eventWithOrg.tags ?? [],
+            prefecture: eventWithOrg.prefecture ?? undefined,
+          },
+          4
+        );
+        return { ...eventWithOrg, otherEvents, relatedEvents };
       }
     } catch {
       // DB未接続 or スキーマ未適用時はフォールバック

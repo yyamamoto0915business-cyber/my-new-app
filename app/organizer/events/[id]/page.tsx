@@ -4,9 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import type { Event, EventFormData } from "@/lib/events";
+import { eventToForm } from "@/lib/organizer-event-to-form";
 import { EVENT_TAGS } from "@/lib/db/types";
 import { EventFormSection } from "@/components/organizer/events/EventFormSection";
 import { EventImageInput } from "@/components/organizer/events/EventImageInput";
+import { getJstNowHm, getJstTodayYmd, toJstTimestamp } from "@/lib/jst-date";
 
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
 
@@ -32,40 +34,6 @@ const STATUS_LABELS: Record<string, string> = {
   draft: "下書き",
 };
 
-function eventToForm(event: Event): EventFormData {
-  return {
-    title: event.title,
-    imageUrl: event.imageUrl ?? "",
-    description: event.description,
-    date: event.date,
-    startTime: event.startTime,
-    endTime: event.endTime ?? "",
-    location: event.location,
-    address: event.address,
-    price: event.price ?? 0,
-    priceNote: event.priceNote ?? "",
-    organizerName: event.organizerName ?? "",
-    organizerContact: event.organizerContact ?? "",
-    rainPolicy: event.rainPolicy ?? "",
-    itemsToBring: event.itemsToBring ?? [],
-    access: event.access ?? "",
-    childFriendly: event.childFriendly ?? false,
-    prefecture: event.prefecture ?? "",
-    city: event.city ?? "",
-    area: event.area ?? "",
-    tags: event.tags ?? [],
-    sponsorTicketPrices: event.sponsorTicketPrices ?? [],
-    sponsorPerks: event.sponsorPerks ?? {},
-    prioritySlots: event.prioritySlots ?? 0,
-    englishGuideAvailable: event.englishGuideAvailable ?? false,
-    capacity: event.capacity,
-    requiresRegistration: event.requiresRegistration ?? false,
-    participationMode: event.participationMode ?? "none",
-    registrationDeadline: event.registrationDeadline,
-    registrationNote: event.registrationNote,
-  };
-}
-
 function validateForm(data: EventFormData): FormErrors {
   const errors: FormErrors = {};
   if (!data.title.trim()) errors.title = "イベント名を入力してください";
@@ -73,6 +41,14 @@ function validateForm(data: EventFormData): FormErrors {
     errors.description = "イベント概要を入力してください";
   if (!data.date) errors.date = "開催日を選択してください";
   if (!data.startTime) errors.startTime = "開始時刻を入力してください";
+  if (data.date && data.startTime) {
+    const startTs = toJstTimestamp(data.date, data.startTime);
+    if (startTs == null) {
+      errors.startTime = "開始時刻の形式が正しくありません";
+    } else if (startTs < Date.now()) {
+      errors.startTime = "開始日時が過去になっています";
+    }
+  }
   if (data.endTime && data.startTime) {
     const [sh, sm] = data.startTime.split(":").map(Number);
     const [eh, em] = data.endTime.split(":").map(Number);
@@ -295,6 +271,10 @@ export default function EditEventPage() {
     );
   }
 
+  const todayJst = getJstTodayYmd();
+  const nowJstHm = getJstNowHm();
+  const startTimeMin = form.date === todayJst ? nowJstHm : undefined;
+
   const hasRequired =
     form.participationMode === "required" ||
     form.participationMode === "optional";
@@ -488,6 +468,7 @@ export default function EditEventPage() {
                 type="date"
                 value={form.date}
                 onChange={handleChange}
+                min={todayJst}
                 className={`${inputBase} ${errors.date ? inputError : ""}`}
               />
             </FormField>
@@ -503,6 +484,7 @@ export default function EditEventPage() {
                 type="time"
                 value={form.startTime}
                 onChange={handleChange}
+                min={startTimeMin}
                 className={`${inputBase} ${errors.startTime ? inputError : ""}`}
               />
             </FormField>

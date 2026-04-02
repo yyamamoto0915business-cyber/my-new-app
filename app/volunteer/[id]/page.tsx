@@ -101,7 +101,7 @@ export default function VolunteerDetailPage() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/80">
+      <header className="sticky top-[calc(var(--mg-mobile-top-header-h)+env(safe-area-inset-top,0px))] z-30 border-b border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-md sm:top-0 sm:z-50 dark:border-zinc-700/60 dark:bg-zinc-900/80">
         <div className="mx-auto max-w-3xl px-4 py-4">
           <Breadcrumb
             items={[

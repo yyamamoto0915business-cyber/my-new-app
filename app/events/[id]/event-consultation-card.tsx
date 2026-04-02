@@ -17,11 +17,13 @@ export function EventConsultationCard({ eventId, eventTitle, organizerName }: Pr
   const [openIntentId, setOpenIntentId] = useState<string | undefined>(undefined);
 
   return (
-    <section className="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm dark:border-emerald-800/50 dark:bg-zinc-900/50">
+    <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)] sm:p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 sm:text-lg">主催者に相談できます</h2>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+          <h2 className="text-[16px] font-semibold text-slate-900 sm:text-lg">
+            主催者に相談できます
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
             分からないことや参加前の相談があれば、主催者へ直接メッセージできます。
           </p>
         </div>
@@ -55,7 +57,7 @@ export function EventConsultationCard({ eventId, eventTitle, organizerName }: Pr
                 setOpenIntentId(intentId);
                 setOpenSignal((s) => s + 1);
               }}
-              className="min-h-[32px] rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-200 dark:hover:bg-emerald-900/20"
+              className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition-colors active:bg-slate-50"
             >
               {t}
             </button>

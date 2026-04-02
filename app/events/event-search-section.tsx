@@ -94,7 +94,7 @@ export function EventSearchSection({
       )}
 
       <div>
-        <h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+        <h3 className="text-sm font-medium text-slate-800 dark:text-zinc-100">
           カテゴリ
         </h3>
         <div
@@ -109,10 +109,10 @@ export function EventSearchSection({
               key={tag.id}
               type="button"
               onClick={() => toggleTag(tag.id)}
-              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs ${
+              className={`whitespace-nowrap h-10 inline-flex items-center rounded-full px-4 text-sm font-medium border transition-all ${
                 selectedTags.includes(tag.id)
-                  ? "bg-[var(--accent)] text-white"
-                  : "border border-[var(--border)] bg-white text-zinc-700 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  ? "border-green-100 bg-green-50 text-green-700"
+                  : "border-slate-200 bg-white text-slate-600 active:bg-slate-50 dark:bg-zinc-900 dark:text-zinc-200"
               }`}
             >
               {tag.label}
@@ -122,24 +122,26 @@ export function EventSearchSection({
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+        <h3 className="text-sm font-medium text-slate-800 dark:text-zinc-100">
           キーワード
         </h3>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <input
-            type="search"
-            placeholder="イベント名・主催者・場所で検索..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onSearch()}
-            className="flex-1 rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm dark:bg-zinc-800 dark:text-zinc-100"
-          />
+          <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4">
+            <input
+              type="search"
+              placeholder="地域やイベント名で探す"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && onSearch()}
+              className="flex-1 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none dark:text-zinc-100"
+            />
+          </div>
           <button
             type="button"
             onClick={onSearch}
-            className="rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-white hover:opacity-90"
+            className="h-11 rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors active:bg-slate-50"
           >
-            検索する
+            検索
           </button>
         </div>
       </div>

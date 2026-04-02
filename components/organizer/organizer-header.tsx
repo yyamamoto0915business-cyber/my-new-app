@@ -15,15 +15,20 @@ type Props = {
   descriptionClassName?: string;
   backHref?: string;
   backLabel?: string;
+  /** 右上の「メッセージ」導線を表示する */
+  showMessages?: boolean;
   /** プライマリCTA（未指定時はイベント用：新規作成） */
   primaryCtaLabel?: string;
   primaryCtaHref?: string;
+  /** プライマリCTAを表示する（例：設定ページでは非表示にしたい） */
+  showPrimaryCta?: boolean;
   /** セカンダリCTA（例：募集作成） */
   secondaryCtaLabel?: string;
   secondaryCtaHref?: string;
-  /** 決済設定ボタン（主催ダッシュボード用） */
+  /** サブ導線（例：売上受取設定） */
   tertiaryCtaHref?: string;
-  /** 決済未設定時はやや目立つスタイルにする */
+  tertiaryCtaLabel?: string;
+  /** 未設定時はやや目立つスタイルにする */
   tertiaryCtaHighlight?: boolean;
 };
 
@@ -33,11 +38,14 @@ export function OrganizerHeader({
   description,
   backHref = "/events",
   backLabel = "← イベント一覧へ",
+  showMessages = true,
   primaryCtaLabel = "新規作成",
   primaryCtaHref = "/organizer/events/new",
+  showPrimaryCta = true,
   secondaryCtaLabel,
   secondaryCtaHref,
   tertiaryCtaHref,
+  tertiaryCtaLabel = "売上受取設定",
   tertiaryCtaHighlight,
   titleClassName,
   descriptionClassName,
@@ -68,17 +76,19 @@ export function OrganizerHeader({
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link
-              href={MESSAGES_HREF}
-              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              メッセージ
-              {unreadCount > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-medium text-white">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              )}
-            </Link>
+            {showMessages && (
+              <Link
+                href={MESSAGES_HREF}
+                className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                メッセージ
+                {unreadCount > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-medium text-white">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </Link>
+            )}
             {tertiaryCtaHref && (
               <Link
                 href={tertiaryCtaHref}
@@ -88,7 +98,7 @@ export function OrganizerHeader({
                     : "border border-[var(--border)] bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 }`}
               >
-                決済設定
+                {tertiaryCtaLabel}
               </Link>
             )}
             {secondaryCtaHref && secondaryCtaLabel && (
@@ -99,12 +109,14 @@ export function OrganizerHeader({
                 {secondaryCtaLabel}
               </Link>
             )}
-            <Link
-              href={primaryCtaHref}
-              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-            >
-              {primaryCtaLabel}
-            </Link>
+            {showPrimaryCta && (
+              <Link
+                href={primaryCtaHref}
+                className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+              >
+                {primaryCtaLabel}
+              </Link>
+            )}
           </div>
         </div>
       </div>

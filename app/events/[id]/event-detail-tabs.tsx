@@ -27,7 +27,7 @@ export function EventDetailTabs({
 
   return (
     <>
-      <div className="sticky top-[57px] z-40 flex border-b border-zinc-200 bg-white/95 dark:border-zinc-700 dark:bg-zinc-900/95">
+      <div className="sticky top-[var(--mg-mobile-top-header-h)] z-40 flex border-b border-zinc-200 bg-white/95 dark:border-zinc-700 dark:bg-zinc-900/95 sm:top-0">
         {TABS.map((t) => (
           <button
             key={t}

@@ -19,17 +19,17 @@ export function SectionHeader({ title, href, subtitle, badge, linkLabel }: Props
     <div className="flex items-start justify-between gap-3">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">
+          <h2 className="text-[15px] font-semibold text-slate-900 dark:text-zinc-100 sm:text-lg">
             {title}
           </h2>
           {badge && (
-            <span className="rounded-md border border-[var(--border)] bg-white/80 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-[var(--background)] dark:text-zinc-400">
+            <span className="rounded-full border border-slate-200 bg-white/80 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-[var(--background)] dark:text-zinc-400">
               {badge}
             </span>
           )}
         </div>
         {subtitle && (
-          <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">{subtitle}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
         )}
       </div>
       {href && (

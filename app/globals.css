@@ -109,30 +109,6 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f0f0e;
-    --foreground: #ededed;
-    --foreground-muted: #9ca3af;
-    --accent: #5a8c3a;
-    --accent-hover: #6da047;
-    --accent-soft: #1e2e18;
-    --border: #2d2d2a;
-    --bg-gradient-from: #141413;
-    --bg-gradient-to: #1a1a18;
-
-    --mg-paper: #141312;
-    --mg-ink: #e8e6e3;
-    --mg-muted: #9a9691;
-    --mg-line: rgba(232, 230, 227, 0.12);
-    --mg-accent: #c9a227;
-    --mg-accent-soft: rgba(201, 162, 39, 0.18);
-    --mg-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    --mg-glow: 0 0 14px rgba(201, 162, 39, 0.18);
-    --mg-glow-strong: 0 0 24px rgba(201, 162, 39, 0.26);
-  }
-}
-
 @keyframes sakura-fall {
   0% {
     transform: translateY(-10px) translateX(0) rotate(0deg);
