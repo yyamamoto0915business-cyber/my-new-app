@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { Suspense } from "react";
+import { usePathname } from "next/navigation";
 import { Bookmark, BookOpenText } from "lucide-react";
 import { TopModeTabs } from "@/components/navigation/top-mode-tabs";
 import { NotificationBell } from "@/components/notification-bell";
 import { cn } from "@/lib/utils";
+import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 
 export const MOBILE_TOP_HEADER_HEIGHT_PX = 132;
 
@@ -14,6 +16,11 @@ type Props = {
 };
 
 export function MobileTopHeader({ className }: Props) {
+  const pathname = usePathname();
+  if (isEventDetailRoute(pathname ?? "")) {
+    return null;
+  }
+
   return (
     <header
       className={cn(

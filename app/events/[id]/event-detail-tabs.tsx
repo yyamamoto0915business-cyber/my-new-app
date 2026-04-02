@@ -3,48 +3,69 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Story } from "@/lib/story-types";
+import type { Event } from "@/lib/db/types";
 import { StoryCard } from "@/components/story/story-card";
 import { EventQnASection } from "@/components/event-qna-section";
+import { EventDetailHero } from "@/components/events/EventDetailHero";
+import { MobileEventHeader } from "@/components/events/detail/MobileEventHeader";
+import { EventSectionTabs } from "@/components/events/detail/EventSectionTabs";
+import { EventInfoCard } from "@/components/events/detail/EventInfoCard";
+import { MOBILE_EVENT_STICKY_SHELL } from "@/components/events/detail/detail-classes";
+import { cn } from "@/lib/utils";
 
 const TABS = ["概要", "主催者ストーリー", "みんなのレポ", "Q&A"] as const;
 
 type Props = {
   eventId: string;
+  eventTitle: string;
+  shareUrl: string;
+  event: Event;
   organizerStory: Story | null;
   repos: Story[];
+  /** `EventPrimaryActions` を1か所だけ渡す（内部でモバイル／デスクトップを切替） */
+  primaryActionsSlot: React.ReactNode;
   overviewChildren: React.ReactNode;
-  isAvailable: boolean;
 };
 
 export function EventDetailTabs({
   eventId,
+  eventTitle,
+  shareUrl,
+  event,
   organizerStory,
   repos,
+  primaryActionsSlot,
   overviewChildren,
-  isAvailable,
 }: Props) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("概要");
 
   return (
     <>
-      <div className="sticky top-[var(--mg-mobile-top-header-h)] z-40 flex border-b border-zinc-200 bg-white/95 dark:border-zinc-700 dark:bg-zinc-900/95 sm:top-0">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={`flex-1 py-3 text-center text-sm font-medium transition-colors ${
-              tab === t
-                ? "border-b-2 border-[var(--accent)] text-[var(--accent)]"
-                : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
+      <div className={cn(MOBILE_EVENT_STICKY_SHELL, "isolate")}>
+        <div className="sm:hidden">
+          <MobileEventHeader eventId={eventId} title={eventTitle} shareUrl={shareUrl} />
+        </div>
+        <EventSectionTabs
+          tabs={TABS}
+          value={tab}
+          onChange={(t) => setTab(t as (typeof TABS)[number])}
+        />
       </div>
 
-      <div className="py-6">
+      {/* モバイル: 情報カード →（デスクトップ: 概要時のみヒーロー）→ 主アクション */}
+      <div className="sm:hidden space-y-4">
+        <EventInfoCard event={event} />
+      </div>
+
+      {tab === "概要" && (
+        <div className="mt-6 hidden sm:block">
+          <EventDetailHero event={event} />
+        </div>
+      )}
+
+      <div className="mt-4 sm:mt-6">{primaryActionsSlot}</div>
+
+      <div className="py-6 sm:py-8">
         {tab === "概要" && overviewChildren}
 
         {tab === "主催者ストーリー" && (

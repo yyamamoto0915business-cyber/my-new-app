@@ -5,10 +5,12 @@ import { getEventStatus } from "@/lib/events";
 import { notFound } from "next/navigation";
 import { getTagLabel } from "@/lib/db/types";
 import { formatEventDateTime } from "@/lib/format-date";
+import type { CSSProperties } from "react";
 import { getOrganizerStoryForEvent, getReposForEvent } from "@/lib/stories-store";
-import { EventDetailClient } from "./event-detail-client";
+import { EventBottomActionBar } from "@/components/events/detail/EventBottomActionBar";
+import { MOBILE_EVENT_DETAIL_MAIN_PADDING_BOTTOM_PX } from "@/components/events/detail/layout-constants";
 import { EventDetailTabs } from "./event-detail-tabs";
-import { EventDetailCTABlock } from "./event-detail-cta-block";
+import { EventPrimaryActions } from "./event-detail-cta-block";
 import { OrganizerContactSection } from "./organizer-contact-section";
 import { EventConsultationCard } from "./event-consultation-card";
 import { EventSupportCard } from "./event-support-card";
@@ -16,10 +18,13 @@ import { EventVolunteerSection } from "@/components/event-volunteer-section";
 import { LoginBenefitsBanner } from "@/components/login-benefits-banner";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { GlyphSectionTitle } from "@/components/glyph/glyph-section-title";
-import { EventDetailHero } from "@/components/events/EventDetailHero";
 import { getMapsUrl } from "@/lib/maps-url";
 import { Backpack, Route as RouteIcon, FileText, MapPinned } from "lucide-react";
 import { CompactEventListSection } from "@/components/events/CompactEventListSection";
+import { cn } from "@/lib/utils";
+
+const SITE_BASE =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://my-new-app-self-iota.vercel.app";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -44,27 +49,32 @@ export default async function EventDetailPage({ params }: Props) {
   const otherEvents = "otherEvents" in event ? (event.otherEvents ?? []) : [];
   const relatedEvents = "relatedEvents" in event ? (event.relatedEvents ?? []) : [];
 
+  const participationModeProp = (event.participationMode ??
+    (event.requiresRegistration ? "required" : "none")) as
+    | "required"
+    | "optional"
+    | "none";
+
+  const primaryActions = isAvailable ? (
+    <EventPrimaryActions
+      eventId={id}
+      participationMode={participationModeProp}
+      price={event.price ?? 0}
+      isAvailable={isAvailable}
+      title={event.title}
+      date={event.date}
+      startTime={event.startTime}
+      endTime={event.endTime}
+      address={event.address}
+      location={event.location}
+      latitude={event.latitude}
+      longitude={event.longitude}
+      hideSave
+    />
+  ) : null;
+
   const overviewContent = (
     <article className="space-y-10">
-      <EventDetailHero event={event} />
-
-      {/* 主CTA + 補助アクション（参加方式に応じて可変） */}
-      <EventDetailCTABlock
-        eventId={id}
-        participationMode={(event.participationMode ?? (event.requiresRegistration ? "required" : "none")) as "required" | "optional" | "none"}
-        price={event.price ?? 0}
-        isAvailable={isAvailable}
-        title={event.title}
-        date={event.date}
-        startTime={event.startTime}
-        endTime={event.endTime}
-        address={event.address}
-        location={event.location}
-        latitude={event.latitude}
-        longitude={event.longitude}
-        hideSave
-      />
-
       {/* 主催者に相談する */}
       <EventConsultationCard
         eventId={id}
@@ -245,9 +255,10 @@ export default async function EventDetailPage({ params }: Props) {
     </article>
   );
 
+  const shareUrl = `${SITE_BASE.replace(/\/$/, "")}/events/${id}`;
   return (
     <div className="min-h-screen bg-[var(--mg-paper)]">
-      <header className="sticky top-[var(--mg-mobile-top-header-h)] z-50 border-b bg-white/95 backdrop-blur-sm sm:top-0 dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
+      <header className="sticky top-0 z-30 hidden border-b bg-white/95 backdrop-blur-sm [border-color:var(--mg-line)] sm:block dark:bg-zinc-900/95">
         <div className="mx-auto max-w-2xl px-4 py-4">
           <Breadcrumb
             items={[
@@ -259,31 +270,39 @@ export default async function EventDetailPage({ params }: Props) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-4">
+      <main
+        className={cn(
+          "mx-auto max-w-2xl px-4 py-4 sm:pb-6",
+          isAvailable
+            ? "max-sm:pb-[calc(var(--mg-event-main-pad)+env(safe-area-inset-bottom,0px))]"
+            : "max-sm:pb-[calc(88px+env(safe-area-inset-bottom,0px))]"
+        )}
+        style={
+          isAvailable
+            ? ({
+                "--mg-event-main-pad": `${MOBILE_EVENT_DETAIL_MAIN_PADDING_BOTTOM_PX}px`,
+              } as CSSProperties)
+            : undefined
+        }
+      >
         <EventDetailTabs
           eventId={id}
+          eventTitle={event.title}
+          shareUrl={shareUrl}
+          event={event}
           organizerStory={organizerStory}
           repos={repos}
+          primaryActionsSlot={primaryActions}
           overviewChildren={overviewContent}
-          isAvailable={isAvailable}
         />
       </main>
 
-      {isAvailable && (event.participationMode ?? (event.requiresRegistration ? "required" : "none")) === "required" && (
-        <EventDetailClient requiresRegistration targetId="event-cta" />
-      )}
-      {isAvailable && (event.participationMode ?? "none") !== "required" && (
-        <EventDetailClient
-          requiresRegistration={false}
+      {isAvailable && (
+        <EventBottomActionBar
           eventId={id}
-          address={event.address}
-          location={event.location}
-          latitude={event.latitude}
-          longitude={event.longitude}
-          title={event.title}
-          date={event.date}
-          startTime={event.startTime}
-          endTime={event.endTime}
+          participationMode={participationModeProp}
+          price={event.price ?? 0}
+          isAvailable={isAvailable}
         />
       )}
     </div>

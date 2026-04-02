@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Suspense, type CSSProperties } from "react";
+import { Suspense } from "react";
 import { MapBackground } from "@/components/MapBackground";
 import { BrandIntro } from "@/components/brand-intro";
 import { LanguageProvider } from "@/components/language-provider";
 import { APP_NAME, APP_SUBTITLE, APP_TAGLINE1 } from "@/lib/brand-copy";
 import { BottomNav } from "@/components/bottom-nav";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { MobileTopHeader, MOBILE_TOP_HEADER_HEIGHT_PX } from "@/components/navigation/mobile-top-header";
+import { MobileTopHeader } from "@/components/navigation/mobile-top-header";
+import { MobileMainShell } from "@/components/navigation/mobile-main-shell";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
 import { Geist } from "next/font/google";
@@ -84,18 +85,12 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <MobileTopHeader />
           </Suspense>
-          <div className="flex min-h-screen flex-col pb-[calc(72px+env(safe-area-inset-bottom,0px))] pt-[calc(var(--mg-mobile-top-header-h)+env(safe-area-inset-top,0px))] sm:pb-0 sm:pl-20 sm:pt-0"
-            style={
-              {
-                "--mg-mobile-top-header-h": `${MOBILE_TOP_HEADER_HEIGHT_PX}px`,
-              } as CSSProperties
-            }
-          >
+          <MobileMainShell>
             <div className="flex-1">{children}</div>
             <div className="sm:block">
               <SiteFooter />
             </div>
-          </div>
+          </MobileMainShell>
           <Suspense fallback={null}>
             <MobileBottomNav />
             <BottomNav />
