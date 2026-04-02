@@ -21,15 +21,22 @@ export async function ensureProfileRowForUser(
     .maybeSingle();
   if (data) return;
 
+  const payload = {
+    id: user.id,
+    email: user.email ?? undefined,
+    display_name: user.name ?? user.email ?? undefined,
+  };
+
   const admin = createAdminClient();
-  const writer = admin ?? supabase;
-  const { error } = await writer.from("profiles").upsert(
-    {
-      id: user.id,
-      email: user.email ?? undefined,
-      display_name: user.name ?? user.email ?? undefined,
-    },
-    { onConflict: "id" }
-  );
+  if (admin) {
+    const { error } = await admin.from("profiles").upsert(payload, {
+      onConflict: "id",
+    });
+    if (!error) return;
+  }
+
+  const { error } = await supabase.from("profiles").upsert(payload, {
+    onConflict: "id",
+  });
   if (error) throw error;
 }

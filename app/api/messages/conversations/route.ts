@@ -188,6 +188,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (/conversation upsert did not resolve id/i.test(errorMessage)) {
+      return NextResponse.json(
+        {
+          error:
+            "会話の初期化に失敗しました。時間をおいて再度お試しください。解消しない場合はサポートへお問い合わせください。",
+        },
+        { status: 503 }
+      );
+    }
+
     if (
       /foreign key|violates foreign key|23503/.test(errorMessage) ||
       (e &&
