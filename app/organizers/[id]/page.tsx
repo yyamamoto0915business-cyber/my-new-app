@@ -9,6 +9,8 @@ import { formatEventDateTime } from "@/lib/format-date";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { CATEGORY_LABELS } from "@/lib/categories";
 
+export const dynamic = "force-dynamic";
+
 type Props = {
   params: Promise<{ id: string }>;
 };

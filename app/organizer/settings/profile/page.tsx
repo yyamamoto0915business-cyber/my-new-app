@@ -843,6 +843,19 @@ export default function OrganizerProfileSettingsPage() {
           {success && (
             <p className="text-sm text-emerald-600" role="status">
               保存しました
+              {organizerId ? (
+                <>
+                  {" "}
+                  <Link
+                    href={`/organizers/${organizerId}`}
+                    className="font-medium underline underline-offset-2 hover:text-emerald-800"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    公開ページを確認
+                  </Link>
+                </>
+              ) : null}
             </p>
           )}
 
