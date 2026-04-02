@@ -63,17 +63,19 @@ export function TopModeTabs({ onTabClick, className }: Props) {
         className
       )}
     >
-      <div className="grid grid-cols-3 gap-1">
+      <div className="flex min-w-0 gap-1">
         {TABS.map((tab) => {
           const isActive = activeId === tab.id;
           const Icon = tab.icon;
+          const isVolunteer = tab.id === "volunteer";
           return (
             <Link
               key={tab.id}
               href={tab.href}
               onClick={() => onTabClick?.(tab.id)}
               className={cn(
-                "flex h-12 w-full items-center justify-center gap-2 rounded-[18px] px-3 text-sm font-semibold leading-none tracking-[-0.01em] transition-all duration-200 select-none",
+                "flex h-12 items-center justify-center gap-1.5 rounded-[18px] px-2.5 text-sm font-semibold leading-none tracking-[-0.01em] transition-all duration-200 select-none",
+                isVolunteer ? "shrink-0" : "min-w-0 flex-1",
                 "border border-transparent",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--mg-paper)]",
                 "active:scale-[0.99]",
@@ -84,7 +86,14 @@ export function TopModeTabs({ onTabClick, className }: Props) {
               aria-current={isActive ? "page" : undefined}
             >
               <Icon className="h-4 w-4 shrink-0 translate-y-[0.5px]" />
-              <span className="truncate translate-y-[0.5px]">{tab.label}</span>
+              <span
+                className={cn(
+                  "translate-y-[0.5px]",
+                  isVolunteer ? "whitespace-nowrap" : "truncate"
+                )}
+              >
+                {tab.label}
+              </span>
             </Link>
           );
         })}
