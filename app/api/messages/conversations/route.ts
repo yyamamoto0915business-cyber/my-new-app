@@ -78,6 +78,11 @@ export async function POST(request: NextRequest) {
     organizerId = fromBody && isUuid(fromBody) ? fromBody : null;
   }
 
+  const admin = createAdminClient();
+  if (safeEventId && !organizerId && admin) {
+    organizerId = await getOrganizerIdByEventId(admin, safeEventId);
+  }
+
   // 既存挙動に合わせ、eventId が来ているのに organizerId が引けない場合は 404
   if (!organizerId) {
     if (rawEventId) {
@@ -94,8 +99,6 @@ export async function POST(request: NextRequest) {
 
   const eventIdForConversation = safeEventId;
   // 既存会話の SELECT のみ RLS 回避用（参加者はまだメンバーでない行を読めないため）。
-  // create_or_get_conversation RPC は GRANT authenticated のみかつ auth.uid() 必須のため、必ずユーザーセッションの supabase で呼ぶ。
-  const admin = createAdminClient();
   const writerForRead = admin ?? supabase;
 
   // 参加者は他主催者の organizers 行を RLS で読めないため、profile_id で突合しない。
@@ -125,6 +128,7 @@ export async function POST(request: NextRequest) {
     if (!eventIdForConversation) {
       // 互換性: eventId が無いケースは既存の createOrGetConversation を利用
       const conversationId = await createOrGetConversation(supabase, {
+        callerUserId: user.id,
         eventId: eventIdForConversation,
         kind,
         organizerId,
@@ -149,6 +153,7 @@ export async function POST(request: NextRequest) {
       // 既存が見つかっても、過去の失敗で conversation_members が欠けている可能性があるため
       // createOrGetConversation で members 登録も再試行する（会話自体は upsert なので新規作成されない）
       const conversationId = await createOrGetConversation(supabase, {
+        callerUserId: user.id,
         eventId: eventIdForConversation,
         kind,
         organizerId,
@@ -159,6 +164,7 @@ export async function POST(request: NextRequest) {
 
     // 2) 無ければ新規作成（membersも2人分登録）
     const conversationId = await createOrGetConversation(supabase, {
+      callerUserId: user.id,
       eventId: eventIdForConversation,
       kind,
       organizerId,

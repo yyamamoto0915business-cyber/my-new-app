@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type InboxItem = {
   conversation_id: string;
@@ -36,10 +37,15 @@ export async function getInbox(
   }));
 }
 
-/** create_or_get_conversation RPC で会話を作成/取得 */
+/**
+ * 会話を作成/取得。
+ * 本番では Service Role 専用 RPC（caller を明示）を優先し、JWT が RPC に乗らない環境でも動かす。
+ * マイグレーション未適用時は従来の create_or_get_conversation にフォールバック。
+ */
 export async function createOrGetConversation(
   supabase: SupabaseClient,
   params: {
+    callerUserId: string;
     eventId: string | null;
     kind: string;
     organizerId: string;
@@ -48,6 +54,25 @@ export async function createOrGetConversation(
 ): Promise<string> {
   const eventId =
     params.eventId ?? "00000000-0000-0000-0000-000000000000";
+
+  const admin = createAdminClient();
+  if (admin) {
+    const { data, error } = await admin.rpc("create_or_get_conversation_for_user", {
+      p_caller: params.callerUserId,
+      p_event_id: eventId,
+      p_kind: params.kind,
+      p_organizer_id: params.organizerId,
+      p_other_user_id: params.otherUserId,
+    });
+    if (!error && data != null) {
+      return data as string;
+    }
+    const msg = (error?.message ?? "").toLowerCase();
+    const missingFn =
+      /does not exist|could not find|schema cache|42883|pgrst202/i.test(msg);
+    if (!missingFn) throw error;
+  }
+
   const { data, error } = await supabase.rpc("create_or_get_conversation", {
     p_event_id: eventId,
     p_kind: params.kind,

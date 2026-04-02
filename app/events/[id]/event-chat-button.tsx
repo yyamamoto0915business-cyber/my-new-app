@@ -84,6 +84,7 @@ export function EventChatButton({
       const res = await fetch("/api/messages/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           eventId,
           organizerId: organizerId ?? undefined,
@@ -252,6 +253,7 @@ function ModalBody({
         const res = await fetch("/api/messages/conversations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ eventId, kind: "event_inquiry" }),
         });
         const data = await res.json().catch(() => ({}));
