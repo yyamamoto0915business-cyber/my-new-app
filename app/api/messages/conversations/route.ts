@@ -93,8 +93,10 @@ export async function POST(request: NextRequest) {
   }
 
   const eventIdForConversation = safeEventId;
+  // 既存会話の SELECT のみ RLS 回避用（参加者はまだメンバーでない行を読めないため）。
+  // create_or_get_conversation RPC は GRANT authenticated のみかつ auth.uid() 必須のため、必ずユーザーセッションの supabase で呼ぶ。
   const admin = createAdminClient();
-  const writer = admin ?? supabase;
+  const writerForRead = admin ?? supabase;
 
   // 参加者は他主催者の organizers 行を RLS で読めないため、profile_id で突合しない。
   // 参加者本人 or 当該主催者本人のみ許可する。
@@ -122,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     if (!eventIdForConversation) {
       // 互換性: eventId が無いケースは既存の createOrGetConversation を利用
-      const conversationId = await createOrGetConversation(writer, {
+      const conversationId = await createOrGetConversation(supabase, {
         eventId: eventIdForConversation,
         kind,
         organizerId,
@@ -133,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     // 1) existing を event_id + organizer_user_id + participant_user_id で検索
     // organizer_user_id は organizers.profile_id に対応するので organizerId を使って突合
-    const { data: existing, error: existingError } = await writer
+    const { data: existing, error: existingError } = await writerForRead
       .from("conversations")
       .select("id")
       .eq("event_id", eventIdForConversation)
@@ -146,7 +148,7 @@ export async function POST(request: NextRequest) {
     if (existing?.id) {
       // 既存が見つかっても、過去の失敗で conversation_members が欠けている可能性があるため
       // createOrGetConversation で members 登録も再試行する（会話自体は upsert なので新規作成されない）
-      const conversationId = await createOrGetConversation(writer, {
+      const conversationId = await createOrGetConversation(supabase, {
         eventId: eventIdForConversation,
         kind,
         organizerId,
@@ -156,7 +158,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2) 無ければ新規作成（membersも2人分登録）
-    const conversationId = await createOrGetConversation(writer, {
+    const conversationId = await createOrGetConversation(supabase, {
       eventId: eventIdForConversation,
       kind,
       organizerId,
@@ -180,6 +182,22 @@ export async function POST(request: NextRequest) {
     if (/not allowed to create this conversation/i.test(errorMessage)) {
       return NextResponse.json(
         { error: "この会話を作成する権限がありません" },
+        { status: 403 }
+      );
+    }
+
+    if (
+      /permission denied for function|must be owner|42501/.test(errorMessage) ||
+      (e &&
+        typeof e === "object" &&
+        "code" in e &&
+        String((e as { code: string }).code) === "42501")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "会話の作成権限がありません。ログアウトして再度ログインしてからお試しください。",
+        },
         { status: 403 }
       );
     }
