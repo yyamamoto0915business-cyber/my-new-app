@@ -49,7 +49,7 @@ export type EventPrimaryActionsProps = {
 };
 
 const subBtnClass =
-  "flex min-h-[var(--mg-touch-min)] items-center justify-center gap-1.5 rounded-[var(--mg-radius)] border border-[var(--mg-line)] bg-zinc-50/80 px-2 py-2.5 text-xs font-semibold text-[var(--mg-muted)] shadow-sm transition active:bg-zinc-100 sm:text-sm";
+  "flex min-h-[var(--mg-touch-min)] items-center justify-center gap-1.5 rounded-[var(--mg-radius)] border border-[var(--mg-line)] bg-zinc-50/80 px-1.5 py-2.5 text-[11px] font-semibold leading-tight text-[var(--mg-muted)] shadow-sm transition active:bg-zinc-100 sm:px-2 sm:text-xs";
 
 const primaryBtnClass =
   "flex min-h-[52px] w-full items-center justify-center rounded-[var(--mg-radius)] bg-[var(--accent)] px-4 text-base font-bold text-white shadow-[var(--mg-shadow)] transition-opacity active:opacity-90 disabled:opacity-50";
@@ -210,7 +210,12 @@ export function EventPrimaryActions({
         hideSave ? "grid-cols-2" : "grid-cols-3"
       )}
     >
-      <button type="button" onClick={handleOpenMaps} className={subBtnClass}>
+      <button
+        type="button"
+        onClick={handleOpenMaps}
+        className={subBtnClass}
+        aria-label="地図を開く"
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-4 w-4 shrink-0 text-[var(--mg-muted)]"
@@ -238,6 +243,8 @@ export function EventPrimaryActions({
         target="_blank"
         rel="noopener noreferrer"
         className={cn(subBtnClass, "text-center")}
+        title="Googleカレンダーに追加"
+        aria-label="カレンダーに追加"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -253,7 +260,7 @@ export function EventPrimaryActions({
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
           />
         </svg>
-        カレンダー
+        <span className="text-center leading-tight">カレンダーに追加</span>
       </a>
       {!hideSave && (
         <button type="button" onClick={handleSave} className={subBtnClass}>

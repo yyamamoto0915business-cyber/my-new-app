@@ -50,12 +50,12 @@ export function EventInfoCard({ event, className }: Props) {
           </p>
         ) : null}
 
-        <h1 className="text-[1.4rem] font-bold leading-snug tracking-tight text-[var(--mg-ink)]">
+        <h1 className="text-xl font-bold leading-snug tracking-tight text-[var(--mg-ink)]">
           {event.title}
         </h1>
 
         {event.description ? (
-          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[var(--mg-muted)]">
+          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[var(--mg-muted)]/95">
             {event.description}
           </p>
         ) : null}

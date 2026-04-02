@@ -22,7 +22,7 @@ export function EventSectionTabs({ tabs, value, onChange, className }: Props) {
       aria-label="イベントセクション"
       style={{ minHeight: MOBILE_EVENT_TABS_ROW_PX }}
       className={cn(
-        "scrollbar-hide flex gap-0 overflow-x-auto scroll-smooth overscroll-x-contain border-t border-[var(--mg-line)]/50 bg-white/95 px-3 backdrop-blur-sm dark:bg-zinc-900/95 sm:px-4",
+        "scrollbar-hide flex touch-pan-x gap-0 overflow-x-auto scroll-smooth overscroll-x-contain border-t border-[var(--mg-line)]/50 bg-white/95 px-3 backdrop-blur-sm dark:bg-zinc-900/95 sm:px-4",
         className
       )}
     >

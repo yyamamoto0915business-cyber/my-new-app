@@ -11,7 +11,8 @@ type Props = {
 
 /**
  * モバイル時のメイン領域の上余白を調整する。
- * イベント詳細ではグローバル上部（モードタブ＋ロゴ行）を非表示にし pt を safe-area のみにする。
+ * イベント詳細ではグローバル上部（`MobileTopHeader`）を非表示にし、
+ * safe-area は `EventDetailTabs` 内の sticky ヘッダー側で確保する。
  */
 export function MobileMainShell({ children }: Props) {
   const pathname = usePathname();

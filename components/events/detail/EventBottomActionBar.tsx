@@ -171,7 +171,7 @@ export function EventBottomActionBar({
       aria-label="イベントの操作"
     >
       <div
-        className="mx-auto flex max-w-2xl items-center gap-3 px-4 pt-3"
+        className="mx-auto flex max-w-2xl items-center gap-3 px-4 pb-[env(safe-area-inset-bottom,0px)] pt-3"
         style={{ minHeight: MOBILE_EVENT_BOTTOM_ACTION_BAR_PX - 12 }}
       >
         <button
