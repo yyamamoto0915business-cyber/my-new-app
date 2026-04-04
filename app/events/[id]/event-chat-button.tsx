@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 
 const CREATE_CONVERSATION_URL = "/api/conversations";
 
+const API_CREDENTIALS: RequestInit = { credentials: "include" };
+
 type EventChatButtonProps = {
   eventId: string;
   eventTitle?: string;
@@ -120,7 +122,10 @@ export function EventChatButton({
       const conversationId = data.conversationId as string | undefined;
       if (!conversationId) throw new Error("会話IDが返ってきませんでした");
 
-      const msgRes = await fetch(`/api/messages/conversations/${conversationId}/messages`);
+      const msgRes = await fetch(
+        `/api/messages/conversations/${conversationId}/messages`,
+        API_CREDENTIALS
+      );
       const msgs = (await msgRes.json().catch(() => [])) as unknown;
       const hasAnyMessages = Array.isArray(msgs) ? msgs.length > 0 : false;
 

@@ -12,11 +12,53 @@ export type CreateOrGetConversationDirectParams = {
   otherUserId: string;
 };
 
+function pgErrorCode(e: unknown): string | undefined {
+  if (e && typeof e === "object" && "code" in e) {
+    const c = (e as { code: unknown }).code;
+    return typeof c === "string" ? c : undefined;
+  }
+  return undefined;
+}
+
 /**
- * create_or_get_conversation_for_user と同等（RLS/JWT を経由しない）。
- * 本番で SUPABASE_DB_URL があるとき会話作成の信頼できる経路にする。
+ * 1 クエリのみ（トランザクションなし）→ Supabase Transaction プーラー（6543）でも動きやすい。
+ * DB 側の SECURITY DEFINER 関数をそのまま呼ぶ。
  */
-export async function createOrGetConversationDirectDb(
+async function createOrGetConversationDirectDbViaDbRpc(
+  params: CreateOrGetConversationDirectParams
+): Promise<string> {
+  const { callerUserId, eventId, kind, organizerId, otherUserId } = params;
+  const config = getDirectPostgresClientConfig();
+  const { default: pg } = await import("pg");
+  const client = new pg.Client(config);
+  await client.connect();
+  try {
+    const r = await client.query(
+      `
+      SELECT public.create_or_get_conversation_for_user(
+        $1::uuid,
+        $2::uuid,
+        $3::text,
+        $4::uuid,
+        $5::uuid
+      ) AS conversation_id
+      `,
+      [callerUserId, eventId, kind, organizerId, otherUserId]
+    );
+    const id = r.rows[0]?.conversation_id as string | undefined;
+    if (!id) {
+      throw new Error("conversation upsert did not resolve id");
+    }
+    return id;
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * 旧経路: 複数文トランザクション。Session モード（5432）向け。プーラーでは失敗しうる。
+ */
+async function createOrGetConversationDirectDbLegacyTransaction(
   params: CreateOrGetConversationDirectParams
 ): Promise<string> {
   const { callerUserId, eventId, kind, organizerId, otherUserId } = params;
@@ -102,6 +144,37 @@ export async function createOrGetConversationDirectDb(
     throw e;
   } finally {
     await client.end();
+  }
+}
+
+/**
+ * create_or_get_conversation_for_user と同等（RLS/JWT を経由しない）。
+ * 本番で SUPABASE_DB_URL があるとき会話作成の信頼できる経路にする。
+ *
+ * 優先: DB 内 RPC を 1 クエリで呼ぶ（Transaction プーラー対策）。
+ * フォールバック: 手組み INSERT トランザクション（Session 直結向け）。
+ */
+export async function createOrGetConversationDirectDb(
+  params: CreateOrGetConversationDirectParams
+): Promise<string> {
+  try {
+    return await createOrGetConversationDirectDbViaDbRpc(params);
+  } catch (e) {
+    const code = pgErrorCode(e);
+    const msg = (e instanceof Error ? e.message : String(e)).toLowerCase();
+    const useLegacy =
+      code === "42883" ||
+      code === "42501" ||
+      /does not exist|permission denied|must be owner|42883|42501/i.test(msg);
+
+    if (useLegacy) {
+      console.warn(
+        "[createOrGetConversationDirectDb] single-RPC call failed, trying legacy transaction",
+        { code, snippet: msg.slice(0, 120) }
+      );
+      return await createOrGetConversationDirectDbLegacyTransaction(params);
+    }
+    throw e;
   }
 }
 
