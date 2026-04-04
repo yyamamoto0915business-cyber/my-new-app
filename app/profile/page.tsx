@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { syncSupabaseSessionFromServerWithRetries } from "@/lib/supabase/sync-session-from-server";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
@@ -17,6 +18,7 @@ import { getProfileCompletion } from "@/lib/profile-dashboard-data";
 import { useModeDashboardData } from "@/hooks/use-mode-dashboard-data";
 import { useUnreadCount } from "@/hooks/use-unread-count";
 import { useUnreadBreakdown } from "@/hooks/use-unread-breakdown";
+import type { User } from "@supabase/supabase-js";
 
 const VALID_MODES: ProfileMode[] = ["participant", "volunteer", "organizer"];
 
@@ -26,6 +28,9 @@ function isValidMode(m: string | null): m is ProfileMode {
 
 function ProfileContent() {
   const { user, loading: authLoading } = useSupabaseUser();
+  /** フックが遅延・未同期でも getUser で取れたユーザーで表示する（同一タブ内のセッションと一致させる） */
+  const [sessionUser, setSessionUser] = useState<User | null>(null);
+  const effectiveUser = user ?? sessionUser;
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlMode = searchParams?.get("mode");
@@ -42,35 +47,36 @@ function ProfileContent() {
     displayName: "",
     completionPercent: 0,
   });
-  const unreadCount = useUnreadCount(!!user);
+  const unreadCount = useUnreadCount(!!effectiveUser);
   const activeMode = resolvedMode ?? "participant";
-  const stat2Breakdown = useUnreadBreakdown(!!user && activeMode === "organizer");
+  const stat2Breakdown = useUnreadBreakdown(!!effectiveUser && activeMode === "organizer");
   const [loading, setLoading] = useState(true);
   const [noSupabase, setNoSupabase] = useState(false);
 
   const { data: dashboardData, loading: dataLoading } = useModeDashboardData(
     activeMode,
-    user?.id ?? null,
+    effectiveUser?.id ?? null,
     unreadCount
   );
 
   const persistDefaultMode = useCallback(
     async (mode: ProfileMode) => {
-      if (!user) return;
+      if (!effectiveUser) return;
       const supabase = createClient();
       if (!supabase) return;
       await supabase
         .from("profiles")
         .update({ default_mode: mode, updated_at: new Date().toISOString() })
-        .eq("id", user.id);
+        .eq("id", effectiveUser.id);
     },
-    [user]
+    [effectiveUser]
   );
 
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) {
       setNoSupabase(true);
+      setSessionUser(null);
       setLoading(false);
       return;
     }
@@ -80,6 +86,14 @@ function ProfileContent() {
         if (!authUser && user) {
           authUser = user;
         }
+        if (!authUser) {
+          await syncSupabaseSessionFromServerWithRetries(supabase);
+          authUser = (await supabase.auth.getUser()).data.user ?? null;
+        }
+        if (!authUser && user) {
+          authUser = user;
+        }
+        setSessionUser(authUser);
         if (!authUser) {
           setResolvedMode(isValidMode(urlMode) ? urlMode : "participant");
           setLoading(false);
@@ -91,8 +105,6 @@ function ProfileContent() {
           (authUser.user_metadata?.name as string) ??
           authUser.email?.split("@")[0] ??
           "";
-        let region: string | null = null;
-        let avatarUrl: string | null = null;
         let defaultMode: string | null = "participant";
 
         const [{ data }, { data: organizerRow }] = await Promise.all([
@@ -153,12 +165,15 @@ function ProfileContent() {
           window.history.replaceState(null, "", `/profile?mode=${fallback}`);
         }
       } catch {
+        setSessionUser(null);
         setResolvedMode(isValidMode(urlMode) ? urlMode : "participant");
         setProfile((p) => ({ ...p, displayName: "ゲスト", completionPercent: 0 }));
       } finally {
         setLoading(false);
       }
     })();
+    // user 全体は入れない（参照が変わるたびにプロフィール再取得を避け、フックの user.id 変化で同期する）
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- user は上記 merge のみ使用、user?.id で十分
   }, [urlMode, user?.id]);
 
   const handleModeChange = useCallback(
@@ -216,7 +231,7 @@ function ProfileContent() {
           </div>
         )}
 
-        {!user && !noSupabase && (
+        {!effectiveUser && !noSupabase && (
           <div className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-6 text-center shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/95">
             <p className="text-zinc-700 dark:text-zinc-300">ログインするとプロフィールや参加予定を確認できます。</p>
             <Link
@@ -228,7 +243,7 @@ function ProfileContent() {
           </div>
         )}
 
-        {user && (
+        {effectiveUser && (
           <>
             {/* 上部プロフィールエリア：マイページ型ヘッダー */}
             <MypageHeader
@@ -238,7 +253,7 @@ function ProfileContent() {
               region={profile.region}
               activeMode={activeMode}
               onModeChange={handleModeChange}
-              userId={user.id}
+              userId={effectiveUser.id}
               onAvatarChange={(url) => setProfile((p) => ({ ...p, avatarUrl: url ?? null }))}
             />
 
@@ -356,7 +371,7 @@ function ProfileContent() {
           </>
         )}
 
-        {!user && !noSupabase && (
+        {!effectiveUser && !noSupabase && (
           <div className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700/60 dark:bg-zinc-900/95 dark:text-zinc-400">
             ログインするとメニューが表示されます
           </div>

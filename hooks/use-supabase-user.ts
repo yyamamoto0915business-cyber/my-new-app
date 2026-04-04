@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { syncSupabaseSessionFromServer } from "@/lib/supabase/sync-session-from-server";
 import type { User } from "@supabase/supabase-js";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
@@ -25,37 +26,36 @@ export function useSupabaseUser(): SupabaseUserState {
       return;
     }
 
-    const recoverSessionFromServer = async (): Promise<boolean> => {
-      try {
-        const res = await fetch("/api/auth/bootstrap", {
-          credentials: "same-origin",
-          cache: "no-store",
-        });
-        if (!res.ok) return false;
-        const data = (await res.json()) as {
-          session: { access_token: string; refresh_token: string } | null;
-        };
-        if (!data.session?.access_token || !data.session.refresh_token) return false;
-        const { error } = await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-        });
-        if (error) return false;
-        const {
-          data: { user: u },
-        } = await supabase.auth.getUser();
-        if (u) {
-          setUser(u);
-          return true;
+    /** Cookie 反映や RSC 遷移のタイミングで 1 回目が空でも、サーバーはセッションを持っていることがある */
+    const recoverSessionFromServerWithRetries = async (): Promise<boolean> => {
+      const delays = [0, 120, 400];
+      for (const ms of delays) {
+        if (ms > 0) {
+          await new Promise((r) => setTimeout(r, ms));
         }
-      } catch {
-        // ignore
+        if (await syncSupabaseSessionFromServer(supabase)) {
+          const {
+            data: { user: u },
+          } = await supabase.auth.getUser();
+          if (u) {
+            setUser(u);
+            return true;
+          }
+        }
       }
       return false;
     };
 
     const init = async () => {
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          return;
+        }
+
         try {
           const {
             data: { user: u },
@@ -67,15 +67,8 @@ export function useSupabaseUser(): SupabaseUserState {
         } catch {
           // ページ遷移・Fast Refresh 等で内部 fetch が中断されると AbortError になり得る
         }
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser(session.user);
-          return;
-        }
 
-        if (await recoverSessionFromServer()) {
+        if (await recoverSessionFromServerWithRetries()) {
           return;
         }
 

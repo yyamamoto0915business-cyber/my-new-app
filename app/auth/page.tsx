@@ -51,9 +51,8 @@ function AuthPageContent() {
       password,
     });
 
-    setLoading(false);
-
     if (signInError) {
+      setLoading(false);
       if (signInError.message.includes("Invalid login credentials")) {
         setError("メールアドレスまたはパスワードが正しくありません");
       } else if (signInError.message.includes("Email not confirmed")) {
@@ -64,8 +63,17 @@ function AuthPageContent() {
       return;
     }
 
-    router.push(returnTo);
-    router.refresh();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      setLoading(false);
+      setError("セッションを保存できませんでした。Cookie を有効にして、もう一度お試しください。");
+      return;
+    }
+
+    // クライアント遷移だけだと Cookie 反映前に次ページが描画され、未ログイン表示になることがある（特にモバイル）。フル読み込みで確実に同期する。
+    window.location.assign(returnTo);
   };
 
   const [signupEmail, setSignupEmail] = useState("");
