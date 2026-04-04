@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
-import { createOrGetConversation } from "@/lib/db/messages";
-import { getOrganizerIdByEventId } from "@/lib/db/events";
+import { createOrGetConversation, insertParticipantMessage } from "@/lib/db/messages";
+import { fetchEventRowForConversation } from "@/lib/db/events";
 import { ensureProfileRowForUser } from "@/lib/ensure-profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -42,33 +42,52 @@ function extractSupabaseErrorText(e: unknown): string {
   return parts.length ? parts.join(" ") : String(e);
 }
 
-function jsonError(
+export type CreateConversationErrorBody = {
+  ok: false;
+  step: string;
+  code: string | null;
+  message: string;
+  details: string | null;
+  /** 既存クライアント向け */
+  error: string;
+};
+
+export function structuredJsonError(
   status: number,
-  userMessage: string,
+  step: string,
+  technicalMessage: string,
   e?: unknown,
   extra?: Record<string, unknown>
 ) {
-  const details = e !== undefined ? serializeDbError(e) : undefined;
-  return NextResponse.json(
-    {
-      error: userMessage,
-      ...(details ? { details } : {}),
-      ...extra,
-    },
-    { status }
-  );
+  const ser = e !== undefined ? serializeDbError(e) : null;
+  const code = ser?.code ?? null;
+  const message = ser?.message ?? technicalMessage;
+  const details = ser?.details ?? null;
+  const body: CreateConversationErrorBody & Record<string, unknown> = {
+    ok: false,
+    step,
+    code,
+    message,
+    details,
+    error: `${step}: ${technicalMessage}`,
+    ...(ser?.hint ? { hint: ser.hint } : {}),
+    ...extra,
+  };
+  return NextResponse.json(body, { status });
 }
 
-const LOG_TAG = "[api/conversations]";
+const LOG = "[createConversation]";
 
 /**
  * POST: 会話を作成/取得（API 統一エントリ）
- * Body: { eventId?: string, kind?: string, organizerId?: string, organizerUserId?: string, otherUserId?: string }
+ * Body: { eventId?, kind?, organizerId?, organizerUserId?, otherUserId?, initialMessage? }
+ * initialMessage を送ると同一リクエスト内で初回メッセージまで保存（失敗 step で切り分け可能）。
  */
 export async function handlePostCreateConversation(request: NextRequest): Promise<NextResponse> {
   const supabase = await createClient();
   if (!supabase) {
-    return jsonError(503, "Supabase が設定されていません");
+    console.error(LOG, "fail", { step: "supabase_config", reason: "no_client" });
+    return structuredJsonError(503, "supabase_config", "supabase_not_configured");
   }
 
   const {
@@ -90,20 +109,25 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
       userId = apiUser.id;
       userEmail = apiUser.email;
       userName = apiUser.name;
-      console.warn(LOG_TAG, "auth.getUser() empty; using getApiUser fallback", {
+      console.warn(LOG, "auth user via getApiUser fallback", {
         getUserError: getUserError?.message,
       });
     }
   }
 
   if (!userId) {
-    console.warn(LOG_TAG, "unauthorized", {
+    console.error(LOG, "fail", {
+      step: "auth",
+      message: "auth_required",
       getUserError: getUserError?.message,
-      sessionHadUser: !!sessionUser,
     });
-    return jsonError(401, "未ログイン", getUserError ?? undefined, {
-      hint: "セッションがサーバーに届いていない可能性があります。再ログインしてください。",
-    });
+    return structuredJsonError(
+      401,
+      "auth",
+      "auth_required",
+      getUserError ?? undefined,
+      { hint: "セッションがサーバーに届いていない可能性があります。再ログインしてください。" }
+    );
   }
 
   const user = {
@@ -116,27 +140,58 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
     eventId?: string | null;
     kind?: string;
     organizerId?: string;
-    /** 主催者の auth.users.id（profiles.id）。検証用 */
     organizerUserId?: string;
     otherUserId?: string;
+    initialMessage?: string | null;
   };
   try {
     body = await request.json();
   } catch {
-    return jsonError(400, "不正なリクエスト");
+    console.error(LOG, "fail", { step: "parse_body", message: "invalid_json" });
+    return structuredJsonError(400, "parse_body", "invalid_json");
   }
 
   const eventIdRaw = body.eventId ?? null;
   const kind = body.kind ?? "event_inquiry";
   const participantUserId = body.otherUserId ?? user.id;
+  const eventIdForLog = typeof eventIdRaw === "string" ? eventIdRaw : null;
+
+  console.log(LOG, "start", {
+    eventId: eventIdForLog,
+    userId: user.id,
+    sessionHadUser: !!sessionUser,
+    getUserError: getUserError?.message ?? null,
+  });
+
+  console.log(LOG, "auth user resolved", { userId: user.id, eventId: eventIdForLog });
 
   const isUuid = (value: string) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
       value
     );
 
-  const safeEventId = eventIdRaw && isUuid(eventIdRaw) ? eventIdRaw : null;
+  const safeEventId = eventIdRaw && isUuid(String(eventIdRaw)) ? String(eventIdRaw) : null;
   const rawEventId = eventIdRaw;
+
+  const wantsInitialMessage = Object.prototype.hasOwnProperty.call(body, "initialMessage");
+  const initialMessageRaw =
+    typeof body.initialMessage === "string" ? body.initialMessage : "";
+  const initialMessageTrimmed = initialMessageRaw.trim();
+
+  if (wantsInitialMessage && !initialMessageTrimmed) {
+    console.error(LOG, "fail", { step: "validate", message: "message_required" });
+    return structuredJsonError(400, "validate", "message_required");
+  }
+
+  if (!user.id || !isUuid(user.id)) {
+    console.error(LOG, "fail", { step: "auth", message: "invalid_user_id" });
+    return structuredJsonError(400, "auth", "invalid_user_id");
+  }
+
+  if (!isUuid(participantUserId)) {
+    console.error(LOG, "fail", { step: "validate", message: "invalid_participant_id" });
+    return structuredJsonError(400, "validate", "invalid_participant_id");
+  }
 
   const admin = createAdminClient();
 
@@ -144,15 +199,51 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
   let eventIdForConversation: string | null = null;
 
   if (safeEventId) {
-    eventIdForConversation = safeEventId;
-    organizerId = await getOrganizerIdByEventId(supabase, safeEventId);
-    if (!organizerId && admin) {
-      organizerId = await getOrganizerIdByEventId(admin, safeEventId);
+    const loaded = await fetchEventRowForConversation(safeEventId, supabase, admin);
+    if (!loaded.ok) {
+      if (loaded.reason === "event_not_found") {
+        console.error(LOG, "fail", {
+          step: "load_event",
+          message: "event_not_found",
+          eventId: safeEventId,
+        });
+        return structuredJsonError(404, "load_event", "event_not_found");
+      }
+      if (loaded.reason === "organizer_id_missing") {
+        console.error(LOG, "fail", {
+          step: "resolve_organizer",
+          message: "organizer_id_missing_on_event",
+          eventId: safeEventId,
+        });
+        return structuredJsonError(
+          400,
+          "resolve_organizer",
+          "organizer_id_missing_on_event"
+        );
+      }
+      console.error(LOG, "fail", {
+        step: "load_event",
+        message: "load_failed",
+        eventId: safeEventId,
+        ...loaded.loadError,
+      });
+      return structuredJsonError(
+        500,
+        "load_event",
+        loaded.loadError?.message ?? "load_failed",
+        loaded.loadError
+      );
     }
+    eventIdForConversation = loaded.id;
+    organizerId = loaded.organizerId;
+    console.log(LOG, "event loaded", {
+      eventId: loaded.id,
+      organizerId: loaded.organizerId,
+    });
   } else {
     if (rawEventId && String(rawEventId).trim()) {
-      console.warn(LOG_TAG, "invalid eventId shape", { userId: user.id, eventIdRaw: rawEventId });
-      return jsonError(400, "イベントIDの形式が不正です");
+      console.warn(LOG, "invalid eventId shape", { userId: user.id, eventIdRaw: rawEventId });
+      return structuredJsonError(400, "validate", "invalid_event_id_shape");
     }
     const fromBody = typeof body.organizerId === "string" ? body.organizerId.trim() : "";
     organizerId = fromBody && isUuid(fromBody) ? fromBody : null;
@@ -160,20 +251,20 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
   }
 
   if (!organizerId) {
-    console.warn(LOG_TAG, "organizer not resolved", {
-      userId: user.id,
+    console.error(LOG, "fail", {
+      step: "resolve_organizer",
+      message: rawEventId ? "organizer_unresolved" : "organizerId_required",
       eventId: safeEventId,
     });
     if (rawEventId) {
-      return jsonError(
-        404,
-        "イベントまたは主催者が見つかりません",
-        undefined,
-        { eventId: safeEventId }
-      );
+      return structuredJsonError(404, "resolve_organizer", "organizer_unresolved", undefined, {
+        eventId: safeEventId,
+      });
     }
-    return jsonError(400, "organizerId が必要です（eventId がない場合）");
+    return structuredJsonError(400, "resolve_organizer", "organizerId_required");
   }
+
+  console.log(LOG, "organizer resolved", { organizerId, eventId: eventIdForConversation });
 
   const writerForRead = admin ?? supabase;
 
@@ -184,43 +275,52 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
     .maybeSingle();
 
   if (orgRowError) {
-    console.error(LOG_TAG, "organizers lookup failed", {
-      userId: user.id,
-      eventId: safeEventId,
-      organizerId,
+    console.error(LOG, "fail", {
+      step: "load_organizer_row",
       ...serializeDbError(orgRowError),
+      organizerId,
     });
-    return jsonError(500, "主催者情報の取得に失敗しました", orgRowError);
+    return structuredJsonError(
+      500,
+      "load_organizer_row",
+      orgRowError.message ?? "organizer_lookup_failed",
+      orgRowError
+    );
   }
 
   const organizerProfileId =
     typeof organizerRow?.profile_id === "string" ? organizerRow.profile_id : null;
 
   if (!organizerProfileId) {
-    console.error(LOG_TAG, "organizer missing profile_id", {
-      userId: user.id,
-      eventId: safeEventId,
+    console.error(LOG, "fail", {
+      step: "resolve_organizer",
+      message: "organizer_profile_missing",
       organizerId,
     });
-    return jsonError(500, "主催者プロフィールが未設定です");
+    return structuredJsonError(500, "resolve_organizer", "organizer_profile_missing");
   }
 
   if (user.id === organizerProfileId) {
-    console.warn(LOG_TAG, "self-message blocked", { userId: user.id, organizerProfileId });
-    return jsonError(400, "自分が主催するイベントには、相談メッセージを送れません");
+    console.warn(LOG, "fail", {
+      step: "guard",
+      message: "cannot_message_self",
+      userId: user.id,
+      organizerProfileId,
+    });
+    return structuredJsonError(400, "guard", "cannot_message_self");
   }
 
   const bodyOrganizerUserId =
     typeof body.organizerUserId === "string" ? body.organizerUserId.trim() : "";
   if (bodyOrganizerUserId && isUuid(bodyOrganizerUserId)) {
     if (bodyOrganizerUserId !== organizerProfileId) {
-      console.warn(LOG_TAG, "organizerUserId mismatch", {
-        userId: user.id,
-        eventId: safeEventId,
+      console.warn(LOG, "fail", {
+        step: "guard",
+        message: "organizer_user_mismatch",
         organizerProfileId,
         bodyOrganizerUserId,
       });
-      return jsonError(400, "主催者情報がイベントと一致しません");
+      return structuredJsonError(400, "guard", "organizer_user_mismatch");
     }
   }
 
@@ -233,16 +333,17 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
       .eq("profile_id", user.id)
       .maybeSingle();
     if (!ownOrg) {
-      console.warn(LOG_TAG, "forbidden surrogate create", {
-        userId: user.id,
+      console.warn(LOG, "fail", {
+        step: "guard",
+        message: "forbidden_surrogate",
         participantUserId,
         organizerId,
       });
-      return jsonError(403, "この会話を作成する権限がありません");
+      return structuredJsonError(403, "guard", "forbidden_surrogate");
     }
   }
 
-  console.log(LOG_TAG, "create flow start", {
+  console.log(LOG, "flow continue", {
     userId: user.id,
     eventId: eventIdForConversation,
     organizerId,
@@ -250,14 +351,31 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
     participantUserId,
     kind,
     hasServiceRole: !!admin,
+    wantsInitialMessage,
   });
 
   try {
     if (participantUserId === user.id) {
-      await ensureProfileRowForUser(supabase, user);
+      console.log(LOG, "ensure profile", { userId: user.id });
+      try {
+        await ensureProfileRowForUser(supabase, user);
+      } catch (pe) {
+        console.error(LOG, "fail", {
+          step: "ensure_profile",
+          userId: user.id,
+          ...serializeDbError(pe),
+        });
+        return structuredJsonError(
+          500,
+          "ensure_profile",
+          serializeDbError(pe).message,
+          pe
+        );
+      }
     }
 
     if (!eventIdForConversation) {
+      console.log(LOG, "createOrGetConversation (no event)", { participantUserId });
       const conversationId = await createOrGetConversation(supabase, {
         callerUserId: user.id,
         eventId: eventIdForConversation,
@@ -265,11 +383,47 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
         organizerId,
         otherUserId: participantUserId,
       });
-      console.log(LOG_TAG, "createOrGetConversation ok (no event id)", {
-        userId: user.id,
+      console.log(LOG, "insert conversation result", {
         conversationId,
+        reusedExisting: false,
+        mode: "no_event",
       });
-      return NextResponse.json({ conversationId });
+
+      if (wantsInitialMessage) {
+        const ins = await insertParticipantMessage({
+          userId: user.id,
+          conversationId,
+          content: initialMessageTrimmed,
+          supabase,
+          admin,
+        });
+        if (!ins.ok) {
+          console.error(LOG, "insert first message result", {
+            conversationId,
+            source: ins.source,
+            ...serializeDbError(ins.error),
+          });
+          return structuredJsonError(
+            500,
+            "insert_message",
+            serializeDbError(ins.error).message,
+            ins.error,
+            { conversationId }
+          );
+        }
+        console.log(LOG, "insert first message result", {
+          conversationId,
+          ok: true,
+          viaAdminFallback: ins.viaAdminFallback,
+        });
+      }
+
+      console.log(LOG, "success", { conversationId, sentMessage: wantsInitialMessage });
+      return NextResponse.json({
+        ok: true,
+        conversationId,
+        sentMessage: wantsInitialMessage,
+      });
     }
 
     const { data: existing, error: existingError } = await writerForRead
@@ -282,20 +436,21 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
       .maybeSingle();
 
     if (existingError) {
-      console.error(LOG_TAG, "existing conversation query error", {
-        userId: user.id,
-        eventId: eventIdForConversation,
-        organizerId,
-        participantUserId,
+      console.error(LOG, "existing conversation query error", {
         ...serializeDbError(existingError),
+        eventId: eventIdForConversation,
       });
-      throw existingError;
+      return structuredJsonError(
+        500,
+        "find_existing_conversation",
+        existingError.message ?? "query_failed",
+        existingError
+      );
     }
 
-    console.log(LOG_TAG, "existing conversation lookup", {
-      userId: user.id,
+    console.log(LOG, "existing conversation", {
+      conversationId: existing?.id ?? null,
       eventId: eventIdForConversation,
-      foundConversationId: existing?.id ?? null,
     });
 
     const conversationId = await createOrGetConversation(supabase, {
@@ -306,15 +461,63 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
       otherUserId: participantUserId,
     });
 
-    console.log(LOG_TAG, "createOrGetConversation ok", {
-      userId: user.id,
-      conversationId,
+    console.log(LOG, "insert conversation result", {
+      data: { id: conversationId },
+      error: null,
       reusedExisting: !!existing?.id,
     });
 
-    return NextResponse.json({ conversationId });
+    if (wantsInitialMessage) {
+      const ins = await insertParticipantMessage({
+        userId: user.id,
+        conversationId,
+        content: initialMessageTrimmed,
+        supabase,
+        admin,
+      });
+      if (!ins.ok) {
+        const ser = serializeDbError(ins.error);
+        console.error(LOG, "insert first message result", {
+          data: null,
+          error: ser,
+          source: ins.source,
+          conversationId,
+        });
+        return structuredJsonError(
+          500,
+          "insert_message",
+          ser.message,
+          ins.error,
+          { conversationId }
+        );
+      }
+      console.log(LOG, "insert first message result", {
+        data: { conversationId },
+        error: null,
+        viaAdminFallback: ins.viaAdminFallback,
+      });
+    }
+
+    console.log(LOG, "update latest message result", {
+      note: "no_conversations_latest_column",
+      skipped: true,
+    });
+
+    console.log(LOG, "success", {
+      conversationId,
+      sentMessage: wantsInitialMessage,
+      reusedExisting: !!existing?.id,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      conversationId,
+      sentMessage: wantsInitialMessage,
+      reusedExisting: !!existing?.id,
+    });
   } catch (e) {
-    console.error(LOG_TAG, "createOrGetConversation error", {
+    console.error(LOG, "fail", {
+      step: "insert_conversation",
       userId: user.id,
       eventId: eventIdForConversation,
       organizerId,
@@ -327,11 +530,11 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
     const errorMessage = errorText.toLowerCase();
 
     if (/organizer not found/i.test(errorMessage)) {
-      return jsonError(404, "イベントまたは主催者が見つかりません", e);
+      return structuredJsonError(404, "insert_conversation", "organizer_not_found", e);
     }
 
     if (/not allowed to create this conversation/i.test(errorMessage)) {
-      return jsonError(403, "この会話を作成する権限がありません", e);
+      return structuredJsonError(403, "insert_conversation", "not_allowed", e);
     }
 
     if (
@@ -341,23 +544,23 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
         "code" in e &&
         String((e as { code: string }).code) === "42501")
     ) {
-      return jsonError(
+      return structuredJsonError(
         403,
-        "会話の作成権限がありません。ログアウトして再度ログインしてからお試しください。",
-        e
+        "insert_conversation",
+        "permission_denied",
+        e,
+        {
+          hint: "RLS または RPC 実行権限。マイグレーション・service_role・再ログインを確認してください。",
+        }
       );
     }
 
     if (/invalid input syntax for type uuid/i.test(errorMessage)) {
-      return jsonError(400, "イベントIDの形式が不正です", e);
+      return structuredJsonError(400, "validate", "invalid_uuid", e);
     }
 
     if (/conversation upsert did not resolve id/i.test(errorMessage)) {
-      return jsonError(
-        503,
-        "会話の初期化に失敗しました。時間をおいて再度お試しください。解消しない場合はサポートへお問い合わせください。",
-        e
-      );
+      return structuredJsonError(503, "insert_conversation", "upsert_did_not_resolve_id", e);
     }
 
     if (
@@ -367,11 +570,7 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
         "code" in e &&
         String((e as { code: string }).code) === "23503")
     ) {
-      return jsonError(
-        400,
-        "プロフィールまたは主催者情報の参照に失敗しました。マイページを開いて保存してから、再度お試しください。",
-        e
-      );
+      return structuredJsonError(500, "insert_conversation", "foreign_key_violation", e);
     }
 
     if (
@@ -381,13 +580,15 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
         "code" in e &&
         String((e as { code: string }).code) === "23505")
     ) {
-      return jsonError(
-        409,
-        "同じ会話が既に存在します。一覧から開き直してください。",
-        e
-      );
+      return structuredJsonError(409, "insert_conversation", "duplicate_conversation", e);
     }
 
-    return jsonError(500, "会話の作成に失敗しました", e);
+    const ser = serializeDbError(e);
+    return structuredJsonError(
+      500,
+      "insert_conversation",
+      ser.message || "unknown_error",
+      e
+    );
   }
 }

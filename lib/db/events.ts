@@ -142,6 +142,56 @@ export async function getOrganizerIdByEventId(
   return typeof oid === "string" && oid.length > 0 ? oid : null;
 }
 
+/** 会話作成 API 用: イベント実在と organizer_id を検証（RLS でユーザー側が空でも admin で再試行） */
+export type EventRowForConversationResult =
+  | { ok: true; id: string; organizerId: string }
+  | {
+      ok: false;
+      reason: "event_not_found" | "organizer_id_missing" | "load_failed";
+      loadError?: { message: string; code?: string; details?: string; hint?: string };
+    };
+
+export async function fetchEventRowForConversation(
+  eventId: string,
+  primary: SupabaseClient,
+  fallback: SupabaseClient | null
+): Promise<EventRowForConversationResult> {
+  const run = (client: SupabaseClient) =>
+    client.from("events").select("id, organizer_id").eq("id", eventId).maybeSingle();
+
+  let { data, error } = await run(primary);
+
+  if (!error && !data?.id && fallback) {
+    const second = await run(fallback);
+    data = second.data;
+    error = second.error;
+  }
+
+  if (error) {
+    return {
+      ok: false,
+      reason: "load_failed",
+      loadError: {
+        message: error.message,
+        code: typeof error.code === "string" ? error.code : undefined,
+        details: typeof error.details === "string" ? error.details : undefined,
+        hint: typeof error.hint === "string" ? error.hint : undefined,
+      },
+    };
+  }
+
+  if (!data?.id) {
+    return { ok: false, reason: "event_not_found" };
+  }
+
+  const oid = data.organizer_id;
+  if (typeof oid !== "string" || oid.length === 0) {
+    return { ok: false, reason: "organizer_id_missing" };
+  }
+
+  return { ok: true, id: data.id, organizerId: oid };
+}
+
 export async function getOrganizerProfileId(
   supabase: SupabaseClient,
   eventId: string

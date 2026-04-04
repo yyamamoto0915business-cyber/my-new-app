@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requiresAuth } from "@/lib/auth-utils";
 import { isDeveloperAdminFromSupabaseUser } from "@/lib/admin-auth";
-import { createProxySupabaseClient } from "@/lib/supabase/proxy";
+import { createProxySupabase, mergeSupabaseCookies } from "@/lib/supabase/proxy";
 
 function isAuthDisabled(): boolean {
   return (
@@ -11,16 +11,18 @@ function isAuthDisabled(): boolean {
 }
 
 export async function proxy(request: NextRequest) {
-  const response = NextResponse.next({ request });
-
-  const supabase = createProxySupabaseClient(request, response);
-  if (!supabase) {
-    return response;
+  const proxyClient = createProxySupabase(request);
+  if (!proxyClient) {
+    return NextResponse.next({ request });
   }
+
+  const { supabase, getSupabaseResponse } = proxyClient;
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  const response = getSupabaseResponse();
 
   if (isAuthDisabled()) {
     return response;
@@ -48,12 +50,16 @@ export async function proxy(request: NextRequest) {
     if (!user) {
       const authUrl = new URL("/auth", request.url);
       authUrl.searchParams.set("next", path);
-      return NextResponse.redirect(authUrl);
+      const redirect = NextResponse.redirect(authUrl);
+      mergeSupabaseCookies(response, redirect);
+      return redirect;
     }
 
     // ログイン済みだが developer_admin ではない → 権限なしページへ
     if (!isDeveloperAdminFromSupabaseUser(user)) {
-      return NextResponse.redirect(new URL("/forbidden", request.url));
+      const redirect = NextResponse.redirect(new URL("/forbidden", request.url));
+      mergeSupabaseCookies(response, redirect);
+      return redirect;
     }
 
     return response;
@@ -62,23 +68,27 @@ export async function proxy(request: NextRequest) {
   // /api/admin/* の保護（API レスポンス）
   if (isAdminApiRoute) {
     if (!user) {
-      return new NextResponse(
+      const json = new NextResponse(
         JSON.stringify({ ok: false, error: { code: "UNAUTHORIZED", message: "ログインが必要です" } }),
         {
           status: 401,
           headers: { "content-type": "application/json; charset=utf-8" },
         }
       );
+      mergeSupabaseCookies(response, json);
+      return json;
     }
 
     if (!isDeveloperAdminFromSupabaseUser(user)) {
-      return new NextResponse(
+      const json = new NextResponse(
         JSON.stringify({ ok: false, error: { code: "FORBIDDEN", message: "開発者権限が必要です" } }),
         {
           status: 403,
           headers: { "content-type": "application/json; charset=utf-8" },
         }
       );
+      mergeSupabaseCookies(response, json);
+      return json;
     }
 
     return response;
@@ -88,12 +98,16 @@ export async function proxy(request: NextRequest) {
   if (!user && requiresAuth(path)) {
     const authUrl = new URL("/auth", request.url);
     authUrl.searchParams.set("next", path);
-    return NextResponse.redirect(authUrl);
+    const redirect = NextResponse.redirect(authUrl);
+    mergeSupabaseCookies(response, redirect);
+    return redirect;
   }
 
   // ログイン済みでロール未設定 → オンボーディングへ
   if (user && !user.user_metadata?.role) {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
+    const redirect = NextResponse.redirect(new URL("/onboarding", request.url));
+    mergeSupabaseCookies(response, redirect);
+    return redirect;
   }
 
   return response;

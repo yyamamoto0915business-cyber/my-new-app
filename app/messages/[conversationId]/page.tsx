@@ -159,9 +159,19 @@ export default function ConversationPage({
           body: JSON.stringify({ content: text }),
         }
       );
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        step?: string;
+        message?: string;
+      };
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "送信に失敗しました");
+        const line =
+          typeof data.step === "string" && typeof data.message === "string"
+            ? `${data.step}: ${data.message}`
+            : typeof data.error === "string"
+              ? data.error
+              : "送信に失敗しました";
+        setError(line);
         return;
       }
       setContent("");

@@ -30,9 +30,25 @@ function logConversationApiError(
   console.error(`[EventChatButton] ${context}`, {
     status,
     error: data.error,
+    step: data.step,
+    message: data.message,
+    code: data.code,
     details: data.details,
     full: data,
   });
+}
+
+/** API の構造化エラー（/api/conversations 等）をユーザー向け短文に */
+function formatStructuredFailure(data: Record<string, unknown>): string {
+  const step = typeof data.step === "string" ? data.step : null;
+  const msg =
+    typeof data.message === "string"
+      ? data.message
+      : typeof data.error === "string"
+        ? data.error
+        : "リクエストに失敗しました";
+  if (step) return `${step}: ${msg}`;
+  return msg;
 }
 
 type IntentOption = {
@@ -118,11 +134,9 @@ export function EventChatButton({
         }),
       });
       const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-      if (!res.ok) {
+      if (!res.ok || data.ok === false) {
         logConversationApiError("create conversation (open)", res.status, data);
-        throw new Error(
-          typeof data.error === "string" ? data.error : "会話の準備に失敗しました"
-        );
+        throw new Error(formatStructuredFailure(data));
       }
       const conversationId = data.conversationId as string | undefined;
       if (!conversationId) throw new Error("会話IDが返ってきませんでした");
@@ -225,7 +239,6 @@ export function EventChatButton({
             <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-zinc-200 dark:bg-zinc-700" />
             <ModalBody
               eventId={eventId}
-              conversationId={conversationIdForModal}
               eventTitle={eventTitle}
               organizerId={organizerId}
               organizerUserId={organizerUserId}
@@ -246,7 +259,6 @@ export function EventChatButton({
 
 function ModalBody({
   eventId,
-  conversationId,
   eventTitle,
   organizerId,
   organizerUserId,
@@ -256,7 +268,6 @@ function ModalBody({
   router,
 }: {
   eventId: string;
-  conversationId?: string | null;
   eventTitle?: string;
   organizerId?: string | null;
   organizerUserId?: string | null;
@@ -288,46 +299,26 @@ function ModalBody({
     setSending(true);
     setError(null);
     try {
-      let cid = conversationId ?? null;
-      if (!cid) {
-        const res = await fetch(CREATE_CONVERSATION_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            eventId,
-            kind: "event_inquiry",
-            ...(organizerId ? { organizerId } : {}),
-            ...(organizerUserId ? { organizerUserId } : {}),
-          }),
-        });
-        const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-        if (!res.ok) {
-          logConversationApiError("create conversation (send)", res.status, data);
-          throw new Error(
-            typeof data.error === "string" ? data.error : "会話の作成に失敗しました"
-          );
-        }
-
-        cid = (data.conversationId as string | undefined) ?? null;
-        if (!cid) throw new Error("会話IDが返ってきませんでした");
-      }
-
-      const msgRes = await fetch(`/api/messages/conversations/${cid}/messages`, {
+      const res = await fetch(CREATE_CONVERSATION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ content: draft }),
+        body: JSON.stringify({
+          eventId,
+          kind: "event_inquiry",
+          initialMessage: draft,
+          ...(organizerId ? { organizerId } : {}),
+          ...(organizerUserId ? { organizerUserId } : {}),
+        }),
       });
-      const msgData = (await msgRes.json().catch(() => ({}))) as Record<string, unknown>;
-      if (!msgRes.ok) {
-        logConversationApiError("post first message", msgRes.status, msgData);
-        throw new Error(
-          typeof msgData.error === "string"
-            ? msgData.error
-            : "メッセージの送信に失敗しました"
-        );
+      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!res.ok || data.ok === false) {
+        logConversationApiError("create conversation + first message", res.status, data);
+        throw new Error(formatStructuredFailure(data));
       }
+
+      const cid = data.conversationId as string | undefined;
+      if (!cid) throw new Error("会話IDが返ってきませんでした");
 
       onClose();
       router.push(`/messages/${cid}`);

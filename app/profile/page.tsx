@@ -76,7 +76,10 @@ function ProfileContent() {
     }
     (async () => {
       try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
+        let authUser = (await supabase.auth.getUser()).data.user ?? null;
+        if (!authUser && user) {
+          authUser = user;
+        }
         if (!authUser) {
           setResolvedMode(isValidMode(urlMode) ? urlMode : "participant");
           setLoading(false);
@@ -156,7 +159,7 @@ function ProfileContent() {
         setLoading(false);
       }
     })();
-  }, [urlMode]);
+  }, [urlMode, user?.id]);
 
   const handleModeChange = useCallback(
     (mode: ProfileMode) => {

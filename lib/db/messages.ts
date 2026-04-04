@@ -231,3 +231,71 @@ export async function markConversationAsRead(
 
   if (error) throw error;
 }
+
+/**
+ * 参加者として messages に INSERT。ユーザー JWT で RLS に阻まれた場合のみ、
+ * メンバー確認のうえ service role で再試行（本番で JWT/RLS 不整合時の切り分け用）。
+ */
+export async function insertParticipantMessage(opts: {
+  userId: string;
+  conversationId: string;
+  content: string;
+  supabase: SupabaseClient;
+  admin: SupabaseClient | null;
+}): Promise<
+  | { ok: true; viaAdminFallback: boolean }
+  | { ok: false; source: "user_insert" | "member_check" | "admin_insert"; error: unknown }
+> {
+  const { userId, conversationId, content, supabase, admin } = opts;
+
+  const { error: insertError } = await supabase.from("messages").insert({
+    conversation_id: conversationId,
+    sender_id: userId,
+    content,
+  });
+
+  if (!insertError) {
+    return { ok: true, viaAdminFallback: false };
+  }
+
+  const msg = (insertError.message ?? "").toLowerCase();
+  const rlsLike =
+    insertError.code === "42501" ||
+    /permission denied|row-level security|new row violates row-level security/i.test(
+      msg
+    );
+
+  if (!admin || !rlsLike) {
+    return { ok: false, source: "user_insert", error: insertError };
+  }
+
+  const { data: mem, error: memErr } = await admin
+    .from("conversation_members")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (memErr) {
+    return { ok: false, source: "member_check", error: memErr };
+  }
+  if (!mem) {
+    return {
+      ok: false,
+      source: "member_check",
+      error: new Error("not_conversation_member"),
+    };
+  }
+
+  const { error: adminErr } = await admin.from("messages").insert({
+    conversation_id: conversationId,
+    sender_id: userId,
+    content,
+  });
+
+  if (adminErr) {
+    return { ok: false, source: "admin_insert", error: adminErr };
+  }
+
+  return { ok: true, viaAdminFallback: true };
+}

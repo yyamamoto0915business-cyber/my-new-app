@@ -25,14 +25,63 @@ export function useSupabaseUser(): SupabaseUserState {
       return;
     }
 
-    const init = async () => {
+    const recoverSessionFromServer = async (): Promise<boolean> => {
       try {
+        const res = await fetch("/api/auth/bootstrap", {
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        if (!res.ok) return false;
+        const data = (await res.json()) as {
+          session: { access_token: string; refresh_token: string } | null;
+        };
+        if (!data.session?.access_token || !data.session.refresh_token) return false;
+        const { error } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+        if (error) return false;
         const {
           data: { user: u },
         } = await supabase.auth.getUser();
-        setUser(u);
+        if (u) {
+          setUser(u);
+          return true;
+        }
       } catch {
-        // ページ遷移・Fast Refresh 等で内部 fetch が中断されると AbortError になり得る
+        // ignore
+      }
+      return false;
+    };
+
+    const init = async () => {
+      try {
+        try {
+          const {
+            data: { user: u },
+          } = await supabase.auth.getUser();
+          if (u) {
+            setUser(u);
+            return;
+          }
+        } catch {
+          // ページ遷移・Fast Refresh 等で内部 fetch が中断されると AbortError になり得る
+        }
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          return;
+        }
+
+        if (await recoverSessionFromServer()) {
+          return;
+        }
+
+        setUser(null);
+      } catch {
+        setUser(null);
       } finally {
         setLoading(false);
       }
