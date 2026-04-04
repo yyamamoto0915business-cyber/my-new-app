@@ -34,6 +34,14 @@ import {
 
 type EventWithDistance = Event & { distanceKm?: number };
 
+/** 現在地取得済みのときの地図の絞り込み半径（km） */
+const MAP_RADIUS_NEAR_ME_KM = 50;
+/**
+ * 位置情報が許可されていないときは一覧APIと同様に全国を対象にする。
+ * デフォルト座標（東京）＋狭い半径だと関西以降のイベントが一切出ない。
+ */
+const MAP_RADIUS_NATIONWIDE_KM = 2800;
+
 function EventsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParamsNoSuspend();
@@ -138,7 +146,7 @@ function EventsPageContent() {
     if (city) params.set("city", city);
     if (urlTags.length) params.set("tags", urlTags.join(","));
     const qs = params.toString();
-    fetchWithTimeout(`/api/events${qs ? `?${qs}` : ""}`)
+    fetchWithTimeout(`/api/events${qs ? `?${qs}` : ""}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data: Event[]) => setEvents(Array.isArray(data) ? data : []))
       .catch(() => {
@@ -153,25 +161,40 @@ function EventsPageContent() {
     setMapLoading(true);
     const lat = userPos?.lat ?? 35.6812;
     const lng = userPos?.lng ?? 139.7671;
+    const radiusKm = userPos ? MAP_RADIUS_NEAR_ME_KM : MAP_RADIUS_NATIONWIDE_KM;
     const params = new URLSearchParams({
       lat: String(lat),
       lng: String(lng),
-      radius: "50",
-      start,
-      end,
+      radius: String(radiusKm),
       price: priceFilter,
       child_friendly: String(childFriendlyOnly),
       limit: "100",
     });
+    // 日付「すべて」は一覧の getEventsByDateRange("all") と揃え、過去イベントも含める（map API は start/end があると今日以降に限定される）
+    if (dateRange !== "all") {
+      params.set("start", start);
+      params.set("end", end);
+    }
     if (prefecture) params.set("prefecture", prefecture);
     if (city) params.set("city", city);
     if (urlTags.length) params.set("tags", urlTags.join(","));
-    fetchWithTimeout(`/api/events/map?${params}`)
+    fetchWithTimeout(`/api/events/map?${params}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => setMapEvents(Array.isArray(data?.events) ? data.events : []))
       .catch(() => setMapEvents([]))
       .finally(() => setMapLoading(false));
-  }, [view, userPos, start, end, priceFilter, childFriendlyOnly, prefecture, city, urlTags]);
+  }, [
+    view,
+    userPos,
+    dateRange,
+    start,
+    end,
+    priceFilter,
+    childFriendlyOnly,
+    prefecture,
+    city,
+    urlTags,
+  ]);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -243,18 +266,22 @@ function EventsPageContent() {
           east: String(bounds.east),
           lat: String(bounds.centerLat),
           lng: String(bounds.centerLng),
-          start,
-          end,
           price: priceFilter,
           child_friendly: String(childFriendlyOnly),
           limit: "200",
         });
+        if (dateRange !== "all") {
+          params.set("start", start);
+          params.set("end", end);
+        }
 
         if (prefecture) params.set("prefecture", prefecture);
         if (city) params.set("city", city);
         if (urlTags.length) params.set("tags", urlTags.join(","));
 
-        const data = await fetchWithTimeout(`/api/events/map?${params}`).then((r) => r.json());
+        const data = await fetchWithTimeout(`/api/events/map?${params}`, {
+          cache: "no-store",
+        }).then((r) => r.json());
         setMapEvents(Array.isArray(data?.events) ? data.events : []);
       } catch {
         setMapEvents([]);
@@ -262,7 +289,7 @@ function EventsPageContent() {
         setMapLoading(false);
       }
     },
-    [start, end, priceFilter, childFriendlyOnly, prefecture, city, urlTags]
+    [dateRange, start, end, priceFilter, childFriendlyOnly, prefecture, city, urlTags]
   );
 
   return (
@@ -515,7 +542,7 @@ function EventsPageContent() {
           <div className="mt-4">
             {!userPos && (
               <div className="mb-3 rounded border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-                位置情報が許可されていません。デフォルトの地域を表示しています。
+                位置情報が許可されていません。地図は広い範囲で表示しています。近くだけ見たいときは現在地を取得してください。
                 <button
                   type="button"
                   onClick={handleCenterToCurrentLocation}
@@ -534,28 +561,43 @@ function EventsPageContent() {
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">地図データを読み込み中...</p>
               </div>
             ) : mapEvents.length === 0 ? (
-              <div className="rounded-2xl border border-zinc-200 bg-white p-10 text-center dark:border-zinc-700 dark:bg-zinc-900">
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  この条件に合うイベントはまだありません
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setView("list");
-                    setDateRange("all");
-                    setSelectedArea("");
-                    setAvailableOnly(false);
-                    setPriceFilter("all");
-                    setChildFriendlyOnly(false);
-                    setSearchQuery("");
-                    handleTagsChange([]);
-                    router.push("/events", { scroll: false });
-                  }}
-                  className="mt-4 rounded bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-                >
-                  条件を緩める
-                </button>
-              </div>
+              filteredEvents.length > 0 ? (
+                <div className="rounded-2xl border border-zinc-200 bg-white p-10 text-center dark:border-zinc-700 dark:bg-zinc-900">
+                  <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
+                    地図に載せられる位置情報がない、または表示範囲外のイベントが含まれている可能性があります。同じ条件のイベントを一覧で表示できます。
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setView("list")}
+                    className="mt-5 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white hover:opacity-90 active:scale-[0.99]"
+                  >
+                    一覧で見る（全{filteredEvents.length}件）
+                  </button>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-zinc-200 bg-white p-10 text-center dark:border-zinc-700 dark:bg-zinc-900">
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    この条件に合うイベントはまだありません
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView("list");
+                      setDateRange("all");
+                      setSelectedArea("");
+                      setAvailableOnly(false);
+                      setPriceFilter("all");
+                      setChildFriendlyOnly(false);
+                      setSearchQuery("");
+                      handleTagsChange([]);
+                      router.push("/events", { scroll: false });
+                    }}
+                    className="mt-4 rounded bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                  >
+                    条件を緩める
+                  </button>
+                </div>
+              )
             ) : (
               <MapPageContainer
                 mapEvents={mapEvents}
