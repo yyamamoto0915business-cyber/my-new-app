@@ -103,7 +103,14 @@ export async function proxy(request: NextRequest) {
     return redirect;
   }
 
-  // ログイン済みでロール未設定 → オンボーディングへ
+  // API は必ず Route Handler まで届ける。ここでオンボーディングへ飛ばすと、
+  // イベント詳細など「ページは見られるが user_metadata.role 未設定」のユーザーが
+  // fetch('/api/conversations') で HTML を受け取り会話作成だけ失敗する。
+  if (path.startsWith("/api/")) {
+    return response;
+  }
+
+  // ログイン済みでロール未設定 → オンボーディングへ（アプリページのみ）
   if (user && !user.user_metadata?.role) {
     const redirect = NextResponse.redirect(new URL("/onboarding", request.url));
     mergeSupabaseCookies(response, redirect);
