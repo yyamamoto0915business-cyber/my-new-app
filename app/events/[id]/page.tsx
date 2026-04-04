@@ -43,6 +43,8 @@ export default async function EventDetailPage({ params }: Props) {
   const organizerStory = getOrganizerStoryForEvent(id);
   const repos = getReposForEvent(id, 3);
   const organizerId = "organizerId" in event ? event.organizerId : null;
+  const organizerProfileId =
+    "organizerProfileId" in event ? event.organizerProfileId : null;
   const organizerAvatarUrl = "organizerAvatarUrl" in event ? event.organizerAvatarUrl : null;
   const organizerRegion = "organizerRegion" in event ? event.organizerRegion : null;
   const organizerBio = "organizerBio" in event ? event.organizerBio : null;
@@ -80,6 +82,7 @@ export default async function EventDetailPage({ params }: Props) {
         eventId={id}
         eventTitle={event.title}
         organizerId={organizerId}
+        organizerUserId={organizerProfileId}
         organizerName={event.organizerName}
       />
 

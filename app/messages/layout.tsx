@@ -12,6 +12,8 @@ import { getModeFromCookie, type ModePreference } from "@/lib/mode-preference";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 
+const API_CREDENTIALS: RequestInit = { credentials: "include" };
+
 function formatRelative(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
@@ -67,7 +69,7 @@ export default function MessagesLayout({
     }
     setLoading(true);
     setError(null);
-    fetchWithTimeout("/api/messages/inbox")
+    fetchWithTimeout("/api/messages/inbox", API_CREDENTIALS)
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
         if (!r.ok) {

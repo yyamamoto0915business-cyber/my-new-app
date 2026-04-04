@@ -8,6 +8,9 @@ import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 
+/** 本番で Cookie 付き API を確実に叩く */
+const API_CREDENTIALS: RequestInit = { credentials: "include" };
+
 type Message = {
   id: string;
   conversation_id: string;
@@ -56,7 +59,10 @@ export default function ConversationPage({
     setOrganizerDisplayName(null);
     setOrganizerAvatarUrl(null);
 
-    fetchWithTimeout(`/api/messages/conversations/${conversationId}/meta`)
+    fetchWithTimeout(
+      `/api/messages/conversations/${conversationId}/meta`,
+      API_CREDENTIALS
+    )
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(data?.error ?? "メタ情報の取得に失敗しました");
@@ -86,7 +92,8 @@ export default function ConversationPage({
       try {
         // メッセージ取得
         const msgRes = await fetchWithTimeout(
-          `/api/messages/conversations/${conversationId}/messages`
+          `/api/messages/conversations/${conversationId}/messages`,
+          API_CREDENTIALS
         );
         if (msgRes.ok) {
           const msgs: Message[] = await msgRes.json();
@@ -98,6 +105,7 @@ export default function ConversationPage({
         // 既読に更新
         await fetch(`/api/messages/conversations/${conversationId}/read`, {
           method: "POST",
+          ...API_CREDENTIALS,
         });
       } catch {
         setError("通信に失敗しました");
@@ -139,30 +147,31 @@ export default function ConversationPage({
   const handleSend = useCallback(async () => {
     const text = content.trim();
     if (!text || !conversationId || !currentUserId || sending) return;
-    const supabase = createClient();
-    if (!supabase) return;
 
     setSending(true);
     try {
-      const { data, error: insertError } = await supabase
-        .from("messages")
-        .insert({
-          conversation_id: conversationId,
-          sender_id: currentUserId,
-          content: text,
-        })
-        .select("id, conversation_id, sender_id, content, created_at")
-        .single();
-
-      if (insertError) {
-        setError(insertError.message ?? "送信に失敗しました");
+      const res = await fetch(
+        `/api/messages/conversations/${conversationId}/messages`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          ...API_CREDENTIALS,
+          body: JSON.stringify({ content: text }),
+        }
+      );
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(typeof data.error === "string" ? data.error : "送信に失敗しました");
         return;
       }
       setContent("");
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === data.id)) return prev;
-        return [...prev, data as Message];
-      });
+      const refreshRes = await fetchWithTimeout(
+        `/api/messages/conversations/${conversationId}/messages`,
+        API_CREDENTIALS
+      );
+      if (refreshRes.ok) {
+        setMessages((await refreshRes.json()) as Message[]);
+      }
     } catch {
       setError("通信に失敗しました");
     } finally {

@@ -5,16 +5,33 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+const CREATE_CONVERSATION_URL = "/api/conversations";
+
 type EventChatButtonProps = {
   eventId: string;
   eventTitle?: string;
   organizerId?: string | null;
+  /** 主催者の auth.users.id（DB の organizers.profile_id と一致させる） */
+  organizerUserId?: string | null;
   organizerName?: string;
   ctaLabel?: string;
   ctaHelper?: string;
   openSignal?: number;
   openIntentId?: string;
 };
+
+function logConversationApiError(
+  context: string,
+  status: number,
+  data: Record<string, unknown>
+) {
+  console.error(`[EventChatButton] ${context}`, {
+    status,
+    error: data.error,
+    details: data.details,
+    full: data,
+  });
+}
 
 type IntentOption = {
   id: string;
@@ -37,6 +54,7 @@ export function EventChatButton({
   eventId,
   eventTitle,
   organizerId,
+  organizerUserId,
   organizerName,
   ctaLabel = "このイベントについて相談する",
   ctaHelper = "参加前の質問や相談ができます。主催者へ直接確認できます。",
@@ -81,19 +99,25 @@ export function EventChatButton({
     try {
       // 既存conversationがある場合は、モーダルを挟まず会話詳細へ直行
       // 初回（messages 0件）のときだけモーダル表示
-      const res = await fetch("/api/messages/conversations", {
+      const res = await fetch(CREATE_CONVERSATION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           eventId,
-          organizerId: organizerId ?? undefined,
           kind: "event_inquiry",
+          ...(organizerId ? { organizerId } : {}),
+          ...(organizerUserId ? { organizerUserId } : {}),
         }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error ?? "会話の準備に失敗しました");
-      const conversationId = data?.conversationId as string | undefined;
+      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!res.ok) {
+        logConversationApiError("create conversation (open)", res.status, data);
+        throw new Error(
+          typeof data.error === "string" ? data.error : "会話の準備に失敗しました"
+        );
+      }
+      const conversationId = data.conversationId as string | undefined;
       if (!conversationId) throw new Error("会話IDが返ってきませんでした");
 
       const msgRes = await fetch(`/api/messages/conversations/${conversationId}/messages`);
@@ -193,6 +217,8 @@ export function EventChatButton({
               eventId={eventId}
               conversationId={conversationIdForModal}
               eventTitle={eventTitle}
+              organizerId={organizerId}
+              organizerUserId={organizerUserId}
               organizerName={organizerName}
               initialIntentId={modalIntentId}
               onClose={() => {
@@ -212,6 +238,8 @@ function ModalBody({
   eventId,
   conversationId,
   eventTitle,
+  organizerId,
+  organizerUserId,
   organizerName,
   initialIntentId,
   onClose,
@@ -220,6 +248,8 @@ function ModalBody({
   eventId: string;
   conversationId?: string | null;
   eventTitle?: string;
+  organizerId?: string | null;
+  organizerUserId?: string | null;
   organizerName?: string;
   initialIntentId?: string;
   onClose: () => void;
@@ -250,34 +280,44 @@ function ModalBody({
     try {
       let cid = conversationId ?? null;
       if (!cid) {
-        const res = await fetch("/api/messages/conversations", {
+        const res = await fetch(CREATE_CONVERSATION_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ eventId, kind: "event_inquiry" }),
+          body: JSON.stringify({
+            eventId,
+            kind: "event_inquiry",
+            ...(organizerId ? { organizerId } : {}),
+            ...(organizerUserId ? { organizerUserId } : {}),
+          }),
         });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data?.error ?? "会話の作成に失敗しました");
+        const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        if (!res.ok) {
+          logConversationApiError("create conversation (send)", res.status, data);
+          throw new Error(
+            typeof data.error === "string" ? data.error : "会話の作成に失敗しました"
+          );
+        }
 
-        cid = data?.conversationId as string | undefined ?? null;
+        cid = (data.conversationId as string | undefined) ?? null;
         if (!cid) throw new Error("会話IDが返ってきませんでした");
       }
 
-      const supabase = createClient();
-      if (!supabase) throw new Error("Supabase が設定されていません");
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("ログインが必要です");
-
-      const { error: insertError } = await supabase.from("messages").insert({
-        conversation_id: cid,
-        sender_id: user.id,
-        content: draft,
+      const msgRes = await fetch(`/api/messages/conversations/${cid}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: draft }),
       });
-
-      if (insertError) throw insertError;
+      const msgData = (await msgRes.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!msgRes.ok) {
+        logConversationApiError("post first message", msgRes.status, msgData);
+        throw new Error(
+          typeof msgData.error === "string"
+            ? msgData.error
+            : "メッセージの送信に失敗しました"
+        );
+      }
 
       onClose();
       router.push(`/messages/${cid}`);

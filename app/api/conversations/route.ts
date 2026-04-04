@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { handlePostCreateConversation } from "@/lib/api/conversations-post";
 
-/** @deprecated クライアントは `/api/conversations` を優先してください（互換のため残置） */
 export async function POST(request: NextRequest) {
   return handlePostCreateConversation(request);
 }

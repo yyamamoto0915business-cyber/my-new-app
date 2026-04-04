@@ -8,6 +8,8 @@ type Props = {
   eventId: string;
   eventTitle: string;
   organizerId?: string | null;
+  /** 主催者の auth / profiles.id（API でイベント主催者と突合） */
+  organizerUserId?: string | null;
   organizerName?: string | null;
 };
 
@@ -17,6 +19,7 @@ export function EventConsultationCard({
   eventId,
   eventTitle,
   organizerId,
+  organizerUserId,
   organizerName,
 }: Props) {
   const [openSignal, setOpenSignal] = useState(0);
@@ -76,6 +79,7 @@ export function EventConsultationCard({
           eventId={eventId}
           eventTitle={eventTitle}
           organizerId={organizerId ?? undefined}
+          organizerUserId={organizerUserId ?? undefined}
           organizerName={organizerName ?? undefined}
           ctaLabel="主催者にメッセージを送る"
           ctaHelper="送信後はチャット形式でやり取りできます"

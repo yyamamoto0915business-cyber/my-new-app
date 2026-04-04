@@ -1,44 +1,15 @@
 import type { InboxItem } from "./inbox-queries";
+import { getDirectPostgresClientConfig } from "./direct-postgres-config";
 
 /**
  * PostgREST を経由せず直接 DB に接続してトーク一覧を取得
  * スキーマキャッシュ問題を回避（SUPABASE_DB_URL 設定時）
  */
-function getDbConfig() {
-  const dbPassword = process.env.SUPABASE_DB_PASSWORD;
-  const dbUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
-
-  if (!dbUrl) {
-    throw new Error("SUPABASE_DB_URL または DATABASE_URL が設定されていません");
-  }
-
-  if (dbPassword) {
-    try {
-      const url = new URL(dbUrl.replace(/^postgres(ql)?:\/\//, "https://"));
-      return {
-        host: url.hostname,
-        port: parseInt(url.port || "6543", 10),
-        user: url.username || "postgres",
-        password: dbPassword,
-        database: url.pathname.slice(1) || "postgres",
-        ssl: { rejectUnauthorized: false },
-      };
-    } catch {
-      // fallback
-    }
-  }
-
-  return {
-    connectionString: dbUrl,
-    ssl: dbUrl.includes("supabase") ? { rejectUnauthorized: false } : undefined,
-  };
-}
-
 export async function fetchInboxDirectDb(
   userId: string,
   limit = 50
 ): Promise<InboxItem[]> {
-  const config = getDbConfig();
+  const config = getDirectPostgresClientConfig();
 
   const { default: pg } = await import("pg");
   const client = new pg.Client(config);

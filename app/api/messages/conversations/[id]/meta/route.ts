@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
+import { hasDirectPostgresEnv } from "@/lib/direct-postgres-config";
+import { fetchConversationMetaDirectDb } from "@/lib/conversation-direct-db";
+
+const LOG_TAG = "[api/messages/conversations/.../meta]";
 
 /**
  * GET: conversation のイベント名 / 主催者名などメタ情報
@@ -29,6 +33,29 @@ export async function GET(
       { error: "conversationId が必要です" },
       { status: 400 }
     );
+  }
+
+  if (hasDirectPostgresEnv()) {
+    try {
+      const meta = await fetchConversationMetaDirectDb(user.id, conversationId);
+      if (!meta) {
+        return NextResponse.json({ error: "会話が見つかりません" }, { status: 404 });
+      }
+      if (meta.eventId != null && meta.eventTitle == null) {
+        return NextResponse.json(
+          { error: "イベントが見つかりません" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json({
+        eventId: meta.eventId,
+        eventTitle: meta.eventTitle ?? "イベント",
+        organizerDisplayName: meta.organizerDisplayName ?? "主催者",
+        organizerAvatarUrl: meta.organizerAvatarUrl,
+      });
+    } catch (e) {
+      console.error(LOG_TAG, "direct db meta failed, falling back to supabase", e);
+    }
   }
 
   try {

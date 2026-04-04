@@ -254,6 +254,8 @@ export async function fetchPublishedEventById(
 
 export type EventWithOrganizerInfo = Event & {
   organizerId?: string | null;
+  /** auth.users.id / profiles.id（主催者ユーザー。会話 API の検証用） */
+  organizerProfileId?: string | null;
   organizerAvatarUrl?: string | null;
   organizerRegion?: string | null;
   organizerBio?: string | null;
@@ -271,6 +273,7 @@ export async function fetchPublishedEventWithOrganizerInfo(
       *,
       organizers (
         id,
+        profile_id,
         organization_name,
         contact_email,
         contact_phone,
@@ -293,6 +296,7 @@ export async function fetchPublishedEventWithOrganizerInfo(
   const row = data as Record<string, unknown>;
   const org = row.organizers as {
     id?: string;
+    profile_id?: string | null;
     organization_name: string | null;
     contact_email: string | null;
     contact_phone: string | null;
@@ -320,6 +324,8 @@ export async function fetchPublishedEventWithOrganizerInfo(
   return {
     ...event,
     organizerId: org?.id ?? null,
+    organizerProfileId:
+      typeof org?.profile_id === "string" && org.profile_id.length > 0 ? org.profile_id : null,
     organizerAvatarUrl: org?.profile?.avatar_url ?? null,
     organizerRegion: org?.profile?.region ?? null,
     organizerBio: org?.profile?.bio ?? null,
