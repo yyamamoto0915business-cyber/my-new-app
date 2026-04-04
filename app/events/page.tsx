@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
@@ -49,11 +49,6 @@ function EventsPageContent() {
 
   // Hydration mismatch防止のため、初期レンダは常に同じ分岐に寄せる
   const [view, setView] = useState<"list" | "map">("list");
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const isMobile = window.matchMedia("(max-width: 640px)").matches;
-    setView(isMobile ? "map" : "list");
-  }, []);
   const [dateRange, setDateRange] = useState<DateRangeFilter>("all");
   const [sortOrder, setSortOrder] = useState<EventSort>("date_asc");
   const [availableOnly, setAvailableOnly] = useState(false);
@@ -70,6 +65,24 @@ function EventsPageContent() {
   const [listError, setListError] = useState<string | null>(null);
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // マップ表示に切り替わる最初のフレームで mapLoading が false のままだと
+  // 「イベントなし」と誤表示される。paint 前にローディングへ寄せる。
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    const isMobile = window.matchMedia("(max-width: 640px)").matches;
+    if (isMobile) {
+      setMapLoading(true);
+      setView("map");
+    } else {
+      setView("list");
+    }
+  }, []);
+
+  const openMapView = useCallback(() => {
+    setMapLoading(true);
+    setView("map");
+  }, []);
 
   const handleTagsChange = useCallback(
     (tags: string[]) => {
@@ -286,7 +299,8 @@ function EventsPageContent() {
             一覧
           </button>
           <button
-            onClick={() => setView("map")}
+            type="button"
+            onClick={openMapView}
             className={`rounded px-4 py-2 text-sm font-medium ${
               view === "map"
                 ? "bg-[var(--accent)] text-white"
@@ -308,7 +322,7 @@ function EventsPageContent() {
                 dateRange={dateRange as MobileSearchPanelDateRange}
                 categoryLabel={urlTags.length ? `カテゴリ：${urlTags.length}件` : "カテゴリ：すべて"}
                 onOpenFilters={() => setFiltersOpen(true)}
-                onToggleMap={() => setView("map")}
+                onToggleMap={openMapView}
                 isMap={false}
               />
             </div>

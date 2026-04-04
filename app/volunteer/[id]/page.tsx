@@ -13,6 +13,7 @@ import {
   getDisplayBenefits,
   type VolunteerRoleWithEvent,
 } from "@/lib/volunteer-utils";
+import { isRecruitmentRowId } from "@/lib/map-recruitment-to-volunteer-role";
 import type { SupportDetail } from "@/lib/volunteer-roles-mock";
 import { BENEFIT_LABELS } from "@/lib/volunteer-roles-mock";
 
@@ -45,11 +46,17 @@ export default function VolunteerDetailPage() {
     }
     setApplying(true);
     try {
-      const res = await fetchWithTimeout("/api/volunteer/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ volunteerRoleId: role.id }),
-      });
+      const fromDb = isRecruitmentRowId(id);
+      const res = await fetchWithTimeout(
+        fromDb ? `/api/recruitments/${id}/apply` : "/api/volunteer/apply",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            fromDb ? {} : { volunteerRoleId: role.id }
+          ),
+        }
+      );
       const data = await res.json().catch(() => ({}));
       if (data.redirectUrl) {
         window.location.href = data.redirectUrl;

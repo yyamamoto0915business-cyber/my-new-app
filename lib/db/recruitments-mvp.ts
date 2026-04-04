@@ -69,7 +69,7 @@ export async function fetchPublicRecruitments(
   const limit = options?.limit ?? 50;
   let query = supabase
     .from("recruitments")
-    .select("*, organizers(organization_name), events(title, date)")
+    .select("*, organizers(organization_name), events(title, date, prefecture)")
     .eq("status", "public")
     .order("start_at", { ascending: true, nullsFirst: false })
     .limit(limit);
@@ -97,7 +97,7 @@ export async function fetchRecommendedRecruitments(
 ): Promise<(RecruitmentMvp & { organizers?: { organization_name: string | null } })[]> {
   const { data, error } = await supabase
     .from("recruitments")
-    .select("*, organizers(organization_name)")
+    .select("*, organizers(organization_name), events(title, date, prefecture)")
     .eq("status", "public")
     .not("meeting_place", "is", null)
     .order("start_at", { ascending: true, nullsFirst: false })
@@ -118,7 +118,7 @@ export async function fetchRecruitmentById(
 ): Promise<(RecruitmentMvp & { organizers?: { organization_name: string | null; contact_email: string | null } }) | null> {
   const { data, error } = await supabase
     .from("recruitments")
-    .select("*, organizers(organization_name, contact_email)")
+    .select("*, organizers(organization_name, contact_email), events(title, date, prefecture)")
     .eq("id", id)
     .single();
 
