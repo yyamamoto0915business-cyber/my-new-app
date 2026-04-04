@@ -7,10 +7,18 @@ type Props = {
   isActive: boolean;
   onToggle: (eventId: string) => void;
   className?: string;
+  /** 明るい丸背景のときは light（未保存アイコンを濃色に） */
+  tone?: "dark" | "light";
 };
 
 /** ブックマークトグル（小さめアイコン・主張しすぎない） */
-export function BookmarkToggle({ eventId, isActive, onToggle, className = "" }: Props) {
+export function BookmarkToggle({
+  eventId,
+  isActive,
+  onToggle,
+  className = "",
+  tone = "dark",
+}: Props) {
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -25,7 +33,11 @@ export function BookmarkToggle({ eventId, isActive, onToggle, className = "" }: 
       type="button"
       onClick={handleClick}
       aria-label={isActive ? "保存を解除" : "保存する"}
-      className={`min-h-[44px] min-w-[44px] rounded-full p-2 transition-colors hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 active:bg-white/40 [-webkit-tap-highlight-color:transparent] sm:min-h-0 sm:min-w-0 sm:p-1.5 ${className}`}
+      className={`min-h-[44px] min-w-[44px] rounded-full p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 [-webkit-tap-highlight-color:transparent] sm:min-h-0 sm:min-w-0 sm:p-1.5 ${
+        tone === "light"
+          ? "hover:bg-zinc-100/90 active:bg-zinc-200/70"
+          : "hover:bg-white/30 active:bg-white/40"
+      } ${className}`}
     >
       {isActive ? (
         <svg
@@ -47,7 +59,11 @@ export function BookmarkToggle({ eventId, isActive, onToggle, className = "" }: 
           viewBox="0 0 24 24"
           strokeWidth={2}
           stroke="currentColor"
-          className="h-5 w-5 text-white/90"
+          className={
+            tone === "light"
+              ? "h-5 w-5 text-slate-600"
+              : "h-5 w-5 text-white/90"
+          }
         >
           <path
             strokeLinecap="round"

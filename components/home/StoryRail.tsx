@@ -65,9 +65,9 @@ function StoryCardSmall({ story }: { story: Story }) {
           className="object-cover transition-transform group-hover:scale-[1.02]"
           sizes="(max-width: 640px) 100vw, 300px"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        <div className="absolute bottom-2 left-2 right-2">
-          <h3 className="line-clamp-2 font-serif text-sm font-semibold text-white drop-shadow-sm">
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/38 via-transparent to-transparent" />
+        <div className="absolute bottom-2 left-2 right-2 z-[2]">
+          <h3 className="line-clamp-2 font-serif text-sm font-semibold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
             {story.title}
           </h3>
         </div>

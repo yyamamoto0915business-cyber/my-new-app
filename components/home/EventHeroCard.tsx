@@ -6,7 +6,7 @@ import type { Event } from "@/lib/db/types";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import { getPrimaryCategory } from "@/lib/inferCategory";
 import { addToRecent } from "@/lib/bookmark-storage";
-import { EventThumbnail } from "@/components/event-thumbnail";
+import { EventCardFlyerImage } from "@/components/events/EventCardFlyerImage";
 import { BookmarkToggle } from "@/components/ui/BookmarkToggle";
 
 type Props = {
@@ -44,22 +44,17 @@ export function EventHeroCard({
       className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md active:scale-[0.995] dark:bg-[var(--background)]"
     >
       <div className="relative aspect-[16/10] overflow-hidden rounded-t-2xl">
-        <EventThumbnail
-          imageUrl={event.imageUrl}
-          alt={event.title}
-          rounded="none"
-          fill
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+        <EventCardFlyerImage imageUrl={event.imageUrl} alt={event.title} />
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
         {badges.length > 0 && (
-          <div className="absolute left-2 top-2 z-10 flex gap-1.5">
+          <div className="absolute left-2 top-2 z-[2] flex gap-1.5">
             {badges.slice(0, 2).map((b) => (
               <span
                 key={b.label}
-                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                className={`rounded-full px-2 py-0.5 text-[10px] font-medium shadow-sm ring-1 ring-black/5 ${
                   b.accent
-                    ? "bg-white/90 text-[var(--accent)]"
-                    : "bg-black/50 text-white backdrop-blur-sm"
+                    ? "bg-white/95 text-[var(--accent)]"
+                    : "bg-white/92 text-slate-700 backdrop-blur-sm"
                 }`}
               >
                 {b.label}
@@ -68,33 +63,34 @@ export function EventHeroCard({
           </div>
         )}
         <div
-          className="absolute right-2 top-2 z-10 flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-black/40 backdrop-blur-sm"
+          className="absolute right-2 top-2 z-[2] flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-white/90 shadow-sm ring-1 ring-slate-200/70 backdrop-blur-sm"
           onClick={(e) => e.stopPropagation()}
         >
           <BookmarkToggle
             eventId={event.id}
             isActive={isBookmarked}
             onToggle={onBookmarkToggle}
+            tone="light"
           />
         </div>
-        <div className="absolute bottom-2 left-2 right-2 text-white">
+        <div className="absolute bottom-2 left-2 right-2 z-[2] text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
           {event.organizerName && (
             event.organizerId ? (
               <Link
                 href={`/organizers/${event.organizerId}`}
                 onClick={(e) => e.stopPropagation()}
-                className="text-xs font-medium drop-shadow-md hover:underline"
+                className="text-xs font-medium hover:underline"
               >
                 by {event.organizerName}
               </Link>
             ) : (
-              <p className="text-xs font-medium drop-shadow-md">by {event.organizerName}</p>
+              <p className="text-xs font-medium">by {event.organizerName}</p>
             )
           )}
-          <h3 className="mt-0.5 line-clamp-2 font-serif text-sm font-semibold drop-shadow-md">
+          <h3 className="mt-0.5 line-clamp-2 font-serif text-sm font-semibold">
             {event.title}
           </h3>
-          <p className="mt-0.5 line-clamp-1 text-xs drop-shadow-md opacity-95">
+          <p className="mt-0.5 line-clamp-1 text-xs opacity-95">
             {event.date} {event.startTime}
             {event.endTime ? `〜${event.endTime}` : ""} ・ {event.location}
           </p>

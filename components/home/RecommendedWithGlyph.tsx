@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import type { Event } from "@/lib/db/types";
-import { EventThumbnail } from "@/components/event-thumbnail";
+import { EventCardFlyerImage } from "@/components/events/EventCardFlyerImage";
 import { GlyphBadge } from "@/components/ui/GlyphBadge";
 import { BookmarkToggle } from "@/components/ui/BookmarkToggle";
 import { addToRecent } from "@/lib/bookmark-storage";
@@ -94,35 +94,31 @@ function RecommendedCard({
       className="group flex w-[220px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)] sm:w-auto"
     >
       <div className="relative aspect-[16/10] overflow-hidden rounded-t-2xl">
-        <EventThumbnail
-          imageUrl={event.imageUrl}
-          alt={event.title}
-          rounded="none"
-          fill
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-        <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+        <EventCardFlyerImage imageUrl={event.imageUrl} alt={event.title} />
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/42 via-black/8 to-transparent" />
+        <div className="absolute left-2 top-2 z-[2] flex flex-wrap gap-1">
           {glyphs.map((g) => (
             <GlyphBadge key={g} glyph={g} />
           ))}
         </div>
         <div
-          className="absolute right-2 top-2 z-10"
+          className="absolute right-2 top-2 z-[2] flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-white/90 shadow-sm ring-1 ring-slate-200/70"
           onClick={(e) => e.stopPropagation()}
         >
           <BookmarkToggle
             eventId={event.id}
             isActive={isBookmarked}
             onToggle={onBookmarkToggle}
+            tone="light"
           />
         </div>
-        <div className="absolute bottom-2 left-2 right-2">
-          <h3 className="line-clamp-2 font-serif text-sm font-semibold text-white drop-shadow-md">
+        <div className="absolute bottom-2 left-2 right-2 z-[2]">
+          <h3 className="line-clamp-2 font-serif text-sm font-semibold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
             {event.title}
           </h3>
         </div>
         {event.price === 0 && (
-          <span className="absolute right-12 top-2 rounded-full bg-white/95 px-2 py-0.5 text-xs font-medium text-[var(--accent)]">
+          <span className="absolute right-12 top-2 z-[2] rounded-full bg-white/95 px-2 py-0.5 text-xs font-medium text-[var(--accent)] shadow-sm ring-1 ring-black/5">
             無料
           </span>
         )}

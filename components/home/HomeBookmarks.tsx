@@ -48,16 +48,20 @@ function BookmarkShelfCard({
           rounded="none"
           fill
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-        <div className="absolute right-1 top-1 z-10" onClick={(e) => e.stopPropagation()}>
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/42 via-black/8 to-transparent" />
+        <div
+          className="absolute right-1 top-1 z-[2] flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full bg-white/90 shadow-sm ring-1 ring-slate-200/70"
+          onClick={(e) => e.stopPropagation()}
+        >
           <BookmarkToggle
             eventId={event.id}
             isActive={isBookmarked}
             onToggle={onToggle}
+            tone="light"
           />
         </div>
-        <div className="absolute bottom-1.5 left-1.5 right-1.5">
-          <h3 className="line-clamp-2 font-serif text-xs font-semibold text-white drop-shadow-md">
+        <div className="absolute bottom-1.5 left-1.5 right-1.5 z-[2]">
+          <h3 className="line-clamp-2 font-serif text-xs font-semibold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
             {event.title}
           </h3>
         </div>

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import type { Event } from "@/lib/db/types";
-import { EventThumbnail } from "@/components/event-thumbnail";
+import { EventCardFlyerImage } from "@/components/events/EventCardFlyerImage";
 import { BookmarkToggle } from "@/components/ui/BookmarkToggle";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { getPrimaryCategory } from "@/lib/inferCategory";
@@ -119,37 +119,33 @@ function PickupCardFeatured({
       onKeyDown={(e) => e.key === "Enter" && handleClick()}
       className="group flex w-[min(300px,88vw)] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md active:scale-[0.995] dark:bg-[var(--background)] sm:w-[320px]"
     >
-      <div className="relative aspect-[16/10]">
-        <EventThumbnail
-          imageUrl={event.imageUrl}
-          alt={event.title}
-          rounded="none"
-          className="rounded-t-2xl"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
+      <div className="relative aspect-[16/10] overflow-hidden rounded-t-2xl">
+        <EventCardFlyerImage imageUrl={event.imageUrl} alt={event.title} />
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/42 via-black/8 to-transparent" />
         {getPrimaryCategory(event) && (
-          <div className="absolute left-2 top-2 z-10">
+          <div className="absolute left-2 top-2 z-[2]">
             <CategoryBadge event={event} />
           </div>
         )}
         <div
-          className="absolute right-2 top-2 z-10"
+          className="absolute right-2 top-2 z-[2] flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-white/90 shadow-sm ring-1 ring-slate-200/70"
           onClick={(e) => e.stopPropagation()}
         >
           <BookmarkToggle
             eventId={event.id}
             isActive={isBookmarked}
             onToggle={onBookmarkToggle}
+            tone="light"
           />
         </div>
-        <div className="absolute bottom-2 left-2 right-2 text-white">
-          <p className="text-xs font-medium drop-shadow-md">{event.organizerName}</p>
-          <h3 className="mt-0.5 line-clamp-2 font-serif text-sm font-semibold drop-shadow-md">
+        <div className="absolute bottom-2 left-2 right-2 z-[2] text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
+          <p className="text-xs font-medium">{event.organizerName}</p>
+          <h3 className="mt-0.5 line-clamp-2 font-serif text-sm font-semibold">
             {event.title}
           </h3>
         </div>
         {event.price === 0 && (
-          <span className="absolute right-12 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-[var(--accent)]">
+          <span className="absolute right-12 top-2 z-[2] rounded-full bg-white/95 px-2 py-0.5 text-xs font-medium text-[var(--accent)] shadow-sm ring-1 ring-black/5">
             無料
           </span>
         )}
@@ -199,37 +195,33 @@ function PickupCard({
       onKeyDown={(e) => e.key === "Enter" && handleClick()}
       className="group flex w-[min(260px,80vw)] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md active:scale-[0.98] dark:bg-[var(--background)] sm:w-[280px]"
     >
-      <div className="relative aspect-[16/10]">
-        <EventThumbnail
-          imageUrl={event.imageUrl}
-          alt={event.title}
-          rounded="none"
-          className="rounded-t-2xl"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
+      <div className="relative aspect-[16/10] overflow-hidden rounded-t-2xl">
+        <EventCardFlyerImage imageUrl={event.imageUrl} alt={event.title} />
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/42 via-black/8 to-transparent" />
         {getPrimaryCategory(event) && (
-          <div className="absolute left-2 top-2 z-10">
+          <div className="absolute left-2 top-2 z-[2]">
             <CategoryBadge event={event} />
           </div>
         )}
         <div
-          className="absolute right-2 top-2 z-10"
+          className="absolute right-2 top-2 z-[2] flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-white/90 shadow-sm ring-1 ring-slate-200/70"
           onClick={(e) => e.stopPropagation()}
         >
           <BookmarkToggle
             eventId={event.id}
             isActive={isBookmarked}
             onToggle={onBookmarkToggle}
+            tone="light"
           />
         </div>
-        <div className="absolute bottom-2 left-2 right-2 text-white">
-          <p className="text-xs font-medium drop-shadow-md">{event.organizerName}</p>
-          <h3 className="mt-0.5 line-clamp-2 font-serif text-sm font-semibold drop-shadow-md">
+        <div className="absolute bottom-2 left-2 right-2 z-[2] text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
+          <p className="text-xs font-medium">{event.organizerName}</p>
+          <h3 className="mt-0.5 line-clamp-2 font-serif text-sm font-semibold">
             {event.title}
           </h3>
         </div>
         {event.price === 0 && (
-          <span className="absolute right-12 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-[var(--accent)]">
+          <span className="absolute right-12 top-2 z-[2] rounded-full bg-white/95 px-2 py-0.5 text-xs font-medium text-[var(--accent)] shadow-sm ring-1 ring-black/5">
             無料
           </span>
         )}

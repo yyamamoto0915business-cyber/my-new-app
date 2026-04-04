@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Event } from "@/lib/db/types";
-import { EventThumbnail } from "@/components/event-thumbnail";
+import { EventDetailFlyerImage } from "@/components/events/EventDetailFlyerImage";
 import { BookmarkToggle } from "@/components/ui/BookmarkToggle";
 import { isBookmarked, toggleBookmark } from "@/lib/bookmark-storage";
 import { getPrimaryCategory } from "@/lib/inferCategory";
@@ -40,8 +40,13 @@ export function EventDetailHero({ event }: Props) {
 
   return (
     <section aria-label="イベントの概要" className="max-sm:space-y-4">
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 max-sm:rounded-2xl sm:rounded-none">
-        <EventThumbnail imageUrl={event.imageUrl} alt={event.title} rounded="none" fill />
+      <div className="relative w-full">
+        <EventDetailFlyerImage
+          imageUrl={event.imageUrl}
+          alt={event.title}
+          priority
+          variant="hero"
+        />
 
         <div className="absolute left-3 top-3 hidden items-center gap-2 sm:flex">
           <Link
@@ -98,7 +103,7 @@ export function EventDetailHero({ event }: Props) {
       </div>
 
       <div
-        className="relative hidden sm:block sm:-mt-6 sm:mx-4 sm:rounded-[24px] sm:border sm:border-slate-200/90 sm:bg-white sm:p-6 sm:shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
+        className="relative z-10 mt-4 hidden sm:mx-4 sm:mt-5 sm:block sm:rounded-[24px] sm:border sm:border-slate-200/90 sm:bg-white sm:p-6 sm:shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
       >
         <h1 className="text-[22px] font-semibold leading-8 text-[var(--mg-ink)]">
           {event.title}

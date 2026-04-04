@@ -1,6 +1,5 @@
 "use client";
 
-import type { CategoryKey } from "@/lib/categories";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import { getPrimaryCategory } from "@/lib/inferCategory";
 import type { Event } from "@/lib/db/types";
@@ -19,7 +18,7 @@ export function CategoryBadge({ event, className = "" }: Props) {
 
   return (
     <span
-      className={`inline-block rounded-full bg-black/50 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm ${className}`}
+      className={`inline-block rounded-full bg-white/92 px-2 py-0.5 text-xs font-medium text-slate-700 shadow-sm ring-1 ring-black/5 backdrop-blur-sm ${className}`}
     >
       {label}
     </span>

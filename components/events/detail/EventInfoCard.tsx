@@ -1,5 +1,5 @@
 import type { Event } from "@/lib/db/types";
-import { EventThumbnail } from "@/components/event-thumbnail";
+import { EventDetailFlyerImage } from "@/components/events/EventDetailFlyerImage";
 import { formatEventDateTime } from "@/lib/format-date";
 import { CalendarDays, MapPin } from "lucide-react";
 import { getEventStatus, type EventStatus } from "@/lib/events";
@@ -39,9 +39,12 @@ export function EventInfoCard({ event, className }: Props) {
         className
       )}
     >
-      <div className="relative aspect-[16/10] w-full bg-slate-100">
-        <EventThumbnail imageUrl={event.imageUrl} alt={event.title} rounded="none" fill />
-      </div>
+      <EventDetailFlyerImage
+        imageUrl={event.imageUrl}
+        alt={event.title}
+        priority
+        variant="cardTop"
+      />
 
       <div className="p-5">
         {categoryLabel ? (

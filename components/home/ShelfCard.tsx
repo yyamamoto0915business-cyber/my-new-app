@@ -6,7 +6,7 @@ import type { Event } from "@/lib/db/types";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import { getPrimaryCategory } from "@/lib/inferCategory";
 import { addToRecent } from "@/lib/bookmark-storage";
-import { EventThumbnail } from "@/components/event-thumbnail";
+import { EventCardFlyerImage } from "@/components/events/EventCardFlyerImage";
 import { BookmarkToggle } from "@/components/ui/BookmarkToggle";
 
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
@@ -53,22 +53,17 @@ export function ShelfCard({
       className="flex w-[168px] shrink-0 snap-start cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md active:scale-[0.98] dark:bg-[var(--background)] sm:w-[200px]"
     >
       <div className="relative aspect-[16/10] overflow-hidden rounded-t-2xl">
-        <EventThumbnail
-          imageUrl={event.imageUrl}
-          alt={event.title}
-          rounded="none"
-          fill
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+        <EventCardFlyerImage imageUrl={event.imageUrl} alt={event.title} />
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/42 via-black/8 to-transparent" />
         {badges.length > 0 && (
-          <div className="absolute left-2 top-2 z-10 flex gap-1">
+          <div className="absolute left-2 top-2 z-[2] flex gap-1">
             {badges.slice(0, 2).map((b) => (
               <span
                 key={b.label}
-                className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium shadow-sm ring-1 ring-black/5 ${
                   b.accent
-                    ? "bg-white/90 text-[var(--accent)]"
-                    : "bg-black/50 text-white backdrop-blur-sm"
+                    ? "bg-white/95 text-[var(--accent)]"
+                    : "bg-white/92 text-slate-700 backdrop-blur-sm"
                 }`}
               >
                 {b.label}
@@ -77,17 +72,18 @@ export function ShelfCard({
           </div>
         )}
         <div
-          className="absolute right-2 top-2 z-10 flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full bg-black/40 backdrop-blur-sm"
+          className="absolute right-2 top-2 z-[2] flex min-h-[32px] min-w-[32px] items-center justify-center rounded-full bg-white/90 shadow-sm ring-1 ring-slate-200/70 backdrop-blur-sm"
           onClick={(e) => e.stopPropagation()}
         >
           <BookmarkToggle
             eventId={event.id}
             isActive={isBookmarked}
             onToggle={onBookmarkToggle}
+            tone="light"
           />
         </div>
-        <div className="absolute bottom-2 left-2 right-2">
-          <h3 className="line-clamp-2 font-serif text-sm font-semibold text-white drop-shadow-md">
+        <div className="absolute bottom-2 left-2 right-2 z-[2]">
+          <h3 className="line-clamp-2 font-serif text-sm font-semibold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
             {event.title}
           </h3>
         </div>
