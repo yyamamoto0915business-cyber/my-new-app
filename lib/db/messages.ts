@@ -40,6 +40,78 @@ export async function getInbox(
 }
 
 /**
+ * admin クライアントで conversations / conversation_members を直接操作。
+ * create_or_get_conversation_for_user RPC がスキーマキャッシュにない場合のフォールバック。
+ */
+async function createOrGetConversationAdminDirect(
+  admin: SupabaseClient,
+  params: {
+    callerUserId: string;
+    eventId: string;
+    kind: string;
+    organizerId: string;
+    otherUserId: string;
+  }
+): Promise<string> {
+  const { callerUserId, eventId, kind, organizerId, otherUserId } = params;
+
+  const { data: org, error: orgErr } = await admin
+    .from("organizers")
+    .select("profile_id")
+    .eq("id", organizerId)
+    .maybeSingle();
+  if (orgErr) throw orgErr;
+  const organizerProfileId = org?.profile_id as string | undefined;
+  if (!organizerProfileId) throw new Error("organizer not found");
+
+  if (callerUserId !== organizerProfileId && callerUserId !== otherUserId) {
+    throw new Error("not allowed to create this conversation");
+  }
+
+  const eventValue =
+    eventId === "00000000-0000-0000-0000-000000000000" ? null : eventId;
+
+  // INSERT, 重複は 23505 で無視
+  const { error: insertError } = await admin.from("conversations").insert({
+    event_id: eventValue,
+    kind,
+    organizer_id: organizerId,
+    other_user_id: otherUserId,
+  });
+  if (insertError && insertError.code !== "23505") throw insertError;
+
+  // SELECT（admin は RLS バイパスなので必ず取得できる）
+  const baseQuery = admin
+    .from("conversations")
+    .select("id")
+    .eq("kind", kind)
+    .eq("organizer_id", organizerId)
+    .eq("other_user_id", otherUserId);
+
+  const { data: conv, error: convErr } = await (eventValue
+    ? baseQuery.eq("event_id", eventValue)
+    : baseQuery.is("event_id", null)
+  ).maybeSingle();
+
+  if (convErr) throw convErr;
+  if (!conv?.id) throw new Error("conversation upsert did not resolve id");
+  const convId = conv.id as string;
+
+  // conversation_members を upsert（ON CONFLICT DO NOTHING 相当）
+  await admin
+    .from("conversation_members")
+    .upsert(
+      [
+        { conversation_id: convId, user_id: organizerProfileId },
+        { conversation_id: convId, user_id: otherUserId },
+      ],
+      { onConflict: "conversation_id,user_id", ignoreDuplicates: true }
+    );
+
+  return convId;
+}
+
+/**
  * 会話を作成/取得。
  * 本番では Service Role 専用 RPC（caller を明示）を優先し、JWT が RPC に乗らない環境でも動かす。
  * マイグレーション未適用時は従来の create_or_get_conversation にフォールバック。
@@ -90,6 +162,28 @@ export async function createOrGetConversation(
     const missingFn =
       /does not exist|could not find|schema cache|42883|pgrst202/i.test(msg);
     if (!missingFn) throw error;
+
+    // RPC がスキーマキャッシュに存在しない場合、admin で直接 INSERT/SELECT にフォールバック
+    console.warn(
+      "[createOrGetConversation] admin RPC not found in schema cache, trying direct admin insert"
+    );
+    try {
+      return await createOrGetConversationAdminDirect(admin, {
+        callerUserId: params.callerUserId,
+        eventId,
+        kind: params.kind,
+        organizerId: params.organizerId,
+        otherUserId: params.otherUserId,
+      });
+    } catch (e) {
+      const errMsg = (e instanceof Error ? e.message : String(e)).toLowerCase();
+      // ビジネスロジックエラー（organizer not found 等）はそのまま投げる
+      if (/organizer not found|not allowed to create/.test(errMsg)) throw e;
+      console.error(
+        "[createOrGetConversation] admin direct failed, falling back to user RPC",
+        e
+      );
+    }
   }
 
   const { data, error } = await supabase.rpc("create_or_get_conversation", {
