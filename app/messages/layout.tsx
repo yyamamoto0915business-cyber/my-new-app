@@ -124,7 +124,7 @@ export default function MessagesLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
+    <div className="flex min-h-screen flex-col md:min-h-0 md:flex-1 md:flex-row">
       {/* 左: トーク一覧 (スマホで会話中は非表示) */}
       <aside
         className={`w-full border-b border-[var(--border)] bg-white md:w-80 md:flex-shrink-0 md:border-b-0 md:border-r dark:bg-zinc-900 ${
@@ -272,7 +272,7 @@ export default function MessagesLayout({
       </aside>
 
       {/* 右: プレースホルダー or 会話 (PC時) / スマホでは children がフル表示 */}
-      <main className="flex-1 bg-zinc-50 dark:bg-zinc-950">
+      <main className="flex min-h-0 flex-1 flex-col bg-zinc-50 dark:bg-zinc-950 md:min-h-screen">
         {children}
       </main>
     </div>

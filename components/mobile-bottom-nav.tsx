@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useUnreadCount } from "@/hooks/use-unread-count";
 import { getActiveMode, getHomeHrefForMode } from "@/components/mode-segment-nav";
+import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 
 const MOBILE_ITEMS = [
   { id: "home" as const, href: "/", label: "ホーム", icon: "home" },
@@ -90,6 +91,8 @@ export function MobileBottomNav() {
     (icon === "messages" || icon === "profile" || icon === "notifications") && unreadCount > 0;
 
   if (!mounted) return null;
+
+  if (isMessagesConversationRoute(pathname ?? "")) return null;
 
   return (
     <nav

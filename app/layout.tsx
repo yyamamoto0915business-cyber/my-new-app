@@ -8,7 +8,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { MobileTopHeader } from "@/components/navigation/mobile-top-header";
 import { MobileMainShell } from "@/components/navigation/mobile-main-shell";
-import { SiteFooter } from "@/components/site-footer";
+import { ImmersiveAwareFooter } from "@/components/navigation/immersive-aware-footer";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -86,10 +86,8 @@ export default function RootLayout({
             <MobileTopHeader />
           </Suspense>
           <MobileMainShell>
-            <div className="flex-1">{children}</div>
-            <div className="sm:block">
-              <SiteFooter />
-            </div>
+            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+            <ImmersiveAwareFooter />
           </MobileMainShell>
           <Suspense fallback={null}>
             <MobileBottomNav />

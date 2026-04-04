@@ -8,6 +8,7 @@ import { TopModeTabs } from "@/components/navigation/top-mode-tabs";
 import { NotificationBell } from "@/components/notification-bell";
 import { cn } from "@/lib/utils";
 import { isEventDetailRoute } from "@/lib/is-event-detail-route";
+import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 
 /** 通常時（探す・ボランティア中心）のモバイル上部の目安高さ（safe-area 除く） */
 export const MOBILE_TOP_HEADER_HEIGHT_PX = 132;
@@ -27,7 +28,10 @@ type Props = {
 
 export function MobileTopHeader({ className }: Props) {
   const pathname = usePathname();
-  if (isEventDetailRoute(pathname ?? "")) {
+  if (
+    isEventDetailRoute(pathname ?? "") ||
+    isMessagesConversationRoute(pathname ?? "")
+  ) {
     return null;
   }
 
