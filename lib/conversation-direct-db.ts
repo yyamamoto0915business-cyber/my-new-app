@@ -1,5 +1,110 @@
 import { getDirectPostgresClientConfig } from "./direct-postgres-config";
 
+/** conversations 一意キー用（SQL リテラルと揃える） */
+const ZERO_UUID_SQL = "'00000000-0000-0000-0000-000000000000'::uuid";
+
+export type CreateOrGetConversationDirectParams = {
+  callerUserId: string;
+  /** RPC と同じく、無イベントは `00000000-0000-0000-0000-000000000000` */
+  eventId: string;
+  kind: string;
+  organizerId: string;
+  otherUserId: string;
+};
+
+/**
+ * create_or_get_conversation_for_user と同等（RLS/JWT を経由しない）。
+ * 本番で SUPABASE_DB_URL があるとき会話作成の信頼できる経路にする。
+ */
+export async function createOrGetConversationDirectDb(
+  params: CreateOrGetConversationDirectParams
+): Promise<string> {
+  const { callerUserId, eventId, kind, organizerId, otherUserId } = params;
+  const config = getDirectPostgresClientConfig();
+  const { default: pg } = await import("pg");
+  const client = new pg.Client(config);
+
+  await client.connect();
+  try {
+    await client.query("BEGIN");
+
+    const orgRes = await client.query(
+      `SELECT profile_id FROM public.organizers WHERE id = $1::uuid`,
+      [organizerId]
+    );
+    if ((orgRes.rowCount ?? 0) === 0) {
+      throw new Error("organizer not found");
+    }
+    const organizerProfileId = orgRes.rows[0].profile_id as string;
+
+    if (
+      callerUserId !== organizerProfileId &&
+      callerUserId !== otherUserId
+    ) {
+      throw new Error("not allowed to create this conversation");
+    }
+
+    await client.query(
+      `
+      INSERT INTO public.conversations (event_id, kind, organizer_id, other_user_id)
+      VALUES (
+        NULLIF($1::uuid, ${ZERO_UUID_SQL}),
+        $2::text,
+        $3::uuid,
+        $4::uuid
+      )
+      ON CONFLICT (
+        (COALESCE(event_id, ${ZERO_UUID_SQL})),
+        kind,
+        organizer_id,
+        other_user_id
+      )
+      DO NOTHING
+      `,
+      [eventId, kind, organizerId, otherUserId]
+    );
+
+    const sel = await client.query(
+      `
+      SELECT id FROM public.conversations
+      WHERE COALESCE(event_id, ${ZERO_UUID_SQL})
+          = COALESCE(NULLIF($1::uuid, ${ZERO_UUID_SQL}), ${ZERO_UUID_SQL})
+        AND kind = $2::text
+        AND organizer_id = $3::uuid
+        AND other_user_id = $4::uuid
+      `,
+      [eventId, kind, organizerId, otherUserId]
+    );
+
+    if ((sel.rowCount ?? 0) === 0) {
+      throw new Error("conversation upsert did not resolve id");
+    }
+
+    const convId = sel.rows[0].id as string;
+
+    await client.query(
+      `
+      INSERT INTO public.conversation_members (conversation_id, user_id)
+      VALUES ($1::uuid, $2::uuid), ($1::uuid, $3::uuid)
+      ON CONFLICT (conversation_id, user_id) DO NOTHING
+      `,
+      [convId, organizerProfileId, otherUserId]
+    );
+
+    await client.query("COMMIT");
+    return convId;
+  } catch (e) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // ignore
+    }
+    throw e;
+  } finally {
+    await client.end();
+  }
+}
+
 export type ConversationMessageRow = {
   id: string;
   conversation_id: string;

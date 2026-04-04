@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasDirectPostgresEnv } from "@/lib/direct-postgres-config";
+import { createOrGetConversationDirectDb } from "@/lib/conversation-direct-db";
 
 export type InboxItem = {
   conversation_id: string;
@@ -54,6 +56,23 @@ export async function createOrGetConversation(
 ): Promise<string> {
   const eventId =
     params.eventId ?? "00000000-0000-0000-0000-000000000000";
+
+  if (hasDirectPostgresEnv()) {
+    try {
+      return await createOrGetConversationDirectDb({
+        callerUserId: params.callerUserId,
+        eventId,
+        kind: params.kind,
+        organizerId: params.organizerId,
+        otherUserId: params.otherUserId,
+      });
+    } catch (e) {
+      console.error(
+        "[createOrGetConversation] direct postgres failed, falling back to RPC",
+        e
+      );
+    }
+  }
 
   const admin = createAdminClient();
   if (admin) {
