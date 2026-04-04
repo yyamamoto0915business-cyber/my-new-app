@@ -26,14 +26,19 @@ export function useSupabaseUser(): SupabaseUserState {
     }
 
     const init = async () => {
-      const {
-        data: { user: u },
-      } = await supabase.auth.getUser();
-      setUser(u);
-      setLoading(false);
+      try {
+        const {
+          data: { user: u },
+        } = await supabase.auth.getUser();
+        setUser(u);
+      } catch {
+        // ページ遷移・Fast Refresh 等で内部 fetch が中断されると AbortError になり得る
+      } finally {
+        setLoading(false);
+      }
     };
 
-    init();
+    void init();
 
     const {
       data: { subscription },

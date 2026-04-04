@@ -80,9 +80,14 @@ export function EventChatButton({
       setAuthState("no_supabase");
       return;
     }
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setAuthState(!!user ? "logged_in" : "logged_out");
-    });
+    void supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        setAuthState(user ? "logged_in" : "logged_out");
+      })
+      .catch(() => {
+        setAuthState("logged_out");
+      });
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
