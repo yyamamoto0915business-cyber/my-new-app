@@ -72,7 +72,7 @@ export function MobileBottomNav() {
   const isActive = (item: (typeof MOBILE_ITEMS)[number]) => {
     const href = getHref(item);
     if (item.id === "home") {
-      if (activeMode === "organizer") return pathname?.startsWith("/organizer/events") ?? false;
+      if (activeMode === "organizer") return pathname?.startsWith("/organizer") ?? false;
       if (activeMode === "volunteer") return pathname?.startsWith("/volunteer") ?? false;
       return pathname === "/" || pathname === "";
     }

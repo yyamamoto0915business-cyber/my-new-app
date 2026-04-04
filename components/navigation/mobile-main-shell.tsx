@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { MOBILE_TOP_HEADER_HEIGHT_PX } from "@/components/navigation/mobile-top-header";
+import { getMobileTopHeaderHeightPx } from "@/components/navigation/mobile-top-header";
 import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 
 type Props = {
@@ -17,6 +17,7 @@ type Props = {
 export function MobileMainShell({ children }: Props) {
   const pathname = usePathname();
   const eventDetail = isEventDetailRoute(pathname ?? "");
+  const topHeaderH = getMobileTopHeaderHeightPx(pathname ?? "");
 
   return (
     <div
@@ -29,7 +30,7 @@ export function MobileMainShell({ children }: Props) {
         eventDetail
           ? undefined
           : ({
-              "--mg-mobile-top-header-h": `${MOBILE_TOP_HEADER_HEIGHT_PX}px`,
+              "--mg-mobile-top-header-h": `${topHeaderH}px`,
             } as CSSProperties)
       }
     >

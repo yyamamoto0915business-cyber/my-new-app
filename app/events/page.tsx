@@ -558,10 +558,10 @@ function EventsPageContent() {
 
         <div className="mt-8 pb-8">
           <Link
-            href="/organizer/events"
+            href="/organizer"
             className="text-sm text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
           >
-            主催者向け：イベント管理 →
+            主催者向け：管理ページ →
           </Link>
         </div>
       </main>

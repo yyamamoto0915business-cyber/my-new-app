@@ -142,36 +142,36 @@ export default function OrganizerDashboardClient() {
   }
 
   return (
-    <div className="space-y-6 pb-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800 sm:text-2xl">
+    <div className="mx-auto max-w-6xl space-y-6 pb-8">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-[26px] font-bold leading-snug tracking-tight text-slate-900 sm:text-2xl sm:text-slate-800">
             ダッシュボード
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            おかえりなさい。イベントや募集の状況をまとめて確認できます
+          <p className="mt-2 text-[14px] leading-relaxed text-slate-600 sm:mt-1 sm:text-sm sm:text-slate-500">
+            まずはイベントを作成するか、進行中の募集・応募を確認しましょう。
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap gap-3">
+        <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:gap-3">
           <Link
             href="/organizer/events/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90"
+            className="inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-3 text-[15px] font-semibold text-white shadow-sm transition hover:opacity-90 sm:min-h-0 sm:w-auto sm:py-2.5 sm:text-sm sm:font-medium"
           >
-            <CalendarPlus className="h-4 w-4" aria-hidden />
+            <CalendarPlus className="h-4 w-4 shrink-0" aria-hidden />
             新しいイベントを作成
           </Link>
           <Link
             href="/organizer/recruitments/new"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+            className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 sm:min-h-0 sm:w-auto"
           >
-            <Users className="h-4 w-4" aria-hidden />
+            <Users className="h-4 w-4 shrink-0" aria-hidden />
             スタッフ募集を作成
           </Link>
           <Link
             href="/organizer/articles/new"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+            className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 sm:min-h-0 sm:w-auto"
           >
-            <FileText className="h-4 w-4" aria-hidden />
+            <FileText className="h-4 w-4 shrink-0" aria-hidden />
             記事を作成
           </Link>
         </div>

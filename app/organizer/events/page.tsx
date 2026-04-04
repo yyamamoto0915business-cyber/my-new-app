@@ -108,7 +108,7 @@ export default function OrganizerEventsPage() {
 
   return (
     <OrganizerRegistrationGate>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-6 sm:pb-0">
       {/* ページヘッダー */}
       <OrganizerHeader
         title="イベント管理"
@@ -177,7 +177,7 @@ export default function OrganizerEventsPage() {
             />
           </section>
 
-          <section>
+          <section className="hidden sm:block">
             <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm sm:px-5">
               このページでは、イベント本体の作成・編集・公開・決済設定を管理します。
               スタッフ募集は各イベントカードの「スタッフ募集を管理」から設定できます。

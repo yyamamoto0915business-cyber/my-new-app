@@ -22,7 +22,7 @@ export function getActiveMode(pathname: string): ModeId {
 
 /** モード別ホームURL（下部タブのホーム押下先） */
 export function getHomeHrefForMode(mode: ModeId): string {
-  if (mode === "organizer") return "/organizer/events";
+  if (mode === "organizer") return "/organizer";
   if (mode === "volunteer") return "/volunteer";
   return "/";
 }

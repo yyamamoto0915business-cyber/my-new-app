@@ -34,7 +34,7 @@ export function getRedirectPathForMode(mode: ModePreference): string {
     case "VOLUNTEER":
       return "/volunteer";
     case "ORGANIZER":
-      return "/organizer/events";
+      return "/organizer";
     default:
       return "/events";
   }

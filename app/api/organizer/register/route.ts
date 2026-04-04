@@ -53,7 +53,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  let body: { organizationName?: string; contactEmail?: string; contactPhone?: string };
+  let body: {
+    organizationName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    activityArea?: string;
+    bio?: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -72,6 +78,20 @@ export async function POST(request: NextRequest) {
       contactEmail: body.contactEmail?.trim() || undefined,
       contactPhone: body.contactPhone?.trim() || undefined,
     });
+
+    const activityArea = body.activityArea?.trim();
+    const bio = body.bio?.trim();
+    if (activityArea || bio) {
+      const { error: profErr } = await supabase.from("organizer_profiles").insert({
+        organizer_id: organizer.id,
+        activity_area: activityArea || null,
+        bio: bio || null,
+      });
+      if (profErr) {
+        console.error("organizer register: organizer_profiles insert failed", profErr);
+      }
+    }
+
     return NextResponse.json(organizer, { status: 201 });
   } catch (e) {
     console.error("organizer register:", e);

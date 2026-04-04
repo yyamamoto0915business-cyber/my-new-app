@@ -11,7 +11,7 @@ const DESKTOP_NAV_ITEMS = [
   { href: "/stories", label: "ストーリー", icon: "story" },
   { href: "/volunteer", label: "ボランティア", icon: "volunteer" },
   { href: "/messages", label: "メッセージ", icon: "messages" },
-  { href: "/organizer/events", label: "主催", icon: "organizer" },
+  { href: "/organizer", label: "主催", icon: "organizer" },
   { href: "/profile", label: "マイページ", icon: "profile" },
 ] as const;
 

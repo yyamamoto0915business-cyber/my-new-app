@@ -277,7 +277,7 @@ function ProfileContent() {
                 <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-700/60 dark:bg-zinc-900/95">
                   <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                     <ProfileMenuLink
-                      href="/organizer/events"
+                      href="/organizer"
                       icon="organizer"
                       title="主催ダッシュボード"
                       subtitle="作成中のイベント・募集・応募状況を確認"

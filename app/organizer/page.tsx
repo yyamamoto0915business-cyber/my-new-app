@@ -14,14 +14,14 @@ function BenefitCard({
   icon: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[var(--mg-shadow)] sm:p-5">
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+        <div className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-900">{title}</p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-600">
+          <p className="text-[15px] font-semibold text-slate-900">{title}</p>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-slate-600">
             {description}
           </p>
         </div>
@@ -62,74 +62,44 @@ export default async function OrganizerPage() {
   }
 
   return (
-    <div className="pb-10">
-      <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white px-5 py-8 shadow-sm sm:px-8 sm:py-10">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.05]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 15% 25%, var(--mg-accent, #f59e0b) 0%, transparent 55%), radial-gradient(circle at 85% 75%, #60a5fa 0%, transparent 50%)",
-          }}
-          aria-hidden
-        />
-
-        <div className="relative mx-auto max-w-2xl text-center">
-          <p className="inline-flex items-center gap-2 rounded-full border border-amber-200/70 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-900">
-            はじめての主催者ページ
-            <span className="inline-block h-1 w-1 rounded-full bg-amber-400" />
-            数分で完了
-          </p>
-
-          <h1 className="mt-4 text-balance text-2xl font-bold text-slate-900 sm:text-3xl">
-            <span className="block sm:inline">主催者登録をして、</span>
-            <span className="block sm:inline">イベントを掲載しましょう</span>
-          </h1>
-          <p className="mt-3 text-pretty text-sm leading-relaxed text-slate-600 sm:text-base">
-            MachiGlyphでは、主催者登録を完了するとイベント作成・スタッフ募集・記事投稿などの機能をご利用いただけます。
-          </p>
-
-          <div className="mt-6 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            <Link
-              href="/organizer/register"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-[var(--mg-accent,theme(colors.amber.600))] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
-            >
-              主催者登録をはじめる
-            </Link>
-            <Link
-              href="/organizer/settings/plan"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-            >
-              料金プランを見る
-            </Link>
-          </div>
-
-          <div className="mt-5 flex flex-col gap-2 text-left text-sm text-slate-600 sm:mx-auto sm:max-w-md">
-            <div className="flex items-start gap-2">
-              <span className="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-              <span>登録は数分で完了</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-              <span>登録後すぐにイベント作成を開始可能</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-              <span>無料プランから利用可能</span>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <Link
-              href="/events"
-              className="text-sm font-medium text-slate-600 underline-offset-4 hover:text-slate-900 hover:underline"
-            >
-              イベントを探すページへ戻る
-            </Link>
-          </div>
+    <div className="mx-auto max-w-lg pb-10 sm:max-w-2xl">
+      {/* ファーストビュー */}
+      <header className="sm:text-center">
+        <h1 className="text-pretty text-[26px] font-bold leading-snug tracking-tight text-slate-900 sm:text-3xl sm:leading-tight">
+          活動者登録をはじめる
+        </h1>
+        <div className="mt-4 space-y-2 text-[15px] leading-relaxed text-slate-600 sm:mx-auto sm:max-w-md">
+          <p>個人でも団体でも登録できます。</p>
+          <p>イベントや地域活動の作成・募集管理を始められます。</p>
+          <p className="text-[14px] text-slate-500">地域活動をこれから始める方も歓迎です。</p>
         </div>
-      </section>
 
-      <section className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="mt-8 flex flex-col gap-3 sm:mx-auto sm:max-w-md sm:flex-row sm:justify-center">
+          <Link
+            href="/organizer/register"
+            className="inline-flex min-h-14 items-center justify-center rounded-2xl bg-[var(--accent)] px-5 py-3.5 text-[16px] font-semibold text-white shadow-sm transition hover:opacity-90"
+          >
+            活動者登録をはじめる
+          </Link>
+          <Link
+            href="/organizer/settings/plan"
+            className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200/90 bg-white px-5 py-3 text-[15px] font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            プラン・機能を見る
+          </Link>
+        </div>
+
+        <p className="mt-6 text-center sm:max-w-md sm:mx-auto">
+          <Link
+            href="/events"
+            className="text-[14px] font-medium text-slate-500 underline-offset-4 hover:text-slate-800 hover:underline"
+          >
+            あとで見る（イベントを探す）
+          </Link>
+        </p>
+      </header>
+
+      <section className="mt-10 space-y-4 sm:mt-12 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0">
         <BenefitCard
           title="イベントを掲載できる"
           description="内容を入力して公開すれば、参加者に見つけてもらえます。"

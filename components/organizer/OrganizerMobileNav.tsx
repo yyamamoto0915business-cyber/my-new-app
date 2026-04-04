@@ -21,7 +21,7 @@ const FULL_NAV_ITEMS = [
 ] as const;
 
 const LITE_NAV_ITEMS = [
-  { label: "主催者登録をはじめる", href: "/organizer/register" },
+  { label: "活動者登録をはじめる", href: "/organizer/register" },
   { label: "料金プランを見る", href: "/organizer/settings/plan" },
   { label: "イベントを探す", href: "/events" },
 ] as const;

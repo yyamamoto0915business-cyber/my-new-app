@@ -1,7 +1,7 @@
 import OrganizerSidebar from "@/components/organizer/OrganizerSidebar";
 import OrganizerMobileNav from "@/components/organizer/OrganizerMobileNav";
+import { OrganizerStickyHeaderTitle } from "@/components/organizer/OrganizerStickyHeaderTitle";
 import { OrganizerAccountMenu } from "@/components/organizer/OrganizerAccountMenu";
-import { SiteFooter } from "@/components/site-footer";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function OrganizerLayout({
@@ -28,19 +28,12 @@ export default async function OrganizerLayout({
 
   return (
     <div className="min-h-screen bg-slate-50/50">
-      <header className="sticky top-[calc(var(--mg-mobile-top-header-h)+env(safe-area-inset-top,0px))] z-30 bg-white/85 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 sm:top-0">
-        <div className="mx-auto w-full max-w-screen-sm px-4 pt-4 pb-3 sm:max-w-6xl sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
+      <header className="sticky top-[calc(var(--mg-mobile-top-header-h)+env(safe-area-inset-top,0px))] z-30 border-b border-slate-200/60 bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/85 sm:top-0 sm:border-b-0">
+        <div className="mx-auto w-full max-w-screen-sm px-4 pt-2 pb-1.5 sm:max-w-6xl sm:px-6 sm:pt-4 sm:pb-3 lg:px-8">
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               <OrganizerMobileNav variant={navVariant} />
-              <div className="min-w-0">
-                <div className="truncate text-[18px] font-bold tracking-[-0.02em] text-slate-900 sm:text-lg">
-                  主催者管理
-                </div>
-                <div className="hidden truncate text-xs text-slate-500 sm:block">
-                  イベントの作成・編集・管理ができます
-                </div>
-              </div>
+              <OrganizerStickyHeaderTitle />
             </div>
 
             <div className="shrink-0">
@@ -54,10 +47,9 @@ export default async function OrganizerLayout({
         <OrganizerSidebar variant={navVariant} />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+          <main className="flex-1 px-5 py-5 sm:px-6 sm:py-6 lg:px-8">
             {children}
           </main>
-          <SiteFooter />
         </div>
       </div>
     </div>

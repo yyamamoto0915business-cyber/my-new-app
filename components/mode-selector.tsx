@@ -19,7 +19,7 @@ export function ModeSelector() {
     setModeCookie(mode);
     if (mode === "EVENT") router.push("/events");
     else if (mode === "VOLUNTEER") router.push("/volunteer");
-    else if (mode === "ORGANIZER") router.push("/organizer/events");
+    else if (mode === "ORGANIZER") router.push("/organizer");
     else router.push("/events");
     router.refresh();
   };
