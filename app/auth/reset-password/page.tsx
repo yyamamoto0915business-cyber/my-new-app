@@ -2,13 +2,37 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import type { AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { AuthResultScreen, AuthPageHeader, authResultButtonClass } from "@/components/auth/auth-result-screen";
 import { getPasswordResetEmailRedirectUrl } from "@/lib/auth-redirect";
 
+/** Supabase のエラー内容に応じた案内（redirect 不許可・レート制限など） */
+function mapAuthEmailError(err: AuthError, context: "initial" | "resend" = "initial"): string {
+  const m = (err.message || "").toLowerCase();
+  const resendPrefix = context === "resend" ? "再送に失敗しました。" : "";
+  if (
+    m.includes("redirect") ||
+    m.includes("redirect_uri") ||
+    m.includes("redirect url") ||
+    err.code === "validation_failed"
+  ) {
+    return `${resendPrefix}送信先URLの許可設定に問題がある可能性があります。時間をおいて試すか、サポートへお問い合わせください。`.trim();
+  }
+  if (err.status === 429 || m.includes("rate") || m.includes("too many") || m.includes("email rate")) {
+    return `${resendPrefix}送信回数の上限に達しました。しばらく時間をおいてからお試しください。`.trim();
+  }
+  const generic = "通信に失敗しました。時間をおいてもう一度お試しください。";
+  if (context === "resend") {
+    return `再送に失敗しました。${generic}`;
+  }
+  return generic;
+}
+
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -35,18 +59,20 @@ export default function ResetPasswordPage() {
     setLoading(false);
 
     if (resetError) {
-      setError("通信に失敗しました。時間をおいてもう一度お試しください。");
+      setError(mapAuthEmailError(resetError));
       return;
     }
 
+    setResendError(null);
     setSent(true);
   };
 
   const handleResend = async () => {
-    setError(null);
+    setResendError(null);
     setResendLoading(true);
     const supabase = createClient();
     if (!supabase) {
+      setResendError("通信に失敗しました。時間をおいてもう一度お試しください。");
       setResendLoading(false);
       return;
     }
@@ -57,7 +83,7 @@ export default function ResetPasswordPage() {
     );
     setResendLoading(false);
     if (resetError) {
-      setError("通信に失敗しました。時間をおいてもう一度お試しください。");
+      setResendError(mapAuthEmailError(resetError, "resend"));
       return;
     }
   };
@@ -69,7 +95,7 @@ export default function ResetPasswordPage() {
         title="再設定メールを送信しました"
         description="メール内のリンクから、新しいパスワードを設定してください。"
         note="メールが届かない場合は、迷惑メールフォルダもご確認ください。"
-        error={error ?? undefined}
+        error={resendError ?? undefined}
       >
         <Link href="/auth" className={authResultButtonClass.primary}>
           ログイン画面に戻る
