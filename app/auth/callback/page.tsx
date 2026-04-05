@@ -2,14 +2,32 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { sessionIsPasswordRecovery } from "@/lib/auth-session";
 import { AuthPageHeader } from "@/components/auth/auth-result-screen";
 
+function recoveryFromUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  if (hashParams.get("type") === "recovery") return true;
+  const searchParams = new URLSearchParams(window.location.search);
+  if (searchParams.get("type") === "recovery") return true;
+  // PKCE 交換後も code だけ消えて残る（GoTrue が recovery をコールバックに載せないための明示フラグ）
+  if (searchParams.get("flow") === "recovery") return true;
+  return false;
+}
+
+/** PKCE 交換前に古いセッションで誤遷移しないよう、code 付きの間は同期 getSession を使わない */
+function hasPkceCodeInUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).has("code");
+}
+
 /**
- * メール内リンクの受け口。認証処理のみ行い、成功/失敗で専用ページへ遷移する。
- * - 確認メール（signup）成功 → /auth/verified
- * - パスワード再設定（recovery）→ /auth/update-password
- * - エラー → /auth/error
+ * メール内リンクの受け口（互換・旧 redirectTo 用）。
+ * PKCE の再設定では hash に type がなく SIGNED_IN のみ届くことがあるため、
+ * sessionIsPasswordRecovery で JWT を見る。
  */
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -21,17 +39,50 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let subscription: { unsubscribe: () => void } | null = null;
+    let redirected = false;
+    const go = (path: string) => {
+      if (redirected) return;
+      redirected = true;
+      router.replace(path);
+    };
 
-    const run = async () => {
-      let isRecovery = false;
+    const routeAfterSession = (session: Session | null) => {
+      if (recoveryFromUrl()) {
+        if (session) {
+          go("/auth/update-password");
+        }
+        return;
+      }
+      if (!session) return;
+      if (sessionIsPasswordRecovery(session)) {
+        go("/auth/update-password");
+        return;
+      }
+      go("/auth/verified");
+      router.refresh();
+    };
+
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        go("/auth/update-password");
+        return;
+      }
+      if (event === "INITIAL_SESSION" || event === "SIGNED_IN") {
+        if (event === "INITIAL_SESSION" && hasPkceCodeInUrl()) {
+          return;
+        }
+        routeAfterSession(session);
+      }
+    });
+
+    void (async () => {
       if (typeof window !== "undefined" && window.location.hash) {
         const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-        isRecovery = params.get("type") === "recovery";
-        const error = params.get("error");
-        if (error) {
-          router.replace("/auth/error");
+        if (params.get("error")) {
+          go("/auth/error");
           return;
         }
       }
@@ -42,55 +93,33 @@ export default function AuthCallbackPage() {
       } = await supabase.auth.getSession();
 
       if (sessionError) {
-        router.replace("/auth/error");
+        go("/auth/error");
         return;
       }
 
-      if (session) {
-        if (isRecovery) {
-          router.replace("/auth/update-password");
-          return;
-        }
-        router.replace("/auth/verified");
-        router.refresh();
-        return;
+      if (session && !redirected && !hasPkceCodeInUrl()) {
+        routeAfterSession(session);
       }
+    })();
 
-      const { data: { subscription: sub } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session && isRecovery) {
-          router.replace("/auth/update-password");
-          return;
-        }
-        if (session) {
-          router.replace("/auth/verified");
-          router.refresh();
-        }
-      });
-      subscription = sub;
-
-      timeoutId = setTimeout(async () => {
-        subscription?.unsubscribe();
-        subscription = null;
-        const { data: { session: s } } = await supabase.auth.getSession();
+    timeoutId = setTimeout(() => {
+      if (redirected) return;
+      void (async () => {
+        const {
+          data: { session: s },
+        } = await supabase.auth.getSession();
+        if (redirected) return;
         if (s) {
-          const params = new URLSearchParams(typeof window !== "undefined" ? (window.location.hash || "").replace(/^#/, "") : "");
-          if (params.get("type") === "recovery") {
-            router.replace("/auth/update-password");
-            return;
-          }
-          router.replace("/auth/verified");
-          router.refresh();
+          routeAfterSession(s);
         } else {
-          router.replace("/auth/error");
+          go("/auth/error");
         }
-      }, 4000);
-    };
-
-    run();
+      })();
+    }, 5000);
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
-      subscription?.unsubscribe();
+      subscription.unsubscribe();
     };
   }, [router]);
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { AuthResultScreen, AuthPageHeader, authResultButtonClass } from "@/components/auth/auth-result-screen";
-import { getAuthCallbackUrl } from "@/lib/auth-redirect";
+import { getPasswordResetEmailRedirectUrl } from "@/lib/auth-redirect";
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
@@ -25,7 +25,7 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    const redirectTo = getAuthCallbackUrl();
+    const redirectTo = getPasswordResetEmailRedirectUrl();
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email.trim().toLowerCase(),
@@ -50,7 +50,7 @@ export default function ResetPasswordPage() {
       setResendLoading(false);
       return;
     }
-    const redirectTo = getAuthCallbackUrl();
+    const redirectTo = getPasswordResetEmailRedirectUrl();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email.trim().toLowerCase(),
       { redirectTo: redirectTo || undefined }

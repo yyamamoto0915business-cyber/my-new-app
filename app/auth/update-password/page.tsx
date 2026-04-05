@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -8,10 +8,34 @@ import { AuthPageHeader } from "@/components/auth/auth-result-screen";
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
+  const [authSettling, setAuthSettling] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  /** メールの PKCE リンク直後は URL の code 交換が終わるまで待ち、フォームを出す */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!new URLSearchParams(window.location.search).has("code")) return;
+
+    setAuthSettling(true);
+    const supabase = createClient();
+    if (!supabase) {
+      setAuthSettling(false);
+      return;
+    }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      setAuthSettling(false);
+    });
+    const t = window.setTimeout(() => setAuthSettling(false), 10000);
+    return () => {
+      subscription.unsubscribe();
+      window.clearTimeout(t);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +82,10 @@ export default function UpdatePasswordPage() {
       <AuthPageHeader />
       <div className="mx-auto max-w-sm rounded-2xl border border-[var(--mg-line)] bg-white p-6 shadow-[var(--mg-shadow)] sm:p-8">
         <h1 className="text-lg font-semibold text-[var(--mg-ink)] leading-tight">新しいパスワードを設定</h1>
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+        {authSettling && (
+          <p className="mt-3 text-sm text-[var(--mg-muted)] leading-relaxed">リンクを確認しています...</p>
+        )}
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4" aria-busy={authSettling}>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-[var(--mg-ink)]">
               新しいパスワード
@@ -96,7 +123,7 @@ export default function UpdatePasswordPage() {
           )}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || authSettling}
             className="flex h-12 w-full min-h-[var(--mg-touch-min)] items-center justify-center rounded-xl bg-[var(--mg-accent)] px-4 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
           >
             {loading ? "更新中..." : "パスワードを更新する"}
