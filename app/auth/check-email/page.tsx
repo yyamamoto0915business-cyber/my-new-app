@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { mapAuthEmailError } from "@/lib/auth-email-errors";
 import { AuthResultScreen, authResultButtonClass } from "@/components/auth/auth-result-screen";
 import { getSignupEmailRedirectTo } from "@/lib/site-url";
 
@@ -29,6 +30,7 @@ function CheckEmailContent() {
     setResendLoading(true);
     const supabase = createClient();
     if (!supabase) {
+      setError("通信に失敗しました。時間をおいてもう一度お試しください。");
       setResendLoading(false);
       return;
     }
@@ -41,7 +43,7 @@ function CheckEmailContent() {
     });
     setResendLoading(false);
     if (resendError) {
-      setError("通信に失敗しました。時間をおいてもう一度お試しください。");
+      setError(mapAuthEmailError(resendError, "resend"));
       return;
     }
     if (!hasEmail) {

@@ -1,6 +1,6 @@
 const LOCAL_FALLBACK = "http://localhost:3000";
 
-function normalizeBaseUrl(url: string): string {
+export function normalizeBaseUrl(url: string): string {
   let u = url.trim().replace(/\/+$/, "");
   if (!u) return LOCAL_FALLBACK;
 

@@ -2,32 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { mapAuthEmailError } from "@/lib/auth-email-errors";
 import { AuthResultScreen, AuthPageHeader, authResultButtonClass } from "@/components/auth/auth-result-screen";
 import { getPasswordResetEmailRedirectUrl } from "@/lib/auth-redirect";
-
-/** Supabase のエラー内容に応じた案内（redirect 不許可・レート制限など） */
-function mapAuthEmailError(err: AuthError, context: "initial" | "resend" = "initial"): string {
-  const m = (err.message || "").toLowerCase();
-  const resendPrefix = context === "resend" ? "再送に失敗しました。" : "";
-  if (
-    m.includes("redirect") ||
-    m.includes("redirect_uri") ||
-    m.includes("redirect url") ||
-    err.code === "validation_failed"
-  ) {
-    return `${resendPrefix}送信先URLの許可設定に問題がある可能性があります。時間をおいて試すか、サポートへお問い合わせください。`.trim();
-  }
-  if (err.status === 429 || m.includes("rate") || m.includes("too many") || m.includes("email rate")) {
-    return `${resendPrefix}送信回数の上限に達しました。しばらく時間をおいてからお試しください。`.trim();
-  }
-  const generic = "通信に失敗しました。時間をおいてもう一度お試しください。";
-  if (context === "resend") {
-    return `再送に失敗しました。${generic}`;
-  }
-  return generic;
-}
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");

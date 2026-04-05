@@ -1,12 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { getSignupEmailRedirectTo } from "@/lib/site-url";
+import { getSignupEmailRedirectToServer } from "@/lib/auth-email-redirect-server";
 
 /**
  * 新規登録（メール確認フロー）。
  *
- * emailRedirectTo はオリジンのみ（getSignupEmailRedirectTo）。メールテンプレで
+ * emailRedirectTo はオリジンのみ（getSignupEmailRedirectToServer）。メールテンプレで
  * {{ .RedirectTo }}/auth/confirm?token_hash=...&type=signup 等と組み合わせる。
  *
  * Supabase「Site URL」は本番で https://www.machiglyph.jp を推奨。
@@ -25,7 +25,7 @@ export async function signUpWithEmail(formData: {
   const password = String(formData.password || "");
   const displayName = String(formData.displayName || "").trim();
 
-  const emailRedirectTo = getSignupEmailRedirectTo();
+  const emailRedirectTo = await getSignupEmailRedirectToServer();
 
   // #region agent log
   fetch("http://127.0.0.1:7242/ingest/089f2869-4b0b-45dc-b221-b1a3b9e2669a", {
