@@ -7,7 +7,7 @@ import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 export type RecruitmentFormValues = {
   title: string;
   description: string;
-  status: "draft" | "public";
+  status: "draft" | "public" | "closed";
   start_at: string;
   end_at: string;
   meeting_place: string;
@@ -311,11 +311,14 @@ export function RecruitmentForm({
         </label>
         <select
           value={form.status}
-          onChange={(e) => update("status", e.target.value as "draft" | "public")}
+          onChange={(e) =>
+            update("status", e.target.value as "draft" | "public" | "closed")
+          }
           className="mt-1 rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-800"
         >
           <option value="draft">下書き</option>
           <option value="public">公開</option>
+          {recruitmentId && <option value="closed">終了</option>}
         </select>
       </div>
 

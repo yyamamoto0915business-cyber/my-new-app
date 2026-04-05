@@ -72,7 +72,7 @@ export default function ResetPasswordPage() {
         icon="mail"
         title="再設定メールを送信しました"
         description="メール内のリンクから、新しいパスワードを設定してください。"
-        note="メールが届かない場合は、迷惑メールフォルダもご確認ください。"
+        note="届かない場合は迷惑メールフォルダもご確認ください。登録時と異なるメールアドレスでは届きません。数分待っても届かないときは「メールを再送する」をお試しください。"
         error={resendError ?? undefined}
       >
         <Link href="/auth" className={authResultButtonClass.primary}>

@@ -243,7 +243,7 @@ export default function OrganizerRecruitmentDetailPage({
               initialValues={{
                 title: recruitment.title,
                 description: recruitment.description ?? "",
-                status: (recruitment.status === "closed" ? "public" : recruitment.status) as "draft" | "public",
+                status: recruitment.status as "draft" | "public" | "closed",
                 start_at: recruitment.start_at ?? "",
                 end_at: recruitment.end_at ?? "",
                 meeting_place: recruitment.meeting_place ?? "",

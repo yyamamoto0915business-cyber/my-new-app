@@ -79,8 +79,9 @@ function OrganizerRecruitmentsContent() {
     needsActionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
-  const fetchDashboard = useCallback(async () => {
-    setLoading(true);
+  const fetchDashboard = useCallback(async (options?: { showLoading?: boolean }) => {
+    const showLoading = options?.showLoading !== false;
+    if (showLoading) setLoading(true);
     try {
       const res = await fetch("/api/organizer/recruitments-dashboard");
       if (!res.ok) throw new Error("Failed to fetch");
@@ -93,7 +94,7 @@ function OrganizerRecruitmentsContent() {
       setTodos([]);
       setRecruitments([]);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, []);
 
@@ -439,7 +440,11 @@ function OrganizerRecruitmentsContent() {
                     )}
                     <ul className="space-y-4">
                       {restRecruitments.map((r) => (
-                        <RecruitmentCard key={r.id} recruitment={r} />
+                        <RecruitmentCard
+                          key={r.id}
+                          recruitment={r}
+                          onRecruitmentUpdated={() => fetchDashboard({ showLoading: false })}
+                        />
                       ))}
                     </ul>
                   </>
@@ -469,8 +474,15 @@ export default function OrganizerRecruitmentsPage() {
   );
 }
 
-function RecruitmentCard({ recruitment }: { recruitment: RecruitmentDashboardItem }) {
+function RecruitmentCard({
+  recruitment,
+  onRecruitmentUpdated,
+}: {
+  recruitment: RecruitmentDashboardItem;
+  onRecruitmentUpdated?: () => void;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const startDate = recruitment.start_at
     ? (typeof recruitment.start_at === "string"
         ? recruitment.start_at.slice(0, 10)
@@ -481,6 +493,34 @@ function RecruitmentCard({ recruitment }: { recruitment: RecruitmentDashboardIte
         ? recruitment.start_at.slice(11, 16)
         : "")
     : "";
+
+  const handleCloseRecruitment = async () => {
+    if (recruitment.status !== "public" || closing) return;
+    if (
+      !window.confirm(
+        "この募集を終了しますか？ボランティア募集の一覧から非表示になります。"
+      )
+    ) {
+      return;
+    }
+    setClosing(true);
+    try {
+      const res = await fetch(`/api/recruitments/${recruitment.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "closed" }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        alert(data.error ?? "終了に失敗しました");
+        return;
+      }
+      setMenuOpen(false);
+      onRecruitmentUpdated?.();
+    } finally {
+      setClosing(false);
+    }
+  };
 
   return (
     <li className="rounded-xl border border-[var(--border)] bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90">
@@ -590,13 +630,16 @@ function RecruitmentCard({ recruitment }: { recruitment: RecruitmentDashboardIte
                     >
                       複製
                     </Link>
-                    <Link
-                      href={`/organizer/recruitments/${recruitment.id}`}
-                      className="block px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      終了する
-                    </Link>
+                    {recruitment.status === "public" && (
+                      <button
+                        type="button"
+                        disabled={closing}
+                        className="block w-full px-4 py-2 text-left text-sm hover:bg-zinc-50 disabled:opacity-50 dark:hover:bg-zinc-800"
+                        onClick={() => void handleCloseRecruitment()}
+                      >
+                        {closing ? "処理中…" : "終了する"}
+                      </button>
+                    )}
                   </div>
                 </>
               )}
