@@ -170,10 +170,56 @@ function OrganizerRecruitmentsContent() {
     return { todayRecruitments: today, restRecruitments: rest };
   }, [filteredRecruitments, todayStr]);
 
+  const activeFilterLabels = useMemo(() => {
+    const labels: string[] = [];
+    if (searchQuery.trim()) labels.push(`検索: ${searchQuery.trim()}`);
+    if (statusFilter !== "all") labels.push(`状態: ${STATUS_LABELS[statusFilter] ?? statusFilter}`);
+    if (eventFilter) {
+      const eventLabel = eventOptions.find((e) => e.id === eventFilter)?.title ?? "イベント指定";
+      labels.push(`イベント: ${eventLabel}`);
+    }
+    if (kpiFilter === "pending_approval") labels.push("KPI: 承認待ち");
+    if (kpiFilter === "has_applications") labels.push("KPI: 応募あり");
+    if (kpiFilter === "today") labels.push("KPI: 今日の募集");
+    if (kpiFilter === "public") labels.push("KPI: 公開中");
+    return labels;
+  }, [searchQuery, statusFilter, eventFilter, eventOptions, kpiFilter]);
+
+  const nextAction = useMemo(() => {
+    if (todos.length > 0) {
+      const first = todos[0];
+      return {
+        label: "承認待ちを確認する",
+        description: `${todos.length}件の対応が必要です`,
+        href: first?.href ?? "/organizer/recruitments",
+      };
+    }
+    if (todayRecruitments.length > 0) {
+      const firstToday = todayRecruitments[0];
+      return {
+        label: "当日管理を開く",
+        description: "本日の募集を先に確認しましょう",
+        href: `/organizer/recruitments/${firstToday.id}/day-of`,
+      };
+    }
+    if (kpis.active > 0) {
+      return {
+        label: "募集中の一覧を見る",
+        description: "公開中の募集を見直せます",
+        href: "#recruitments-list",
+      };
+    }
+    return {
+      label: "スタッフ募集を作成する",
+      description: "受付や誘導など役割ごとに作成できます",
+      href: "/organizer/recruitments/new",
+    };
+  }, [todos, todayRecruitments, kpis.active]);
+
   const kpiCardBase =
     "relative rounded-xl border p-4 text-center shadow-sm transition-all duration-150 ";
   const kpiCardSelected =
-    "cursor-pointer border-2 border-zinc-700 bg-zinc-800 ring-2 ring-[var(--accent)] ring-offset-2 dark:border-zinc-600 dark:bg-zinc-700 dark:ring-offset-zinc-900 [&>p:first-child]:text-white [&>p:last-child]:text-zinc-300 hover:bg-zinc-700 hover:border-zinc-600 dark:hover:bg-zinc-600 dark:hover:border-zinc-500 ";
+    "cursor-pointer border-[var(--accent)] bg-white ring-2 ring-[var(--accent)]/20 ring-offset-1 dark:border-[var(--accent)] dark:bg-zinc-900/90 dark:ring-offset-zinc-900 ";
   const kpiCardUnselected =
     "cursor-pointer border-[var(--border)] bg-white hover:border-zinc-300 hover:bg-zinc-50/80 hover:shadow-md active:border-zinc-400 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:hover:shadow-md dark:active:bg-zinc-800 ";
 
@@ -209,13 +255,26 @@ function OrganizerRecruitmentsContent() {
               </p>
             </section>
 
+            <section className="mb-5 rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-4 py-3 sm:px-5">
+              <p className="text-xs font-semibold tracking-wide text-emerald-800">次のアクション</p>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-emerald-900">{nextAction.description}</p>
+                <Link
+                  href={nextAction.href}
+                  className="w-full rounded-lg bg-emerald-700 px-3 py-2 text-center text-sm font-medium text-white hover:bg-emerald-800 sm:w-auto"
+                >
+                  {nextAction.label}
+                </Link>
+              </div>
+            </section>
+
             {/* KPIカード（応募対応中心・クリックでフィルタ・選択中は濃いスタイル） */}
             <section className="mb-6 overflow-x-auto">
-              <div className="grid min-w-[280px] grid-cols-2 gap-3 sm:grid-cols-4 sm:min-w-0">
+              <div className="flex min-w-max gap-3 sm:grid sm:min-w-0 sm:grid-cols-4">
                 <button
                   type="button"
                   onClick={() => handleKpiClick(kpiFilter === "pending_approval" ? "" : "pending_approval")}
-                  className={`${kpiCardBase}${kpiFilter === "pending_approval" ? kpiCardSelected : kpiCardUnselected}`}
+                  className={`w-[130px] sm:w-auto ${kpiCardBase}${kpiFilter === "pending_approval" ? kpiCardSelected : kpiCardUnselected}`}
                   aria-label="承認待ちで絞り込む"
                 >
                   {kpiFilter === "pending_approval" && (
@@ -229,7 +288,7 @@ function OrganizerRecruitmentsContent() {
                 <button
                   type="button"
                   onClick={() => handleKpiClick(kpiFilter === "has_applications" ? "" : "has_applications")}
-                  className={`${kpiCardBase}${kpiFilter === "has_applications" ? kpiCardSelected : kpiCardUnselected}`}
+                  className={`w-[130px] sm:w-auto ${kpiCardBase}${kpiFilter === "has_applications" ? kpiCardSelected : kpiCardUnselected}`}
                   aria-label="応募ありで絞り込む"
                 >
                   {kpiFilter === "has_applications" && (
@@ -238,12 +297,12 @@ function OrganizerRecruitmentsContent() {
                     </span>
                   )}
                   <p className="text-2xl font-bold">{kpis.totalApplications}</p>
-                  <p className="mt-1 text-xs">新着応募</p>
+                  <p className="mt-1 text-xs">応募あり</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleKpiClick(kpiFilter === "today" ? "" : "today")}
-                  className={`${kpiCardBase}${kpiFilter === "today" ? kpiCardSelected : kpiCardUnselected}`}
+                  className={`w-[130px] sm:w-auto ${kpiCardBase}${kpiFilter === "today" ? kpiCardSelected : kpiCardUnselected}`}
                   aria-label="当日で絞り込む"
                 >
                   {kpiFilter === "today" && (
@@ -252,12 +311,12 @@ function OrganizerRecruitmentsContent() {
                     </span>
                   )}
                   <p className="text-2xl font-bold">{kpis.todayCount}</p>
-                  <p className="mt-1 text-xs">当日</p>
+                  <p className="mt-1 text-xs">今日の募集</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleKpiClick(kpiFilter === "public" ? "" : "public")}
-                  className={`${kpiCardBase}${kpiFilter === "public" ? kpiCardSelected : kpiCardUnselected}`}
+                  className={`w-[130px] sm:w-auto ${kpiCardBase}${kpiFilter === "public" ? kpiCardSelected : kpiCardUnselected}`}
                   aria-label="募集中で絞り込む"
                 >
                   {kpiFilter === "public" && (
@@ -266,9 +325,12 @@ function OrganizerRecruitmentsContent() {
                     </span>
                   )}
                   <p className="text-2xl font-bold">{kpis.active}</p>
-                  <p className="mt-1 text-xs">募集中</p>
+                  <p className="mt-1 text-xs">公開中</p>
                 </button>
               </div>
+              <p className="mt-2 text-[11px] text-[var(--foreground-muted)] sm:hidden">
+                横にスワイプして指標を確認できます
+              </p>
             </section>
 
             {/* 要対応パネル（要対応=0のときは非表示） */}
@@ -276,7 +338,10 @@ function OrganizerRecruitmentsContent() {
               <section ref={needsActionRef} className="mb-6" id="needs-action-section">
                 <div className="rounded-xl border border-[var(--border)] bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90">
                   <div className="border-b border-[var(--border)] px-4 py-3 dark:border-zinc-700">
-                    <h2 className="font-medium text-zinc-900 dark:text-zinc-100">要対応</h2>
+                    <h2 className="font-medium text-zinc-900 dark:text-zinc-100">
+                      要対応
+                      <span className="ml-1 text-sm text-[var(--foreground-muted)]">({todos.length})</span>
+                    </h2>
                   </div>
                   <div className="divide-y divide-[var(--border)] dark:divide-zinc-700">
                     {todos.map((todo) => (
@@ -315,15 +380,15 @@ function OrganizerRecruitmentsContent() {
             )}
 
             {/* 検索・フィルタ・リセット（検索を主役に、高さを揃える） */}
-            <section className="mb-4 flex flex-wrap items-stretch gap-2">
+            <section className="mb-5 space-y-2 rounded-xl border border-[var(--border)] bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90">
               <input
                 type="search"
                 placeholder="募集名で検索（例：受付）"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-white px-4 py-2.5 text-sm shadow-sm dark:border-zinc-600 dark:bg-zinc-900/50"
+                className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-white px-4 py-2.5 text-sm shadow-sm dark:border-zinc-600 dark:bg-zinc-900/50"
               />
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={statusFilter}
                   onChange={(e) => {
@@ -334,7 +399,7 @@ function OrganizerRecruitmentsContent() {
                     const qs = params.toString();
                     router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
                   }}
-                  className="h-[42px] w-[5.5rem] shrink-0 rounded-lg border border-[var(--border)] bg-white px-2.5 text-xs text-[var(--foreground-muted)] dark:border-zinc-600 dark:bg-zinc-900/50"
+                  className="h-[42px] min-w-[6.5rem] shrink-0 rounded-lg border border-[var(--border)] bg-white px-2.5 text-xs text-[var(--foreground-muted)] dark:border-zinc-600 dark:bg-zinc-900/50"
                 >
                   <option value="all">すべて</option>
                   <option value="public">募集中</option>
@@ -345,7 +410,7 @@ function OrganizerRecruitmentsContent() {
                   <select
                     value={eventFilter}
                     onChange={(e) => setEventFilter(e.target.value)}
-                    className="h-[42px] max-w-[8rem] shrink-0 rounded-lg border border-[var(--border)] bg-white px-2.5 text-xs text-[var(--foreground-muted)] dark:border-zinc-600 dark:bg-zinc-900/50"
+                    className="h-[42px] max-w-[10rem] shrink-0 rounded-lg border border-[var(--border)] bg-white px-2.5 text-xs text-[var(--foreground-muted)] dark:border-zinc-600 dark:bg-zinc-900/50"
                   >
                     <option value="">すべて</option>
                     {eventOptions.map((e) => (
@@ -367,17 +432,30 @@ function OrganizerRecruitmentsContent() {
               </div>
             </section>
 
+            {activeFilterLabels.length > 0 && (
+              <section className="mb-4 flex flex-wrap items-center gap-1.5">
+                {activeFilterLabels.map((label) => (
+                  <span
+                    key={label}
+                    className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300"
+                  >
+                    {label}
+                  </span>
+                ))}
+              </section>
+            )}
+
             {/* 今日の募集（固定表示・0件なら非表示） */}
             {todayRecruitments.length > 0 && (
               <section className="mb-6">
-                <h2 className="mb-3 text-sm font-medium text-[var(--foreground-muted)]">
+                <h2 className="mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
                   今日の募集
                 </h2>
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {todayRecruitments.map((r) => (
                     <li
                       key={r.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-white px-4 py-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90"
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-white px-4 py-3.5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-zinc-900 dark:text-zinc-100">{r.title}</p>
@@ -401,7 +479,7 @@ function OrganizerRecruitmentsContent() {
 
             {/* 募集一覧（空状態 or 今日以外） */}
             {(filteredRecruitments.length === 0 || restRecruitments.length > 0) && (
-              <section>
+              <section id="recruitments-list">
                 {filteredRecruitments.length === 0 ? (
                   <div className="rounded-xl border border-[var(--border)] bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900/90">
                     {recruitments.length === 0 ? (
@@ -434,11 +512,11 @@ function OrganizerRecruitmentsContent() {
                 ) : (
                   <>
                     {todayRecruitments.length > 0 && (
-                      <h2 className="mb-3 text-sm font-medium text-[var(--foreground-muted)]">
+                      <h2 className="mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
                         その他の募集
                       </h2>
                     )}
-                    <ul className="space-y-4">
+                    <ul className="space-y-3">
                       {restRecruitments.map((r) => (
                         <RecruitmentCard
                           key={r.id}
@@ -493,6 +571,15 @@ function RecruitmentCard({
         ? recruitment.start_at.slice(11, 16)
         : "")
     : "";
+  const isToday = startDate === new Date().toISOString().slice(0, 10);
+  const primaryHref =
+    (recruitment.pendingCount ?? 0) > 0
+      ? `/organizer/recruitments/${recruitment.id}`
+      : isToday
+        ? `/organizer/recruitments/${recruitment.id}/day-of`
+        : `/organizer/recruitments/${recruitment.id}`;
+  const primaryLabel =
+    (recruitment.pendingCount ?? 0) > 0 ? "応募を確認" : isToday ? "当日管理へ" : "募集を確認";
 
   const handleCloseRecruitment = async () => {
     if (recruitment.status !== "public" || closing) return;
@@ -523,8 +610,8 @@ function RecruitmentCard({
   };
 
   return (
-    <li className="rounded-xl border border-[var(--border)] bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90">
-      <div className="p-4">
+    <li className="rounded-xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900/90">
+      <div className="p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -547,50 +634,40 @@ function RecruitmentCard({
               </span>
             </div>
             {recruitment.eventTitle && (
-              <p className="mt-1 text-sm text-[var(--foreground-muted)]">{recruitment.eventTitle}</p>
+              <p className="mt-1 text-xs font-medium text-[var(--foreground-muted)]">{recruitment.eventTitle}</p>
             )}
-            <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+            <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-300">
               {startDate}
               {startTime ? ` ${startTime}` : ""}
               {recruitment.meeting_place ? ` ・ ${recruitment.meeting_place}` : ""}
             </p>
-            <p className="mt-2 text-xs text-[var(--foreground-muted)]">
-              <span>応募 {recruitment.applicationCount}</span>
-              <span className="mx-1.5 opacity-60">・</span>
-              <span>承認済 {recruitment.approvedCount}</span>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300">
+                応募 {recruitment.applicationCount}
+              </span>
+              <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300">
+                承認済 {recruitment.approvedCount}
+              </span>
               {recruitment.capacity != null && (
-                <>
-                  <span className="mx-1.5 opacity-60">・</span>
-                  <span>定員 {recruitment.capacity}</span>
-                </>
+                <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300">
+                  定員 {recruitment.capacity}
+                </span>
               )}
-            </p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
             <Link
-              href={`/organizer/recruitments/${recruitment.id}`}
+              href={primaryHref}
               className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
             >
-              確認
+              {primaryLabel}
             </Link>
-            <Link
-              href={`/organizer/recruitments/${recruitment.id}/day-of`}
-              className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
-            >
-              当日管理
-            </Link>
-            <Link
-              href="/messages"
-              className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
-            >
-              チャット
-            </Link>
-            <div className="relative">
+            <div className="relative sm:self-auto">
               <button
                 type="button"
                 onClick={() => setMenuOpen((o) => !o)}
-                className="rounded-lg border border-[var(--border)] p-2 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] p-2 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
                 aria-label="その他メニュー"
               >
                 <svg
@@ -615,13 +692,27 @@ function RecruitmentCard({
                     onClick={() => setMenuOpen(false)}
                     aria-hidden
                   />
-                  <div className="absolute right-0 top-full z-20 mt-1 min-w-[160px] rounded-lg border border-[var(--border)] bg-white py-1 shadow-lg dark:border-zinc-600 dark:bg-zinc-900">
+                  <div className="absolute right-0 top-full z-20 mt-1 min-w-[180px] rounded-lg border border-[var(--border)] bg-white py-1 shadow-lg dark:border-zinc-600 dark:bg-zinc-900">
                     <Link
                       href={`/organizer/recruitments/${recruitment.id}`}
                       className="block px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
                       onClick={() => setMenuOpen(false)}
                     >
-                      編集
+                      募集を確認
+                    </Link>
+                    <Link
+                      href={`/organizer/recruitments/${recruitment.id}/day-of`}
+                      className="block px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      当日管理
+                    </Link>
+                    <Link
+                      href="/messages"
+                      className="block px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      チャット
                     </Link>
                     <Link
                       href={`/organizer/recruitments/new?copyFrom=${recruitment.id}`}
@@ -637,7 +728,7 @@ function RecruitmentCard({
                         className="block w-full px-4 py-2 text-left text-sm hover:bg-zinc-50 disabled:opacity-50 dark:hover:bg-zinc-800"
                         onClick={() => void handleCloseRecruitment()}
                       >
-                        {closing ? "処理中…" : "終了する"}
+                        {closing ? "処理中…" : "募集を終了"}
                       </button>
                     )}
                   </div>
