@@ -187,10 +187,13 @@ export type ConversationMessageRow = {
 };
 
 export type ConversationMetaDirect = {
+  conversationKind: string | null;
   eventId: string | null;
   eventTitle: string | null;
   organizerDisplayName: string | null;
   organizerAvatarUrl: string | null;
+  organizerProfileId: string | null;
+  otherUserId: string | null;
 };
 
 /**
@@ -255,8 +258,11 @@ export async function fetchConversationMetaDirectDb(
     const result = await client.query(
       `
       SELECT
+        c.kind AS conversation_kind,
         c.event_id AS event_id,
+        c.other_user_id AS other_user_id,
         ev.title AS event_title,
+        o.profile_id AS organizer_profile_id,
         pr.display_name AS organizer_display_name,
         pr.avatar_url AS organizer_avatar_url
       FROM public.conversations c
@@ -273,17 +279,23 @@ export async function fetchConversationMetaDirectDb(
     if ((result.rowCount ?? 0) === 0) return null;
 
     const row = result.rows[0] as {
+      conversation_kind: string | null;
       event_id: string | null;
+      other_user_id: string | null;
       event_title: string | null;
+      organizer_profile_id: string | null;
       organizer_display_name: string | null;
       organizer_avatar_url: string | null;
     };
 
     return {
+      conversationKind: row.conversation_kind,
       eventId: row.event_id,
       eventTitle: row.event_title,
       organizerDisplayName: row.organizer_display_name,
       organizerAvatarUrl: row.organizer_avatar_url,
+      organizerProfileId: row.organizer_profile_id,
+      otherUserId: row.other_user_id,
     };
   } finally {
     await client.end();

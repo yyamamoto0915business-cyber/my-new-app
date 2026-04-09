@@ -47,11 +47,27 @@ export async function GET(
           { status: 404 }
         );
       }
+      const myRole = meta.organizerProfileId === user.id ? "organizer" : "volunteer";
+      let counterpartDisplayName: string | null =
+        myRole === "organizer" ? "ボランティア参加者" : meta.organizerDisplayName ?? "主催者";
+      let counterpartAvatarUrl: string | null =
+        myRole === "organizer" ? null : meta.organizerAvatarUrl;
+      if (myRole === "organizer" && meta.otherUserId) {
+        const { data: participant } = await supabase
+          .from("profiles")
+          .select("display_name, avatar_url")
+          .eq("id", meta.otherUserId)
+          .maybeSingle();
+        counterpartDisplayName = participant?.display_name ?? counterpartDisplayName;
+        counterpartAvatarUrl = participant?.avatar_url ?? null;
+      }
       return NextResponse.json({
         eventId: meta.eventId,
         eventTitle: meta.eventTitle ?? "イベント",
-        organizerDisplayName: meta.organizerDisplayName ?? "主催者",
-        organizerAvatarUrl: meta.organizerAvatarUrl,
+        conversationKind: meta.conversationKind ?? "event_inquiry",
+        myRole,
+        counterpartDisplayName,
+        counterpartAvatarUrl,
       });
     } catch (e) {
       console.error(LOG_TAG, "direct db meta failed, falling back to supabase", e);
@@ -61,7 +77,7 @@ export async function GET(
   try {
     const { data: conv, error: convError } = await supabase
       .from("conversations")
-      .select("event_id, organizer_id")
+      .select("kind, event_id, organizer_id, other_user_id, organizers(profile_id)")
       .eq("id", conversationId)
       .single();
 
@@ -72,42 +88,36 @@ export async function GET(
       );
     }
 
-    const { data: event, error: eventError } = await supabase
-      .from("events")
-      .select("title")
-      .eq("id", conv.event_id)
-      .single();
+    const organizerProfileId = (
+      Array.isArray(conv.organizers) ? conv.organizers[0] : conv.organizers
+    )?.profile_id as string | undefined;
+    const myRole = organizerProfileId === user.id ? "organizer" : "volunteer";
+    const counterpartUserId =
+      myRole === "organizer" ? (conv.other_user_id as string | null) : organizerProfileId ?? null;
 
-    if (eventError || !event) {
-      return NextResponse.json(
-        { error: "イベントが見つかりません" },
-        { status: 404 }
-      );
-    }
-
-    const { data: organizer, error: organizerError } = await supabase
-      .from("organizers")
-      .select("profile:profile_id(display_name, avatar_url)")
-      .eq("id", conv.organizer_id)
-      .single();
-
-    type ProfileRel = { display_name: string | null; avatar_url: string | null };
-    const profile = organizer?.profile as ProfileRel | null | undefined;
-    const organizerName = profile?.display_name ?? null;
-    const organizerAvatarUrl = profile?.avatar_url ?? null;
-
-    if (organizerError || !organizer) {
-      return NextResponse.json(
-        { error: "主催者が見つかりません" },
-        { status: 404 }
-      );
-    }
+    const [{ data: event }, { data: counterpart }] = await Promise.all([
+      conv.event_id
+        ? supabase.from("events").select("title").eq("id", conv.event_id).maybeSingle()
+        : Promise.resolve({ data: null as { title: string } | null }),
+      counterpartUserId
+        ? supabase
+            .from("profiles")
+            .select("display_name, avatar_url")
+            .eq("id", counterpartUserId)
+            .maybeSingle()
+        : Promise.resolve({
+            data: null as { display_name: string | null; avatar_url: string | null } | null,
+          }),
+    ]);
 
     return NextResponse.json({
-      eventId: conv.event_id as string,
-      eventTitle: event.title as string,
-      organizerDisplayName: organizerName ?? "主催者",
-      organizerAvatarUrl,
+      eventId: (conv.event_id as string | null) ?? null,
+      eventTitle: event?.title ?? "イベント",
+      conversationKind: (conv.kind as string | null) ?? "event_inquiry",
+      myRole,
+      counterpartDisplayName:
+        counterpart?.display_name ?? (myRole === "organizer" ? "ボランティア参加者" : "主催者"),
+      counterpartAvatarUrl: counterpart?.avatar_url ?? null,
     });
   } catch {
     return NextResponse.json(

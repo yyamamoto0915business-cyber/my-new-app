@@ -27,6 +27,7 @@ export async function fetchInboxDirectDb(
       convs_with_org AS (
         SELECT
           c.id,
+          c.kind,
           c.event_id,
           c.organizer_id,
           c.other_user_id,
@@ -67,15 +68,21 @@ export async function fetchInboxDirectDb(
       )
       SELECT
         ou.conv_id AS conversation_id,
+        cwo.kind AS conversation_kind,
         ou.event_id AS event_id,
         ev.title AS event_title,
         ou.other_id AS other_user_id,
+        CASE
+          WHEN cwo.organizer_profile_id = $1 THEN 'organizer'
+          ELSE 'volunteer'
+        END AS my_role,
         p.display_name AS other_display_name,
         p.avatar_url AS other_avatar_url,
         lm.content AS last_message_content,
         lm.created_at AS last_message_at,
         COALESCE(uc.cnt, 0) AS unread_count
       FROM other_users ou
+      JOIN convs_with_org cwo ON cwo.id = ou.conv_id
       LEFT JOIN public.events ev ON ev.id = ou.event_id
       JOIN public.profiles p ON p.id = ou.other_id
       LEFT JOIN last_msgs lm ON lm.conversation_id = ou.conv_id
@@ -88,6 +95,7 @@ export async function fetchInboxDirectDb(
 
     return (result.rows ?? []).map((row) => ({
       conversation_id: row.conversation_id,
+      conversation_kind: row.conversation_kind ?? null,
       event_id: row.event_id ?? null,
       event_title: row.event_title ?? null,
       other_user_id: row.other_user_id,
@@ -96,6 +104,7 @@ export async function fetchInboxDirectDb(
       last_message_content: row.last_message_content ?? null,
       last_message_at: row.last_message_at ?? null,
       unread_count: Number(row.unread_count ?? 0),
+      my_role: row.my_role === "organizer" ? "organizer" : "volunteer",
     }));
   } finally {
     await client.end();

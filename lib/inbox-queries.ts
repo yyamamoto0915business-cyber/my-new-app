@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type InboxItem = {
   conversation_id: string;
+  conversation_kind: string | null;
   event_id: string | null;
   event_title: string | null;
   other_user_id: string;
@@ -10,6 +11,7 @@ export type InboxItem = {
   last_message_content: string | null;
   last_message_at: string | null;
   unread_count: number;
+  my_role: "organizer" | "volunteer";
 };
 
 /**
@@ -41,6 +43,7 @@ export async function fetchInboxByQueries(
     .select(
       `
       id,
+      kind,
       event_id,
       organizer_id,
       other_user_id,
@@ -55,6 +58,7 @@ export async function fetchInboxByQueries(
   // 3. 各会話の「相手」user_id を決定
   type ConvRow = {
     id: string;
+    kind: string | null;
     event_id: string | null;
     organizer_id: string;
     other_user_id: string;
@@ -138,8 +142,10 @@ export async function fetchInboxByQueries(
       orgProfileId === currentUserId ? c.other_user_id : orgProfileId ?? c.other_user_id;
     const prof = profileMap.get(otherId);
     const lastMsg = lastMsgMap.get(c.id);
+    const myRole = orgProfileId === currentUserId ? "organizer" : "volunteer";
     return {
       conversation_id: c.id,
+      conversation_kind: c.kind ?? null,
       event_id: c.event_id ?? null,
       event_title: c.event_id ? eventMap.get(c.event_id) ?? null : null,
       other_user_id: otherId,
@@ -148,6 +154,7 @@ export async function fetchInboxByQueries(
       last_message_content: lastMsg?.content ?? null,
       last_message_at: lastMsg?.created_at ?? null,
       unread_count: unreadMap.get(c.id) ?? 0,
+      my_role: myRole,
     };
   });
 

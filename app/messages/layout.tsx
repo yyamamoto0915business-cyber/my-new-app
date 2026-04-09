@@ -26,6 +26,27 @@ function formatRelative(iso: string): string {
   return d.toLocaleDateString("ja-JP", { month: "short", day: "numeric" });
 }
 
+function getPartnerTypeLabel(item: InboxItem): string {
+  if (item.my_role !== "organizer") return "主催者";
+  if (item.conversation_kind === "general") return "ボランティア応募者";
+  return "イベント参加者";
+}
+
+function getConversationTypeBadge(item: InboxItem): string | null {
+  if (item.my_role !== "organizer") return null;
+  if (item.conversation_kind === "general") return "ボランティア応募";
+  return "イベント参加";
+}
+
+function getDisplayName(item: InboxItem): string {
+  const name = item.other_display_name?.trim();
+  if (name) return name;
+  if (item.my_role === "organizer") {
+    return item.conversation_kind === "general" ? "応募者" : "参加者";
+  }
+  return "主催者";
+}
+
 export default function MessagesLayout({
   children,
 }: {
@@ -57,6 +78,12 @@ export default function MessagesLayout({
     const bAt = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
     return bAt - aAt;
   });
+  const organizerItems = sortedItems.filter((item) => item.my_role === "organizer");
+  const volunteerItems = sortedItems.filter((item) => item.my_role === "volunteer");
+  const organizerSectionTitle =
+    "主催者としてのやり取り（応募者・参加者）";
+  const volunteerSectionTitle =
+    mode === "VOLUNTEER" ? "ボランティアとしてのやり取り" : "参加者としてのやり取り";
 
   useEffect(() => {
     if (!user && !AUTH_DISABLED) {
@@ -217,56 +244,160 @@ export default function MessagesLayout({
           )}
 
           {!error && sortedItems.length > 0 && (
-            <ul className="space-y-3 px-4 py-3">
-              {sortedItems.map((item) => {
-                const isActive = item.conversation_id === conversationId;
-                const eventInitial = (item.event_title ?? "イベント")[0];
-                return (
-                  <li key={item.conversation_id}>
-                    <Link
-                      href={`/messages/${item.conversation_id}`}
-                      className={`flex min-h-[72px] items-center gap-3 rounded-2xl border px-4 py-3 ${
-                        isActive
-                          ? "border-[var(--accent)] bg-[var(--accent)]/5"
-                          : item.unread_count > 0
-                            ? "border-[var(--accent)]/40 bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10 dark:border-[var(--accent)]/30 dark:bg-zinc-950/20"
-                            : "border-zinc-200/80 bg-white hover:bg-zinc-50 dark:border-zinc-700/60 dark:bg-zinc-950/30 dark:hover:bg-zinc-900/30"
-                      }`}
-                    >
-                      <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--accent)]/10">
-                        <span className="text-lg font-semibold text-[var(--accent)]">{eventInitial}</span>
-                        {item.unread_count > 0 && (
-                          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-xs font-semibold text-white">
-                            {item.unread_count > 99 ? "99+" : item.unread_count}
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className={`line-clamp-2 text-sm font-semibold ${item.unread_count > 0 ? "text-[var(--accent)] dark:text-[var(--accent)]" : "text-zinc-900 dark:text-zinc-100"}`}>
-                          {item.event_title ?? "イベント"}
-                        </p>
-                        <p className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">
-                          {item.other_display_name || "主催者"}
-                        </p>
-                        <p className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">
-                          {item.last_message_content || "メッセージがありません"}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 flex-col items-end gap-2">
-                        {item.last_message_at && (
-                          <span className="text-xs text-zinc-400">{formatRelative(item.last_message_at)}</span>
-                        )}
-                        {item.unread_count > 0 && (
-                          <span className="rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
-                            未読
-                          </span>
-                        )}
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="space-y-4 px-4 py-3">
+              {organizerItems.length > 0 && (
+                <section>
+                  <p className="mb-2 text-[11px] font-semibold tracking-wide text-zinc-500">
+                    {organizerSectionTitle}
+                  </p>
+                  <ul className="space-y-3">
+                    {organizerItems.map((item) => {
+                      const isActive = item.conversation_id === conversationId;
+                      const eventInitial = (item.event_title ?? "イベント")[0];
+                      return (
+                        <li key={item.conversation_id}>
+                          <Link
+                            href={`/messages/${item.conversation_id}`}
+                            className={`flex min-h-[72px] items-center gap-3 rounded-2xl border px-4 py-3 ${
+                              isActive
+                                ? "border-[var(--accent)] bg-[var(--accent)]/5"
+                                : item.unread_count > 0
+                                  ? "border-[var(--accent)]/40 bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10 dark:border-[var(--accent)]/30 dark:bg-zinc-950/20"
+                                  : "border-zinc-200/80 bg-white hover:bg-zinc-50 dark:border-zinc-700/60 dark:bg-zinc-950/30 dark:hover:bg-zinc-900/30"
+                            }`}
+                          >
+                            <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--accent)]/10">
+                              <span className="text-lg font-semibold text-[var(--accent)]">{eventInitial}</span>
+                              {item.unread_count > 0 && (
+                                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-xs font-semibold text-white">
+                                  {item.unread_count > 99 ? "99+" : item.unread_count}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                                <p
+                                  className={`line-clamp-3 break-words text-sm font-semibold leading-5 ${item.unread_count > 0 ? "text-[var(--accent)] dark:text-[var(--accent)]" : "text-zinc-900 dark:text-zinc-100"}`}
+                                  title={getDisplayName(item)}
+                                >
+                                  {getDisplayName(item)}
+                                </p>
+                                {getConversationTypeBadge(item) && (
+                                  <span className="hidden w-fit shrink-0 rounded-full border border-emerald-200/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 sm:inline-flex">
+                                    {getConversationTypeBadge(item)}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">
+                                {item.event_title ?? "イベント"}
+                              </p>
+                              <p className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">
+                                {item.last_message_content || "メッセージがありません"}
+                              </p>
+                              <div className="mt-1 flex items-center gap-2 sm:hidden">
+                                {item.last_message_at && (
+                                  <span className="text-[11px] text-zinc-400">
+                                    {formatRelative(item.last_message_at)}
+                                  </span>
+                                )}
+                                {item.unread_count > 0 && (
+                                  <span className="rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
+                                    未読
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
+                              {item.last_message_at && (
+                                <span className="text-xs text-zinc-400">{formatRelative(item.last_message_at)}</span>
+                              )}
+                              {item.unread_count > 0 && (
+                                <span className="rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
+                                  未読
+                                </span>
+                              )}
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              )}
+
+              {volunteerItems.length > 0 && (
+                <section>
+                  <p className="mb-2 text-[11px] font-semibold tracking-wide text-zinc-500">
+                    {volunteerSectionTitle}
+                  </p>
+                  <ul className="space-y-3">
+                    {volunteerItems.map((item) => {
+                      const isActive = item.conversation_id === conversationId;
+                      const eventInitial = (item.event_title ?? "イベント")[0];
+                      return (
+                        <li key={item.conversation_id}>
+                          <Link
+                            href={`/messages/${item.conversation_id}`}
+                            className={`flex min-h-[72px] items-center gap-3 rounded-2xl border px-4 py-3 ${
+                              isActive
+                                ? "border-[var(--accent)] bg-[var(--accent)]/5"
+                                : item.unread_count > 0
+                                  ? "border-[var(--accent)]/40 bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10 dark:border-[var(--accent)]/30 dark:bg-zinc-950/20"
+                                  : "border-zinc-200/80 bg-white hover:bg-zinc-50 dark:border-zinc-700/60 dark:bg-zinc-950/30 dark:hover:bg-zinc-900/30"
+                            }`}
+                          >
+                            <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--accent)]/10">
+                              <span className="text-lg font-semibold text-[var(--accent)]">{eventInitial}</span>
+                              {item.unread_count > 0 && (
+                                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-xs font-semibold text-white">
+                                  {item.unread_count > 99 ? "99+" : item.unread_count}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className={`line-clamp-3 break-words text-sm font-semibold leading-5 ${item.unread_count > 0 ? "text-[var(--accent)] dark:text-[var(--accent)]" : "text-zinc-900 dark:text-zinc-100"}`}
+                                title={getDisplayName(item)}
+                              >
+                                {getDisplayName(item)}
+                              </p>
+                              <p className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">
+                                {item.event_title ?? "イベント"}
+                              </p>
+                              <p className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">
+                                {item.last_message_content || "メッセージがありません"}
+                              </p>
+                              <div className="mt-1 flex items-center gap-2 sm:hidden">
+                                {item.last_message_at && (
+                                  <span className="text-[11px] text-zinc-400">
+                                    {formatRelative(item.last_message_at)}
+                                  </span>
+                                )}
+                                {item.unread_count > 0 && (
+                                  <span className="rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
+                                    未読
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
+                              {item.last_message_at && (
+                                <span className="text-xs text-zinc-400">{formatRelative(item.last_message_at)}</span>
+                              )}
+                              {item.unread_count > 0 && (
+                                <span className="rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
+                                  未読
+                                </span>
+                              )}
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              )}
+            </div>
           )}
         </div>
       </aside>

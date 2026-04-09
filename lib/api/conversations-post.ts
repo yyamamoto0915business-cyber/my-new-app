@@ -300,12 +300,15 @@ export async function handlePostCreateConversation(request: NextRequest): Promis
     return structuredJsonError(500, "resolve_organizer", "organizer_profile_missing");
   }
 
-  if (user.id === organizerProfileId) {
+  // 「自分宛てメッセージ」のみ禁止する。
+  // 主催者が参加者との会話を開くケースは許可する。
+  if (participantUserId === organizerProfileId) {
     console.warn(LOG, "fail", {
       step: "guard",
       message: "cannot_message_self",
       userId: user.id,
       organizerProfileId,
+      participantUserId,
     });
     return structuredJsonError(400, "guard", "cannot_message_self");
   }

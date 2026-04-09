@@ -42,15 +42,24 @@ export async function GET(request: NextRequest, { params }: Params) {
     const organizerId = await getOrganizerIdByProfileId(supabase, user.id);
 
     if (participantId && organizerId && recruitment.organizer_id === organizerId) {
-      const room = await getRecruitmentChatRoom(
+      const existingRoom = await getRecruitmentChatRoom(
         supabase,
         recruitmentId,
         participantId
       );
-      if (!room) {
-        return NextResponse.json({ error: "ルームが見つかりません" }, { status: 404 });
+      if (existingRoom) {
+        return NextResponse.json({ roomId: existingRoom.id });
       }
-      return NextResponse.json({ roomId: room.id });
+      const createdRoom = await getOrCreateRecruitmentChatRoom(
+        supabase,
+        recruitmentId,
+        participantId,
+        user.id
+      );
+      if (!createdRoom) {
+        return NextResponse.json({ error: "ルームの取得に失敗しました" }, { status: 500 });
+      }
+      return NextResponse.json({ roomId: createdRoom.id });
     }
 
     const status = await getApplicationStatus(supabase, recruitmentId, user.id);

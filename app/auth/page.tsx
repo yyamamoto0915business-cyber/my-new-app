@@ -34,46 +34,70 @@ function AuthPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const isAbortLikeError = (err: unknown): boolean => {
+    if (err instanceof DOMException && err.name === "AbortError") return true;
+    if (err instanceof Error) {
+      return (
+        err.name === "AbortError" ||
+        /aborted/i.test(err.message) ||
+        /operation was aborted/i.test(err.message)
+      );
+    }
+    if (typeof err === "object" && err !== null && "name" in err) {
+      return String((err as { name?: unknown }).name) === "AbortError";
+    }
+    return false;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    const supabase = createClient();
-    if (!supabase) {
-      setError("エラーが発生しました。しばらくしてからもう一度お試しください。");
-      setLoading(false);
-      return;
-    }
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-
-    if (signInError) {
-      setLoading(false);
-      if (signInError.message.includes("Invalid login credentials")) {
-        setError("メールアドレスまたはパスワードが正しくありません");
-      } else if (signInError.message.includes("Email not confirmed")) {
-        setError("メールアドレスの確認がまだ完了していません。確認メールをご確認ください");
-      } else {
+    try {
+      const supabase = createClient();
+      if (!supabase) {
         setError("エラーが発生しました。しばらくしてからもう一度お試しください。");
+        setLoading(false);
+        return;
       }
-      return;
-    }
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      if (signInError) {
+        setLoading(false);
+        if (signInError.message.includes("Invalid login credentials")) {
+          setError("メールアドレスまたはパスワードが正しくありません");
+        } else if (signInError.message.includes("Email not confirmed")) {
+          setError("メールアドレスの確認がまだ完了していません。確認メールをご確認ください");
+        } else {
+          setError("エラーが発生しました。しばらくしてからもう一度お試しください。");
+        }
+        return;
+      }
+
+      // 遷移直後はセッション同期中で getSession が AbortError になることがあるため、
+      // ここで失敗してもログイン自体は成立している前提で遷移を優先する。
+      try {
+        await supabase.auth.getSession();
+      } catch (sessionErr) {
+        if (!isAbortLikeError(sessionErr)) {
+          console.warn("getSession failed after sign-in:", sessionErr);
+        }
+      }
+
+      window.location.assign(returnTo);
+    } catch (err) {
+      if (isAbortLikeError(err)) {
+        window.location.assign(returnTo);
+        return;
+      }
       setLoading(false);
-      setError("セッションを保存できませんでした。Cookie を有効にして、もう一度お試しください。");
-      return;
+      setError("通信が途中で中断されました。時間をおいて、もう一度お試しください。");
     }
-
-    // クライアント遷移だけだと Cookie 反映前に次ページが描画され、未ログイン表示になることがある（特にモバイル）。フル読み込みで確実に同期する。
-    window.location.assign(returnTo);
   };
 
   const [signupEmail, setSignupEmail] = useState("");

@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { RecruitmentForm } from "@/components/recruitment-form";
-import { ChatRoom } from "@/components/chat/chat-room";
 import { ApplicationSummaryCards } from "@/components/organizer/applications/ApplicationSummaryCards";
 import {
   ApplicationToolbar,
@@ -30,10 +30,25 @@ type Recruitment = {
   roles: { name: string; count: number }[];
 };
 
+type BulkMessageResult = {
+  sent: number;
+  total: number;
+  failed: number;
+  failedParticipantIds: string[];
+};
+
 const RECRUITMENT_STATUS_LABELS: Record<string, string> = {
   draft: "下書き",
   public: "募集中",
   closed: "終了",
+};
+
+const BULK_TEMPLATE_TEXTS: Record<string, string> = {
+  reminder:
+    "【前日リマインド】明日の集合をお忘れなく。集合時刻・場所を再度確認の上、余裕を持ってお越しください。",
+  venue_change:
+    "【集合場所変更】大変お手数ですが、集合場所が変更になりました。このチャットの最新メッセージでご確認ください。",
+  thanks: "【お礼】本日はお疲れさまでした。ご協力ありがとうございました。",
 };
 
 function formatDateTime(iso: string | null | undefined): string {
@@ -56,25 +71,18 @@ export default function OrganizerRecruitmentDetailPage({
   const [recruitment, setRecruitment] = useState<Recruitment | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [chatParticipantId, setChatParticipantId] = useState<string | null>(null);
-  const [roomId, setRoomId] = useState<string | null>(null);
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkTemplate, setBulkTemplate] = useState("");
-  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [bulkMessage, setBulkMessage] = useState("");
+  const [bulkResult, setBulkResult] = useState<BulkMessageResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("created_desc");
   const [detailApp, setDetailApp] = useState<Application | null>(null);
   const [contentOpen, setContentOpen] = useState(false);
   const [resolvedId, setResolvedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchWithTimeout("/api/auth/me")
-      .then((r) => r.json())
-      .then((data) => setCurrentUserId(data?.user?.id ?? "dev-user"))
-      .catch(() => setCurrentUserId("dev-user"));
-  }, []);
 
   useEffect(() => {
     params.then((p) => setResolvedId(p.id));
@@ -105,18 +113,36 @@ export default function OrganizerRecruitmentDetailPage({
     load();
   }, [load]);
 
-  useEffect(() => {
-    if (!resolvedId || !chatParticipantId) {
-      setRoomId(null);
-      return;
-    }
-    fetchWithTimeout(
-      `/api/recruitments/${resolvedId}/chat-room?participantId=${chatParticipantId}`
-    )
-      .then((r) => r.json())
-      .then((data) => setRoomId(data.roomId ?? null))
-      .catch(() => setRoomId(null));
-  }, [resolvedId, chatParticipantId]);
+  const handleOpenChat = useCallback(
+    async (participantId: string) => {
+      if (!resolvedId || !participantId) return;
+      const organizerId = (recruitment as { organizer_id?: string } | null)?.organizer_id ?? null;
+      if (!organizerId) {
+        alert("主催者情報の取得に失敗しました");
+        return;
+      }
+      try {
+        const res = await fetchWithTimeout(`/api/conversations`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            organizerId,
+            otherUserId: participantId,
+            kind: "general",
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data?.conversationId) {
+          alert(data?.error ?? "チャットの準備に失敗しました");
+          return;
+        }
+        router.push(`/messages/${data.conversationId}`);
+      } catch {
+        alert("チャットの準備に失敗しました");
+      }
+    },
+    [recruitment, resolvedId, router]
+  );
 
   const handleAccept = async (appId: string) => {
     const res = await fetchWithTimeout(
@@ -142,8 +168,29 @@ export default function OrganizerRecruitmentDetailPage({
     if (res.ok) load();
   };
 
-  const handleBulkMessage = async () => {
+  const resolveDisplayName = useCallback((app: Application) => {
+    const profileName = app.user?.display_name?.trim();
+    if (profileName) return profileName;
+    const email = app.user?.email?.trim();
+    if (email && email.includes("@")) {
+      const localPart = email.split("@")[0]?.trim();
+      if (localPart) return localPart;
+    }
+    return "応募者";
+  }, []);
+
+  const handleBulkMessage = async (targetUserIds?: string[]) => {
     if (!resolvedId) return;
+    const content = bulkMessage.trim() || BULK_TEMPLATE_TEXTS[bulkTemplate] || "";
+    if (!content) {
+      alert("送信するメッセージを入力してください");
+      return;
+    }
+    const targetCount = Array.isArray(targetUserIds) && targetUserIds.length > 0 ? targetUserIds.length : acceptedCount;
+    const confirmed = window.confirm(
+      `承認済み参加者 ${targetCount} 名へ一斉連絡を送信します。\nこの操作を実行しますか？`
+    );
+    if (!confirmed) return;
     setBulkSending(true);
     try {
       const res = await fetchWithTimeout(
@@ -153,13 +200,30 @@ export default function OrganizerRecruitmentDetailPage({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             template: bulkTemplate || undefined,
-            content: bulkTemplate ? undefined : "お知らせがあります。",
+            content,
+            targetUserIds: targetUserIds && targetUserIds.length > 0 ? targetUserIds : undefined,
           }),
         }
       );
       const data = await res.json();
       if (res.ok && data.sent != null) {
-        alert(`${data.sent}件送信しました`);
+        const total = Number(data.total ?? acceptedCount);
+        const sent = Number(data.sent ?? 0);
+        const failed = Number(data.failed ?? Math.max(0, total - sent));
+        if (failed > 0) {
+          alert(`一斉送信が完了しました\n成功: ${sent}件 / 失敗: ${failed}件`);
+        } else {
+          alert(`${sent}件送信しました`);
+        }
+        setBulkResult({
+          sent,
+          total,
+          failed,
+          failedParticipantIds: Array.isArray(data.failedParticipantIds)
+            ? data.failedParticipantIds.filter((id: unknown): id is string => typeof id === "string")
+            : [],
+        });
+        setBulkMessage("");
       } else {
         alert(data.error ?? "送信に失敗しました");
       }
@@ -173,6 +237,11 @@ export default function OrganizerRecruitmentDetailPage({
     (a) => a.status === "accepted" || a.status === "confirmed"
   ).length;
   const rejectedCount = applications.filter((a) => a.status === "rejected").length;
+  const failedApplications = useMemo(() => {
+    if (!bulkResult || bulkResult.failedParticipantIds.length === 0) return [];
+    const targetIds = new Set(bulkResult.failedParticipantIds);
+    return applications.filter((app) => targetIds.has(app.user_id));
+  }, [applications, bulkResult]);
 
   const filteredApplications = useMemo(() => {
     let list = applications;
@@ -198,8 +267,30 @@ export default function OrganizerRecruitmentDetailPage({
       sorted.sort((a, b) =>
         (a.user?.display_name ?? "").localeCompare(b.user?.display_name ?? "", "ja")
       );
+    // 常に未確認を上位に表示して、対応漏れを減らす
+    sorted.sort((a, b) => {
+      const aPending = a.status === "pending" ? 0 : 1;
+      const bPending = b.status === "pending" ? 0 : 1;
+      return aPending - bPending;
+    });
     return sorted;
   }, [applications, statusFilter, searchQuery, sortBy]);
+
+  const hasActiveFilters = searchQuery.trim().length > 0 || statusFilter !== "all" || sortBy !== "created_desc";
+  const activeFilterLabel =
+    statusFilter === "pending"
+      ? "未確認のみ"
+      : statusFilter === "accepted"
+        ? "承認済みのみ"
+        : statusFilter === "rejected"
+          ? "却下のみ"
+          : null;
+
+  const handleResetFilters = useCallback(() => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setSortBy("created_desc");
+  }, []);
 
   if (!resolvedId || loading) {
     return (
@@ -273,6 +364,12 @@ export default function OrganizerRecruitmentDetailPage({
       : recruitment.status === "closed"
         ? "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
         : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+  const dateRangeText = `${formatDateTime(recruitment.start_at)}${
+    recruitment.end_at ? ` ～ ${formatDateTime(recruitment.end_at)}` : ""
+  }`;
+  const meetingPlaceText = recruitment.meeting_place?.trim() || "未設定";
+  const hasCapacity = recruitment.capacity != null && recruitment.capacity > 0;
+  const remainingSlots = hasCapacity ? Math.max(0, recruitment.capacity! - acceptedCount) : null;
 
   return (
     <div className="min-h-screen bg-[var(--mg-paper)]">
@@ -312,19 +409,33 @@ export default function OrganizerRecruitmentDetailPage({
         {/* (2) 募集概要（コンパクト） */}
         <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
           <h2 className="sr-only">募集概要</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium ${statusBadgeClass}`}
-            >
-              {RECRUITMENT_STATUS_LABELS[recruitment.status] ?? recruitment.status}
-            </span>
-            <span className="text-sm text-slate-600">
-              {formatDateTime(recruitment.start_at)}
-              {recruitment.end_at && ` ～ ${formatDateTime(recruitment.end_at)}`}
-            </span>
-            {recruitment.capacity != null && recruitment.capacity > 0 && (
-              <span className="text-sm text-slate-500">定員 {recruitment.capacity}名</span>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <span
+                className={`inline-flex shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium ${statusBadgeClass}`}
+              >
+                {RECRUITMENT_STATUS_LABELS[recruitment.status] ?? recruitment.status}
+              </span>
+              <p className="text-sm font-medium text-slate-800">募集の基本情報</p>
+            </div>
+            {hasCapacity && (
+              <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2 text-right">
+                <p className="text-[11px] text-amber-700">残り枠</p>
+                <p className="text-sm font-semibold text-amber-800">
+                  {remainingSlots} / {recruitment.capacity}名
+                </p>
+              </div>
             )}
+          </div>
+          <div className="mt-3 grid grid-cols-1 gap-2.5 text-sm sm:grid-cols-2">
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5">
+              <p className="text-[11px] font-medium text-slate-500">日時</p>
+              <p className="mt-1 text-slate-700">{dateRangeText}</p>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5">
+              <p className="text-[11px] font-medium text-slate-500">集合場所</p>
+              <p className="mt-1 text-slate-700">{meetingPlaceText}</p>
+            </div>
           </div>
         </section>
 
@@ -335,14 +446,42 @@ export default function OrganizerRecruitmentDetailPage({
           acceptedCount={acceptedCount}
           rejectedCount={rejectedCount}
           capacity={recruitment.capacity ?? null}
+          activeStatus={statusFilter}
+          onStatusSelect={(nextStatus) =>
+            setStatusFilter((prev) => (prev === nextStatus ? "all" : nextStatus))
+          }
         />
+
+        {pendingCount > 0 && statusFilter !== "pending" && (
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200/80 bg-amber-50/70 px-4 py-3 shadow-sm">
+            <div>
+              <p className="text-sm font-semibold text-amber-900">未確認の応募が {pendingCount} 件あります</p>
+              <p className="text-xs text-amber-700">先に対応すると運営準備がスムーズです</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("pending")}
+              className="shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-amber-700"
+            >
+              未確認を確認する
+            </button>
+          </section>
+        )}
 
         {/* (4) 一斉送信（承認済みがある場合） */}
         {acceptedCount > 0 && (
-          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
+          <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
+            <p className="text-xs font-medium text-slate-500">承認済み参加者へ一斉連絡</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
             <select
               value={bulkTemplate}
-              onChange={(e) => setBulkTemplate(e.target.value)}
+              onChange={(e) => {
+                const nextTemplate = e.target.value;
+                setBulkTemplate(nextTemplate);
+                if (nextTemplate && !bulkMessage.trim()) {
+                  setBulkMessage(BULK_TEMPLATE_TEXTS[nextTemplate] ?? "");
+                }
+              }}
               className="rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm"
               aria-label="メッセージテンプレート"
             >
@@ -351,14 +490,53 @@ export default function OrganizerRecruitmentDetailPage({
               <option value="venue_change">集合場所変更</option>
               <option value="thanks">お礼メッセージ</option>
             </select>
+            <textarea
+              value={bulkMessage}
+              onChange={(e) => setBulkMessage(e.target.value)}
+              placeholder="送信内容を入力"
+              rows={3}
+              className="min-h-[84px] w-full rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/50"
+              aria-label="一斉送信メッセージ"
+            />
             <button
               type="button"
-              onClick={handleBulkMessage}
-              disabled={bulkSending}
+              onClick={() => handleBulkMessage()}
+              disabled={bulkSending || (!bulkMessage.trim() && !bulkTemplate)}
               className="rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90 disabled:opacity-50"
             >
               {bulkSending ? "送信中..." : `一斉送信（${acceptedCount}名）`}
             </button>
+            </div>
+            {bulkResult && (
+              <div className="mt-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3">
+                <p className="text-xs text-slate-600">
+                  直近の送信結果: 成功 {bulkResult.sent}件 / 失敗 {bulkResult.failed}件（対象 {bulkResult.total}件）
+                </p>
+                {failedApplications.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-xs font-medium text-amber-800">送信失敗の参加者</p>
+                    <ul className="flex flex-wrap gap-1.5">
+                      {failedApplications.map((app) => (
+                        <li
+                          key={app.id}
+                          className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-800"
+                        >
+                          {resolveDisplayName(app)}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => handleBulkMessage(failedApplications.map((app) => app.user_id))}
+                      disabled={bulkSending || failedApplications.length === 0}
+                      className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-50 disabled:opacity-50"
+                    >
+                      失敗分だけ再送する（{failedApplications.length}名）
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -370,10 +548,50 @@ export default function OrganizerRecruitmentDetailPage({
           onStatusFilterChange={setStatusFilter}
           sortBy={sortBy}
           onSortChange={setSortBy}
+          resultCount={filteredApplications.length}
+          hasFilter={hasActiveFilters}
+          onReset={handleResetFilters}
         />
 
+        {statusFilter === "pending" && (
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-2.5">
+            <p className="text-xs font-medium text-amber-800">
+              未確認のみ表示中（{filteredApplications.length}件）
+            </p>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("all")}
+              className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50"
+            >
+              すべて表示に戻す
+            </button>
+          </section>
+        )}
+
         {/* (6) 応募者一覧 */}
-        <section>
+        <section id="applications-list">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-800">
+              応募者一覧
+              <span className="ml-1 text-xs font-normal text-slate-500">
+                （{filteredApplications.length}件表示）
+              </span>
+            </h2>
+            {(activeFilterLabel || searchQuery.trim()) && (
+              <div className="flex items-center gap-2">
+                {activeFilterLabel && (
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600">
+                    {activeFilterLabel}
+                  </span>
+                )}
+                {searchQuery.trim() && (
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600">
+                    検索中
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
           {filteredApplications.length === 0 ? (
             <ApplicationsEmptyState
               hasFilter={!!searchQuery.trim() || statusFilter !== "all"}
@@ -387,8 +605,9 @@ export default function OrganizerRecruitmentDetailPage({
                   application={app}
                   onAccept={handleAccept}
                   onReject={handleReject}
-                  onChat={setChatParticipantId}
+                  onChat={handleOpenChat}
                   onDetail={setDetailApp}
+                  onFocusPending={() => setStatusFilter("pending")}
                 />
               ))}
             </div>
@@ -421,43 +640,6 @@ export default function OrganizerRecruitmentDetailPage({
 
       {/* 応募者詳細スライドオーバー */}
       <ApplicationDetailSheet application={detailApp} onClose={() => setDetailApp(null)} />
-
-      {/* チャットモーダル */}
-      {chatParticipantId && roomId && (
-        <div className="fixed inset-4 top-16 z-50 rounded-xl border border-[var(--border)] bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900 md:inset-8 md:top-24">
-          <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 dark:border-zinc-700">
-              <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
-                チャット（
-                {applications.find((a) => a.user_id === chatParticipantId)?.user?.display_name ??
-                  "応募者"}
-                ）
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setChatParticipantId(null);
-                  setRoomId(null);
-                }}
-                className="rounded-lg px-2 py-1 text-sm text-[var(--foreground-muted)] hover:bg-zinc-100 dark:hover:bg-zinc-800"
-              >
-                閉じる
-              </button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <ChatRoom
-                roomId={roomId}
-                currentUserId={currentUserId || "dev-user"}
-                otherPartyName={
-                  applications.find((a) => a.user_id === chatParticipantId)?.user?.display_name ??
-                  "応募者"
-                }
-                participantId={chatParticipantId}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

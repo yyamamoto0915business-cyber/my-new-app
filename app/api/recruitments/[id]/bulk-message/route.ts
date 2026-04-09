@@ -6,10 +6,8 @@ import {
   fetchApplicationsByRecruitment,
   getOrganizerIdByProfileId,
 } from "@/lib/db/recruitments-mvp";
-import {
-  getRecruitmentChatRoomsForOrganizer,
-  sendMessage,
-} from "@/lib/db/chat";
+import { createOrGetConversation, insertParticipantMessage } from "@/lib/db/messages";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -41,6 +39,9 @@ export async function POST(request: NextRequest, { params }: Params) {
   const template = typeof body.template === "string" ? body.template : "";
   const customContent = typeof body.content === "string" ? body.content.trim() : "";
   const content = customContent || (TEMPLATES[template] ?? "");
+  const targetUserIds = Array.isArray(body.targetUserIds)
+    ? body.targetUserIds.filter((id): id is string => typeof id === "string" && id.length > 0)
+    : [];
 
   if (!content) {
     return NextResponse.json(
@@ -74,8 +75,12 @@ export async function POST(request: NextRequest, { params }: Params) {
         .filter((a) => a.status === "accepted" || a.status === "confirmed")
         .map((a) => a.user_id)
     );
+    const recipientIds =
+      targetUserIds.length > 0
+        ? new Set(targetUserIds.filter((id) => acceptedUserIds.has(id)))
+        : acceptedUserIds;
 
-    if (acceptedUserIds.size === 0) {
+    if (recipientIds.size === 0) {
       return NextResponse.json({
         success: true,
         sent: 0,
@@ -83,21 +88,47 @@ export async function POST(request: NextRequest, { params }: Params) {
       });
     }
 
-    const rooms = await getRecruitmentChatRoomsForOrganizer(supabase, recruitmentId);
+    const admin = createAdminClient();
     let sent = 0;
-
-    for (const room of rooms) {
-      const participantId = room.participant_id ?? (room.participant as { id?: string } | null)?.id;
-      if (participantId && acceptedUserIds.has(participantId)) {
-        const ok = await sendMessage(supabase, room.id, user.id, content);
-        if (ok) sent++;
+    const failedParticipantIds: string[] = [];
+    for (const participantId of recipientIds) {
+      let conversationId: string | null = null;
+      try {
+        conversationId = await createOrGetConversation(supabase, {
+          callerUserId: user.id,
+          eventId: null,
+          kind: "general",
+          organizerId,
+          otherUserId: participantId,
+        });
+      } catch {
+        failedParticipantIds.push(participantId);
+        continue;
+      }
+      if (!conversationId) {
+        failedParticipantIds.push(participantId);
+        continue;
+      }
+      const ins = await insertParticipantMessage({
+        userId: user.id,
+        conversationId,
+        content,
+        supabase,
+        admin,
+      });
+      if (ins.ok) {
+        sent++;
+      } else {
+        failedParticipantIds.push(participantId);
       }
     }
 
     return NextResponse.json({
       success: true,
       sent,
-      total: acceptedUserIds.size,
+      total: recipientIds.size,
+      failed: failedParticipantIds.length,
+      failedParticipantIds,
       message: `${sent}件送信しました`,
     });
   } catch (e) {

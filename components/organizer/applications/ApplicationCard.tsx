@@ -50,7 +50,21 @@ type ApplicationCardProps = {
   onReject: (appId: string) => void;
   onChat: (userId: string) => void;
   onDetail?: (application: Application) => void;
+  onFocusPending?: () => void;
 };
+
+function resolveDisplayName(application: Application): string {
+  const profileName = application.user?.display_name?.trim();
+  if (profileName) return profileName;
+
+  const email = application.user?.email?.trim();
+  if (email && email.includes("@")) {
+    const localPart = email.split("@")[0]?.trim();
+    if (localPart) return localPart;
+  }
+
+  return "応募者";
+}
 
 export function ApplicationCard({
   application,
@@ -58,15 +72,21 @@ export function ApplicationCard({
   onReject,
   onChat,
   onDetail,
+  onFocusPending,
 }: ApplicationCardProps) {
-  const displayName = application.user?.display_name ?? application.user_id.slice(0, 8);
+  const displayName = resolveDisplayName(application);
   const email = application.user?.email ?? null;
   const statusStyle = STATUS_STYLES[application.status] ?? "bg-slate-100 text-slate-600 border-slate-200/80";
   const statusLabel = STATUS_LABELS[application.status] ?? application.status;
   const isPending = application.status === "pending";
+  const messagePreview =
+    application.message?.trim() || "自己紹介・応募メッセージはまだ入力されていません。";
+  const cardClassName = isPending
+    ? "rounded-2xl border border-amber-300/80 bg-amber-50/40 shadow-sm transition hover:shadow-md"
+    : "rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:shadow-md";
 
   return (
-    <article className="rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:shadow-md">
+    <article className={cardClassName}>
       <div className="p-4 sm:p-5">
         {/* 上段: 名前 + ステータスバッジ */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -78,6 +98,16 @@ export function ApplicationCard({
               >
                 {statusLabel}
               </span>
+              {isPending && (
+                <button
+                  type="button"
+                  onClick={onFocusPending}
+                  className="inline-flex items-center rounded-full bg-amber-600 px-2 py-0.5 text-[10px] font-medium text-white transition hover:bg-amber-700"
+                  aria-label="未確認のみ表示する"
+                >
+                  要対応
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -96,12 +126,10 @@ export function ApplicationCard({
 
         {/* 下段: コメント・アクション */}
         <div className="mt-3 border-t border-slate-100 pt-3">
-          {application.message && (
-            <p className="line-clamp-3 text-sm text-slate-600">{application.message}</p>
-          )}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {isPending && (
-              <>
+          {isPending && (
+            <div className="mb-3 rounded-xl border border-amber-200/70 bg-amber-50/60 p-2.5">
+              <p className="text-xs font-medium text-amber-800">未確認の応募です。先に対応できます</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => onAccept(application.id)}
@@ -116,15 +144,20 @@ export function ApplicationCard({
                 >
                   却下する
                 </button>
-              </>
-            )}
-            <button
-              type="button"
-              onClick={() => onChat(application.user_id)}
-              className="rounded-xl border border-slate-200/80 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-            >
-              チャット
-            </button>
+              </div>
+            </div>
+          )}
+          <p className="text-xs font-medium text-slate-500">応募メッセージ</p>
+          <p
+            className={`mt-1 rounded-xl border px-3 py-2 text-sm ${
+              application.message?.trim()
+                ? "line-clamp-3 border-slate-100 bg-slate-50/70 text-slate-700"
+                : "border-slate-100 bg-slate-50/40 text-slate-500"
+            }`}
+          >
+            {messagePreview}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {onDetail && (
               <button
                 type="button"
@@ -134,6 +167,13 @@ export function ApplicationCard({
                 詳細を見る
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => onChat(application.user_id)}
+              className="rounded-xl border border-slate-200/80 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              チャット
+            </button>
           </div>
         </div>
       </div>

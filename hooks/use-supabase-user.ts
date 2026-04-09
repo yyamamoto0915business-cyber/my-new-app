@@ -46,6 +46,48 @@ export function useSupabaseUser(): SupabaseUserState {
       return false;
     };
 
+    /**
+     * Supabase クライアントが一時的に user を返せないときに、
+     * サーバー判定（cookie ベース）でログイン状態を補完する。
+     */
+    const recoverUserFromApiWithRetries = async (): Promise<boolean> => {
+      const delays = [0, 120, 400];
+      for (const ms of delays) {
+        if (ms > 0) {
+          await new Promise((r) => setTimeout(r, ms));
+        }
+        try {
+          const res = await fetch("/api/auth/me", {
+            credentials: "include",
+            cache: "no-store",
+          });
+          if (!res.ok) continue;
+          const data = (await res.json()) as {
+            user?: { id?: string; email?: string | null; name?: string | null } | null;
+          };
+          const apiUser = data?.user;
+          if (apiUser?.id) {
+            const fallbackUser = {
+              id: apiUser.id,
+              email: apiUser.email ?? null,
+              user_metadata: {
+                display_name: apiUser.name ?? apiUser.email?.split("@")[0] ?? null,
+                name: apiUser.name ?? null,
+              },
+              app_metadata: {},
+              aud: "authenticated",
+              created_at: new Date(0).toISOString(),
+            } as unknown as User;
+            setUser(fallbackUser);
+            return true;
+          }
+        } catch {
+          // ignore and retry
+        }
+      }
+      return false;
+    };
+
     const init = async () => {
       try {
         const {
@@ -72,6 +114,10 @@ export function useSupabaseUser(): SupabaseUserState {
           return;
         }
 
+        if (await recoverUserFromApiWithRetries()) {
+          return;
+        }
+
         setUser(null);
       } catch {
         setUser(null);
@@ -84,8 +130,12 @@ export function useSupabaseUser(): SupabaseUserState {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        return;
+      }
+      setUser((prev) => session?.user ?? prev);
     });
 
     return () => subscription.unsubscribe();

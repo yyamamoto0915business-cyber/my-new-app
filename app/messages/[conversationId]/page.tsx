@@ -31,8 +31,10 @@ export default function ConversationPage({
   const [messages, setMessages] = useState<Message[]>([]);
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventTitle, setEventTitle] = useState<string | null>(null);
-  const [organizerDisplayName, setOrganizerDisplayName] = useState<string | null>(null);
-  const [organizerAvatarUrl, setOrganizerAvatarUrl] = useState<string | null>(null);
+  const [counterpartDisplayName, setCounterpartDisplayName] = useState<string | null>(null);
+  const [counterpartAvatarUrl, setCounterpartAvatarUrl] = useState<string | null>(null);
+  const [myRole, setMyRole] = useState<"organizer" | "volunteer">("volunteer");
+  const [conversationKind, setConversationKind] = useState<string>("event_inquiry");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,13 +68,15 @@ export default function ConversationPage({
 
   const currentUserId = user?.id ?? (AUTH_DISABLED ? "dev-user" : null);
 
-  // 会話のメタ情報（イベント名 / 主催者名）
+  // 会話のメタ情報（イベント名 / 相手表示名）
   useEffect(() => {
     if (!conversationId) return;
     setEventId(null);
     setEventTitle(null);
-    setOrganizerDisplayName(null);
-    setOrganizerAvatarUrl(null);
+    setCounterpartDisplayName(null);
+    setCounterpartAvatarUrl(null);
+    setMyRole("volunteer");
+    setConversationKind("event_inquiry");
 
     fetchWithTimeout(
       `/api/messages/conversations/${conversationId}/meta`,
@@ -83,8 +87,10 @@ export default function ConversationPage({
         if (!r.ok) throw new Error(data?.error ?? "メタ情報の取得に失敗しました");
         setEventId(data?.eventId ?? null);
         setEventTitle(data?.eventTitle ?? null);
-        setOrganizerDisplayName(data?.organizerDisplayName ?? null);
-        setOrganizerAvatarUrl(data?.organizerAvatarUrl ?? null);
+        setMyRole(data?.myRole === "organizer" ? "organizer" : "volunteer");
+        setConversationKind(typeof data?.conversationKind === "string" ? data.conversationKind : "event_inquiry");
+        setCounterpartDisplayName(data?.counterpartDisplayName ?? null);
+        setCounterpartAvatarUrl(data?.counterpartAvatarUrl ?? null);
       })
       .catch(() => {
         // 表示だけなら最低限で成立するので、失敗しても会話UIは出す
@@ -276,9 +282,9 @@ export default function ConversationPage({
 
           <div className="flex min-w-0 flex-1 items-start gap-2">
             <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--accent)]/10">
-              {organizerAvatarUrl ? (
+              {counterpartAvatarUrl ? (
                 <img
-                  src={organizerAvatarUrl}
+                  src={counterpartAvatarUrl}
                   alt=""
                   className="h-full w-full object-cover"
                 />
@@ -302,7 +308,12 @@ export default function ConversationPage({
                 {eventTitle ?? "イベント"}
               </p>
               <p className="mt-0.5 line-clamp-1 text-[11px] leading-tight text-zinc-500 dark:text-zinc-400">
-                主催者: {organizerDisplayName ?? "主催者"}
+                {myRole === "organizer"
+                  ? conversationKind === "general"
+                    ? "ボランティア応募者"
+                    : "イベント参加者"
+                  : "主催者"}
+                : {counterpartDisplayName ?? (myRole === "organizer" ? "参加者" : "主催者")}
               </p>
             </div>
           </div>
@@ -362,13 +373,19 @@ export default function ConversationPage({
               </svg>
             </div>
             <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              主催者にメッセージを送ってみましょう
+              {myRole === "organizer"
+                ? "参加者にメッセージを送ってみましょう"
+                : "主催者にメッセージを送ってみましょう"}
             </p>
             <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-              イベントについての質問や相談ができます。
+              {myRole === "organizer"
+                ? "応募内容の確認や当日の案内に使えます。"
+                : "イベントについての質問や相談ができます。"}
             </p>
             <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">
-              参加前の確認にも使えます。
+              {myRole === "organizer"
+                ? "参加前の不安を減らす連絡にも便利です。"
+                : "参加前の確認にも使えます。"}
             </p>
           </div>
         )}
