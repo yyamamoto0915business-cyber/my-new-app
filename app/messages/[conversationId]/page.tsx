@@ -51,6 +51,8 @@ export default function ConversationPage({
 
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const emptySuggestionsAutoOpened = useRef(false);
+  /** iOS 等: キーボード表示時にレイアウト下端が隠れないよう visualViewport から余白を取る */
+  const [keyboardInsetPx, setKeyboardInsetPx] = useState(0);
 
   useEffect(() => {
     emptySuggestionsAutoOpened.current = false;
@@ -59,8 +61,32 @@ export default function ConversationPage({
   useEffect(() => {
     if (loading || messages.length > 0 || emptySuggestionsAutoOpened.current) return;
     emptySuggestionsAutoOpened.current = true;
+    // モバイルは縦が狭いので候補の自動表示はせず、入力欄を優先
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+      return;
+    }
     setSuggestionsOpen(true);
   }, [conversationId, loading, messages.length]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const inset = Math.max(
+        0,
+        Math.round(window.innerHeight - vv.height - vv.offsetTop)
+      );
+      setKeyboardInsetPx(inset);
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
 
   useEffect(() => {
     params.then((p) => setConversationId(p.conversationId));
@@ -211,6 +237,7 @@ export default function ConversationPage({
   }, [content, conversationId, currentUserId, sending]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing || e.key === "Process") return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -245,9 +272,14 @@ export default function ConversationPage({
     <div
       className={cn(
         "flex min-h-0 flex-col bg-[var(--mg-paper)] dark:bg-zinc-950",
-        "h-[100dvh] max-h-[100dvh]",
+        "h-[100dvh] max-h-[100dvh] box-border",
         "md:h-auto md:max-h-none md:flex-1 md:min-h-0"
       )}
+      style={
+        keyboardInsetPx > 0
+          ? { paddingBottom: keyboardInsetPx }
+          : undefined
+      }
     >
       {/* スマホ: 専用コンパクトヘッダー / md: 一覧併用時も同じ情報密度で統一 */}
       <header
@@ -435,16 +467,16 @@ export default function ConversationPage({
           <p className="mb-2 text-xs text-red-600 dark:text-red-400">{error}</p>
         )}
 
-        <div className="mb-2">
+        <div className="mb-1.5 md:mb-2">
           <button
             type="button"
             onClick={() => setSuggestionsOpen((o) => !o)}
-            className="text-xs font-medium text-zinc-500 underline-offset-2 hover:text-[var(--accent)] hover:underline dark:text-zinc-400"
+            className="text-[11px] font-medium text-zinc-500 underline-offset-2 hover:text-[var(--accent)] hover:underline dark:text-zinc-400 md:text-xs"
           >
             {suggestionsOpen ? "候補を隠す" : "返信の候補を表示"}
           </button>
           {suggestionsOpen && (
-            <div className="scrollbar-hide mt-2 flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
+            <div className="scrollbar-hide mt-1.5 flex gap-2 overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch] md:mt-2 md:pb-1">
               {suggestionChips.map((chip) => (
                 <button
                   key={chip.label}
@@ -472,9 +504,27 @@ export default function ConversationPage({
               if (error) setError(null);
             }}
             onKeyDown={handleKeyDown}
+            onFocus={() => {
+              if (
+                typeof window !== "undefined" &&
+                window.matchMedia("(min-width: 768px)").matches
+              ) {
+                return;
+              }
+              requestAnimationFrame(() => {
+                inputRef.current?.scrollIntoView({
+                  block: "nearest",
+                  behavior: "smooth",
+                });
+              });
+            }}
             placeholder="メッセージを入力"
             rows={1}
-            className="min-h-[48px] max-h-32 flex-1 resize-none rounded-[14px] border border-[var(--mg-line)] bg-zinc-50 px-3.5 py-3 text-[15px] leading-snug text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+            enterKeyHint="send"
+            inputMode="text"
+            autoComplete="off"
+            autoCorrect="on"
+            className="min-h-[52px] max-h-32 flex-1 resize-none rounded-[14px] border border-[var(--mg-line)] bg-zinc-50 px-3.5 py-3 text-base leading-snug text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 md:min-h-[48px] md:text-[15px]"
           />
           <button
             type="button"
