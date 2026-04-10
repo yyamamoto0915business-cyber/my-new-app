@@ -524,7 +524,7 @@ export default function ConversationPage({
             inputMode="text"
             autoComplete="off"
             autoCorrect="on"
-            className="min-h-[52px] max-h-32 flex-1 resize-none rounded-[14px] border border-[var(--mg-line)] bg-zinc-50 px-3.5 py-3 text-base leading-snug text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 md:min-h-[48px] md:text-[15px]"
+            className="min-h-[52px] max-h-32 flex-1 resize-none rounded-[14px] border border-[var(--mg-line)] bg-zinc-50 px-3.5 py-3 text-[16px] leading-snug text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 md:min-h-[48px] md:text-[15px]"
           />
           <button
             type="button"

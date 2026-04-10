@@ -391,7 +391,7 @@ function ModalBody({
           }}
           placeholder="イベントについて質問したいです"
           rows={4}
-          className="w-full resize-none rounded-2xl border border-[var(--border)] bg-zinc-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 dark:bg-zinc-800 dark:text-zinc-100"
+          className="w-full resize-none rounded-2xl border border-[var(--border)] bg-zinc-50 px-4 py-3 text-[16px] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 dark:bg-zinc-800 dark:text-zinc-100 md:text-sm"
         />
 
         {error && (
