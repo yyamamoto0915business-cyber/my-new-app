@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getStripe, getStripeSecretKey } from "@/lib/stripe";
 
-const stripeKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-function getStripe(): Stripe | null {
-  return stripeKey ? new Stripe(stripeKey) : null;
-}
 
 async function updateOrganizerSubscription(
   supabase: NonNullable<ReturnType<typeof createAdminClient>>,
@@ -78,7 +74,7 @@ async function updateOrganizerSubscription(
 }
 
 export async function POST(request: NextRequest) {
-  if (!stripeKey || !webhookSecret) {
+  if (!getStripeSecretKey() || !webhookSecret) {
     return NextResponse.json({ error: "Stripe未設定" }, { status: 503 });
   }
 

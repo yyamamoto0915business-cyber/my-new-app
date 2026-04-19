@@ -4,9 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerByProfileId } from "@/lib/db/organizers";
+import { getStripeSecretKey } from "@/lib/stripe";
+import { getPublicOriginForStripeRedirect } from "@/lib/stripe-redirect-origin";
 
-const stripeKey = process.env.STRIPE_SECRET_KEY;
-const appUrl = process.env.APP_URL || "http://localhost:3000";
+const stripeKey = getStripeSecretKey();
 
 /**
  * POST: Stripe Connect Account Link（受取設定の onboarding）
@@ -40,13 +41,31 @@ export async function POST(request: NextRequest) {
   }
 
   const stripe = new Stripe(stripeKey);
+  const appUrl = getPublicOriginForStripeRedirect(request);
 
-  const link = await stripe.accountLinks.create({
-    account: organizer.stripe_account_id,
-    refresh_url: `${appUrl}/organizer/settings/payouts?refresh=1`,
-    return_url: `${appUrl}/organizer/settings/payouts?connected=1`,
-    type: "account_onboarding",
-  });
-
-  return NextResponse.json({ url: link.url });
+  try {
+    const link = await stripe.accountLinks.create({
+      account: organizer.stripe_account_id,
+      refresh_url: `${appUrl}/organizer/settings/payouts?refresh=1`,
+      return_url: `${appUrl}/organizer/settings/payouts?connected=1`,
+      type: "account_onboarding",
+    });
+    return NextResponse.json({ url: link.url });
+  } catch (err: unknown) {
+    const msg = err instanceof Stripe.errors.StripeError ? err.message : String(err);
+    const noSuch =
+      /no such account/i.test(msg) ||
+      /not connected to your platform/i.test(msg) ||
+      /does not exist/i.test(msg) ||
+      /was created in test mode/i.test(msg) ||
+      /test mode.*live mode/i.test(msg);
+    return NextResponse.json(
+      {
+        error: noSuch
+          ? "保存されている Stripe 連携先が、いまの秘密鍵（本番/テスト）と一致しません。下の「連携をやり直す」を押してから、もう一度設定を始めてください。"
+          : `Stripe 連携エラー: ${msg}`,
+      },
+      { status: 400 }
+    );
+  }
 }

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useUnreadCount } from "@/hooks/use-unread-count";
-import { getActiveMode, getHomeHrefForMode } from "@/components/mode-segment-nav";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 
 const MOBILE_ITEMS = [
@@ -55,36 +54,34 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
   return null;
 }
 
-/** モバイル用5項目ナビ（ホーム/メッセージ/保存/通知/マイページ）。役割切替は上部セグメントで行う。ホームはモード別の初期画面へ。 */
+/** モバイル用5項目ナビ（ホーム/メッセージ/保存/通知/マイページ）。役割切替は上部セグメントで行う。 */
 export function MobileBottomNav() {
   const pathname = usePathname();
   const unreadCount = useUnreadCount(true);
   const [mounted, setMounted] = useState(false);
-  const activeMode = getActiveMode(pathname ?? "");
-  const homeHref = getHomeHrefForMode(activeMode);
 
   useEffect(() => setMounted(true), []);
 
   const items = MOBILE_ITEMS;
 
-  const getHref = (item: (typeof MOBILE_ITEMS)[number]) =>
-    item.id === "home" ? homeHref : item.href;
+  const getHref = (item: (typeof MOBILE_ITEMS)[number]) => item.href;
 
   const isActive = (item: (typeof MOBILE_ITEMS)[number]) => {
     const href = getHref(item);
     if (item.id === "home") {
-      if (activeMode === "organizer") return pathname?.startsWith("/organizer") ?? false;
-      if (activeMode === "volunteer") return pathname?.startsWith("/volunteer") ?? false;
-      return pathname === "/" || pathname === "";
+      // 「ホーム」は常に探す側トップ（/events）へ戻す導線。
+      // 主催/ボランティア配下では active にしない。
+      if (pathname?.startsWith("/organizer")) return false;
+      if (pathname?.startsWith("/volunteer")) return false;
+      // 他の下部ナビ項目に該当しない「探す側ページ群」でのみ active
+      if (pathname?.startsWith("/messages")) return false;
+      if (pathname?.startsWith("/saved")) return false;
+      if (pathname?.startsWith("/notifications")) return false;
+      if (pathname?.startsWith("/profile")) return false;
+      return true;
     }
     if (item.id === "notifications") return pathname?.startsWith("/notifications");
     return pathname?.startsWith(item.href) ?? false;
-  };
-
-  const getHomeLabel = () => {
-    if (activeMode === "organizer") return "主催";
-    if (activeMode === "volunteer") return "ボランティア";
-    return "ホーム";
   };
 
   const showBadge = (icon: string) =>
@@ -128,7 +125,7 @@ export function MobileBottomNav() {
               )}
             </span>
             <span className="whitespace-nowrap text-center text-[11px] leading-tight">
-              {item.id === "home" ? getHomeLabel() : item.label}
+              {item.label}
             </span>
           </Link>
         );})}

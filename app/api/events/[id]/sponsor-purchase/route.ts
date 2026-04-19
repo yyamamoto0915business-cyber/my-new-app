@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createSponsorPurchase } from "@/lib/db/sponsors";
 import { addSponsorPurchase } from "@/lib/sponsor-purchases-store";
+import { isStripeServerConfigured } from "@/lib/stripe";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   const supabase = await createClient();
-  const stripeConfigured = !!process.env.STRIPE_SECRET_KEY;
+  const stripeConfigured = isStripeServerConfigured();
   const status = stripeConfigured ? "pending" : "paid";
 
   if (supabase) {

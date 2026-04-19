@@ -35,6 +35,9 @@ export function getFounderBonusSlotsUsed(published: number): number {
   return Math.max(0, published - NORMAL_SLOTS);
 }
 
-export function getReceivingStatus(data: OrganizerBillingData): "未設定" | "設定済み" {
+export function getReceivingStatus(
+  data: OrganizerBillingData
+): "未設定" | "設定済み" | "決済未対応" {
+  if (!data.stripeConnectConfigured) return "決済未対応";
   return data.organizer.stripe_account_charges_enabled ? "設定済み" : "未設定";
 }

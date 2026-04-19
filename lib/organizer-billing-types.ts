@@ -1,4 +1,6 @@
 export type OrganizerBillingData = {
+  /** サーバーに STRIPE_SECRET_KEY があるか（Connect / Checkout API が動くか） */
+  stripeConnectConfigured: boolean;
   organizer: {
     plan: string;
     earlybird_eligible?: boolean;

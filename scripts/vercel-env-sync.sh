@@ -26,6 +26,13 @@ VARS=(
   "NEXT_PUBLIC_AUTH_RESEND"
   "AUTH_DISABLED"
   "NEXT_PUBLIC_AUTH_DISABLED"
+  # Stripe（売上受取・主催者課金・協賛決済）。未設定だと本番で Connect が 503 になる
+  "STRIPE_SECRET_KEY"
+  "STRIPE_WEBHOOK_SECRET"
+  "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"
+  "STRIPE_PRICE_ORGANIZER_980"
+  "STRIPE_PRICE_STARTER_980"
+  "APP_URL"
 )
 
 echo "=== Vercel 環境変数 sync (Production) ==="

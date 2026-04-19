@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerByProfileId } from "@/lib/db/organizers";
+import { getStripeSecretKey } from "@/lib/stripe";
 
-const stripeKey = process.env.STRIPE_SECRET_KEY;
+const stripeKey = getStripeSecretKey();
 
 /**
  * POST: Stripe Connect Express アカウント作成
@@ -45,12 +46,24 @@ export async function POST(request: NextRequest) {
 
   const stripe = new Stripe(stripeKey);
 
-  const account = await stripe.accounts.create({
-    type: "express",
-    country: "JP",
-    email: organizer.contact_email ?? user.email ?? undefined,
-    metadata: { organizer_id: organizerId },
-  });
+  const rawEmail = organizer.contact_email ?? user.email ?? "";
+  const email =
+    rawEmail.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail.trim())
+      ? rawEmail.trim()
+      : undefined;
+
+  let account: Stripe.Account;
+  try {
+    account = await stripe.accounts.create({
+      type: "express",
+      country: "JP",
+      email,
+      metadata: { organizer_id: organizerId },
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Stripe.errors.StripeError ? err.message : String(err);
+    return NextResponse.json({ error: `Stripe 連携エラー: ${msg}` }, { status: 400 });
+  }
 
   await supabase
     .from("organizers")

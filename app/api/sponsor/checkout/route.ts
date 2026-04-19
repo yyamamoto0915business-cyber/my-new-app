@@ -3,9 +3,9 @@ import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganizerIdByEventId } from "@/lib/db/events";
 import { getOrganizerByProfileId } from "@/lib/db/organizers";
+import { getAppUrl, getStripeSecretKey } from "@/lib/stripe";
 
-const stripeKey = process.env.STRIPE_SECRET_KEY;
-const appUrl = process.env.APP_URL || "http://localhost:3000";
+const stripeKey = getStripeSecretKey();
 const PLATFORM_FEE_RATE = parseFloat(process.env.PLATFORM_FEE_RATE ?? "0.05");
 const PLATFORM_FEE_MIN_JPY = parseInt(process.env.PLATFORM_FEE_MIN_JPY ?? "300", 10);
 
@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
   const organizerNetJpy = amountJpy - platformFeeJpy;
 
   const stripe = new Stripe(stripeKey);
+  const appUrl = getAppUrl();
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",

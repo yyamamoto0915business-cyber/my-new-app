@@ -4,10 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerByProfileId } from "@/lib/db/organizers";
+import { getAppUrl, getStripeSecretKey } from "@/lib/stripe";
 
-const stripeKey = process.env.STRIPE_SECRET_KEY;
+const stripeKey = getStripeSecretKey();
 const priceId = process.env.STRIPE_PRICE_ORGANIZER_980 ?? process.env.STRIPE_PRICE_STARTER_980;
-const appUrl = process.env.APP_URL || "http://localhost:3000";
 
 /**
  * POST: 月980円サブスクのCheckout Sessionを作成
@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   const stripe = new Stripe(stripeKey);
+  const appUrl = getAppUrl();
 
   let customerId = organizer.stripe_customer_id;
   if (!customerId) {
