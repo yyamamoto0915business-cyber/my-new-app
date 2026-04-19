@@ -33,6 +33,8 @@ VARS=(
   "STRIPE_PRICE_ORGANIZER_980"
   "STRIPE_PRICE_STARTER_980"
   "APP_URL"
+  # canonical・OGP 用（本番ドメインと揃える。Stripe 登録 URL と一致させる）
+  "NEXT_PUBLIC_SITE_URL"
 )
 
 echo "=== Vercel 環境変数 sync (Production) ==="

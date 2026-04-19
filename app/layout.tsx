@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://my-new-app-self-iota.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.machiglyph.jp";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

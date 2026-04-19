@@ -4,6 +4,9 @@
  */
 
 // ─── 事業者情報 ─────────────────────────────────────────────
+/** Stripe・特商法で「サイト上の名称」と登記名の対応を示すためのサービス名（屋号） */
+export const SERVICE_TRADE_NAME = "MachiGlyph" as const;
+
 export const LEGAL_ENTITY = {
   name: "合同会社Act.",
   representative: "山本雄太",
@@ -15,7 +18,7 @@ export const LEGAL_ENTITY = {
 
 export const LEGAL_DATES = {
   established: "2026年3月13日",
-  revised: "2026年3月13日",
+  revised: "2026年4月19日",
 } as const;
 
 // ─── 共通の型 ───────────────────────────────────────────────
@@ -174,8 +177,15 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
 // ─── 特定商取引法に基づく表記 ──────────────────────────────
 export const COMMERCE_TITLE = "特定商取引法に基づく表記";
 
+/** ページ冒頭の説明（決済事業者確認・Stripe 審査用） */
+export const COMMERCE_INTRO = `${LEGAL_ENTITY.name}が運営するオンラインサービス「${SERVICE_TRADE_NAME}」について、特定商取引法に基づき次のとおり表記します。`;
+
 export const COMMERCE_ITEMS: CommerceItem[] = [
   { label: "事業者名", value: LEGAL_ENTITY.name },
+  {
+    label: "サービス名称",
+    value: `「${SERVICE_TRADE_NAME}」\n本ウェブサイトおよびアプリ上の表示名です。運営・契約の当事者は${LEGAL_ENTITY.name}です。`,
+  },
   { label: "代表者名", value: LEGAL_ENTITY.representative },
   { label: "所在地", value: LEGAL_ENTITY.address },
   { label: "電話番号", value: LEGAL_ENTITY.phone },

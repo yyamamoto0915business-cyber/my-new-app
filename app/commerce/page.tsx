@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { COMMERCE_TITLE, COMMERCE_ITEMS, LEGAL_DATES } from "@/lib/legal";
+import {
+  COMMERCE_TITLE,
+  COMMERCE_INTRO,
+  COMMERCE_ITEMS,
+  LEGAL_DATES,
+} from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: `${COMMERCE_TITLE} - MachiGlyph`,
@@ -16,6 +21,9 @@ export default function CommercePage() {
         </h1>
         <p className="mt-3 text-sm text-[var(--mg-muted)]">
           制定日：{LEGAL_DATES.established}　改定日：{LEGAL_DATES.revised}
+        </p>
+        <p className="mt-6 text-sm leading-relaxed text-[var(--mg-ink)]/90">
+          {COMMERCE_INTRO}
         </p>
 
         {/* テーブル */}
