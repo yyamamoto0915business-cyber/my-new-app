@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Megaphone, Sparkles, UsersRound } from "lucide-react";
 import type { ReactNode } from "react";
-import { createClient } from "@/lib/supabase/server";
 import OrganizerDashboardClient from "@/components/organizer/OrganizerDashboardClient";
+import { getOrganizerNavState } from "@/lib/organizer/get-organizer-nav-state";
 
 function BenefitCard({
   title,
@@ -31,7 +31,7 @@ function BenefitCard({
 }
 
 export default async function OrganizerPage() {
-  const supabase = await createClient();
+  const { supabase, organizerRegistered } = await getOrganizerNavState();
   if (!supabase) {
     return (
       <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 px-5 py-5 text-sm text-amber-900">
@@ -42,20 +42,6 @@ export default async function OrganizerPage() {
       </div>
     );
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const organizerRegistered = await (async () => {
-    if (!user) return false;
-    const { data } = await supabase
-      .from("organizers")
-      .select("id")
-      .eq("profile_id", user.id)
-      .maybeSingle();
-    return !!data;
-  })();
 
   if (organizerRegistered) {
     return <OrganizerDashboardClient />;

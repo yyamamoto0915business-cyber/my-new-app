@@ -45,6 +45,7 @@ export function useOrganizerBilling() {
   const [connectLoading, setConnectLoading] = useState(false);
   const [resetConnectLoading, setResetConnectLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchBilling = useCallback(async () => {
     try {
@@ -78,6 +79,7 @@ export function useOrganizerBilling() {
 
   const handleCheckout = async () => {
     setCheckoutLoading(true);
+    setActionError(null);
     try {
       const res = await fetch("/api/billing/checkout", { method: "POST" });
       const json = await parseApiJson(res);
@@ -96,7 +98,7 @@ export function useOrganizerBilling() {
         e instanceof Error
           ? e.message
           : "決済ページの準備に失敗しました。時間をおいて再度お試しください。";
-      setError(humanizeClientError(raw));
+      setActionError(humanizeClientError(raw));
     } finally {
       setCheckoutLoading(false);
     }
@@ -104,6 +106,7 @@ export function useOrganizerBilling() {
 
   const handlePortal = async () => {
     setPortalLoading(true);
+    setActionError(null);
     try {
       const res = await fetch("/api/billing/portal", { method: "POST" });
       const json = await parseApiJson(res);
@@ -122,7 +125,7 @@ export function useOrganizerBilling() {
         e instanceof Error
           ? e.message
           : "お支払い管理ページの起動に失敗しました。時間をおいて再度お試しください。";
-      setError(humanizeClientError(raw));
+      setActionError(humanizeClientError(raw));
     } finally {
       setPortalLoading(false);
     }
@@ -130,6 +133,7 @@ export function useOrganizerBilling() {
 
   const handleConnect = async () => {
     setConnectLoading(true);
+    setActionError(null);
     try {
       let res = await fetch("/api/connect/create-account", { method: "POST" });
       let json = await parseApiJson(res);
@@ -158,7 +162,7 @@ export function useOrganizerBilling() {
         e instanceof Error
           ? e.message
           : "Stripe連携の開始に失敗しました。時間をおいて再度お試しください。";
-      setError(humanizeClientError(raw));
+      setActionError(humanizeClientError(raw));
     } finally {
       setConnectLoading(false);
     }
@@ -166,6 +170,7 @@ export function useOrganizerBilling() {
 
   const handleResetStripeConnect = useCallback(async () => {
     setResetConnectLoading(true);
+    setActionError(null);
     try {
       const res = await fetch("/api/connect/reset", { method: "POST" });
       const json = await parseApiJson(res);
@@ -177,14 +182,13 @@ export function useOrganizerBilling() {
           )
         );
       }
-      setError(null);
       await fetchBilling();
     } catch (e) {
       const raw =
         e instanceof Error
           ? e.message
           : "Stripe連携情報のリセットに失敗しました。時間をおいて再度お試しください。";
-      setError(humanizeClientError(raw));
+      setActionError(humanizeClientError(raw));
     } finally {
       setResetConnectLoading(false);
     }
@@ -194,7 +198,9 @@ export function useOrganizerBilling() {
     data,
     loading,
     error,
+    actionError,
     setError,
+    setActionError,
     refetch: fetchBilling,
     checkoutLoading,
     portalLoading,

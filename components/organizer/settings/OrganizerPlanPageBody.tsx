@@ -19,6 +19,7 @@ export function OrganizerPlanPageBody() {
     data,
     loading,
     error,
+    actionError,
     checkoutLoading,
     portalLoading,
     handleCheckout,
@@ -44,6 +45,12 @@ export function OrganizerPlanPageBody() {
         ) : error ? (
           <p className="text-red-600">{error}</p>
         ) : data ? (
+          <>
+          {actionError && (
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-950/30 dark:text-red-400">
+              {actionError}
+            </div>
+          )}
           <div className="flex flex-col gap-8">
             <section
               className="min-h-[200px] rounded-2xl border border-[var(--mg-accent)]/25 bg-gradient-to-br from-[var(--accent-soft)]/50 via-[var(--mg-accent-soft)]/30 to-[var(--mg-paper)] p-4 shadow-[var(--mg-shadow)] dark:from-[var(--accent-soft)]/25 dark:via-[var(--mg-accent-soft)]/15 dark:to-[var(--mg-paper)] sm:p-6"
@@ -389,6 +396,7 @@ export function OrganizerPlanPageBody() {
               </Link>
             </section>
           </div>
+          </>
         ) : null}
       </main>
     </div>

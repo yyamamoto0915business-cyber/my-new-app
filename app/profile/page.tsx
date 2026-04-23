@@ -19,6 +19,7 @@ import { useModeDashboardData } from "@/hooks/use-mode-dashboard-data";
 import { useUnreadCount } from "@/hooks/use-unread-count";
 import { useUnreadBreakdown } from "@/hooks/use-unread-breakdown";
 import type { User } from "@supabase/supabase-js";
+import { ProfilePageSkeleton } from "@/components/profile/ProfilePageSkeleton";
 
 const VALID_MODES: ProfileMode[] = ["participant", "volunteer", "organizer"];
 
@@ -191,11 +192,7 @@ function ProfileContent() {
   );
 
   if (authLoading || loading || resolvedMode === null) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-zinc-500">読み込み中...</p>
-      </div>
-    );
+    return <ProfilePageSkeleton />;
   }
 
   return (
@@ -383,7 +380,7 @@ function ProfileContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><p className="text-sm text-zinc-500">読み込み中...</p></div>}>
+    <Suspense fallback={<ProfilePageSkeleton />}>
       <ProfileContent />
     </Suspense>
   );

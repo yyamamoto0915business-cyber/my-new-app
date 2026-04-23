@@ -25,15 +25,13 @@ export function HeroSection() {
         </p>
 
         {/* メインコピー：主導線をシンプルに訴求 */}
-        <h2 className="mt-2 max-w-xs font-serif text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">
-          まちのイベントと、
-          <br className="sm:hidden" />
-          出会える場所
+        <h2 className="mt-2 font-serif text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">
+          まちのイベントと、出会える場所
         </h2>
 
         {/* 補足文はモバイルでは少し控えめに表示 */}
         <p className="mt-1.5 text-sm leading-relaxed text-slate-600 sm:mt-2">
-          近くで開かれる催しや活動を、やさしく見つけられます。
+          近くで開かれる身近な催しや活動を、見つけられます。
         </p>
 
         {/* 検索導線：横幅いっぱい・角丸大きめ・余白広め */}

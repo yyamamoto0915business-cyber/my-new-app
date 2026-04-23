@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
 import { useUnreadCount } from "@/hooks/use-unread-count";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 
@@ -56,11 +55,9 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
 
 /** モバイル用5項目ナビ（ホーム/メッセージ/保存/通知/マイページ）。役割切替は上部セグメントで行う。 */
 export function MobileBottomNav() {
-  const pathname = usePathname();
+  /** 初回から DOM に Link を出す（SSR 含む）→ ビューポート内プリフェッチが効き、モバイルのタップが速くなりやすい */
+  const pathname = usePathname() ?? "";
   const unreadCount = useUnreadCount(true);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
 
   const items = MOBILE_ITEMS;
 
@@ -87,9 +84,7 @@ export function MobileBottomNav() {
   const showBadge = (icon: string) =>
     (icon === "messages" || icon === "profile" || icon === "notifications") && unreadCount > 0;
 
-  if (!mounted) return null;
-
-  if (isMessagesConversationRoute(pathname ?? "")) return null;
+  if (isMessagesConversationRoute(pathname)) return null;
 
   return (
     <nav
@@ -104,7 +99,8 @@ export function MobileBottomNav() {
           <Link
             key={item.id}
             href={href}
-            className={`relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1.5 px-1 py-2 text-[11px] transition-colors rounded-xl ${
+            prefetch
+            className={`relative flex min-h-[56px] flex-1 touch-manipulation flex-col items-center justify-center gap-1.5 px-1 py-2 text-[11px] transition-colors rounded-xl ${
               active
                 ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                 : "text-[var(--foreground-muted)]"

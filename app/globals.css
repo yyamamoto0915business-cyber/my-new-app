@@ -221,4 +221,8 @@ body {
   html {
     @apply font-sans;
   }
+  /* モバイルのダブルタップズーム待ちを避け、タップの体感を速くする */
+  :where(button, [type="button"], [type="submit"], [role="button"], summary) {
+    touch-action: manipulation;
+  }
 }

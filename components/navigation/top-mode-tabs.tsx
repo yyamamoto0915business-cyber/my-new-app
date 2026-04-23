@@ -77,9 +77,10 @@ export function TopModeTabs({ onTabClick, className, compact, emphasizeOrganizer
             <Link
               key={tab.id}
               href={tab.href}
+              prefetch
               onClick={() => onTabClick?.(tab.id)}
               className={cn(
-                "flex items-center justify-center gap-1.5 font-semibold leading-none tracking-[-0.01em] transition-all duration-200 select-none",
+                "flex touch-manipulation items-center justify-center gap-1.5 font-semibold leading-none tracking-[-0.01em] transition-all duration-200 select-none",
                 compact
                   ? "h-10 rounded-[14px] px-2 text-[13px]"
                   : "h-12 rounded-[18px] px-2.5 text-sm",

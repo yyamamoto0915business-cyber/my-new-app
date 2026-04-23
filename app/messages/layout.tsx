@@ -182,7 +182,7 @@ export default function MessagesLayout({
                 <button
                   type="button"
                   onClick={() => router.refresh()}
-                  className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+                  className="mt-3 inline-flex w-full touch-manipulation items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition-[opacity,transform] duration-100 ease-out hover:opacity-90 active:scale-[0.99] active:opacity-80 motion-reduce:active:scale-100"
                 >
                   再読み込み
                 </button>
@@ -235,7 +235,7 @@ export default function MessagesLayout({
                 </p>
                 <Link
                   href="/events"
-                  className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+                  className="mt-4 inline-flex w-full touch-manipulation items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition-[opacity,transform] duration-100 ease-out hover:opacity-90 active:scale-[0.99] active:opacity-80 motion-reduce:active:scale-100"
                 >
                   イベントを探す
                 </Link>
@@ -258,7 +258,8 @@ export default function MessagesLayout({
                         <li key={item.conversation_id}>
                           <Link
                             href={`/messages/${item.conversation_id}`}
-                            className={`flex min-h-[72px] items-center gap-3 rounded-2xl border px-4 py-3 ${
+                            prefetch
+                            className={`flex min-h-[72px] touch-manipulation items-center gap-3 rounded-2xl border px-4 py-3 transition-[background-color,transform,border-color] duration-100 ease-out active:scale-[0.99] motion-reduce:active:scale-100 ${
                               isActive
                                 ? "border-[var(--accent)] bg-[var(--accent)]/5"
                                 : item.unread_count > 0
@@ -338,7 +339,8 @@ export default function MessagesLayout({
                         <li key={item.conversation_id}>
                           <Link
                             href={`/messages/${item.conversation_id}`}
-                            className={`flex min-h-[72px] items-center gap-3 rounded-2xl border px-4 py-3 ${
+                            prefetch
+                            className={`flex min-h-[72px] touch-manipulation items-center gap-3 rounded-2xl border px-4 py-3 transition-[background-color,transform,border-color] duration-100 ease-out active:scale-[0.99] motion-reduce:active:scale-100 ${
                               isActive
                                 ? "border-[var(--accent)] bg-[var(--accent)]/5"
                                 : item.unread_count > 0

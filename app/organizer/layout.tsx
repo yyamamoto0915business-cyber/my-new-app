@@ -2,28 +2,14 @@ import OrganizerSidebar from "@/components/organizer/OrganizerSidebar";
 import OrganizerMobileNav from "@/components/organizer/OrganizerMobileNav";
 import { OrganizerStickyHeaderTitle } from "@/components/organizer/OrganizerStickyHeaderTitle";
 import { OrganizerAccountMenu } from "@/components/organizer/OrganizerAccountMenu";
-import { createClient } from "@/lib/supabase/server";
+import { getOrganizerNavState } from "@/lib/organizer/get-organizer-nav-state";
 
 export default async function OrganizerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const organizerRegistered = await (async () => {
-    if (!supabase) return false;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return false;
-    const { data } = await supabase
-      .from("organizers")
-      .select("id")
-      .eq("profile_id", user.id)
-      .maybeSingle();
-    return !!data;
-  })();
-
+  const { organizerRegistered } = await getOrganizerNavState();
   const navVariant = organizerRegistered ? "full" : "lite";
 
   return (
