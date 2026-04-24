@@ -14,7 +14,7 @@ const MOBILE_ITEMS = [
 ] as const;
 
 function NavIcon({ icon, active }: { icon: string; active: boolean }) {
-  const stroke = active ? "var(--accent)" : "currentColor";
+  const stroke = active ? "#1e3848" : "#7a7268";
   if (icon === "home") {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
@@ -88,8 +88,9 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 flex border-t border-[var(--border)] bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom,0px)] sm:hidden dark:bg-[var(--background)]"
+      className="fixed bottom-0 left-0 right-0 z-50 flex border-t border-[#ccc4b4] bg-[#faf8f2]/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom,0px)] sm:hidden"
       aria-label="モバイルナビゲーション"
+      role="navigation"
     >
       <div className="mx-auto flex w-full max-w-lg items-stretch justify-around gap-0">
         {items.map((item) => {
@@ -100,15 +101,14 @@ export function MobileBottomNav() {
             key={item.id}
             href={href}
             prefetch
-            className={`relative flex min-h-[56px] flex-1 touch-manipulation flex-col items-center justify-center gap-1.5 px-1 py-2 text-[11px] transition-colors rounded-xl ${
-              active
-                ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                : "text-[var(--foreground-muted)]"
+            aria-current={active ? "page" : undefined}
+            className={`relative flex min-h-[44px] flex-1 touch-manipulation flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] transition-colors rounded-xl ${
+              active ? "text-[#1e3848]" : "text-[#7a7268]"
             }`}
           >
             {active && (
               <span
-                className="absolute left-1/2 top-0 h-0.5 w-9 -translate-x-1/2 rounded-full bg-[var(--accent)]"
+                className="absolute left-1/2 top-0 h-0.5 w-9 -translate-x-1/2 rounded-full bg-[#1e3848]"
                 aria-hidden
               />
             )}

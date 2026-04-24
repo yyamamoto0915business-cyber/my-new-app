@@ -63,62 +63,52 @@ export function TopModeTabs({ onTabClick, className, compact, emphasizeOrganizer
   return (
     <div
       className={cn(
-        "rounded-[24px] border border-slate-200 bg-slate-100/80 p-1 shadow-[0_1px_0_rgba(15,23,42,0.03)] backdrop-blur supports-[backdrop-filter]:bg-slate-100/70",
-        compact && "rounded-[20px] p-0.5",
+        "flex min-w-0 gap-1.5 rounded-[24px] bg-[#e4ede0]/70 p-1 backdrop-blur supports-[backdrop-filter]:bg-[#e4ede0]/60",
+        compact && "rounded-[20px] gap-1 p-0.5",
         className
       )}
     >
-      <div className="flex min-w-0 gap-1">
-        {TABS.map((tab) => {
-          const isActive = activeId === tab.id;
-          const Icon = tab.icon;
-          const isVolunteer = tab.id === "volunteer";
-          return (
-            <Link
-              key={tab.id}
-              href={tab.href}
-              prefetch
-              onClick={() => onTabClick?.(tab.id)}
+      {TABS.map((tab) => {
+        const isActive = activeId === tab.id;
+        const Icon = tab.icon;
+        const isVolunteer = tab.id === "volunteer";
+        return (
+          <Link
+            key={tab.id}
+            href={tab.href}
+            prefetch
+            onClick={() => onTabClick?.(tab.id)}
+            className={cn(
+              "flex touch-manipulation items-center justify-center gap-1.5 font-medium leading-none transition-all duration-200 select-none",
+              "border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3848]/40 focus-visible:ring-offset-1",
+              "active:scale-[0.98]",
+              compact
+                ? "min-h-[34px] rounded-[20px] px-3 py-[7px] text-[12px]"
+                : "min-h-[34px] rounded-[20px] px-[14px] py-[7px] text-[12px]",
+              isVolunteer ? "shrink-0" : "min-w-0 flex-1",
+              isActive
+                ? cn(
+                    "border-[#1e3848] bg-[#1e3848] text-[#f4f0e8] shadow-sm",
+                    emphasizeOrganizerActive &&
+                      tab.id === "organizer" &&
+                      "ring-2 ring-[#1e3848]/40 ring-offset-1"
+                  )
+                : "border-transparent bg-white/60 text-[#2e2820] active:bg-white/80"
+            )}
+            aria-current={isActive ? "page" : undefined}
+          >
+            <Icon
               className={cn(
-                "flex touch-manipulation items-center justify-center gap-1.5 font-semibold leading-none tracking-[-0.01em] transition-all duration-200 select-none",
-                compact
-                  ? "h-10 rounded-[14px] px-2 text-[13px]"
-                  : "h-12 rounded-[18px] px-2.5 text-sm",
-                isVolunteer ? "shrink-0" : "min-w-0 flex-1",
-                "border border-transparent",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--mg-paper)]",
-                "active:scale-[0.99]",
-                isActive
-                  ? cn(
-                      "border",
-                      tab.active,
-                      tab.pressed,
-                      emphasizeOrganizerActive &&
-                        tab.id === "organizer" &&
-                        "ring-2 ring-[var(--accent)] ring-offset-1 ring-offset-white"
-                    )
-                  : "bg-white/30 text-slate-600 active:bg-slate-200/60"
+                "shrink-0",
+                compact ? "h-3.5 w-3.5" : "h-3.5 w-3.5"
               )}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <Icon
-                className={cn(
-                  "shrink-0 translate-y-[0.5px]",
-                  compact ? "h-3.5 w-3.5" : "h-4 w-4"
-                )}
-              />
-              <span
-                className={cn(
-                  "translate-y-[0.5px]",
-                  isVolunteer ? "whitespace-nowrap" : "truncate"
-                )}
-              >
-                {tab.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+            />
+            <span className={isVolunteer ? "whitespace-nowrap" : "truncate"}>
+              {tab.label}
+            </span>
+          </Link>
+        );
+      })}
     </div>
   );
 }
