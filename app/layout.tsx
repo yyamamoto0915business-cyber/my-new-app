@@ -74,7 +74,7 @@ export default function RootLayout({
     <html lang="ja" className={cn("font-sans", geist.variable)}>
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700&family=M+PLUS+1p:wght@300;400;500;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700&family=M+PLUS+1p:wght@300;400;500;700&family=Shippori+Mincho:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
       </head>

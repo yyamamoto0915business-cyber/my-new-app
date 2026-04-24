@@ -34,6 +34,20 @@
   --mg-section-gap: 2rem;
   --mg-touch-min: 44px;
   --map-footprint-duration: 350ms;
+
+  /* 和テイスト デザイントークン（主催管理ページ等） */
+  --wa-bg: #f4f0e8;
+  --wa-bg2: #faf8f2;
+  --wa-ink: #0e1610;
+  --wa-ink2: #3a3428;
+  --wa-ink3: #6a6258;
+  --wa-ink4: #a8a090;
+  --wa-accent: #1e3848;
+  --wa-accent2: #2c7a88;
+  --wa-border: #ccc4b4;
+  --wa-border2: #b8d0c8;
+  --wa-green-bg: #eef6f2;
+  --wa-dark-header: #1e3020;
   --mg-glow: 0 0 12px rgba(184, 134, 11, 0.22);
   --mg-glow-strong: 0 0 20px rgba(184, 134, 11, 0.32);
   --card: oklch(1 0 0);

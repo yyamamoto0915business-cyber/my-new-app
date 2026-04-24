@@ -79,6 +79,7 @@ export type DashboardResponse = {
   events: DashboardEvent[];
   billingSummary?: BillingSummary;
   planSummary?: PlanSummary;
+  organizationName?: string;
 };
 
 /** フォールバック: モックデータでダッシュボードを構築 */
@@ -129,6 +130,7 @@ async function buildMockDashboard(): Promise<DashboardResponse> {
       { subscription_status: null, founder30_end_at: null },
       0
     ),
+    organizationName: MOCK_ORGANIZER_NAME,
   };
 }
 
@@ -144,6 +146,7 @@ async function buildSupabaseDashboard(
     stripe_account_charges_enabled?: boolean | null;
     subscription_status?: string | null;
     founder30_end_at?: string | null;
+    organization_name?: string | null;
   };
   type PlanStateRow = {
     stripe_status?: string | null;
@@ -164,7 +167,7 @@ async function buildSupabaseDashboard(
     Promise.all([
       supabase
         .from("organizers")
-        .select("stripe_account_charges_enabled, subscription_status, founder30_end_at")
+        .select("stripe_account_charges_enabled, subscription_status, founder30_end_at, organization_name")
         .eq("id", organizerId)
         .single(),
       supabase
@@ -344,6 +347,7 @@ async function buildSupabaseDashboard(
       stripeAccountChargesEnabled: chargesEnabled,
     },
     planSummary,
+    organizationName: orgRow?.organization_name ?? undefined,
   };
 }
 
