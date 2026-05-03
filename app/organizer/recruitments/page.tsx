@@ -217,19 +217,20 @@ function OrganizerRecruitmentsContent() {
   }, [todos, todayRecruitments, kpis.active]);
 
   const kpiCardBase =
-    "relative rounded-xl border p-4 text-center shadow-sm transition-all duration-150 ";
+    "relative rounded-xl border p-4 text-center transition-all duration-150 ";
   const kpiCardSelected =
-    "cursor-pointer border-[var(--accent)] bg-white ring-2 ring-[var(--accent)]/20 ring-offset-1 dark:border-[var(--accent)] dark:bg-zinc-900/90 dark:ring-offset-zinc-900 ";
+    "cursor-pointer border-[#1e3848] bg-[#1e3020] text-[#f4f0e8] ring-2 ring-[#1e3848]/20 ring-offset-1 ";
   const kpiCardUnselected =
-    "cursor-pointer border-[var(--border)] bg-white hover:border-zinc-300 hover:bg-zinc-50/80 hover:shadow-md active:border-zinc-400 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:hover:shadow-md dark:active:bg-zinc-800 ";
+    "cursor-pointer border-[#ccc4b4] bg-[#faf8f2] text-[#0e1610] hover:border-[#b8d0c8] hover:bg-[#eef6f2] active:bg-[#e4ede0] ";
 
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
+    <div className="min-h-screen bg-[#f4f0e8]">
       <OrganizerHeader
         title="スタッフ募集管理"
-        description="イベント当日の受付・誘導・設営など、運営スタッフ募集を管理します"
-        backHref="/organizer/events"
-        backLabel="← イベント一覧へ"
+        eyebrow="STAFF RECRUITMENT"
+        subtitle="— 募集・応募管理 —"
+        backHref="/organizer"
+        backLabel="← ダッシュボードへ"
         primaryCtaLabel="スタッフ募集を作成"
         primaryCtaHref="/organizer/recruitments/new"
         tertiaryCtaHref="/organizer/settings/payouts"
@@ -237,31 +238,31 @@ function OrganizerRecruitmentsContent() {
 
       <main className="mx-auto max-w-6xl px-4 py-6 pb-24">
         {loading ? (
-          <div className="space-y-6">
+          <div className="space-y-4 animate-pulse">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-20 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700" />
+                <div key={i} className="h-20 rounded-xl bg-[#e4ede0]" />
               ))}
             </div>
-            <div className="h-48 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700" />
-            <div className="h-64 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700" />
+            <div className="h-48 rounded-xl bg-[#e4ede0]" />
+            <div className="h-64 rounded-xl bg-[#e4ede0]" />
           </div>
         ) : (
           <>
-            <section className="mb-6 rounded-2xl border border-sky-200/80 bg-sky-50/70 px-4 py-3 sm:px-5">
-              <p className="text-sm text-sky-900">
-                このページではイベントごとの運営スタッフ募集を管理します。
-                受付・誘導・設営など役割ごとに募集を作成し、応募確認や承認、当日管理まで行えます。
-              </p>
+            <section className="mb-4 flex items-start gap-2 rounded-2xl border border-[#b8d0c8] bg-[#e0eeea] px-4 py-3 text-[13px] leading-relaxed text-[#1e4840] sm:px-5">
+              <span>ℹ</span>
+              <span>このページではイベントごとの運営スタッフ募集を管理します。受付・誘導・設営など役割ごとに募集を作成し、応募確認・承認・当日管理まで行えます。</span>
             </section>
 
-            <section className="mb-5 rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-4 py-3 sm:px-5">
-              <p className="text-xs font-semibold tracking-wide text-emerald-800">次のアクション</p>
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm text-emerald-900">{nextAction.description}</p>
+            <section className="mb-4 overflow-hidden rounded-2xl border border-[#ccc4b4]">
+              <div className="border-b border-[#ccc4b4] bg-[#1e3020] px-4 py-2.5 sm:px-5">
+                <p className="text-[10px] font-medium tracking-[0.18em] text-[#a8c8a4]">NEXT ACTION</p>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-[#faf8f2] px-4 py-3">
+                <p className="text-[13px] text-[#3a3428]">{nextAction.description}</p>
                 <Link
                   href={nextAction.href}
-                  className="w-full rounded-lg bg-emerald-700 px-3 py-2 text-center text-sm font-medium text-white hover:bg-emerald-800 sm:w-auto"
+                  className="inline-flex min-h-[36px] items-center rounded-full bg-[#1e3848] px-4 text-[12px] font-medium text-[#f4f0e8] hover:opacity-90"
                 >
                   {nextAction.label}
                 </Link>
@@ -278,7 +279,7 @@ function OrganizerRecruitmentsContent() {
                   aria-label="承認待ちで絞り込む"
                 >
                   {kpiFilter === "pending_approval" && (
-                    <span className="absolute left-2 top-2 rounded bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-medium text-white">
+                    <span className="absolute left-2 top-2 rounded-full bg-[#a8c8a4]/30 px-1.5 py-0.5 text-[10px] font-medium text-[#a8c8a4]">
                       選択中
                     </span>
                   )}
@@ -292,7 +293,7 @@ function OrganizerRecruitmentsContent() {
                   aria-label="応募ありで絞り込む"
                 >
                   {kpiFilter === "has_applications" && (
-                    <span className="absolute left-2 top-2 rounded bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-medium text-white">
+                    <span className="absolute left-2 top-2 rounded-full bg-[#a8c8a4]/30 px-1.5 py-0.5 text-[10px] font-medium text-[#a8c8a4]">
                       選択中
                     </span>
                   )}
@@ -306,7 +307,7 @@ function OrganizerRecruitmentsContent() {
                   aria-label="当日で絞り込む"
                 >
                   {kpiFilter === "today" && (
-                    <span className="absolute left-2 top-2 rounded bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-medium text-white">
+                    <span className="absolute left-2 top-2 rounded-full bg-[#a8c8a4]/30 px-1.5 py-0.5 text-[10px] font-medium text-[#a8c8a4]">
                       選択中
                     </span>
                   )}
@@ -320,7 +321,7 @@ function OrganizerRecruitmentsContent() {
                   aria-label="募集中で絞り込む"
                 >
                   {kpiFilter === "public" && (
-                    <span className="absolute left-2 top-2 rounded bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-medium text-white">
+                    <span className="absolute left-2 top-2 rounded-full bg-[#a8c8a4]/30 px-1.5 py-0.5 text-[10px] font-medium text-[#a8c8a4]">
                       選択中
                     </span>
                   )}
@@ -335,26 +336,23 @@ function OrganizerRecruitmentsContent() {
 
             {/* 要対応パネル（要対応=0のときは非表示） */}
             {todos.length > 0 && (
-              <section ref={needsActionRef} className="mb-6" id="needs-action-section">
-                <div className="rounded-xl border border-[var(--border)] bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90">
-                  <div className="border-b border-[var(--border)] px-4 py-3 dark:border-zinc-700">
-                    <h2 className="font-medium text-zinc-900 dark:text-zinc-100">
-                      要対応
-                      <span className="ml-1 text-sm text-[var(--foreground-muted)]">({todos.length})</span>
+              <section ref={needsActionRef} className="mb-4" id="needs-action-section">
+                <div className="overflow-hidden rounded-2xl border border-[#ccc4b4]">
+                  <div className="border-b border-[#ccc4b4] bg-[#1e3020] px-4 py-2.5">
+                    <h2
+                      className="text-[13px] font-bold text-[#f4f0e8]"
+                      style={{ fontFamily: "'Shippori Mincho', serif" }}
+                    >
+                      要対応 <span className="text-[11px] font-normal text-[#a8c8a4]">({todos.length})</span>
                     </h2>
                   </div>
-                  <div className="divide-y divide-[var(--border)] dark:divide-zinc-700">
+                  <div className="divide-y divide-[#e8e0d4] bg-[#faf8f2]">
                     {todos.map((todo) => (
-                      <div
-                        key={todo.id}
-                        className="flex items-center justify-between gap-3 px-4 py-3"
-                      >
-                        <p className="min-w-0 flex-1 text-sm text-zinc-700 dark:text-zinc-300">
-                          {todo.title}
-                        </p>
+                      <div key={todo.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                        <p className="min-w-0 flex-1 text-[13px] text-[#3a3428]">{todo.title}</p>
                         <Link
                           href={todo.href}
-                          className="shrink-0 rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+                          className="shrink-0 inline-flex min-h-[32px] items-center rounded-full bg-[#1e3848] px-3 text-[12px] font-medium text-[#f4f0e8] hover:opacity-90"
                         >
                           {todo.type === "day_of" ? "当日管理" : "確認"}
                         </Link>
@@ -367,26 +365,26 @@ function OrganizerRecruitmentsContent() {
 
             {/* 要対応=0のときの次の一手 */}
             {todos.length === 0 && recruitments.length > 0 && (
-              <p className="mb-4 text-center text-xs text-[var(--foreground-muted)]">
+              <p className="mb-4 text-center text-[12px] text-[#6a6258]">
                 次にやること：
-                <Link href="/organizer/stories/new" className="mx-1 text-[var(--accent)] hover:underline">
+                <Link href="/organizer/stories/new" className="mx-1 text-[#2c7a88] hover:underline">
                   ストーリーを書く
                 </Link>
-                <span className="mx-1">/</span>
-                <Link href="/organizer/recruitments/new" className="text-[var(--accent)] hover:underline">
+                <span className="mx-1 text-[#ccc4b4]">／</span>
+                <Link href="/organizer/recruitments/new" className="text-[#2c7a88] hover:underline">
                   スタッフ募集を作る
                 </Link>
               </p>
             )}
 
-            {/* 検索・フィルタ・リセット（検索を主役に、高さを揃える） */}
-            <section className="mb-5 space-y-2 rounded-xl border border-[var(--border)] bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90">
+            {/* 検索・フィルタ・リセット */}
+            <section className="mb-4 space-y-2 rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] p-3">
               <input
                 type="search"
                 placeholder="募集名で検索（例：受付）"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-white px-4 py-2.5 text-sm shadow-sm dark:border-zinc-600 dark:bg-zinc-900/50"
+                className="w-full min-w-0 rounded-full border border-[#ccc4b4] bg-white px-4 py-2.5 text-[13px] text-[#3a3428] placeholder:text-[#a8a090] outline-none focus:border-[#2c7a88]"
               />
               <div className="flex flex-wrap items-center gap-2">
                 <select
@@ -399,7 +397,7 @@ function OrganizerRecruitmentsContent() {
                     const qs = params.toString();
                     router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
                   }}
-                  className="h-[42px] min-w-[6.5rem] shrink-0 rounded-lg border border-[var(--border)] bg-white px-2.5 text-xs text-[var(--foreground-muted)] dark:border-zinc-600 dark:bg-zinc-900/50"
+                  className="h-10 min-w-[6.5rem] shrink-0 rounded-full border border-[#ccc4b4] bg-white px-3 text-[12px] text-[#3a3428]"
                 >
                   <option value="all">すべて</option>
                   <option value="public">募集中</option>
@@ -410,13 +408,11 @@ function OrganizerRecruitmentsContent() {
                   <select
                     value={eventFilter}
                     onChange={(e) => setEventFilter(e.target.value)}
-                    className="h-[42px] max-w-[10rem] shrink-0 rounded-lg border border-[var(--border)] bg-white px-2.5 text-xs text-[var(--foreground-muted)] dark:border-zinc-600 dark:bg-zinc-900/50"
+                    className="h-10 max-w-[10rem] shrink-0 rounded-full border border-[#ccc4b4] bg-white px-3 text-[12px] text-[#3a3428]"
                   >
                     <option value="">すべて</option>
                     {eventOptions.map((e) => (
-                      <option key={e.id} value={e.id}>
-                        {e.title}
-                      </option>
+                      <option key={e.id} value={e.id}>{e.title}</option>
                     ))}
                   </select>
                 )}
@@ -424,7 +420,7 @@ function OrganizerRecruitmentsContent() {
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="h-[42px] shrink-0 rounded-lg border border-[var(--border)] px-2.5 text-xs font-medium text-[var(--foreground-muted)] outline-none transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                    className="h-10 shrink-0 rounded-full border border-[#ccc4b4] bg-white px-3 text-[12px] font-medium text-[#6a6258] transition-colors hover:bg-[#f0ece4]"
                   >
                     リセット
                   </button>
@@ -433,11 +429,11 @@ function OrganizerRecruitmentsContent() {
             </section>
 
             {activeFilterLabels.length > 0 && (
-              <section className="mb-4 flex flex-wrap items-center gap-1.5">
+              <section className="mb-3 flex flex-wrap items-center gap-1.5">
                 {activeFilterLabels.map((label) => (
                   <span
                     key={label}
-                    className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300"
+                    className="rounded-full border border-[#ccc4b4] bg-[#faf8f2] px-2.5 py-0.5 text-[11px] text-[#6a6258]"
                   >
                     {label}
                   </span>
@@ -447,27 +443,33 @@ function OrganizerRecruitmentsContent() {
 
             {/* 今日の募集（固定表示・0件なら非表示） */}
             {todayRecruitments.length > 0 && (
-              <section className="mb-6">
-                <h2 className="mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+              <section className="mb-4">
+                <h2
+                  className="mb-2 text-[11px] font-medium tracking-[0.18em] text-[#6a6258]"
+                  style={{ fontFamily: "'Shippori Mincho', serif" }}
+                >
                   今日の募集
                 </h2>
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                   {todayRecruitments.map((r) => (
                     <li
                       key={r.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-white px-4 py-3.5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90"
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#b8d0c8] bg-[#eef6f2] px-4 py-3"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-zinc-900 dark:text-zinc-100">{r.title}</p>
+                        <p
+                          className="text-[14px] font-bold text-[#0e1610]"
+                          style={{ fontFamily: "'Shippori Mincho', serif" }}
+                        >
+                          {r.title}
+                        </p>
                         {r.eventTitle && (
-                          <p className="mt-0.5 text-xs text-[var(--foreground-muted)]">
-                            {r.eventTitle}
-                          </p>
+                          <p className="mt-0.5 text-[11px] text-[#6a6258]">{r.eventTitle}</p>
                         )}
                       </div>
                       <Link
                         href={`/organizer/recruitments/${r.id}/day-of`}
-                        className="shrink-0 rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+                        className="shrink-0 inline-flex min-h-[34px] items-center rounded-full bg-[#1e3848] px-3 text-[12px] font-medium text-[#f4f0e8] hover:opacity-90"
                       >
                         当日管理へ
                       </Link>
@@ -481,38 +483,44 @@ function OrganizerRecruitmentsContent() {
             {(filteredRecruitments.length === 0 || restRecruitments.length > 0) && (
               <section id="recruitments-list">
                 {filteredRecruitments.length === 0 ? (
-                  <div className="rounded-xl border border-[var(--border)] bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900/90">
+                  <div className="rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] p-8 text-center">
                     {recruitments.length === 0 ? (
                       <>
-                        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                        <h2
+                          className="text-[16px] font-bold text-[#0e1610]"
+                          style={{ fontFamily: "'Shippori Mincho', serif" }}
+                        >
                           募集がまだありません
                         </h2>
-                        <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+                        <p className="mt-2 text-[13px] text-[#6a6258]">
                           『受付』『誘導』『設営』など役割ごとにスタッフ募集を作れます
                         </p>
-                        <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                        <div className="mt-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                           <Link
                             href="/organizer/recruitments/new"
-                            className="inline-block rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                            className="inline-flex min-h-[40px] items-center rounded-full bg-[#1e3848] px-5 text-[13px] font-medium text-[#f4f0e8] hover:opacity-90"
                           >
                             スタッフ募集を作成する
                           </Link>
                           <Link
                             href="/organizer/events"
-                            className="text-sm text-[var(--foreground-muted)] underline-offset-2 hover:underline"
+                            className="text-[13px] text-[#6a6258] underline-offset-2 hover:underline"
                           >
                             イベント一覧へ
                           </Link>
                         </div>
                       </>
                     ) : (
-                      <p className="text-zinc-500">該当する募集がありません</p>
+                      <p className="text-[13px] text-[#6a6258]">該当する募集がありません</p>
                     )}
                   </div>
                 ) : (
                   <>
                     {todayRecruitments.length > 0 && (
-                      <h2 className="mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+                      <h2
+                        className="mb-2 text-[11px] font-medium tracking-[0.18em] text-[#6a6258]"
+                        style={{ fontFamily: "'Shippori Mincho', serif" }}
+                      >
                         その他の募集
                       </h2>
                     )}
@@ -610,46 +618,46 @@ function RecruitmentCard({
   };
 
   return (
-    <li className="rounded-xl border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900/90">
-      <div className="p-4 sm:p-5">
+    <li className="overflow-hidden rounded-2xl border border-[#ccc4b4] bg-[#faf8f2]">
+      <div className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={`/organizer/recruitments/${recruitment.id}`}
-                className="font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
+                className="text-[14px] font-bold text-[#0e1610] hover:underline"
+                style={{ fontFamily: "'Shippori Mincho', serif" }}
               >
                 {recruitment.title}
               </Link>
               <span
-                className={`shrink-0 rounded px-2 py-0.5 text-xs ${
+                className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
                   recruitment.status === "public"
-                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                    ? "border border-[#a8ccbc] bg-[#d8ece4] text-[#1a3428]"
                     : recruitment.status === "closed"
-                      ? "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-                      : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                      ? "border border-[#d8d0b8] bg-[#f0ede4] text-[#5a5040]"
+                      : "border border-[#d8c090] bg-[#f0e8d4] text-[#5a3a10]"
                 }`}
               >
                 {STATUS_LABELS[recruitment.status] ?? recruitment.status}
               </span>
             </div>
             {recruitment.eventTitle && (
-              <p className="mt-1 text-xs font-medium text-[var(--foreground-muted)]">{recruitment.eventTitle}</p>
+              <p className="mt-1 text-[11px] text-[#6a6258]">{recruitment.eventTitle}</p>
             )}
-            <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-300">
-              {startDate}
-              {startTime ? ` ${startTime}` : ""}
+            <p className="mt-1.5 text-[13px] text-[#3a3428]">
+              {startDate}{startTime ? ` ${startTime}` : ""}
               {recruitment.meeting_place ? ` ・ ${recruitment.meeting_place}` : ""}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300">
+              <span className="rounded-full border border-[#ccc4b4] bg-white px-2.5 py-0.5 text-[11px] text-[#6a6258]">
                 応募 {recruitment.applicationCount}
               </span>
-              <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300">
+              <span className="rounded-full border border-[#ccc4b4] bg-white px-2.5 py-0.5 text-[11px] text-[#6a6258]">
                 承認済 {recruitment.approvedCount}
               </span>
               {recruitment.capacity != null && (
-                <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300">
+                <span className="rounded-full border border-[#ccc4b4] bg-white px-2.5 py-0.5 text-[11px] text-[#6a6258]">
                   定員 {recruitment.capacity}
                 </span>
               )}
@@ -659,75 +667,31 @@ function RecruitmentCard({
           <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
             <Link
               href={primaryHref}
-              className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+              className="inline-flex min-h-[34px] items-center rounded-full bg-[#1e3848] px-3 text-[12px] font-medium text-[#f4f0e8] hover:opacity-90"
             >
               {primaryLabel}
             </Link>
-            <div className="relative sm:self-auto">
+            <div className="relative">
               <button
                 type="button"
                 onClick={() => setMenuOpen((o) => !o)}
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] p-2 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ccc4b4] bg-white hover:bg-[#f0ece4]"
                 aria-label="その他メニュー"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                  />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#6a6258]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                 </svg>
               </button>
               {menuOpen && (
                 <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setMenuOpen(false)}
-                    aria-hidden
-                  />
-                  <div className="absolute right-0 top-full z-20 mt-1 min-w-[180px] rounded-lg border border-[var(--border)] bg-white py-1 shadow-lg dark:border-zinc-600 dark:bg-zinc-900">
-                    <Link
-                      href={`/organizer/recruitments/${recruitment.id}`}
-                      className="block px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      募集を確認
-                    </Link>
-                    <Link
-                      href={`/organizer/recruitments/${recruitment.id}/day-of`}
-                      className="block px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      当日管理
-                    </Link>
-                    <Link
-                      href="/messages"
-                      className="block px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      チャット
-                    </Link>
-                    <Link
-                      href={`/organizer/recruitments/new?copyFrom=${recruitment.id}`}
-                      className="block px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      複製
-                    </Link>
+                  <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
+                  <div className="absolute right-0 top-full z-20 mt-1 min-w-[160px] overflow-hidden rounded-xl border border-[#ccc4b4] bg-white shadow-lg">
+                    <Link href={`/organizer/recruitments/${recruitment.id}`} className="block px-4 py-2.5 text-[13px] text-[#3a3428] hover:bg-[#f0ece4]" onClick={() => setMenuOpen(false)}>募集を確認</Link>
+                    <Link href={`/organizer/recruitments/${recruitment.id}/day-of`} className="block px-4 py-2.5 text-[13px] text-[#3a3428] hover:bg-[#f0ece4]" onClick={() => setMenuOpen(false)}>当日管理</Link>
+                    <Link href="/messages" className="block px-4 py-2.5 text-[13px] text-[#3a3428] hover:bg-[#f0ece4]" onClick={() => setMenuOpen(false)}>チャット</Link>
+                    <Link href={`/organizer/recruitments/new?copyFrom=${recruitment.id}`} className="block px-4 py-2.5 text-[13px] text-[#3a3428] hover:bg-[#f0ece4]" onClick={() => setMenuOpen(false)}>複製</Link>
                     {recruitment.status === "public" && (
-                      <button
-                        type="button"
-                        disabled={closing}
-                        className="block w-full px-4 py-2 text-left text-sm hover:bg-zinc-50 disabled:opacity-50 dark:hover:bg-zinc-800"
-                        onClick={() => void handleCloseRecruitment()}
-                      >
+                      <button type="button" disabled={closing} className="block w-full px-4 py-2.5 text-left text-[13px] text-[#8a2c20] hover:bg-[#fef0ee] disabled:opacity-50" onClick={() => void handleCloseRecruitment()}>
                         {closing ? "処理中…" : "募集を終了"}
                       </button>
                     )}

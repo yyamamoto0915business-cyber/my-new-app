@@ -7,8 +7,10 @@ import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { InboxItem } from "@/lib/inbox-queries";
 import { ProfileEmptyCard } from "@/components/profile/profile-empty-card";
+import { CommonAvatar } from "@/components/profile/common-avatar";
 import { getLoginUrl } from "@/lib/auth-utils";
 import { getModeFromCookie, type ModePreference } from "@/lib/mode-preference";
+import { resolveAvatarUrlByRole } from "@/lib/profile-avatar";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 
@@ -26,25 +28,27 @@ function formatRelative(iso: string): string {
   return d.toLocaleDateString("ja-JP", { month: "short", day: "numeric" });
 }
 
-function getPartnerTypeLabel(item: InboxItem): string {
-  if (item.my_role !== "organizer") return "主催者";
-  if (item.conversation_kind === "general") return "ボランティア応募者";
-  return "イベント参加者";
-}
-
-function getConversationTypeBadge(item: InboxItem): string | null {
-  if (item.my_role !== "organizer") return null;
-  if (item.conversation_kind === "general") return "ボランティア応募";
-  return "イベント参加";
-}
-
 function getDisplayName(item: InboxItem): string {
   const name = item.other_display_name?.trim();
   if (name) return name;
+  const emailName = item.other_email?.split("@")[0]?.trim();
+  if (emailName) return emailName;
   if (item.my_role === "organizer") {
     return item.conversation_kind === "general" ? "応募者" : "参加者";
   }
   return "主催者";
+}
+
+function getCounterpartAvatar(item: InboxItem): string | null {
+  const counterpartRole = item.my_role === "organizer" ? "participant" : "organizer";
+  return resolveAvatarUrlByRole(
+    {
+      avatar_url: item.other_avatar_url,
+      participant_avatar_url: item.other_participant_avatar_url,
+      organizer_avatar_url: item.other_organizer_avatar_url,
+    },
+    counterpartRole
+  );
 }
 
 export default function MessagesLayout({
@@ -154,17 +158,20 @@ export default function MessagesLayout({
     <div className="flex min-h-screen flex-col md:min-h-0 md:flex-1 md:flex-row">
       {/* 左: トーク一覧 (スマホで会話中は非表示) */}
       <aside
-        className={`w-full border-b border-[var(--border)] bg-white md:w-80 md:flex-shrink-0 md:border-b-0 md:border-r dark:bg-zinc-900 ${
+        className={`w-full border-b border-[#ccc4b4] bg-[#faf8f2] md:w-80 md:flex-shrink-0 md:border-b-0 md:border-r min-[900px]:w-[240px] dark:bg-zinc-900 ${
           conversationId ? "hidden md:block" : ""
         }`}
       >
-        <div className="flex flex-col gap-1 border-b border-[var(--border)] px-4 py-4">
-          <h1 className="text-lg font-semibold">メッセージ</h1>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            イベントごとのやり取りを確認できます
-          </p>
+        {/* スレッドリストヘッダー */}
+        <div className="border-b border-[#ccc4b4] px-4 py-4">
+          <h1
+            className="text-[16px] font-semibold text-[#0e1610]"
+            style={{ fontFamily: "'Shippori Mincho', serif" }}
+          >
+            メッセージ
+          </h1>
           {mode && (
-            <p className="mt-1 text-[11px] font-medium text-[var(--accent)]">
+            <p className="mt-0.5 whitespace-nowrap text-[10px] tracking-wide text-[#6a6258]">
               {mode === "ORGANIZER"
                 ? "主催としてのやり取り"
                 : mode === "VOLUNTEER"
@@ -173,16 +180,17 @@ export default function MessagesLayout({
             </p>
           )}
         </div>
-        <div className="max-h-[calc(100vh-8rem)] overflow-y-auto md:max-h-[calc(100vh-4rem)]">
+
+        <div className="overflow-y-auto">
           {error && (
             <div className="p-4">
-              <div className="rounded-2xl border border-red-200/80 bg-red-50 px-4 py-4 dark:border-red-800/40 dark:bg-red-950/20">
-                <p className="text-sm font-medium text-red-700 dark:text-red-300">読み込みに失敗しました</p>
-                <p className="mt-1 text-xs text-red-600 dark:text-red-200">{error}</p>
+              <div className="rounded-xl border border-red-200/80 bg-red-50 px-4 py-3">
+                <p className="text-[12px] font-medium text-red-700">読み込みに失敗しました</p>
+                <p className="mt-0.5 text-[11px] text-red-600">{error}</p>
                 <button
                   type="button"
                   onClick={() => router.refresh()}
-                  className="mt-3 inline-flex w-full touch-manipulation items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition-[opacity,transform] duration-100 ease-out hover:opacity-90 active:scale-[0.99] active:opacity-80 motion-reduce:active:scale-100"
+                  className="mt-2 text-[11px] font-medium text-[#2c7a88] underline underline-offset-2"
                 >
                   再読み込み
                 </button>
@@ -191,221 +199,138 @@ export default function MessagesLayout({
           )}
 
           {loading && !error && (
-            <div className="space-y-3 px-4 py-3">
+            <div className="animate-pulse">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 dark:border-zinc-700/60 dark:bg-zinc-900/30"
-                >
-                  <div className="h-12 w-12 rounded-full bg-zinc-100 animate-pulse dark:bg-zinc-800" />
+                <div key={i} className="flex items-center gap-3 border-b border-[#e8e0d4] px-4 py-3">
+                  <div className="h-9 w-9 rounded-full bg-[#e4ede0]" />
                   <div className="min-w-0 flex-1">
-                    <div className="h-4 w-2/3 rounded bg-zinc-100 animate-pulse dark:bg-zinc-800" />
-                    <div className="mt-2 h-4 w-1/2 rounded bg-zinc-100 animate-pulse dark:bg-zinc-800" />
-                    <div className="mt-2 h-4 w-3/4 rounded bg-zinc-100 animate-pulse dark:bg-zinc-800" />
+                    <div className="h-3 w-2/3 rounded bg-[#e4ede0]" />
+                    <div className="mt-2 h-3 w-3/4 rounded bg-[#e4ede0]" />
                   </div>
-                  <div className="h-4 w-10 rounded bg-zinc-100 animate-pulse dark:bg-zinc-800" />
+                  <div className="h-3 w-8 rounded bg-[#e4ede0]" />
                 </div>
               ))}
             </div>
           )}
 
           {!error && !loading && sortedItems.length === 0 && (
-            <div className="p-4">
-              <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 text-center dark:border-zinc-700/60 dark:bg-zinc-900/95">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent)]/10">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6 text-[var(--accent)]"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">まだメッセージがありません</h3>
-                <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-                  イベント詳細ページから主催者へメッセージできます。
-                </p>
-                <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-                  気になることがあれば、まずは質問してみましょう。
-                </p>
-                <Link
-                  href="/events"
-                  className="mt-4 inline-flex w-full touch-manipulation items-center justify-center rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition-[opacity,transform] duration-100 ease-out hover:opacity-90 active:scale-[0.99] active:opacity-80 motion-reduce:active:scale-100"
-                >
-                  イベントを探す
-                </Link>
-              </div>
+            <div className="px-4 py-8 text-center">
+              <p className="text-[13px] text-[#6a6258]">まだメッセージがありません</p>
+              <Link
+                href="/events"
+                className="mt-4 inline-flex items-center rounded-full bg-[#1e3848] px-5 py-2 text-[12px] font-medium text-[#f4f0e8] hover:opacity-90"
+              >
+                イベントを探す
+              </Link>
             </div>
           )}
 
           {!error && sortedItems.length > 0 && (
-            <div className="space-y-4 px-4 py-3">
-              {organizerItems.length > 0 && (
-                <section>
-                  <p className="mb-2 text-[11px] font-semibold tracking-wide text-zinc-500">
-                    {organizerSectionTitle}
-                  </p>
-                  <ul className="space-y-3">
-                    {organizerItems.map((item) => {
-                      const isActive = item.conversation_id === conversationId;
-                      const eventInitial = (item.event_title ?? "イベント")[0];
-                      return (
-                        <li key={item.conversation_id}>
-                          <Link
-                            href={`/messages/${item.conversation_id}`}
-                            prefetch
-                            className={`flex min-h-[72px] touch-manipulation items-center gap-3 rounded-2xl border px-4 py-3 transition-[background-color,transform,border-color] duration-100 ease-out active:scale-[0.99] motion-reduce:active:scale-100 ${
-                              isActive
-                                ? "border-[var(--accent)] bg-[var(--accent)]/5"
-                                : item.unread_count > 0
-                                  ? "border-[var(--accent)]/40 bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10 dark:border-[var(--accent)]/30 dark:bg-zinc-950/20"
-                                  : "border-zinc-200/80 bg-white hover:bg-zinc-50 dark:border-zinc-700/60 dark:bg-zinc-950/30 dark:hover:bg-zinc-900/30"
-                            }`}
-                          >
-                            <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--accent)]/10">
-                              <span className="text-lg font-semibold text-[var(--accent)]">{eventInitial}</span>
-                              {item.unread_count > 0 && (
-                                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-xs font-semibold text-white">
-                                  {item.unread_count > 99 ? "99+" : item.unread_count}
-                                </span>
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-                                <p
-                                  className={`line-clamp-3 break-words text-sm font-semibold leading-5 ${item.unread_count > 0 ? "text-[var(--accent)] dark:text-[var(--accent)]" : "text-zinc-900 dark:text-zinc-100"}`}
-                                  title={getDisplayName(item)}
-                                >
-                                  {getDisplayName(item)}
-                                </p>
-                                {getConversationTypeBadge(item) && (
-                                  <span className="hidden w-fit shrink-0 rounded-full border border-emerald-200/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 sm:inline-flex">
-                                    {getConversationTypeBadge(item)}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">
-                                {item.event_title ?? "イベント"}
-                              </p>
-                              <p className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">
-                                {item.last_message_content || "メッセージがありません"}
-                              </p>
-                              <div className="mt-1 flex items-center gap-2 sm:hidden">
-                                {item.last_message_at && (
-                                  <span className="text-[11px] text-zinc-400">
-                                    {formatRelative(item.last_message_at)}
-                                  </span>
-                                )}
-                                {item.unread_count > 0 && (
-                                  <span className="rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
-                                    未読
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
-                              {item.last_message_at && (
-                                <span className="text-xs text-zinc-400">{formatRelative(item.last_message_at)}</span>
-                              )}
-                              {item.unread_count > 0 && (
-                                <span className="rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
-                                  未読
-                                </span>
-                              )}
-                            </div>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
+            <ul>
+              {organizerItems.length > 0 && volunteerItems.length > 0 && (
+                <li className="border-b border-[#e8e0d4] px-4 py-1.5">
+                  <span className="text-[10px] tracking-[0.12em] text-[#a8a090]">{organizerSectionTitle}</span>
+                </li>
               )}
+              {organizerItems.map((item) => {
+                const active = item.conversation_id === conversationId;
+                return (
+                  <li key={item.conversation_id}>
+                    <Link
+                      href={`/messages/${item.conversation_id}`}
+                      prefetch
+                      className={`flex touch-manipulation items-center gap-3 border-b border-[#e8e0d4] px-4 py-3 transition-colors ${
+                        active ? "bg-[#eef6f2]" : "bg-[#faf8f2] hover:bg-[#f0ece4]"
+                      }`}
+                    >
+                      <CommonAvatar
+                        avatarUrl={getCounterpartAvatar(item)}
+                        displayName={getDisplayName(item)}
+                        size="md"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p
+                            className="truncate text-[13px] font-semibold text-[#0e1610]"
+                            style={{ fontFamily: "'Shippori Mincho', serif" }}
+                          >
+                            {getDisplayName(item)}
+                          </p>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            {item.last_message_at && (
+                              <span className="whitespace-nowrap text-[11px] text-[#a8a090]">
+                                {formatRelative(item.last_message_at)}
+                              </span>
+                            )}
+                            {item.unread_count > 0 && (
+                              <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#2c7a88]" />
+                            )}
+                          </div>
+                        </div>
+                        <p className="mt-0.5 truncate text-[11px] text-[#6a6258]">
+                          {item.last_message_content || item.event_title || "メッセージがありません"}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
 
-              {volunteerItems.length > 0 && (
-                <section>
-                  <p className="mb-2 text-[11px] font-semibold tracking-wide text-zinc-500">
-                    {volunteerSectionTitle}
-                  </p>
-                  <ul className="space-y-3">
-                    {volunteerItems.map((item) => {
-                      const isActive = item.conversation_id === conversationId;
-                      const eventInitial = (item.event_title ?? "イベント")[0];
-                      return (
-                        <li key={item.conversation_id}>
-                          <Link
-                            href={`/messages/${item.conversation_id}`}
-                            prefetch
-                            className={`flex min-h-[72px] touch-manipulation items-center gap-3 rounded-2xl border px-4 py-3 transition-[background-color,transform,border-color] duration-100 ease-out active:scale-[0.99] motion-reduce:active:scale-100 ${
-                              isActive
-                                ? "border-[var(--accent)] bg-[var(--accent)]/5"
-                                : item.unread_count > 0
-                                  ? "border-[var(--accent)]/40 bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10 dark:border-[var(--accent)]/30 dark:bg-zinc-950/20"
-                                  : "border-zinc-200/80 bg-white hover:bg-zinc-50 dark:border-zinc-700/60 dark:bg-zinc-950/30 dark:hover:bg-zinc-900/30"
-                            }`}
-                          >
-                            <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--accent)]/10">
-                              <span className="text-lg font-semibold text-[var(--accent)]">{eventInitial}</span>
-                              {item.unread_count > 0 && (
-                                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-xs font-semibold text-white">
-                                  {item.unread_count > 99 ? "99+" : item.unread_count}
-                                </span>
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p
-                                className={`line-clamp-3 break-words text-sm font-semibold leading-5 ${item.unread_count > 0 ? "text-[var(--accent)] dark:text-[var(--accent)]" : "text-zinc-900 dark:text-zinc-100"}`}
-                                title={getDisplayName(item)}
-                              >
-                                {getDisplayName(item)}
-                              </p>
-                              <p className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">
-                                {item.event_title ?? "イベント"}
-                              </p>
-                              <p className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">
-                                {item.last_message_content || "メッセージがありません"}
-                              </p>
-                              <div className="mt-1 flex items-center gap-2 sm:hidden">
-                                {item.last_message_at && (
-                                  <span className="text-[11px] text-zinc-400">
-                                    {formatRelative(item.last_message_at)}
-                                  </span>
-                                )}
-                                {item.unread_count > 0 && (
-                                  <span className="rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
-                                    未読
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
-                              {item.last_message_at && (
-                                <span className="text-xs text-zinc-400">{formatRelative(item.last_message_at)}</span>
-                              )}
-                              {item.unread_count > 0 && (
-                                <span className="rounded-full bg-[var(--accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
-                                  未読
-                                </span>
-                              )}
-                            </div>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
+              {organizerItems.length > 0 && volunteerItems.length > 0 && (
+                <li className="border-b border-[#e8e0d4] px-4 py-1.5">
+                  <span className="text-[10px] tracking-[0.12em] text-[#a8a090]">{volunteerSectionTitle}</span>
+                </li>
               )}
-            </div>
+              {volunteerItems.map((item) => {
+                const active = item.conversation_id === conversationId;
+                return (
+                  <li key={item.conversation_id}>
+                    <Link
+                      href={`/messages/${item.conversation_id}`}
+                      prefetch
+                      className={`flex touch-manipulation items-center gap-3 border-b border-[#e8e0d4] px-4 py-3 transition-colors ${
+                        active ? "bg-[#eef6f2]" : "bg-[#faf8f2] hover:bg-[#f0ece4]"
+                      }`}
+                    >
+                      <CommonAvatar
+                        avatarUrl={getCounterpartAvatar(item)}
+                        displayName={getDisplayName(item)}
+                        size="md"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p
+                            className="truncate text-[13px] font-semibold text-[#0e1610]"
+                            style={{ fontFamily: "'Shippori Mincho', serif" }}
+                          >
+                            {getDisplayName(item)}
+                          </p>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            {item.last_message_at && (
+                              <span className="whitespace-nowrap text-[11px] text-[#a8a090]">
+                                {formatRelative(item.last_message_at)}
+                              </span>
+                            )}
+                            {item.unread_count > 0 && (
+                              <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#2c7a88]" />
+                            )}
+                          </div>
+                        </div>
+                        <p className="mt-0.5 truncate text-[11px] text-[#6a6258]">
+                          {item.last_message_content || item.event_title || "メッセージがありません"}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
       </aside>
 
       {/* 右: プレースホルダー or 会話 (PC時) / スマホでは children がフル表示 */}
-      <main className="flex min-h-0 flex-1 flex-col bg-zinc-50 dark:bg-zinc-950 md:min-h-screen">
+      <main className="flex min-h-0 flex-1 flex-col bg-[#f4f0e8] dark:bg-zinc-950 md:min-h-screen">
         {children}
       </main>
     </div>

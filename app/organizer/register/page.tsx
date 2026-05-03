@@ -45,6 +45,7 @@ export default function OrganizerRegisterPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "登録に失敗しました");
+      router.refresh();
       router.push("/organizer");
     } catch (e) {
       setError(e instanceof Error ? e.message : "登録に失敗しました");

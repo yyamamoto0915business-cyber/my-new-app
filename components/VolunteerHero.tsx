@@ -52,9 +52,10 @@ export function VolunteerHero({
       {/* 和テイストヒーローバナー */}
       <WaHeroBanner
         eyebrow="VOLUNTEER"
-        title="募集中の活動"
-        subtitle="1日だけの参加や、交通費・食事つきも探せます。"
-        className="rounded-2xl"
+        title="募集中の活動一覧"
+        subtitle="参加やお手伝いを募集している活動です"
+        compact
+        className="rounded-sm"
       />
 
       {/* 統計グリッド */}

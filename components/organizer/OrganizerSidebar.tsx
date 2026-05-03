@@ -2,39 +2,26 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  BookOpen,
-  CalendarDays,
-  ExternalLink,
-  FileText,
-  Inbox,
-  Layers,
-  Landmark,
-  LayoutDashboard,
-  Settings,
-  UserPlus,
-  Users,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type OrganizerNavVariant = "full" | "lite";
 
 const FULL_NAV_ITEMS = [
-  { label: "ダッシュボード", href: "/organizer", icon: LayoutDashboard },
-  { label: "イベント管理", href: "/organizer/events", icon: CalendarDays },
-  { label: "主催者プラン（公開枠）", href: "/organizer/settings/plan", icon: Layers },
-  { label: "売上受取（Stripe）", href: "/organizer/settings/payouts", icon: Landmark },
-  { label: "スタッフ募集管理", href: "/organizer/recruitments", icon: Users },
-  { label: "記事管理", href: "/organizer/articles", icon: FileText },
-  { label: "ストーリー", href: "/organizer/stories", icon: BookOpen },
-  { label: "受信箱", href: "/organizer/inbox", icon: Inbox },
-  { label: "設定", href: "/organizer/settings", icon: Settings },
+  { label: "ダッシュボード", href: "/organizer" },
+  { label: "イベント管理", href: "/organizer/events" },
+  { label: "主催者プラン", href: "/organizer/settings/plan" },
+  { label: "売上受取", href: "/organizer/settings/payouts" },
+  { label: "スタッフ募集", href: "/organizer/recruitments" },
+  { label: "記事管理", href: "/organizer/articles" },
+  { label: "ストーリー", href: "/organizer/stories" },
+  { label: "受信箱", href: "/organizer/inbox" },
+  { label: "設定", href: "/organizer/settings" },
 ] as const;
 
 const LITE_NAV_ITEMS = [
-  { label: "活動者登録をはじめる", href: "/organizer/register", icon: UserPlus },
-  { label: "料金プランを見る", href: "/organizer/settings/plan", icon: Layers },
-  { label: "イベントを探す", href: "/events", icon: ExternalLink },
+  { label: "主催者登録", href: "/organizer/register" },
+  { label: "料金プラン", href: "/organizer/settings/plan" },
+  { label: "イベントを探す", href: "/events" },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
@@ -48,9 +35,7 @@ function isActive(pathname: string, href: string): boolean {
     return pathname === "/organizer/settings/plan" || pathname.startsWith("/organizer/settings/plan/");
   }
   if (href === "/organizer/settings/payouts") {
-    return (
-      pathname === "/organizer/settings/payouts" || pathname.startsWith("/organizer/settings/payouts/")
-    );
+    return pathname === "/organizer/settings/payouts" || pathname.startsWith("/organizer/settings/payouts/");
   }
   if (href === "/organizer/settings") {
     if (pathname.startsWith("/organizer/settings/plan")) return false;
@@ -62,58 +47,80 @@ function isActive(pathname: string, href: string): boolean {
 
 export default function OrganizerSidebar({
   variant = "full",
+  showAdminLink = false,
 }: {
   variant?: OrganizerNavVariant;
+  showAdminLink?: boolean;
 }) {
   const pathname = usePathname();
   const navItems = variant === "lite" ? LITE_NAV_ITEMS : FULL_NAV_ITEMS;
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-slate-200/80 md:bg-white">
-      <div className="px-4 py-4">
-        <div className="text-sm font-semibold text-slate-800">
-          {variant === "lite" ? "主催者ページ" : "イベント運営メニュー"}
-        </div>
-        {variant === "lite" && (
-          <div className="mt-1 text-xs text-slate-500">
-            まずは主催者登録を完了しましょう
+    <aside className="hidden min-[900px]:sticky min-[900px]:top-[var(--mg-pc-top-nav-h)] min-[900px]:z-20 min-[900px]:flex min-[900px]:max-h-[calc(100dvh-var(--mg-pc-top-nav-h))] min-[900px]:w-[200px] min-[900px]:shrink-0 min-[900px]:self-start min-[900px]:flex-col min-[900px]:border-r min-[900px]:border-[#ccc4b4]">
+      {/* Organizer brand block */}
+      <div className="relative shrink-0 overflow-hidden rounded-b-[18px] bg-[#6f9562] px-[22px] py-[20px]">
+        <svg
+          className="absolute right-4 top-3 h-10 w-10 opacity-65"
+          viewBox="0 0 48 48"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden
+        >
+          <circle cx="24" cy="24" r="17" fill="none" stroke="#8faa67" strokeWidth="1.5" />
+          <circle cx="24" cy="24" r="11" fill="none" stroke="#8faa67" strokeWidth="1" />
+          <path d="M24 7v34M7 24h34M12 12l24 24M36 12 12 36" stroke="#8faa67" strokeWidth="1" />
+        </svg>
+
+        <div className="relative z-10">
+          <div
+            className="whitespace-nowrap text-[14px] font-semibold text-[#f5fbf7]"
+            style={{ fontFamily: "'Shippori Mincho', serif" }}
+          >
+            MachiGlyph
           </div>
-        )}
+          <div className="mt-0.5 whitespace-nowrap text-[11px] tracking-[0.07em] text-[rgba(245,251,247,0.95)]">
+            {variant === "lite" ? "主催者ページ" : "主催者管理"}
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 pb-4" aria-label="主催者メニュー">
+      {/* Menu items */}
+      <nav className="min-h-0 flex-1 overflow-y-auto bg-[#faf8f2]" aria-label="主催者メニュー">
         {navItems.map((item) => {
-          const Icon = item.icon;
           const active = isActive(pathname, item.href);
-
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
+                "flex items-center whitespace-nowrap border-b border-[#ece6dc] px-[14px] py-[10px] text-[13px] transition-colors",
                 active
-                  ? "bg-slate-100 font-medium text-slate-900"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  ? "border-l-2 border-l-[#1e3848] bg-[#eef6f2] font-medium text-[#1e3848]"
+                  : "text-[#3a3428] hover:bg-[#f4f0e8]"
               )}
             >
-              <Icon className="h-4 w-4 shrink-0" aria-hidden />
-              <span>{item.label}</span>
+              {item.label}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-slate-200/80 p-3">
-        {variant === "full" && (
+      {/* Bottom links */}
+      <div className="shrink-0 border-t border-[#c8dcd0] bg-[#f4faf6] p-3 space-y-1">
+        {showAdminLink && (
           <Link
-            href="/"
-            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+            href="/admin"
+            className="flex items-center whitespace-nowrap rounded-lg px-3 py-2 text-[12px] font-medium transition"
+            style={{ background: "#1e3848", color: "#70c8e0" }}
           >
-            <ExternalLink className="h-4 w-4 shrink-0" aria-hidden />
-            <span>サイトを見る</span>
+            🔐 管理者画面
           </Link>
         )}
+        <Link
+          href="/"
+          className="flex items-center whitespace-nowrap rounded-lg px-3 py-2 text-[13px] text-[#3a5848] transition hover:bg-[#ecf6ee] hover:text-[#1e3828]"
+        >
+          ← サイトへ戻る
+        </Link>
       </div>
     </aside>
   );

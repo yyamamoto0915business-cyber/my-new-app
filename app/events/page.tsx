@@ -293,9 +293,9 @@ function EventsPageContent() {
   );
 
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
-      <header className="sticky top-[var(--mg-mobile-top-header-h)] z-50 border-b bg-white/95 backdrop-blur-sm sm:top-0 dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
-        <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
+    <div className="min-h-screen bg-[#f4f0e8]">
+      <header className="sticky top-[var(--mg-mobile-top-header-h)] z-50 border-b border-[#ccc4b4] bg-[#faf8f2]/95 backdrop-blur-sm sm:top-0">
+        <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Breadcrumb
               items={[
@@ -307,20 +307,23 @@ function EventsPageContent() {
             />
             <ProfileLink />
           </div>
-          <GlyphSectionTitle as="h1" className="mt-2">
+          <h1
+            className="mt-1 font-serif text-[18px] font-bold text-[#0e1610] hidden sm:block"
+            style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
+          >
             全国のイベント
-          </GlyphSectionTitle>
+          </h1>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         <div className="mb-4 hidden gap-2 sm:flex">
           <button
             onClick={() => setView("list")}
-            className={`rounded px-4 py-2 text-sm font-medium ${
+            className={`min-h-[36px] rounded-full px-5 text-[13px] font-medium transition-colors ${
               view === "list"
-                ? "bg-[var(--accent)] text-white"
-                : "border border-zinc-200 dark:border-zinc-700"
+                ? "bg-[#1e3848] text-[#f4f0e8]"
+                : "border border-[#ccc4b4] bg-white text-[#3a3428] hover:bg-[#f0ece4]"
             }`}
           >
             一覧
@@ -328,10 +331,10 @@ function EventsPageContent() {
           <button
             type="button"
             onClick={openMapView}
-            className={`rounded px-4 py-2 text-sm font-medium ${
+            className={`min-h-[36px] rounded-full px-5 text-[13px] font-medium transition-colors ${
               view === "map"
-                ? "bg-[var(--accent)] text-white"
-                : "border border-zinc-200 dark:border-zinc-700"
+                ? "bg-[#1e3848] text-[#f4f0e8]"
+                : "border border-[#ccc4b4] bg-white text-[#3a3428] hover:bg-[#f0ece4]"
             }`}
           >
             地図
@@ -356,7 +359,7 @@ function EventsPageContent() {
 
             <section ref={eventListRef} className="scroll-mt-4">
               {loading ? (
-                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <li key={i}>
                       <EventCardSkeleton />
@@ -364,19 +367,19 @@ function EventsPageContent() {
                   ))}
                 </ul>
               ) : listError ? (
-                <div className="rounded border border-zinc-200 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
+                <div className="rounded-[20px] border border-[#ccc4b4] bg-[#faf8f2] p-8 text-center">
                   <p className="text-sm text-red-600">{listError}</p>
                   <button
                     type="button"
                     onClick={() => window.location.reload()}
-                    className="mt-3 text-sm text-[var(--accent)] underline"
+                    className="mt-3 text-sm text-[#2c7a88] underline"
                   >
                     再読み込み
                   </button>
                 </div>
               ) : filteredEvents.length === 0 ? (
-                <div className="rounded border border-zinc-200 bg-white p-10 text-center dark:border-zinc-700 dark:bg-zinc-900">
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                <div className="rounded-[20px] border border-[#ccc4b4] bg-[#faf8f2] p-10 text-center">
+                  <p className="text-sm text-[#6a6258]">
                     該当するイベントがありません
                   </p>
                   <button
@@ -391,17 +394,17 @@ function EventsPageContent() {
                       handleTagsChange([]);
                       router.push("/events", { scroll: false });
                     }}
-                    className="mt-4 rounded bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                    className="mt-4 inline-flex h-10 items-center rounded-full bg-[#1e3848] px-5 text-sm font-medium text-[#f4f0e8]"
                   >
                     条件を緩める
                   </button>
                 </div>
               ) : (
                 <>
-                  <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+                  <p className="mb-3 px-1 text-[12px] text-[#6a6258]">
                     全{filteredEvents.length}件
                   </p>
-                  <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredEvents.map((event) => (
                       <li key={event.id}>
                         <EventCard event={event} />
@@ -435,15 +438,18 @@ function EventsPageContent() {
                   onClick={() => setFiltersOpen(false)}
                   aria-hidden="true"
                 />
-                <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-hidden rounded-t-2xl border-t border-[var(--border)] bg-white pb-[env(safe-area-inset-bottom,0px)] shadow-xl dark:bg-[var(--background)] sm:hidden">
-                  <div className="flex items-center justify-between border-b border-slate-200/80 px-4 py-3">
-                    <h2 className="text-[15px] font-semibold text-slate-900 dark:text-zinc-100">
+                <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-hidden rounded-t-2xl border-t border-[#ccc4b4] bg-[#faf8f2] pb-[env(safe-area-inset-bottom,0px)] shadow-xl sm:hidden">
+                  <div className="flex items-center justify-between border-b border-[#ccc4b4] px-4 py-3">
+                    <h2
+                      className="text-[15px] font-bold text-[#0e1610]"
+                      style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
+                    >
                       絞り込み
                     </h2>
                     <button
                       type="button"
                       onClick={() => setFiltersOpen(false)}
-                      className="h-11 w-11 rounded-full border border-slate-200 bg-white/80 p-2 text-slate-600 transition-colors active:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ccc4b4] bg-white text-[#6a6258] transition-colors active:bg-[#f0ece4]"
                       aria-label="閉じる"
                     >
                       ✕
@@ -463,38 +469,34 @@ function EventsPageContent() {
                       variant="drawer"
                     />
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                        <label className="flex items-center gap-2">
+                      <div className="flex items-center justify-between rounded-2xl border border-[#ccc4b4] bg-white px-4 py-3 text-[14px]">
+                        <label className="flex items-center gap-2 text-[#3a3428]">
                           <input
                             type="checkbox"
                             checked={availableOnly}
                             onChange={(e) => setAvailableOnly(e.target.checked)}
-                            className="rounded border-slate-300"
+                            className="rounded border-[#ccc4b4]"
                           />
-                          <span className="text-slate-700">
-                            募集中のみ
-                          </span>
+                          募集中のみ
                         </label>
-                        <label className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 text-[#3a3428]">
                           <input
                             type="checkbox"
                             checked={childFriendlyOnly}
                             onChange={(e) => setChildFriendlyOnly(e.target.checked)}
-                            className="rounded border-slate-300"
+                            className="rounded border-[#ccc4b4]"
                           />
-                          <span className="text-slate-700">
-                            親子歓迎
-                          </span>
+                          親子歓迎
                         </label>
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs text-slate-500">
+                        <label className="mb-1.5 block text-[11px] text-[#6a6258]">
                           並び替え
                         </label>
                         <select
                           value={sortOrder}
                           onChange={(e) => setSortOrder(e.target.value as EventSort)}
-                          className="w-full h-11 rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-700"
+                          className="h-11 w-full rounded-2xl border border-[#ccc4b4] bg-white px-3 text-[14px] text-[#3a3428]"
                         >
                           <option value="date_asc">開催日が近い順</option>
                           <option value="date_desc">開催日が遠い順</option>
@@ -503,7 +505,7 @@ function EventsPageContent() {
                       </div>
                     </div>
                   </div>
-                  <div className="border-t border-slate-200/80 bg-white/95 px-4 py-3">
+                  <div className="border-t border-[#ccc4b4] bg-[#faf8f2]/95 px-4 py-3">
                     <div className="flex gap-3">
                       <button
                         type="button"
@@ -514,11 +516,10 @@ function EventsPageContent() {
                           setPriceFilter("all");
                           setChildFriendlyOnly(false);
                           setSearchQuery("");
-                          // クエリ（都道府県/タグ等）もまとめて初期化
                           router.push("/events", { scroll: false });
                           setFiltersOpen(false);
                         }}
-                        className="h-11 flex-1 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-colors active:bg-slate-50"
+                        className="h-11 flex-1 rounded-full border border-[#ccc4b4] bg-white text-[13px] font-medium text-[#3a3428] transition-colors active:bg-[#f0ece4]"
                       >
                         条件をクリア
                       </button>
@@ -528,7 +529,7 @@ function EventsPageContent() {
                           setFiltersOpen(false);
                           handleSearch();
                         }}
-                        className="h-11 flex-1 rounded-full bg-[var(--accent)] text-sm font-semibold text-white active:scale-[0.99]"
+                        className="h-11 flex-1 rounded-full bg-[#1e3848] text-[13px] font-medium text-[#f4f0e8] active:scale-[0.99]"
                       >
                         適用する
                       </button>
@@ -541,12 +542,12 @@ function EventsPageContent() {
         ) : (
           <div className="mt-4">
             {!userPos && (
-              <div className="mb-3 rounded border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-                位置情報が許可されていません。地図は広い範囲で表示しています。近くだけ見たいときは現在地を取得してください。
+              <div className="mb-3 rounded-[16px] border border-[#f0d8a0] bg-[#fef8e8] px-4 py-3 text-[13px] text-[#8a6820]">
+                位置情報が許可されていません。地図は広い範囲で表示しています。
                 <button
                   type="button"
                   onClick={handleCenterToCurrentLocation}
-                  className="ml-2 underline"
+                  className="ml-1.5 underline underline-offset-2"
                 >
                   現在地を取得
                 </button>
@@ -555,28 +556,28 @@ function EventsPageContent() {
 
             {mapLoading ? (
               <div
-                className="flex items-center justify-center rounded-2xl border border-zinc-200/60 bg-white/60 dark:border-zinc-700/60 dark:bg-zinc-800/60"
+                className="flex items-center justify-center rounded-2xl border border-[#ccc4b4] bg-[#faf8f2]"
                 style={{ height: "60vh", minHeight: "60vh" }}
               >
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">地図データを読み込み中...</p>
+                <p className="text-[13px] text-[#6a6258]">地図データを読み込み中...</p>
               </div>
             ) : mapEvents.length === 0 ? (
               filteredEvents.length > 0 ? (
-                <div className="rounded-2xl border border-zinc-200 bg-white p-10 text-center dark:border-zinc-700 dark:bg-zinc-900">
-                  <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-                    地図に載せられる位置情報がない、または表示範囲外のイベントが含まれている可能性があります。同じ条件のイベントを一覧で表示できます。
+                <div className="rounded-[20px] border border-[#ccc4b4] bg-[#faf8f2] p-10 text-center">
+                  <p className="text-[13px] leading-relaxed text-[#6a6258]">
+                    地図に載せられる位置情報がない、または表示範囲外のイベントが含まれている可能性があります。
                   </p>
                   <button
                     type="button"
                     onClick={() => setView("list")}
-                    className="mt-5 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white hover:opacity-90 active:scale-[0.99]"
+                    className="mt-5 inline-flex h-11 items-center rounded-full bg-[#1e3848] px-6 text-[13px] font-medium text-[#f4f0e8] active:scale-[0.99]"
                   >
                     一覧で見る（全{filteredEvents.length}件）
                   </button>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-zinc-200 bg-white p-10 text-center dark:border-zinc-700 dark:bg-zinc-900">
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                <div className="rounded-[20px] border border-[#ccc4b4] bg-[#faf8f2] p-10 text-center">
+                  <p className="text-[13px] text-[#6a6258]">
                     この条件に合うイベントはまだありません
                   </p>
                   <button
@@ -592,7 +593,7 @@ function EventsPageContent() {
                       handleTagsChange([]);
                       router.push("/events", { scroll: false });
                     }}
-                    className="mt-4 rounded bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                    className="mt-4 inline-flex h-10 items-center rounded-full bg-[#1e3848] px-5 text-[13px] font-medium text-[#f4f0e8]"
                   >
                     条件を緩める
                   </button>
@@ -615,7 +616,7 @@ function EventsPageContent() {
         <div className="mt-8 pb-8">
           <Link
             href="/organizer"
-            className="text-sm text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+            className="text-[13px] text-[#6a6258] underline-offset-4 hover:text-[#3a3428] hover:underline"
           >
             主催者向け：管理ページ →
           </Link>

@@ -7,6 +7,9 @@ export type Profile = {
   email: string | null;
   display_name: string | null;
   avatar_url: string | null;
+  participant_avatar_url?: string | null;
+  organizer_avatar_url?: string | null;
+  active_profile_role?: "participant" | "organizer" | null;
   phone: string | null;
   address: string | null;
   region: string | null;

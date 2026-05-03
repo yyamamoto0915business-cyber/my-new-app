@@ -4,13 +4,20 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
+import { CommonAvatar } from "@/components/profile/common-avatar";
+import { resolveAvatarUrlByRole, type ProfileAvatarRole } from "@/lib/profile-avatar";
 
 export default function ProfileEditPage() {
-  const avatarFileInputRef = useRef<HTMLInputElement>(null);
-  const avatarCameraInputRef = useRef<HTMLInputElement>(null);
+  const participantFileInputRef = useRef<HTMLInputElement>(null);
+  const participantCameraInputRef = useRef<HTMLInputElement>(null);
+  const organizerFileInputRef = useRef<HTMLInputElement>(null);
+  const organizerCameraInputRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
+  const [participantAvatarUrl, setParticipantAvatarUrl] = useState("");
+  const [organizerAvatarUrl, setOrganizerAvatarUrl] = useState("");
+  const [activeProfileRole, setActiveProfileRole] =
+    useState<ProfileAvatarRole>("participant");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [region, setRegion] = useState("");
@@ -42,12 +49,14 @@ export default function ProfileEditPage() {
         setDisplayName((user.user_metadata?.display_name as string) ?? "");
         const { data } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url, phone, address, region, bio")
+          .select("display_name, avatar_url, participant_avatar_url, organizer_avatar_url, active_profile_role, phone, address, region, bio")
           .eq("id", user.id)
           .single();
         if (data) {
           setDisplayName(data.display_name ?? "");
-          setAvatarUrl(data.avatar_url ?? "");
+          setParticipantAvatarUrl(data.participant_avatar_url ?? data.avatar_url ?? "");
+          setOrganizerAvatarUrl(data.organizer_avatar_url ?? "");
+          setActiveProfileRole(data.active_profile_role === "organizer" ? "organizer" : "participant");
           setPhone(data.phone ?? "");
           setAddress(data.address ?? "");
           setRegion(data.region ?? "");
@@ -61,7 +70,10 @@ export default function ProfileEditPage() {
     })();
   }, []);
 
-  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileSelect = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    role: ProfileAvatarRole
+  ) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !file.type.startsWith("image/")) return;
@@ -73,13 +85,18 @@ export default function ProfileEditPage() {
     setError(null);
     try {
       const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/avatar.${ext}`;
+      const path = `${user.id}/${role}/avatar.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-      setAvatarUrl(urlData.publicUrl);
+      if (role === "organizer") {
+        setOrganizerAvatarUrl(urlData.publicUrl);
+      } else {
+        setParticipantAvatarUrl(urlData.publicUrl);
+      }
+      setActiveProfileRole(role);
     } catch (err) {
       setError(err instanceof Error ? err.message : "アップロードに失敗しました");
     } finally {
@@ -111,7 +128,10 @@ export default function ProfileEditPage() {
           id: user.id,
           email: user.email ?? null,
           display_name: displayName || null,
-          avatar_url: avatarUrl || null,
+          avatar_url: participantAvatarUrl || null,
+          participant_avatar_url: participantAvatarUrl || null,
+          organizer_avatar_url: organizerAvatarUrl || null,
+          active_profile_role: activeProfileRole,
           phone: phone.trim() || null,
           address: address.trim() || null,
           region: region.trim() || null,
@@ -203,49 +223,136 @@ export default function ProfileEditPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              プロフィール写真（任意）
+              参加者用アイコン（任意）
             </label>
             <p className="mt-1 text-xs text-[var(--foreground-muted)]">
               カメラで撮影するか、アルバムから選択できます
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <input
-                ref={avatarFileInputRef}
+                ref={participantFileInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/gif,image/webp"
                 className="hidden"
-                onChange={handleAvatarFileSelect}
+                onChange={(e) => handleAvatarFileSelect(e, "participant")}
               />
               <input
-                ref={avatarCameraInputRef}
+                ref={participantCameraInputRef}
                 type="file"
                 accept="image/*"
                 capture="environment"
                 className="hidden"
-                onChange={handleAvatarFileSelect}
+                onChange={(e) => handleAvatarFileSelect(e, "participant")}
               />
               <button
                 type="button"
-                onClick={() => avatarFileInputRef.current?.click()}
+                onClick={() => participantFileInputRef.current?.click()}
                 className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
               >
                 アルバムから選択
               </button>
               <button
                 type="button"
-                onClick={() => avatarCameraInputRef.current?.click()}
+                onClick={() => participantCameraInputRef.current?.click()}
                 className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
               >
                 カメラで撮影
               </button>
               <input
-                id="avatarUrl"
+                id="participantAvatarUrl"
                 type="url"
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
+                value={participantAvatarUrl}
+                onChange={(e) => setParticipantAvatarUrl(e.target.value)}
                 placeholder="または URL を入力"
                 className="flex-1 min-w-[160px] rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
               />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              主催者用アイコン（任意）
+            </label>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <input
+                ref={organizerFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={(e) => handleAvatarFileSelect(e, "organizer")}
+              />
+              <input
+                ref={organizerCameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => handleAvatarFileSelect(e, "organizer")}
+              />
+              <button
+                type="button"
+                onClick={() => organizerFileInputRef.current?.click()}
+                className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
+              >
+                アルバムから選択
+              </button>
+              <button
+                type="button"
+                onClick={() => organizerCameraInputRef.current?.click()}
+                className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
+              >
+                カメラで撮影
+              </button>
+              <input
+                id="organizerAvatarUrl"
+                type="url"
+                value={organizerAvatarUrl}
+                onChange={(e) => setOrganizerAvatarUrl(e.target.value)}
+                placeholder="または URL を入力"
+                className="flex-1 min-w-[160px] rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              現在の表示モード
+            </label>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveProfileRole("participant")}
+                className={`rounded-full px-4 py-2 text-sm ${
+                  activeProfileRole === "participant"
+                    ? "bg-[#1e3848] text-[#f4f0e8]"
+                    : "border border-zinc-300 text-zinc-700"
+                }`}
+              >
+                参加者
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveProfileRole("organizer")}
+                className={`rounded-full px-4 py-2 text-sm ${
+                  activeProfileRole === "organizer"
+                    ? "bg-[#1e3848] text-[#f4f0e8]"
+                    : "border border-zinc-300 text-zinc-700"
+                }`}
+              >
+                主催者
+              </button>
+            </div>
+            <div className="mt-3 flex items-center gap-3">
+              <CommonAvatar
+                avatarUrl={resolveAvatarUrlByRole(
+                  {
+                    participant_avatar_url: participantAvatarUrl || null,
+                    organizer_avatar_url: organizerAvatarUrl || null,
+                  },
+                  activeProfileRole
+                )}
+                displayName={displayName || "ゲスト"}
+                size="md"
+              />
+              <p className="text-xs text-zinc-500">選択中モードの表示プレビュー</p>
             </div>
           </div>
           <div>

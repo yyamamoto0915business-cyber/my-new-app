@@ -72,6 +72,7 @@ export function ProfileSummaryCard({ profile, unreadCount = 0, userId, onAvatarC
             currentAvatarUrl={profile.avatarUrl}
             onAvatarChange={handleAvatarChange}
             userId={userId}
+            role="participant"
           />
         )}
 

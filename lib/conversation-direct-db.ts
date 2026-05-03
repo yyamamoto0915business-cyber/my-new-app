@@ -192,6 +192,8 @@ export type ConversationMetaDirect = {
   eventTitle: string | null;
   organizerDisplayName: string | null;
   organizerAvatarUrl: string | null;
+  organizerParticipantAvatarUrl: string | null;
+  organizerOrganizerAvatarUrl: string | null;
   organizerProfileId: string | null;
   otherUserId: string | null;
 };
@@ -255,8 +257,7 @@ export async function fetchConversationMetaDirectDb(
   try {
     await client.connect();
 
-    const result = await client.query(
-      `
+    const queryWithRoleAvatars = `
       SELECT
         c.kind AS conversation_kind,
         c.event_id AS event_id,
@@ -264,7 +265,9 @@ export async function fetchConversationMetaDirectDb(
         ev.title AS event_title,
         o.profile_id AS organizer_profile_id,
         pr.display_name AS organizer_display_name,
-        pr.avatar_url AS organizer_avatar_url
+        pr.avatar_url AS organizer_avatar_url,
+        pr.participant_avatar_url AS organizer_participant_avatar_url,
+        pr.organizer_avatar_url AS organizer_organizer_avatar_url
       FROM public.conversations c
       INNER JOIN public.conversation_members cm
         ON cm.conversation_id = c.id AND cm.user_id = $2::uuid
@@ -272,9 +275,28 @@ export async function fetchConversationMetaDirectDb(
       INNER JOIN public.organizers o ON o.id = c.organizer_id
       LEFT JOIN public.profiles pr ON pr.id = o.profile_id
       WHERE c.id = $1::uuid
-      `,
-      [conversationId, userId]
-    );
+    `;
+    const queryLegacy = queryWithRoleAvatars
+      .replace(
+        "pr.participant_avatar_url AS organizer_participant_avatar_url,",
+        "NULL::text AS organizer_participant_avatar_url,"
+      )
+      .replace(
+        "pr.organizer_avatar_url AS organizer_organizer_avatar_url",
+        "NULL::text AS organizer_organizer_avatar_url"
+      );
+
+    let result;
+    try {
+      result = await client.query(queryWithRoleAvatars, [conversationId, userId]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/participant_avatar_url|organizer_avatar_url|42703/i.test(msg)) {
+        result = await client.query(queryLegacy, [conversationId, userId]);
+      } else {
+        throw e;
+      }
+    }
 
     if ((result.rowCount ?? 0) === 0) return null;
 
@@ -286,6 +308,8 @@ export async function fetchConversationMetaDirectDb(
       organizer_profile_id: string | null;
       organizer_display_name: string | null;
       organizer_avatar_url: string | null;
+      organizer_participant_avatar_url: string | null;
+      organizer_organizer_avatar_url: string | null;
     };
 
     return {
@@ -294,6 +318,8 @@ export async function fetchConversationMetaDirectDb(
       eventTitle: row.event_title,
       organizerDisplayName: row.organizer_display_name,
       organizerAvatarUrl: row.organizer_avatar_url,
+      organizerParticipantAvatarUrl: row.organizer_participant_avatar_url,
+      organizerOrganizerAvatarUrl: row.organizer_organizer_avatar_url,
       organizerProfileId: row.organizer_profile_id,
       otherUserId: row.other_user_id,
     };

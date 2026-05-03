@@ -17,8 +17,7 @@ export async function fetchInboxDirectDb(
   try {
     await client.connect();
 
-    const result = await client.query(
-      `
+    const queryWithRoleAvatars = `
       WITH my_conversations AS (
         SELECT cm.conversation_id, cm.last_read_at
         FROM public.conversation_members cm
@@ -77,7 +76,10 @@ export async function fetchInboxDirectDb(
           ELSE 'volunteer'
         END AS my_role,
         p.display_name AS other_display_name,
+        p.email AS other_email,
         p.avatar_url AS other_avatar_url,
+        p.participant_avatar_url AS other_participant_avatar_url,
+        p.organizer_avatar_url AS other_organizer_avatar_url,
         lm.content AS last_message_content,
         lm.created_at AS last_message_at,
         COALESCE(uc.cnt, 0) AS unread_count
@@ -89,9 +91,29 @@ export async function fetchInboxDirectDb(
       LEFT JOIN unread_cnt uc ON uc.conversation_id = ou.conv_id
       ORDER BY lm.created_at DESC NULLS LAST
       LIMIT $2
-      `,
-      [userId, limit]
-    );
+    `;
+    const queryLegacy = queryWithRoleAvatars
+      .replace(
+        "p.participant_avatar_url AS other_participant_avatar_url,",
+        "NULL::text AS other_participant_avatar_url,"
+      )
+      .replace(
+        "p.organizer_avatar_url AS other_organizer_avatar_url,",
+        "NULL::text AS other_organizer_avatar_url,"
+      );
+
+    let result;
+    try {
+      result = await client.query(queryWithRoleAvatars, [userId, limit]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // マイグレーション未適用環境では新カラム参照で失敗するため旧SQLで継続
+      if (/participant_avatar_url|organizer_avatar_url|42703/i.test(msg)) {
+        result = await client.query(queryLegacy, [userId, limit]);
+      } else {
+        throw e;
+      }
+    }
 
     return (result.rows ?? []).map((row) => ({
       conversation_id: row.conversation_id,
@@ -100,7 +122,10 @@ export async function fetchInboxDirectDb(
       event_title: row.event_title ?? null,
       other_user_id: row.other_user_id,
       other_display_name: row.other_display_name ?? null,
+      other_email: row.other_email ?? null,
       other_avatar_url: row.other_avatar_url ?? null,
+      other_participant_avatar_url: row.other_participant_avatar_url ?? null,
+      other_organizer_avatar_url: row.other_organizer_avatar_url ?? null,
       last_message_content: row.last_message_content ?? null,
       last_message_at: row.last_message_at ?? null,
       unread_count: Number(row.unread_count ?? 0),

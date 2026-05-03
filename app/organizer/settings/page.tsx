@@ -2,18 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  User,
-  Building2,
-  Bell,
-  Shield,
-  ChevronRight,
-  Layout,
-} from "lucide-react";
+import { User, Building2, Bell, Shield, ChevronRight, Layout } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { SettingsSectionCard } from "@/components/organizer/settings/SettingsSectionCard";
 import { OrganizerSettingsPlanPayoutCards } from "@/components/organizer/settings/OrganizerSettingsPlanPayoutCards";
+import { WaHeroBanner } from "@/components/wa-hero-banner";
 
 export default function OrganizerSettingsPage() {
   const { user } = useSupabaseUser();
@@ -45,9 +39,7 @@ export default function OrganizerSettingsPage() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [user?.id]);
 
   const displayEmail = user?.email ?? "—";
@@ -58,165 +50,198 @@ export default function OrganizerSettingsPage() {
     "—";
 
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
-      <div className="mx-auto max-w-2xl">
-        {/* 上部見出し */}
-        <header className="mb-6 sm:mb-8">
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">設定</h1>
-          <p className="mt-1 text-sm text-slate-500 sm:text-base">
-            主催者情報や表示内容、通知設定を管理できます
-          </p>
-        </header>
+    <div className="min-h-screen bg-[#f4f0e8]">
+      <div className="mx-auto max-w-2xl space-y-4">
+        <WaHeroBanner
+          compact
+          eyebrow="SETTINGS"
+          title="設定"
+          subtitle="— アカウント・通知設定 —"
+          className="rounded-sm"
+        />
 
-        <div className="space-y-6 sm:space-y-8">
-          <section aria-labelledby="plan-payout-heading" className="space-y-3">
-            <h2 id="plan-payout-heading" className="sr-only">
-              料金プランと売上受取
-            </h2>
-            <OrganizerSettingsPlanPayoutCards />
-          </section>
+        {/* ナビ帯 */}
+        <div className="flex items-center rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] px-4 py-3">
+          <Link href="/organizer" className="text-[12px] text-[#6a6258] hover:underline">
+            ← ダッシュボードへ
+          </Link>
+        </div>
 
-          {/* アカウント情報セクション */}
-          <section
-            className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5"
-            aria-labelledby="account-heading"
+        {/* プラン・売上受取 */}
+        <section aria-labelledby="plan-payout-heading" className="space-y-3">
+          <h2 id="plan-payout-heading" className="sr-only">料金プランと売上受取</h2>
+          <OrganizerSettingsPlanPayoutCards />
+        </section>
+
+        {/* セクション区切り */}
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-px flex-1 bg-[#c0b8a8] opacity-60" />
+          <span
+            className="text-[10px] tracking-[0.18em] text-[#5a5448] whitespace-nowrap"
+            style={{ fontFamily: "'Shippori Mincho', serif" }}
           >
+            アカウント情報
+          </span>
+          <div className="h-px flex-1 bg-[#c0b8a8] opacity-60" />
+        </div>
+
+        {/* アカウント情報 */}
+        <section
+          className="overflow-hidden rounded-2xl border border-[#ccc4b4]"
+          aria-labelledby="account-heading"
+        >
+          <div className="border-b border-[#ccc4b4] bg-[#1e3020] px-4 py-2.5">
             <h2
               id="account-heading"
-              className="flex items-center gap-2 text-base font-semibold text-slate-900"
+              className="flex items-center gap-2 text-[13px] font-bold text-[#f4f0e8]"
+              style={{ fontFamily: "'Shippori Mincho', serif" }}
             >
-              <User className="h-4 w-4 text-slate-600" />
+              <User className="h-3.5 w-3.5 text-[#a8c8a4]" />
               アカウント情報
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              ログイン中のアカウントや表示名を管理します
-            </p>
-            <dl className="mt-4 space-y-3">
+          </div>
+          <div className="bg-[#faf8f2] p-4">
+            <p className="text-[12px] text-[#6a6258]">ログイン中のアカウントや表示名を管理します</p>
+            <dl className="mt-3 space-y-2.5">
               <div>
-                <dt className="text-xs font-medium text-slate-500">ログイン中</dt>
-                <dd className="mt-0.5 text-sm font-medium text-slate-900">{displayEmail}</dd>
+                <dt className="text-[10px] font-medium tracking-wide text-[#6a6258]">ログイン中</dt>
+                <dd className="mt-0.5 text-[13px] font-medium text-[#0e1610]">{displayEmail}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium text-slate-500">表示名</dt>
-                <dd className="mt-0.5 text-sm text-slate-900">{displayName || "未設定"}</dd>
+                <dt className="text-[10px] font-medium tracking-wide text-[#6a6258]">表示名</dt>
+                <dd className="mt-0.5 text-[13px] text-[#0e1610]">{displayName || "未設定"}</dd>
               </div>
             </dl>
             <Link
               href="/profile/edit"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="mt-3 inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-[#ccc4b4] bg-white px-4 text-[12px] font-medium text-[#3a3428] transition hover:bg-[#f0ece4]"
             >
               プロフィールを編集
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3.5 w-3.5" />
             </Link>
-          </section>
+          </div>
+        </section>
 
-          {/* 主催者プロフィールセクション */}
-          <section
-            className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5"
-            aria-labelledby="organizer-heading"
-          >
+        {/* 主催者プロフィール */}
+        <section
+          className="overflow-hidden rounded-2xl border border-[#ccc4b4]"
+          aria-labelledby="organizer-heading"
+        >
+          <div className="border-b border-[#ccc4b4] bg-[#1e3020] px-4 py-2.5">
             <h2
               id="organizer-heading"
-              className="flex items-center gap-2 text-base font-semibold text-slate-900"
+              className="flex items-center gap-2 text-[13px] font-bold text-[#f4f0e8]"
+              style={{ fontFamily: "'Shippori Mincho', serif" }}
             >
-              <Building2 className="h-4 w-4 text-slate-600" />
+              <Building2 className="h-3.5 w-3.5 text-[#a8c8a4]" />
               主催者プロフィール
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              イベント参加者に表示される主催者・団体情報です
-            </p>
+          </div>
+          <div className="bg-[#faf8f2] p-4">
+            <p className="text-[12px] text-[#6a6258]">イベント参加者に表示される主催者・団体情報です</p>
             {loading ? (
-              <p className="mt-4 text-sm text-slate-500">読み込み中...</p>
+              <p className="mt-3 text-[13px] text-[#6a6258]">読み込み中...</p>
             ) : (
               <>
-                <dl className="mt-4 space-y-3">
+                <dl className="mt-3 space-y-2.5">
                   <div>
-                    <dt className="text-xs font-medium text-slate-500">団体名 / 主催者名</dt>
-                    <dd className="mt-0.5 text-sm text-slate-900">
+                    <dt className="text-[10px] font-medium tracking-wide text-[#6a6258]">団体名 / 主催者名</dt>
+                    <dd className="mt-0.5 text-[13px] text-[#0e1610]">
                       {organizer?.organization_name || "未設定"}
                     </dd>
                   </div>
                   {(organizer?.contact_email || organizer?.contact_phone) && (
                     <div>
-                      <dt className="text-xs font-medium text-slate-500">問い合わせ先</dt>
-                      <dd className="mt-0.5 text-sm text-slate-900">
-                        {[organizer.contact_email, organizer.contact_phone]
-                          .filter(Boolean)
-                          .join(" / ") || "—"}
+                      <dt className="text-[10px] font-medium tracking-wide text-[#6a6258]">問い合わせ先</dt>
+                      <dd className="mt-0.5 text-[13px] text-[#0e1610]">
+                        {[organizer.contact_email, organizer.contact_phone].filter(Boolean).join(" / ") || "—"}
                       </dd>
                     </div>
                   )}
                 </dl>
                 <Link
                   href="/organizer/settings/profile"
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="mt-3 inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-[#ccc4b4] bg-white px-4 text-[12px] font-medium text-[#3a3428] transition hover:bg-[#f0ece4]"
                 >
                   主催者プロフィールを編集
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </Link>
               </>
             )}
-          </section>
+          </div>
+        </section>
 
-          {/* 公開情報・表示設定（将来用のプレースホルダー） */}
-          <section
-            className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5"
-            aria-labelledby="display-heading"
+        {/* セクション区切り */}
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-px flex-1 bg-[#c0b8a8] opacity-60" />
+          <span
+            className="text-[10px] tracking-[0.18em] text-[#5a5448] whitespace-nowrap"
+            style={{ fontFamily: "'Shippori Mincho', serif" }}
           >
+            その他の設定
+          </span>
+          <div className="h-px flex-1 bg-[#c0b8a8] opacity-60" />
+        </div>
+
+        {/* 公開情報・表示設定 */}
+        <section
+          className="overflow-hidden rounded-2xl border border-[#ccc4b4]"
+          aria-labelledby="display-heading"
+        >
+          <div className="border-b border-[#ccc4b4] bg-[#1e3020] px-4 py-2.5">
             <h2
               id="display-heading"
-              className="flex items-center gap-2 text-base font-semibold text-slate-900"
+              className="flex items-center gap-2 text-[13px] font-bold text-[#f4f0e8]"
+              style={{ fontFamily: "'Shippori Mincho', serif" }}
             >
-              <Layout className="h-4 w-4 text-slate-600" />
+              <Layout className="h-3.5 w-3.5 text-[#a8c8a4]" />
               公開情報 / 表示設定
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              主催者ページやイベントでの表示設定（準備中）
-            </p>
-          </section>
+          </div>
+          <div className="bg-[#faf8f2] p-4">
+            <p className="text-[12px] text-[#6a6258]">主催者ページやイベントでの表示設定（準備中）</p>
+          </div>
+        </section>
 
-          {/* 通知設定 */}
-          <SettingsSectionCard
-            title="通知設定"
-            description="お知らせの受け取り方を設定できます"
-            href="/profile/settings"
-            icon={Bell}
-            badge="準備中"
-          />
+        {/* 通知設定 */}
+        <SettingsSectionCard
+          title="通知設定"
+          description="お知らせの受け取り方を設定できます"
+          href="/profile/settings"
+          icon={Bell}
+          badge="準備中"
+        />
 
-          {/* セキュリティ / ログアウト */}
-          <section
-            className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5"
-            aria-labelledby="security-heading"
-          >
+        {/* セキュリティ */}
+        <section
+          className="overflow-hidden rounded-2xl border border-[#ccc4b4]"
+          aria-labelledby="security-heading"
+        >
+          <div className="border-b border-[#ccc4b4] bg-[#1e3020] px-4 py-2.5">
             <h2
               id="security-heading"
-              className="flex items-center gap-2 text-base font-semibold text-slate-900"
+              className="flex items-center gap-2 text-[13px] font-bold text-[#f4f0e8]"
+              style={{ fontFamily: "'Shippori Mincho', serif" }}
             >
-              <Shield className="h-4 w-4 text-slate-600" />
+              <Shield className="h-3.5 w-3.5 text-[#a8c8a4]" />
               セキュリティ / ログアウト
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+          </div>
+          <div className="bg-[#faf8f2] p-4">
+            <p className="text-[12px] text-[#6a6258]">
               ログアウトは右上のアカウントメニューから行えます。プロフィールやパスワードの変更はアカウント設定で行えます。
             </p>
             <Link
               href="/profile/edit"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="mt-3 inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-[#ccc4b4] bg-white px-4 text-[12px] font-medium text-[#3a3428] transition hover:bg-[#f0ece4]"
             >
               アカウント設定を開く
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3.5 w-3.5" />
             </Link>
-          </section>
-        </div>
+          </div>
+        </section>
 
-        <div className="mt-8 pb-12">
-          <Link
-            href="/organizer"
-            className="text-sm text-slate-500 hover:text-slate-700 hover:underline"
-          >
-            ← ダッシュボードへ戻る
-          </Link>
-        </div>
+        <div className="pb-12" />
       </div>
     </div>
   );

@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { createClient } from "@/lib/supabase/client";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { cn } from "@/lib/utils";
+import { CommonAvatar } from "@/components/profile/common-avatar";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 
@@ -21,11 +23,8 @@ type Message = {
   created_at: string;
 };
 
-export default function ConversationPage({
-  params,
-}: {
-  params: Promise<{ conversationId: string }>;
-}) {
+export default function ConversationPage() {
+  const routeParams = useParams<{ conversationId?: string | string[] }>();
   const { user, loading: authLoading } = useSupabaseUser();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -89,8 +88,17 @@ export default function ConversationPage({
   }, []);
 
   useEffect(() => {
-    params.then((p) => setConversationId(p.conversationId));
-  }, [params]);
+    const raw = routeParams?.conversationId;
+    if (typeof raw === "string" && raw.length > 0) {
+      setConversationId(raw);
+      return;
+    }
+    if (Array.isArray(raw) && raw[0]) {
+      setConversationId(raw[0]);
+      return;
+    }
+    setConversationId(null);
+  }, [routeParams]);
 
   const currentUserId = user?.id ?? (AUTH_DISABLED ? "dev-user" : null);
 
@@ -271,7 +279,7 @@ export default function ConversationPage({
   return (
     <div
       className={cn(
-        "flex min-h-0 flex-col bg-[var(--mg-paper)] dark:bg-zinc-950",
+        "flex min-h-0 flex-col bg-[#f4f0e8] dark:bg-zinc-950",
         "h-[100dvh] max-h-[100dvh] box-border",
         "md:h-auto md:max-h-none md:flex-1 md:min-h-0"
       )}
@@ -281,85 +289,52 @@ export default function ConversationPage({
           : undefined
       }
     >
-      {/* スマホ: 専用コンパクトヘッダー / md: 一覧併用時も同じ情報密度で統一 */}
-      <header
-        className={cn(
-          "z-50 shrink-0 border-b border-[var(--mg-line)] bg-white/95 backdrop-blur-md",
-          "pt-[max(0.35rem,env(safe-area-inset-top,0px))] dark:bg-zinc-900/95",
-          "md:pt-2"
-        )}
-      >
-        <div className="flex items-start gap-2 px-3 pb-2 md:px-4 md:pb-2.5">
+      {/* ヘッダー */}
+      <header className="z-50 shrink-0 border-b border-[#ccc4b4] bg-[#faf8f2]/95 backdrop-blur-md pt-[max(0.35rem,env(safe-area-inset-top,0px))]">
+        <div className="flex items-center gap-2 px-4 pb-3 pt-1">
+          {/* モバイルのみ戻るボタン */}
           <Link
             href="/messages"
-            className="mt-0.5 flex shrink-0 items-center gap-0.5 rounded-lg py-1.5 pl-0.5 pr-1 text-zinc-500 transition-colors hover:text-zinc-800 active:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:active:bg-zinc-800"
+            className="flex shrink-0 items-center gap-0.5 rounded-lg py-1.5 pl-0.5 pr-1 text-[#6a6258] transition-colors hover:text-[#3a3428] active:bg-[#f0ece4] md:hidden"
             aria-label="メッセージ一覧へ戻る"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="text-xs font-medium">戻る</span>
           </Link>
 
-          <div className="flex min-w-0 flex-1 items-start gap-2">
-            <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--accent)]/10">
-              {counterpartAvatarUrl ? (
-                <img
-                  src={counterpartAvatarUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-[18px] w-[18px] text-[var(--accent)]"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <CommonAvatar
+                avatarUrl={counterpartAvatarUrl}
+                displayName={counterpartDisplayName ?? (myRole === "organizer" ? "参加者" : "主催者")}
+                size="sm"
+                className="border border-[#ccc4b4] bg-[#eef6f2]"
+              />
+              <div className="min-w-0">
+                <p
+                  className="truncate text-[15px] font-semibold text-[#0e1610]"
+                  style={{ fontFamily: "'Shippori Mincho', serif" }}
                 >
-                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5a8.5 8.5 0 0 1 17 0z" />
-                </svg>
-              )}
-            </span>
-            <div className="min-w-0 flex-1 py-0.5">
-              <p className="line-clamp-1 text-[15px] font-semibold leading-tight text-zinc-900 dark:text-zinc-100">
-                {eventTitle ?? "イベント"}
-              </p>
-              <p className="mt-0.5 line-clamp-1 text-[11px] leading-tight text-zinc-500 dark:text-zinc-400">
-                {myRole === "organizer"
-                  ? conversationKind === "general"
-                    ? "ボランティア応募者"
-                    : "イベント参加者"
-                  : "主催者"}
-                : {counterpartDisplayName ?? (myRole === "organizer" ? "参加者" : "主催者")}
-              </p>
+                  {eventTitle ?? "イベント"}
+                </p>
+                <p className="mt-0.5 truncate text-[11px] text-[#6a6258]">
+                  {counterpartDisplayName
+                    ? `${myRole === "organizer" ? (conversationKind === "general" ? "ボランティア応募者" : "参加者") : "主催者"} · ${counterpartDisplayName}`
+                    : myRole === "organizer" ? "参加者" : "主催者"}
+                </p>
+              </div>
             </div>
           </div>
 
-          {eventId ? (
+          {eventId && (
             <Link
               href={`/events/${eventId}`}
-              className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--mg-line)] bg-white text-zinc-600 transition-colors hover:bg-zinc-50 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#ccc4b4] bg-white text-[#6a6258] transition-colors hover:bg-[#f0ece4]"
               aria-label="イベントページを開く"
             >
-              <CalendarDays className="h-5 w-5" aria-hidden />
+              <CalendarDays className="h-4 w-4" aria-hidden />
             </Link>
-          ) : (
-            <span className="w-10 shrink-0" aria-hidden />
           )}
         </div>
       </header>
@@ -433,18 +408,18 @@ export default function ConversationPage({
               }`}
             >
               <div
-                className={`max-w-[86%] rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 ${
+                className={`max-w-[58%] rounded-[10px] px-3 py-2.5 ${
                   isOwn
-                    ? "rounded-br-md bg-[var(--accent)] text-white shadow-sm"
-                    : "rounded-bl-md border border-[var(--mg-line)] bg-white text-zinc-900 shadow-[var(--mg-shadow)] dark:border-zinc-600/50 dark:bg-zinc-800 dark:text-zinc-50"
+                    ? "bg-[#1e3848] text-[#e8f4f8]"
+                    : "border border-[#ccc4b4] bg-[#faf8f2] text-[#3a3428]"
                 }`}
               >
-                <p className="whitespace-pre-wrap break-all break-words text-sm">
+                <p className="whitespace-pre-wrap break-words text-[11px] leading-[1.55]">
                   {m.content}
                 </p>
                 <p
-                  className={`mt-1 text-[11px] leading-none ${
-                    isOwn ? "text-white/70" : "text-zinc-500/90"
+                  className={`mt-1 text-[10px] leading-none ${
+                    isOwn ? "text-[#e8f4f8]/60" : "text-[#a8a090]"
                   }`}
                 >
                   {new Date(m.created_at).toLocaleTimeString("ja-JP", {
@@ -461,7 +436,7 @@ export default function ConversationPage({
 
       {/* 入力欄: Enter送信 / Shift+Enter改行 */}
       <div
-        className="z-40 shrink-0 border-t border-[var(--mg-line)] bg-white/95 px-3 pt-2 pb-[max(0.65rem,env(safe-area-inset-bottom,0px))] backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/95 md:px-4 md:pt-2.5 md:pb-3"
+        className="z-40 shrink-0 border-t border-[#ccc4b4] bg-[#faf8f2]/95 px-3 pt-2 pb-[max(0.65rem,env(safe-area-inset-bottom,0px))] backdrop-blur-md md:px-4 md:pt-2.5 md:pb-3"
       >
         {!loading && error && (
           <p className="mb-2 text-xs text-red-600 dark:text-red-400">{error}</p>
@@ -518,52 +493,22 @@ export default function ConversationPage({
                 });
               });
             }}
-            placeholder="メッセージを入力"
+            placeholder="メッセージを入力..."
             rows={1}
             enterKeyHint="send"
             inputMode="text"
             autoComplete="off"
             autoCorrect="on"
-            className="min-h-[52px] max-h-32 flex-1 resize-none rounded-[14px] border border-[var(--mg-line)] bg-zinc-50 px-3.5 py-3 text-[16px] leading-snug text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 md:min-h-[48px] md:text-[15px]"
+            className="min-h-[44px] max-h-32 flex-1 resize-none rounded-[24px] border border-[#ccc4b4] bg-white px-4 py-2.5 text-[16px] leading-snug text-[#0e1610] placeholder:text-[#a8a090] focus:outline-none focus:ring-1 focus:ring-[#1e3848]/40 md:min-h-[40px] md:text-[13px]"
           />
           <button
             type="button"
             onClick={() => handleSend()}
             disabled={sending || !content.trim()}
-            className="mb-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent)] text-white shadow-sm hover:opacity-90 active:opacity-95 disabled:opacity-50"
+            className="flex h-10 shrink-0 items-center justify-center rounded-[20px] bg-[#1e3848] px-4 text-[13px] font-medium text-[#f4f0e8] hover:opacity-90 active:opacity-95 disabled:opacity-40"
             aria-label="送信"
           >
-            {sending ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 2v4m0 16v-4m10-6h-4M6 12H2m15.364-7.364l-2.828 2.828M9.464 14.536l-2.828 2.828m12.728 0l-2.828-2.828M9.464 9.464L6.636 6.636"
-                />
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
-              </svg>
-            )}
+            {sending ? "…" : "送信"}
           </button>
         </div>
       </div>

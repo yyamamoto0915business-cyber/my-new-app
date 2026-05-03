@@ -346,10 +346,10 @@ function AuthPageContent() {
 
           <p className="mt-6 text-center text-sm text-slate-500">
             <Link
-              href="/welcome"
+              href="/"
               className="underline underline-offset-2 hover:text-slate-700"
             >
-              welcome に戻る
+              トップへ戻る
             </Link>
           </p>
         </section>

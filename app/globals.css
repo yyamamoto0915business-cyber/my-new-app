@@ -6,8 +6,9 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --font-heading: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
-  --font-body: "M PLUS 1p", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --font-heading: var(--font-noto-serif-jp), "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-body: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --font-serif-display: var(--font-shippori-mincho), "Hiragino Mincho ProN", serif;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --foreground-muted: #5c5c5c;
@@ -33,20 +34,22 @@
   --mg-space: 1rem;
   --mg-section-gap: 2rem;
   --mg-touch-min: 44px;
+  /** PC 固定ヘッダー高（PcTopNav / BottomNav オフセット / メイン上余白で共通） */
+  --mg-pc-top-nav-h: 52px;
   --map-footprint-duration: 350ms;
 
   /* 和テイスト デザイントークン（主催管理ページ等） */
-  --wa-bg: #f4f0e8;
-  --wa-bg2: #faf8f2;
+  --wa-bg: #eaf2ec;
+  --wa-bg2: #f4faf6;
   --wa-ink: #0e1610;
-  --wa-ink2: #3a3428;
-  --wa-ink3: #6a6258;
-  --wa-ink4: #a8a090;
+  --wa-ink2: #1e3828;
+  --wa-ink3: #3a5848;
+  --wa-ink4: #7a9888;
   --wa-accent: #1e3848;
   --wa-accent2: #2c7a88;
-  --wa-border: #ccc4b4;
-  --wa-border2: #b8d0c8;
-  --wa-green-bg: #eef6f2;
+  --wa-border: #c8dcd0;
+  --wa-border2: #b8d8c4;
+  --wa-green-bg: #ecf6ee;
   --wa-dark-header: #1e3020;
   --mg-glow: 0 0 12px rgba(184, 134, 11, 0.22);
   --mg-glow-strong: 0 0 20px rgba(184, 134, 11, 0.32);
@@ -150,12 +153,26 @@
 }
 
 body {
-  background: var(--mg-paper);
+  background-color: #eaf2ec;
   color: var(--foreground);
   font-family: var(--font-body), "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   min-height: 100vh;
   transition: background-color 0.2s ease, color 0.2s ease;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='16'%3E%3Cpath d='M14 0 Q28 8 14 16 Q0 8 14 0Z' fill='none' stroke='%234a9868' stroke-width='0.8' opacity='0.10'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='11' cy='11' r='10' fill='none' stroke='%233898b8' stroke-width='0.5' opacity='0.07'/%3E%3Ccircle cx='0' cy='0' r='10' fill='none' stroke='%233898b8' stroke-width='0.5' opacity='0.07'/%3E%3Ccircle cx='22' cy='0' r='10' fill='none' stroke='%233898b8' stroke-width='0.5' opacity='0.07'/%3E%3Ccircle cx='0' cy='22' r='10' fill='none' stroke='%233898b8' stroke-width='0.5' opacity='0.07'/%3E%3Ccircle cx='22' cy='22' r='10' fill='none' stroke='%233898b8' stroke-width='0.5' opacity='0.07'/%3E%3C/svg%3E");
+  background-size: 28px 16px, 22px 22px;
+  background-position: 0 0, 4px 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -238,5 +255,13 @@ body {
   /* モバイルのダブルタップズーム待ちを避け、タップの体感を速くする */
   :where(button, [type="button"], [type="submit"], [role="button"], summary) {
     touch-action: manipulation;
+  }
+  /* iOS Safari のフォーカス時自動ズームを防ぐ（font-size < 16px で発生） */
+  @supports (-webkit-touch-callout: none) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
   }
 }

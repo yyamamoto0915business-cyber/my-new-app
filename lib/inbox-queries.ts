@@ -7,7 +7,10 @@ export type InboxItem = {
   event_title: string | null;
   other_user_id: string;
   other_display_name: string | null;
+  other_email: string | null;
   other_avatar_url: string | null;
+  other_participant_avatar_url: string | null;
+  other_organizer_avatar_url: string | null;
   last_message_content: string | null;
   last_message_at: string | null;
   unread_count: number;
@@ -89,11 +92,20 @@ export async function fetchInboxByQueries(
   // 4. 相手の profiles を取得
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, display_name, avatar_url")
+    .select("id, email, display_name, avatar_url, participant_avatar_url, organizer_avatar_url")
     .in("id", uniqueOtherIds);
 
   const profileMap = new Map(
-    (profiles ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+    (profiles ?? []).map((p) => [
+      p.id,
+      {
+        email: p.email,
+        display_name: p.display_name,
+        avatar_url: p.avatar_url,
+        participant_avatar_url: p.participant_avatar_url,
+        organizer_avatar_url: p.organizer_avatar_url,
+      },
+    ])
   );
 
   // 5. 各会話の最終メッセージと未読数を並行取得（会話ごとに最小限のクエリ）
@@ -150,7 +162,10 @@ export async function fetchInboxByQueries(
       event_title: c.event_id ? eventMap.get(c.event_id) ?? null : null,
       other_user_id: otherId,
       other_display_name: prof?.display_name ?? null,
+      other_email: prof?.email ?? null,
       other_avatar_url: prof?.avatar_url ?? null,
+      other_participant_avatar_url: prof?.participant_avatar_url ?? null,
+      other_organizer_avatar_url: prof?.organizer_avatar_url ?? null,
       last_message_content: lastMsg?.content ?? null,
       last_message_at: lastMsg?.created_at ?? null,
       unread_count: unreadMap.get(c.id) ?? 0,

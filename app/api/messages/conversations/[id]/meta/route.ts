@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { hasDirectPostgresEnv } from "@/lib/direct-postgres-config";
 import { fetchConversationMetaDirectDb } from "@/lib/conversation-direct-db";
+import { resolveAvatarUrlByRole } from "@/lib/profile-avatar";
 
 const LOG_TAG = "[api/messages/conversations/.../meta]";
 
@@ -51,15 +52,25 @@ export async function GET(
       let counterpartDisplayName: string | null =
         myRole === "organizer" ? "ボランティア参加者" : meta.organizerDisplayName ?? "主催者";
       let counterpartAvatarUrl: string | null =
-        myRole === "organizer" ? null : meta.organizerAvatarUrl;
+        myRole === "organizer"
+          ? null
+          : resolveAvatarUrlByRole(
+              {
+                avatar_url: meta.organizerAvatarUrl,
+                participant_avatar_url: meta.organizerParticipantAvatarUrl,
+                organizer_avatar_url: meta.organizerOrganizerAvatarUrl,
+              },
+              "organizer"
+            );
       if (myRole === "organizer" && meta.otherUserId) {
         const { data: participant } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url")
+          .select("display_name, avatar_url, participant_avatar_url")
           .eq("id", meta.otherUserId)
           .maybeSingle();
         counterpartDisplayName = participant?.display_name ?? counterpartDisplayName;
-        counterpartAvatarUrl = participant?.avatar_url ?? null;
+        counterpartAvatarUrl =
+          participant?.participant_avatar_url ?? participant?.avatar_url ?? null;
       }
       return NextResponse.json({
         eventId: meta.eventId,
@@ -102,11 +113,16 @@ export async function GET(
       counterpartUserId
         ? supabase
             .from("profiles")
-            .select("display_name, avatar_url")
+            .select("display_name, avatar_url, participant_avatar_url, organizer_avatar_url")
             .eq("id", counterpartUserId)
             .maybeSingle()
         : Promise.resolve({
-            data: null as { display_name: string | null; avatar_url: string | null } | null,
+            data: null as {
+              display_name: string | null;
+              avatar_url: string | null;
+              participant_avatar_url: string | null;
+              organizer_avatar_url: string | null;
+            } | null,
           }),
     ]);
 
@@ -117,7 +133,17 @@ export async function GET(
       myRole,
       counterpartDisplayName:
         counterpart?.display_name ?? (myRole === "organizer" ? "ボランティア参加者" : "主催者"),
-      counterpartAvatarUrl: counterpart?.avatar_url ?? null,
+      counterpartAvatarUrl:
+        myRole === "organizer"
+          ? counterpart?.participant_avatar_url ?? counterpart?.avatar_url ?? null
+          : resolveAvatarUrlByRole(
+              {
+                avatar_url: counterpart?.avatar_url ?? null,
+                participant_avatar_url: counterpart?.participant_avatar_url ?? null,
+                organizer_avatar_url: counterpart?.organizer_avatar_url ?? null,
+              },
+              "organizer"
+            ),
     });
   } catch {
     return NextResponse.json(

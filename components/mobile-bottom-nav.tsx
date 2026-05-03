@@ -88,7 +88,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 flex border-t border-[#ccc4b4] bg-[#faf8f2]/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom,0px)] sm:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 flex border-t border-[#c8dcd0] bg-[#f4faf6]/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom,0px)] sm:hidden"
       aria-label="モバイルナビゲーション"
       role="navigation"
     >

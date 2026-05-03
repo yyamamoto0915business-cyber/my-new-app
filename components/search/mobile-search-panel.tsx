@@ -19,10 +19,10 @@ function Chip({
       type="button"
       onClick={onClick}
       className={cn(
-        "h-10 rounded-full px-4 text-sm font-medium border transition-all whitespace-nowrap",
+        "h-9 rounded-full px-3.5 text-[12px] font-medium border transition-all whitespace-nowrap touch-manipulation",
         tone === "active"
-          ? "border-green-100 bg-green-50 text-green-700"
-          : "border-slate-200 bg-white text-slate-600 active:bg-slate-50"
+          ? "border-[#b8d0c8] bg-[#eef6f2] text-[#1e3020]"
+          : "border-[#ccc4b4] bg-white text-[#3a3428] active:bg-[#f0ece4]"
       )}
     >
       {label}
@@ -80,23 +80,41 @@ export function MobileSearchPanel({
   return (
     <section
       className={cn(
-        "mx-4 mt-2 rounded-[24px] border border-slate-200/90 bg-white/95 p-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)]",
+        "mx-4 mt-2 overflow-hidden rounded-[20px] border border-[#ccc4b4] bg-[#faf8f2]",
         className
       )}
       aria-label="検索"
     >
-      <div className="space-y-3">
-        <div>
-          <p className="text-[15px] font-semibold text-slate-900">{title}</p>
-          <p className="mt-0.5 text-xs text-slate-500">{description}</p>
-        </div>
+      {/* ダークヘッダー帯 */}
+      <div className="relative overflow-hidden px-4 py-3" style={{ background: "#1e3020" }}>
+        <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="xMidYMid slice" aria-hidden>
+          <defs>
+            <pattern id="msearch-shippou" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+              <circle cx="8" cy="8" r="8" fill="none" stroke="white" strokeWidth="0.6" />
+              <circle cx="0" cy="0" r="8" fill="none" stroke="white" strokeWidth="0.6" />
+              <circle cx="16" cy="0" r="8" fill="none" stroke="white" strokeWidth="0.6" />
+              <circle cx="0" cy="16" r="8" fill="none" stroke="white" strokeWidth="0.6" />
+              <circle cx="16" cy="16" r="8" fill="none" stroke="white" strokeWidth="0.6" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#msearch-shippou)" opacity="0.07" />
+        </svg>
+        <p
+          className="relative text-[14px] font-bold text-[#f4f0e8]"
+          style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
+        >
+          {title}
+        </p>
+        <p className="relative mt-0.5 text-[11px] text-[#a8c8a4]">{description}</p>
+      </div>
 
-        <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4">
-          <Search className="h-4 w-4 text-slate-400" aria-hidden />
+      <div className="space-y-3 p-4">
+        <div className="flex h-11 items-center gap-3 rounded-full border border-[#ccc4b4] bg-white px-4">
+          <Search className="h-4 w-4 shrink-0 text-[#a8a090]" aria-hidden />
           <input
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
-            className="flex-1 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none"
+            className="flex-1 bg-transparent text-[14px] text-[#3a3428] placeholder:text-[#a8a090] outline-none"
             placeholder="地域やイベント名で探す"
             aria-label="地域やイベント名で探す"
           />
@@ -124,24 +142,24 @@ export function MobileSearchPanel({
           <button
             type="button"
             onClick={onOpenFilters}
-            className="h-11 flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-colors active:bg-slate-50"
+            className="inline-flex h-10 flex-1 touch-manipulation items-center justify-center gap-2 rounded-full border border-[#ccc4b4] bg-white text-[12px] font-medium text-[#3a3428] transition-colors active:bg-[#f0ece4]"
           >
-            <SlidersHorizontal className="h-4 w-4" aria-hidden />
+            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
             絞り込み
           </button>
           <button
             type="button"
             onClick={onToggleMap}
-            className="h-11 flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-colors active:bg-slate-50"
+            className="inline-flex h-10 flex-1 touch-manipulation items-center justify-center gap-2 rounded-full border border-[#ccc4b4] bg-white text-[12px] font-medium text-[#3a3428] transition-colors active:bg-[#f0ece4]"
           >
             {isMap ? (
               <>
-                <List className="h-4 w-4" aria-hidden />
+                <List className="h-3.5 w-3.5" aria-hidden />
                 一覧
               </>
             ) : (
               <>
-                <Map className="h-4 w-4" aria-hidden />
+                <Map className="h-3.5 w-3.5" aria-hidden />
                 地図
               </>
             )}

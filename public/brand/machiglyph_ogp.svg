@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <g id="sk">
+      <g transform="rotate(0)">  <ellipse cx="0" cy="-9" rx="5" ry="9" fill="#D4769A"/></g>
+      <g transform="rotate(72)"> <ellipse cx="0" cy="-9" rx="5" ry="9" fill="#D4769A"/></g>
+      <g transform="rotate(144)"><ellipse cx="0" cy="-9" rx="5" ry="9" fill="#D4769A"/></g>
+      <g transform="rotate(216)"><ellipse cx="0" cy="-9" rx="5" ry="9" fill="#D4769A"/></g>
+      <g transform="rotate(288)"><ellipse cx="0" cy="-9" rx="5" ry="9" fill="#D4769A"/></g>
+      <circle cx="0" cy="0" r="3" fill="#F7C5D5"/>
+    </g>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#F4F3FA"/>
+  <!-- Subtle gradient overlay -->
+  <rect width="1200" height="630" fill="url(#bgGrad)" opacity="0.4"/>
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EAE8F8"/>
+      <stop offset="100%" stop-color="#F8F4FA"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sakura decorations (scaled up ~1.5x, spread across wider canvas) -->
+  <g opacity="0.85">
+    <!-- Left -->
+    <g transform="translate(80,70) rotate(-20) scale(0.85)"><use href="#sk"/></g>
+    <g transform="translate(42,165) rotate(10) scale(1.3)"><use href="#sk"/></g>
+    <g transform="translate(65,295) rotate(30) scale(1.0)"><use href="#sk"/></g>
+    <g transform="translate(110,445) rotate(-15) scale(1.1)"><use href="#sk"/></g>
+    <!-- Right -->
+    <g transform="translate(1130,60) rotate(15) scale(1.4)"><use href="#sk"/></g>
+    <g transform="translate(1100,165) rotate(-25) scale(0.85)"><use href="#sk"/></g>
+    <g transform="translate(1148,315) rotate(40) scale(1.15)"><use href="#sk"/></g>
+    <g transform="translate(1115,465) rotate(-8) scale(1.25)"><use href="#sk"/></g>
+    <!-- Branch lines -->
+    <path d="M98,120 Q118,90 148,72" fill="none" stroke="#C8607A" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M1050,510 Q1072,468 1110,445" fill="none" stroke="#C8607A" stroke-width="1.4" stroke-linecap="round"/>
+    <g transform="translate(148,72) rotate(5) scale(0.92)"><use href="#sk"/></g>
+    <g transform="translate(1110,445) rotate(-12) scale(0.90)"><use href="#sk"/></g>
+    <!-- Scattered petals -->
+    <ellipse cx="195" cy="55"  rx="4" ry="8"  transform="rotate(-30,195,55)"  fill="#D4769A" opacity="0.70"/>
+    <ellipse cx="232" cy="33"  rx="5" ry="9"  transform="rotate(20,232,33)"   fill="#C8607A" opacity="0.60"/>
+    <ellipse cx="940" cy="48"  rx="4" ry="7"  transform="rotate(45,940,48)"   fill="#D4769A" opacity="0.65"/>
+    <ellipse cx="988" cy="88"  rx="4.5" ry="8" transform="rotate(-15,988,88)" fill="#C8607A" opacity="0.55"/>
+    <ellipse cx="90"  cy="510" rx="4" ry="7"   transform="rotate(10,90,510)"  fill="#D4769A" opacity="0.65"/>
+    <ellipse cx="1105" cy="545" rx="4" ry="8"  transform="rotate(-20,1105,545)" fill="#C8607A" opacity="0.60"/>
+    <ellipse cx="310" cy="590" rx="5" ry="9"   transform="rotate(35,310,590)"  fill="#D4769A" opacity="0.50"/>
+    <ellipse cx="860" cy="600" rx="4" ry="7.5" transform="rotate(-10,860,600)" fill="#C8607A" opacity="0.45"/>
+  </g>
+
+  <!-- ===== Network icon, centered left at (310,315), scale 1.5 ===== -->
+  <g transform="translate(310,315)">
+
+    <polygon points="0,-135 117,-67.5 117,67.5 0,135 -117,67.5 -117,-67.5"
+             fill="none" stroke="#4A3F8F" stroke-width="1.5" opacity="0.2"/>
+
+    <!-- Halos -->
+    <circle cx="0"    cy="-117" r="21" fill="#8FD44A" opacity="0.13"/>
+    <circle cx="102"  cy="58.5" r="21" fill="#8FD44A" opacity="0.13"/>
+    <circle cx="-102" cy="58.5" r="21" fill="#8FD44A" opacity="0.13"/>
+    <circle cx="102"  cy="-58.5" r="21" fill="#4A3F8F" opacity="0.08"/>
+    <circle cx="0"    cy="117"  r="21" fill="#4A3F8F" opacity="0.08"/>
+    <circle cx="-102" cy="-58.5" r="21" fill="#4A3F8F" opacity="0.08"/>
+
+    <!-- Outer ring edges -->
+    <g stroke="#4A3F8F" stroke-width="3.15" opacity="0.31" stroke-linecap="round">
+      <line x1="0"    y1="-117" x2="102"  y2="-58.5"/>
+      <line x1="102"  y1="-58.5" x2="102"  y2="58.5"/>
+      <line x1="102"  y1="58.5"  x2="0"    y2="117"/>
+      <line x1="0"    y1="117"   x2="-102" y2="58.5"/>
+      <line x1="-102" y1="58.5"  x2="-102" y2="-58.5"/>
+      <line x1="-102" y1="-58.5" x2="0"    y2="-117"/>
+    </g>
+
+    <!-- YG spokes -->
+    <g stroke="#8FD44A" stroke-width="6.0" opacity="1.00" stroke-linecap="round">
+      <line x1="0"    y1="-24"  x2="0"    y2="-103.5"/>
+      <line x1="21"   y1="12"   x2="88.5" y2="51"/>
+      <line x1="-21"  y1="12"   x2="-88.5" y2="51"/>
+    </g>
+
+    <!-- Indigo spokes -->
+    <g stroke="#4A3F8F" stroke-width="4.92" opacity="1.00" stroke-linecap="round">
+      <line x1="21"   y1="-12"  x2="88.5" y2="-58.5"/>
+      <line x1="0"    y1="24"   x2="0"    y2="103.5"/>
+      <line x1="-21"  y1="-12"  x2="-88.5" y2="-58.5"/>
+    </g>
+
+    <!-- YG nodes -->
+    <circle cx="0"    cy="-117" r="16.5" fill="#8FD44A"/>
+    <circle cx="0"    cy="-117" r="6.75" fill="#ffffff"/>
+    <circle cx="102"  cy="58.5" r="16.5" fill="#8FD44A"/>
+    <circle cx="102"  cy="58.5" r="6.75" fill="#ffffff"/>
+    <circle cx="-102" cy="58.5" r="16.5" fill="#8FD44A"/>
+    <circle cx="-102" cy="58.5" r="6.75" fill="#ffffff"/>
+
+    <!-- Indigo nodes -->
+    <circle cx="102"  cy="-58.5" r="16.5" fill="#ffffff" stroke="#4A3F8F" stroke-width="3.75"/>
+    <circle cx="102"  cy="-58.5" r="5.7"  fill="#4A3F8F" opacity="0.30"/>
+    <circle cx="0"    cy="117"   r="16.5" fill="#ffffff" stroke="#4A3F8F" stroke-width="3.75"/>
+    <circle cx="0"    cy="117"   r="5.7"  fill="#4A3F8F" opacity="0.30"/>
+    <circle cx="-102" cy="-58.5" r="16.5" fill="#ffffff" stroke="#4A3F8F" stroke-width="3.75"/>
+    <circle cx="-102" cy="-58.5" r="5.7"  fill="#4A3F8F" opacity="0.30"/>
+
+    <!-- Center node -->
+    <circle r="48"  fill="#8FD44A" opacity="0.08"/>
+    <circle r="34.5" fill="none" stroke="#8FD44A" stroke-width="2.25" opacity="0.30"/>
+    <circle r="25.5" fill="#ffffff" stroke="#4A3F8F" stroke-width="4.5"/>
+    <circle r="9.75" fill="#8FD44A"/>
+    <circle r="4.2"  fill="#ffffff"/>
+  </g>
+
+  <!-- Separator -->
+  <line x1="500" y1="165" x2="500" y2="465" stroke="#4A3F8F" stroke-width="1.8" opacity="0.22"/>
+
+  <!-- Brand name -->
+  <text x="528" y="290"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="72" font-weight="500" letter-spacing="0.01em"
+        fill="#2C2560">Machiglyph</text>
+
+  <!-- Tagline -->
+  <text x="533" y="338"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="22" font-weight="400" letter-spacing="0.25em"
+        fill="#C8A84B">まちの掲示板</text>
+</svg>

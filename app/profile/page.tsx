@@ -20,11 +20,22 @@ import { useUnreadCount } from "@/hooks/use-unread-count";
 import { useUnreadBreakdown } from "@/hooks/use-unread-breakdown";
 import type { User } from "@supabase/supabase-js";
 import { ProfilePageSkeleton } from "@/components/profile/ProfilePageSkeleton";
+import {
+  normalizeProfileAvatarRole,
+  resolveAvatarUrlByRole,
+  type ProfileAvatarRole,
+} from "@/lib/profile-avatar";
 
 const VALID_MODES: ProfileMode[] = ["participant", "volunteer", "organizer"];
 
 function isValidMode(m: string | null): m is ProfileMode {
   return m !== null && VALID_MODES.includes(m as ProfileMode);
+}
+
+function isMissingAvatarColumnsError(message: string): boolean {
+  return /participant_avatar_url|organizer_avatar_url|active_profile_role|42703/i.test(
+    message
+  );
 }
 
 function ProfileContent() {
@@ -40,6 +51,9 @@ function ProfileContent() {
     displayName: string;
     region?: string | null;
     avatarUrl?: string | null;
+    participantAvatarUrl?: string | null;
+    organizerAvatarUrl?: string | null;
+    activeProfileRole: ProfileAvatarRole;
     bio?: string | null;
     completionPercent: number;
     defaultMode?: string | null;
@@ -47,6 +61,7 @@ function ProfileContent() {
   }>({
     displayName: "",
     completionPercent: 0,
+    activeProfileRole: "participant",
   });
   const unreadCount = useUnreadCount(!!effectiveUser);
   const activeMode = resolvedMode ?? "participant";
@@ -68,6 +83,19 @@ function ProfileContent() {
       await supabase
         .from("profiles")
         .update({ default_mode: mode, updated_at: new Date().toISOString() })
+        .eq("id", effectiveUser.id);
+    },
+    [effectiveUser]
+  );
+
+  const persistActiveProfileRole = useCallback(
+    async (role: ProfileAvatarRole) => {
+      if (!effectiveUser) return;
+      const supabase = createClient();
+      if (!supabase) return;
+      await supabase
+        .from("profiles")
+        .update({ active_profile_role: role, updated_at: new Date().toISOString() })
         .eq("id", effectiveUser.id);
     },
     [effectiveUser]
@@ -108,18 +136,48 @@ function ProfileContent() {
           "";
         let defaultMode: string | null = "participant";
 
-        const [{ data }, { data: organizerRow }] = await Promise.all([
-          supabase
+        const { data: organizerRow } = await supabase
+          .from("organizers")
+          .select("id")
+          .eq("profile_id", authUser.id)
+          .maybeSingle();
+
+        let data:
+          | {
+              display_name: string | null;
+              avatar_url: string | null;
+              participant_avatar_url: string | null;
+              organizer_avatar_url: string | null;
+              active_profile_role: string | null;
+              phone: string | null;
+              address: string | null;
+              region: string | null;
+              bio: string | null;
+              default_mode: string | null;
+            }
+          | null = null;
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("display_name, avatar_url, participant_avatar_url, organizer_avatar_url, active_profile_role, phone, address, region, bio, default_mode")
+          .eq("id", authUser.id)
+          .single();
+        if (profileError && isMissingAvatarColumnsError(profileError.message ?? "")) {
+          const { data: legacyData } = await supabase
             .from("profiles")
             .select("display_name, avatar_url, phone, address, region, bio, default_mode")
             .eq("id", authUser.id)
-            .single(),
-          supabase
-            .from("organizers")
-            .select("id")
-            .eq("profile_id", authUser.id)
-            .maybeSingle(),
-        ]);
+            .single();
+          data = legacyData
+            ? {
+                ...legacyData,
+                participant_avatar_url: legacyData.avatar_url ?? null,
+                organizer_avatar_url: null,
+                active_profile_role: "participant",
+              }
+            : null;
+        } else {
+          data = profileData as typeof data;
+        }
 
         if (data) {
           const dn = (data.display_name ?? displayName) as string;
@@ -127,7 +185,20 @@ function ProfileContent() {
           setProfile({
             displayName: dn,
             region: data.region,
-            avatarUrl: data.avatar_url,
+            participantAvatarUrl: data.participant_avatar_url ?? data.avatar_url,
+            organizerAvatarUrl: data.organizer_avatar_url,
+            activeProfileRole: normalizeProfileAvatarRole(data.active_profile_role),
+            avatarUrl: resolveAvatarUrlByRole(
+              {
+                avatar_url: data.avatar_url,
+                participant_avatar_url: data.participant_avatar_url,
+                organizer_avatar_url: data.organizer_avatar_url,
+                active_profile_role: normalizeProfileAvatarRole(
+                  data.active_profile_role
+                ),
+              },
+              activeMode === "organizer" ? "organizer" : "participant"
+            ),
             bio: data.bio,
             completionPercent: getProfileCompletion({
               display_name: dn,
@@ -144,6 +215,9 @@ function ProfileContent() {
             displayName: displayName || "ゲスト",
             region: null,
             avatarUrl: null,
+            participantAvatarUrl: null,
+            organizerAvatarUrl: null,
+            activeProfileRole: "participant",
             bio: null,
             completionPercent: getProfileCompletion({
               display_name: displayName,
@@ -168,7 +242,12 @@ function ProfileContent() {
       } catch {
         setSessionUser(null);
         setResolvedMode(isValidMode(urlMode) ? urlMode : "participant");
-        setProfile((p) => ({ ...p, displayName: "ゲスト", completionPercent: 0 }));
+        setProfile((p) => ({
+          ...p,
+          displayName: "ゲスト",
+          completionPercent: 0,
+          activeProfileRole: "participant",
+        }));
       } finally {
         setLoading(false);
       }
@@ -187,8 +266,22 @@ function ProfileContent() {
       }
       setResolvedMode(mode);
       persistDefaultMode(mode);
+      const role: ProfileAvatarRole = mode === "organizer" ? "organizer" : "participant";
+      setProfile((p) => ({
+        ...p,
+        activeProfileRole: role,
+        avatarUrl: resolveAvatarUrlByRole(
+          {
+            participant_avatar_url: p.participantAvatarUrl,
+            organizer_avatar_url: p.organizerAvatarUrl,
+            avatar_url: p.avatarUrl,
+          },
+          role
+        ),
+      }));
+      persistActiveProfileRole(role);
     },
-    [persistDefaultMode, router, searchParams]
+    [persistActiveProfileRole, persistDefaultMode, router, searchParams]
   );
 
   if (authLoading || loading || resolvedMode === null) {
@@ -246,12 +339,31 @@ function ProfileContent() {
             <MypageHeader
               displayName={profile.displayName}
               avatarUrl={profile.avatarUrl}
+              activeProfileRole={profile.activeProfileRole}
               bio={profile.bio}
               region={profile.region}
               activeMode={activeMode}
               onModeChange={handleModeChange}
               userId={effectiveUser.id}
-              onAvatarChange={(url) => setProfile((p) => ({ ...p, avatarUrl: url ?? null }))}
+              onAvatarChange={(url) =>
+                setProfile((p) => {
+                  const nextRole =
+                    activeMode === "organizer" ? "organizer" : "participant";
+                  return {
+                    ...p,
+                    avatarUrl: url ?? null,
+                    participantAvatarUrl:
+                      nextRole === "participant"
+                        ? (url ?? null)
+                        : p.participantAvatarUrl ?? null,
+                    organizerAvatarUrl:
+                      nextRole === "organizer"
+                        ? (url ?? null)
+                        : p.organizerAvatarUrl ?? null,
+                    activeProfileRole: nextRole,
+                  };
+                })
+              }
             />
 
             {/* よく使う：2列グリッドカード */}

@@ -27,8 +27,8 @@ export function MobileMainShell({ children }: Props) {
     <div
       className={
         immersiveMobile
-          ? "flex min-h-screen flex-col pt-0 pb-0 sm:pb-0 sm:pl-20 sm:pt-0"
-          : "flex min-h-screen flex-col pt-[calc(var(--mg-mobile-top-header-h)+env(safe-area-inset-top,0px))] pb-[calc(72px+env(safe-area-inset-bottom,0px))] sm:pb-0 sm:pl-20 sm:pt-0"
+          ? "flex min-h-screen flex-col pt-0 pb-0 sm:pb-0 sm:pl-20 min-[900px]:pl-20 min-[900px]:pt-[var(--mg-pc-top-nav-h)]"
+          : "flex min-h-screen flex-col max-[639px]:pt-[calc(var(--mg-mobile-top-header-h)+env(safe-area-inset-top,0px))] max-[639px]:pb-[calc(72px+env(safe-area-inset-bottom,0px))] min-[640px]:max-[899px]:pt-0 min-[900px]:pt-[var(--mg-pc-top-nav-h)] sm:pb-0 sm:pl-20 min-[900px]:pl-20"
       }
       style={
         immersiveMobile

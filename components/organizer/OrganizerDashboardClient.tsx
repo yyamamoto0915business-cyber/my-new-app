@@ -58,56 +58,160 @@ function formatDate(dateStr: string) {
 function OrganizerHeroBanner() {
   return (
     <div
-      className="relative -mx-5 -mt-5 h-[190px] overflow-hidden sm:mx-0 sm:mt-0 sm:h-[140px] sm:rounded-2xl"
+      className="relative -mx-5 -mt-5 h-[190px] overflow-hidden sm:mx-0 sm:mt-0 sm:h-[140px] sm:rounded-sm"
       aria-hidden="true"
+      style={{
+        boxShadow: "0 0 0 3px #c8a030, 0 0 0 6px #2a1800, 0 0 0 9px #c8a030, 0 8px 32px rgba(0,0,0,0.4)",
+      }}
     >
       <div
         className="absolute inset-0"
-        style={{ background: "linear-gradient(135deg, #dde8db 0%, #e4ede0 100%)" }}
+        style={{ background: "linear-gradient(to bottom right, #1e4868 0%, #2a5870 40%, #245858 75%, #1e3c28 100%)" }}
       />
       <svg
         className="absolute inset-0 h-full w-full"
-        viewBox="0 0 400 190"
+        viewBox="0 0 900 190"
         preserveAspectRatio="xMidYMid slice"
+        aria-hidden="true"
       >
         <defs>
-          <pattern id="org-seigaiha" x="0" y="0" width="24" height="16" patternUnits="userSpaceOnUse">
-            <path d="M0 16 A12 12 0 0 1 24 16" fill="none" stroke="#9ab49a" strokeWidth="1" />
-            <path d="M-12 16 A12 12 0 0 1 12 16" fill="none" stroke="#9ab49a" strokeWidth="1" />
+          <pattern id="seigaiha-org-dash" x="0" y="0" width="44" height="25" patternUnits="userSpaceOnUse">
+            <path d="M22 0 Q44 12.5 22 25 Q0 12.5 22 0Z" fill="none" stroke="#80d0e8" strokeWidth="1.1" opacity="0.14"/>
+            <path d="M0 12.5 Q22 25 44 12.5" fill="none" stroke="#80d0e8" strokeWidth="0.6" opacity="0.08"/>
           </pattern>
+          <pattern id="shippo-org-dash" x="0" y="0" width="26" height="26" patternUnits="userSpaceOnUse">
+            <circle cx="13" cy="13" r="12" fill="none" stroke="#d4b040" strokeWidth="0.5" opacity="0.12"/>
+            <circle cx="0"  cy="0"  r="12" fill="none" stroke="#d4b040" strokeWidth="0.5" opacity="0.12"/>
+            <circle cx="26" cy="0"  r="12" fill="none" stroke="#d4b040" strokeWidth="0.5" opacity="0.12"/>
+            <circle cx="0"  cy="26" r="12" fill="none" stroke="#d4b040" strokeWidth="0.5" opacity="0.12"/>
+            <circle cx="26" cy="26" r="12" fill="none" stroke="#d4b040" strokeWidth="0.5" opacity="0.12"/>
+          </pattern>
+          <radialGradient id="kumo1-org-dash" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stopColor="#f0d860" stopOpacity="0.65"/>
+            <stop offset="55%"  stopColor="#d4b040" stopOpacity="0.32"/>
+            <stop offset="100%" stopColor="#d4b040" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="kumo2-org-dash" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stopColor="#ecd050" stopOpacity="0.50"/>
+            <stop offset="55%"  stopColor="#d4b040" stopOpacity="0.24"/>
+            <stop offset="100%" stopColor="#d4b040" stopOpacity="0"/>
+          </radialGradient>
+          <linearGradient id="textOverlay-org-dash" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stopColor="#1e4868" stopOpacity="0.97"/>
+            <stop offset="42%"  stopColor="#1e4868" stopOpacity="0.52"/>
+            <stop offset="100%" stopColor="#1e4868" stopOpacity="0"/>
+          </linearGradient>
         </defs>
-        {/* 青海波 */}
-        <rect width="400" height="190" fill="url(#org-seigaiha)" opacity="0.5" />
-        {/* 山のシルエット layer 1 */}
-        <path
-          d="M0 190 L50 140 L100 155 L150 108 L200 145 L250 116 L300 148 L350 124 L400 155 L400 190 Z"
-          fill="#a8c8a4"
-          opacity="0.55"
-        />
-        {/* 山のシルエット layer 2 */}
-        <path
-          d="M0 190 L40 162 L85 170 L128 150 L168 163 L212 150 L258 164 L296 153 L342 165 L400 158 L400 190 Z"
-          fill="#98b894"
-          opacity="0.65"
-        />
-        {/* 日輪 top-right */}
-        <g opacity="0.22">
-          <circle cx="380" cy="22" r="28" fill="none" stroke="white" strokeWidth="0.7" />
-          <circle cx="380" cy="22" r="42" fill="none" stroke="white" strokeWidth="0.5" />
-          <circle cx="380" cy="22" r="56" fill="none" stroke="white" strokeWidth="0.4" />
-        </g>
-        {/* 家紋風円紋 top-left */}
-        <g transform="translate(30,30)" stroke="#607860" fill="none" opacity="0.3">
-          <circle cx="0" cy="0" r="18" strokeWidth="1" />
-          <line x1="-18" y1="0" x2="18" y2="0" strokeWidth="0.5" />
-          <line x1="0" y1="-18" x2="0" y2="18" strokeWidth="0.5" />
-          <line x1="-12.7" y1="-12.7" x2="12.7" y2="12.7" strokeWidth="0.5" />
-          <line x1="12.7" y1="-12.7" x2="-12.7" y2="12.7" strokeWidth="0.5" />
-        </g>
+
+        {/* 青海波・七宝つなぎ */}
+        <rect width="100%" height="100%" fill="url(#seigaiha-org-dash)"/>
+        <rect width="100%" height="100%" fill="url(#shippo-org-dash)"/>
+
+        {/* 月（右上） */}
+        <circle cx="800" cy="38" r="52" fill="#f0e478" opacity="0.20"/>
+        <circle cx="800" cy="38" r="35" fill="#f8ee90" opacity="0.26"/>
+        <circle cx="800" cy="38" r="20" fill="#fef8b0" opacity="0.32"/>
+
+        {/* 金泥雲（上部） */}
+        <ellipse cx="770" cy="25"  rx="170" ry="20" fill="url(#kumo1-org-dash)" opacity="0.85"/>
+        <ellipse cx="820" cy="14"  rx="115" ry="13" fill="url(#kumo1-org-dash)" opacity="0.70"/>
+        <ellipse cx="690" cy="38"  rx="95"  ry="11" fill="url(#kumo2-org-dash)" opacity="0.60"/>
+
+        {/* 金泥雲（下部 cy=bannerHeight-20=170） */}
+        <ellipse cx="620" cy="170" rx="190" ry="22" fill="url(#kumo1-org-dash)" opacity="0.65"/>
+        <ellipse cx="700" cy="178" rx="140" ry="16" fill="url(#kumo1-org-dash)" opacity="0.55"/>
+        <ellipse cx="780" cy="183" rx="110" ry="13" fill="url(#kumo2-org-dash)" opacity="0.50"/>
+        <ellipse cx="510" cy="178" rx="90"  ry="12" fill="url(#kumo2-org-dash)" opacity="0.42"/>
+
+        {/* 大きな松（右側）幹 bannerHeight=190 */}
+        <path d="M840 190 Q838 180 842 140 Q845 100 838 55"
+              stroke="#163010" strokeWidth="9" fill="none" strokeLinecap="round" opacity="0.90"/>
+        <path d="M840 190 Q838 180 842 140 Q845 100 838 55"
+              stroke="#2c5020" strokeWidth="6" fill="none" strokeLinecap="round" opacity="0.65"/>
+
+        {/* 主枝1（左上） */}
+        <path d="M840 110 Q800 90 740 65 Q700 48 660 38"
+              stroke="#1e3c10" strokeWidth="5.5" fill="none" strokeLinecap="round" opacity="0.85"/>
+        <path d="M760 72 Q748 58 738 45" stroke="#1e3c10" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.75"/>
+        <path d="M720 55 Q710 42 702 30" stroke="#1e3c10" strokeWidth="2.0" fill="none" strokeLinecap="round" opacity="0.70"/>
+
+        {/* 主枝2（右上） */}
+        <path d="M840 80 Q870 62 895 42 Q910 30 918 18"
+              stroke="#1e3c10" strokeWidth="4.5" fill="none" strokeLinecap="round" opacity="0.80"/>
+        <path d="M858 68 Q878 52 900 38"
+              stroke="#1e3c10" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.65"/>
+
+        {/* 主枝3（左中段） */}
+        <path d="M840 145 Q795 128 750 118 Q710 110 675 108"
+              stroke="#1e3c10" strokeWidth="4.5" fill="none" strokeLinecap="round" opacity="0.80"/>
+        <path d="M760 120 Q745 108 735 95" stroke="#1e3c10" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.70"/>
+        <path d="M715 112 Q700 100 690 88" stroke="#1e3c10" strokeWidth="2.0" fill="none" strokeLinecap="round" opacity="0.65"/>
+
+        {/* 主枝4（右中段） */}
+        <path d="M842 160 Q875 145 905 132"
+              stroke="#1e3c10" strokeWidth="4.0" fill="none" strokeLinecap="round" opacity="0.75"/>
+
+        {/* 松葉の房 */}
+        <ellipse cx="650" cy="32"  rx="34" ry="15" fill="#285c20" opacity="0.82" transform="rotate(-20 650 32)"/>
+        <ellipse cx="668" cy="22"  rx="28" ry="13" fill="#306228" opacity="0.72" transform="rotate(8 668 22)"/>
+        <ellipse cx="633" cy="25"  rx="24" ry="11" fill="#285c20" opacity="0.68" transform="rotate(-35 633 25)"/>
+        <ellipse cx="697" cy="33"  rx="30" ry="14" fill="#2c6022" opacity="0.75" transform="rotate(-10 697 33)"/>
+        <ellipse cx="730" cy="57"  rx="32" ry="14" fill="#285c20" opacity="0.78" transform="rotate(-15 730 57)"/>
+        <ellipse cx="750" cy="46"  rx="26" ry="12" fill="#306228" opacity="0.68" transform="rotate(12 750 46)"/>
+        <ellipse cx="713" cy="50"  rx="24" ry="11" fill="#285c20" opacity="0.65" transform="rotate(-30 713 50)"/>
+        <ellipse cx="793" cy="68"  rx="28" ry="13" fill="#285c20" opacity="0.72" transform="rotate(-8 793 68)"/>
+        <ellipse cx="810" cy="60"  rx="24" ry="11" fill="#306228" opacity="0.65" transform="rotate(15 810 60)"/>
+        <ellipse cx="902" cy="30"  rx="32" ry="14" fill="#285c20" opacity="0.78" transform="rotate(-25 902 30)"/>
+        <ellipse cx="882" cy="23"  rx="27" ry="12" fill="#2c6022" opacity="0.68" transform="rotate(5 882 23)"/>
+        <ellipse cx="864" cy="53"  rx="30" ry="13" fill="#285c20" opacity="0.72" transform="rotate(-18 864 53)"/>
+        <ellipse cx="670" cy="98"  rx="32" ry="14" fill="#285c20" opacity="0.78" transform="rotate(-12 670 98)"/>
+        <ellipse cx="688" cy="88"  rx="26" ry="12" fill="#306228" opacity="0.68" transform="rotate(10 688 88)"/>
+        <ellipse cx="653" cy="90"  rx="24" ry="11" fill="#285c20" opacity="0.65" transform="rotate(-28 653 90)"/>
+        <ellipse cx="730" cy="106" rx="30" ry="13" fill="#285c20" opacity="0.75" transform="rotate(-8 730 106)"/>
+        <ellipse cx="748" cy="96"  rx="24" ry="11" fill="#306228" opacity="0.65" transform="rotate(14 748 96)"/>
+        <ellipse cx="898" cy="123" rx="28" ry="13" fill="#285c20" opacity="0.72" transform="rotate(-15 898 123)"/>
+        <ellipse cx="880" cy="116" rx="24" ry="11" fill="#2c6022" opacity="0.65" transform="rotate(8 880 116)"/>
+
+        {/* 山シルエット（遠景）bannerHeight=190 */}
+        <path d="M380 165 Q480 122 590 150 Q700 176 820 140 L900 128 L900 190 L380 190Z"
+              fill="#1a3c28" opacity="0.55"/>
+        <path d="M420 180 Q520 162 638 175 Q755 188 870 165 L900 162 L900 190 L420 190Z"
+              fill="#162e1e" opacity="0.50"/>
+
+        {/* 水面（下部 cy=bannerHeight-10=180） */}
+        <path d="M460 178 Q530 168 600 178 Q670 186 745 174 Q820 162 900 174 L900 190 L460 190Z"
+              fill="#203848" opacity="0.65"/>
+        <ellipse cx="680" cy="184" rx="88" ry="8" fill="none" stroke="#80d0e8" strokeWidth="0.9" opacity="0.25"/>
+        <ellipse cx="680" cy="184" rx="60" ry="5" fill="none" stroke="#80d0e8" strokeWidth="0.6" opacity="0.18"/>
+
+        {/* 家紋（左上・金） */}
+        <circle cx="385" cy="30" r="22" fill="none" stroke="#d4b040" strokeWidth="1.0" opacity="0.55"/>
+        <circle cx="385" cy="30" r="14" fill="none" stroke="#d4b040" strokeWidth="0.7" opacity="0.45"/>
+        <path d="M385 8 L385 52 M363 30 L407 30 M370 15 L400 45 M400 15 L370 45"
+              stroke="#d4b040" strokeWidth="0.55" opacity="0.38"/>
+        <circle cx="385" cy="30" r="4" fill="#d4b040" opacity="0.48"/>
+
+        {/* テキスト側グラデーションオーバーレイ */}
+        <rect width="100%" height="100%" fill="url(#textOverlay-org-dash)"/>
+
+        {/* 屏風の折り目（中央縦線） */}
+        <line x1="450" y1="0" x2="450" y2="100%" stroke="#d4b040" strokeWidth="1.2" opacity="0.22"/>
+
+        {/* 金の縁ライン（上下）bannerHeight-3=187 */}
+        <rect x="0" y="0"   width="100%" height="3" fill="#d4b040" opacity="0.88"/>
+        <rect x="0" y="187" width="100%" height="3" fill="#d4b040" opacity="0.68"/>
       </svg>
+
       <div className="absolute bottom-5 left-5">
-        <p className="text-[10px] font-medium tracking-[0.22em] text-[#607860]">ORGANIZER</p>
-        <h1 className="mt-0.5 font-serif text-[22px] font-bold leading-tight text-[#1e3020]">
+        <p className="text-[9px] font-medium tracking-[0.25em]" style={{ color: "#d4b040" }}>ORGANIZER</p>
+        <h1
+          className="mt-0.5 font-semibold leading-snug tracking-[0.05em] [text-shadow:0_2px_14px_rgba(0,0,0,0.45)]"
+          style={{
+            fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif",
+            fontSize: "22px",
+            color: "#f0f6fa",
+          }}
+        >
           MachiGlyph 主催者管理
         </h1>
       </div>
@@ -170,8 +274,11 @@ function PlanCard({ planSummary }: { planSummary: PlanSummary }) {
       className="overflow-hidden rounded-[14px] border border-[#c8c0b0]"
       aria-labelledby="plan-card-heading"
     >
-      {/* Dark header with 七宝つなぎ pattern */}
-      <div className="relative overflow-hidden px-4 py-4" style={{ background: "#1e3020" }}>
+      {/* Header with 七宝つなぎ pattern */}
+      <div
+        className="relative overflow-hidden px-4 py-4"
+        style={{ background: "linear-gradient(135deg, #3f6c57 0%, #4b775f 55%, #416d58 100%)" }}
+      >
         <svg
           className="absolute inset-0 h-full w-full"
           preserveAspectRatio="xMidYMid slice"
@@ -186,25 +293,25 @@ function PlanCard({ planSummary }: { planSummary: PlanSummary }) {
               height="20"
               patternUnits="userSpaceOnUse"
             >
-              <circle cx="10" cy="10" r="10" fill="none" stroke="white" strokeWidth="0.8" />
-              <circle cx="0" cy="0" r="10" fill="none" stroke="white" strokeWidth="0.8" />
-              <circle cx="20" cy="0" r="10" fill="none" stroke="white" strokeWidth="0.8" />
-              <circle cx="0" cy="20" r="10" fill="none" stroke="white" strokeWidth="0.8" />
-              <circle cx="20" cy="20" r="10" fill="none" stroke="white" strokeWidth="0.8" />
+              <circle cx="10" cy="10" r="10" fill="none" stroke="#d6e6dc" strokeWidth="0.8" />
+              <circle cx="0" cy="0" r="10" fill="none" stroke="#d6e6dc" strokeWidth="0.8" />
+              <circle cx="20" cy="0" r="10" fill="none" stroke="#d6e6dc" strokeWidth="0.8" />
+              <circle cx="0" cy="20" r="10" fill="none" stroke="#d6e6dc" strokeWidth="0.8" />
+              <circle cx="20" cy="20" r="10" fill="none" stroke="#d6e6dc" strokeWidth="0.8" />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#org-shippou)" opacity="0.08" />
+          <rect width="100%" height="100%" fill="url(#org-shippou)" opacity="0.2" />
         </svg>
         {/* 家紋風円紋 right */}
         <svg
-          className="absolute right-3 top-1/2 h-14 w-14 -translate-y-1/2 opacity-[0.18]"
+          className="absolute right-3 top-1/2 h-14 w-14 -translate-y-1/2 opacity-[0.3]"
           viewBox="0 0 56 56"
           aria-hidden="true"
         >
-          <circle cx="28" cy="28" r="26" fill="none" stroke="white" strokeWidth="1.2" />
-          <circle cx="28" cy="28" r="17" fill="none" stroke="white" strokeWidth="0.8" />
-          <line x1="2" y1="28" x2="54" y2="28" stroke="white" strokeWidth="0.8" />
-          <line x1="28" y1="2" x2="28" y2="54" stroke="white" strokeWidth="0.8" />
+          <circle cx="28" cy="28" r="26" fill="none" stroke="#dcebe2" strokeWidth="1.2" />
+          <circle cx="28" cy="28" r="17" fill="none" stroke="#dcebe2" strokeWidth="0.8" />
+          <line x1="2" y1="28" x2="54" y2="28" stroke="#dcebe2" strokeWidth="0.8" />
+          <line x1="28" y1="2" x2="28" y2="54" stroke="#dcebe2" strokeWidth="0.8" />
         </svg>
         {/* Badges */}
         <div className="relative flex flex-wrap gap-2">

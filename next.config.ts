@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  compress: true,
   async redirects() {
     return [
       { source: "/rankings", destination: "/discover?tab=ranking", permanent: false },
@@ -11,6 +12,8 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 3600,
     remotePatterns: [
       {
         protocol: "https",
@@ -45,6 +48,9 @@ const nextConfig: NextConfig = {
         }
       })(),
     ],
+  },
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
   },
 };
 

@@ -86,7 +86,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`relative flex flex-1 flex-col items-center gap-1 text-xs transition-colors sm:flex-none sm:w-full sm:px-2 ${
+      className={`relative flex flex-1 flex-col items-center gap-1 text-[13px] transition-colors sm:flex-none sm:w-full sm:px-2 ${
         minTapHeight ? "min-h-[44px] justify-center py-3 sm:py-2" : "py-3 sm:py-2"
       } ${isActive ? "text-[var(--accent)]" : "text-[var(--foreground-muted)]"}`}
     >

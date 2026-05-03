@@ -31,15 +31,15 @@ export function EventCard({ event }: Props) {
   const [saved, setSaved] = useState(() => isBookmarked(event.id));
 
   const statusBadge = useMemo(() => {
-    if (status === "available") return { label: "参加受付中", className: "bg-green-50 text-green-700 border-green-100" };
-    if (status === "full") return { label: "満員", className: "bg-slate-100 text-slate-600 border-slate-200" };
-    if (status === "ended") return { label: "終了", className: "bg-slate-100 text-slate-500 border-slate-200" };
+    if (status === "available") return { label: "参加受付中", className: "bg-[#eef6f2] text-[#1e3020] border-[#b8d0c8]" };
+    if (status === "full") return { label: "満員", className: "bg-[#f0ece4] text-[#6a6258] border-[#ccc4b4]" };
+    if (status === "ended") return { label: "終了", className: "bg-[#f0ece4] text-[#a8a090] border-[#ccc4b4]" };
     return null;
   }, [status]);
 
   const priceBadge = useMemo(() => {
-    if (event.price === 0) return { label: "無料", className: "bg-emerald-50 text-emerald-700 border-emerald-100" };
-    return { label: `¥${event.price}`, className: "bg-slate-50 text-slate-700 border-slate-200" };
+    if (event.price === 0) return { label: "無料", className: "bg-[#eef6f2] text-[#2c7a88] border-[#b8d0c8]" };
+    return { label: `¥${event.price}`, className: "bg-[#faf8f2] text-[#3a3428] border-[#ccc4b4]" };
   }, [event.price]);
 
   const handleOpen = () => {
@@ -53,22 +53,22 @@ export function EventCard({ event }: Props) {
       tabIndex={0}
       onClick={handleOpen}
       onKeyDown={(e) => e.key === "Enter" && handleOpen()}
-      className={`overflow-hidden rounded-[24px] border border-slate-200/90 bg-white shadow-[0_4px_14px_rgba(15,23,42,0.05)] transition active:scale-[0.995] ${
+      className={`overflow-hidden rounded-[20px] border border-[#ccc4b4] bg-[#faf8f2] transition active:scale-[0.995] ${
         isEnded ? "opacity-60" : ""
       }`}
       aria-label={`${event.title}の詳細を見る`}
     >
-      <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
+      <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#e4ede0]">
         <EventThumbnail imageUrl={event.imageUrl} alt={event.title} rounded="none" fill />
 
         {categoryLabel && (
-          <span className="absolute left-3 top-3 inline-flex h-8 items-center rounded-full border border-white/40 bg-white/85 px-3 text-xs font-semibold text-slate-700 backdrop-blur-sm">
+          <span className="absolute left-3 top-3 inline-flex h-7 items-center rounded-full border border-white/40 bg-white/85 px-3 text-[11px] font-semibold text-[#3a3428] backdrop-blur-sm">
             {categoryLabel}
           </span>
         )}
 
         <div
-          className="absolute right-2 top-2 z-10 flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full bg-black/30 backdrop-blur-sm"
+          className="absolute right-2 top-2 z-10 flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-black/25 backdrop-blur-sm"
           onClick={(e) => e.stopPropagation()}
         >
           <BookmarkToggle
@@ -83,49 +83,52 @@ export function EventCard({ event }: Props) {
       </div>
 
       <div className="p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-semibold ${priceBadge.className}`}>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={`inline-flex h-7 items-center rounded-full border px-3 text-[11px] font-semibold ${priceBadge.className}`}>
             {priceBadge.label}
           </span>
           {statusBadge && (
-            <span className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-semibold ${statusBadge.className}`}>
+            <span className={`inline-flex h-7 items-center rounded-full border px-3 text-[11px] font-semibold ${statusBadge.className}`}>
               {statusBadge.label}
             </span>
           )}
           {event.salonOnly && (
-            <span className="inline-flex h-8 items-center rounded-full border border-amber-100 bg-amber-50 px-3 text-xs font-semibold text-amber-800">
+            <span className="inline-flex h-7 items-center rounded-full border border-[#f0d8a0] bg-[#fef8e8] px-3 text-[11px] font-semibold text-[#8a6820]">
               サロン限定
             </span>
           )}
         </div>
 
-        <h3 className="mt-3 text-[17px] font-semibold leading-6 text-slate-900 line-clamp-2">
+        <h3
+          className="mt-2.5 text-[16px] font-bold leading-6 text-[#0e1610] line-clamp-2"
+          style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
+        >
           {event.title}
         </h3>
 
         {event.description && (
-          <p className="mt-2 text-sm leading-relaxed text-slate-600 line-clamp-2">
+          <p className="mt-1.5 text-[13px] leading-relaxed text-[#6a6258] line-clamp-2">
             {truncate(event.description, 72)}
           </p>
         )}
 
-        <div className="mt-3 space-y-2">
-          <div className="flex items-start gap-2 text-sm text-slate-600">
-            <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+        <div className="mt-3 space-y-1.5">
+          <div className="flex items-start gap-2 text-[13px] text-[#3a3428]">
+            <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#a8a090]" aria-hidden />
             <span className="min-w-0">
               {formatEventDateTime(event.date, event.startTime)}
               {event.endTime ? `〜${event.endTime}` : ""}
             </span>
           </div>
-          <div className="flex items-start gap-2 text-sm text-slate-600">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+          <div className="flex items-start gap-2 text-[13px] text-[#3a3428]">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#a8a090]" aria-hidden />
             <span className="min-w-0 line-clamp-1">
               {event.location}
             </span>
           </div>
           {event.organizerName && (
-            <div className="flex items-start gap-2 text-sm text-slate-600">
-              <UserRound className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+            <div className="flex items-start gap-2 text-[13px] text-[#3a3428]">
+              <UserRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#a8a090]" aria-hidden />
               <span className="min-w-0 line-clamp-1">
                 {event.organizerName}
               </span>
@@ -133,12 +136,9 @@ export function EventCard({ event }: Props) {
           )}
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="inline-flex h-11 flex-1 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700">
-            詳細を見る
-          </span>
-          <span className="text-xs text-slate-500">
-            タップで開く
+        <div className="mt-3.5">
+          <span className="inline-flex h-10 w-full items-center justify-center rounded-full border border-[#ccc4b4] bg-white text-[13px] font-medium text-[#3a3428]">
+            詳細を見る →
           </span>
         </div>
       </div>

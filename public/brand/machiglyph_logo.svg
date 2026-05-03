@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="420" viewBox="0 0 680 420">
+  <defs>
+    <!-- Reusable sakura flower at origin, unscaled -->
+    <g id="sakura">
+      <g transform="rotate(0)">  <ellipse cx="0" cy="-9" rx="5" ry="9" fill="#D4769A"/></g>
+      <g transform="rotate(72)"> <ellipse cx="0" cy="-9" rx="5" ry="9" fill="#D4769A"/></g>
+      <g transform="rotate(144)"><ellipse cx="0" cy="-9" rx="5" ry="9" fill="#D4769A"/></g>
+      <g transform="rotate(216)"><ellipse cx="0" cy="-9" rx="5" ry="9" fill="#D4769A"/></g>
+      <g transform="rotate(288)"><ellipse cx="0" cy="-9" rx="5" ry="9" fill="#D4769A"/></g>
+      <circle cx="0" cy="0" r="3" fill="#F7C5D5"/>
+    </g>
+  </defs>
+
+  <!-- ===== Sakura background layer ===== -->
+  <g opacity="0.90">
+
+    <!-- Left side sakura flowers -->
+    <g transform="translate(62,55) rotate(-20) scale(0.55)"><use href="#sakura"/></g>
+    <g transform="translate(32,110) rotate(10) scale(0.85)"><use href="#sakura"/></g>
+    <g transform="translate(48,195) rotate(30) scale(0.65)"><use href="#sakura"/></g>
+    <g transform="translate(80,290) rotate(-15) scale(0.7)"><use href="#sakura"/></g>
+
+    <!-- Right side sakura flowers -->
+    <g transform="translate(630,44) rotate(15) scale(0.9)"><use href="#sakura"/></g>
+    <g transform="translate(610,110) rotate(-25) scale(0.55)"><use href="#sakura"/></g>
+    <g transform="translate(648,200) rotate(40) scale(0.75)"><use href="#sakura"/></g>
+    <g transform="translate(620,310) rotate(-8) scale(0.8)"><use href="#sakura"/></g>
+
+    <!-- Branch lines -->
+    <path d="M68,80 Q80,60 100,48" fill="none" stroke="#C8607A" stroke-width="1" stroke-linecap="round"/>
+    <path d="M580,340 Q590,310 610,295" fill="none" stroke="#C8607A" stroke-width="1" stroke-linecap="round"/>
+
+    <!-- Branch-tip flowers -->
+    <g transform="translate(100,48) rotate(5) scale(0.60)"><use href="#sakura"/></g>
+    <g transform="translate(610,295) rotate(-12) scale(0.58)"><use href="#sakura"/></g>
+
+    <!-- Scattered single petals -->
+    <ellipse cx="130" cy="38"  rx="3" ry="6"  transform="rotate(-30,130,38)"  fill="#D4769A" opacity="0.75"/>
+    <ellipse cx="155" cy="22"  rx="4" ry="7"  transform="rotate(20,155,22)"   fill="#C8607A" opacity="0.65"/>
+    <ellipse cx="520" cy="32"  rx="3" ry="5.5" transform="rotate(45,520,32)"  fill="#D4769A" opacity="0.70"/>
+    <ellipse cx="555" cy="58"  rx="3.5" ry="6" transform="rotate(-15,555,58)" fill="#C8607A" opacity="0.60"/>
+    <ellipse cx="68"  cy="340" rx="3" ry="5"   transform="rotate(10,68,340)"  fill="#D4769A" opacity="0.70"/>
+    <ellipse cx="612" cy="360" rx="3" ry="6"   transform="rotate(-20,612,360)" fill="#C8607A" opacity="0.65"/>
+    <ellipse cx="200" cy="390" rx="4" ry="7"   transform="rotate(35,200,390)"  fill="#D4769A" opacity="0.55"/>
+    <ellipse cx="460" cy="400" rx="3" ry="5.5" transform="rotate(-10,460,400)" fill="#C8607A" opacity="0.50"/>
+  </g>
+
+  <!-- ===== Network icon, centered at (200,200) ===== -->
+  <g transform="translate(200,200)">
+
+    <!-- Outer hexagon guide -->
+    <polygon points="0,-90 78,-45 78,45 0,90 -78,45 -78,-45"
+             fill="none" stroke="#4A3F8F" stroke-width="1" opacity="0.2"/>
+
+    <!-- Halos behind outer nodes -->
+    <!-- YG nodes: top, bottom-right, bottom-left -->
+    <circle cx="0"   cy="-78" r="14" fill="#8FD44A" opacity="0.13"/>
+    <circle cx="68"  cy="39"  r="14" fill="#8FD44A" opacity="0.13"/>
+    <circle cx="-68" cy="39"  r="14" fill="#8FD44A" opacity="0.13"/>
+    <!-- Indigo nodes: top-right, bottom, top-left -->
+    <circle cx="68"  cy="-39" r="14" fill="#4A3F8F" opacity="0.08"/>
+    <circle cx="0"   cy="78"  r="14" fill="#4A3F8F" opacity="0.08"/>
+    <circle cx="-68" cy="-39" r="14" fill="#4A3F8F" opacity="0.08"/>
+
+    <!-- Outer ring edges -->
+    <g stroke="#4A3F8F" stroke-width="2.1" opacity="0.31" stroke-linecap="round">
+      <line x1="0"   y1="-78" x2="68"  y2="-39"/>
+      <line x1="68"  y1="-39" x2="68"  y2="39"/>
+      <line x1="68"  y1="39"  x2="0"   y2="78"/>
+      <line x1="0"   y1="78"  x2="-68" y2="39"/>
+      <line x1="-68" y1="39"  x2="-68" y2="-39"/>
+      <line x1="-68" y1="-39" x2="0"   y2="-78"/>
+    </g>
+
+    <!-- YG spokes (to top, bottom-right, bottom-left) -->
+    <g stroke="#8FD44A" stroke-width="4.0" opacity="1.00" stroke-linecap="round">
+      <line x1="0"   y1="-16" x2="0"   y2="-69"/>
+      <line x1="14"  y1="8"   x2="59"  y2="34"/>
+      <line x1="-14" y1="8"   x2="-59" y2="34"/>
+    </g>
+
+    <!-- Indigo spokes (to top-right, bottom, top-left) -->
+    <g stroke="#4A3F8F" stroke-width="3.28" opacity="1.00" stroke-linecap="round">
+      <line x1="14"  y1="-8"  x2="59"  y2="-39"/>
+      <line x1="0"   y1="16"  x2="0"   y2="69"/>
+      <line x1="-14" y1="-8"  x2="-59" y2="-39"/>
+    </g>
+
+    <!-- Outer nodes: YG filled (top, bottom-right, bottom-left) -->
+    <!-- Top -->
+    <circle cx="0"  cy="-78" r="11" fill="#8FD44A"/>
+    <circle cx="0"  cy="-78" r="4.5" fill="#ffffff"/>
+    <!-- Bottom-right -->
+    <circle cx="68" cy="39"  r="11" fill="#8FD44A"/>
+    <circle cx="68" cy="39"  r="4.5" fill="#ffffff"/>
+    <!-- Bottom-left -->
+    <circle cx="-68" cy="39" r="11" fill="#8FD44A"/>
+    <circle cx="-68" cy="39" r="4.5" fill="#ffffff"/>
+
+    <!-- Outer nodes: Indigo outline (top-right, bottom, top-left) -->
+    <!-- Top-right -->
+    <circle cx="68"  cy="-39" r="11" fill="#ffffff" stroke="#4A3F8F" stroke-width="2.5"/>
+    <circle cx="68"  cy="-39" r="3.8" fill="#4A3F8F" opacity="0.30"/>
+    <!-- Bottom -->
+    <circle cx="0"   cy="78"  r="11" fill="#ffffff" stroke="#4A3F8F" stroke-width="2.5"/>
+    <circle cx="0"   cy="78"  r="3.8" fill="#4A3F8F" opacity="0.30"/>
+    <!-- Top-left -->
+    <circle cx="-68" cy="-39" r="11" fill="#ffffff" stroke="#4A3F8F" stroke-width="2.5"/>
+    <circle cx="-68" cy="-39" r="3.8" fill="#4A3F8F" opacity="0.30"/>
+
+    <!-- Center node (4-layer) -->
+    <circle r="32" fill="#8FD44A" opacity="0.08"/>
+    <circle r="23" fill="none" stroke="#8FD44A" stroke-width="1.5" opacity="0.30"/>
+    <circle r="17" fill="#ffffff" stroke="#4A3F8F" stroke-width="3.0"/>
+    <circle r="6.5" fill="#8FD44A"/>
+    <circle r="2.8" fill="#ffffff"/>
+  </g>
+
+  <!-- ===== Separator ===== -->
+  <line x1="316" y1="110" x2="316" y2="290" stroke="#4A3F8F" stroke-width="1.2" opacity="0.22"/>
+
+  <!-- ===== Text ===== -->
+  <text x="334" y="188"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="38" font-weight="500" letter-spacing="0.01em"
+        fill="#2C2560">Machiglyph</text>
+  <text x="337" y="218"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="12" font-weight="400" letter-spacing="0.25em"
+        fill="#C8A84B">まちの掲示板</text>
+</svg>

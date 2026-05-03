@@ -6,6 +6,7 @@ import { getDeveloperAdminContext } from "@/lib/admin-auth";
 
 export const metadata: Metadata = {
   title: "MachiGlyph 開発者管理画面",
+  robots: "noindex, nofollow",
 };
 
 export default async function AdminLayout({

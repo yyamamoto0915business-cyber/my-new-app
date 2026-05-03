@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
+import { WaHeroBanner } from "@/components/wa-hero-banner";
 
 type Thread = {
   id: string;
@@ -34,67 +35,82 @@ export default function OrganizerInboxPage() {
 
   return (
     <OrganizerRegistrationGate>
-      <div className="min-h-screen">
-      <header className="sticky top-[var(--mg-mobile-top-header-h)] z-50 border-b border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-md sm:top-0 dark:border-zinc-700/60 dark:bg-zinc-900/80">
-        <div className="mx-auto max-w-2xl px-4 py-4">
-          <Link href="/organizer/events" className="text-sm text-zinc-500 hover:underline">
-            ← 主催者トップ
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-            メッセージ
-          </h1>
-        </div>
-      </header>
+      <div className="min-h-screen bg-[#f4f0e8]">
+        <div className="space-y-4">
+          <WaHeroBanner
+            compact
+            eyebrow="INBOX · MESSAGES"
+            title="受信箱"
+            subtitle="— メッセージ管理 —"
+            className="rounded-sm"
+          />
 
-      <main className="mx-auto max-w-2xl px-4 py-6">
-        {loading ? (
-          <p className="text-zinc-500">読み込み中...</p>
-        ) : error ? (
-          <div>
-            <p className="text-red-600">{error}</p>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="mt-2 text-sm text-[var(--accent)] underline"
-            >
-              再読み込み
-            </button>
+          {/* ナビ帯 */}
+          <div className="flex items-center border-b border-[#ccc4b4] bg-[#faf8f2] px-4 py-3 rounded-2xl">
+            <Link href="/organizer" className="text-[12px] text-[#6a6258] hover:underline">
+              ← ダッシュボードへ
+            </Link>
           </div>
-        ) : threads.length === 0 ? (
-          <p className="rounded-xl border border-zinc-200/60 bg-white/80 p-8 text-center text-zinc-500 dark:border-zinc-700/60 dark:bg-zinc-900/80">
-            ボランティアからの相談はまだありません
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {threads.map((t) => (
-              <li key={t.id}>
-                <Link
-                  href={`/dm/${t.id}`}
-                  className="block rounded-xl border border-zinc-200/60 bg-white/80 p-4 transition-colors hover:bg-zinc-50 dark:border-zinc-700/60 dark:bg-zinc-900/80 dark:hover:bg-zinc-800/80"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {t.partnerName}
-                    </span>
+
+          {loading ? (
+            <div className="space-y-2 animate-pulse">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-16 rounded-2xl border border-[#ccc4b4] bg-[#e4ede0]" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] p-6 text-center">
+              <p className="text-[13px] text-red-600">{error}</p>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="mt-3 text-[13px] text-[#2c7a88] underline"
+              >
+                再読み込み
+              </button>
+            </div>
+          ) : threads.length === 0 ? (
+            <div className="rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] p-8 text-center">
+              <p className="text-[13px] text-[#6a6258]">ボランティアからの相談はまだありません</p>
+            </div>
+          ) : (
+            <ul className="overflow-hidden rounded-2xl border border-[#ccc4b4]">
+              {threads.map((t, i) => (
+                <li key={t.id} className={i > 0 ? "border-t border-[#e8e0d4]" : ""}>
+                  <Link
+                    href={`/dm/${t.id}`}
+                    className="flex items-center justify-between gap-3 bg-[#faf8f2] px-4 py-3.5 transition-colors hover:bg-[#f0ece4]"
+                  >
+                    {/* アバター */}
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#d8eae4] text-[13px] font-bold text-[#1a3428]">
+                      {t.partnerName.slice(0, 1)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="text-[14px] font-bold text-[#0e1610] line-clamp-1"
+                        style={{ fontFamily: "'Shippori Mincho', serif" }}
+                      >
+                        {t.partnerName}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-[#6a6258]">
+                        {new Date(t.lastMessageAt).toLocaleString("ja-JP")}
+                      </p>
+                    </div>
                     <span
-                      className={`rounded px-2 py-0.5 text-xs ${
+                      className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
                         t.status === "resolved"
-                          ? "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-                          : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                          ? "border border-[#d8d0b8] bg-[#f0ede4] text-[#5a5040]"
+                          : "border border-[#d8c090] bg-[#f0e8d4] text-[#5a3a10]"
                       }`}
                     >
                       {t.status === "resolved" ? "完了" : "対応中"}
                     </span>
-                  </div>
-                  <p className="mt-1 text-sm text-zinc-500">
-                    最終メッセージ: {new Date(t.lastMessageAt).toLocaleString("ja-JP")}
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </main>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </OrganizerRegistrationGate>
   );

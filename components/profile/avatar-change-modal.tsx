@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { ProfileAvatarRole } from "@/lib/profile-avatar";
 
 type Props = {
   isOpen: boolean;
@@ -9,6 +10,7 @@ type Props = {
   currentAvatarUrl?: string | null;
   onAvatarChange: (newUrl: string | null) => void;
   userId: string;
+  role: ProfileAvatarRole;
 };
 
 export function AvatarChangeModal({
@@ -17,6 +19,7 @@ export function AvatarChangeModal({
   currentAvatarUrl,
   onAvatarChange,
   userId,
+  role,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -38,7 +41,9 @@ export function AvatarChangeModal({
     setError(null);
     try {
       const ext = file.name.split(".").pop() || "jpg";
-      const path = `${userId}/avatar.${ext}`;
+      const path = `${userId}/${role}/avatar.${ext}`;
+      const avatarColumn =
+        role === "organizer" ? "organizer_avatar_url" : "participant_avatar_url";
 
       const { error: uploadError } = await supabase.storage
         .from("avatars")
@@ -50,12 +55,35 @@ export function AvatarChangeModal({
         .from("avatars")
         .getPublicUrl(path);
 
-      await supabase
+      const { error: updateError } = await supabase
         .from("profiles")
-        .update({ avatar_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+        .update({
+          [avatarColumn]: urlData.publicUrl,
+          active_profile_role: role,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", userId);
+      if (updateError) {
+        const msg = updateError.message ?? "";
+        // マイグレーション未適用時は旧カラムのみ更新して表示を維持
+        if (/participant_avatar_url|organizer_avatar_url|active_profile_role|42703/i.test(msg)) {
+          const { error: legacyError } = await supabase
+            .from("profiles")
+            .update({
+              avatar_url: urlData.publicUrl,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userId);
+          if (legacyError) throw legacyError;
+        } else {
+          throw updateError;
+        }
+      }
 
       onAvatarChange(urlData.publicUrl);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("mg:profile-avatar-updated"));
+      }
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "アップロードに失敗しました");
@@ -71,12 +99,29 @@ export function AvatarChangeModal({
     setUploading(true);
     setError(null);
     try {
-      await supabase
+      const avatarColumn =
+        role === "organizer" ? "organizer_avatar_url" : "participant_avatar_url";
+      const { error: updateError } = await supabase
         .from("profiles")
-        .update({ avatar_url: null, updated_at: new Date().toISOString() })
+        .update({ [avatarColumn]: null, updated_at: new Date().toISOString() })
         .eq("id", userId);
+      if (updateError) {
+        const msg = updateError.message ?? "";
+        if (/participant_avatar_url|organizer_avatar_url|42703/i.test(msg)) {
+          const { error: legacyError } = await supabase
+            .from("profiles")
+            .update({ avatar_url: null, updated_at: new Date().toISOString() })
+            .eq("id", userId);
+          if (legacyError) throw legacyError;
+        } else {
+          throw updateError;
+        }
+      }
 
       onAvatarChange(null);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("mg:profile-avatar-updated"));
+      }
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "削除に失敗しました");
