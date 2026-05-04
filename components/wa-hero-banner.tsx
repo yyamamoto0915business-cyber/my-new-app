@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
+
 type Props = {
   eyebrow?: string;
-  title: string;
+  title: ReactNode;
   subtitle?: string;
   /** true のとき高さ 130px(mobile)/160px(PC)、false(default)で 200px(mobile)/300px(PC) */
   compact?: boolean;
