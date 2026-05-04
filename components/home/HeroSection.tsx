@@ -17,8 +17,7 @@ export function HeroSection() {
       {/* 和テイストヒーローバナー */}
       <WaHeroBanner
         eyebrow="MACHIGLYPH"
-        title="まちの出来事と出会える場所"
-        titleClassName="whitespace-nowrap text-[clamp(0.9375rem,2.85vw+0.48rem,1.5625rem)] tracking-[0.02em] sm:text-[32px] sm:tracking-[0.05em]"
+        title="まちの魅力と出会える場所"
         subtitle="近くで開かれる催しや活動を、見つけられます。"
         className="rounded-2xl sm:rounded-2xl"
       />
