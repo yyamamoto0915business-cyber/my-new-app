@@ -4,6 +4,8 @@ type Props = {
   eyebrow?: string;
   title: ReactNode;
   subtitle?: string;
+  /** h1 に追加するクラス（例: 1行固定・可変フォント） */
+  titleClassName?: string;
   /** true のとき高さ 130px(mobile)/160px(PC)、false(default)で 200px(mobile)/300px(PC) */
   compact?: boolean;
   className?: string;
@@ -13,6 +15,7 @@ export function WaHeroBanner({
   eyebrow,
   title,
   subtitle,
+  titleClassName = "",
   compact = false,
   className = "",
 }: Props) {
@@ -215,7 +218,7 @@ export function WaHeroBanner({
         <h1
           className={`mt-0.5 font-semibold leading-snug tracking-[0.05em] [text-shadow:0_2px_14px_rgba(0,0,0,0.45)] ${
             compact ? "text-[20px] sm:text-[26px]" : "text-[25px] sm:text-[32px]"
-          }`}
+          } ${titleClassName}`}
           style={{
             fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif",
             color: "#f0f6fa",
