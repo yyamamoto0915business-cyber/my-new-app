@@ -28,10 +28,10 @@ const C = {
 } as const;
 
 const THEMES = [
-  { border:"#c2e0ce", bg:"linear-gradient(160deg,#f0faf4 0%,#fff 60%)", plistBg:"rgba(240,250,244,.5)", stBg:"rgba(224,242,230,.6)", stBorder:"#c2e0ce" },
-  { border:"#f0d4bc", bg:"linear-gradient(160deg,#fef6ef 0%,#fff 60%)", plistBg:"rgba(254,246,239,.5)", stBg:"rgba(254,234,224,.5)", stBorder:"#f0d4bc" },
-  { border:"#bcd4f0", bg:"linear-gradient(160deg,#eff4fe 0%,#fff 60%)", plistBg:"rgba(239,244,254,.5)", stBg:"rgba(224,234,248,.6)", stBorder:"#bcd4f0" },
-  { border:"#e8c8d4", bg:"linear-gradient(160deg,#fef0f4 0%,#fff 60%)", plistBg:"rgba(254,240,244,.5)", stBg:"rgba(248,228,236,.5)", stBorder:"#e8c8d4" },
+  { border:"#c2e0ce", bg:"linear-gradient(160deg,#f0faf4 0%,#fff 60%)", plistBg:"rgba(240,250,244,.5)", stBg:"rgba(224,242,230,.6)", stBorder:"#c2e0ce", thumbBg: C.greenL,  thumbColor: C.greenD  },
+  { border:"#f0d4bc", bg:"linear-gradient(160deg,#fef6ef 0%,#fff 60%)", plistBg:"rgba(254,246,239,.5)", stBg:"rgba(254,234,224,.5)", stBorder:"#f0d4bc", thumbBg: C.orangeL, thumbColor: C.orangeD },
+  { border:"#bcd4f0", bg:"linear-gradient(160deg,#eff4fe 0%,#fff 60%)", plistBg:"rgba(239,244,254,.5)", stBg:"rgba(224,234,248,.6)", stBorder:"#bcd4f0", thumbBg: C.blueL,   thumbColor: C.blueD   },
+  { border:"#e8c8d4", bg:"linear-gradient(160deg,#fef0f4 0%,#fff 60%)", plistBg:"rgba(254,240,244,.5)", stBg:"rgba(248,228,236,.5)", stBorder:"#e8c8d4", thumbBg: "#faeee6",  thumbColor: "#7a3510"  },
 ] as const;
 
 type Tab = "h" | "v" | "p";
@@ -107,12 +107,12 @@ function PersonRow({ item, activeId, avBg, avColor, activeBg, activeBorder, unre
         {initials(name)}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="ms-pname" style={{ fontSize: 13, fontWeight: 500, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        <div className="ms-pprev" style={{ fontSize: 12, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
+        <div className="ms-pname" style={{ fontSize: 12, fontWeight: 500, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        <div className="ms-pprev" style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
           {item.last_message_content ?? "メッセージがありません"}
         </div>
       </div>
-      <span className="ms-ptime" style={{ fontSize: 11, color: C.t3, flexShrink: 0 }}>{item.last_message_at ? formatRel(item.last_message_at) : ""}</span>
+      <span className="ms-ptime" style={{ fontSize: 10, color: C.t3, flexShrink: 0 }}>{item.last_message_at ? formatRel(item.last_message_at) : ""}</span>
       {item.unread_count > 0 && <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, marginLeft: 5, background: unreadColor }} />}
     </Link>
   );
@@ -151,16 +151,16 @@ function EvCard({ group, activeId, tab, search }: { group: EventGroup; activeId?
       {/* Header row */}
       <div onClick={() => setOpen(!open)}
         style={{ display: "flex", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
-        <div style={{ width: 56, minWidth: 56, height: 56, flexShrink: 0, borderRadius: 8, margin: "9px 0 9px 10px", background: t.border, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+        <div style={{ width: 56, minWidth: 56, height: 56, flexShrink: 0, borderRadius: 8, margin: "9px 0 9px 10px", background: t.thumbBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: t.thumbColor }}>
           📅
         </div>
         <div style={{ flex: 1, minWidth: 0, padding: "0 0 0 12px" }}>
-          <div className="ms-ev-name" style={{ fontSize: 13, fontWeight: 600, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
+          <div className="ms-ev-name" style={{ fontSize: 12, fontWeight: 600, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
             {group.eventTitle ?? "イベント"}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
             {group.participants.length > 0 && (
-              <span className="ms-ev-pill" style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: C.greenL, color: C.greenD }}>
+              <span className="ms-ev-pill" style={{ fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 100, background: C.greenL, color: C.greenD }}>
                 参加者 {group.participants.length}
               </span>
             )}
@@ -291,7 +291,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       >
         {/* Header */}
         <div style={{ padding: "18px 16px 13px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-          <div style={{ fontFamily: "'Cormorant Garamond', 'Noto Serif JP', serif", fontStyle: "italic", fontSize: 20, fontWeight: 500, color: C.t1, marginBottom: 10, letterSpacing: "-.4px", lineHeight: 1 }}>
+          <div style={{ fontFamily: "'Cormorant Garamond', 'Noto Serif JP', serif", fontStyle: "italic", fontSize: 17, fontWeight: 500, color: C.t1, marginBottom: 10, letterSpacing: "-.4px", lineHeight: 1 }}>
             メッセージ
           </div>
           <div style={{ position: "relative" }}>
@@ -305,7 +305,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               onChange={(e) => setSearch(e.target.value)}
               placeholder="イベント名・人名で検索…"
               className="ms-sbsearch-input"
-              style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 100, padding: "7px 12px 7px 32px", fontSize: 13, fontFamily: "inherit", color: C.t1, outline: "none", transition: "border-color .15s, box-shadow .15s" }}
+              style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 100, padding: "7px 12px 7px 32px", fontSize: 12, fontFamily: "inherit", color: C.t1, outline: "none", transition: "border-color .15s, box-shadow .15s" }}
             />
           </div>
         </div>
@@ -316,7 +316,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
             const on = tab === td.id;
             return (
               <button key={td.id} className="ms-tab-btn" onClick={() => setTab(td.id)}
-                style={{ flex: 1, padding: "9px 4px", background: "none", border: "none", borderBottom: `2px solid ${on ? td.onColor : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: on ? 500 : 400, color: on ? td.onColor : C.t3, transition: "all .13s", letterSpacing: ".01em", whiteSpace: "nowrap" }}>
+                style={{ flex: 1, padding: "10px 4px", background: "none", border: "none", borderBottom: `2px solid ${on ? td.onColor : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: on ? 500 : 400, color: on ? td.onColor : C.t3, transition: "all .13s", letterSpacing: ".02em", whiteSpace: "nowrap" }}>
                 {td.label}
                 {td.badge > 0 && (
                   <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 14, height: 14, borderRadius: 100, fontSize: 9, fontWeight: 700, padding: "0 4px", marginLeft: 4, verticalAlign: "middle", background: td.onL, color: td.onColor }}>

@@ -229,12 +229,12 @@ export default function ConversationPage() {
       <div style={{ display: "flex", alignItems: "stretch", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface, boxShadow: `0 1px 0 ${C.border}` }}>
         <div style={{ width: 4, flexShrink: 0, background: accentColor }} />
         <div style={{ flex: 1, minWidth: 0, padding: "11px 14px" }}>
-          <div className="ms-ctx-ev" style={{ fontSize: 14, fontWeight: 500, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
+          <div className="ms-ctx-ev" style={{ fontSize: 12.5, fontWeight: 500, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
             {eventTitle ?? "イベント"}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
             <span className="ms-ctx-chip" style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, ...chipStyle }}>{chipText}</span>
-            <span className="ms-ctx-name" style={{ fontSize: 12, color: C.t2 }}>{counterpartName ?? "—"}</span>
+            <span className="ms-ctx-name" style={{ fontSize: 11, color: C.t2 }}>{counterpartName ?? "—"}</span>
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, paddingRight: 14, alignItems: "center" }}>
@@ -305,7 +305,7 @@ export default function ConversationPage() {
             <div key={msg.id}
               style={{ display: "flex", gap: 6, maxWidth: "72%", margin: "1px 0", alignSelf: isOwn ? "flex-end" : "flex-start", flexDirection: isOwn ? "row-reverse" : "row" }}>
               <div className="ms-bubble" style={{
-                padding: "9px 14px", fontSize: 14, lineHeight: 1.7, wordBreak: "break-word",
+                padding: "9px 14px", fontSize: 13, lineHeight: 1.7, wordBreak: "break-word",
                 borderRadius: isOwn ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
                 background: isOwn ? bubbleBg : C.surface,
                 color: isOwn ? "white" : C.t1,
@@ -314,7 +314,7 @@ export default function ConversationPage() {
               }}>
                 {msg.content}
               </div>
-              <span className="ms-mtime" style={{ fontSize: 11, color: C.t3, alignSelf: "flex-end", whiteSpace: "nowrap", marginBottom: 3 }}>
+              <span className="ms-mtime" style={{ fontSize: 9.5, color: C.t3, alignSelf: "flex-end", whiteSpace: "nowrap", marginBottom: 3 }}>
                 {formatTime(msg.created_at)}
               </span>
             </div>

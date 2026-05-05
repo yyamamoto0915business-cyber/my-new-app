@@ -294,20 +294,20 @@ body:has(.ms-shell) { background: #f8f7f4 !important; }
 
 /* モバイル文字サイズ調整 */
 @media (max-width: 680px) {
-  .ms-ev-name   { font-size: 15px !important; }
-  .ms-ev-date   { font-size: 12px !important; }
-  .ms-ev-pill   { font-size: 11px !important; padding: 3px 9px !important; }
-  .ms-ev-unread { width: 22px !important; height: 22px !important; font-size: 11px !important; }
-  .ms-sub-btn   { font-size: 13px !important; padding: 10px 8px !important; }
-  .ms-pitem     { padding: 13px 16px !important; }
-  .ms-av        { width: 38px !important; height: 38px !important; font-size: 13px !important; }
-  .ms-pname     { font-size: 15px !important; }
-  .ms-pprev     { font-size: 13px !important; }
-  .ms-ptime     { font-size: 12px !important; }
-  .ms-bubble    { font-size: 15px !important; line-height: 1.75 !important; padding: 11px 15px !important; }
-  .ms-mtime     { font-size: 12px !important; }
-  .ms-ctx-ev    { font-size: 15px !important; }
-  .ms-ctx-name  { font-size: 13px !important; }
-  .ms-ctx-chip  { font-size: 11px !important; padding: 3px 9px !important; }
-  .ms-send-btn  { width: 42px !important; height: 42px !important; }
+  .ms-ev-name   { font-size: 13px !important; }
+  .ms-ev-date   { font-size: 11px !important; }
+  .ms-ev-pill   { font-size: 10px !important; padding: 2px 8px !important; }
+  .ms-ev-unread { width: 18px !important; height: 18px !important; font-size: 10px !important; }
+  .ms-sub-btn   { font-size: 12px !important; padding: 10px 8px !important; }
+  .ms-pitem     { padding: 11px 14px !important; }
+  .ms-av        { width: 36px !important; height: 36px !important; font-size: 11px !important; }
+  .ms-pname     { font-size: 13px !important; }
+  .ms-pprev     { font-size: 11.5px !important; }
+  .ms-ptime     { font-size: 10.5px !important; }
+  .ms-bubble    { font-size: 13px !important; line-height: 1.7 !important; padding: 9px 13px !important; }
+  .ms-mtime     { font-size: 10px !important; }
+  .ms-ctx-ev    { font-size: 13px !important; }
+  .ms-ctx-name  { font-size: 11px !important; }
+  .ms-ctx-chip  { font-size: 10px !important; padding: 2px 8px !important; }
+  .ms-send-btn  { width: 44px !important; height: 44px !important; }
 }
