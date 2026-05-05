@@ -39,6 +39,7 @@ type Tab = "h" | "v" | "p";
 type EventGroup = {
   eventId: string | null;
   eventTitle: string | null;
+  eventImageUrl: string | null;
   participants: InboxItem[];
   volunteers: InboxItem[];
   unreadCount: number;
@@ -51,7 +52,7 @@ function buildGroups(items: InboxItem[]): EventGroup[] {
   items.forEach((item) => {
     const key = item.event_id ?? `__${item.conversation_id}`;
     if (!map.has(key)) {
-      map.set(key, { eventId: item.event_id, eventTitle: item.event_title, participants: [], volunteers: [], unreadCount: 0, themeIdx: order.length % 4 });
+      map.set(key, { eventId: item.event_id, eventTitle: item.event_title, eventImageUrl: item.event_image_url, participants: [], volunteers: [], unreadCount: 0, themeIdx: order.length % 4 });
       order.push(key);
     }
     const g = map.get(key)!;
@@ -151,8 +152,22 @@ function EvCard({ group, activeId, tab, search }: { group: EventGroup; activeId?
       {/* Header row */}
       <div onClick={() => setOpen(!open)}
         style={{ display: "flex", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
-        <div style={{ width: 56, minWidth: 56, height: 56, flexShrink: 0, borderRadius: 8, margin: "9px 0 9px 10px", background: t.thumbBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: t.thumbColor }}>
-          📅
+        <div style={{ width: 56, minWidth: 56, height: 56, flexShrink: 0, borderRadius: 8, margin: "9px 0 9px 10px", overflow: "hidden", position: "relative" }}>
+          {group.eventImageUrl ? (
+            <img
+              src={group.eventImageUrl}
+              alt={group.eventTitle ?? ""}
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", borderRadius: 8 }}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+                const fb = e.currentTarget.nextElementSibling as HTMLElement | null;
+                if (fb) fb.style.display = "flex";
+              }}
+            />
+          ) : null}
+          <div style={{ display: group.eventImageUrl ? "none" : "flex", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", background: t.thumbBg, borderRadius: 8, fontSize: 22, color: t.thumbColor, position: group.eventImageUrl ? "absolute" : undefined, inset: group.eventImageUrl ? 0 : undefined }}>
+            📅
+          </div>
         </div>
         <div style={{ flex: 1, minWidth: 0, padding: "0 0 0 12px" }}>
           <div className="ms-ev-name" style={{ fontSize: 12, fontWeight: 600, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
@@ -286,8 +301,8 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
     <div className="ms-shell" style={{ display: "flex", height: "100dvh", overflow: "hidden", background: C.bg, fontFamily: "'Noto Sans JP', sans-serif" }}>
       {/* Sidebar */}
       <aside
-        style={{ width: 304, flexShrink: 0, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", overflow: "hidden" }}
-        className={sidebarHidden ? "hidden sm:flex" : "flex w-full sm:w-[304px]"}
+        style={{ background: C.surface, borderRight: `1px solid ${C.border}`, flexDirection: "column", overflow: "hidden" }}
+        className={sidebarHidden ? "hidden sm:flex sm:w-[304px] sm:shrink-0" : "flex flex-col w-full sm:w-[304px] sm:shrink-0"}
       >
         {/* Header */}
         <div style={{ padding: "18px 16px 13px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
@@ -368,8 +383,8 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
 
       {/* Main area */}
       <main
-        style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: C.bg }}
-        className={mainHidden ? "hidden sm:flex" : "flex"}
+        style={{ flexDirection: "column", overflow: "hidden", background: C.bg }}
+        className={mainHidden ? "hidden sm:flex sm:flex-1 sm:flex-col" : "flex flex-1 flex-col"}
       >
         {children}
       </main>

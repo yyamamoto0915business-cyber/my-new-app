@@ -5,6 +5,7 @@ export type InboxItem = {
   conversation_kind: string | null;
   event_id: string | null;
   event_title: string | null;
+  event_image_url: string | null;
   other_user_id: string;
   other_display_name: string | null;
   other_email: string | null;
@@ -82,11 +83,11 @@ export async function fetchInboxByQueries(
     .filter((id): id is string => !!id);
   const uniqueEventIds = [...new Set(eventIds)];
   const { data: events } = uniqueEventIds.length
-    ? await supabase.from("events").select("id, title").in("id", uniqueEventIds)
-    : { data: [] as { id: string; title: string }[] };
+    ? await supabase.from("events").select("id, title, image_url").in("id", uniqueEventIds)
+    : { data: [] as { id: string; title: string; image_url?: string | null }[] };
 
   const eventMap = new Map(
-    (events ?? []).map((e) => [e.id, e.title] as const)
+    (events ?? []).map((e) => [e.id, { title: e.title, imageUrl: e.image_url ?? null }] as const)
   );
 
   // 4. 相手の profiles を取得
@@ -159,7 +160,8 @@ export async function fetchInboxByQueries(
       conversation_id: c.id,
       conversation_kind: c.kind ?? null,
       event_id: c.event_id ?? null,
-      event_title: c.event_id ? eventMap.get(c.event_id) ?? null : null,
+      event_title: c.event_id ? (eventMap.get(c.event_id)?.title ?? null) : null,
+      event_image_url: c.event_id ? (eventMap.get(c.event_id)?.imageUrl ?? null) : null,
       other_user_id: otherId,
       other_display_name: prof?.display_name ?? null,
       other_email: prof?.email ?? null,

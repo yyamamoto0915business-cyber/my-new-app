@@ -70,6 +70,7 @@ export async function fetchInboxDirectDb(
         cwo.kind AS conversation_kind,
         ou.event_id AS event_id,
         ev.title AS event_title,
+        ev.image_url AS event_image_url,
         ou.other_id AS other_user_id,
         CASE
           WHEN cwo.organizer_profile_id = $1 THEN 'organizer'
@@ -100,6 +101,10 @@ export async function fetchInboxDirectDb(
       .replace(
         "p.organizer_avatar_url AS other_organizer_avatar_url,",
         "NULL::text AS other_organizer_avatar_url,"
+      )
+      .replace(
+        "ev.image_url AS event_image_url,",
+        "NULL::text AS event_image_url,"
       );
 
     let result;
@@ -120,6 +125,7 @@ export async function fetchInboxDirectDb(
       conversation_kind: row.conversation_kind ?? null,
       event_id: row.event_id ?? null,
       event_title: row.event_title ?? null,
+      event_image_url: row.event_image_url ?? null,
       other_user_id: row.other_user_id,
       other_display_name: row.other_display_name ?? null,
       other_email: row.other_email ?? null,
