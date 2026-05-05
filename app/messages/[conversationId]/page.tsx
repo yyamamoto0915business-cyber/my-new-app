@@ -3,17 +3,26 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { CalendarDays } from "lucide-react";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { createClient } from "@/lib/supabase/client";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
-import { cn } from "@/lib/utils";
-import { CommonAvatar } from "@/components/profile/common-avatar";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
-
-/** 本番で Cookie 付き API を確実に叩く */
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
+
+const C = {
+  bg: "#f6f2eb",
+  surface: "#ffffff",
+  surface2: "#faf8f4",
+  border: "#e6dfd4",
+  border2: "#ede8df",
+  t1: "#19170f",
+  t2: "#5a5448",
+  t3: "#9e9688",
+  green: "#2e8a5a",  greenL: "#eaf4f0",  greenD: "#1a5538",
+  blue:  "#3460a8",  blueL:  "#eaeff8",  blueD:  "#1c3a70",
+  orange:"#b85c2a",  orangeL:"#faeee6",  orangeD:"#7a3510",
+} as const;
 
 type Message = {
   id: string;
@@ -23,6 +32,39 @@ type Message = {
   created_at: string;
 };
 
+type RoleKey = "h" | "v" | "p";
+
+function getRoleKey(myRole: "organizer" | "volunteer", conversationKind: string): RoleKey {
+  if (myRole === "organizer") return "h";
+  if (conversationKind === "general") return "v";
+  return "p";
+}
+
+function getChipText(myRole: "organizer" | "volunteer", conversationKind: string): string {
+  if (myRole === "organizer") return conversationKind === "general" ? "ボランティア応募者" : "参加者";
+  return "主催者";
+}
+
+function getChipStyle(chipText: string): { background: string; color: string } {
+  if (chipText === "参加者") return { background: C.greenL, color: C.green };
+  if (chipText === "ボランティア応募者") return { background: C.blueL, color: C.blue };
+  return { background: C.orangeL, color: C.orange };
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatDateSep(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  if (diff < 86400000 && d.getDate() === now.getDate()) return "今日";
+  if (diff < 172800000) return "昨日";
+  return d.toLocaleDateString("ja-JP", { month: "long", day: "numeric" });
+}
+
+
 export default function ConversationPage() {
   const routeParams = useParams<{ conversationId?: string | string[] }>();
   const { user, loading: authLoading } = useSupabaseUser();
@@ -30,92 +72,40 @@ export default function ConversationPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventTitle, setEventTitle] = useState<string | null>(null);
-  const [counterpartDisplayName, setCounterpartDisplayName] = useState<string | null>(null);
-  const [counterpartAvatarUrl, setCounterpartAvatarUrl] = useState<string | null>(null);
+  const [counterpartName, setCounterpartName] = useState<string | null>(null);
   const [myRole, setMyRole] = useState<"organizer" | "volunteer">("volunteer");
   const [conversationKind, setConversationKind] = useState<string>("event_inquiry");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const suggestionChips = [
-    { label: "質問したい", value: "イベントについて質問したいです。" },
-    { label: "参加を相談", value: "参加について相談したいです。" },
-    { label: "ボランティア", value: "ボランティア参加は可能でしょうか。" },
-    { label: "キャンセル相談", value: "キャンセル方法について確認したいです。" },
-  ] as const;
-
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
-  const emptySuggestionsAutoOpened = useRef(false);
-  /** iOS 等: キーボード表示時にレイアウト下端が隠れないよう visualViewport から余白を取る */
-  const [keyboardInsetPx, setKeyboardInsetPx] = useState(0);
-
   useEffect(() => {
-    emptySuggestionsAutoOpened.current = false;
-  }, [conversationId]);
-
-  useEffect(() => {
-    if (loading || messages.length > 0 || emptySuggestionsAutoOpened.current) return;
-    emptySuggestionsAutoOpened.current = true;
-    // モバイルは縦が狭いので候補の自動表示はせず、入力欄を優先
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
-      return;
-    }
-    setSuggestionsOpen(true);
-  }, [conversationId, loading, messages.length]);
+    const raw = routeParams?.conversationId;
+    if (typeof raw === "string" && raw.length > 0) { setConversationId(raw); return; }
+    if (Array.isArray(raw) && raw[0]) { setConversationId(raw[0]); return; }
+    setConversationId(null);
+  }, [routeParams]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => {
-      const inset = Math.max(
-        0,
-        Math.round(window.innerHeight - vv.height - vv.offsetTop)
-      );
-      setKeyboardInsetPx(inset);
-    };
+    const update = () => setKeyboardInset(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
     update();
     vv.addEventListener("resize", update);
     vv.addEventListener("scroll", update);
-    return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-    };
+    return () => { vv.removeEventListener("resize", update); vv.removeEventListener("scroll", update); };
   }, []);
 
   useEffect(() => {
-    const raw = routeParams?.conversationId;
-    if (typeof raw === "string" && raw.length > 0) {
-      setConversationId(raw);
-      return;
-    }
-    if (Array.isArray(raw) && raw[0]) {
-      setConversationId(raw[0]);
-      return;
-    }
-    setConversationId(null);
-  }, [routeParams]);
-
-  const currentUserId = user?.id ?? (AUTH_DISABLED ? "dev-user" : null);
-
-  // 会話のメタ情報（イベント名 / 相手表示名）
-  useEffect(() => {
     if (!conversationId) return;
-    setEventId(null);
-    setEventTitle(null);
-    setCounterpartDisplayName(null);
-    setCounterpartAvatarUrl(null);
-    setMyRole("volunteer");
-    setConversationKind("event_inquiry");
-
-    fetchWithTimeout(
-      `/api/messages/conversations/${conversationId}/meta`,
-      API_CREDENTIALS
-    )
+    setEventId(null); setEventTitle(null); setCounterpartName(null);
+    setMyRole("volunteer"); setConversationKind("event_inquiry");
+    fetchWithTimeout(`/api/messages/conversations/${conversationId}/meta`, API_CREDENTIALS)
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(data?.error ?? "メタ情報の取得に失敗しました");
@@ -123,76 +113,37 @@ export default function ConversationPage() {
         setEventTitle(data?.eventTitle ?? null);
         setMyRole(data?.myRole === "organizer" ? "organizer" : "volunteer");
         setConversationKind(typeof data?.conversationKind === "string" ? data.conversationKind : "event_inquiry");
-        setCounterpartDisplayName(data?.counterpartDisplayName ?? null);
-        setCounterpartAvatarUrl(data?.counterpartAvatarUrl ?? null);
+        setCounterpartName(data?.counterpartDisplayName ?? null);
       })
-      .catch(() => {
-        // 表示だけなら最低限で成立するので、失敗しても会話UIは出す
-      });
+      .catch(() => {});
   }, [conversationId]);
 
-  // メッセージ取得・既読・Realtime 購読
+  const currentUserId = user?.id ?? (AUTH_DISABLED ? "dev-user" : null);
+
   useEffect(() => {
     if (!conversationId || !currentUserId) return;
     const supabase = createClient();
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
+    if (!supabase) { setLoading(false); return; }
+    setLoading(true); setError(null);
 
     (async () => {
       try {
-        // メッセージ取得
-        const msgRes = await fetchWithTimeout(
-          `/api/messages/conversations/${conversationId}/messages`,
-          API_CREDENTIALS
-        );
-        if (msgRes.ok) {
-          const msgs: Message[] = await msgRes.json();
-          setMessages(msgs);
-        } else {
-          setError("メッセージの取得に失敗しました");
-        }
-
-        // 既読に更新
-        await fetch(`/api/messages/conversations/${conversationId}/read`, {
-          method: "POST",
-          ...API_CREDENTIALS,
-        });
-      } catch {
-        setError("通信に失敗しました");
-      } finally {
-        setLoading(false);
-      }
+        const msgRes = await fetchWithTimeout(`/api/messages/conversations/${conversationId}/messages`, API_CREDENTIALS);
+        if (msgRes.ok) setMessages(await msgRes.json());
+        else setError("メッセージの取得に失敗しました");
+        await fetch(`/api/messages/conversations/${conversationId}/read`, { method: "POST", ...API_CREDENTIALS });
+      } catch { setError("通信に失敗しました"); }
+      finally { setLoading(false); }
     })();
 
-    // Realtime: messages の INSERT を購読
-    const channel = supabase
-      .channel(`messages:${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const newRow = payload.new as Message;
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === newRow.id)) return prev;
-            return [...prev, newRow];
-          });
-        }
-      )
+    const channel = supabase.channel(`messages:${conversationId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
+        const newRow = payload.new as Message;
+        setMessages((prev) => prev.some((m) => m.id === newRow.id) ? prev : [...prev, newRow]);
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [conversationId, currentUserId]);
 
   useEffect(() => {
@@ -202,315 +153,207 @@ export default function ConversationPage() {
   const handleSend = useCallback(async () => {
     const text = content.trim();
     if (!text || !conversationId || !currentUserId || sending) return;
-
     setSending(true);
     try {
-      const res = await fetch(
-        `/api/messages/conversations/${conversationId}/messages`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          ...API_CREDENTIALS,
-          body: JSON.stringify({ content: text }),
-        }
-      );
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        step?: string;
-        message?: string;
-      };
+      const res = await fetch(`/api/messages/conversations/${conversationId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        ...API_CREDENTIALS,
+        body: JSON.stringify({ content: text }),
+      });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const line =
-          typeof data.step === "string" && typeof data.message === "string"
-            ? `${data.step}: ${data.message}`
-            : typeof data.error === "string"
-              ? data.error
-              : "送信に失敗しました";
-        setError(line);
+        setError(data?.step && data?.message ? `${data.step}: ${data.message}` : data?.error ?? "送信に失敗しました");
         return;
       }
       setContent("");
-      const refreshRes = await fetchWithTimeout(
-        `/api/messages/conversations/${conversationId}/messages`,
-        API_CREDENTIALS
-      );
-      if (refreshRes.ok) {
-        setMessages((await refreshRes.json()) as Message[]);
-      }
-    } catch {
-      setError("通信に失敗しました");
-    } finally {
-      setSending(false);
-    }
+      const r2 = await fetchWithTimeout(`/api/messages/conversations/${conversationId}/messages`, API_CREDENTIALS);
+      if (r2.ok) setMessages(await r2.json());
+    } catch { setError("通信に失敗しました"); }
+    finally { setSending(false); }
   }, [content, conversationId, currentUserId, sending]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.nativeEvent.isComposing || e.key === "Process") return;
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
   if (authLoading || !conversationId) {
+    return <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}><p style={{ fontSize: 14, color: C.t3 }}>読み込み中...</p></div>;
+  }
+  if (!currentUserId) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-sm text-zinc-500">読み込み中...</p>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 16px" }}>
+        <p style={{ color: C.t2 }}>ログインするとメッセージを利用できます</p>
+        <Link href={`/auth?next=/messages/${conversationId}`} style={{ color: C.green, textDecoration: "underline" }}>ログイン</Link>
       </div>
     );
   }
 
-  if (!currentUserId) {
-    return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-4">
-        <p className="text-zinc-600 dark:text-zinc-400">
-          ログインするとメッセージを利用できます
-        </p>
-        <Link
-          href={`/auth?next=/messages/${conversationId}`}
-          className="text-[var(--accent)] underline underline-offset-2"
-        >
-          ログイン
-        </Link>
-      </div>
-    );
-  }
+  const rk = getRoleKey(myRole, conversationKind);
+  const chipText = getChipText(myRole, conversationKind);
+  const chipStyle = getChipStyle(chipText);
+  const accentColor = rk === "h" ? C.green : rk === "v" ? C.blue : C.orange;
+  const bubbleBg = rk === "h" ? C.green : rk === "v" ? C.blue : C.orange;
+  const inpClass = rk === "h" ? "ms-input-wrap fh" : rk === "v" ? "ms-input-wrap fv" : "ms-input-wrap fp";
+
+  // Group messages by day, track sender changes
+  type MsgItem = { type: "date"; label: string } | { type: "sender"; name: string } | { type: "msg"; msg: Message; isOwn: boolean };
+  const items: MsgItem[] = [];
+  let lastDate = "";
+  let lastSender = "";
+
+  messages.forEach((m) => {
+    const dateStr = m.created_at.slice(0, 10);
+    if (dateStr !== lastDate) {
+      items.push({ type: "date", label: formatDateSep(m.created_at) });
+      lastDate = dateStr;
+      lastSender = "";
+    }
+    const isOwn = m.sender_id === currentUserId;
+    const senderKey = isOwn ? "__me__" : m.sender_id;
+    if (senderKey !== lastSender) {
+      const senderLabel = isOwn ? (user?.user_metadata?.display_name ?? user?.email?.split("@")[0] ?? "自分") : (counterpartName ?? "相手");
+      items.push({ type: "sender", name: senderLabel });
+      lastSender = senderKey;
+    }
+    items.push({ type: "msg", msg: m, isOwn });
+  });
 
   return (
     <div
-      className={cn(
-        "flex min-h-0 flex-col bg-[#f4f0e8] dark:bg-zinc-950",
-        "h-[100dvh] max-h-[100dvh] box-border",
-        "md:h-auto md:max-h-none md:flex-1 md:min-h-0"
-      )}
-      style={
-        keyboardInsetPx > 0
-          ? { paddingBottom: keyboardInsetPx }
-          : undefined
-      }
-    >
-      {/* ヘッダー */}
-      <header className="z-50 shrink-0 border-b border-[#ccc4b4] bg-[#faf8f2]/95 backdrop-blur-md pt-[max(0.35rem,env(safe-area-inset-top,0px))]">
-        <div className="flex items-center gap-2 px-4 pb-3 pt-1">
-          {/* モバイルのみ戻るボタン */}
-          <Link
-            href="/messages"
-            className="flex shrink-0 items-center gap-0.5 rounded-lg py-1.5 pl-0.5 pr-1 text-[#6a6258] transition-colors hover:text-[#3a3428] active:bg-[#f0ece4] md:hidden"
-            aria-label="メッセージ一覧へ戻る"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
+      className="ms-anim-up"
+      style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", background: C.bg, ...(keyboardInset > 0 ? { paddingBottom: keyboardInset } : {}) }}>
 
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-2">
-              <CommonAvatar
-                avatarUrl={counterpartAvatarUrl}
-                displayName={counterpartDisplayName ?? (myRole === "organizer" ? "参加者" : "主催者")}
-                size="sm"
-                className="border border-[#ccc4b4] bg-[#eef6f2]"
-              />
-              <div className="min-w-0">
-                <p
-                  className="truncate text-[15px] font-semibold text-[#0e1610]"
-                  style={{ fontFamily: "'Shippori Mincho', serif" }}
-                >
-                  {eventTitle ?? "イベント"}
-                </p>
-                <p className="mt-0.5 truncate text-[11px] text-[#6a6258]">
-                  {counterpartDisplayName
-                    ? `${myRole === "organizer" ? (conversationKind === "general" ? "ボランティア応募者" : "参加者") : "主催者"} · ${counterpartDisplayName}`
-                    : myRole === "organizer" ? "参加者" : "主催者"}
-                </p>
-              </div>
-            </div>
+      {/* Context bar */}
+      <div style={{ display: "flex", alignItems: "stretch", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface, boxShadow: `0 1px 0 ${C.border}` }}>
+        <div style={{ width: 4, flexShrink: 0, background: accentColor }} />
+        <div style={{ flex: 1, minWidth: 0, padding: "11px 14px" }}>
+          <div style={{ fontSize: 13.5, fontWeight: 500, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
+            {eventTitle ?? "イベント"}
           </div>
-
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, ...chipStyle }}>{chipText}</span>
+            <span style={{ fontSize: 12, color: C.t2 }}>{counterpartName ?? "—"}</span>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 6, paddingRight: 14, alignItems: "center" }}>
+          {/* Back button (mobile) */}
+          <Link href="/messages" className="sm:hidden"
+            style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.t2, padding: 0, marginRight: 4, textDecoration: "none" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ width: 15, height: 15, strokeWidth: 2 }}><polyline points="15 18 9 12 15 6"/></svg>
+            戻る
+          </Link>
           {eventId && (
-            <Link
-              href={`/events/${eventId}`}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#ccc4b4] bg-white text-[#6a6258] transition-colors hover:bg-[#f0ece4]"
-              aria-label="イベントページを開く"
-            >
-              <CalendarDays className="h-4 w-4" aria-hidden />
+            <Link href={`/events/${eventId}`} className="ms-icn"
+              style={{ width: 28, height: 28, borderRadius: 7, border: `1px solid ${C.border}`, background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.t3, transition: "all .12s", textDecoration: "none" }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ width: 12, height: 12, strokeWidth: 1.8 }}>
+                <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>
+              </svg>
             </Link>
           )}
         </div>
-      </header>
+      </div>
 
-      {/* メッセージ一覧 */}
-      <div
-        className={cn(
-          "min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-3",
-          "md:px-4"
-        )}
-      >
+      {/* Messages */}
+      <div className="ms-msgs-scroll" style={{ flex: 1, overflowY: "auto", padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 2 }}>
         {error && (
-          <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-            {error}
-          </div>
+          <div style={{ borderRadius: 8, background: "#fef2f2", padding: "8px 12px", fontSize: 13, color: "#b91c1c" }}>{error}</div>
         )}
         {loading && messages.length === 0 && (
-          <div className="space-y-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-10 w-full animate-pulse rounded-2xl ${
-                  i % 2 === 0 ? "bg-zinc-100 dark:bg-zinc-800" : "bg-zinc-50 dark:bg-zinc-900"
-                }`}
-              />
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[80,60,70,50,65].map((w,i) => (
+              <div key={i} style={{ height: 40, width: `${w}%`, borderRadius: 18, background: i % 2 === 0 ? C.border2 : C.border, alignSelf: i % 2 === 0 ? "flex-start" : "flex-end" }} />
             ))}
           </div>
         )}
         {!loading && !error && messages.length === 0 && (
-          <div className="rounded-2xl border border-[var(--mg-line)] bg-white/80 p-4 text-center shadow-[var(--mg-shadow)] dark:border-zinc-700/60 dark:bg-zinc-900/40">
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent)]/10">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-[var(--accent)]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
-              </svg>
-            </div>
-            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              {myRole === "organizer"
-                ? "参加者にメッセージを送ってみましょう"
-                : "主催者にメッセージを送ってみましょう"}
+          <div style={{ borderRadius: 12, border: `1px solid ${C.border}`, background: C.surface, padding: 16, textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ width: 24, height: 24, color: accentColor, margin: "0 auto 8px", display: "block", strokeWidth: 1.5 }}>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <p style={{ fontSize: 13, fontWeight: 600, color: C.t1 }}>
+              {myRole === "organizer" ? "参加者にメッセージを送ってみましょう" : "主催者にメッセージを送ってみましょう"}
             </p>
-            <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-              {myRole === "organizer"
-                ? "応募内容の確認や当日の案内に使えます。"
-                : "イベントについての質問や相談ができます。"}
-            </p>
-            <p className="mt-0.5 text-sm text-[var(--foreground-muted)]">
-              {myRole === "organizer"
-                ? "参加前の不安を減らす連絡にも便利です。"
-                : "参加前の確認にも使えます。"}
+            <p style={{ fontSize: 12, color: C.t3, marginTop: 4, lineHeight: 1.7 }}>
+              {myRole === "organizer" ? "当日の案内や応募内容の確認に使えます。" : "イベントについての質問や相談ができます。"}
             </p>
           </div>
         )}
-        {messages.map((m, idx) => {
-          const isOwn = m.sender_id === currentUserId;
-          const prev = idx > 0 ? messages[idx - 1] : null;
-          const isSameSender = prev?.sender_id === m.sender_id;
-          return (
-            <div
-              key={m.id}
-              className={`flex ${isOwn ? "justify-end" : "justify-start"} ${
-                idx === 0 ? "" : isSameSender ? "mt-1" : "mt-3"
-              }`}
-            >
-              <div
-                className={`max-w-[58%] rounded-[10px] px-3 py-2.5 ${
-                  isOwn
-                    ? "bg-[#1e3848] text-[#e8f4f8]"
-                    : "border border-[#ccc4b4] bg-[#faf8f2] text-[#3a3428]"
-                }`}
-              >
-                <p className="whitespace-pre-wrap break-words text-[11px] leading-[1.55]">
-                  {m.content}
-                </p>
-                <p
-                  className={`mt-1 text-[10px] leading-none ${
-                    isOwn ? "text-[#e8f4f8]/60" : "text-[#a8a090]"
-                  }`}
-                >
-                  {new Date(m.created_at).toLocaleTimeString("ja-JP", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
+
+        {items.map((item, idx) => {
+          if (item.type === "date") {
+            return (
+              <div key={`date-${idx}`} style={{ display: "flex", alignItems: "center", gap: 10, margin: "10px 0 8px" }}>
+                <div style={{ flex: 1, height: 1, background: C.border2 }} />
+                <span style={{ fontSize: 10.5, color: C.t3, whiteSpace: "nowrap" }}>{item.label}</span>
+                <div style={{ flex: 1, height: 1, background: C.border2 }} />
               </div>
+            );
+          }
+          if (item.type === "sender") {
+            return (
+              <div key={`sep-${idx}`} style={{ display: "flex", alignItems: "center", gap: 8, margin: "10px 0 6px" }}>
+                <div style={{ flex: 1, height: 1, background: C.border2 }} />
+                <span style={{ fontSize: 10, color: C.t3, whiteSpace: "nowrap", background: C.bg, padding: "0 4px" }}>{item.name}</span>
+                <div style={{ flex: 1, height: 1, background: C.border2 }} />
+              </div>
+            );
+          }
+          const { msg, isOwn } = item;
+          return (
+            <div key={msg.id}
+              style={{ display: "flex", gap: 6, maxWidth: "72%", margin: "1px 0", alignSelf: isOwn ? "flex-end" : "flex-start", flexDirection: isOwn ? "row-reverse" : "row" }}>
+              <div style={{
+                padding: "9px 14px", fontSize: 13, lineHeight: 1.7, wordBreak: "break-word",
+                borderRadius: isOwn ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
+                background: isOwn ? bubbleBg : C.surface,
+                color: isOwn ? "white" : C.t1,
+                border: isOwn ? "none" : `1px solid ${C.border2}`,
+                boxShadow: isOwn ? "0 1px 6px rgba(0,0,0,.12)" : "0 1px 4px rgba(0,0,0,.06)",
+              }}>
+                {msg.content}
+              </div>
+              <span style={{ fontSize: 10, color: C.t3, alignSelf: "flex-end", whiteSpace: "nowrap", marginBottom: 3 }}>
+                {formatTime(msg.created_at)}
+              </span>
             </div>
           );
         })}
-        <div ref={bottomRef} className="h-1 shrink-0" aria-hidden />
+        <div ref={bottomRef} style={{ height: 4, flexShrink: 0 }} />
       </div>
 
-      {/* 入力欄: Enter送信 / Shift+Enter改行 */}
-      <div
-        className="z-40 shrink-0 border-t border-[#ccc4b4] bg-[#faf8f2]/95 px-3 pt-2 pb-[max(0.65rem,env(safe-area-inset-bottom,0px))] backdrop-blur-md md:px-4 md:pt-2.5 md:pb-3"
-      >
-        {!loading && error && (
-          <p className="mb-2 text-xs text-red-600 dark:text-red-400">{error}</p>
-        )}
-
-        <div className="mb-1.5 md:mb-2">
-          <button
-            type="button"
-            onClick={() => setSuggestionsOpen((o) => !o)}
-            className="text-[11px] font-medium text-zinc-500 underline-offset-2 hover:text-[var(--accent)] hover:underline dark:text-zinc-400 md:text-xs"
-          >
-            {suggestionsOpen ? "候補を隠す" : "返信の候補を表示"}
-          </button>
-          {suggestionsOpen && (
-            <div className="scrollbar-hide mt-1.5 flex gap-2 overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch] md:mt-2 md:pb-1">
-              {suggestionChips.map((chip) => (
-                <button
-                  key={chip.label}
-                  type="button"
-                  onClick={() => {
-                    setContent(chip.value);
-                    setError(null);
-                    requestAnimationFrame(() => inputRef.current?.focus());
-                  }}
-                  className="shrink-0 rounded-full border border-[var(--mg-line)] bg-white px-3 py-2 text-xs font-medium text-zinc-700 shadow-sm active:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:active:bg-zinc-700"
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-end gap-2">
+      {/* Input */}
+      <div style={{ padding: "12px 16px", background: C.surface, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <div className={inpClass}
+          style={{ flex: 1, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 100, padding: "9px 14px", display: "flex", alignItems: "center", gap: 8, transition: "border-color .15s, box-shadow .15s" }}>
           <textarea
             ref={inputRef}
             value={content}
-            onChange={(e) => {
-              setContent(e.target.value);
-              if (error) setError(null);
-            }}
+            onChange={(e) => { setContent(e.target.value); if (error) setError(null); }}
             onKeyDown={handleKeyDown}
             onFocus={() => {
-              if (
-                typeof window !== "undefined" &&
-                window.matchMedia("(min-width: 768px)").matches
-              ) {
-                return;
-              }
-              requestAnimationFrame(() => {
-                inputRef.current?.scrollIntoView({
-                  block: "nearest",
-                  behavior: "smooth",
-                });
-              });
+              if (typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches) return;
+              requestAnimationFrame(() => inputRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
             }}
-            placeholder="メッセージを入力..."
+            placeholder="メッセージを入力…"
             rows={1}
             enterKeyHint="send"
             inputMode="text"
             autoComplete="off"
-            autoCorrect="on"
-            className="min-h-[44px] max-h-32 flex-1 resize-none rounded-[24px] border border-[#ccc4b4] bg-white px-4 py-2.5 text-[16px] leading-snug text-[#0e1610] placeholder:text-[#a8a090] focus:outline-none focus:ring-1 focus:ring-[#1e3848]/40 md:min-h-[40px] md:text-[13px]"
+            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, fontFamily: "inherit", color: C.t1, resize: "none", minHeight: 22, maxHeight: 120, overflowY: "auto", lineHeight: 1.6 }}
           />
-          <button
-            type="button"
-            onClick={() => handleSend()}
-            disabled={sending || !content.trim()}
-            className="flex h-10 shrink-0 items-center justify-center rounded-[20px] bg-[#1e3848] px-4 text-[13px] font-medium text-[#f4f0e8] hover:opacity-90 active:opacity-95 disabled:opacity-40"
-            aria-label="送信"
-          >
-            {sending ? "…" : "送信"}
-          </button>
         </div>
+        <button
+          type="button"
+          onClick={handleSend}
+          disabled={sending || !content.trim()}
+          className="ms-send-btn"
+          style={{ width: 36, height: 36, borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "transform .15s, opacity .15s", boxShadow: "0 1px 6px rgba(0,0,0,.15)", background: accentColor, opacity: sending || !content.trim() ? 0.4 : 1 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ width: 13, height: 13, strokeWidth: 2.5, color: "white" }}>
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
       </div>
     </div>
   );

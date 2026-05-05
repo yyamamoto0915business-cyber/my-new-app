@@ -2,335 +2,375 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { InboxItem } from "@/lib/inbox-queries";
 import { ProfileEmptyCard } from "@/components/profile/profile-empty-card";
-import { CommonAvatar } from "@/components/profile/common-avatar";
 import { getLoginUrl } from "@/lib/auth-utils";
-import { getModeFromCookie, type ModePreference } from "@/lib/mode-preference";
-import { resolveAvatarUrlByRole } from "@/lib/profile-avatar";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
-
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
 
-function formatRelative(iso: string): string {
-  const d = new Date(iso);
-  const now = new Date();
-  const diff = now.getTime() - d.getTime();
+// v14 design tokens
+const C = {
+  bg: "#f6f2eb",
+  surface: "#ffffff",
+  surface2: "#faf8f4",
+  border: "#e6dfd4",
+  border2: "#ede8df",
+  t1: "#19170f",
+  t2: "#5a5448",
+  t3: "#9e9688",
+  green: "#2e8a5a",  greenL: "#eaf4f0",  greenD: "#1a5538",
+  blue:  "#3460a8",  blueL:  "#eaeff8",  blueD:  "#1c3a70",
+  orange:"#b85c2a",  orangeL:"#faeee6",  orangeD:"#7a3510",
+} as const;
+
+const THEMES = [
+  { border:"#c2e0ce", bg:"linear-gradient(160deg,#f0faf4 0%,#fff 60%)", plistBg:"rgba(240,250,244,.5)", stBg:"rgba(224,242,230,.6)", stBorder:"#c2e0ce" },
+  { border:"#f0d4bc", bg:"linear-gradient(160deg,#fef6ef 0%,#fff 60%)", plistBg:"rgba(254,246,239,.5)", stBg:"rgba(254,234,224,.5)", stBorder:"#f0d4bc" },
+  { border:"#bcd4f0", bg:"linear-gradient(160deg,#eff4fe 0%,#fff 60%)", plistBg:"rgba(239,244,254,.5)", stBg:"rgba(224,234,248,.6)", stBorder:"#bcd4f0" },
+  { border:"#e8c8d4", bg:"linear-gradient(160deg,#fef0f4 0%,#fff 60%)", plistBg:"rgba(254,240,244,.5)", stBg:"rgba(248,228,236,.5)", stBorder:"#e8c8d4" },
+] as const;
+
+type Tab = "h" | "v" | "p";
+
+type EventGroup = {
+  eventId: string | null;
+  eventTitle: string | null;
+  participants: InboxItem[];
+  volunteers: InboxItem[];
+  unreadCount: number;
+  themeIdx: number;
+};
+
+function buildGroups(items: InboxItem[]): EventGroup[] {
+  const map = new Map<string, EventGroup>();
+  const order: string[] = [];
+  items.forEach((item) => {
+    const key = item.event_id ?? `__${item.conversation_id}`;
+    if (!map.has(key)) {
+      map.set(key, { eventId: item.event_id, eventTitle: item.event_title, participants: [], volunteers: [], unreadCount: 0, themeIdx: order.length % 4 });
+      order.push(key);
+    }
+    const g = map.get(key)!;
+    g.unreadCount += item.unread_count;
+    if (item.conversation_kind === "general") g.volunteers.push(item);
+    else g.participants.push(item);
+  });
+  return order.map((k) => map.get(k)!);
+}
+
+function formatRel(iso: string): string {
+  const d = new Date(iso), now = new Date(), diff = now.getTime() - d.getTime();
   if (diff < 60000) return "たった今";
   if (diff < 3600000) return `${Math.floor(diff / 60000)}分前`;
   if (diff < 86400000 && d.getDate() === now.getDate())
     return d.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
-  if (diff < 604800000) return `${Math.floor(diff / 86400000)}日前`;
-  return d.toLocaleDateString("ja-JP", { month: "short", day: "numeric" });
+  if (diff < 172800000) return "昨日";
+  if (diff < 604800000) return "先週";
+  return d.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" });
 }
 
-function getDisplayName(item: InboxItem): string {
-  const name = item.other_display_name?.trim();
-  if (name) return name;
-  const emailName = item.other_email?.split("@")[0]?.trim();
-  if (emailName) return emailName;
-  if (item.my_role === "organizer") {
-    return item.conversation_kind === "general" ? "応募者" : "参加者";
-  }
-  return "主催者";
+function getName(item: InboxItem): string {
+  const n = item.other_display_name?.trim();
+  if (n) return n;
+  const e = item.other_email?.split("@")[0]?.trim();
+  if (e) return e;
+  return item.my_role === "organizer" ? (item.conversation_kind === "general" ? "応募者" : "参加者") : "主催者";
 }
 
-function getCounterpartAvatar(item: InboxItem): string | null {
-  const counterpartRole = item.my_role === "organizer" ? "participant" : "organizer";
-  return resolveAvatarUrlByRole(
-    {
-      avatar_url: item.other_avatar_url,
-      participant_avatar_url: item.other_participant_avatar_url,
-      organizer_avatar_url: item.other_organizer_avatar_url,
-    },
-    counterpartRole
+function initials(name: string): string {
+  return name.charAt(0).toUpperCase();
+}
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      style={{ width: 13, height: 13, strokeWidth: 2, color: C.t3, flexShrink: 0, margin: "0 12px 0 8px", transition: "transform .22s ease", transform: open ? "rotate(180deg)" : "none" }}>
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
   );
 }
 
-export default function MessagesLayout({
-  children,
-}: {
-  children: React.ReactNode;
+function PersonRow({ item, activeId, avBg, avColor, activeBg, activeBorder, unreadColor }: {
+  item: InboxItem; activeId?: string;
+  avBg: string; avColor: string; activeBg: string; activeBorder: string; unreadColor: string;
 }) {
+  const name = getName(item);
+  const active = item.conversation_id === activeId;
+  return (
+    <Link href={`/messages/${item.conversation_id}`} className="ms-pitem"
+      style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", cursor: "pointer", textDecoration: "none", borderLeft: `2.5px solid ${active ? activeBorder : "transparent"}`, background: active ? activeBg : "transparent", transition: "background .1s", position: "relative", borderBottom: `1px solid ${C.border2}` }}>
+      <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, flexShrink: 0, background: avBg, color: avColor }}>
+        {initials(name)}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        <div style={{ fontSize: 11.5, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
+          {item.last_message_content ?? "メッセージがありません"}
+        </div>
+      </div>
+      <span style={{ fontSize: 10, color: C.t3, flexShrink: 0 }}>{item.last_message_at ? formatRel(item.last_message_at) : ""}</span>
+      {item.unread_count > 0 && <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, marginLeft: 5, background: unreadColor }} />}
+    </Link>
+  );
+}
+
+function EvCard({ group, activeId, tab, search }: { group: EventGroup; activeId?: string; tab: Tab; search: string }) {
+  const [open, setOpen] = useState(true);
+  const [sub, setSub] = useState<"pax" | "vol">("pax");
+  const t = THEMES[group.themeIdx];
+  const hasBoth = group.participants.length > 0 && group.volunteers.length > 0;
+
+  const avProps = (item: InboxItem) => {
+    if (tab === "h") {
+      if (item.conversation_kind === "general") return { avBg: C.blueL, avColor: C.blueD, activeBg: C.blueL, activeBorder: C.blue, unreadColor: C.blue };
+      return { avBg: C.greenL, avColor: C.greenD, activeBg: C.greenL, activeBorder: C.green, unreadColor: C.green };
+    }
+    if (tab === "v") return { avBg: C.blueL, avColor: C.blueD, activeBg: C.blueL, activeBorder: C.blue, unreadColor: C.blue };
+    return { avBg: C.orangeL, avColor: C.orangeD, activeBg: C.orangeL, activeBorder: C.orange, unreadColor: C.orange };
+  };
+
+  const tabUnread = tab === "h" ? C.green : tab === "v" ? C.blue : C.orange;
+
+  const displayItems = hasBoth
+    ? (sub === "pax" ? group.participants : group.volunteers)
+    : [...group.participants, ...group.volunteers];
+
+  const filteredItems = search
+    ? displayItems.filter((i) => getName(i).includes(search) || (i.event_title ?? "").includes(search))
+    : displayItems;
+
+  if (search && filteredItems.length === 0 && !(group.eventTitle ?? "").includes(search)) return null;
+
+  return (
+    <div className="ms-evcard"
+      style={{ margin: "8px 10px 0", borderRadius: 12, overflow: "hidden", border: `1px solid ${t.border}`, background: t.bg, boxShadow: "0 1px 4px rgba(0,0,0,.05)", transition: "box-shadow .15s" }}>
+      {/* Header row */}
+      <div onClick={() => setOpen(!open)}
+        style={{ display: "flex", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
+        <div style={{ width: 56, minWidth: 56, height: 56, flexShrink: 0, borderRadius: 8, margin: "9px 0 9px 10px", background: t.border, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+          📅
+        </div>
+        <div style={{ flex: 1, minWidth: 0, padding: "0 0 0 12px" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
+            {group.eventTitle ?? "イベント"}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
+            {group.participants.length > 0 && (
+              <span style={{ fontSize: 9.5, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: C.greenL, color: C.greenD }}>
+                参加者 {group.participants.length}
+              </span>
+            )}
+            {group.volunteers.length > 0 && (
+              <span style={{ fontSize: 9.5, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: C.blueL, color: C.blueD }}>
+                ボランティア募集 {group.volunteers.length}
+              </span>
+            )}
+            {group.unreadCount > 0 && (
+              <span style={{ width: 20, height: 20, borderRadius: "50%", fontSize: 10, fontWeight: 700, color: "white", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: "auto", flexShrink: 0, background: tabUnread, boxShadow: "0 1px 4px rgba(0,0,0,.18)" }}>
+                {group.unreadCount}
+              </span>
+            )}
+          </div>
+        </div>
+        <Chevron open={open} />
+      </div>
+
+      {open && (
+        <>
+          {hasBoth && (
+            <div style={{ display: "flex", background: t.stBg, borderTop: `1px solid ${t.stBorder}` }}>
+              <button className="ms-sub-btn" onClick={() => setSub("pax")}
+                style={{ flex: 1, padding: "7px 8px", background: sub === "pax" ? C.greenL : "none", border: "none", borderBottom: `2px solid ${sub === "pax" ? C.green : "transparent"}`, cursor: "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 500, color: sub === "pax" ? C.greenD : C.t3, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, transition: "all .13s" }}>
+                参加者
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 14, height: 14, borderRadius: 100, fontSize: 9, fontWeight: 700, padding: "0 3px", background: sub === "pax" ? C.green : C.border, color: sub === "pax" ? "white" : C.t2 }}>
+                  {group.participants.length}
+                </span>
+              </button>
+              <button className="ms-sub-btn" onClick={() => setSub("vol")}
+                style={{ flex: 1, padding: "7px 8px", background: sub === "vol" ? C.blueL : "none", border: "none", borderBottom: `2px solid ${sub === "vol" ? C.blue : "transparent"}`, cursor: "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 500, color: sub === "vol" ? C.blueD : C.t3, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, transition: "all .13s" }}>
+                ボランティア応募
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 14, height: 14, borderRadius: 100, fontSize: 9, fontWeight: 700, padding: "0 3px", background: sub === "vol" ? C.blue : C.border, color: sub === "vol" ? "white" : C.t2 }}>
+                  {group.volunteers.length}
+                </span>
+              </button>
+            </div>
+          )}
+          <div style={{ background: search ? undefined : t.plistBg }}>
+            {(search ? filteredItems : displayItems).map((item) => (
+              <PersonRow key={item.conversation_id} item={item} activeId={activeId} {...avProps(item)} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default function MessagesLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, loading: authLoading } = useSupabaseUser();
   const authRequired = !user && !AUTH_DISABLED;
   const loginHref = getLoginUrl(pathname ?? "/messages");
   const [items, setItems] = useState<InboxItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const conversationId = pathname?.split("/").filter(Boolean)[1]; // messages/[id] -> id
+  const [tab, setTab] = useState<Tab>("h");
+  const [search, setSearch] = useState("");
 
-  const [mode, setMode] = useState<ModePreference>(null);
-
-  useEffect(() => {
-    // ModeSegmentNav と同じ cookie を使い、一覧ヘッダーにも短い説明を出す
-    setMode(getModeFromCookie());
-  }, []);
-
-  // 未読を優先し、次に最終更新日時が新しいものを上に表示
-  const sortedItems = [...items].sort((a, b) => {
-    const aUnread = a.unread_count > 0 ? 1 : 0;
-    const bUnread = b.unread_count > 0 ? 1 : 0;
-    if (aUnread !== bUnread) return bUnread - aUnread;
-    const aAt = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
-    const bAt = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
-    return bAt - aAt;
-  });
-  const organizerItems = sortedItems.filter((item) => item.my_role === "organizer");
-  const volunteerItems = sortedItems.filter((item) => item.my_role === "volunteer");
-  const organizerSectionTitle =
-    "主催者としてのやり取り（応募者・参加者）";
-  const volunteerSectionTitle =
-    mode === "VOLUNTEER" ? "ボランティアとしてのやり取り" : "参加者としてのやり取り";
+  const conversationId = pathname?.split("/").filter(Boolean)[1];
 
   useEffect(() => {
-    if (!user && !AUTH_DISABLED) {
-      setLoading(false);
-      return;
-    }
-    if (AUTH_DISABLED) {
-      setLoading(false);
-      return;
-    }
+    if (!user && !AUTH_DISABLED) { setLoading(false); return; }
+    if (AUTH_DISABLED) { setLoading(false); return; }
     setLoading(true);
     setError(null);
     fetchWithTimeout("/api/messages/inbox", API_CREDENTIALS)
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
-        if (!r.ok) {
-          const msg =
-            data?.error ??
-            (r.status === 401 ? "ログインが必要です" : "取得に失敗しました");
-          const detail = data?.detail ? `（${data.detail}）` : "";
-          throw new Error(`${msg}${detail}`);
-        }
+        if (!r.ok) throw new Error(data?.error ?? "取得に失敗しました");
         return data as InboxItem[];
       })
       .then((data) => setItems(data ?? []))
-      .catch((e) => {
-        const msg = e?.message ?? "取得に失敗しました";
-        const needDbUrl =
-          /schema cache|could not find the (table|function)|SUPABASE_DB_URL|設定されていません/i.test(
-            msg
-          );
-        const isDbAuthError = /password authentication|DB接続に失敗/i.test(msg);
-        setError(
-          isDbAuthError
-            ? `DB接続エラー: ${msg}（SUPABASE_DB_PASSWORD が正しいか確認し、サーバーを再起動してください）`
-            : needDbUrl
-              ? "SUPABASE_DB_URL を .env.local に追加してください（docs/MESSAGES_SETUP.md 参照）"
-              : msg
-        );
-      })
+      .catch((e) => setError(e?.message ?? "取得に失敗しました"))
       .finally(() => setLoading(false));
   }, [user]);
 
   if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-zinc-500">読み込み中...</p>
-      </div>
-    );
+    return <div style={{ display: "flex", minHeight: "100dvh", alignItems: "center", justifyContent: "center" }}><p style={{ fontSize: 14, color: C.t3 }}>読み込み中...</p></div>;
   }
-
   if (authRequired) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-md">
-          <ProfileEmptyCard
-            title="ログインが必要です"
-            description="メッセージを利用するにはログインしてください"
-            ctaLabel="ログイン"
-            ctaHref={loginHref}
-          />
+      <div style={{ display: "flex", minHeight: "100dvh", alignItems: "center", justifyContent: "center", padding: "0 16px" }}>
+        <div style={{ width: "100%", maxWidth: 440 }}>
+          <ProfileEmptyCard title="ログインが必要です" description="メッセージを利用するにはログインしてください" ctaLabel="ログイン" ctaHref={loginHref} />
         </div>
       </div>
     );
   }
 
+  // Sort: unread first, then by recency
+  const sorted = [...items].sort((a, b) => {
+    if ((a.unread_count > 0) !== (b.unread_count > 0)) return (b.unread_count > 0) ? 1 : -1;
+    return (b.last_message_at ?? "").localeCompare(a.last_message_at ?? "");
+  });
+
+  const hostItems      = sorted.filter((i) => i.my_role === "organizer");
+  const volunteerItems = sorted.filter((i) => i.my_role === "volunteer" && i.conversation_kind === "general");
+  const participantItems = sorted.filter((i) => i.my_role === "volunteer" && i.conversation_kind !== "general");
+
+  const tabItems = tab === "h" ? hostItems : tab === "v" ? volunteerItems : participantItems;
+  const groups = buildGroups(tabItems);
+
+  const unreadCount = (arr: InboxItem[]) => arr.reduce((s, i) => s + (i.unread_count > 0 ? 1 : 0), 0);
+  const hBadge = unreadCount(hostItems);
+  const vBadge = unreadCount(volunteerItems);
+  const pBadge = unreadCount(participantItems);
+
+  const tabColor = tab === "h" ? C.green : tab === "v" ? C.blue : C.orange;
+
+  const tabDef = [
+    { id: "h" as Tab, label: "主催者",      badge: hBadge, onColor: C.green,  onL: C.greenL },
+    { id: "v" as Tab, label: "ボランティア", badge: vBadge, onColor: C.blue,   onL: C.blueL  },
+    { id: "p" as Tab, label: "参加者",       badge: pBadge, onColor: C.orange, onL: C.orangeL },
+  ];
+
+  // Mobile: hide sidebar when viewing a conversation
+  const sidebarHidden = !!conversationId;
+  const mainHidden = !conversationId;
+
   return (
-    <div className="flex min-h-screen flex-col md:min-h-0 md:flex-1 md:flex-row">
-      {/* 左: トーク一覧 (スマホで会話中は非表示) */}
+    <div style={{ display: "flex", height: "100dvh", overflow: "hidden", background: C.bg, fontFamily: "'Noto Sans JP', sans-serif" }}>
+      {/* Sidebar */}
       <aside
-        className={`w-full border-b border-[#ccc4b4] bg-[#faf8f2] md:w-80 md:flex-shrink-0 md:border-b-0 md:border-r min-[900px]:w-[240px] dark:bg-zinc-900 ${
-          conversationId ? "hidden md:block" : ""
-        }`}
+        style={{ width: 304, flexShrink: 0, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", overflow: "hidden" }}
+        className={sidebarHidden ? "hidden sm:flex" : "flex w-full sm:w-[304px]"}
       >
-        {/* スレッドリストヘッダー */}
-        <div className="border-b border-[#ccc4b4] px-4 py-4">
-          <h1
-            className="text-[16px] font-semibold text-[#0e1610]"
-            style={{ fontFamily: "'Shippori Mincho', serif" }}
-          >
+        {/* Header */}
+        <div style={{ padding: "18px 16px 13px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+          <div style={{ fontFamily: "'Cormorant Garamond', 'Noto Serif JP', serif", fontStyle: "italic", fontSize: 23, fontWeight: 500, color: C.t1, marginBottom: 11, letterSpacing: "-.4px", lineHeight: 1 }}>
             メッセージ
-          </h1>
-          {mode && (
-            <p className="mt-0.5 whitespace-nowrap text-[10px] tracking-wide text-[#6a6258]">
-              {mode === "ORGANIZER"
-                ? "主催としてのやり取り"
-                : mode === "VOLUNTEER"
-                  ? "ボランティア関連のやり取り"
-                  : "参加者としてのやり取り"}
-            </p>
-          )}
+          </div>
+          <div style={{ position: "relative" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", width: 13, height: 13, color: C.t3, strokeWidth: 2, pointerEvents: "none" }}>
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="イベント名・人名で検索…"
+              className="ms-sbsearch-input"
+              style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 100, padding: "7.5px 12px 7.5px 32px", fontSize: 12.5, fontFamily: "inherit", color: C.t1, outline: "none", transition: "border-color .15s, box-shadow .15s" }}
+            />
+          </div>
         </div>
 
-        <div className="overflow-y-auto">
+        {/* Role Tabs */}
+        <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+          {tabDef.map((td) => {
+            const on = tab === td.id;
+            return (
+              <button key={td.id} className="ms-tab-btn" onClick={() => setTab(td.id)}
+                style={{ flex: 1, padding: "10px 4px", background: "none", border: "none", borderBottom: `2px solid ${on ? td.onColor : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 500, color: on ? td.onColor : C.t3, transition: "all .13s", letterSpacing: ".02em" }}>
+                {td.label}
+                {td.badge > 0 && (
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 14, height: 14, borderRadius: 100, fontSize: 9, fontWeight: 700, padding: "0 4px", marginLeft: 4, verticalAlign: "middle", background: td.onL, color: td.onColor }}>
+                    {td.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Conversation list */}
+        <div className="ms-conv-scroll" style={{ flex: 1, overflowY: "auto" }}>
           {error && (
-            <div className="p-4">
-              <div className="rounded-xl border border-red-200/80 bg-red-50 px-4 py-3">
-                <p className="text-[12px] font-medium text-red-700">読み込みに失敗しました</p>
-                <p className="mt-0.5 text-[11px] text-red-600">{error}</p>
-                <button
-                  type="button"
-                  onClick={() => router.refresh()}
-                  className="mt-2 text-[11px] font-medium text-[#2c7a88] underline underline-offset-2"
-                >
-                  再読み込み
-                </button>
+            <div style={{ padding: 16 }}>
+              <div style={{ borderRadius: 12, border: "1px solid #fecaca", background: "#fef2f2", padding: "12px 16px" }}>
+                <p style={{ fontSize: 12, fontWeight: 500, color: "#b91c1c" }}>読み込みに失敗しました</p>
+                <p style={{ fontSize: 11, color: "#dc2626", marginTop: 2 }}>{error}</p>
               </div>
             </div>
           )}
-
           {loading && !error && (
-            <div className="animate-pulse">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 border-b border-[#e8e0d4] px-4 py-3">
-                  <div className="h-9 w-9 rounded-full bg-[#e4ede0]" />
-                  <div className="min-w-0 flex-1">
-                    <div className="h-3 w-2/3 rounded bg-[#e4ede0]" />
-                    <div className="mt-2 h-3 w-3/4 rounded bg-[#e4ede0]" />
+            <div style={{ padding: 16 }}>
+              {[1,2,3].map((i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.border }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ height: 12, background: C.border, borderRadius: 6, width: "60%", marginBottom: 6 }} />
+                    <div style={{ height: 11, background: C.border2, borderRadius: 6, width: "80%" }} />
                   </div>
-                  <div className="h-3 w-8 rounded bg-[#e4ede0]" />
                 </div>
               ))}
             </div>
           )}
-
-          {!error && !loading && sortedItems.length === 0 && (
-            <div className="px-4 py-8 text-center">
-              <p className="text-[13px] text-[#6a6258]">まだメッセージがありません</p>
-              <Link
-                href="/events"
-                className="mt-4 inline-flex items-center rounded-full bg-[#1e3848] px-5 py-2 text-[12px] font-medium text-[#f4f0e8] hover:opacity-90"
-              >
+          {!loading && !error && groups.length === 0 && (
+            <div style={{ padding: "32px 16px", textAlign: "center" }}>
+              <p style={{ fontSize: 13, color: C.t3 }}>まだメッセージがありません</p>
+              <Link href="/events" style={{ display: "inline-flex", alignItems: "center", marginTop: 16, borderRadius: 100, background: tabColor, color: "white", padding: "8px 20px", fontSize: 12, fontWeight: 500, textDecoration: "none" }}>
                 イベントを探す
               </Link>
             </div>
           )}
-
-          {!error && sortedItems.length > 0 && (
-            <ul>
-              {organizerItems.length > 0 && volunteerItems.length > 0 && (
-                <li className="border-b border-[#e8e0d4] px-4 py-1.5">
-                  <span className="text-[10px] tracking-[0.12em] text-[#a8a090]">{organizerSectionTitle}</span>
-                </li>
-              )}
-              {organizerItems.map((item) => {
-                const active = item.conversation_id === conversationId;
-                return (
-                  <li key={item.conversation_id}>
-                    <Link
-                      href={`/messages/${item.conversation_id}`}
-                      prefetch
-                      className={`flex touch-manipulation items-center gap-3 border-b border-[#e8e0d4] px-4 py-3 transition-colors ${
-                        active ? "bg-[#eef6f2]" : "bg-[#faf8f2] hover:bg-[#f0ece4]"
-                      }`}
-                    >
-                      <CommonAvatar
-                        avatarUrl={getCounterpartAvatar(item)}
-                        displayName={getDisplayName(item)}
-                        size="md"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p
-                            className="truncate text-[13px] font-semibold text-[#0e1610]"
-                            style={{ fontFamily: "'Shippori Mincho', serif" }}
-                          >
-                            {getDisplayName(item)}
-                          </p>
-                          <div className="flex shrink-0 items-center gap-1.5">
-                            {item.last_message_at && (
-                              <span className="whitespace-nowrap text-[11px] text-[#a8a090]">
-                                {formatRelative(item.last_message_at)}
-                              </span>
-                            )}
-                            {item.unread_count > 0 && (
-                              <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#2c7a88]" />
-                            )}
-                          </div>
-                        </div>
-                        <p className="mt-0.5 truncate text-[11px] text-[#6a6258]">
-                          {item.last_message_content || item.event_title || "メッセージがありません"}
-                        </p>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-
-              {organizerItems.length > 0 && volunteerItems.length > 0 && (
-                <li className="border-b border-[#e8e0d4] px-4 py-1.5">
-                  <span className="text-[10px] tracking-[0.12em] text-[#a8a090]">{volunteerSectionTitle}</span>
-                </li>
-              )}
-              {volunteerItems.map((item) => {
-                const active = item.conversation_id === conversationId;
-                return (
-                  <li key={item.conversation_id}>
-                    <Link
-                      href={`/messages/${item.conversation_id}`}
-                      prefetch
-                      className={`flex touch-manipulation items-center gap-3 border-b border-[#e8e0d4] px-4 py-3 transition-colors ${
-                        active ? "bg-[#eef6f2]" : "bg-[#faf8f2] hover:bg-[#f0ece4]"
-                      }`}
-                    >
-                      <CommonAvatar
-                        avatarUrl={getCounterpartAvatar(item)}
-                        displayName={getDisplayName(item)}
-                        size="md"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p
-                            className="truncate text-[13px] font-semibold text-[#0e1610]"
-                            style={{ fontFamily: "'Shippori Mincho', serif" }}
-                          >
-                            {getDisplayName(item)}
-                          </p>
-                          <div className="flex shrink-0 items-center gap-1.5">
-                            {item.last_message_at && (
-                              <span className="whitespace-nowrap text-[11px] text-[#a8a090]">
-                                {formatRelative(item.last_message_at)}
-                              </span>
-                            )}
-                            {item.unread_count > 0 && (
-                              <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#2c7a88]" />
-                            )}
-                          </div>
-                        </div>
-                        <p className="mt-0.5 truncate text-[11px] text-[#6a6258]">
-                          {item.last_message_content || item.event_title || "メッセージがありません"}
-                        </p>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          {!loading && !error && groups.map((g, idx) => (
+            <EvCard key={g.eventId ?? idx} group={g} activeId={conversationId} tab={tab} search={search} />
+          ))}
+          <div style={{ height: 8 }} />
         </div>
       </aside>
 
-      {/* 右: プレースホルダー or 会話 (PC時) / スマホでは children がフル表示 */}
-      <main className="flex min-h-0 flex-1 flex-col bg-[#f4f0e8] dark:bg-zinc-950 md:min-h-screen">
+      {/* Main area */}
+      <main
+        style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: C.bg }}
+        className={mainHidden ? "hidden sm:flex" : "flex"}
+      >
         {children}
       </main>
     </div>
