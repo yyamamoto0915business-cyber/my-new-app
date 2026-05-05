@@ -101,10 +101,6 @@ export async function fetchInboxDirectDb(
       .replace(
         "p.organizer_avatar_url AS other_organizer_avatar_url,",
         "NULL::text AS other_organizer_avatar_url,"
-      )
-      .replace(
-        "ev.image_url AS event_image_url,",
-        "NULL::text AS event_image_url,"
       );
 
     let result;
