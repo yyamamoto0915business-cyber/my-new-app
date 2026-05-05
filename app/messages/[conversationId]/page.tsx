@@ -11,11 +11,11 @@ const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
 
 const C = {
-  bg: "#f6f2eb",
+  bg: "#f8f7f4",
   surface: "#ffffff",
-  surface2: "#faf8f4",
-  border: "#e6dfd4",
-  border2: "#ede8df",
+  surface2: "#f5f4f1",
+  border: "#e8e3db",
+  border2: "#eeebe4",
   t1: "#19170f",
   t2: "#5a5448",
   t3: "#9e9688",
@@ -229,12 +229,12 @@ export default function ConversationPage() {
       <div style={{ display: "flex", alignItems: "stretch", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface, boxShadow: `0 1px 0 ${C.border}` }}>
         <div style={{ width: 4, flexShrink: 0, background: accentColor }} />
         <div style={{ flex: 1, minWidth: 0, padding: "11px 14px" }}>
-          <div style={{ fontSize: 13.5, fontWeight: 500, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
+          <div className="ms-ctx-ev" style={{ fontSize: 14, fontWeight: 500, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
             {eventTitle ?? "イベント"}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, ...chipStyle }}>{chipText}</span>
-            <span style={{ fontSize: 12, color: C.t2 }}>{counterpartName ?? "—"}</span>
+            <span className="ms-ctx-chip" style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, ...chipStyle }}>{chipText}</span>
+            <span className="ms-ctx-name" style={{ fontSize: 12, color: C.t2 }}>{counterpartName ?? "—"}</span>
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, paddingRight: 14, alignItems: "center" }}>
@@ -304,8 +304,8 @@ export default function ConversationPage() {
           return (
             <div key={msg.id}
               style={{ display: "flex", gap: 6, maxWidth: "72%", margin: "1px 0", alignSelf: isOwn ? "flex-end" : "flex-start", flexDirection: isOwn ? "row-reverse" : "row" }}>
-              <div style={{
-                padding: "9px 14px", fontSize: 13, lineHeight: 1.7, wordBreak: "break-word",
+              <div className="ms-bubble" style={{
+                padding: "9px 14px", fontSize: 14, lineHeight: 1.7, wordBreak: "break-word",
                 borderRadius: isOwn ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
                 background: isOwn ? bubbleBg : C.surface,
                 color: isOwn ? "white" : C.t1,
@@ -314,7 +314,7 @@ export default function ConversationPage() {
               }}>
                 {msg.content}
               </div>
-              <span style={{ fontSize: 10, color: C.t3, alignSelf: "flex-end", whiteSpace: "nowrap", marginBottom: 3 }}>
+              <span className="ms-mtime" style={{ fontSize: 11, color: C.t3, alignSelf: "flex-end", whiteSpace: "nowrap", marginBottom: 3 }}>
                 {formatTime(msg.created_at)}
               </span>
             </div>

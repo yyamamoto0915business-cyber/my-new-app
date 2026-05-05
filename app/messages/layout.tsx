@@ -12,13 +12,13 @@ import { getLoginUrl } from "@/lib/auth-utils";
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
 
-// v14 design tokens
+// v14 design tokens (fixes2: lighter background, no texture)
 const C = {
-  bg: "#f6f2eb",
+  bg: "#f8f7f4",
   surface: "#ffffff",
-  surface2: "#faf8f4",
-  border: "#e6dfd4",
-  border2: "#ede8df",
+  surface2: "#f5f4f1",
+  border: "#e8e3db",
+  border2: "#eeebe4",
   t1: "#19170f",
   t2: "#5a5448",
   t3: "#9e9688",
@@ -103,16 +103,16 @@ function PersonRow({ item, activeId, avBg, avColor, activeBg, activeBorder, unre
   return (
     <Link href={`/messages/${item.conversation_id}`} className="ms-pitem"
       style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", cursor: "pointer", textDecoration: "none", borderLeft: `2.5px solid ${active ? activeBorder : "transparent"}`, background: active ? activeBg : "transparent", transition: "background .1s", position: "relative", borderBottom: `1px solid ${C.border2}` }}>
-      <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, flexShrink: 0, background: avBg, color: avColor }}>
+      <div className="ms-av" style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, flexShrink: 0, background: avBg, color: avColor }}>
         {initials(name)}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-        <div style={{ fontSize: 11.5, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
+        <div className="ms-pname" style={{ fontSize: 13, fontWeight: 500, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        <div className="ms-pprev" style={{ fontSize: 12, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
           {item.last_message_content ?? "メッセージがありません"}
         </div>
       </div>
-      <span style={{ fontSize: 10, color: C.t3, flexShrink: 0 }}>{item.last_message_at ? formatRel(item.last_message_at) : ""}</span>
+      <span className="ms-ptime" style={{ fontSize: 11, color: C.t3, flexShrink: 0 }}>{item.last_message_at ? formatRel(item.last_message_at) : ""}</span>
       {item.unread_count > 0 && <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, marginLeft: 5, background: unreadColor }} />}
     </Link>
   );
@@ -155,22 +155,22 @@ function EvCard({ group, activeId, tab, search }: { group: EventGroup; activeId?
           📅
         </div>
         <div style={{ flex: 1, minWidth: 0, padding: "0 0 0 12px" }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
+          <div className="ms-ev-name" style={{ fontSize: 13, fontWeight: 600, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
             {group.eventTitle ?? "イベント"}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
             {group.participants.length > 0 && (
-              <span style={{ fontSize: 9.5, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: C.greenL, color: C.greenD }}>
+              <span className="ms-ev-pill" style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: C.greenL, color: C.greenD }}>
                 参加者 {group.participants.length}
               </span>
             )}
             {group.volunteers.length > 0 && (
-              <span style={{ fontSize: 9.5, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: C.blueL, color: C.blueD }}>
+              <span className="ms-ev-pill" style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: C.blueL, color: C.blueD }}>
                 ボランティア募集 {group.volunteers.length}
               </span>
             )}
             {group.unreadCount > 0 && (
-              <span style={{ width: 20, height: 20, borderRadius: "50%", fontSize: 10, fontWeight: 700, color: "white", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: "auto", flexShrink: 0, background: tabUnread, boxShadow: "0 1px 4px rgba(0,0,0,.18)" }}>
+              <span className="ms-ev-unread" style={{ width: 20, height: 20, borderRadius: "50%", fontSize: 10, fontWeight: 700, color: "white", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: "auto", flexShrink: 0, background: tabUnread, boxShadow: "0 1px 4px rgba(0,0,0,.18)" }}>
                 {group.unreadCount}
               </span>
             )}
@@ -283,7 +283,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const mainHidden = !conversationId;
 
   return (
-    <div style={{ display: "flex", height: "100dvh", overflow: "hidden", background: C.bg, fontFamily: "'Noto Sans JP', sans-serif" }}>
+    <div className="ms-shell" style={{ display: "flex", height: "100dvh", overflow: "hidden", background: C.bg, fontFamily: "'Noto Sans JP', sans-serif" }}>
       {/* Sidebar */}
       <aside
         style={{ width: 304, flexShrink: 0, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", overflow: "hidden" }}
@@ -291,7 +291,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       >
         {/* Header */}
         <div style={{ padding: "18px 16px 13px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-          <div style={{ fontFamily: "'Cormorant Garamond', 'Noto Serif JP', serif", fontStyle: "italic", fontSize: 23, fontWeight: 500, color: C.t1, marginBottom: 11, letterSpacing: "-.4px", lineHeight: 1 }}>
+          <div style={{ fontFamily: "'Cormorant Garamond', 'Noto Serif JP', serif", fontStyle: "italic", fontSize: 20, fontWeight: 500, color: C.t1, marginBottom: 10, letterSpacing: "-.4px", lineHeight: 1 }}>
             メッセージ
           </div>
           <div style={{ position: "relative" }}>
@@ -305,7 +305,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               onChange={(e) => setSearch(e.target.value)}
               placeholder="イベント名・人名で検索…"
               className="ms-sbsearch-input"
-              style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 100, padding: "7.5px 12px 7.5px 32px", fontSize: 12.5, fontFamily: "inherit", color: C.t1, outline: "none", transition: "border-color .15s, box-shadow .15s" }}
+              style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 100, padding: "7px 12px 7px 32px", fontSize: 13, fontFamily: "inherit", color: C.t1, outline: "none", transition: "border-color .15s, box-shadow .15s" }}
             />
           </div>
         </div>
@@ -316,7 +316,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
             const on = tab === td.id;
             return (
               <button key={td.id} className="ms-tab-btn" onClick={() => setTab(td.id)}
-                style={{ flex: 1, padding: "10px 4px", background: "none", border: "none", borderBottom: `2px solid ${on ? td.onColor : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 500, color: on ? td.onColor : C.t3, transition: "all .13s", letterSpacing: ".02em" }}>
+                style={{ flex: 1, padding: "9px 4px", background: "none", border: "none", borderBottom: `2px solid ${on ? td.onColor : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: on ? 500 : 400, color: on ? td.onColor : C.t3, transition: "all .13s", letterSpacing: ".01em", whiteSpace: "nowrap" }}>
                 {td.label}
                 {td.badge > 0 && (
                   <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 14, height: 14, borderRadius: 100, fontSize: 9, fontWeight: 700, padding: "0 4px", marginLeft: 4, verticalAlign: "middle", background: td.onL, color: td.onColor }}>
