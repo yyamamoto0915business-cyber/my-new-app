@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { syncSupabaseSessionFromServer } from "@/lib/supabase/sync-session-from-server";
+import { isAbortLikeError } from "@/lib/is-abort-like-error";
 import type { User } from "@supabase/supabase-js";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
@@ -26,20 +27,26 @@ export function useSupabaseUser(): SupabaseUserState {
       return;
     }
 
+    let cancelled = false;
+
     /** Cookie 反映や RSC 遷移のタイミングで 1 回目が空でも、サーバーはセッションを持っていることがある */
     const recoverSessionFromServerWithRetries = async (): Promise<boolean> => {
       const delays = [0, 120, 400];
       for (const ms of delays) {
+        if (cancelled) return false;
         if (ms > 0) {
           await new Promise((r) => setTimeout(r, ms));
         }
+        if (cancelled) return false;
         if (await syncSupabaseSessionFromServer(supabase)) {
-          const {
-            data: { user: u },
-          } = await supabase.auth.getUser();
-          if (u) {
-            setUser(u);
-            return true;
+          try {
+            const { data: { user: u } } = await supabase.auth.getUser();
+            if (!cancelled && u) {
+              setUser(u);
+              return true;
+            }
+          } catch {
+            // ページ遷移・HMR で中断された場合は無視
           }
         }
       }
@@ -53,9 +60,11 @@ export function useSupabaseUser(): SupabaseUserState {
     const recoverUserFromApiWithRetries = async (): Promise<boolean> => {
       const delays = [0, 120, 400];
       for (const ms of delays) {
+        if (cancelled) return false;
         if (ms > 0) {
           await new Promise((r) => setTimeout(r, ms));
         }
+        if (cancelled) return false;
         try {
           const res = await fetch("/api/auth/me", {
             credentials: "include",
@@ -78,7 +87,7 @@ export function useSupabaseUser(): SupabaseUserState {
               aud: "authenticated",
               created_at: new Date(0).toISOString(),
             } as unknown as User;
-            setUser(fallbackUser);
+            if (!cancelled) setUser(fallbackUser);
             return true;
           }
         } catch {
@@ -90,11 +99,19 @@ export function useSupabaseUser(): SupabaseUserState {
 
     const init = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser(session.user);
+        let sessionUser: User | null = null;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          sessionUser = session?.user ?? null;
+        } catch (sessionErr) {
+          if (!isAbortLikeError(sessionErr)) {
+            console.warn("getSession failed:", sessionErr);
+          }
+          if (cancelled) return;
+        }
+        if (cancelled) return;
+        if (sessionUser) {
+          setUser(sessionUser);
           return;
         }
 
@@ -102,12 +119,16 @@ export function useSupabaseUser(): SupabaseUserState {
           const {
             data: { user: u },
           } = await supabase.auth.getUser();
+          if (cancelled) return;
           if (u) {
             setUser(u);
             return;
           }
-        } catch {
-          // ページ遷移・Fast Refresh 等で内部 fetch が中断されると AbortError になり得る
+        } catch (userErr) {
+          if (!isAbortLikeError(userErr)) {
+            console.warn("getUser failed:", userErr);
+          }
+          if (cancelled) return;
         }
 
         if (await recoverSessionFromServerWithRetries()) {
@@ -118,11 +139,11 @@ export function useSupabaseUser(): SupabaseUserState {
           return;
         }
 
-        setUser(null);
+        if (!cancelled) setUser(null);
       } catch {
-        setUser(null);
+        if (!cancelled) setUser(null);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
@@ -131,6 +152,7 @@ export function useSupabaseUser(): SupabaseUserState {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
       if (event === "SIGNED_OUT") {
         setUser(null);
         return;
@@ -138,7 +160,10 @@ export function useSupabaseUser(): SupabaseUserState {
       setUser((prev) => session?.user ?? prev);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (AUTH_DISABLED) {

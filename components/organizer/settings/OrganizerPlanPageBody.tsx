@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { OrganizerHeader } from "@/components/organizer/organizer-header";
+import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
+import { OrganizerPageShell } from "@/components/organizer/OrganizerPageShell";
+import { OrganizerPlanHero } from "@/components/organizer/plan/OrganizerPlanHero";
 import { useOrganizerBilling } from "@/hooks/use-organizer-billing";
 import {
-  getPlanLabel,
   isPaidPlan,
   isFounderActive,
   getNormalSlotsUsed,
@@ -13,6 +15,58 @@ import {
   NORMAL_SLOTS,
   FOUNDER_BONUS_SLOTS_UI,
 } from "@/lib/organizer-billing-display";
+import { SECTION_TONES } from "@/lib/section-tones";
+
+const COMPARE_ROWS = [
+  ["月額料金", "0円", "月額980円"],
+  ["公開枠", "毎月1件まで", "制限なし"],
+  ["イベント作成", "利用可能", "利用可能"],
+  ["スタッフ募集管理", "利用可能", "利用可能"],
+  ["チャット", "利用可能", "利用可能"],
+  ["売上受取（Stripe）", "別途設定", "別途設定"],
+  ["協賛受付", "対応", "対応"],
+  ["おすすめ", "無料で始めたい方", "本格的に主催したい方"],
+] as const;
+
+const usageTone = SECTION_TONES.organizer;
+const proTone = SECTION_TONES.security;
+const MG_ACCENT = "#b8860b";
+const MG_ACCENT_LIGHT = "#c9a227";
+const MG_ACCENT_DARK = "#8a6510";
+
+const cardBase =
+  "rounded-2xl bg-white p-3 shadow-[0_1px_8px_rgba(0,0,0,0.05)] sm:p-4 dark:bg-zinc-900";
+const cardBorderSoft = "border-[0.5px] border-[#e8e6e0] dark:border-zinc-700";
+const pageBottomPad =
+  "max-[639px]:pb-[calc(2rem+env(safe-area-inset-bottom,0px))] min-[640px]:max-[899px]:pb-12 min-[900px]:pb-8";
+
+const PRO_FEATURES = [
+  "公開枠無制限",
+  "継続的な主催に向いたプラン",
+  "Stripe で安全にお支払い管理",
+] as const;
+
+function PlanIcon({
+  src,
+  size = 40,
+  className = "",
+}: {
+  src: string;
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <Image
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      className={`shrink-0 rounded-full object-contain ${className}`}
+      style={{ width: size, height: size, maxWidth: size, maxHeight: size }}
+      unoptimized
+    />
+  );
+}
 
 export function OrganizerPlanPageBody() {
   const {
@@ -26,379 +80,342 @@ export function OrganizerPlanPageBody() {
     handlePortal,
   } = useOrganizerBilling();
   const [billingAgreed, setBillingAgreed] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
+
+  if (loading) {
+    return (
+      <OrganizerPageShell
+        className={`org-plan-page ${pageBottomPad}`}
+        contentClassName="mx-auto w-full max-w-5xl space-y-3"
+      >
+        <div className="h-12 animate-pulse rounded-xl bg-[#e4ede0] min-[900px]:h-16" />
+        <div className="org-plan-page__grid min-[900px]:grid-cols-2">
+          <div className="h-44 animate-pulse rounded-2xl bg-[#d8e8dc]" />
+          <div className="h-44 animate-pulse rounded-2xl bg-[#ebe4d8]" />
+        </div>
+      </OrganizerPageShell>
+    );
+  }
+
+  const paid = data ? isPaidPlan(data) : false;
+  const founder = data ? isFounderActive(data) : false;
 
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
-      <OrganizerHeader
-        title="主催者プラン（公開枠）"
-        description="イベントの公開枠に関するプランです。プランの比較やアップグレード、お支払いの管理ができます"
-        titleClassName="text-[22px] font-bold sm:text-[28px]"
-        descriptionClassName="text-[13px] sm:text-sm"
-        backHref="/organizer/settings"
-        backLabel="← 設定へ"
-        showMessages={false}
-        showPrimaryCta={false}
+    <OrganizerPageShell
+      className={`org-plan-page ${pageBottomPad}`}
+      contentClassName="mx-auto w-full max-w-5xl space-y-3 min-[900px]:space-y-3.5"
+    >
+      <OrganizerWorkspacePageHeader
+        className="min-[900px]:hidden"
+        title="主催者プラン"
+        subtitle="Starter（無料）と Pro（月額980円）から選べます。公開枠や特典をここで確認できます。"
       />
-      <main className="mx-auto max-w-[960px] px-4 pb-24 pt-6 sm:px-6">
-        {loading ? (
-          <div className="h-48 animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-700" />
-        ) : error ? (
-          <p className="text-red-600">{error}</p>
+      <div className="hidden min-[900px]:block">
+        <OrganizerPlanHero />
+      </div>
+
+      <div className="w-full space-y-3 min-[900px]:space-y-3.5">
+        {error ? (
+          <p className="text-[12px] text-red-600 sm:text-sm">{error}</p>
         ) : data ? (
           <>
-          {actionError && (
-            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-950/30 dark:text-red-400">
-              {actionError}
-            </div>
-          )}
-          <div className="flex flex-col gap-8">
-            <section
-              className="min-h-[200px] rounded-2xl border border-[var(--mg-accent)]/25 bg-gradient-to-br from-[var(--accent-soft)]/50 via-[var(--mg-accent-soft)]/30 to-[var(--mg-paper)] p-4 shadow-[var(--mg-shadow)] dark:from-[var(--accent-soft)]/25 dark:via-[var(--mg-accent-soft)]/15 dark:to-[var(--mg-paper)] sm:p-6"
-              aria-labelledby="summary-heading"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-[var(--mg-ink)] shadow-sm dark:bg-zinc-800/90 dark:text-zinc-100">
-                  プラン・公開枠
-                </span>
-                {!isPaidPlan(data) && (
-                  <span className="inline-flex rounded-full bg-amber-100/90 px-2.5 py-1 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
-                    無料プラン利用中
-                  </span>
-                )}
+            {actionError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700 sm:rounded-xl sm:px-4 sm:py-3 sm:text-sm">
+                {actionError}
               </div>
-              <h2 id="summary-heading" className="mt-3 text-lg font-bold text-[var(--mg-ink)] sm:text-xl">
-                現在の利用状況
-              </h2>
-              <ul className="mt-4 space-y-2.5 text-sm text-[var(--mg-ink)]">
-                <li className="flex gap-2">
-                  <span className="text-[var(--mg-muted)]">現在のプラン：</span>
-                  <span className="font-semibold">{getPlanLabel(data)}</span>
-                </li>
-                {!isPaidPlan(data) && (
-                  <li className="flex gap-2">
-                    <span className="text-[var(--mg-muted)]">毎月使える公開枠：</span>
-                    <span className="font-semibold">
-                      {getNormalSlotsUsed(data.monthlyPublished)}/{NORMAL_SLOTS}
-                    </span>
-                  </li>
-                )}
-                {!isPaidPlan(data) && isFounderActive(data) && (
-                  <>
-                    <li className="flex gap-2">
-                      <span className="text-[var(--mg-muted)]">特典の公開枠：</span>
-                      <span className="font-semibold">
-                        {getFounderBonusSlotsUsed(data.monthlyPublished)}/{FOUNDER_BONUS_SLOTS_UI}
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-[var(--mg-muted)]">今月公開できる件数：</span>
-                      <span className="font-semibold">
-                        最大{NORMAL_SLOTS + FOUNDER_BONUS_SLOTS_UI}件
-                      </span>
-                    </li>
-                  </>
-                )}
-              </ul>
-              <p className="mt-4 text-sm text-[var(--mg-muted)]">
-                売上の受け取り（Stripe）は{" "}
-                <Link
-                  href="/organizer/settings/payouts"
-                  className="font-medium text-[var(--mg-accent)] underline underline-offset-2 hover:no-underline"
-                >
-                  売上受取設定
-                </Link>
-                で行います。
-              </p>
-              <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                <a
-                  href="#recommended-plan"
-                  className="order-1 flex h-11 w-full items-center justify-center rounded-[10px] bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:opacity-90 sm:w-auto"
-                >
-                  プランを変更する
-                </a>
-              </div>
-            </section>
-
-            {!isPaidPlan(data) && (
-              <section className="rounded-[14px] border border-[var(--border)] bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900/90">
-                <h3 className="text-base font-bold text-[var(--mg-ink)]">無料プランと Starter の違い</h3>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--mg-muted)]">
-                  無料プランでは毎月の公開枠に上限があります。より多くのイベントを公開したい場合は、下のプランから Starter へアップグレードしてください。
-                </p>
-              </section>
             )}
 
-            <section id="recommended-plan" className="space-y-4">
-              <h3 className="text-lg font-bold text-[var(--mg-ink)] sm:text-[22px]">プランを選ぶ</h3>
-              <p className="text-sm text-[var(--mg-muted)]">
-                ご利用に合わせてプランをお選びください。アップグレードはカード決済でお手続きできます。
-              </p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="min-h-[220px] rounded-2xl border border-[#eaeaea] bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900/90 sm:p-6">
-                  <span className="inline-block rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-medium text-[var(--mg-muted)] dark:bg-zinc-700 dark:text-zinc-400">
-                    まずは気軽に始めたい方におすすめ
-                  </span>
-                  <h4 className="mt-4 text-lg font-bold text-[var(--mg-ink)] sm:text-xl">無料プラン</h4>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--mg-muted)]">
-                    まずは気軽に主催を始めたい方向けのプランです。
-                    毎月1件まで無料で公開できます。
-                  </p>
-                  {!isPaidPlan(data) && (
-                    <span className="mt-4 inline-block rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">
-                      現在利用中
-                    </span>
-                  )}
-                  {isPaidPlan(data) && (
-                    <p className="mt-6 text-sm text-[var(--mg-muted)]">—</p>
-                  )}
-                </div>
-
-                <div className="min-h-[300px] rounded-2xl border-2 border-[var(--mg-accent)]/40 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:border-[var(--mg-accent)]/50 dark:bg-zinc-900/90 dark:shadow-[0_1px_3px_rgba(0,0,0,0.2)] sm:p-6">
-                  <div className="flex flex-wrap gap-2">
-                    <span className="inline-block rounded-full bg-[var(--mg-accent)] px-2.5 py-1 text-xs font-medium text-white">
-                      おすすめ
-                    </span>
-                    <span className="inline-block rounded-full bg-zinc-200 px-2 py-1 text-xs font-medium text-[var(--mg-muted)] dark:bg-zinc-700 dark:text-zinc-400">
-                      続けて主催したい方におすすめ
-                    </span>
+            <div className="org-plan-page__grid min-[900px]:grid-cols-2">
+              {/* 現在のご利用状況 */}
+              <section className="org-plan-usage-card flex flex-col" aria-labelledby="plan-usage-heading">
+                <div className="org-plan-usage-card__header">
+                  <div className="org-plan-usage-card__header-title">
+                    <PlanIcon src="/organizer/plan/usage-status.png" size={32} />
+                    <h2 id="plan-usage-heading">現在のご利用状況</h2>
                   </div>
-                  <h4 className="mt-4 text-lg font-bold text-[var(--mg-ink)] sm:text-xl">
-                    Starterプラン（月額980円）
-                  </h4>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--mg-muted)]">
-                    継続してイベントを主催したい方向けの基本プランです。
-                    公開枠の制限なく、運営をスムーズに進めやすくなります。
+                  <span
+                    className={`org-plan-usage-card__badge ${
+                      paid ? "org-plan-usage-card__badge--pro" : "org-plan-usage-card__badge--starter"
+                    }`}
+                  >
+                    {paid ? "現在利用中" : "Starter"}
+                  </span>
+                </div>
+                <div className="org-plan-usage-card__body">
+                  <div className="org-plan-usage-card__stats">
+                    <div className="org-plan-usage-card__stat-row">
+                      <span className="org-plan-usage-card__stat-label">
+                        <PlanIcon src="/organizer/plan/usage-status.png" size={18} className="org-plan-usage-card__stat-icon" />
+                        現在のプラン
+                      </span>
+                      <span className="org-plan-usage-card__stat-value">
+                        {paid ? "Proプラン" : "Starter（無料）"}
+                      </span>
+                    </div>
+                    {founder && (
+                      <div className="org-plan-usage-card__stat-row">
+                        <span className="org-plan-usage-card__stat-label">
+                          <PlanIcon src="/organizer/plan/gift.png" size={18} className="org-plan-usage-card__stat-icon" />
+                          特典の公開枠
+                        </span>
+                        <span className="org-plan-usage-card__stat-value">
+                          {getFounderBonusSlotsUsed(data.monthlyPublished)} / {FOUNDER_BONUS_SLOTS_UI} 件
+                        </span>
+                      </div>
+                    )}
+                    {paid ? (
+                      <div className="org-plan-usage-card__stat-row">
+                        <span className="org-plan-usage-card__stat-label">
+                          <PlanIcon src="/organizer/plan/calendar.png" size={18} className="org-plan-usage-card__stat-icon" />
+                          今月公開できる件数
+                        </span>
+                        <span className="org-plan-usage-card__stat-value org-plan-usage-card__stat-value--accent">
+                          無制限
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="org-plan-usage-card__stat-row">
+                        <span className="org-plan-usage-card__stat-label">
+                          <PlanIcon src="/organizer/plan/calendar.png" size={18} className="org-plan-usage-card__stat-icon" />
+                          毎月の公開枠
+                        </span>
+                        <span className="org-plan-usage-card__stat-value">
+                          {getNormalSlotsUsed(data.monthlyPublished)} / {NORMAL_SLOTS} 件
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="org-plan-usage-card__note">
+                    <PlanIcon src="/organizer/plan/calendar.png" size={18} className="mt-0.5" />
+                    <span>参加費・協賛金の受け取りは Stripe の売上受取設定で行います。</span>
                   </p>
-                  <ul className="mt-4 space-y-2 text-sm text-[var(--mg-ink)]">
-                    <li className="flex items-center gap-2">
-                      <span className="text-emerald-500">✓</span> 公開枠を気にせず公開しやすい
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-emerald-500">✓</span> 継続的な主催に向いたプラン
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-emerald-500">✓</span> お支払いは Stripe で安全に管理
-                    </li>
+
+                  <Link href="/organizer/settings/payouts" className="org-plan-usage-card__cta">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                      <rect x="1" y="4" width="22" height="16" rx="2" />
+                      <line x1="1" y1="10" x2="23" y2="10" />
+                    </svg>
+                    売上受取設定へ
+                  </Link>
+                </div>
+              </section>
+
+              {/* Proプラン */}
+              <section className="org-plan-pro-card flex flex-col" aria-labelledby="plan-pro-heading">
+                <div className="org-plan-pro-card__ribbon">おすすめ</div>
+                <div className="org-plan-pro-card__top">
+                  <PlanIcon src="/organizer/plan/pro-plan.png" size={56} className="org-plan-pro-card__illus" />
+                  <div className="min-w-0 flex-1">
+                    <h2 id="plan-pro-heading" className="org-plan-pro-card__title">
+                      Proプラン
+                    </h2>
+                    <p className="org-plan-pro-card__price">月額980円（税込）</p>
+                    <p className="org-plan-pro-card__desc">
+                      公開枠の制限なく、継続的に主催できます。
+                    </p>
+                  </div>
+                </div>
+                <div className="org-plan-pro-card__content flex flex-1 flex-col">
+                  <ul className="org-plan-pro-card__features">
+                    {PRO_FEATURES.map((text) => (
+                      <li key={text} className="org-plan-pro-card__feature">
+                        <span className="org-plan-pro-card__feature-check" aria-hidden>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </span>
+                        {text}
+                      </li>
+                    ))}
                   </ul>
-                  {isPaidPlan(data) ? (
-                    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                      <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">
-                        現在利用中
-                      </span>
-                      <p className="text-sm text-[var(--mg-muted)]">
-                        次回更新：
-                        {data.organizer.current_period_end
-                          ? new Date(data.organizer.current_period_end).toLocaleDateString("ja-JP")
-                          : "-"}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handlePortal}
-                        disabled={portalLoading}
-                        className="flex h-11 w-full min-h-[44px] items-center justify-center rounded-[10px] border border-[var(--border)] bg-white px-4 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 disabled:opacity-50 sm:w-auto"
-                      >
-                        {portalLoading ? "処理中..." : "お支払い・プランを管理する"}
-                      </button>
-                    </div>
-                  ) : data.organizer.subscription_status === "past_due" ? (
-                    <div className="mt-6">
-                      <span className="inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
-                        要対応
-                      </span>
-                      <p className="mt-2 text-sm text-[var(--mg-muted)]">
-                        お支払いでエラーが発生しています。カード情報をご確認ください。
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handlePortal}
-                        disabled={portalLoading}
-                        className="mt-4 flex min-h-[var(--mg-touch-min)] w-full items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 sm:w-auto"
-                      >
-                        {portalLoading ? "処理中..." : "カード情報を確認する"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="mt-6 space-y-3">
-                      <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-                        <p className="text-xs leading-relaxed text-slate-500">
-                          お申し込み前に、
-                          <Link href="/terms" target="_blank" className="text-slate-700 underline underline-offset-2 hover:text-[var(--mg-accent)]">
-                            利用規約
-                          </Link>
-                          、
-                          <Link href="/commerce" target="_blank" className="text-slate-700 underline underline-offset-2 hover:text-[var(--mg-accent)]">
-                            特定商取引法に基づく表記
-                          </Link>
-                          、
-                          <Link href="/terms#cancellation" target="_blank" className="text-slate-700 underline underline-offset-2 hover:text-[var(--mg-accent)]">
-                            キャンセル条件
-                          </Link>
-                          をご確認ください。
+
+                  <div className="org-plan-pro-card__footer mt-auto">
+                    {paid ? (
+                      <>
+                        <span className="org-plan-pro-card__active-badge">現在利用中</span>
+                        {data.organizer.current_period_end ? (
+                          <p className="text-center text-[11px] text-[#7a6a58]">
+                            次回更新：
+                            {new Date(data.organizer.current_period_end).toLocaleDateString("ja-JP")}
+                          </p>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={handlePortal}
+                          disabled={portalLoading}
+                          className="org-plan-pro-card__cta"
+                        >
+                          <PlanIcon src="/organizer/plan/crown.png" size={22} />
+                          {portalLoading ? "処理中..." : "お支払い・プランを管理する"}
+                        </button>
+                      </>
+                    ) : data.organizer.subscription_status === "past_due" ? (
+                      <>
+                        <span className="mx-auto w-fit rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-800">
+                          要対応
+                        </span>
+                        <p className="text-center text-[12px] text-[#566358]">
+                          お支払いでエラーが発生しています。カード情報をご確認ください。
                         </p>
-                        <label className="flex cursor-pointer items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={billingAgreed}
-                            onChange={(e) => setBillingAgreed(e.target.checked)}
-                            className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded border-slate-300"
-                          />
-                          <span className="text-[13px] leading-relaxed text-slate-700">
-                            <Link href="/terms" target="_blank" className="font-medium text-[var(--mg-ink)] underline underline-offset-2 hover:text-[var(--mg-accent)]">
+                        <button
+                          type="button"
+                          onClick={handlePortal}
+                          disabled={portalLoading}
+                          className="org-plan-pro-card__cta org-plan-pro-card__cta--green"
+                        >
+                          {portalLoading ? "処理中..." : "カード情報を確認する"}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+                          <p className="text-[10px] leading-relaxed text-slate-500 sm:text-[11px]">
+                            お申し込み前に、
+                            <Link href="/terms" target="_blank" className="hover:underline" style={{ color: MG_ACCENT }}>
                               利用規約
                             </Link>
-                            ・
-                            <Link href="/commerce" target="_blank" className="font-medium text-[var(--mg-ink)] underline underline-offset-2 hover:text-[var(--mg-accent)]">
+                            、
+                            <Link href="/commerce" target="_blank" className="hover:underline" style={{ color: MG_ACCENT }}>
                               特定商取引法に基づく表記
                             </Link>
-                            ・
-                            <Link href="/terms#cancellation" target="_blank" className="font-medium text-[var(--mg-ink)] underline underline-offset-2 hover:text-[var(--mg-accent)]">
+                            、
+                            <Link href="/terms#cancellation" target="_blank" className="hover:underline" style={{ color: MG_ACCENT }}>
                               キャンセル条件
                             </Link>
-                            を確認し、同意します
-                          </span>
-                        </label>
-                      </div>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                            をご確認ください。
+                          </p>
+                          <label className="flex cursor-pointer items-start gap-2">
+                            <input
+                              type="checkbox"
+                              checked={billingAgreed}
+                              onChange={(e) => setBillingAgreed(e.target.checked)}
+                              className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300"
+                            />
+                            <span className="text-[10px] leading-snug text-slate-700 sm:text-[11px]">
+                              上記に同意します
+                            </span>
+                          </label>
+                        </div>
                         <button
                           type="button"
                           onClick={handleCheckout}
                           disabled={checkoutLoading || !billingAgreed}
-                          className="flex h-11 w-full items-center justify-center rounded-[10px] bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 sm:w-auto"
+                          className="org-plan-pro-card__cta org-plan-pro-card__cta--green"
                         >
-                          {checkoutLoading ? "処理中..." : "このプランを選ぶ（アップグレード）"}
+                          {checkoutLoading ? "処理中..." : "Pro にアップグレード"}
                         </button>
-                        <a
-                          href="#plan-detail"
-                          className="flex items-center justify-center text-sm font-semibold text-[var(--mg-accent)] underline hover:no-underline sm:w-auto"
+                      </>
+                    )}
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowCompare((v) => !v)}
+              className="org-plan-compare-toggle"
+              aria-expanded={showCompare}
+            >
+              {showCompare ? "▲ プラン比較を閉じる" : "▼ プラン比較を見る"}
+            </button>
+
+            {showCompare && (
+              <div className={`${cardBase} ${cardBorderSoft} overflow-hidden overflow-x-auto`}>
+                <table className="w-full min-w-[280px] border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="w-[40%] border-b border-[#e8e6e0] bg-[#fafaf8] p-2 text-left text-[11px] font-medium text-[var(--mg-muted)] sm:p-3 sm:text-[12px]" />
+                      <th
+                        className="border-b p-2 text-center text-[11px] font-semibold sm:p-3 sm:text-[12px]"
+                        style={{ background: usageTone.infoBg, color: usageTone.btnText, borderColor: usageTone.border }}
+                      >
+                        Starter
+                      </th>
+                      <th
+                        className="border-b p-2 text-center text-[11px] font-bold sm:p-3 sm:text-[12px]"
+                        style={{
+                          background: proTone.infoBg,
+                          color: proTone.btnText,
+                          borderColor: proTone.infoBorder,
+                        }}
+                      >
+                        Pro プラン
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {COMPARE_ROWS.map(([label, free, pro], i) => (
+                      <tr
+                        key={label}
+                        className={i < COMPARE_ROWS.length - 1 ? "border-b border-[#f5f3ef]" : ""}
+                      >
+                        <td className="bg-[#fafaf8] p-2 text-[11px] font-medium text-[var(--mg-ink)] sm:p-3 sm:text-[12px]">
+                          {label}
+                        </td>
+                        <td
+                          className="p-2 text-center text-[11px] sm:p-3 sm:text-[12px]"
+                          style={{ background: usageTone.bodyBg, color: usageTone.desc }}
                         >
-                          プラン比較を見る
-                        </a>
-                      </div>
+                          {free}
+                        </td>
+                        <td
+                          className="p-2 text-center text-[11px] font-semibold sm:p-3 sm:text-[12px]"
+                          style={{ background: proTone.bodyBg, color: proTone.btnText }}
+                        >
+                          {pro}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {founder && (
+              <section className="org-plan-founder-card" aria-label="先着特典">
+                <div className="org-plan-founder-card__row">
+                  <PlanIcon src="/organizer/plan/gift.png" size={36} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className="rounded-md px-2 py-0.5 text-[10px] font-bold"
+                        style={{ background: "var(--mg-accent-soft)", color: MG_ACCENT_DARK }}
+                      >
+                        先着特典
+                      </span>
+                      <span className="text-[11px] font-semibold" style={{ color: MG_ACCENT }}>
+                        ご利用中
+                      </span>
                     </div>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            <section id="plan-detail" className="space-y-4">
-              <div className="overflow-x-auto rounded-2xl border border-[var(--border)] dark:border-zinc-700">
-                <div className="border-b border-[var(--border)] bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800/80">
-                  <h4 className="px-4 py-3 text-sm font-semibold text-[var(--mg-ink)] sm:px-4 sm:py-3">プラン比較</h4>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[280px] text-[13px] sm:text-sm">
-                    <thead>
-                      <tr className="border-b border-[var(--border)] bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800/80">
-                        <th className="p-3 pr-3 text-left font-medium text-[var(--mg-muted)] sm:p-[14px_16px]" />
-                        <th className="p-3 text-center font-medium text-[var(--mg-ink)] sm:p-[14px_16px]">無料プラン</th>
-                        <th className="p-3 text-center font-medium text-[var(--mg-accent)] sm:p-[14px_16px]">Starterプラン</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-[var(--mg-ink)]">
-                      <tr className="border-b border-[var(--border)] dark:border-zinc-600">
-                        <td className="p-3 font-medium sm:p-[14px_16px]">月額料金</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">0円</td>
-                        <td className="p-3 text-center font-medium sm:p-[14px_16px]">月額980円</td>
-                      </tr>
-                      <tr className="border-b border-[var(--border)] dark:border-zinc-600">
-                        <td className="p-3 font-medium sm:p-[14px_16px]">公開枠</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">毎月1件まで</td>
-                        <td className="p-3 text-center font-medium sm:p-[14px_16px]">制限なし</td>
-                      </tr>
-                      <tr className="border-b border-[var(--border)] dark:border-zinc-600">
-                        <td className="p-3 font-medium sm:p-[14px_16px]">イベント作成</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">利用可能</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">利用可能</td>
-                      </tr>
-                      <tr className="border-b border-[var(--border)] dark:border-zinc-600">
-                        <td className="p-3 font-medium sm:p-[14px_16px]">スタッフ募集管理</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">利用可能</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">利用可能</td>
-                      </tr>
-                      <tr className="border-b border-[var(--border)] dark:border-zinc-600">
-                        <td className="p-3 font-medium sm:p-[14px_16px]">チャット</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">利用可能</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">利用可能</td>
-                      </tr>
-                      <tr className="border-b border-[var(--border)] dark:border-zinc-600">
-                        <td className="p-3 font-medium sm:p-[14px_16px]">売上受取（Stripe）</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">別途設定</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">別途設定</td>
-                      </tr>
-                      <tr className="border-b border-[var(--border)] dark:border-zinc-600">
-                        <td className="p-3 font-medium sm:p-[14px_16px]">協賛受付</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">対応</td>
-                        <td className="p-3 text-center sm:p-[14px_16px]">対応</td>
-                      </tr>
-                      <tr>
-                        <td className="p-3 font-medium sm:p-[14px_16px]">おすすめ</td>
-                        <td className="p-3 text-center text-[var(--mg-muted)] sm:p-[14px_16px]">まずは気軽に始めたい方</td>
-                        <td className="p-3 text-center font-medium text-[var(--mg-accent)] sm:p-[14px_16px]">続けて主催したい方</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {data.organizer.earlybird_eligible &&
-                data.organizer.full_feature_trial_end_at &&
-                !isFounderActive(data) && (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-800/50 dark:bg-emerald-950/20">
-                    <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
-                      早期登録キャンペーン：全機能無料
-                    </p>
-                    <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-400">
-                      {new Date(data.organizer.full_feature_trial_end_at).toLocaleDateString("ja-JP", {
+                    <p className="mt-2 text-[12px] leading-relaxed text-[#7a6a58]">
+                      特典の公開枠：{getFounderBonusSlotsUsed(data.monthlyPublished)} / {FOUNDER_BONUS_SLOTS_UI} 件
+                      <br />
+                      特典終了日：
+                      {new Date(data.organizer.founder30_end_at!).toLocaleDateString("ja-JP", {
                         year: "numeric",
-                        month: "long",
-                        day: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
                       })}
-                      まで
                     </p>
                   </div>
-                )}
-            </section>
-
-            {isFounderActive(data) && (
-              <section className="rounded-2xl border border-[var(--border)] bg-zinc-50/80 p-5 dark:border-zinc-700 dark:bg-zinc-900/50">
-                <h3 className="text-lg font-bold text-[var(--mg-ink)]">先着特典</h3>
-                <p className="mt-2 text-sm font-semibold text-[var(--mg-ink)]">先着特典 適用中</p>
-                <p className="mt-1 text-sm leading-relaxed text-[var(--mg-muted)]">
-                  先着でご利用中の主催者向け特典が適用されています。
-                  特典期間中は、公開に使える特典枠を利用できます。
-                </p>
-                <ul className="mt-3 space-y-1 text-sm text-[var(--mg-muted)]">
-                  <li>
-                    特典の公開枠：{getFounderBonusSlotsUsed(data.monthlyPublished)}/{FOUNDER_BONUS_SLOTS_UI}
-                  </li>
-                  <li>
-                    特典終了日：
-                    {new Date(data.organizer.founder30_end_at!).toLocaleDateString("ja-JP", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                    })}
-                  </li>
-                </ul>
+                </div>
+                <PlanIcon
+                  src="/organizer/plan/starter-leaf.png"
+                  size={44}
+                  className="org-plan-founder-card__deco"
+                />
               </section>
             )}
 
-            <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
-              <h3 className="text-base font-semibold text-[var(--mg-ink)]">参加費・協賛金の受け取り</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--mg-muted)]">
-                カード決済での売上受け取りは、主催者プラン（公開枠）とは別に「売上受取設定」で Stripe を連携します。
-              </p>
-              <Link
-                href="/organizer/settings/payouts"
-                className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-800 transition hover:bg-slate-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
-              >
-                売上受取設定を開く
-              </Link>
-            </section>
-          </div>
+            <div
+              className="max-[639px]:block min-[640px]:hidden h-[calc(4.5rem+env(safe-area-inset-bottom,0px))] shrink-0"
+              aria-hidden
+            />
           </>
         ) : null}
-      </main>
-    </div>
+      </div>
+    </OrganizerPageShell>
   );
 }

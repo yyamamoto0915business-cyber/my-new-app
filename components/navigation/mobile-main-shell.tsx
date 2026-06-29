@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { getMobileTopHeaderHeightPx } from "@/components/navigation/mobile-top-header";
 import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
+import { isAuthRoute } from "@/lib/is-auth-route";
 
 type Props = {
   children: ReactNode;
@@ -12,8 +13,9 @@ type Props = {
 
 /**
  * モバイル時のメイン領域の上余白を調整する。
- * イベント詳細・メッセージ会話詳細ではグローバル上部（`MobileTopHeader`）を非表示にし、
- * 下のモバイルナビ用余白も外す（各画面の専用UIで safe-area を確保）。
+ * MobileTopHeader は position:sticky のため文書フロー上でスペースを占有する。
+ * pt は不要（二重オフセットになるため削除）。--mg-mobile-top-header-h はサブヘッダーの
+ * sticky 位置決めに使用するため引き続き設定する。
  */
 export function MobileMainShell({ children }: Props) {
   const pathname = usePathname();
@@ -22,13 +24,23 @@ export function MobileMainShell({ children }: Props) {
   /** モバイルでグローバル上・下を外し、画面専用UIに任せる */
   const immersiveMobile = eventDetail || chatConversation;
   const topHeaderH = getMobileTopHeaderHeightPx(pathname ?? "");
+  const organizerArea = pathname?.startsWith("/organizer") ?? false;
+  const authRoute = isAuthRoute(pathname ?? "");
+
+  const pcTopPad = organizerArea
+    ? "min-[900px]:pt-0"
+    : "min-[900px]:pt-[var(--mg-pc-top-nav-h)]";
+
+  const sidePad = authRoute
+    ? "min-[900px]:pl-0"
+    : "sm:pl-20 min-[900px]:pl-20";
 
   return (
     <div
       className={
         immersiveMobile
-          ? "flex min-h-screen flex-col pt-0 pb-0 sm:pb-0 sm:pl-20 min-[900px]:pl-20 min-[900px]:pt-[var(--mg-pc-top-nav-h)]"
-          : "flex min-h-screen flex-col max-[639px]:pt-[calc(var(--mg-mobile-top-header-h)+env(safe-area-inset-top,0px))] max-[639px]:pb-[calc(72px+env(safe-area-inset-bottom,0px))] min-[640px]:max-[899px]:pt-0 min-[900px]:pt-[var(--mg-pc-top-nav-h)] sm:pb-0 sm:pl-20 min-[900px]:pl-20"
+          ? `flex min-h-screen flex-col pt-0 pb-0 sm:pb-0 ${sidePad} ${pcTopPad}`
+          : `flex min-h-screen flex-col max-[639px]:pb-[calc(72px+env(safe-area-inset-bottom,0px))] min-[640px]:max-[899px]:pt-0 sm:pb-0 ${sidePad} ${pcTopPad}`
       }
       style={
         immersiveMobile

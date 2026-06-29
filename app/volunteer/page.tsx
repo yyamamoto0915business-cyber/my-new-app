@@ -1,45 +1,39 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Breadcrumb } from "@/components/breadcrumb";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
-import { VOLUNTEER_ROLE_LABELS } from "@/lib/volunteer-roles-mock";
+import { isAbortLikeError } from "@/lib/is-abort-like-error";
 import {
   type VolunteerRoleWithEvent,
   type BenefitFilter,
   type VolunteerSort,
-  resolveBenefits,
   getCategoryLabel,
   getDisplayBenefits,
   sortEmergencyRoles,
   sortVolunteerRoles,
   filterByBenefit,
 } from "@/lib/volunteer-utils";
-import { VolunteerHero } from "@/components/VolunteerHero";
-import { VolunteerTrustSection } from "@/components/VolunteerTrustSection";
-import { VolunteerFilters } from "@/components/VolunteerFilters";
-import { VolunteerCard } from "@/components/VolunteerCard";
-import { VolunteerCardSkeleton } from "@/components/VolunteerCardSkeleton";
-import { VolunteerEmptyState } from "@/components/VolunteerEmptyState";
 import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
-import { PREFECTURES } from "@/lib/prefectures";
-
-const QUICK_FILTERS: { value: BenefitFilter; label: string; icon: string }[] = [
-  { value: "EMERGENCY", label: "緊急のみ", icon: "⚡" },
-  { value: "TRANSPORT", label: "交通費", icon: "🚃" },
-  { value: "LODGING", label: "宿泊", icon: "🏨" },
-  { value: "MEAL", label: "食事", icon: "🍱" },
-  { value: "REWARD", label: "謝礼", icon: "🎁" },
-  { value: "INSURANCE", label: "保険", icon: "🛡️" },
-  { value: "SHUTTLE", label: "送迎", icon: "🚌" },
-];
-
-const SORT_OPTIONS: { value: VolunteerSort; label: string }[] = [
-  { value: "recommended", label: "おすすめ" },
-  { value: "newest", label: "新着" },
-  { value: "soonest", label: "日程が近い" },
-];
+import { matchesVolunteerDiscoverCategory } from "@/lib/volunteer-discover-categories";
+import { PcVolunteerHero } from "@/components/volunteer/pc/PcVolunteerHero";
+import type { ConditionKey } from "@/components/volunteer/pc/PcVolunteerConditionTags";
+import { PcVolunteerCategorySidebar } from "@/components/volunteer/pc/PcVolunteerCategorySidebar";
+import {
+  PcVolunteerRecommendedRow,
+  type PcVolunteerCardItem,
+} from "@/components/volunteer/pc/PcVolunteerRecommendedRow";
+import { PcVolunteerCard } from "@/components/volunteer/pc/PcVolunteerCard";
+import { PcVolunteerCtaBanners } from "@/components/volunteer/pc/PcVolunteerCtaBanners";
+import { MobileVolunteerHero } from "@/components/volunteer/mobile/MobileVolunteerHero";
+import { MobileVolunteerPopularTags } from "@/components/volunteer/mobile/MobileVolunteerPopularTags";
+import { MobileVolunteerRecommendedCarousel } from "@/components/volunteer/mobile/MobileVolunteerRecommendedCarousel";
+import { MobileVolunteerCtaBanners } from "@/components/volunteer/mobile/MobileVolunteerCtaBanners";
+import {
+  MobileVolunteerFilterSheet,
+  type MobileVolunteerFilterKind,
+} from "@/components/volunteer/mobile/MobileVolunteerFilterSheet";
+import type { MobileVolunteerCardItem } from "@/components/volunteer/mobile/MobileVolunteerCard";
 
 function parseDateStart(dateTime: string): Date | null {
   const match = dateTime.match(/^(\d{4}-\d{2}-\d{2})/);
@@ -49,10 +43,9 @@ function parseDateStart(dateTime: string): Date | null {
 }
 
 function getWeekRange(now: Date): { start: Date; end: Date } {
-  // 月曜開始の今週（日本の感覚に寄せる）
   const d = new Date(now);
-  const day = d.getDay(); // 0:日曜, 1:月曜...
-  const diffToMonday = (day + 6) % 7; // 月曜までの差分
+  const day = d.getDay();
+  const diffToMonday = (day + 6) % 7;
   const start = new Date(d);
   start.setDate(d.getDate() - diffToMonday);
   start.setHours(0, 0, 0, 0);
@@ -63,43 +56,195 @@ function getWeekRange(now: Date): { start: Date; end: Date } {
   return { start, end };
 }
 
+function matchesDateFilter(dateTime: string, filter: string): boolean {
+  if (!filter) return true;
+  const d = parseDateStart(dateTime);
+  if (!d) return true;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (filter === "today") {
+    return d.getTime() === today.getTime();
+  }
+  if (filter === "week") {
+    const { start, end } = getWeekRange(now);
+    return d >= start && d <= end;
+  }
+  if (filter === "month") {
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+  return true;
+}
+
+function matchesKeyword(role: VolunteerRoleWithEvent, keyword: string): boolean {
+  if (!keyword.trim()) return true;
+  const q = keyword.trim().toLowerCase();
+  const haystack = [
+    role.title,
+    role.description,
+    role.location,
+    getCategoryLabel(role.roleType),
+    role.event?.title ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(q);
+}
+
+function matchesConditionTags(role: VolunteerRoleWithEvent, active: Set<ConditionKey>): boolean {
+  if (active.size === 0) return true;
+  if (active.has("beginner") && !role.beginnerFriendly) return false;
+  if (active.has("shortTime") && !role.oneDayOk) return false;
+  if (active.has("student")) {
+    const text = `${role.title} ${role.description}`.toLowerCase();
+    if (!/学生|student/.test(text)) return false;
+  }
+  if (active.has("family")) {
+    const text = `${role.title} ${role.description}`.toLowerCase();
+    if (!/親子|家族|子ども|kids|family/.test(text)) return false;
+  }
+  if (active.has("senior")) {
+    const text = `${role.title} ${role.description}`.toLowerCase();
+    if (!/シニア|高齢|senior/.test(text)) return false;
+  }
+  return true;
+}
+
+function matchesPrefecture(role: VolunteerRoleWithEvent, prefecture: string): boolean {
+  if (!prefecture) return true;
+  if (role.event?.prefecture === prefecture) return true;
+  return role.location.includes(prefecture);
+}
+
+function matchesRoleType(role: VolunteerRoleWithEvent, roleType: string): boolean {
+  return matchesVolunteerDiscoverCategory(role, roleType);
+}
+
+function formatVolunteerDateLabel(dateTime: string): string {
+  const d = parseDateStart(dateTime);
+  if (!d) return dateTime;
+  const base = d.toLocaleDateString("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+  });
+  if (!dateTime.includes("T")) return base;
+  const time = dateTime.split("T")[1]?.slice(0, 5) ?? "";
+  return time ? `${base} ${time}` : base;
+}
+
+function toCardItem(r: VolunteerRoleWithEvent): PcVolunteerCardItem {
+  const dateLabel = formatVolunteerDateLabel(r.dateTime);
+  const areaLabel = r.event?.prefecture ?? r.location;
+  const trustTags = [
+    r.beginnerFriendly ? "初心者OK" : null,
+    r.oneDayOk ? "短時間OK" : null,
+  ].filter(Boolean) as string[];
+  const { chips } = getDisplayBenefits(r);
+  const benefitTags = chips.slice(0, 2 - trustTags.length).map((c) => c.label);
+  const tags = [...trustTags, ...benefitTags].slice(0, 2);
+
+  return {
+    id: r.id,
+    title: r.title,
+    imageUrl: r.thumbnailUrl,
+    dateLabel,
+    areaLabel,
+    tags,
+    href: `/volunteer/${r.id}`,
+  };
+}
+
+function toMobileCardItem(r: VolunteerRoleWithEvent): MobileVolunteerCardItem {
+  const dateLabel = formatVolunteerDateLabel(r.dateTime);
+  const areaLabel = r.event?.prefecture ?? r.location;
+  const categoryLabel = getCategoryLabel(r.roleType);
+  const conditionTag = r.beginnerFriendly
+    ? "初めてOK"
+    : r.oneDayOk
+    ? "短時間OK"
+    : null;
+  const tags = [categoryLabel, conditionTag].filter(Boolean).slice(0, 2) as string[];
+
+  return {
+    id: r.id,
+    title: r.title,
+    imageUrl: r.thumbnailUrl,
+    dateLabel,
+    areaLabel,
+    tags,
+    href: `/volunteer/${r.id}`,
+  };
+}
+
 function VolunteerPageContent() {
   const searchParams = useSearchParamsNoSuspend();
   const router = useRouter();
-  const roleType = searchParams.get("roleType") ?? "";
-  const prefecture = searchParams.get("prefecture") ?? "";
+  const [roleType, setRoleType] = useState("");
+  const [prefecture, setPrefecture] = useState("");
 
   const [roles, setRoles] = useState<VolunteerRoleWithEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [benefitFilter, setBenefitFilter] = useState<BenefitFilter | "">("");
-  const [sort, setSort] = useState<VolunteerSort>("recommended");
+  const [sort] = useState<VolunteerSort>("recommended");
+
+  const [keyword, setKeyword] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [conditionTags, setConditionTags] = useState<Set<ConditionKey>>(new Set());
+  const [draftKeyword, setDraftKeyword] = useState("");
+  const [draftPrefecture, setDraftPrefecture] = useState(prefecture);
+  const [draftRoleType, setDraftRoleType] = useState(roleType);
+  const [draftDateFilter, setDraftDateFilter] = useState("");
+  const [draftBenefitFilter, setDraftBenefitFilter] = useState<BenefitFilter | "">("");
+
+  const [mobileKeyword, setMobileKeyword] = useState("");
+  const [mobileFilterOpen, setMobileFilterOpen] = useState<MobileVolunteerFilterKind | null>(null);
+  const loadAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    setRoleType(searchParams.get("roleType") ?? "");
+    setPrefecture(searchParams.get("prefecture") ?? "");
+  }, [searchParams]);
+
+  useEffect(() => {
+    setDraftPrefecture(prefecture);
+    setDraftRoleType(roleType);
+  }, [prefecture, roleType]);
 
   const pushQuery = useCallback(
     (updates: { roleType?: string; prefecture?: string }) => {
-      const p = new URLSearchParams(searchParams.toString());
-      if (updates.roleType !== undefined) {
-        if (updates.roleType) p.set("roleType", updates.roleType);
-        else p.delete("roleType");
-      }
-      if (updates.prefecture !== undefined) {
-        if (updates.prefecture) p.set("prefecture", updates.prefecture);
-        else p.delete("prefecture");
-      }
+      const nextRoleType =
+        updates.roleType !== undefined ? updates.roleType : roleType;
+      const nextPrefecture =
+        updates.prefecture !== undefined ? updates.prefecture : prefecture;
+
+      setRoleType(nextRoleType);
+      setPrefecture(nextPrefecture);
+
+      const p = new URLSearchParams();
+      if (nextPrefecture) p.set("prefecture", nextPrefecture);
+      if (nextRoleType) p.set("roleType", nextRoleType);
       const qs = p.toString();
       router.push(`/volunteer${qs ? `?${qs}` : ""}`, { scroll: false });
     },
-    [router, searchParams]
+    [router, roleType, prefecture]
   );
 
   const load = useCallback(async () => {
+    loadAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadAbortRef.current = controller;
+
     setLoading(true);
     setError(null);
-    const params = new URLSearchParams();
-    if (prefecture) params.set("prefecture", prefecture);
-    if (roleType) params.set("roleType", roleType);
     try {
-      const res = await fetchWithTimeout(`/api/volunteer/roles?${params}`);
+      const res = await fetchWithTimeout("/api/volunteer/roles", {
+        signal: controller.signal,
+        cache: "no-store",
+      });
+      if (controller.signal.aborted || res.status === 499) return;
       if (!res.ok) {
         console.error(`[volunteer] API error: ${res.status} ${res.statusText}`);
         setRoles([]);
@@ -107,18 +252,21 @@ function VolunteerPageContent() {
         return;
       }
       const data = await res.json();
+      if (controller.signal.aborted) return;
       setRoles(Array.isArray(data) ? data : []);
     } catch (err) {
+      if (controller.signal.aborted || isAbortLikeError(err)) return;
       console.error("[volunteer] fetch error:", err);
       setRoles([]);
       setError("読み込みに失敗しました");
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
-  }, [prefecture, roleType]);
+  }, []);
 
   useEffect(() => {
     load();
+    return () => loadAbortRef.current?.abort();
   }, [load]);
 
   const emergencyRoles = useMemo(() => {
@@ -142,177 +290,213 @@ function VolunteerPageContent() {
     if (benefitFilter === "EMERGENCY") return emergencyRoles;
     return [...emergencyRoles, ...normalRoles];
   }, [benefitFilter, emergencyRoles, normalRoles]);
-  const isEmpty = items.length === 0;
 
-  const now = useMemo(() => new Date(), []);
-  const weekRange = useMemo(() => getWeekRange(now), [now]);
+  const pcItems = useMemo(() => {
+    return items.filter(
+      (r) =>
+        matchesPrefecture(r, prefecture) &&
+        matchesRoleType(r, roleType) &&
+        matchesKeyword(r, keyword) &&
+        matchesDateFilter(r.dateTime, dateFilter) &&
+        matchesConditionTags(r, conditionTags)
+    );
+  }, [items, prefecture, roleType, keyword, dateFilter, conditionTags]);
 
-  const summary = useMemo(() => {
-    const total = roles.length;
-    const thisWeek = roles.filter((r) => {
-      const d = parseDateStart(r.dateTime);
-      if (!d) return false;
-      return d >= weekRange.start && d <= weekRange.end;
-    }).length;
+  const pcCardItems = useMemo(() => pcItems.map(toCardItem), [pcItems]);
+  const mobileCardItems = useMemo(() => pcItems.map(toMobileCardItem), [pcItems]);
+  const isPcEmpty = pcItems.length === 0;
 
-    const transport = roles.filter((r) => resolveBenefits(r).includes("TRANSPORT")).length;
-    const beginner = roles.filter((r) => r.beginnerFriendly === true).length;
+  const handlePcSearch = () => {
+    setKeyword(draftKeyword);
+    setDateFilter(draftDateFilter);
+    setBenefitFilter(draftBenefitFilter);
+    pushQuery({ roleType: draftRoleType, prefecture: draftPrefecture });
+  };
 
-    return { total, thisWeek, transport, beginner };
-  }, [roles, weekRange]);
-
-  const recommendedRoleTypes = useMemo(() => {
-    const counts = new Map<string, number>();
-    roles.forEach((r) => {
-      counts.set(r.roleType, (counts.get(r.roleType) ?? 0) + 1);
+  const toggleConditionTag = (key: ConditionKey) => {
+    setConditionTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
     });
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([roleType]) => roleType);
-  }, [roles]);
+  };
+
+  const handleMobileSearch = () => {
+    setKeyword(mobileKeyword);
+    setDraftKeyword(mobileKeyword);
+  };
+
+  const resetAllFilters = () => {
+    setKeyword("");
+    setDraftKeyword("");
+    setMobileKeyword("");
+    setDateFilter("");
+    setDraftDateFilter("");
+    setBenefitFilter("");
+    setDraftBenefitFilter("");
+    setConditionTags(new Set());
+    pushQuery({ roleType: "", prefecture: "" });
+  };
+
+  const handleMobilePrefecture = (value: string) => {
+    setDraftPrefecture(value);
+    pushQuery({ prefecture: value, roleType });
+  };
+
+  const handleMobileRoleType = (value: string) => {
+    setDraftRoleType(value);
+    pushQuery({ roleType: value, prefecture });
+  };
+
+  const handleMobileDateFilter = (value: string) => {
+    setDateFilter(value);
+    setDraftDateFilter(value);
+  };
+
+  const handleMobileBenefitFilter = (value: BenefitFilter | "") => {
+    setBenefitFilter(value);
+    setDraftBenefitFilter(value);
+  };
 
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
-      <header className="sticky top-[calc(var(--mg-mobile-top-header-h)+env(safe-area-inset-top,0px))] z-30 border-b bg-white/95 shadow-sm backdrop-blur-md sm:top-0 sm:z-50 dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
-        <div className="mx-auto max-w-4xl px-4 py-4">
-          <Breadcrumb
-            items={[{ label: "トップ", href: "/" }, { label: "ボランティア募集" }]}
+    <>
+      {/* ─── PC (900px+) ─── */}
+      <div className="hidden min-[900px]:block bg-[#eef2ee] px-6 py-4">
+        <div className="mx-auto max-w-[1280px] overflow-hidden rounded-[16px] border border-[#DDE8DF]/80 shadow-sm">
+          <PcVolunteerHero
+            keyword={draftKeyword}
+            prefecture={draftPrefecture}
+            roleType={draftRoleType}
+            dateFilter={draftDateFilter}
+            benefitFilter={draftBenefitFilter}
+            conditionTags={conditionTags}
+            onKeywordChange={setDraftKeyword}
+            onPrefectureChange={setDraftPrefecture}
+            onRoleTypeChange={setDraftRoleType}
+            onDateFilterChange={setDraftDateFilter}
+            onBenefitFilterChange={setDraftBenefitFilter}
+            onToggleConditionTag={toggleConditionTag}
+            onSearch={handlePcSearch}
           />
+
+          <div className="mg-volunteer-pc-dots flex items-start gap-0">
+            <PcVolunteerCategorySidebar
+              activeRoleType={roleType}
+              onSelect={(v) => pushQuery({ roleType: v })}
+            />
+
+            <div className="min-w-0 flex-1 px-4 pb-5 pt-4">
+            <PcVolunteerRecommendedRow
+              items={pcCardItems}
+              loading={loading}
+              totalCount={pcItems.length}
+            />
+
+            {!loading && pcItems.length > 4 && (
+              <section id="volunteer-results" aria-label="すべての募集" className="mt-6 space-y-2">
+                <h2 className="text-[14px] font-semibold text-[#1A2214]">すべての募集</h2>
+                <div className="grid grid-cols-4 items-stretch gap-3">
+                  {pcCardItems.slice(4).map((item) => (
+                    <PcVolunteerCard key={item.id} {...item} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {!loading && isPcEmpty && !error && (
+              <div className="mt-4 rounded-[12px] border border-[#DDE8DF] bg-white p-8 text-center">
+                <p className="text-[13px] text-[#566358]">条件に合う募集がありません</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setKeyword("");
+                    setDraftKeyword("");
+                    setMobileKeyword("");
+                    setDateFilter("");
+                    setDraftDateFilter("");
+                    setBenefitFilter("");
+                    setDraftBenefitFilter("");
+                    setConditionTags(new Set());
+                    pushQuery({ roleType: "", prefecture: "" });
+                  }}
+                  className="mt-3 text-[12px] font-medium text-[#2D7A4F] hover:underline"
+                >
+                  条件をリセット
+                </button>
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-4 rounded-[12px] border border-[#DDE8DF] bg-white p-6">
+                <p className="text-[13px] text-red-600">{error}</p>
+                <button
+                  type="button"
+                  onClick={load}
+                  className="mt-2 text-[12px] text-[#2D7A4F] underline"
+                >
+                  再読み込み
+                </button>
+              </div>
+            )}
+
+            <PcVolunteerCtaBanners />
+            </div>
+          </div>
         </div>
-      </header>
+      </div>
 
-      <main className="mx-auto max-w-4xl px-4 py-6 pb-24 sm:pb-6">
-        <VolunteerHero
-          totalCount={summary.total}
-          thisWeekCount={summary.thisWeek}
-          beginnerFriendlyCount={summary.beginner}
-          travelSupportCount={summary.transport}
-          isLoading={loading}
-        />
-
-        <VolunteerTrustSection
-          beginnerFriendlyCount={summary.beginner}
-          isLoading={loading}
-        />
-
-        <VolunteerFilters
-          category={roleType}
+      {/* ─── Mobile (below 900px) ─── */}
+      <div className="mg-volunteer-mobile-page min-[900px]:hidden min-h-screen space-y-2 pb-20 pt-1">
+        <MobileVolunteerHero
+          keyword={mobileKeyword}
           prefecture={prefecture}
-          quickFilters={{
-            urgentOnly: benefitFilter === "EMERGENCY",
-            travelFee: benefitFilter === "TRANSPORT",
-            lodging: benefitFilter === "LODGING",
-            meal: benefitFilter === "MEAL",
-            reward: benefitFilter === "REWARD",
-            insurance: benefitFilter === "INSURANCE",
-            pickup: benefitFilter === "SHUTTLE",
-          }}
-          sort={sort}
-          onChangeCategory={(v) => pushQuery({ roleType: v })}
-          onChangePrefecture={(v) => pushQuery({ prefecture: v })}
-          onToggleQuickFilter={(key) => {
-            const map: Record<string, BenefitFilter> = {
-              urgentOnly: "EMERGENCY",
-              travelFee: "TRANSPORT",
-              lodging: "LODGING",
-              meal: "MEAL",
-              reward: "REWARD",
-              insurance: "INSURANCE",
-              pickup: "SHUTTLE",
-            };
-            const next = map[key];
-            setBenefitFilter((prev) => (prev === next ? "" : next));
-          }}
-          onChangeSort={(v) => setSort(v)}
-          onReset={() => {
-            setBenefitFilter("");
-            setSort("recommended");
-            pushQuery({ roleType: "", prefecture: "" });
-          }}
+          roleType={roleType}
+          dateFilter={dateFilter}
+          benefitFilter={benefitFilter}
+          onKeywordChange={setMobileKeyword}
+          onSearch={handleMobileSearch}
+          onOpenFilter={setMobileFilterOpen}
         />
 
-        {loading ? (
-          <VolunteerCardSkeleton count={6} />
-        ) : error ? (
-          <div>
-            <p className="text-red-600">{error}</p>
+        <MobileVolunteerPopularTags active={conditionTags} onToggle={toggleConditionTag} />
+
+        <MobileVolunteerRecommendedCarousel
+          items={mobileCardItems}
+          loading={loading}
+          totalCount={pcItems.length}
+          onResetFilters={resetAllFilters}
+        />
+
+        <MobileVolunteerCtaBanners />
+
+        <MobileVolunteerFilterSheet
+          kind={mobileFilterOpen}
+          prefecture={prefecture}
+          roleType={roleType}
+          dateFilter={dateFilter}
+          benefitFilter={benefitFilter}
+          onClose={() => setMobileFilterOpen(null)}
+          onSelectPrefecture={handleMobilePrefecture}
+          onSelectRoleType={handleMobileRoleType}
+          onSelectDateFilter={handleMobileDateFilter}
+          onSelectBenefitFilter={handleMobileBenefitFilter}
+        />
+
+        {error && (
+          <div className="mx-3 rounded-[12px] border border-[#DDE8DF] bg-white p-4">
+            <p className="text-[13px] text-red-600">{error}</p>
             <button
               type="button"
               onClick={load}
-              className="mt-2 text-sm text-[var(--accent)] underline"
+              className="mt-2 text-[12px] text-[#2D7A4F] underline"
             >
               再読み込み
             </button>
           </div>
-        ) : isEmpty ? (
-          <VolunteerEmptyState
-            onReset={() => {
-              setBenefitFilter("");
-              setSort("recommended");
-              pushQuery({ roleType: "", prefecture: "" });
-            }}
-            onViewNewest={() => {
-              setBenefitFilter("");
-              setSort("newest");
-            }}
-            onViewRecommended={() => {
-              const rt = recommendedRoleTypes[0];
-              if (!rt) return;
-              setBenefitFilter("");
-              setSort("recommended");
-              pushQuery({ roleType: rt, prefecture });
-            }}
-          />
-        ) : (
-          <section>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {items.map((r) => {
-                const { chips, overflowCount } = getDisplayBenefits(r);
-                const badges = [
-                  ...chips.map((c) => c.label),
-                  ...(overflowCount > 0 ? [`+${overflowCount}`] : []),
-                ];
-                const trustBadges = [
-                  r.beginnerFriendly ? "初心者歓迎" : null,
-                  r.oneDayOk ? "1日だけOK" : null,
-                  r.organizerVerified ? "主催者確認済み" : null,
-                  r.contactAvailable ? "問い合わせ可" : null,
-                ].filter(Boolean) as string[];
-
-                const d = parseDateStart(r.dateTime);
-                const dateLabel = d
-                  ? d.toLocaleDateString("ja-JP", {
-                      month: "numeric",
-                      day: "numeric",
-                      weekday: "short",
-                    })
-                  : r.dateTime;
-
-                const areaLabel = r.event?.prefecture ?? r.location;
-
-                return (
-                  <VolunteerCard
-                    key={r.id}
-                    id={r.id}
-                    title={r.title}
-                    imageUrl={r.thumbnailUrl}
-                    dateLabel={dateLabel}
-                    areaLabel={areaLabel}
-                    roleLabel={`${getCategoryLabel(r.roleType)}・定員${r.capacity}名`}
-                    shortDescription={r.description}
-                    badges={badges}
-                    trustBadges={trustBadges}
-                    href={`/volunteer/${r.id}`}
-                  />
-                );
-              })}
-            </div>
-          </section>
         )}
-
-      </main>
-    </div>
+      </div>
+    </>
   );
 }
 

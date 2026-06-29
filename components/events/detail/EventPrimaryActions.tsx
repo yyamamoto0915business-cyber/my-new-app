@@ -1,12 +1,22 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import {
+  Bookmark,
+  CalendarPlus,
+  CalendarDays,
+  MapPin,
+  MessageCircle,
+  UserPlus,
+} from "lucide-react";
 import { toggleBookmark, isBookmarked } from "@/lib/bookmark-storage";
 import { openMaps } from "@/lib/maps-url";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { getLoginUrl } from "@/lib/auth-utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { cn } from "@/lib/utils";
+import { useEventOrganizerConsultOptional } from "@/app/events/[id]/event-organizer-consult-provider";
 
 function buildCalendarUrl(
   title: string,
@@ -46,6 +56,12 @@ export type EventPrimaryActionsProps = {
   longitude?: number;
   /** ヘッダー／下部バーに保存がある場合はサブ行から省略可 */
   hideSave?: boolean;
+  /** PCサイドバー向けの縦積み / モバイル2ボタン / PCヒーローカード横並び */
+  layout?: "default" | "sidebar" | "mobile" | "pcHero";
+  /** 主催者相談リンク（Provider 外のフォールバック） */
+  consultHref?: string;
+  /** 主催者相談ボタンを表示（Provider 内ではモーダルを開く） */
+  showOrganizerConsult?: boolean;
 };
 
 const subBtnClass =
@@ -71,8 +87,12 @@ export function EventPrimaryActions({
   latitude,
   longitude,
   hideSave = false,
+  layout = "default",
+  consultHref,
+  showOrganizerConsult = false,
 }: EventPrimaryActionsProps) {
   const { user } = useSupabaseUser();
+  const consultCtx = useEventOrganizerConsultOptional();
   const [saved, setSaved] = useState(false);
   const [applied, setApplied] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -202,6 +222,150 @@ export function EventPrimaryActions({
   if (!isAvailable) return null;
 
   const authDisabled = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
+  const isSidebar = layout === "sidebar";
+  const isMobile = layout === "mobile";
+  const isPcHero = layout === "pcHero";
+
+  const mobilePrimaryBtn =
+    "ed-btn-primary flex min-h-[48px] w-full items-center justify-center gap-2 px-4 text-[15px] disabled:opacity-50";
+  const mobileSecondaryBtn =
+    "ed-btn-outline flex min-h-[48px] w-full items-center justify-center gap-2 px-4 text-[15px] disabled:opacity-50";
+
+  const pcHeroPrimaryBtn =
+    "flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl bg-[#348b38] px-4 text-[15px] font-bold text-white shadow-sm transition hover:bg-[#2d7a32] disabled:opacity-50";
+  const pcHeroSaveBtn =
+    "flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl border-2 border-[#348b38] bg-white px-4 text-[15px] font-semibold text-[#348b38] transition hover:bg-[#f4faf6] disabled:opacity-50";
+
+  if (isPcHero) {
+    const primaryLabel =
+      participationMode === "required"
+        ? applied
+          ? "申込済み"
+          : joining
+            ? "処理中..."
+            : !user && !authDisabled
+              ? "ログインして参加する"
+              : "参加する"
+        : reactionLoadingType === "planned"
+          ? "保存中..."
+          : !user && !authDisabled
+            ? "ログインして参加予定にする"
+            : myReaction === "planned"
+              ? "参加予定です"
+              : "参加予定にする";
+
+    const handlePrimary = () => {
+      if (participationMode === "required") void handleJoin();
+      else void handleReaction("planned");
+    };
+
+    return (
+      <section id="event-cta" className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={handlePrimary}
+          disabled={
+            participationMode === "required"
+              ? applied || joining
+              : reactionLoadingType !== null
+          }
+          className={pcHeroPrimaryBtn}
+        >
+          <UserPlus className="h-5 w-5" aria-hidden />
+          {primaryLabel}
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          className={cn(pcHeroSaveBtn, saved && "bg-[#f4faf6]")}
+        >
+          <Bookmark
+            className={cn("h-5 w-5", saved && "fill-[#348b38]")}
+            aria-hidden
+          />
+          {saved ? "保存済み" : "保存する"}
+        </button>
+        {reactionError ? (
+          <p className="col-span-2 text-xs text-red-600" role="alert">
+            {reactionError}
+          </p>
+        ) : null}
+      </section>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <section id="event-cta" className="flex flex-col gap-2.5">
+        {participationMode === "required" && (
+          <>
+            {applied ? (
+              <div className="rounded-[10px] border border-[var(--ed-line)] bg-[var(--ed-accent-soft)] px-4 py-3 text-center text-sm font-semibold text-[var(--ed-forest)]">
+                申込済みです
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleJoin}
+                disabled={joining}
+                className={mobilePrimaryBtn}
+              >
+                <CalendarPlus className="h-5 w-5" aria-hidden />
+                {joining
+                  ? "処理中..."
+                  : !user && !authDisabled
+                    ? "ログインして参加する"
+                    : "参加する"}
+              </button>
+            )}
+          </>
+        )}
+
+        {(participationMode === "optional" || participationMode === "none") && (
+          <>
+            <button
+              type="button"
+              onClick={() => handleReaction("planned")}
+              disabled={reactionLoadingType !== null}
+              className={mobilePrimaryBtn}
+            >
+                <CalendarDays className="h-5 w-5" aria-hidden />
+                {reactionLoadingType === "planned"
+                  ? "保存中..."
+                  : !user && !authDisabled
+                    ? "ログインして参加予定にする"
+                    : myReaction === "planned"
+                      ? "参加予定です"
+                      : "参加予定にする"}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleReaction("interested")}
+              disabled={reactionLoadingType !== null}
+              className={cn(
+                mobileSecondaryBtn,
+                myReaction === "interested" && "bg-[var(--ed-accent-soft,#eef5ef)]"
+              )}
+            >
+              <Bookmark className="h-5 w-5" aria-hidden />
+              {reactionLoadingType === "interested"
+                ? "保存中..."
+                : !user && !authDisabled
+                  ? "ログインしてあとで見る"
+                  : myReaction === "interested"
+                    ? "あとで見る ✓"
+                    : "あとで見る"}
+            </button>
+            {reactionError ? (
+              <p className="text-xs text-red-600" role="alert">
+                {reactionError}
+              </p>
+            ) : null}
+          </>
+        )}
+      </section>
+    );
+  }
 
   const renderSubActions = () => (
     <div
@@ -303,6 +467,144 @@ export function EventPrimaryActions({
       )}
     </div>
   );
+
+  const sidebarPrimaryBtn =
+    "flex min-h-[46px] w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-50";
+  const sidebarSecondaryBtn =
+    "flex min-h-[46px] w-full items-center justify-center gap-2 rounded-lg border border-[var(--accent)] bg-white px-4 text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--accent-soft)] disabled:opacity-50";
+
+  if (isSidebar) {
+    return (
+      <section id="event-cta" className="space-y-3">
+        {participationMode === "required" && (
+          <>
+            {applied ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-center text-sm font-semibold text-emerald-900">
+                申込済みです
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleJoin}
+                disabled={joining}
+                className={sidebarPrimaryBtn}
+              >
+                <CalendarPlus className="h-5 w-5" aria-hidden />
+                {joining
+                  ? "処理中..."
+                  : !user && !authDisabled
+                    ? "ログインして参加する"
+                    : "参加する"}
+              </button>
+            )}
+          </>
+        )}
+
+        {(participationMode === "optional" || participationMode === "none") && (
+          <>
+            <button
+              type="button"
+              onClick={() => handleReaction("planned")}
+              disabled={reactionLoadingType !== null}
+              className={sidebarPrimaryBtn}
+            >
+              <CalendarPlus className="h-5 w-5" aria-hidden />
+              {reactionLoadingType === "planned"
+                ? "保存中..."
+                : !user && !authDisabled
+                  ? "ログインして参加予定にする"
+                  : myReaction === "planned"
+                    ? "参加予定です"
+                    : "参加予定にする"}
+            </button>
+            {participationMode === "none" && (
+              <button
+                type="button"
+                onClick={() => handleReaction("interested")}
+                disabled={reactionLoadingType !== null}
+                className={cn(
+                  sidebarSecondaryBtn,
+                  myReaction === "interested" &&
+                    "border-[var(--accent)] bg-[var(--mg-accent-soft)]"
+                )}
+              >
+                <Bookmark className="h-5 w-5" aria-hidden />
+                {reactionLoadingType === "interested"
+                  ? "保存中..."
+                  : !user && !authDisabled
+                    ? "ログインしてあとで見る"
+                    : myReaction === "interested"
+                      ? "あとで見る ✓"
+                      : "あとで見る"}
+              </button>
+            )}
+            {reactionError && (
+              <p className="text-xs text-red-600" role="alert">
+                {reactionError}
+              </p>
+            )}
+          </>
+        )}
+
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={handleOpenMaps}
+            className="flex flex-col items-center justify-center gap-1 rounded-lg border border-[var(--mg-line)] bg-white py-2.5 text-[10px] font-medium leading-tight text-[var(--mg-muted)] transition hover:bg-zinc-50"
+          >
+            <MapPin className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
+            地図を開く
+          </button>
+          <a
+            href={calendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col items-center justify-center gap-1 rounded-lg border border-[var(--mg-line)] bg-white py-2.5 text-[10px] font-medium leading-tight text-[var(--mg-muted)] transition hover:bg-zinc-50"
+          >
+            <CalendarDays className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
+            カレンダーに追加
+          </a>
+          {showOrganizerConsult || consultHref || consultCtx ? (
+            consultCtx ? (
+              <button
+                type="button"
+                onClick={() => consultCtx.openConsult("question")}
+                disabled={consultCtx.opening}
+                className="flex flex-col items-center justify-center gap-1 rounded-lg border border-[var(--mg-line)] bg-white py-2.5 text-[10px] font-medium leading-tight text-[var(--mg-muted)] transition hover:bg-zinc-50 disabled:opacity-50"
+              >
+                <MessageCircle className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
+                {consultCtx.opening ? "準備中..." : "主催者に相談"}
+              </button>
+            ) : (
+              <Link
+                href={consultHref!}
+                className="flex flex-col items-center justify-center gap-1 rounded-lg border border-[var(--mg-line)] bg-white py-2.5 text-[10px] font-medium leading-tight text-[var(--mg-muted)] transition hover:bg-zinc-50"
+              >
+                <MessageCircle className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
+                主催者に相談
+              </Link>
+            )
+          ) : (
+            <span className="rounded-lg border border-transparent py-2.5" aria-hidden />
+          )}
+        </div>
+
+        {(participationMode === "optional" || participationMode === "none") && (
+          <div className="rounded-lg bg-zinc-50 px-3 py-2.5 text-[11px] leading-relaxed text-[var(--mg-muted)]">
+            <span className="font-semibold text-[var(--mg-ink)]">参加予定</span>
+            ＝行く可能性が高いとき。
+            {participationMode === "none" ? (
+              <>
+                <span className="font-semibold text-[var(--mg-ink)]"> あとで見る</span>
+                ＝まだ未定だが関心あり。
+              </>
+            ) : null}
+            マイページで一覧できます。
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section id="event-cta" className="space-y-4">
@@ -415,7 +717,7 @@ export function EventPrimaryActions({
         )}
       </div>
 
-      <div className="hidden space-y-2 sm:block">
+      <div className="hidden space-y-2 min-[900px]:hidden sm:block">
         {participationMode === "required" && (
           <>
             {applied ? (
@@ -531,7 +833,7 @@ export function EventPrimaryActions({
         )}
       </div>
 
-      <div className="hidden sm:block">{renderSubActions()}</div>
+      <div className="hidden sm:block min-[900px]:hidden">{renderSubActions()}</div>
     </section>
   );
 }

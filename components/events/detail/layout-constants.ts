@@ -6,6 +6,6 @@ export const MOBILE_EVENT_TABS_ROW_PX = 48;
 export const MOBILE_EVENT_BOTTOM_ACTION_BAR_PX = 72;
 /** モバイル下部ナビを避けるオフセット */
 export const MOBILE_BOTTOM_NAV_CLEARANCE_PX = 72;
-/** メイン本文の下余白（下部バー＋下部ナビ分。safe-area は別途加算） */
+/** メイン本文の下余白（モバイルはインラインCTAのみ＋下部ナビ分。safe-area は別途加算） */
 export const MOBILE_EVENT_DETAIL_MAIN_PADDING_BOTTOM_PX =
-  MOBILE_EVENT_BOTTOM_ACTION_BAR_PX + MOBILE_BOTTOM_NAV_CLEARANCE_PX;
+  MOBILE_BOTTOM_NAV_CLEARANCE_PX + 16;

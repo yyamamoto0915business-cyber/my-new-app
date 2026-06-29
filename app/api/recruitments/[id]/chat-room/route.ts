@@ -66,6 +66,12 @@ export async function GET(request: NextRequest, { params }: Params) {
     if (!status) {
       return NextResponse.json({ error: "応募していないためチャットを利用できません" }, { status: 403 });
     }
+    if (status === "pending" || status === "rejected" || status === "canceled") {
+      return NextResponse.json(
+        { error: "承認後にチャットが利用可能になります" },
+        { status: 403 }
+      );
+    }
 
     const room = await getOrCreateRecruitmentChatRoom(
       supabase,

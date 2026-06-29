@@ -13,7 +13,7 @@ type Props = {
   alt: string;
   priority?: boolean;
   /** イベント詳細ヒーロー用の角丸（モバイルのみ角丸など） */
-  variant?: "hero" | "cardTop";
+  variant?: "hero" | "cardTop" | "pcHero" | "mobileHero";
   className?: string;
 };
 
@@ -36,7 +36,11 @@ export function EventDetailFlyerImage({
   const roundedCls =
     variant === "cardTop"
       ? "rounded-t-[22px]"
-      : "max-sm:rounded-2xl sm:rounded-none";
+      : variant === "pcHero"
+        ? "rounded-none"
+        : variant === "mobileHero"
+          ? "rounded-xl"
+          : "max-sm:rounded-2xl sm:rounded-none";
 
   if (!imageUrl?.trim() || failed) {
     return (
@@ -57,9 +61,9 @@ export function EventDetailFlyerImage({
 
   const shell = cn(
     "w-full overflow-hidden bg-slate-100/95 dark:bg-zinc-900/55",
-    "p-3 sm:p-4 md:p-5",
+    variant === "pcHero" ? "p-0" : "p-3 sm:p-4 md:p-5",
     roundedCls,
-    variant === "cardTop"
+    variant === "cardTop" || variant === "pcHero"
       ? "border-0"
       : "border border-slate-200/60 dark:border-zinc-700/50",
     className
@@ -68,6 +72,66 @@ export function EventDetailFlyerImage({
   const setDims = (w: number, h: number) => {
     if (w > 0 && h > 0) setRatio(w / h);
   };
+
+  if (variant === "mobileHero" || variant === "pcHero") {
+    const url = imageUrl?.trim();
+    if (!url || failed) {
+      return (
+        <div
+          className={cn(
+            "flex w-full items-center justify-center bg-[#f0f4f0] text-sm text-zinc-500",
+            variant === "mobileHero" ? "min-h-[200px]" : "min-h-[168px]",
+            roundedCls,
+            className
+          )}
+        >
+          画像なし
+        </div>
+      );
+    }
+    const useNext = isEventImageHostAllowed(url);
+    const isPcHero = variant === "pcHero";
+    const isWideHero = ratio !== null && ratio >= EVENT_FLYER_PORTRAIT_RATIO_THRESHOLD;
+    const imgCover = "object-cover object-center";
+    const imgContain = "object-contain object-center";
+    const imgTagCover = "absolute inset-0 h-full w-full object-cover object-center";
+    const imgTagContain = "absolute inset-0 h-full w-full object-contain object-center";
+
+    return (
+      <div
+        className={cn(
+          "relative w-full overflow-hidden bg-[#f0f4f0]",
+          variant === "mobileHero" ? "min-h-[200px]" : "min-h-[168px]",
+          roundedCls,
+          className
+        )}
+      >
+        {useNext ? (
+          <Image
+            src={url}
+            alt={alt}
+            fill
+            sizes={variant === "mobileHero" ? "100vw" : "(min-width: 900px) 280px, 100vw"}
+            className={isPcHero && !isWideHero ? imgContain : imgCover}
+            priority={priority}
+            onLoadingComplete={(img) => setDims(img.naturalWidth, img.naturalHeight)}
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={url}
+            alt={alt}
+            className={isPcHero && !isWideHero ? imgTagContain : imgTagCover}
+            onLoad={(e) =>
+              setDims(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)
+            }
+            onError={() => setFailed(true)}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={shell}>

@@ -20,34 +20,41 @@ export type OrganizerPublicInfo = {
   publicPhone: string | null;
 };
 
+export type OrganizerPublicInfoWithMeta = OrganizerPublicInfo & {
+  createdAt: string | null;
+};
+
 /** 主催者1件取得（公開プロフィールページ用） */
 export async function getOrganizerById(
   supabase: SupabaseClient,
   organizerId: string
-): Promise<OrganizerPublicInfo | null> {
-  const { data, error } = await supabase
-    .from("organizer_public_profiles")
-    .select(
+): Promise<OrganizerPublicInfoWithMeta | null> {
+  const [{ data, error }, { data: orgRow }] = await Promise.all([
+    supabase
+      .from("organizer_public_profiles")
+      .select(
+        `
+        organizer_id,
+        organization_name,
+        avatar_url,
+        cover_image_url,
+        gallery_images,
+        categories,
+        short_bio,
+        bio,
+        activity_area,
+        website_url,
+        instagram_url,
+        x_url,
+        facebook_url,
+        public_email,
+        public_phone
       `
-      organizer_id,
-      organization_name,
-      avatar_url,
-      cover_image_url,
-      gallery_images,
-      categories,
-      short_bio,
-      bio,
-      activity_area,
-      website_url,
-      instagram_url,
-      x_url,
-      facebook_url,
-      public_email,
-      public_phone
-    `
-    )
-    .eq("organizer_id", organizerId)
-    .single();
+      )
+      .eq("organizer_id", organizerId)
+      .single(),
+    supabase.from("organizers").select("created_at").eq("id", organizerId).maybeSingle(),
+  ]);
 
   if (error || !data) return null;
 
@@ -73,6 +80,7 @@ export async function getOrganizerById(
     facebookUrl: (row.facebook_url as string) ?? null,
     publicEmail: (row.public_email as string) ?? null,
     publicPhone: (row.public_phone as string) ?? null,
+    createdAt: (orgRow?.created_at as string) ?? null,
   };
 }
 

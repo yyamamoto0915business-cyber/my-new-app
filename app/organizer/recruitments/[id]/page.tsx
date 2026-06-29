@@ -5,18 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { RecruitmentForm } from "@/components/recruitment-form";
-import { ApplicationSummaryCards } from "@/components/organizer/applications/ApplicationSummaryCards";
 import {
-  ApplicationToolbar,
   type StatusFilter,
   type SortOption,
 } from "@/components/organizer/applications/ApplicationToolbar";
-import {
-  ApplicationCard,
-  type Application,
-} from "@/components/organizer/applications/ApplicationCard";
-import { ApplicationsEmptyState } from "@/components/organizer/applications/ApplicationsEmptyState";
+import { type Application } from "@/components/organizer/applications/ApplicationCard";
 import { ApplicationDetailSheet } from "@/components/organizer/applications/ApplicationDetailSheet";
+import { ApplicationsManagementPcView } from "@/components/organizer/applications/ApplicationsManagementPcView";
+import { ApplicationsManagementMobileView } from "@/components/organizer/applications/ApplicationsManagementMobileView";
+import { OrganizerPageShell } from "@/components/organizer/OrganizerPageShell";
 
 type Recruitment = {
   id: string;
@@ -37,12 +34,6 @@ type BulkMessageResult = {
   failedParticipantIds: string[];
 };
 
-const RECRUITMENT_STATUS_LABELS: Record<string, string> = {
-  draft: "下書き",
-  public: "募集中",
-  closed: "終了",
-};
-
 const BULK_TEMPLATE_TEXTS: Record<string, string> = {
   reminder:
     "【前日リマインド】明日の集合をお忘れなく。集合時刻・場所を再度確認の上、余裕を持ってお越しください。",
@@ -50,18 +41,6 @@ const BULK_TEMPLATE_TEXTS: Record<string, string> = {
     "【集合場所変更】大変お手数ですが、集合場所が変更になりました。このチャットの最新メッセージでご確認ください。",
   thanks: "【お礼】本日はお疲れさまでした。ご協力ありがとうございました。",
 };
-
-function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  const date = d.toLocaleDateString("ja-JP", {
-    month: "numeric",
-    day: "numeric",
-    weekday: "short",
-  });
-  const time = iso.length > 10 ? iso.slice(11, 16) : "";
-  return time ? `${date} ${time}` : date;
-}
 
 export default function OrganizerRecruitmentDetailPage({
   params,
@@ -81,7 +60,6 @@ export default function OrganizerRecruitmentDetailPage({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("created_desc");
   const [detailApp, setDetailApp] = useState<Application | null>(null);
-  const [contentOpen, setContentOpen] = useState(false);
   const [resolvedId, setResolvedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -277,19 +255,25 @@ export default function OrganizerRecruitmentDetailPage({
   }, [applications, statusFilter, searchQuery, sortBy]);
 
   const hasActiveFilters = searchQuery.trim().length > 0 || statusFilter !== "all" || sortBy !== "created_desc";
-  const activeFilterLabel =
-    statusFilter === "pending"
-      ? "未確認のみ"
-      : statusFilter === "accepted"
-        ? "承認済みのみ"
-        : statusFilter === "rejected"
-          ? "却下のみ"
-          : null;
 
   const handleResetFilters = useCallback(() => {
     setSearchQuery("");
     setStatusFilter("all");
     setSortBy("created_desc");
+  }, []);
+
+  const handleStatusSelect = useCallback((nextStatus: StatusFilter) => {
+    setStatusFilter((prev) => (prev === nextStatus ? "all" : nextStatus));
+  }, []);
+
+  const handleBulkTemplateChange = useCallback((nextTemplate: string) => {
+    setBulkTemplate(nextTemplate);
+    setBulkMessage((prev) => {
+      if (nextTemplate && !prev.trim()) {
+        return BULK_TEMPLATE_TEXTS[nextTemplate] ?? "";
+      }
+      return prev;
+    });
   }, []);
 
   if (!resolvedId || loading) {
@@ -358,288 +342,87 @@ export default function OrganizerRecruitmentDetailPage({
     );
   }
 
-  const statusBadgeClass =
-    recruitment.status === "public"
-      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
-      : recruitment.status === "closed"
-        ? "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
-        : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
-  const dateRangeText = `${formatDateTime(recruitment.start_at)}${
-    recruitment.end_at ? ` ～ ${formatDateTime(recruitment.end_at)}` : ""
-  }`;
-  const meetingPlaceText = recruitment.meeting_place?.trim() || "未設定";
-  const hasCapacity = recruitment.capacity != null && recruitment.capacity > 0;
-  const remainingSlots = hasCapacity ? Math.max(0, recruitment.capacity! - acceptedCount) : null;
-
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
-      {/* (1) ヘッダー sticky */}
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-sm shadow-sm">
-        <div className="mx-auto max-w-4xl px-4 py-4">
-          <Link
-            href="/organizer/recruitments"
-            className="text-sm text-slate-500 hover:underline"
-          >
-            ← スタッフ募集管理へ
-          </Link>
-          <h1 className="mt-2 text-lg font-semibold text-slate-800">応募管理</h1>
-          <p className="mt-1 text-base font-medium text-slate-900">{recruitment.title}</p>
-          <p className="mt-0.5 text-sm text-slate-500">
-            参加者情報や応募状況を確認・対応できます
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="text-sm font-medium text-slate-600 hover:text-slate-900"
-            >
-              編集
-            </button>
-            <Link
-              href={`/organizer/recruitments/${resolvedId}/day-of`}
-              className="rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90"
-            >
-              当日管理へ
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-4xl px-4 py-6 pb-24 space-y-6">
-        {/* (2) 募集概要（コンパクト） */}
-        <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
-          <h2 className="sr-only">募集概要</h2>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-1">
-              <span
-                className={`inline-flex shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium ${statusBadgeClass}`}
-              >
-                {RECRUITMENT_STATUS_LABELS[recruitment.status] ?? recruitment.status}
-              </span>
-              <p className="text-sm font-medium text-slate-800">募集の基本情報</p>
-            </div>
-            {hasCapacity && (
-              <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2 text-right">
-                <p className="text-[11px] text-amber-700">残り枠</p>
-                <p className="text-sm font-semibold text-amber-800">
-                  {remainingSlots} / {recruitment.capacity}名
-                </p>
-              </div>
-            )}
-          </div>
-          <div className="mt-3 grid grid-cols-1 gap-2.5 text-sm sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5">
-              <p className="text-[11px] font-medium text-slate-500">日時</p>
-              <p className="mt-1 text-slate-700">{dateRangeText}</p>
-            </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5">
-              <p className="text-[11px] font-medium text-slate-500">集合場所</p>
-              <p className="mt-1 text-slate-700">{meetingPlaceText}</p>
-            </div>
-          </div>
-        </section>
-
-        {/* (3) サマリーカード */}
-        <ApplicationSummaryCards
+    <>
+      <OrganizerPageShell
+        className="hidden min-[900px]:block"
+        contentClassName="space-y-0 pb-8 min-[900px]:pb-4"
+      >
+        <ApplicationsManagementPcView
+          recruitmentId={resolvedId}
+          recruitmentTitle={recruitment.title}
+          recruitmentDescription={recruitment.description}
+          filteredApplications={filteredApplications}
           total={applications.length}
           pendingCount={pendingCount}
           acceptedCount={acceptedCount}
           rejectedCount={rejectedCount}
-          capacity={recruitment.capacity ?? null}
-          activeStatus={statusFilter}
-          onStatusSelect={(nextStatus) =>
-            setStatusFilter((prev) => (prev === nextStatus ? "all" : nextStatus))
-          }
-        />
-
-        {pendingCount > 0 && statusFilter !== "pending" && (
-          <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200/80 bg-amber-50/70 px-4 py-3 shadow-sm">
-            <div>
-              <p className="text-sm font-semibold text-amber-900">未確認の応募が {pendingCount} 件あります</p>
-              <p className="text-xs text-amber-700">先に対応すると運営準備がスムーズです</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setStatusFilter("pending")}
-              className="shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-amber-700"
-            >
-              未確認を確認する
-            </button>
-          </section>
-        )}
-
-        {/* (4) 一斉送信（承認済みがある場合） */}
-        {acceptedCount > 0 && (
-          <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
-            <p className="text-xs font-medium text-slate-500">承認済み参加者へ一斉連絡</p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-            <select
-              value={bulkTemplate}
-              onChange={(e) => {
-                const nextTemplate = e.target.value;
-                setBulkTemplate(nextTemplate);
-                if (nextTemplate && !bulkMessage.trim()) {
-                  setBulkMessage(BULK_TEMPLATE_TEXTS[nextTemplate] ?? "");
-                }
-              }}
-              className="rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm"
-              aria-label="メッセージテンプレート"
-            >
-              <option value="">カスタム</option>
-              <option value="reminder">前日リマインド</option>
-              <option value="venue_change">集合場所変更</option>
-              <option value="thanks">お礼メッセージ</option>
-            </select>
-            <textarea
-              value={bulkMessage}
-              onChange={(e) => setBulkMessage(e.target.value)}
-              placeholder="送信内容を入力"
-              rows={3}
-              className="min-h-[84px] w-full rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/50"
-              aria-label="一斉送信メッセージ"
-            />
-            <button
-              type="button"
-              onClick={() => handleBulkMessage()}
-              disabled={bulkSending || (!bulkMessage.trim() && !bulkTemplate)}
-              className="rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90 disabled:opacity-50"
-            >
-              {bulkSending ? "送信中..." : `一斉送信（${acceptedCount}名）`}
-            </button>
-            </div>
-            {bulkResult && (
-              <div className="mt-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3">
-                <p className="text-xs text-slate-600">
-                  直近の送信結果: 成功 {bulkResult.sent}件 / 失敗 {bulkResult.failed}件（対象 {bulkResult.total}件）
-                </p>
-                {failedApplications.length > 0 && (
-                  <div className="mt-2 space-y-2">
-                    <p className="text-xs font-medium text-amber-800">送信失敗の参加者</p>
-                    <ul className="flex flex-wrap gap-1.5">
-                      {failedApplications.map((app) => (
-                        <li
-                          key={app.id}
-                          className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-800"
-                        >
-                          {resolveDisplayName(app)}
-                        </li>
-                      ))}
-                    </ul>
-                    <button
-                      type="button"
-                      onClick={() => handleBulkMessage(failedApplications.map((app) => app.user_id))}
-                      disabled={bulkSending || failedApplications.length === 0}
-                      className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-50 disabled:opacity-50"
-                    >
-                      失敗分だけ再送する（{failedApplications.length}名）
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* (5) 検索・絞り込み・並び替え */}
-        <ApplicationToolbar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
+          onStatusSelect={handleStatusSelect}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           sortBy={sortBy}
           onSortChange={setSortBy}
-          resultCount={filteredApplications.length}
-          hasFilter={hasActiveFilters}
-          onReset={handleResetFilters}
+          onResetFilters={handleResetFilters}
+          hasActiveFilters={hasActiveFilters}
+          bulkTemplate={bulkTemplate}
+          onBulkTemplateChange={handleBulkTemplateChange}
+          bulkMessage={bulkMessage}
+          onBulkMessageChange={setBulkMessage}
+          bulkSending={bulkSending}
+          onBulkSend={() => handleBulkMessage()}
+          bulkResult={bulkResult}
+          onEdit={() => setEditing(true)}
+          onAccept={handleAccept}
+          onReject={handleReject}
+          onChat={handleOpenChat}
+          onDetail={setDetailApp}
         />
+      </OrganizerPageShell>
 
-        {statusFilter === "pending" && (
-          <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-2.5">
-            <p className="text-xs font-medium text-amber-800">
-              未確認のみ表示中（{filteredApplications.length}件）
-            </p>
-            <button
-              type="button"
-              onClick={() => setStatusFilter("all")}
-              className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50"
-            >
-              すべて表示に戻す
-            </button>
-          </section>
-        )}
-
-        {/* (6) 応募者一覧 */}
-        <section id="applications-list">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-800">
-              応募者一覧
-              <span className="ml-1 text-xs font-normal text-slate-500">
-                （{filteredApplications.length}件表示）
-              </span>
-            </h2>
-            {(activeFilterLabel || searchQuery.trim()) && (
-              <div className="flex items-center gap-2">
-                {activeFilterLabel && (
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600">
-                    {activeFilterLabel}
-                  </span>
-                )}
-                {searchQuery.trim() && (
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600">
-                    検索中
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-          {filteredApplications.length === 0 ? (
-            <ApplicationsEmptyState
-              hasFilter={!!searchQuery.trim() || statusFilter !== "all"}
-              recruitmentId={resolvedId!}
-            />
-          ) : (
-            <div className="space-y-4">
-              {filteredApplications.map((app) => (
-                <ApplicationCard
-                  key={app.id}
-                  application={app}
-                  onAccept={handleAccept}
-                  onReject={handleReject}
-                  onChat={handleOpenChat}
-                  onDetail={setDetailApp}
-                  onFocusPending={() => setStatusFilter("pending")}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* (7) 募集内容（折りたたみ） */}
-        {recruitment.description && (
-          <section className="rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-            <button
-              type="button"
-              onClick={() => setContentOpen((o) => !o)}
-              className="flex w-full items-center justify-between px-4 py-3 text-left"
-            >
-              <h2 className="font-semibold text-slate-900">募集内容</h2>
-              <span className="text-sm text-slate-500">{contentOpen ? "閉じる" : "開く"}</span>
-            </button>
-            {contentOpen && (
-              <div className="border-t border-slate-100 px-4 py-4">
-                <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-p:mb-3">
-                  {recruitment.description.split(/\n\n+/).map((p, i) => (
-                    <p key={i}>{p}</p>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-        )}
-      </main>
+    <div className="min-[900px]:hidden">
+      <ApplicationsManagementMobileView
+        recruitmentId={resolvedId}
+        recruitmentTitle={recruitment.title}
+        recruitmentDescription={recruitment.description}
+        filteredApplications={filteredApplications}
+        total={applications.length}
+        pendingCount={pendingCount}
+        acceptedCount={acceptedCount}
+        rejectedCount={rejectedCount}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        onStatusSelect={handleStatusSelect}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        onResetFilters={handleResetFilters}
+        hasActiveFilters={hasActiveFilters}
+        bulkTemplate={bulkTemplate}
+        onBulkTemplateChange={handleBulkTemplateChange}
+        bulkMessage={bulkMessage}
+        onBulkMessageChange={setBulkMessage}
+        bulkSending={bulkSending}
+        onBulkSend={() => handleBulkMessage()}
+        bulkResult={bulkResult}
+        failedApplicationNames={failedApplications.map((app) => resolveDisplayName(app))}
+        onBulkRetryFailed={
+          failedApplications.length > 0
+            ? () => handleBulkMessage(failedApplications.map((app) => app.user_id))
+            : undefined
+        }
+        onEdit={() => setEditing(true)}
+        onAccept={handleAccept}
+        onReject={handleReject}
+        onChat={handleOpenChat}
+        onDetail={setDetailApp}
+      />
+    </div>
 
       {/* 応募者詳細スライドオーバー */}
       <ApplicationDetailSheet application={detailApp} onClose={() => setDetailApp(null)} />
-    </div>
+    </>
   );
 }

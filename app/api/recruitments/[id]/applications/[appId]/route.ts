@@ -8,11 +8,13 @@ import {
   getOrganizerIdByProfileId,
 } from "@/lib/db/recruitments-mvp";
 import {
-  getStoreRecruitmentById,
   getStoreApplicationsByRecruitment,
   updateStoreApplication,
-  getDevOrganizerId,
 } from "@/lib/created-recruitments-store";
+import {
+  canManageStoreRecruitment,
+  getStoreRecruitmentIfExists,
+} from "@/lib/store-recruitment-api";
 import type { ApplicationStatus } from "@/lib/db/recruitments-mvp";
 
 type Params = { params: Promise<{ id: string; appId: string }> };
@@ -37,6 +39,37 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const supabase = await createClient();
+  const storeRecruitment = getStoreRecruitmentIfExists(recruitmentId);
+
+  if (storeRecruitment) {
+    const allowed = await canManageStoreRecruitment(supabase, user.id, storeRecruitment);
+    if (!allowed) {
+      return NextResponse.json({ error: "権限がありません" }, { status: 403 });
+    }
+
+    const apps = getStoreApplicationsByRecruitment(recruitmentId);
+    const app = apps.find((a) => a.id === appId);
+    if (!app) {
+      return NextResponse.json({ error: "応募が見つかりません" }, { status: 404 });
+    }
+
+    const updates: { status?: string; checked_in_at?: string | null; role_assigned?: string | null } = {};
+    if (
+      body.status != null &&
+      ["accepted", "rejected", "canceled", "confirmed", "pending"].includes(String(body.status))
+    ) {
+      updates.status = body.status as string;
+    }
+    if (body.checked_in_at === true) {
+      updates.checked_in_at = new Date().toISOString();
+    }
+    if (body.role_assigned !== undefined) {
+      updates.role_assigned = typeof body.role_assigned === "string" ? body.role_assigned : null;
+    }
+
+    const updated = updateStoreApplication(appId, updates);
+    return NextResponse.json(updated);
+  }
 
   if (supabase) {
     try {
@@ -94,29 +127,5 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     }
   }
 
-  const recruitment = getStoreRecruitmentById(recruitmentId);
-  if (!recruitment) return NextResponse.json(null, { status: 404 });
-  if (recruitment.organizer_id !== getDevOrganizerId()) {
-    return NextResponse.json({ error: "権限がありません" }, { status: 403 });
-  }
-
-  const apps = getStoreApplicationsByRecruitment(recruitmentId);
-  const app = apps.find((a) => a.id === appId);
-  if (!app) {
-    return NextResponse.json({ error: "応募が見つかりません" }, { status: 404 });
-  }
-
-  const updates: { status?: string; checked_in_at?: string | null; role_assigned?: string | null } = {};
-  if (body.status != null && ["accepted", "rejected", "canceled", "confirmed", "pending"].includes(String(body.status))) {
-    updates.status = body.status as string;
-  }
-  if (body.checked_in_at === true) {
-    updates.checked_in_at = new Date().toISOString();
-  }
-  if (body.role_assigned !== undefined) {
-    updates.role_assigned = typeof body.role_assigned === "string" ? body.role_assigned : null;
-  }
-
-  const updated = updateStoreApplication(appId, updates);
-  return NextResponse.json(updated);
+  return NextResponse.json({ error: "募集が見つかりません" }, { status: 404 });
 }

@@ -1,6 +1,6 @@
 import type { Event } from "@/lib/db/types";
 import { EventDetailFlyerImage } from "@/components/events/EventDetailFlyerImage";
-import { formatEventDateTime } from "@/lib/format-date";
+import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import { CalendarDays, MapPin } from "lucide-react";
 import { getEventStatus, type EventStatus } from "@/lib/events";
 import { getPrimaryCategory } from "@/lib/inferCategory";
@@ -27,9 +27,13 @@ export function EventInfoCard({ event, className }: Props) {
   const categoryLabel = category ? CATEGORY_LABELS[category] : undefined;
   const reception = receptionLabel(status, isAvailable);
 
-  const dateLine = `${formatEventDateTime(event.date, event.startTime)}${
-    event.endTime ? ` 〜 ${event.endTime}` : ""
-  }`;
+  const dateLine = formatEventScheduleLabel(
+    event.date,
+    event.startTime,
+    event.endTime,
+    event.recurrence ?? "none",
+    event.recurrenceCount
+  );
 
   return (
     <section

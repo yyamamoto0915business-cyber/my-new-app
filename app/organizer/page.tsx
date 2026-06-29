@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Megaphone, Sparkles, UsersRound } from "lucide-react";
 import type { ReactNode } from "react";
-import OrganizerDashboardClient from "@/components/organizer/OrganizerDashboardClient";
+import { DayManagementHub } from "@/components/organizer/day/DayManagementHub";
+import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import { getOrganizerNavState } from "@/lib/organizer/get-organizer-nav-state";
 
 function BenefitCard({
@@ -44,7 +45,11 @@ export default async function OrganizerPage() {
   }
 
   if (organizerRegistered) {
-    return <OrganizerDashboardClient />;
+    return (
+      <OrganizerRegistrationGate>
+        <DayManagementHub />
+      </OrganizerRegistrationGate>
+    );
   }
 
   return (

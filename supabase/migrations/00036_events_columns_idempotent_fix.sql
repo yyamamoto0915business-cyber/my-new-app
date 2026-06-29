@@ -31,3 +31,5 @@ ALTER TABLE public.events ADD COLUMN IF NOT EXISTS capacity INTEGER;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS stripe_price_id TEXT;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT true;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS is_sample BOOLEAN DEFAULT false;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS recurrence TEXT NOT NULL DEFAULT 'none';
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS recurrence_count INTEGER;

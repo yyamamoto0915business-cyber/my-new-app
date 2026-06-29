@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useMemo, useEffect, useState } from "react";
 import { routeToSpotKey, SPOTS, type SpotKey } from "@/components/map/spots";
+import { isAuthRoute } from "@/lib/is-auth-route";
 
 const VIEWBOX_WIDTH = 1000;
 const VIEWBOX_HEIGHT = 600;
@@ -44,6 +45,8 @@ export function MapBackground() {
       transformOrigin: `${FOOTPRINT_CX}px ${FOOTPRINT_CY}px`,
     };
   }, [spot, prefersReducedMotion]);
+
+  if (isAuthRoute(pathname)) return null;
 
   return (
     <div

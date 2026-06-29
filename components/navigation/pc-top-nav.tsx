@@ -1,17 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { createClient } from "@/lib/supabase/client";
 import { CommonAvatar } from "@/components/profile/common-avatar";
+import { NotificationBell } from "@/components/notification-bell";
 import {
   resolveAvatarUrlByRole,
   resolveProfileDisplayName,
   type ProfileAvatarRole,
 } from "@/lib/profile-avatar";
 import { isAdmin } from "@/lib/admin";
+import { useOrganizerPro } from "@/lib/organizer-pro-store";
+import { isDiscoverPath } from "@/lib/top-mode-active";
+import { Search } from "lucide-react";
+import { setModeCookie } from "@/lib/mode-preference";
 
 function isMissingAvatarColumnsError(message: string): boolean {
   return /participant_avatar_url|organizer_avatar_url|active_profile_role|42703/i.test(
@@ -20,20 +25,78 @@ function isMissingAvatarColumnsError(message: string): boolean {
 }
 
 const NAV_LINKS = [
-  { label: "探す", href: "/" },
-  { label: "ストーリー", href: "/stories" },
-  { label: "ボランティア", href: "/volunteer" },
-  { label: "主催", href: "/organizer" },
+  { label: "探す", href: "/", icon: "search" as const },
+  { label: "ボランティア", href: "/volunteer", icon: null },
+  { label: "主催", href: "/organizer", icon: null },
 ] as const;
 
 function isNavActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/" || pathname.startsWith("/events");
+  if (href === "/organizer") return pathname.startsWith("/organizer");
+  if (href === "/volunteer") return pathname.startsWith("/volunteer");
+  if (href === "/stories") return pathname.startsWith("/stories");
+  if (href === "/") return isDiscoverPath(pathname);
   return pathname.startsWith(href);
+}
+
+function syncModeCookieForNav(href: string) {
+  if (href === "/organizer") setModeCookie("ORGANIZER");
+  else if (href === "/volunteer") setModeCookie("VOLUNTEER");
+  else if (href === "/") setModeCookie("EVENT");
+}
+
+const AUTH_RETURN_KEYS = ["next", "returnTo", "redirect", "callbackUrl"] as const;
+
+function buildAuthHref(tab: "login" | "signup", searchParams: URLSearchParams): string {
+  const params = new URLSearchParams();
+  for (const key of AUTH_RETURN_KEYS) {
+    const value = searchParams.get(key);
+    if (value) params.set(key, value);
+  }
+  if (tab === "signup") params.set("tab", "signup");
+  const qs = params.toString();
+  return qs ? `/auth?${qs}` : "/auth";
+}
+
+function PcAuthNavButtons() {
+  const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
+  const onAuth = pathname === "/auth";
+  const isSignupTab = onAuth && searchParams.get("tab") === "signup";
+  const loginHref = buildAuthHref("login", searchParams);
+  const signupHref = buildAuthHref("signup", searchParams);
+
+  return (
+    <>
+      <Link
+        href={loginHref}
+        aria-current={onAuth && !isSignupTab ? "page" : undefined}
+        className={`whitespace-nowrap rounded-[20px] border px-[14px] py-[6px] text-[13px] font-medium transition ${
+          onAuth && !isSignupTab
+            ? "border-[#1e3848] bg-[#ecf6ee] text-[#1e3848]"
+            : "border-[#c8dcd0] bg-transparent text-[#1e3828] hover:bg-[#ecf6ee]"
+        }`}
+      >
+        ログイン
+      </Link>
+      <Link
+        href={signupHref}
+        aria-current={isSignupTab ? "page" : undefined}
+        className={`whitespace-nowrap rounded-[20px] px-[14px] py-[6px] text-[13px] font-medium transition ${
+          isSignupTab
+            ? "bg-[#1e3848] text-[#f4f0e8] ring-2 ring-[#1e3848]/25"
+            : "bg-[#1e3848] text-[#f4f0e8] hover:opacity-90"
+        }`}
+      >
+        新規登録
+      </Link>
+    </>
+  );
 }
 
 export function PcTopNav() {
   const pathname = usePathname() ?? "";
   const { user } = useSupabaseUser();
+  const isProOrganizer = useOrganizerPro();
   const [activeProfileRole, setActiveProfileRole] =
     useState<ProfileAvatarRole>("participant");
   const [participantAvatarUrl, setParticipantAvatarUrl] = useState<string | null>(null);
@@ -111,7 +174,7 @@ export function PcTopNav() {
   );
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-[100] hidden h-[var(--mg-pc-top-nav-h)] min-h-[var(--mg-pc-top-nav-h)] items-center gap-4 border-b border-[#c8dcd0] bg-[#f4faf6]/98 px-7 backdrop-blur-sm min-[900px]:left-20 min-[900px]:flex">
+    <header className="fixed left-0 right-0 top-0 z-[100] hidden h-[var(--mg-pc-top-nav-h)] min-h-[var(--mg-pc-top-nav-h)] items-center gap-4 border-b border-[#e8ebe6] bg-white/98 px-7 backdrop-blur-sm min-[900px]:left-20 min-[900px]:flex">
       {/* Logo */}
       <Link
         href="/"
@@ -126,16 +189,57 @@ export function PcTopNav() {
       <nav className="flex items-center gap-1" aria-label="メインナビゲーション">
         {NAV_LINKS.map((link) => {
           const active = isNavActive(pathname, link.href);
+          const isPaidOrganizerLink =
+            link.href === "/organizer" && isProOrganizer;
+
+          if (isPaidOrganizerLink && active) {
+            return (
+              <span key={link.href} className="relative inline-block">
+                <Link
+                  href={link.href}
+                  className="org-tab-pro-shiny"
+                  aria-current="page"
+                  onClick={() => syncModeCookieForNav(link.href)}
+                >
+                  {link.label}
+                </Link>
+                <span className="org-pro-tab-badge">PRO</span>
+                <span className="org-pro-star org-pro-star-1" aria-hidden />
+                <span className="org-pro-star org-pro-star-2" aria-hidden />
+                <span className="org-pro-star org-pro-star-3" aria-hidden />
+              </span>
+            );
+          }
+
+          if (isPaidOrganizerLink && !active) {
+            return (
+              <span key={link.href} className="relative inline-block">
+                <Link
+                  href={link.href}
+                  onClick={() => syncModeCookieForNav(link.href)}
+                  className="whitespace-nowrap rounded-[20px] px-[12px] py-[5px] text-[13px] font-medium text-[#3a5848] transition-colors hover:text-[#1e3828]"
+                >
+                  {link.label}
+                </Link>
+                <span className="org-pro-tab-badge">PRO</span>
+              </span>
+            );
+          }
+
           return (
             <Link
               key={link.href}
               href={link.href}
-              className={`whitespace-nowrap rounded-[20px] px-[12px] py-[5px] text-[13px] font-medium transition-colors ${
+              onClick={() => syncModeCookieForNav(link.href)}
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[20px] px-[14px] py-[6px] text-[13px] font-medium transition-colors ${
                 active
-                  ? "bg-[#1e3848] text-[#f4faf6]"
-                  : "text-[#3a5848] hover:text-[#1e3828]"
+                  ? "bg-[#1a2b3c] text-white"
+                  : "text-[#3d5c48] hover:bg-[#f4f6f4]"
               }`}
             >
+              {link.icon === "search" && (
+                <Search className="h-3.5 w-3.5" aria-hidden />
+              )}
               {link.label}
             </Link>
           );
@@ -145,10 +249,35 @@ export function PcTopNav() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* User menu */}
-      {user ? (
-        <div className="flex items-center gap-2">
-          {isAdmin(user.email) && (
+      {/* 右側: ストーリー・通知・ユーザー */}
+      <div className="flex items-center gap-2">
+        <Link
+          href="/stories"
+          className="inline-flex h-9 items-center gap-1.5 rounded-[20px] border border-[#c8dcd0] bg-white px-3.5 text-[13px] font-medium text-[#1e3848] transition hover:bg-[#ecf6ee]"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+            />
+          </svg>
+          ストーリー
+        </Link>
+        <Suspense fallback={null}>
+          <NotificationBell />
+        </Suspense>
+        {user ? (
+          <>
+            {isAdmin(user.email) && (
             <Link
               href="/admin"
               style={{
@@ -181,23 +310,20 @@ export function PcTopNav() {
               initialsClassName="text-[#1e3848]"
             />
           </Link>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <Link
-            href="/auth"
-            className="whitespace-nowrap rounded-[20px] border border-[#c8dcd0] bg-transparent px-[14px] py-[6px] text-[13px] font-medium text-[#1e3828] transition hover:bg-[#ecf6ee]"
+          </>
+        ) : (
+          <Suspense
+            fallback={
+              <>
+                <span className="inline-flex h-[34px] w-[72px] rounded-[20px] border border-[#c8dcd0]" aria-hidden />
+                <span className="inline-flex h-[34px] w-[88px] rounded-[20px] bg-[#1e3848]/80" aria-hidden />
+              </>
+            }
           >
-            ログイン
-          </Link>
-          <Link
-            href="/auth"
-            className="whitespace-nowrap rounded-[20px] bg-[#1e3848] px-[14px] py-[6px] text-[13px] font-medium text-[#f4f0e8] transition hover:opacity-90"
-          >
-            新規登録
-          </Link>
-        </div>
-      )}
+            <PcAuthNavButtons />
+          </Suspense>
+        )}
+      </div>
     </header>
   );
 }

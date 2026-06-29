@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
-import { WaHeroBanner } from "@/components/wa-hero-banner";
+import { OrganizerManagementHeroBanner } from "@/components/organizer/OrganizerManagementHeroBanner";
+import { OrganizerHeroBleed, OrganizerPageShell } from "@/components/organizer/OrganizerPageShell";
 import type { ReadArticle } from "@/lib/read-article-types";
 
 const MOCK_ORGANIZER_ID = "org-1";
@@ -31,17 +32,17 @@ export default function OrganizerArticlesPage() {
 
   return (
     <OrganizerRegistrationGate>
-      <div className="min-h-screen bg-[#f4f0e8]">
-        <div className="space-y-4">
-          <WaHeroBanner
-            compact
-            eyebrow="ARTICLE MANAGEMENT"
-            title="記事管理"
-            subtitle="— 作成・編集・公開 —"
-            className="rounded-sm"
+      <OrganizerPageShell variant="hero" contentClassName="space-y-3 pb-16 min-[900px]:space-y-3 min-[900px]:pb-0">
+        <OrganizerHeroBleed className="-mx-5 sm:-mx-6">
+          <OrganizerManagementHeroBanner
+            dense
+            labelEn="ARTICLE MANAGEMENT"
+            titleJa="記事管理"
+            subtitleJa="― 作成・編集・公開 ―"
           />
+        </OrganizerHeroBleed>
 
-          {/* CTAライト帯 */}
+        {/* CTAライト帯 */}
           <div className="flex items-center justify-between rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] px-4 py-3">
             <Link
               href="/organizer"
@@ -131,8 +132,7 @@ export default function OrganizerArticlesPage() {
               読みもの一覧を見る →
             </Link>
           </div>
-        </div>
-      </div>
+      </OrganizerPageShell>
     </OrganizerRegistrationGate>
   );
 }

@@ -1,9 +1,85 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { Fragment, useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  CircleHelp,
+  Handshake,
+  Heart,
+  ShieldCheck,
+  Sparkles,
+  Sprout,
+  Users,
+} from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { isGuestSplashReturnPath } from "@/lib/top-mode-active";
 
 const FADE_MS = 600;
+const NAV_DELAY_MS = 120;
+const PETAL_COUNT = 48;
+const SPLASH_DISMISSED_KEY = "mg-splash-dismissed";
+
+function isOrganizerPath(pathname: string, search = ""): boolean {
+  if (pathname.startsWith("/organizer")) return true;
+  if (pathname === "/auth" || pathname.startsWith("/auth/")) {
+    const next = new URLSearchParams(search).get("next");
+    if (next?.startsWith("/organizer")) return true;
+  }
+  return false;
+}
+
+function isSplashDismissed(persistent: boolean): boolean {
+  try {
+    const storage = persistent ? localStorage : sessionStorage;
+    return storage.getItem(SPLASH_DISMISSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markSplashDismissed(persistent: boolean): void {
+  try {
+    const storage = persistent ? localStorage : sessionStorage;
+    storage.setItem(SPLASH_DISMISSED_KEY, "1");
+  } catch {
+    // storage 不可時はスキップ
+  }
+}
+
+function clearSessionSplashDismissed(): void {
+  try {
+    sessionStorage.removeItem(SPLASH_DISMISSED_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+function resolveSplashVisibility(
+  pathname: string,
+  search: string,
+  user: User | null
+): { ready: boolean; gone: boolean } {
+  if (isOrganizerPath(pathname, search)) {
+    return { ready: false, gone: true };
+  }
+
+  if (user) {
+    if (pathname !== "/") return { ready: false, gone: true };
+    if (isSplashDismissed(true)) return { ready: false, gone: true };
+    return { ready: true, gone: false };
+  }
+
+  if (isGuestSplashReturnPath(pathname)) {
+    clearSessionSplashDismissed();
+    return { ready: true, gone: false };
+  }
+
+  return { ready: false, gone: true };
+}
 
 const SAKURA_COLORS = [
   "#E8385A", "#F06090", "#FF80A8", "#C83880",
@@ -120,7 +196,7 @@ function drawSakura(
 }
 
 function createPetals(w: number, h: number): Petal[] {
-  return Array.from({ length: 75 }, () => ({
+  return Array.from({ length: PETAL_COUNT }, () => ({
     x:     Math.random() * w,
     y:     -20 - Math.random() * h * 0.9,
     vx:    (Math.random() - 0.5) * 1.3,
@@ -135,62 +211,132 @@ function createPetals(w: number, h: number): Petal[] {
   }));
 }
 
-const ROLE_CARDS = [
+/** ロールカードのアイコン円: カードごとに色味を分ける */
+type RoleIconAccent = "sky" | "warm" | "leaf";
+
+const ROLE_CARDS: {
+  Icon: LucideIcon;
+  iconAccent: RoleIconAccent;
+  title: string;
+  mobileTitle: string;
+  desc: ReactNode;
+  mobileDesc: string;
+  buttonLabel: string;
+  href: string;
+}[] = [
   {
-    icon: "📅",
+    Icon: CalendarDays,
+    iconAccent: "sky",
     title: "イベントを探したい",
-    desc: "地域で開かれているイベントを見つけて参加できます",
-    link: "イベントを見る →",
+    mobileTitle: "イベントを探す",
+    desc: (
+      <>
+        <span style={{ whiteSpace: "nowrap" }}>地域で開催されるイベントを</span>
+        <br />
+        <span style={{ whiteSpace: "nowrap" }}>見つけて参加できます。</span>
+      </>
+    ),
+    mobileDesc: "地域のイベントに参加できます",
+    buttonLabel: "イベントを見る",
     href: "/",
   },
   {
-    icon: "🤝",
+    Icon: Handshake,
+    iconAccent: "warm",
     title: "募集を見たい",
-    desc: "参加募集やお手伝いの募集を探せます",
-    link: "募集を見る →",
-    href: "/recruitments",
+    mobileTitle: "募集を見る",
+    desc: (
+      <>
+        <span style={{ whiteSpace: "nowrap" }}>ボランティアやまちおこしの</span>
+        <br />
+        <span style={{ whiteSpace: "nowrap" }}>募集を見つけられます。</span>
+      </>
+    ),
+    mobileDesc: "ボランティア活動を探せます",
+    buttonLabel: "募集を見る",
+    href: "/volunteer",
   },
   {
-    icon: "🌱",
-    title: "活動をはじめたい",
-    desc: "イベントを開いたり募集を掲載したりできます",
-    link: "この使い方ではじめる →",
+    Icon: Sprout,
+    iconAccent: "leaf",
+    title: "イベントを掲載したい",
+    mobileTitle: "掲載する",
+    desc: "イベントを開いたり募集を掲載できます。",
+    mobileDesc: "イベントや募集を掲載できます",
+    buttonLabel: "使い方を見る",
     href: "/auth?next=/organizer",
   },
-] as const;
+];
 
 export function SplashScreen() {
-  const [ready,  setReady]  = useState(false); // 認証確認後に true
-  const [fading, setFading] = useState(false);
-  const [gone,   setGone]   = useState(false);
-  const [query,  setQuery]  = useState("");
-  const bgRef    = useRef<HTMLCanvasElement>(null);
-  const petalRef = useRef<HTMLCanvasElement>(null);
-  const rafRef   = useRef<number>(0);
-  const petalsRef      = useRef<Petal[]>([]);
-  const respawnRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  /** SSR/CSR で一致させるため初期は非表示。表示可否は useEffect でのみ決める */
+  const [ready, setReady] = useState(false);
+  const [fading, setFading] = useState(false);
+  const [gone, setGone] = useState(true);
+  const bgRef = useRef<HTMLCanvasElement>(null);
+  const petalRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const petalsRef = useRef<Petal[]>([]);
+  const respawnRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // / 以外のページではスプラッシュ不要
+  const applyVisibility = useCallback((authUser: User | null) => {
+    const { pathname, search } = window.location;
+    const next = resolveSplashVisibility(pathname, search, authUser);
+    setReady(next.ready);
+    setGone(next.gone);
+  }, []);
+
+  // スプラッシュ専用: getSession のみ（リトライ/API 補完なしで即判定）
   useEffect(() => {
-    if (window.location.pathname !== "/") {
-      setGone(true);
+    const supabase = createClient();
+    if (!supabase) {
+      applyVisibility(null);
       return;
     }
-    // / では常に表示
-    setReady(true);
-  }, []);
+
+    let cancelled = false;
+
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+      const authUser = session?.user ?? null;
+      setUser(authUser);
+      applyVisibility(authUser);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
+      const authUser = session?.user ?? null;
+      setUser(authUser);
+      applyVisibility(authUser);
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [applyVisibility]);
 
   useEffect(() => {
     if (!ready) return;
+
     const bg = bgRef.current;
     if (bg) drawBackground(bg);
 
     const canvas = petalRef.current;
     if (!canvas) return;
 
+    const reducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reducedMotion) return;
+
     const resize = () => {
-      canvas.width  = window.innerWidth;
+      canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       petalsRef.current = createPetals(canvas.width, canvas.height);
     };
@@ -200,17 +346,21 @@ export function SplashScreen() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    let running = true;
+
     const animate = () => {
-      const w = canvas.width, h = canvas.height;
+      if (!running) return;
+      const w = canvas.width;
+      const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
       let alive = false;
       for (const p of petalsRef.current) {
         if (p.y > h + 20) continue;
         alive = true;
         p.sway += p.ss;
-        p.x    += p.vx + Math.sin(p.sway) * 0.65;
-        p.y    += p.vy;
-        p.rot  += p.vrot;
+        p.x += p.vx + Math.sin(p.sway) * 0.65;
+        p.y += p.vy;
+        p.rot += p.vrot;
         drawSakura(ctx, p.x, p.y, p.r, p.color, p.rot, p.alpha);
       }
       if (!alive) {
@@ -220,9 +370,14 @@ export function SplashScreen() {
       }
       rafRef.current = requestAnimationFrame(animate);
     };
-    rafRef.current = requestAnimationFrame(animate);
+
+    const startId = requestAnimationFrame(() => {
+      rafRef.current = requestAnimationFrame(animate);
+    });
 
     return () => {
+      running = false;
+      cancelAnimationFrame(startId);
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(rafRef.current);
       if (respawnRef.current) clearTimeout(respawnRef.current);
@@ -231,21 +386,31 @@ export function SplashScreen() {
 
   const dismiss = useCallback(() => {
     if (fading) return;
+    if (user) markSplashDismissed(true);
     setFading(true);
     setTimeout(() => setGone(true), FADE_MS);
-  }, [fading]);
+  }, [fading, user]);
 
-  const navigate = useCallback((href: string) => {
-    dismiss();
-    if (href !== "/") {
-      setTimeout(() => router.push(href), 80);
-    }
-  }, [dismiss, router]);
+  const navigate = useCallback(
+    (href: string) => {
+      const target = new URL(href, window.location.origin);
+      if (user) {
+        markSplashDismissed(true);
+      } else if (isOrganizerPath(target.pathname, target.search)) {
+        markSplashDismissed(false);
+      }
+      const sameLocation =
+        target.pathname === window.location.pathname &&
+        target.search === window.location.search;
 
-  const handleSearch = useCallback(() => {
-    const q = query.trim();
-    navigate(q ? `/events?q=${encodeURIComponent(q)}` : "/events");
-  }, [navigate, query]);
+      dismiss();
+      if (sameLocation) return;
+
+      const path = `${target.pathname}${target.search}${target.hash}`;
+      setTimeout(() => router.push(path), NAV_DELAY_MS);
+    },
+    [dismiss, router, user]
+  );
 
   if (!ready || gone) return null;
 
@@ -260,17 +425,255 @@ export function SplashScreen() {
           from { opacity: 0; }
           to   { opacity: 1; }
         }
+        @keyframes spCtaIridescent {
+          0%, 100% { background-position: 8% 42%; }
+          50% { background-position: 92% 58%; }
+        }
+        @keyframes spCtaShine {
+          0%, 100% { transform: translateX(-120%) skewX(-12deg); opacity: 0; }
+          12% { opacity: 1; }
+          28% { transform: translateX(120%) skewX(-12deg); opacity: 0; }
+        }
+        .sp-top-bar { animation: fadeIn 0.55s ease-out 0.1s both; }
+        .sp-top-guide:hover { opacity: 0.88; }
+        .sp-top-guide:active { transform: scale(0.98); }
+        .sp-top-login:hover { filter: brightness(1.02); }
+        .sp-top-login:active { transform: scale(0.98); }
         .sp-eyebrow { animation: fadeUp 0.8s ease-out 0.2s both; }
         .sp-title   { animation: fadeUp 0.9s ease-out 0.5s both; }
         .sp-sub     { animation: fadeUp 0.8s ease-out 0.8s both; }
         .sp-divider { animation: fadeIn 0.6s ease-out 1.0s both; }
         .sp-cards   { animation: fadeUp 0.8s ease-out 1.1s both; }
-        .sp-search  { animation: fadeUp 0.7s ease-out 1.5s both; }
         .sp-links   { animation: fadeIn 0.6s ease-out 1.8s both; }
+        .sp-trust   { animation: fadeIn 0.65s ease-out 2.05s both; }
+        .sp-trust-text {
+          min-width: 0;
+          flex: 1;
+          overflow: hidden;
+        }
+        .sp-trust-title,
+        .sp-trust-sub {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+        }
+        .sp-cta-row {
+          display: grid;
+          grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+          align-items: stretch;
+          gap: 10px;
+          width: 100%;
+          max-width: 560px;
+        }
+        .sp-cta-primary,
+        .sp-cta-secondary {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          min-width: 0;
+          border-radius: 10px;
+          line-height: 1.3;
+          cursor: pointer;
+          box-sizing: border-box;
+          transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .sp-cta-primary {
+          position: relative;
+          isolation: isolate;
+          overflow: hidden;
+          min-height: 50px;
+          padding: 12px 16px;
+          font-size: 14px;
+          border: none;
+          font-weight: 600;
+          color: #0f2744;
+          text-shadow: 0 1px 0 rgba(255,255,255,0.55);
+          background: linear-gradient(
+            118deg,
+            #dff6ff 0%,
+            #fde8f8 16%,
+            #fff9e6 32%,
+            #e6ffef 48%,
+            #ebe9ff 64%,
+            #d4f8ff 80%,
+            #fff5f0 100%
+          );
+          background-size: 240% 240%;
+          animation: spCtaIridescent 9s ease-in-out infinite;
+          box-shadow:
+            0 2px 16px rgba(120, 200, 255, 0.35),
+            0 1px 0 rgba(255,255,255,0.9) inset,
+            0 0 0 1px rgba(255,255,255,0.65);
+        }
+        .sp-cta-primary-front {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          row-gap: 4px;
+          min-width: 0;
+          width: 100%;
+        }
+        .sp-cta-primary::after {
+          content: "";
+          position: absolute;
+          inset: -20% -60%;
+          z-index: 1;
+          background: linear-gradient(
+            105deg,
+            transparent 0%,
+            rgba(255,255,255,0) 42%,
+            rgba(255,255,255,0.75) 50%,
+            rgba(255,255,255,0) 58%,
+            transparent 100%
+          );
+          animation: spCtaShine 4.5s ease-in-out infinite;
+          pointer-events: none;
+          mix-blend-mode: soft-light;
+        }
+        .sp-cta-primary .sp-cta-icon {
+          color: #0f2744;
+          filter: drop-shadow(0 1px 0 rgba(255,255,255,0.6));
+        }
+        .sp-cta-primary:active,
+        .sp-cta-secondary:active { transform: scale(0.98); }
+        .sp-cta-primary:hover {
+          filter: brightness(1.05) saturate(1.08);
+          box-shadow:
+            0 4px 22px rgba(130, 210, 255, 0.45),
+            0 1px 0 rgba(255,255,255,0.95) inset,
+            0 0 0 1px rgba(255,255,255,0.75);
+        }
+        .sp-cta-secondary:hover { opacity: 0.92; }
+        @media (prefers-reduced-motion: reduce) {
+          .sp-cta-primary {
+            animation: none;
+            background-position: 50% 50%;
+          }
+          .sp-cta-primary::after { animation: none; opacity: 0; }
+          .sp-trust { animation: none; opacity: 1; }
+          .sp-card:hover .sp-card-icon-wrap { transform: none; }
+        }
+        .sp-cta-secondary {
+          min-height: 44px;
+          padding: 9px 12px;
+          font-size: 13px;
+          font-weight: 500;
+          color: #2a2a3a;
+          background: rgba(255,255,255,0.96);
+          border: 1px solid rgba(195,195,215,0.95);
+        }
+        .sp-cta-icon { flex-shrink: 0; }
+        @media (max-width: 480px) {
+          .sp-cta-row {
+            grid-template-columns: 1fr;
+            max-width: 320px;
+            gap: 8px;
+          }
+          .sp-cta-primary {
+            min-height: 48px;
+            font-size: 13px;
+            padding: 12px 14px;
+            gap: 6px;
+            flex-wrap: nowrap;
+          }
+          .sp-cta-primary-front { flex-wrap: nowrap; gap: 6px; }
+          .sp-cta-secondary {
+            min-height: 42px;
+            font-size: 12px;
+            padding: 10px 12px;
+          }
+        }
         .sp-card:hover {
-          background: rgba(255,255,255,0.94) !important;
+          background: #ffffff !important;
           transform: translateY(-2px);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+          box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08) !important;
+        }
+        .sp-card:active { transform: translateY(0) scale(0.98); }
+        .sp-card-icon-wrap {
+          width: 48px;
+          height: 48px;
+          border-radius: 9999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          border: 1px solid rgba(255, 255, 255, 0.75);
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.85),
+            0 3px 14px rgba(15, 23, 42, 0.07);
+          transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .sp-card:hover .sp-card-icon-wrap {
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.95),
+            0 5px 18px rgba(15, 23, 42, 0.1);
+          transform: scale(1.04);
+        }
+        .sp-card-icon-wrap--sky {
+          background: linear-gradient(150deg, #effbff 0%, #f5feff 42%, #eefcfb 100%);
+          color: #06b6d4;
+        }
+        .sp-card-icon-wrap--warm {
+          background: linear-gradient(150deg, #fffbf5 0%, #fff7ed 40%, #ffedd5 100%);
+          color: #f97316;
+        }
+        .sp-card-icon-wrap--leaf {
+          background: linear-gradient(150deg, #f7fef9 0%, #f0fdf4 48%, #ecfdf3 100%);
+          color: #22c55e;
+        }
+        .sp-card-icon-wrap svg {
+          filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.55));
+        }
+        .sp-card-cta {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          margin-top: 4px;
+          padding: 8px 14px;
+          border-radius: 9999px;
+          font-size: 11px;
+          font-weight: 600;
+          line-height: 1.2;
+          border: 1px solid transparent;
+          background: transparent;
+          transition: border-color 0.15s ease, color 0.15s ease, gap 0.15s ease;
+        }
+        .sp-card:hover .sp-card-cta { gap: 6px; }
+        .sp-card-cta--mint {
+          border-color: #9bc4a8;
+          color: #2a6b45;
+        }
+        .sp-card-cta--cream {
+          border-color: #d4c4a8;
+          color: #8a7038;
+        }
+        .sp-mobile-only  { display: none; }
+        .sp-desktop-only { display: inline; }
+        @media (max-width: 430px) {
+          .sp-mobile-only  { display: inline; }
+          .sp-desktop-only { display: none; }
+          .sp-content { padding: 0 12px !important; }
+          .sp-cards   { gap: 6px !important; }
+          .sp-card    { padding: 14px 8px !important; }
+          .sp-card-title { font-size: 10px !important; }
+          .sp-card-desc  { font-size: 9px !important; }
+          .sp-card-cta   { font-size: 9px !important; padding: 6px 10px !important; }
+          .sp-card-icon-wrap { width: 40px !important; height: 40px !important; }
+          .sp-trust-cell { padding: 6px 4px !important; gap: 4px !important; }
+          .sp-trust-title { font-size: 9px !important; }
+          .sp-trust-sub { font-size: 7px !important; line-height: 1.25 !important; letter-spacing: -0.02em !important; }
+          .sp-trust-icon { width: 17px !important; height: 17px !important; }
+          .sp-top-bar { gap: 6px !important; right: max(8px, env(safe-area-inset-right)) !important; }
+          .sp-top-bar .sp-top-guide { font-size: 11px !important; }
+          .sp-top-bar .sp-top-login { font-size: 11px !important; padding: 5px 10px !important; }
         }
       `}</style>
 
@@ -297,8 +700,69 @@ export function SplashScreen() {
           style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none" }}
         />
 
+        {/* Top-right: 使い方ガイド + ログイン */}
+        <div
+          className="sp-top-bar"
+          style={{
+            position: "absolute",
+            top: "max(10px, env(safe-area-inset-top))",
+            right: "max(12px, env(safe-area-inset-right))",
+            zIndex: 4,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => navigate("/guide")}
+            className="sp-top-guide"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              margin: 0,
+              padding: "4px 0",
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 500,
+              color: "#8a7038",
+              letterSpacing: "0.02em",
+              transition: "opacity 0.15s ease, transform 0.15s ease",
+            }}
+            aria-label="使い方ガイド（読みもの・街ガイド）"
+          >
+            <CircleHelp size={15} strokeWidth={1.35} aria-hidden style={{ flexShrink: 0, opacity: 0.92 }} />
+            使い方ガイド
+          </button>
+          <button
+            type="button"
+            className="sp-top-login"
+            onClick={() => navigate("/auth?next=/")}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 9999,
+              fontSize: 12,
+              fontWeight: 500,
+              color: "#2a3440",
+              background: "rgba(255,255,255,0.98)",
+              border: "1px solid rgba(200,200,215,0.95)",
+              cursor: "pointer",
+              boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
+              whiteSpace: "nowrap",
+              transition: "filter 0.15s ease, transform 0.15s ease",
+            }}
+            aria-label="ログイン"
+          >
+            ログイン
+          </button>
+        </div>
+
         {/* Layer 3: content — slightly above center for visual balance */}
         <div
+          className="sp-content"
           style={{
             position: "relative", zIndex: 3,
             display: "flex", flexDirection: "column",
@@ -327,7 +791,7 @@ export function SplashScreen() {
 
           {/* 3. Sub */}
           <p className="sp-sub" style={{ fontSize: 13, color: "#3A3A4A", lineHeight: 1.8, margin: 0, textAlign: "center" }}>
-            イベントを探したい人も、募集を見たい人も、<br />活動をはじめたい人も、ここからどうぞ。
+            イベントを探したい人も、募集を見たい人も、<br />活動をはじめたい人も、ここから
           </p>
 
           {/* 4. Divider */}
@@ -343,95 +807,194 @@ export function SplashScreen() {
           <div
             className="sp-cards"
             style={{
-              display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
+              display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               gap: 10, width: "100%", alignItems: "stretch",
             }}
           >
-            {ROLE_CARDS.map((card) => (
-              <button
-                key={card.href}
-                type="button"
-                className="sp-card"
-                onClick={() => navigate(card.href)}
-                style={{
-                  background: "rgba(255,255,255,0.80)",
-                  border: "0.5px solid rgba(160,160,200,0.45)",
-                  borderRadius: 12, padding: "16px 12px",
-                  textAlign: "center",
-                  backdropFilter: "blur(8px)",
-                  cursor: "pointer",
-                  transition: "background 0.2s, transform 0.15s, box-shadow 0.2s",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                }}
-              >
-                <span style={{ fontSize: 22, lineHeight: 1 }}>{card.icon}</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#1A1A2A" }}>{card.title}</span>
-                <span style={{ fontSize: 10, color: "#5A5A6A", lineHeight: 1.5, flexGrow: 1 }}>{card.desc}</span>
-                <span style={{ fontSize: 10, fontWeight: 500, color: "#3A3A5A", marginTop: 4 }}>{card.link}</span>
-              </button>
-            ))}
+            {ROLE_CARDS.map((card) => {
+              const { Icon, iconAccent } = card;
+              const ctaClass =
+                iconAccent === "warm"
+                  ? "sp-card-cta sp-card-cta--cream"
+                  : "sp-card-cta sp-card-cta--mint";
+              const iconWrapClass =
+                iconAccent === "warm"
+                  ? "sp-card-icon-wrap sp-card-icon-wrap--warm"
+                  : iconAccent === "leaf"
+                    ? "sp-card-icon-wrap sp-card-icon-wrap--leaf"
+                    : "sp-card-icon-wrap sp-card-icon-wrap--sky";
+              return (
+                <button
+                  key={card.href}
+                  type="button"
+                  className="sp-card"
+                  onClick={() => navigate(card.href)}
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid rgba(148, 163, 184, 0.35)",
+                    borderRadius: 16,
+                    padding: "18px 12px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                    transition: "background 0.2s, transform 0.15s, box-shadow 0.2s",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 10,
+                    boxShadow: "0 4px 18px rgba(15, 23, 42, 0.06)",
+                    minHeight: 0,
+                  }}
+                >
+                  <div className={iconWrapClass} aria-hidden>
+                    <Icon strokeWidth={1.75} size={22} />
+                  </div>
+                  <span className="sp-card-title" style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", lineHeight: 1.35 }}>
+                    <span className="sp-desktop-only">{card.title}</span>
+                    <span className="sp-mobile-only">{card.mobileTitle}</span>
+                  </span>
+                  <span
+                    className="sp-card-desc"
+                    style={{
+                      fontSize: 10,
+                      color: "#64748b",
+                      lineHeight: 1.55,
+                      flexGrow: 1,
+                      textWrap: "pretty",
+                    }}
+                  >
+                    <span className="sp-desktop-only">{card.desc}</span>
+                    <span className="sp-mobile-only">{card.mobileDesc}</span>
+                  </span>
+                  <span className={ctaClass}>
+                    {card.buttonLabel}
+                    <ArrowRight size={12} strokeWidth={2.5} aria-hidden />
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* 6. Search bar */}
-          <div
-            className="sp-search"
-            style={{
-              display: "flex", gap: 8, width: "100%", maxWidth: 460,
-            }}
-          >
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="地域名・イベント名で検索"
-              style={{
-                flex: 1, padding: "10px 14px", fontSize: 13,
-                border: "1px solid rgba(160,160,200,0.5)", borderRadius: 6,
-                background: "rgba(255,255,255,0.85)", color: "#1A1A1A", outline: "none",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-              }}
-            />
+          {/* 6. Footer CTAs（主＝虹彩グラデ・副＝白枠） */}
+          <div className="sp-links sp-cta-row">
             <button
               type="button"
-              onClick={handleSearch}
-              style={{
-                padding: "10px 20px",
-                background: "linear-gradient(135deg, #3A3A5A, #2A2A3A)",
-                color: "#fff", border: "none", borderRadius: 6,
-                fontSize: 12, cursor: "pointer", fontWeight: 500,
-                whiteSpace: "nowrap",
-              }}
+              className="sp-cta-primary"
+              onClick={() => navigate("/")}
             >
-              探す
+              <span className="sp-cta-primary-front">
+                <Sparkles className="sp-cta-icon" size={16} strokeWidth={2} aria-hidden />
+                まずはイベントを見てみる
+                <ArrowRight className="sp-cta-icon" size={16} strokeWidth={2} aria-hidden />
+              </span>
             </button>
-          </div>
-
-          {/* 7. Footer links */}
-          <div className="sp-links" style={{ display: "flex", gap: 20 }}>
-            <button
-              type="button"
-              onClick={() => navigate("/events")}
-              style={{
-                fontSize: 12, color: "#3A3A5A", fontWeight: 500,
-                background: "none", border: "none", cursor: "pointer",
-                borderBottom: "1px solid rgba(90,90,120,0.4)", paddingBottom: 1,
-              }}
-            >
-              まずはイベントを見てみる
-            </button>
-            <button
-              type="button"
-              onClick={dismiss}
-              style={{
-                fontSize: 12, color: "#8A8A9A",
-                background: "none", border: "none", cursor: "pointer",
-              }}
-            >
+            <button type="button" className="sp-cta-secondary" onClick={dismiss}>
               あとで決める
             </button>
           </div>
+
+          {/* 7. 特長バナー（安心・地域・かんたん） */}
+          <aside
+            className="sp-trust"
+            aria-label="MachiGlyphの特長"
+            style={{
+              width: "100%",
+              maxWidth: "min(100%, 600px)",
+              alignSelf: "center",
+              marginTop: 4,
+              background: "rgba(255, 255, 255, 0.92)",
+              borderRadius: 14,
+              boxShadow: "0 2px 16px rgba(15, 23, 42, 0.045), 0 1px 0 rgba(255, 255, 255, 0.85) inset",
+              border: "1px solid rgba(235, 238, 245, 0.98)",
+              display: "flex",
+              alignItems: "stretch",
+              overflow: "hidden",
+            }}
+          >
+            {(
+              [
+                {
+                  Icon: ShieldCheck,
+                  title: "安心・安全の情報",
+                  sub: "運営確認で安心してお使いいただけます",
+                },
+                {
+                  Icon: Users,
+                  title: "地域のつながりを応援",
+                  sub: "まちの活動を見つけてつながれます",
+                },
+                {
+                  Icon: Heart,
+                  title: "はじめてでもかんたん",
+                  sub: "シンプルな操作ですぐ使えます",
+                },
+              ] as const
+            ).map((item, idx) => (
+              <Fragment key={item.title}>
+                {idx > 0 ? (
+                  <div
+                    aria-hidden
+                    style={{
+                      width: 1,
+                      flexShrink: 0,
+                      alignSelf: "stretch",
+                      background: "#eceef2",
+                      margin: "8px 0",
+                    }}
+                  />
+                ) : null}
+                <div
+                  className="sp-trust-cell"
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 7,
+                    padding: "9px 8px",
+                    minWidth: 0,
+                  }}
+                >
+                  <item.Icon
+                    className="sp-trust-icon"
+                    size={19}
+                    strokeWidth={1.35}
+                    aria-hidden
+                    color="#22c55e"
+                    style={{ flexShrink: 0, opacity: 0.95 }}
+                  />
+                  <div className="sp-trust-text" style={{ textAlign: "left" }}>
+                    <p
+                      className="sp-trust-title"
+                      title={item.title}
+                      style={{
+                        margin: 0,
+                        fontSize: 10.5,
+                        fontWeight: 600,
+                        lineHeight: 1.25,
+                        color: "#3d3d4a",
+                        letterSpacing: "0.01em",
+                      }}
+                    >
+                      {item.title}
+                    </p>
+                    <p
+                      className="sp-trust-sub"
+                      title={item.sub}
+                      style={{
+                        margin: "2px 0 0",
+                        fontSize: 8,
+                        fontWeight: 400,
+                        lineHeight: 1.25,
+                        color: "#6f6f7a",
+                        letterSpacing: "-0.01em",
+                      }}
+                    >
+                      {item.sub}
+                    </p>
+                  </div>
+                </div>
+              </Fragment>
+            ))}
+          </aside>
         </div>
       </div>
     </>

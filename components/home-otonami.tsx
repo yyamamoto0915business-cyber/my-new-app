@@ -1,294 +1,173 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { Event } from "@/lib/db/types";
 import type { CategoryKey } from "@/lib/categories";
-import { getBookmarks, toggleBookmark } from "@/lib/bookmark-storage";
-import { getAreaPreference, setAreaPreference } from "@/lib/area-preference-storage";
+import { getRegionPreference, setRegionPreference } from "@/lib/area-preference-storage";
+import { useRegionPreference } from "@/hooks/use-region-preference";
 import { getCategoryPrefs } from "@/lib/category-preference-storage";
-import { getEventsByDateRange, filterEventsByRegion } from "@/lib/events";
-import { eventMatchesCategory } from "@/lib/inferCategory";
-import { takeWithoutSeen } from "@/lib/utils";
-import { useLanguage } from "./language-provider";
-import { HomeHeader } from "./home/HomeHeader";
-import { HeroSection } from "./home/HeroSection";
-import { HomeFooter } from "./home/HomeFooter";
-import { RecommendedHero } from "./home/RecommendedHero";
-import { WeeklyPickupSection } from "./home/WeeklyPickupSection";
-import { CollectionsShelf } from "./home/CollectionsShelf";
-import { RecruitmentOrMissions } from "./home/RecruitmentOrMissions";
-import { MachiBinyoriPreview } from "./home/MachiBinyoriPreview";
-import { FeaturedOrganizersSection } from "./home/FeaturedOrganizersSection";
-import { BookmarksSheet } from "@/components/ui/BookmarksSheet";
-import { RegionFilter } from "@/components/region-filter";
-import Link from "next/link";
-
-const THEME_FILTERS = [
-  (e: Event) =>
-    e.price === 0 || e.tags?.includes("free") || /無料/.test(e.title),
-  (e: Event) =>
-    e.childFriendly ||
-    e.tags?.includes("kids") ||
-    /親子|キッズ|子供/.test(e.title),
-  (e: Event) =>
-    /体験|ワークショップ|教室/.test(e.title) || e.tags?.includes("beginner"),
-  (e: Event) =>
-    /文化|アート|歴史|地域/.test(e.title) ||
-    /体験|ワークショップ/.test(e.title),
-];
-
-function pickCollectionEvents(
-  source: Event[],
-  limit: number,
-  excludeIds: Set<string>,
-  categoryPrefs: CategoryKey[]
-): Event[] {
-  const used = new Set<string>();
-  const result: Event[] = [];
-  const hasCategory = categoryPrefs.length > 0;
-
-  for (const filter of THEME_FILTERS) {
-    const candidates = source.filter(
-      (e) =>
-        filter(e) &&
-        !excludeIds.has(e.id) &&
-        !used.has(e.id) &&
-        (!hasCategory || eventMatchesCategory(e, categoryPrefs))
-    );
-    const take = candidates.slice(0, limit - result.length);
-    take.forEach((e) => {
-      used.add(e.id);
-      result.push(e);
-    });
-    if (result.length >= limit) break;
-  }
-  if (result.length < limit) {
-    const rest = source.filter((e) => !excludeIds.has(e.id) && !used.has(e.id));
-    result.push(...rest.slice(0, limit - result.length));
-  }
-  return result.slice(0, limit);
-}
+import {
+  searchEvents,
+  filterEventsByPrice,
+  filterEventsByChildFriendly,
+  filterEventsByRegion,
+  getEventsByDateRange,
+} from "@/lib/events";
+import { getPrimaryCategory, inferCategoryKeys } from "@/lib/inferCategory";
+import { PcDiscoverHero } from "@/components/home/pc/PcDiscoverHero";
+import { PcSearchFiltersPanel } from "@/components/home/pc/PcSearchFiltersPanel";
+import { PcRecommendedRow } from "@/components/home/pc/PcRecommendedRow";
+import { PcCtaBanners } from "@/components/home/pc/PcCtaBanners";
+import { MobileDiscoverHero } from "@/components/home/mobile/MobileDiscoverHero";
+import { MobileRegionSection } from "@/components/home/mobile/MobileRegionSection";
+import { MobileCategoryGrid } from "@/components/home/mobile/MobileCategoryGrid";
+import { MobileRecommendedCarousel } from "@/components/home/mobile/MobileRecommendedCarousel";
+import { MobileCtaBanners } from "@/components/home/mobile/MobileCtaBanners";
 
 export function HomeOtonami() {
-  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const prefecture = searchParams.get("prefecture") ?? "";
   const city = searchParams.get("city") ?? "";
-  const effectiveArea = prefecture || city || getAreaPreference();
-
-  // ファーストビュー直下（モバイルのみ）に置く簡易チップ
-  const heroCategoryTags = [
-    { label: "無料", tags: "free" },
-    { label: "親子", tags: "kids" },
-    { label: "体験", tags: "beginner" },
-    { label: "交流会", tags: "indoor" },
-  ];
+  const { label: savedRegionLabel, preference: savedRegion } = useRegionPreference();
+  const effectiveArea = prefecture || city || savedRegionLabel || savedRegion.prefecture;
 
   const [allEvents, setAllEvents] = useState<Event[]>([]);
-  const [allRecruitments, setAllRecruitments] = useState<
-    {
-      id: string;
-      organizer_id?: string;
-      title: string;
-      description: string;
-      meeting_place: string | null;
-      start_at?: string | null;
-      organizers?: { organization_name: string | null };
-      events?: { title: string; date: string } | null;
-    }[]
-  >([]);
   const [loading, setLoading] = useState(true);
-  const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
   const [categoryPrefs, setCategoryPrefsState] = useState<CategoryKey[]>([]);
-  const [bookmarksOpen, setBookmarksOpen] = useState(false);
 
-  const handleBookmarkToggle = useCallback((eventId: string) => {
-    toggleBookmark(eventId);
-    setBookmarkIds(getBookmarks());
-  }, []);
+  // フィルター state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeChip, setActiveChip] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedArea, setSelectedArea] = useState("");
 
   useEffect(() => {
-    setBookmarkIds(getBookmarks());
     setCategoryPrefsState(getCategoryPrefs());
   }, []);
   useEffect(() => {
-    if (prefecture) setAreaPreference(prefecture);
-  }, [prefecture]);
+    if (!prefecture) return;
+    const current = getRegionPreference();
+    setRegionPreference({
+      prefecture,
+      city: city || current.city,
+      setAsHome: current.setAsHome,
+    });
+  }, [prefecture, city]);
 
   const loadData = useCallback(() => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (prefecture) params.set("prefecture", prefecture);
-    if (city) params.set("city", city);
-    const qs = params.toString();
-    Promise.all([
-      fetchWithTimeout(`/api/events${qs ? `?${qs}` : ""}`, { cache: "no-store" }).then(
-        (r) => r.json()
-      ),
-      fetchWithTimeout("/api/recruitments?limit=20", { cache: "no-store" }).then(
-        (r) => r.json()
-      ),
-    ])
-      .then(([events, recAll]) => {
-        setAllEvents(Array.isArray(events) ? events : []);
-        setAllRecruitments(Array.isArray(recAll) ? recAll : []);
-      })
-      .catch(() => {
-        setAllEvents([]);
-        setAllRecruitments([]);
-      })
+    fetchWithTimeout(`/api/events?limit=100`)
+      .then((r) => r.json())
+      .then((events) => setAllEvents(Array.isArray(events) ? events : []))
+      .catch(() => setAllEvents([]))
       .finally(() => setLoading(false));
-  }, [prefecture, city]);
+  }, []);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const areaEvents =
-    effectiveArea.trim().length > 0
-      ? filterEventsByRegion(allEvents, effectiveArea)
-      : allEvents;
-  const weekEvents = getEventsByDateRange(allEvents, "week");
-  const weekendEvents = getEventsByDateRange(allEvents, "weekend");
-  const freeFilter = (e: Event) =>
-    e.price === 0 || e.tags?.includes("free") || /無料/.test(e.title);
+  const hasActiveFilter =
+    searchQuery !== "" || activeChip !== "all" || selectedCategory !== "" || selectedArea !== "";
 
-  const { pickupEvents, collectionEvents, machiEvents } = useMemo(() => {
-    const { getHeroWithSubCards } = require("@/lib/filterEvents");
-    const { featured, subCards } = getHeroWithSubCards(
-      allEvents,
-      effectiveArea,
-      categoryPrefs,
-      3
-    );
-    const heroIds = new Set(
-      [featured, ...subCards].filter((e): e is Event => e != null).map((e) => e.id)
-    );
-    const pickupCandidates = weekendEvents.filter(
-      (e) => freeFilter(e) && !heroIds.has(e.id)
-    );
-    const { items: pickup, updatedSeen: seen1 } = takeWithoutSeen(
-      pickupCandidates,
-      heroIds,
-      8
-    );
-    const collection = pickCollectionEvents(
-      areaEvents,
-      8,
-      seen1,
-      categoryPrefs
-    );
-    const seen2 = new Set(seen1);
-    collection.forEach((e) => seen2.add(e.id));
-    const { items: machi } = takeWithoutSeen(weekEvents, seen2, 2);
+  const filteredEvents = useMemo((): Event[] => {
+    if (!hasActiveFilter) return allEvents;
+    let result = [...allEvents];
+    if (searchQuery) result = searchEvents(result, searchQuery);
+    if (activeChip === "today") result = getEventsByDateRange(result, "today");
+    if (activeChip === "weekend") result = getEventsByDateRange(result, "weekend");
+    if (activeChip === "free") result = filterEventsByPrice(result, "free");
+    if (activeChip === "family") result = filterEventsByChildFriendly(result, true);
+    if (activeChip === "workshop") result = result.filter((e) => getPrimaryCategory(e) === "workshop");
+    if (activeChip === "community") result = result.filter((e) => getPrimaryCategory(e) === "community");
+    if (selectedCategory) {
+      result = result.filter((e) => {
+        if (selectedCategory === "volunteer") {
+          const keys = inferCategoryKeys(e);
+          return keys.includes("volunteer") || getPrimaryCategory(e) === "volunteer";
+        }
+        return getPrimaryCategory(e) === selectedCategory;
+      });
+    }
+    if (selectedArea) result = filterEventsByRegion(result, selectedArea, undefined);
+    return result;
+  }, [allEvents, searchQuery, activeChip, selectedCategory, selectedArea, hasActiveFilter]);
 
-    return {
-      pickupEvents: pickup,
-      collectionEvents: collection,
-      machiEvents: machi,
-    };
-  }, [allEvents, effectiveArea, categoryPrefs, areaEvents, weekEvents, weekendEvents]);
+  const handleChipClick = useCallback((key: string) => {
+    if (key === "all") {
+      setActiveChip("all");
+      setSelectedCategory("");
+      setSelectedArea("");
+      setSearchQuery("");
+    } else {
+      setActiveChip(key);
+    }
+  }, []);
+
+  const handleSelectCategory = useCallback((key: string) => {
+    setSelectedCategory(key);
+    setActiveChip("all");
+  }, []);
+
+  const handleSelectArea = useCallback((area: string) => {
+    setSelectedArea(area);
+  }, []);
 
   return (
-    <div className="min-h-screen">
-      <HomeHeader
-        platformTitle={t.platformTitle}
-        onOpenBookmarks={() => setBookmarksOpen(true)}
-        bookmarkCount={bookmarkIds.length}
-      />
-
-      <main className="mx-auto max-w-5xl space-y-8 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-8 sm:pb-8">
-        {/* ファーストビュー */}
-        <HeroSection />
-
-        {/* 地域・カテゴリ：モバイルではファーストビューの直下から“少し下”に配置 */}
-        <section
-          className="sm:hidden mt-2 rounded-[24px] border border-slate-200/90 bg-white/95 p-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)]"
-          aria-label="検索と絞り込み"
-        >
-          <div className="space-y-4">
-            <div>
-              <p className="text-[15px] font-semibold text-slate-900">地域で探す</p>
-              <p className="mt-0.5 text-xs text-slate-500">よく使う地域だけ、まずはここから</p>
-              <div className="mt-3">
-                <RegionFilter variant="chips" />
-              </div>
-            </div>
-            <div>
-              <p className="text-[15px] font-semibold text-slate-900">カテゴリから探す</p>
-              <p className="mt-0.5 text-xs text-slate-500">気分に合わせて、軽く絞り込み</p>
-              <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {heroCategoryTags.map(({ label, tags }) => (
-                  <Link
-                    key={tags}
-                    href={`/events?tags=${tags}`}
-                    className="shrink-0 h-10 inline-flex items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition-colors active:bg-slate-50"
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 1) おすすめイベント */}
-        <RecommendedHero
+    <div className="min-h-screen min-[900px]:bg-[#f3f4f1]">
+      {/* PC（900px以上） */}
+      <main className="mx-auto hidden max-w-[1280px] space-y-4 bg-[#f3f4f1] px-8 py-4 pb-4 min-[900px]:block">
+        <PcDiscoverHero
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          activeChip={activeChip}
+          onChipClick={handleChipClick}
+        />
+        <PcSearchFiltersPanel
+          selectedArea={selectedArea}
+          onAreaChange={handleSelectArea}
+          selectedCategory={selectedCategory}
+          onCategoryChange={handleSelectCategory}
+        />
+        <PcRecommendedRow
           events={allEvents}
+          filteredEvents={filteredEvents}
+          hasActiveFilter={hasActiveFilter}
           loading={loading}
           areaPreference={effectiveArea}
           categoryPrefs={categoryPrefs}
-          onCategoryChange={setCategoryPrefsState}
-          bookmarkIds={bookmarkIds}
-          onBookmarkToggle={handleBookmarkToggle}
         />
-
-        {/* 2) 今週のピックアップ */}
-        <WeeklyPickupSection
-          events={pickupEvents}
-          loading={loading}
-          bookmarkIds={bookmarkIds}
-          onBookmarkToggle={handleBookmarkToggle}
-        />
-
-        {/* 3) テーマ別コレクション */}
-        <CollectionsShelf
-          events={collectionEvents}
-          loading={loading}
-          bookmarkIds={bookmarkIds}
-          onBookmarkToggle={handleBookmarkToggle}
-        />
-
-        {/* 4) 注目の主催者 */}
-        <FeaturedOrganizersSection />
-
-        {/* 5) すきまサポート */}
-        <RecruitmentOrMissions
-          recruitments={allRecruitments}
-          loading={loading}
-        />
-
-        {/* 6) 今週のまち便り */}
-        <MachiBinyoriPreview
-          events={machiEvents}
-          loading={loading}
-          bookmarkIds={bookmarkIds}
-          onBookmarkToggle={handleBookmarkToggle}
-        />
-
-        {/* MachiGlyph案内と3軸への再導線 */}
-        <HomeFooter />
+        <PcCtaBanners />
       </main>
 
-      <BookmarksSheet
-        isOpen={bookmarksOpen}
-        onClose={() => setBookmarksOpen(false)}
-        events={allEvents}
-        bookmarkIds={bookmarkIds}
-        onBookmarkToggle={handleBookmarkToggle}
-      />
+      {/* モバイル（モックアップ準拠） */}
+      <main className="w-full space-y-3.5 bg-[#f3f4f1] px-2.5 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] pt-0 min-[900px]:hidden sm:max-w-none">
+        <MobileDiscoverHero
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          activeChip={activeChip}
+          onChipClick={handleChipClick}
+        />
+        <MobileRegionSection
+          selectedArea={selectedArea}
+          onSelectArea={handleSelectArea}
+        />
+        <MobileCategoryGrid
+          selectedCategory={selectedCategory}
+          onSelectCategory={handleSelectCategory}
+        />
+        <MobileRecommendedCarousel
+          events={allEvents}
+          filteredEvents={filteredEvents}
+          hasActiveFilter={hasActiveFilter}
+          loading={loading}
+          areaPreference={effectiveArea}
+          categoryPrefs={categoryPrefs}
+        />
+        <MobileCtaBanners />
+      </main>
     </div>
   );
 }

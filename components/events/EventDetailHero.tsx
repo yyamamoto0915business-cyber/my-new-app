@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Event } from "@/lib/db/types";
 import { EventDetailFlyerImage } from "@/components/events/EventDetailFlyerImage";
 import { BookmarkToggle } from "@/components/ui/BookmarkToggle";
 import { isBookmarked, toggleBookmark } from "@/lib/bookmark-storage";
 import { getPrimaryCategory } from "@/lib/inferCategory";
 import { CATEGORY_LABELS } from "@/lib/categories";
-import { formatEventDateTime } from "@/lib/format-date";
+import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import { CalendarDays, MapPin, UserRound, ArrowLeft } from "lucide-react";
 import { getEventStatus, type EventStatus } from "@/lib/events";
 
@@ -29,12 +29,23 @@ export function EventDetailHero({ event }: Props) {
   const isAvailable = status === "available";
   const category = getPrimaryCategory(event);
   const categoryLabel = category ? CATEGORY_LABELS[category] : undefined;
-  const [saved, setSaved] = useState(() => isBookmarked(event.id));
+  const [saved, setSaved] = useState(false);
 
-  const dateBadge = useMemo(() => {
-    const d = formatEventDateTime(event.date, event.startTime);
-    return d;
-  }, [event.date, event.startTime]);
+  useEffect(() => {
+    setSaved(isBookmarked(event.id));
+  }, [event.id]);
+
+  const dateBadge = useMemo(
+    () =>
+      formatEventScheduleLabel(
+        event.date,
+        event.startTime,
+        event.endTime,
+        event.recurrence ?? "none",
+        event.recurrenceCount
+      ),
+    [event.date, event.startTime, event.endTime, event.recurrence, event.recurrenceCount]
+  );
 
   const reception = receptionLabel(status, isAvailable);
 
@@ -50,9 +61,9 @@ export function EventDetailHero({ event }: Props) {
 
         <div className="absolute left-3 top-3 hidden items-center gap-2 sm:flex">
           <Link
-            href="/events"
+            href="/"
             className="inline-flex h-11 w-11 min-h-[var(--mg-touch-min)] min-w-[var(--mg-touch-min)] items-center justify-center rounded-full border border-white/70 bg-white/90 text-slate-700 shadow-[var(--mg-shadow)] backdrop-blur-sm"
-            aria-label="一覧に戻る"
+            aria-label="ホームに戻る"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
           </Link>
@@ -123,10 +134,7 @@ export function EventDetailHero({ event }: Props) {
                 className="mt-0.5 h-5 w-5 shrink-0 text-[var(--accent)]"
                 aria-hidden
               />
-              <span className="min-w-0 break-words">
-                {formatEventDateTime(event.date, event.startTime)}
-                {event.endTime ? ` 〜 ${event.endTime}` : ""}
-              </span>
+              <span className="min-w-0 break-words">{dateBadge}</span>
             </dd>
           </div>
           <div>

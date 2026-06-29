@@ -46,6 +46,10 @@ export async function GET() {
       .eq("organizer_id", organizerId)
       .maybeSingle();
 
+    /** plan_state 未移行・部分的な行でも、主催レイアウトと同じく organizers 行を参照する */
+    const mergedStripeStatus =
+      planState?.stripe_status ?? organizer.stripe_status ?? null;
+
     const monthlyPublished = await getMonthlyPublishedCount(supabase, organizerId);
     const founderActive = !!(
       organizer.founder30_end_at && new Date(organizer.founder30_end_at) >= new Date()
@@ -53,7 +57,7 @@ export async function GET() {
     const publishLimit =
       isPaidOrganizer({
         subscription_status: organizer.subscription_status ?? null,
-        stripe_status: planState?.stripe_status ?? null,
+        stripe_status: mergedStripeStatus,
         manual_grant_active:
           planState?.manual_grant_active ?? organizer.manual_grant_active ?? false,
         manual_grant_expires_at:
@@ -74,7 +78,7 @@ export async function GET() {
         founder30_granted_at: organizer.founder30_granted_at,
         founder30_end_at: organizer.founder30_end_at,
         subscription_status: organizer.subscription_status,
-        stripe_status: planState?.stripe_status ?? null,
+        stripe_status: mergedStripeStatus,
         current_period_end: organizer.current_period_end,
         manual_grant_active:
           planState?.manual_grant_active ?? organizer.manual_grant_active ?? false,

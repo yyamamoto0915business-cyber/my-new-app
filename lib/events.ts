@@ -102,6 +102,64 @@ export function sortEvents(
   return copy;
 }
 
+/** 直近 N 日以内に終了したイベントの下限日（YYYY-MM-DD） */
+function getPastCutoffYmd(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return getJstTodayYmd(d);
+}
+
+export type BackfillEndedOptions = {
+  /** この件数未満の開催予定なら終了イベントを補完する */
+  minUpcoming?: number;
+  /** 補完する終了イベントの最大件数 */
+  maxEnded?: number;
+  /** 何日以内に終了したイベントを対象にするか */
+  pastDays?: number;
+};
+
+/**
+ * 開催予定が少ないとき、日付フィルタ以外の同一条件で絞った直近の終了イベントを補完する。
+ */
+export function backfillWithRecentEndedEvents(
+  filtered: Event[],
+  source: Event[],
+  options?: BackfillEndedOptions
+): Event[] {
+  const minUpcoming = options?.minUpcoming ?? 5;
+  const maxEnded = options?.maxEnded ?? 10;
+  const pastDays = options?.pastDays ?? 365;
+
+  const todayStr = getJstTodayYmd();
+  const pastCutoff = getPastCutoffYmd(pastDays);
+  const upcoming = filtered.filter((e) => getEventStatus(e) !== "ended");
+  if (upcoming.length >= minUpcoming) return filtered;
+
+  const existingIds = new Set(filtered.map((e) => e.id));
+  const endedBackfill = source
+    .filter((e) => getEventStatus(e) === "ended")
+    .filter((e) => e.date >= pastCutoff && e.date < todayStr)
+    .filter((e) => !existingIds.has(e.id))
+    .sort(
+      (a, b) =>
+        b.date.localeCompare(a.date) ||
+        (b.startTime || "").localeCompare(a.startTime || "")
+    )
+    .slice(0, maxEnded);
+
+  return [...filtered, ...endedBackfill];
+}
+
+/** 一覧向け: 開催予定を先に（日付昇順）、終了を後に（日付降順） */
+export function sortEventsForDiscover(events: Event[]): Event[] {
+  const upcoming = events.filter((e) => getEventStatus(e) !== "ended");
+  const ended = events.filter((e) => getEventStatus(e) === "ended");
+  return [
+    ...sortEvents(upcoming, "date_asc"),
+    ...sortEvents(ended, "date_desc"),
+  ];
+}
+
 export function filterEventsByPrice(
   events: Event[],
   filter: "all" | "free" | "paid"
@@ -122,13 +180,17 @@ export function filterEventsByChildFriendly(
 export function searchEvents(events: Event[], query: string): Event[] {
   if (!query.trim()) return events;
   const q = query.toLowerCase();
-  return events.filter(
-    (e) =>
-      e.title.toLowerCase().includes(q) ||
-      e.description.toLowerCase().includes(q) ||
-      e.organizerName.toLowerCase().includes(q) ||
-      e.location.toLowerCase().includes(q)
-  );
+  return events.filter((e) => {
+    const fields = [
+      e.title,
+      e.description,
+      e.organizerName,
+      e.location,
+      e.prefecture,
+      e.city,
+    ];
+    return fields.some((f) => f?.toLowerCase().includes(q));
+  });
 }
 
 export function filterEventsByRegion(

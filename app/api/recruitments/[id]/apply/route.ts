@@ -5,17 +5,11 @@ import {
   fetchRecruitmentById,
   createApplication,
   getApplicationStatus,
-  getOrganizerIdByProfileId,
 } from "@/lib/db/recruitments-mvp";
-import {
-  getOrCreateRecruitmentChatRoom,
-  sendSystemMessage,
-} from "@/lib/db/chat";
 import {
   getStoreRecruitmentById,
   addStoreApplication,
   getStoreApplicationStatus,
-  getDevOrganizerId,
 } from "@/lib/created-recruitments-store";
 
 type Params = { params: Promise<{ id: string }> };
@@ -64,41 +58,11 @@ export async function POST(request: NextRequest, { params }: Params) {
 
       await createApplication(supabase, recruitmentId, user.id, message || undefined);
 
-      const room = await getOrCreateRecruitmentChatRoom(
-        supabase,
-        recruitmentId,
-        user.id,
-        user.id
-      );
-
-      if (room) {
-        const { data: org } = await supabase
-          .from("organizers")
-          .select("profile_id")
-          .eq("id", recruitment.organizer_id)
-          .single();
-        const senderId = org?.profile_id ?? user.id;
-
-        const meetingTime =
-          recruitment.start_at != null
-            ? new Date(recruitment.start_at).toLocaleString("ja-JP", {
-                month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "未定";
-        const place = recruitment.meeting_place ?? "未定";
-        const items = recruitment.items_to_bring ?? "特になし";
-
-        const autoReply = `応募ありがとうございます。集合は${meetingTime}に${place}です。持ち物は${items}。遅刻はこのチャットで連絡してください。`;
-        await sendSystemMessage(supabase, room.id, autoReply, senderId);
-      }
-
       return NextResponse.json({
         success: true,
         status: "pending",
-        message: "応募を受け付けました",
+        recruitmentId,
+        message: "応募を受け付けました。主催者の確認をお待ちください。",
       });
     } catch (e) {
       console.error("recruitments/[id]/apply POST:", e);
@@ -131,6 +95,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   return NextResponse.json({
     success: true,
     status: "pending",
-    message: "応募を受け付けました（開発モード：チャットはSupabase接続時に利用可能）",
+    recruitmentId,
+    message: "応募を受け付けました。主催者の確認をお待ちください。",
   });
 }

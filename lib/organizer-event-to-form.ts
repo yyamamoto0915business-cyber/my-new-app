@@ -32,5 +32,7 @@ export function eventToForm(event: Event): EventFormData {
     participationMode: event.participationMode ?? "none",
     registrationDeadline: event.registrationDeadline,
     registrationNote: event.registrationNote,
+    recurrence: event.recurrence ?? "none",
+    recurrenceCount: event.recurrenceCount ?? null,
   };
 }

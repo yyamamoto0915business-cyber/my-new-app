@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUnreadCount } from "@/hooks/use-unread-count";
+import { useRegionPreference } from "@/hooks/use-region-preference";
 import { setModeCookie } from "@/lib/mode-preference";
+import { RegionSettingModal } from "@/components/region/RegionSettingModal";
+import { MapPin, HelpCircle } from "lucide-react";
 
 const DESKTOP_NAV_ITEMS = [
   { href: "/", label: "ホーム", icon: "home" },
@@ -16,7 +19,7 @@ const DESKTOP_NAV_ITEMS = [
 ] as const;
 
 function NavIcon({ icon, active }: { icon: string; active: boolean }) {
-  const stroke = active ? "var(--accent)" : "currentColor";
+  const stroke = active ? "#4a9a68" : "currentColor";
   if (icon === "home") {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
@@ -87,9 +90,15 @@ function NavLink({
     <Link
       href={href}
       className={`relative flex flex-1 flex-col items-center gap-1 text-[13px] transition-colors sm:flex-none sm:w-full sm:px-2 ${
-        minTapHeight ? "min-h-[44px] justify-center py-3 sm:py-2" : "py-3 sm:py-2"
-      } ${isActive ? "text-[var(--accent)]" : "text-[var(--foreground-muted)]"}`}
+        minTapHeight ? "min-h-[44px] justify-center py-3 sm:py-2" : "py-3 sm:py-2.5"
+      } ${isActive ? "text-[#4a9a68] sm:text-[#4a9a68]" : "text-[var(--foreground-muted)] sm:text-[#8a9088]"}`}
     >
+      {isActive && (
+        <span
+          className="absolute left-0 top-1/2 hidden h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-[#4a9a68] sm:block"
+          aria-hidden
+        />
+      )}
       {showActiveIndicator && isActive && (
         <span
           className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[var(--accent)] sm:hidden"
@@ -104,7 +113,7 @@ function NavLink({
           </span>
         )}
       </span>
-      <span className="text-center leading-tight whitespace-nowrap">{item.label}</span>
+      <span className="text-center text-[9px] leading-tight font-medium whitespace-nowrap">{item.label}</span>
     </Link>
   );
 }
@@ -130,7 +139,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 top-0 right-auto z-50 hidden w-20 flex-col items-center border-r border-[var(--border)] bg-white/95 py-4 backdrop-blur-sm sm:flex dark:bg-[var(--background)]"
+      className="fixed bottom-0 left-0 top-0 right-auto z-50 hidden h-screen w-20 flex-col items-center border-r border-[#e8ebe6] bg-white py-5 sm:flex"
       aria-label="PCナビゲーション"
     >
       <div className="flex w-full flex-col items-center justify-start gap-0">
@@ -145,6 +154,58 @@ export function BottomNav() {
           />
         ))}
       </div>
+      <SidebarFooter />
     </nav>
+  );
+}
+
+function SidebarFooter() {
+  const { label, preference, hydrated } = useRegionPreference();
+  const [modalOpen, setModalOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const hasRegion = hydrated && Boolean(preference.prefecture);
+  const displayLabel = hydrated ? label || "未設定" : "未設定";
+
+  return (
+    <div className="mt-auto flex w-full flex-col items-center gap-3 px-1 pb-2">
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setModalOpen(true)}
+        className={`relative flex w-full flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center transition ${
+          hasRegion
+            ? "border-[#b8dcc8] bg-[#f4faf6] hover:bg-[#eef6f2]"
+            : "border-transparent hover:bg-[#f4faf6]"
+        }`}
+        aria-label="地域を設定"
+        aria-haspopup="dialog"
+        aria-expanded={modalOpen}
+      >
+        {hasRegion && (
+          <span
+            className="absolute right-1 top-2 h-1.5 w-1.5 rounded-full bg-[#4a9a68]"
+            aria-hidden
+          />
+        )}
+        <MapPin className="h-4 w-4 text-[#48a878]" aria-hidden />
+        <span className="text-[9px] font-medium leading-tight text-[#3a5848]">地域を設定</span>
+        <span className="line-clamp-2 text-[8px] leading-tight text-[#6a6258]" suppressHydrationWarning>
+          {displayLabel}
+        </span>
+      </button>
+      <RegionSettingModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        anchorRef={triggerRef}
+      />
+      <Link
+        href="/guide"
+        className="flex w-full flex-col items-center gap-1 rounded-lg px-1 py-2 text-[9px] font-medium text-[#3a5848] transition hover:bg-[#f4faf6]"
+        aria-label="ヘルプ"
+      >
+        <HelpCircle className="h-4 w-4" aria-hidden />
+        ヘルプ
+      </Link>
+    </div>
   );
 }

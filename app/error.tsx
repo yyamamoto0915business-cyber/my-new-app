@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { isAbortLikeError } from "@/lib/is-abort-like-error";
 
 export default function Error({
   error,
@@ -11,8 +12,12 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
+    if (isAbortLikeError(error)) {
+      reset();
+      return;
+    }
     console.error(error);
-  }, [error]);
+  }, [error, reset]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4">

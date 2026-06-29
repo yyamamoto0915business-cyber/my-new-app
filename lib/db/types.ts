@@ -107,6 +107,10 @@ export type DbEvent = {
   participation_mode?: "required" | "optional" | "none" | null;
   registration_deadline?: string | null;
   registration_note?: string | null;
+  /** 開催パターン: none=単発, weekly=毎週, monthly=毎月 */
+  recurrence?: string | null;
+  /** 繰り返し回数（初回を含む。単発のときは NULL） */
+  recurrence_count?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -188,6 +192,10 @@ export type Event = {
   participationMode?: "required" | "optional" | "none";
   registrationDeadline?: string;
   registrationNote?: string;
+  /** 開催パターン: none=単発, weekly=毎週, monthly=毎月 */
+  recurrence?: "none" | "weekly" | "monthly";
+  /** 繰り返し回数（初回を含む。単発のときは未設定） */
+  recurrenceCount?: number | null;
   createdAt: string;
   participantCount?: number;
   avgRating?: number;

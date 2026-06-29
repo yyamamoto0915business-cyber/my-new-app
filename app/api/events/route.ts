@@ -56,6 +56,8 @@ export async function GET(request: NextRequest) {
   const city = searchParams.get("city") ?? undefined;
   const tagsParam = searchParams.get("tags");
   const tags = tagsParam ? tagsParam.split(",").filter(Boolean) : [];
+  const limitParam = searchParams.get("limit");
+  const limit = limitParam ? parseInt(limitParam, 10) || undefined : undefined;
 
   const supabase = await createClient();
   let result;
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
 
   if (supabase) {
     try {
-      const dbEvents = await fetchEvents(supabase);
+      const dbEvents = await fetchEvents(supabase, limit);
       // 本番環境では mock / created ストアには絶対にフォールバックしない
       if (isProduction) {
         result = dbEvents;
@@ -121,6 +123,8 @@ export async function POST(request: NextRequest) {
       participationMode,
       registrationDeadline,
       registrationNote,
+      recurrence,
+      recurrenceCount,
     } = body;
 
     if (!title?.trim() || !description?.trim() || !date || !startTime || !location?.trim() || !address?.trim()) {
@@ -148,6 +152,9 @@ export async function POST(request: NextRequest) {
     const { getApiUser } = await import("../../../lib/api-auth");
     const { getOrganizerIdByProfileId } = await import("../../../lib/db/recruitments-mvp");
     const { createEvent } = await import("../../../lib/db/events");
+    const { normalizeEventRecurrence, normalizeRecurrenceCount } = await import(
+      "../../../lib/event-recurrence"
+    );
     const { addCreatedEvent } = await import("../../../lib/created-events-store");
     const { addDefaultVolunteerRoleForEvent } = await import(
       "../../../lib/created-volunteer-roles-store"
@@ -155,6 +162,12 @@ export async function POST(request: NextRequest) {
     const { setOrganizerForCreatedEvent } = await import(
       "../../../lib/event-organizers"
     );
+
+    const normalizedRecurrence = normalizeEventRecurrence(recurrence);
+    const normalizedRecurrenceCount =
+      normalizedRecurrence === "none"
+        ? null
+        : normalizeRecurrenceCount(recurrenceCount, normalizedRecurrence);
 
     const formData = {
       title: String(title).trim(),
@@ -200,6 +213,8 @@ export async function POST(request: NextRequest) {
         registrationNote && String(registrationNote).trim()
           ? String(registrationNote).trim()
           : undefined,
+      recurrence: normalizedRecurrence,
+      recurrenceCount: normalizedRecurrenceCount,
     };
 
     const isProduction = process.env.NODE_ENV === "production";

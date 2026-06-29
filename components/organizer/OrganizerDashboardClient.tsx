@@ -1,723 +1,636 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import Link from "next/link";
-import {
-  CalendarDays,
-  CalendarPlus,
-  FileText,
-  Users,
-  ExternalLink,
-  ChevronRight,
-  BookOpen,
-  Settings,
-} from "lucide-react";
 import type {
   DashboardKpis,
-  DashboardTodo,
   DashboardEvent,
   BillingSummary,
 } from "@/app/api/organizer/dashboard/route";
 import type { PlanSummary } from "@/lib/organizer-plan-summary";
+import { OrganizerManagementHeroBanner } from "@/components/organizer/OrganizerManagementHeroBanner";
+import {
+  OrganizerHeroBleed,
+  OrganizerPageShell,
+  organizerHeroDenseSkeletonClass,
+} from "@/components/organizer/OrganizerPageShell";
 
-const STATUS_LABELS: Record<string, string> = {
-  public: "公開中",
-  draft: "下書き",
-  ended: "終了",
-};
+const RECENT_LIMIT = 3;
 
-const RECENT_LIMIT = 5;
-
-function StatusBadge({ status }: { status: string }) {
-  const label = STATUS_LABELS[status] ?? status;
-  const className =
-    status === "public"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
-      : status === "draft"
-        ? "bg-amber-50 text-amber-700 border-amber-200/80"
-        : "bg-slate-100 text-slate-600 border-slate-200/80";
+// ── MachiGlyph ロゴ SVG ────────────────────────────────────────────────────────
+function PlanLogo({ isPro, size = 30 }: { isPro: boolean; size?: number }) {
+  const lines = isPro
+    ? ["#f0d060", "#f0d060", "#f0d060", "#C0C8D8", "#C0C8D8", "#C0C8D8"]
+    : ["#6BBF3E", "#6BBF3E", "#6BBF3E", "#fff", "#fff", "#fff"];
+  const nodes = isPro
+    ? ["#f5e07a", "#f5e07a", "#f5e07a", "#E8EEFF", "#E8EEFF", "#E8EEFF"]
+    : ["#6BBF3E", "#6BBF3E", "#6BBF3E", "#fff", "#fff", "#fff"];
+  const center = isPro ? "#C0C8D8" : "#fff";
+  const dot = isPro ? "#f0d060" : "#6BBF3E";
+  const hex = isPro ? "rgba(200,168,75,0.35)" : "rgba(255,255,255,0.3)";
   return (
-    <span className={`inline-flex rounded-lg border px-2 py-0.5 text-xs font-medium ${className}`}>
-      {label}
-    </span>
+    <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden>
+      <polygon points="50,5 88,27 88,73 50,95 12,73 12,27" fill="none" stroke={hex} strokeWidth="3"/>
+      <line x1="50" y1="5"  x2="50" y2="50" stroke={lines[0]} strokeWidth="6" strokeLinecap="round"/>
+      <line x1="12" y1="73" x2="50" y2="50" stroke={lines[1]} strokeWidth="6" strokeLinecap="round"/>
+      <line x1="88" y1="73" x2="50" y2="50" stroke={lines[2]} strokeWidth="6" strokeLinecap="round"/>
+      <line x1="12" y1="27" x2="50" y2="50" stroke={lines[3]} strokeWidth="6" strokeLinecap="round"/>
+      <line x1="88" y1="27" x2="50" y2="50" stroke={lines[4]} strokeWidth="6" strokeLinecap="round"/>
+      <line x1="50" y1="95" x2="50" y2="50" stroke={lines[5]} strokeWidth="6" strokeLinecap="round"/>
+      <circle cx="50" cy="5"  r="8" fill={nodes[0]} stroke={hex} strokeWidth="2"/>
+      <circle cx="12" cy="73" r="8" fill={nodes[1]} stroke={hex} strokeWidth="2"/>
+      <circle cx="88" cy="73" r="8" fill={nodes[2]} stroke={hex} strokeWidth="2"/>
+      <circle cx="12" cy="27" r="8" fill={nodes[3]} stroke={hex} strokeWidth="2"/>
+      <circle cx="88" cy="27" r="8" fill={nodes[4]} stroke={hex} strokeWidth="2"/>
+      <circle cx="50" cy="95" r="8" fill={nodes[5]} stroke={hex} strokeWidth="2"/>
+      <circle cx="50" cy="50" r="12" fill={center}/>
+      <circle cx="50" cy="50" r="6"  fill={dot} opacity="0.85"/>
+      <circle cx="50" cy="50" r="2.5" fill={dot}/>
+    </svg>
   );
 }
 
-function formatDate(dateStr: string) {
-  try {
-    return new Date(dateStr + "T12:00:00").toLocaleDateString("ja-JP", {
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
 
-// ── Hero Banner ──────────────────────────────────────────────────────────────
-function OrganizerHeroBanner() {
+// ── プランカード ───────────────────────────────────────────────────────────────
+function PlanCard({
+  planSummary,
+  onChangePlan,
+  compact = false,
+}: {
+  planSummary: PlanSummary;
+  onChangePlan: () => void;
+  compact?: boolean;
+}) {
+  const isPro = !planSummary.isFreePlan;
+
+  const starterMeta = planSummary.publishLimit !== null
+    ? `公開枠 ${planSummary.publishLimit}件/月`
+    : "公開枠 無制限";
+
+  const pad = compact ? "11px 12px" : "16px 18px";
+  const logoSize = compact ? 38 : 46;
+  const planTitleSize = compact ? "17px" : "20px";
+
   return (
-    <div
-      className="relative -mx-5 -mt-5 h-[190px] overflow-hidden sm:mx-0 sm:mt-0 sm:h-[140px] sm:rounded-sm"
-      aria-hidden="true"
-      style={{
-        boxShadow: "0 0 0 3px #c8a030, 0 0 0 6px #2a1800, 0 0 0 9px #c8a030, 0 8px 32px rgba(0,0,0,0.4)",
-      }}
-    >
+    <div className={`org-plan-card-glow-wrap${isPro ? " is-pro" : ""}`}>
       <div
-        className="absolute inset-0"
-        style={{ background: "linear-gradient(to bottom right, #1e4868 0%, #2a5870 40%, #245858 75%, #1e3c28 100%)" }}
-      />
-      <svg
-        className="absolute inset-0 h-full w-full"
-        viewBox="0 0 900 190"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden="true"
+        className={isPro ? "org-plan-card-pro" : ""}
+        style={{
+          borderRadius: compact ? "12px" : "16px",
+          padding: pad,
+          display: "flex",
+          alignItems: "center",
+          gap: compact ? "10px" : "14px",
+          position: "relative",
+          overflow: "hidden",
+          // background-colorをinline styleで確実に設定
+          // org-plan-card-pro クラスのbackground-imageが上に重なる
+          backgroundColor: isPro ? "#0A0D18" : "#2B3A6B",
+        }}
       >
-        <defs>
-          <pattern id="seigaiha-org-dash" x="0" y="0" width="44" height="25" patternUnits="userSpaceOnUse">
-            <path d="M22 0 Q44 12.5 22 25 Q0 12.5 22 0Z" fill="none" stroke="#80d0e8" strokeWidth="1.1" opacity="0.14"/>
-            <path d="M0 12.5 Q22 25 44 12.5" fill="none" stroke="#80d0e8" strokeWidth="0.6" opacity="0.08"/>
-          </pattern>
-          <pattern id="shippo-org-dash" x="0" y="0" width="26" height="26" patternUnits="userSpaceOnUse">
-            <circle cx="13" cy="13" r="12" fill="none" stroke="#d4b040" strokeWidth="0.5" opacity="0.12"/>
-            <circle cx="0"  cy="0"  r="12" fill="none" stroke="#d4b040" strokeWidth="0.5" opacity="0.12"/>
-            <circle cx="26" cy="0"  r="12" fill="none" stroke="#d4b040" strokeWidth="0.5" opacity="0.12"/>
-            <circle cx="0"  cy="26" r="12" fill="none" stroke="#d4b040" strokeWidth="0.5" opacity="0.12"/>
-            <circle cx="26" cy="26" r="12" fill="none" stroke="#d4b040" strokeWidth="0.5" opacity="0.12"/>
-          </pattern>
-          <radialGradient id="kumo1-org-dash" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"   stopColor="#f0d860" stopOpacity="0.65"/>
-            <stop offset="55%"  stopColor="#d4b040" stopOpacity="0.32"/>
-            <stop offset="100%" stopColor="#d4b040" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id="kumo2-org-dash" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"   stopColor="#ecd050" stopOpacity="0.50"/>
-            <stop offset="55%"  stopColor="#d4b040" stopOpacity="0.24"/>
-            <stop offset="100%" stopColor="#d4b040" stopOpacity="0"/>
-          </radialGradient>
-          <linearGradient id="textOverlay-org-dash" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"   stopColor="#1e4868" stopOpacity="0.97"/>
-            <stop offset="42%"  stopColor="#1e4868" stopOpacity="0.52"/>
-            <stop offset="100%" stopColor="#1e4868" stopOpacity="0"/>
-          </linearGradient>
-        </defs>
+        {/* 装飾円 */}
+        <div style={{ position: "absolute", top: "-24px", right: "-24px", width: "110px", height: "110px", borderRadius: "50%", background: isPro ? "rgba(200,168,75,0.08)" : "rgba(255,255,255,0.06)", pointerEvents: "none" }}/>
+        <div style={{ position: "absolute", bottom: "-32px", left: "30px", width: "90px", height: "90px", borderRadius: "50%", background: "rgba(255,255,255,0.04)", pointerEvents: "none" }}/>
 
-        {/* 青海波・七宝つなぎ */}
-        <rect width="100%" height="100%" fill="url(#seigaiha-org-dash)"/>
-        <rect width="100%" height="100%" fill="url(#shippo-org-dash)"/>
-
-        {/* 月（右上） */}
-        <circle cx="800" cy="38" r="52" fill="#f0e478" opacity="0.20"/>
-        <circle cx="800" cy="38" r="35" fill="#f8ee90" opacity="0.26"/>
-        <circle cx="800" cy="38" r="20" fill="#fef8b0" opacity="0.32"/>
-
-        {/* 金泥雲（上部） */}
-        <ellipse cx="770" cy="25"  rx="170" ry="20" fill="url(#kumo1-org-dash)" opacity="0.85"/>
-        <ellipse cx="820" cy="14"  rx="115" ry="13" fill="url(#kumo1-org-dash)" opacity="0.70"/>
-        <ellipse cx="690" cy="38"  rx="95"  ry="11" fill="url(#kumo2-org-dash)" opacity="0.60"/>
-
-        {/* 金泥雲（下部 cy=bannerHeight-20=170） */}
-        <ellipse cx="620" cy="170" rx="190" ry="22" fill="url(#kumo1-org-dash)" opacity="0.65"/>
-        <ellipse cx="700" cy="178" rx="140" ry="16" fill="url(#kumo1-org-dash)" opacity="0.55"/>
-        <ellipse cx="780" cy="183" rx="110" ry="13" fill="url(#kumo2-org-dash)" opacity="0.50"/>
-        <ellipse cx="510" cy="178" rx="90"  ry="12" fill="url(#kumo2-org-dash)" opacity="0.42"/>
-
-        {/* 大きな松（右側）幹 bannerHeight=190 */}
-        <path d="M840 190 Q838 180 842 140 Q845 100 838 55"
-              stroke="#163010" strokeWidth="9" fill="none" strokeLinecap="round" opacity="0.90"/>
-        <path d="M840 190 Q838 180 842 140 Q845 100 838 55"
-              stroke="#2c5020" strokeWidth="6" fill="none" strokeLinecap="round" opacity="0.65"/>
-
-        {/* 主枝1（左上） */}
-        <path d="M840 110 Q800 90 740 65 Q700 48 660 38"
-              stroke="#1e3c10" strokeWidth="5.5" fill="none" strokeLinecap="round" opacity="0.85"/>
-        <path d="M760 72 Q748 58 738 45" stroke="#1e3c10" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.75"/>
-        <path d="M720 55 Q710 42 702 30" stroke="#1e3c10" strokeWidth="2.0" fill="none" strokeLinecap="round" opacity="0.70"/>
-
-        {/* 主枝2（右上） */}
-        <path d="M840 80 Q870 62 895 42 Q910 30 918 18"
-              stroke="#1e3c10" strokeWidth="4.5" fill="none" strokeLinecap="round" opacity="0.80"/>
-        <path d="M858 68 Q878 52 900 38"
-              stroke="#1e3c10" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.65"/>
-
-        {/* 主枝3（左中段） */}
-        <path d="M840 145 Q795 128 750 118 Q710 110 675 108"
-              stroke="#1e3c10" strokeWidth="4.5" fill="none" strokeLinecap="round" opacity="0.80"/>
-        <path d="M760 120 Q745 108 735 95" stroke="#1e3c10" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.70"/>
-        <path d="M715 112 Q700 100 690 88" stroke="#1e3c10" strokeWidth="2.0" fill="none" strokeLinecap="round" opacity="0.65"/>
-
-        {/* 主枝4（右中段） */}
-        <path d="M842 160 Q875 145 905 132"
-              stroke="#1e3c10" strokeWidth="4.0" fill="none" strokeLinecap="round" opacity="0.75"/>
-
-        {/* 松葉の房 */}
-        <ellipse cx="650" cy="32"  rx="34" ry="15" fill="#285c20" opacity="0.82" transform="rotate(-20 650 32)"/>
-        <ellipse cx="668" cy="22"  rx="28" ry="13" fill="#306228" opacity="0.72" transform="rotate(8 668 22)"/>
-        <ellipse cx="633" cy="25"  rx="24" ry="11" fill="#285c20" opacity="0.68" transform="rotate(-35 633 25)"/>
-        <ellipse cx="697" cy="33"  rx="30" ry="14" fill="#2c6022" opacity="0.75" transform="rotate(-10 697 33)"/>
-        <ellipse cx="730" cy="57"  rx="32" ry="14" fill="#285c20" opacity="0.78" transform="rotate(-15 730 57)"/>
-        <ellipse cx="750" cy="46"  rx="26" ry="12" fill="#306228" opacity="0.68" transform="rotate(12 750 46)"/>
-        <ellipse cx="713" cy="50"  rx="24" ry="11" fill="#285c20" opacity="0.65" transform="rotate(-30 713 50)"/>
-        <ellipse cx="793" cy="68"  rx="28" ry="13" fill="#285c20" opacity="0.72" transform="rotate(-8 793 68)"/>
-        <ellipse cx="810" cy="60"  rx="24" ry="11" fill="#306228" opacity="0.65" transform="rotate(15 810 60)"/>
-        <ellipse cx="902" cy="30"  rx="32" ry="14" fill="#285c20" opacity="0.78" transform="rotate(-25 902 30)"/>
-        <ellipse cx="882" cy="23"  rx="27" ry="12" fill="#2c6022" opacity="0.68" transform="rotate(5 882 23)"/>
-        <ellipse cx="864" cy="53"  rx="30" ry="13" fill="#285c20" opacity="0.72" transform="rotate(-18 864 53)"/>
-        <ellipse cx="670" cy="98"  rx="32" ry="14" fill="#285c20" opacity="0.78" transform="rotate(-12 670 98)"/>
-        <ellipse cx="688" cy="88"  rx="26" ry="12" fill="#306228" opacity="0.68" transform="rotate(10 688 88)"/>
-        <ellipse cx="653" cy="90"  rx="24" ry="11" fill="#285c20" opacity="0.65" transform="rotate(-28 653 90)"/>
-        <ellipse cx="730" cy="106" rx="30" ry="13" fill="#285c20" opacity="0.75" transform="rotate(-8 730 106)"/>
-        <ellipse cx="748" cy="96"  rx="24" ry="11" fill="#306228" opacity="0.65" transform="rotate(14 748 96)"/>
-        <ellipse cx="898" cy="123" rx="28" ry="13" fill="#285c20" opacity="0.72" transform="rotate(-15 898 123)"/>
-        <ellipse cx="880" cy="116" rx="24" ry="11" fill="#2c6022" opacity="0.65" transform="rotate(8 880 116)"/>
-
-        {/* 山シルエット（遠景）bannerHeight=190 */}
-        <path d="M380 165 Q480 122 590 150 Q700 176 820 140 L900 128 L900 190 L380 190Z"
-              fill="#1a3c28" opacity="0.55"/>
-        <path d="M420 180 Q520 162 638 175 Q755 188 870 165 L900 162 L900 190 L420 190Z"
-              fill="#162e1e" opacity="0.50"/>
-
-        {/* 水面（下部 cy=bannerHeight-10=180） */}
-        <path d="M460 178 Q530 168 600 178 Q670 186 745 174 Q820 162 900 174 L900 190 L460 190Z"
-              fill="#203848" opacity="0.65"/>
-        <ellipse cx="680" cy="184" rx="88" ry="8" fill="none" stroke="#80d0e8" strokeWidth="0.9" opacity="0.25"/>
-        <ellipse cx="680" cy="184" rx="60" ry="5" fill="none" stroke="#80d0e8" strokeWidth="0.6" opacity="0.18"/>
-
-        {/* 家紋（左上・金） */}
-        <circle cx="385" cy="30" r="22" fill="none" stroke="#d4b040" strokeWidth="1.0" opacity="0.55"/>
-        <circle cx="385" cy="30" r="14" fill="none" stroke="#d4b040" strokeWidth="0.7" opacity="0.45"/>
-        <path d="M385 8 L385 52 M363 30 L407 30 M370 15 L400 45 M400 15 L370 45"
-              stroke="#d4b040" strokeWidth="0.55" opacity="0.38"/>
-        <circle cx="385" cy="30" r="4" fill="#d4b040" opacity="0.48"/>
-
-        {/* テキスト側グラデーションオーバーレイ */}
-        <rect width="100%" height="100%" fill="url(#textOverlay-org-dash)"/>
-
-        {/* 屏風の折り目（中央縦線） */}
-        <line x1="450" y1="0" x2="450" y2="100%" stroke="#d4b040" strokeWidth="1.2" opacity="0.22"/>
-
-        {/* 金の縁ライン（上下）bannerHeight-3=187 */}
-        <rect x="0" y="0"   width="100%" height="3" fill="#d4b040" opacity="0.88"/>
-        <rect x="0" y="187" width="100%" height="3" fill="#d4b040" opacity="0.68"/>
-      </svg>
-
-      <div className="absolute bottom-5 left-5">
-        <p className="text-[9px] font-medium tracking-[0.25em]" style={{ color: "#d4b040" }}>ORGANIZER</p>
-        <h1
-          className="mt-0.5 font-semibold leading-snug tracking-[0.05em] [text-shadow:0_2px_14px_rgba(0,0,0,0.45)]"
-          style={{
-            fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif",
-            fontSize: "22px",
-            color: "#f0f6fa",
-          }}
-        >
-          MachiGlyph 主催者管理
-        </h1>
-      </div>
-    </div>
-  );
-}
-
-// ── Organization avatar row ───────────────────────────────────────────────────
-function OrgAvatar({ name }: { name?: string }) {
-  const initial = name?.[0] ?? "M";
-  return (
-    <div className="flex items-center justify-between py-4">
-      <div className="flex items-center gap-3">
-        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#a8c8a4] bg-[#1e3020]">
-          <svg className="absolute inset-0 h-full w-full opacity-[0.18]" viewBox="0 0 48 48">
-            <circle cx="24" cy="24" r="22" fill="none" stroke="white" strokeWidth="0.8" />
-            <circle cx="24" cy="24" r="14" fill="none" stroke="white" strokeWidth="0.5" />
-            <line x1="2" y1="24" x2="46" y2="24" stroke="white" strokeWidth="0.5" />
-            <line x1="24" y1="2" x2="24" y2="46" stroke="white" strokeWidth="0.5" />
-          </svg>
-          <span className="relative z-10 font-serif text-lg font-bold text-white">{initial}</span>
-        </div>
-        <div>
-          <p className="text-[15px] font-semibold text-[#0e1610]">{name ?? "MachiGlyph"}</p>
-          <p className="text-[11px] text-[#6a6258]">主催者アカウント</p>
-        </div>
-      </div>
-      <Link
-        href="/organizer/settings"
-        className="flex min-h-[34px] items-center gap-1 rounded-full border border-[#ccc4b4] bg-[#faf8f2] px-3 py-1.5 text-[12px] font-medium text-[#2c7a88] transition hover:bg-[#eef6f2]"
-      >
-        <Settings className="h-3 w-3" aria-hidden />
-        設定
-      </Link>
-    </div>
-  );
-}
-
-// ── Eyebrow section divider ───────────────────────────────────────────────────
-function Eyebrow({ label }: { label: string }) {
-  return (
-    <div className="my-5 flex items-center gap-3" role="separator" aria-label={label}>
-      <div className="h-[0.5px] flex-1 bg-[#c0b8a8] opacity-60" />
-      <span className="font-serif text-[10px] tracking-[0.18em] text-[#5a5448]">{label}</span>
-      <div className="h-[0.5px] flex-1 bg-[#c0b8a8] opacity-60" />
-    </div>
-  );
-}
-
-// ── Plan card with Japanese design ───────────────────────────────────────────
-function PlanCard({ planSummary }: { planSummary: PlanSummary }) {
-  const founderActive = planSummary.publishLimit !== null && planSummary.publishLimit > 1;
-  const normalSlotsUsed = Math.min(planSummary.monthlyPublished, 1);
-  const founderSlotsUsed = founderActive ? Math.max(0, planSummary.monthlyPublished - 1) : 0;
-  const normalPct = Math.round(normalSlotsUsed * 100);
-  const founderPct = founderActive ? Math.round((founderSlotsUsed / 3) * 100) : 0;
-
-  return (
-    <section
-      className="overflow-hidden rounded-[14px] border border-[#c8c0b0]"
-      aria-labelledby="plan-card-heading"
-    >
-      {/* Header with 七宝つなぎ pattern */}
-      <div
-        className="relative overflow-hidden px-4 py-4"
-        style={{ background: "linear-gradient(135deg, #3f6c57 0%, #4b775f 55%, #416d58 100%)" }}
-      >
-        <svg
-          className="absolute inset-0 h-full w-full"
-          preserveAspectRatio="xMidYMid slice"
-          aria-hidden="true"
-        >
-          <defs>
-            <pattern
-              id="org-shippou"
-              x="0"
-              y="0"
-              width="20"
-              height="20"
-              patternUnits="userSpaceOnUse"
-            >
-              <circle cx="10" cy="10" r="10" fill="none" stroke="#d6e6dc" strokeWidth="0.8" />
-              <circle cx="0" cy="0" r="10" fill="none" stroke="#d6e6dc" strokeWidth="0.8" />
-              <circle cx="20" cy="0" r="10" fill="none" stroke="#d6e6dc" strokeWidth="0.8" />
-              <circle cx="0" cy="20" r="10" fill="none" stroke="#d6e6dc" strokeWidth="0.8" />
-              <circle cx="20" cy="20" r="10" fill="none" stroke="#d6e6dc" strokeWidth="0.8" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#org-shippou)" opacity="0.2" />
-        </svg>
-        {/* 家紋風円紋 right */}
-        <svg
-          className="absolute right-3 top-1/2 h-14 w-14 -translate-y-1/2 opacity-[0.3]"
-          viewBox="0 0 56 56"
-          aria-hidden="true"
-        >
-          <circle cx="28" cy="28" r="26" fill="none" stroke="#dcebe2" strokeWidth="1.2" />
-          <circle cx="28" cy="28" r="17" fill="none" stroke="#dcebe2" strokeWidth="0.8" />
-          <line x1="2" y1="28" x2="54" y2="28" stroke="#dcebe2" strokeWidth="0.8" />
-          <line x1="28" y1="2" x2="28" y2="54" stroke="#dcebe2" strokeWidth="0.8" />
-        </svg>
-        {/* Badges */}
-        <div className="relative flex flex-wrap gap-2">
-          <span
-            id="plan-card-heading"
-            className="inline-flex items-center rounded-full border border-[#a8ccbc] bg-[#d8ece4] px-3 py-[5px] text-[11px] font-medium text-[#1a3428]"
-          >
-            プラン・公開枠
-          </span>
-          {planSummary.isFreePlan ? (
-            <span className="inline-flex items-center rounded-full border border-[#88b8c8] bg-[#c8e4ec] px-3 py-[5px] text-[11px] font-medium text-[#0e2c38]">
-              無料プラン利用中
-            </span>
-          ) : (
-            <span className="inline-flex items-center rounded-full border border-[#a8ccbc] bg-[#d8ece4] px-3 py-[5px] text-[11px] font-medium text-[#1a3428]">
-              Starterプラン
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Card body */}
-      <div className="bg-[#faf8f2] p-4">
-        {planSummary.publishLimit !== null ? (
-          <>
-            <div className={`grid gap-3 ${founderActive ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
-              {/* 毎月の公開枠 */}
-              <div className="rounded-xl border border-[#b8d0c8] bg-[#eef6f2] p-3">
-                <p className="text-[11px] text-[#6a6258]">毎月の公開枠</p>
-                <p className="mt-1 font-serif text-[22px] font-bold leading-none text-[#1e3020]">
-                  {normalSlotsUsed}
-                  <span className="text-[13px] font-normal text-[#6a6258]">/1</span>
-                </p>
-                <div className="mt-2">
-                  <p className="mb-1 text-[9px] text-[#7a9890]">使用率 {normalPct}%</p>
-                  <div
-                    className="h-[5px] overflow-hidden rounded-full bg-[#c0dcd6]"
-                    role="progressbar"
-                    aria-valuenow={normalSlotsUsed}
-                    aria-valuemin={0}
-                    aria-valuemax={1}
-                    aria-label="毎月の公開枠使用率"
-                  >
-                    <div
-                      className="h-full rounded-full bg-[#2c7a88] transition-all"
-                      style={{ width: `${normalPct}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 特典の公開枠 */}
-              {founderActive && (
-                <div className="rounded-xl border border-[#b8d0c8] bg-[#eef6f2] p-3">
-                  <p className="text-[11px] text-[#6a6258]">特典の公開枠</p>
-                  <p className="mt-1 font-serif text-[22px] font-bold leading-none text-[#1e3020]">
-                    {founderSlotsUsed}
-                    <span className="text-[13px] font-normal text-[#6a6258]">/3</span>
-                  </p>
-                  <div className="mt-2">
-                    <p className="mb-1 text-[9px] text-[#7a9890]">使用率 {founderPct}%</p>
-                    <div
-                      className="h-[5px] overflow-hidden rounded-full bg-[#c0dcd6]"
-                      role="progressbar"
-                      aria-valuenow={founderSlotsUsed}
-                      aria-valuemin={0}
-                      aria-valuemax={3}
-                      aria-label="特典の公開枠使用率"
-                    >
-                      <div
-                        className="h-full rounded-full bg-[#2c7a88] transition-all"
-                        style={{ width: `${founderPct}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 今月公開できる件数 */}
-            <div className="mt-3 flex items-center justify-between rounded-lg bg-[#f4f0e8] px-3 py-2.5">
-              <span className="text-[12px] text-[#3a3428]">今月公開できる件数</span>
-              <span className="text-[12px] font-semibold text-[#1e3020]">
-                最大{planSummary.publishLimit}件
-              </span>
-            </div>
-          </>
-        ) : (
-          <div className="rounded-xl border border-[#b8d0c8] bg-[#eef6f2] p-3">
-            <p className="text-[11px] text-[#6a6258]">公開枠</p>
-            <p className="mt-1 font-serif text-[22px] font-bold text-[#1e3020]">無制限</p>
+        {/* PROバッジ */}
+        {isPro && (
+          <div style={{
+            position: "absolute", top: 0, right: 0,
+            fontSize: "9px", fontWeight: 800,
+            padding: "4px 14px", letterSpacing: "0.12em",
+            borderRadius: "0 14px 0 12px",
+            background: "linear-gradient(90deg, #c8a84b, #f0d060, #c8a84b)",
+            backgroundSize: "200% auto",
+            animation: "org-badge-shimmer 1.8s linear infinite, org-badge-glow 2.2s ease-in-out infinite",
+            color: "#0A0D18",
+          }}>
+            PRO
           </div>
         )}
 
-        {/* 売上受取設定インフォ帯 */}
-        <div className="mt-3 flex items-center justify-between rounded-lg border border-[#ccc4b4] bg-[#f4f0e8] px-3 py-2.5">
-          <span className="text-[12px] text-[#3a3428]">売上受取設定（Stripe）</span>
-          <Link
-            href="/organizer/settings/payouts"
-            className="text-[12px] font-medium text-[#2c7a88] underline-offset-2 hover:underline"
+        {/* ロゴ */}
+        <div style={{
+          width: logoSize, height: logoSize, borderRadius: compact ? "10px" : "13px",
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          background: isPro ? "rgba(200,168,75,0.15)" : "rgba(255,255,255,0.15)",
+          border: isPro ? "1px solid rgba(200,168,75,0.4)" : "none",
+        }}>
+          <PlanLogo isPro={isPro} size={compact ? 24 : 30}/>
+        </div>
+
+        {/* テキスト */}
+        <div style={{ flex: 1, zIndex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: "9px", fontWeight: 600, letterSpacing: "0.06em", color: isPro ? "#c8a84b" : "rgba(255,255,255,0.6)" }}>
+            現在のプラン
+          </div>
+          <div style={{ fontSize: planTitleSize, fontWeight: 700, color: "#fff", marginTop: "1px", letterSpacing: "0.01em", lineHeight: 1.2 }}>
+            {isPro ? "Pro" : "Starter"}
+          </div>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: "4px",
+            marginTop: compact ? "4px" : "6px", padding: "2px 8px", borderRadius: "20px",
+            fontSize: "9px",
+            background: isPro ? "rgba(200,168,75,0.12)" : "rgba(255,255,255,0.14)",
+            color: isPro ? "#e8c96a" : "rgba(255,255,255,0.85)",
+            border: isPro ? "0.5px solid rgba(200,168,75,0.4)" : "none",
+          }}>
+            {isPro ? "公開枠 無制限" : starterMeta}
+          </div>
+        </div>
+
+        {/* ボタン */}
+        <div style={{ display: "flex", flexDirection: compact ? "row" : "column", gap: compact ? "5px" : "6px", flexShrink: 0, zIndex: 1 }}>
+          <button
+            type="button"
+            onClick={onChangePlan}
+            style={{
+              borderRadius: "10px", padding: compact ? "6px 10px" : "7px 13px",
+              fontSize: "10px", fontWeight: 700,
+              border: "none", fontFamily: "inherit", cursor: "pointer",
+              background: isPro
+                ? "linear-gradient(90deg, #c8a84b, #f0d060, #c8a84b)"
+                : "#c8a84b",
+              backgroundSize: isPro ? "200% auto" : "auto",
+              animation: isPro ? "org-badge-shimmer 2s linear infinite" : "none",
+              color: isPro ? "#0D1020" : "#1A3A2A",
+            }}
           >
-            設定へ →
+            {isPro ? "プランを変更" : "Proにアップグレード"}
+          </button>
+          <Link
+            href="/organizer/settings/plan"
+            style={{
+              borderRadius: "10px", padding: compact ? "6px 10px" : "7px 13px",
+              fontSize: "10px", fontWeight: 700,
+              background: "rgba(255,255,255,0.12)", color: "#fff",
+              textAlign: "center", whiteSpace: "nowrap", textDecoration: "none",
+            }}
+          >
+            {compact ? "詳細" : "詳細を見る"}
           </Link>
         </div>
       </div>
-    </section>
-  );
-}
-
-// ── CTA button ────────────────────────────────────────────────────────────────
-function PlanCtaButton({ isFreePlan }: { isFreePlan: boolean }) {
-  return (
-    <div className="mt-4">
-      <Link
-        href="/organizer/settings/plan"
-        className="relative flex min-h-[56px] w-full items-center justify-between overflow-hidden rounded-[12px] px-5 transition hover:opacity-90"
-        style={{ background: "#1e3848" }}
-        aria-label={isFreePlan ? "プランをアップグレードする" : "プランを管理する"}
-      >
-        {/* 波紋装飾 */}
-        <svg
-          className="absolute right-14 top-0 h-full w-24 opacity-[0.07]"
-          viewBox="0 0 96 56"
-          aria-hidden="true"
-        >
-          <circle cx="48" cy="28" r="20" fill="none" stroke="white" strokeWidth="1.2" />
-          <circle cx="48" cy="28" r="34" fill="none" stroke="white" strokeWidth="1" />
-          <circle cx="48" cy="28" r="48" fill="none" stroke="white" strokeWidth="0.8" />
-        </svg>
-        <span className="relative font-serif text-[16px] text-[#e8f4f8]">
-          {isFreePlan ? "プランを変更する" : "プランを管理する"}
-        </span>
-        <span
-          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-          style={{ background: "rgba(255,255,255,0.18)" }}
-          aria-hidden
-        >
-          <ChevronRight className="h-4 w-4 text-white" />
-        </span>
-      </Link>
-      {isFreePlan && (
-        <p className="mt-2 px-1 text-[11px] text-[#6a6258]">
-          Starterプランにアップグレードすると公開枠が無制限になります
-        </p>
-      )}
     </div>
   );
 }
 
-// ── Main Dashboard ────────────────────────────────────────────────────────────
+// ── プラン変更モーダル ─────────────────────────────────────────────────────────
+function PlanModal({ onClose }: { onClose: () => void }) {
+  const [selected, setSelected] = useState<"starter" | "pro">("starter");
+
+  const starterBorder = selected === "starter" ? "2px solid #2B3A6B" : "2px solid #e8e6e0";
+  const starterBg = selected === "starter" ? "#f0f4ff" : "#fff";
+  const proBorder = selected === "pro" ? "2px solid #c8a84b" : "2px solid #e8e6e0";
+  const proBg = selected === "pro" ? "#fffbf0" : "#fff";
+  const confirmBg = selected === "pro" ? "#c8a84b" : "#2B3A6B";
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 200,
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "20px 20px 0 0",
+          padding: "24px 20px 36px",
+          width: "100%",
+          maxWidth: "480px",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <div style={{ fontSize: "16px", fontWeight: 500, color: "#1a1a1a" }}>プランを選択</div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: "#F3F2EF", border: "none",
+              width: "30px", height: "30px", borderRadius: "50%",
+              fontSize: "16px", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >✕</button>
+        </div>
+
+        {/* Starterカード */}
+        <div
+          onClick={() => setSelected("starter")}
+          style={{
+            borderRadius: "12px", border: starterBorder,
+            padding: "14px 16px", marginBottom: "10px",
+            cursor: "pointer", transition: "all 0.2s",
+            background: starterBg,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <PlanLogo isPro={false} size={22}/>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "15px", fontWeight: 500, color: "#1a1a1a" }}>
+                Starter <span style={{ fontSize: "11px", fontWeight: 400, color: "#999" }}>無料</span>
+              </div>
+              <div style={{ fontSize: "11px", color: "#888", marginTop: "2px" }}>公開枠 1件/月</div>
+            </div>
+            <div style={{
+              width: "22px", height: "22px", borderRadius: "50%",
+              border: selected === "starter" ? "2px solid #2B3A6B" : "2px solid #ddd",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              background: selected === "starter" ? "#2B3A6B" : "transparent",
+            }}>
+              {selected === "starter" && (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Proカード */}
+        <div
+          onClick={() => setSelected("pro")}
+          style={{
+            borderRadius: "12px", border: proBorder,
+            padding: "14px 16px", cursor: "pointer", transition: "all 0.2s",
+            background: proBg, position: "relative", overflow: "hidden",
+          }}
+        >
+          <div style={{ position: "absolute", top: 0, right: 0, background: "#c8a84b", color: "#0A0D18", fontSize: "9px", fontWeight: 700, padding: "3px 12px", borderRadius: "0 10px 0 10px", letterSpacing: "0.08em" }}>おすすめ</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: "rgba(200,168,75,0.15)", border: "1px solid rgba(200,168,75,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <PlanLogo isPro={true} size={22}/>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "15px", fontWeight: 500, color: "#1a1a1a" }}>
+                Pro <span style={{ fontSize: "11px", fontWeight: 400, color: "#999" }}>有料</span>
+              </div>
+              <div style={{ fontSize: "11px", color: "#888", marginTop: "2px" }}>公開枠 無制限・優先サポート</div>
+            </div>
+            <div style={{
+              width: "22px", height: "22px", borderRadius: "50%",
+              border: selected === "pro" ? "2px solid #c8a84b" : "2px solid #ddd",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              background: selected === "pro" ? "#c8a84b" : "transparent",
+            }}>
+              {selected === "pro" && (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <Link
+          href="/organizer/settings/plan"
+          style={{
+            marginTop: "16px", display: "block", width: "100%",
+            background: confirmBg, color: "#fff",
+            border: "none", borderRadius: "12px",
+            padding: "14px", fontSize: "14px", fontWeight: 500,
+            fontFamily: "inherit", cursor: "pointer",
+            textAlign: "center", textDecoration: "none",
+            transition: "background 0.2s",
+          }}
+        >
+          このプランに変更する
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ── フォーマット ──────────────────────────────────────────────────────────────
+function formatDate(dateStr: string) {
+  try {
+    const d = new Date(dateStr + "T12:00:00");
+    const month = d.toLocaleDateString("ja-JP", { month: "short" });
+    const day = d.getDate();
+    return { day: String(day), month };
+  } catch {
+    return { day: dateStr, month: "" };
+  }
+}
+
+// ── メインダッシュボード ──────────────────────────────────────────────────────
 export default function OrganizerDashboardClient() {
   const [kpis, setKpis] = useState<DashboardKpis>({
     hosting: 0,
     needsAction: 0,
     pendingApplications: 0,
     unreadMessages: 0,
+    recruitingPublic: 0,
   });
-  const [todos, setTodos] = useState<DashboardTodo[]>([]);
   const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
   const [planSummary, setPlanSummary] = useState<PlanSummary | null>(null);
-  const [organizationName, setOrganizationName] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
+  const [showPlanModal, setShowPlanModal] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     (async () => {
       try {
-        const res = await fetch("/api/organizer/dashboard");
-        if (!res.ok || cancelled) return;
+        const res = await fetch("/api/organizer/dashboard", { signal: controller.signal });
+        if (!res.ok) return;
         const data = await res.json();
         setKpis(data.kpis ?? kpis);
-        setTodos(data.todos ?? []);
         setEvents(data.events ?? []);
         setBillingSummary(data.billingSummary ?? null);
         setPlanSummary(data.planSummary ?? null);
-        setOrganizationName(data.organizationName);
-      } catch {
-        if (!cancelled) {
-          setKpis({ hosting: 0, needsAction: 0, pendingApplications: 0, unreadMessages: 0 });
-          setTodos([]);
-          setEvents([]);
-          setBillingSummary(null);
-          setPlanSummary(null);
-        }
+      } catch (e) {
+        if ((e as { name?: string })?.name === "AbortError") return;
+        setKpis({ hosting: 0, needsAction: 0, pendingApplications: 0, unreadMessages: 0, recruitingPublic: 0 });
+        setEvents([]);
+        setBillingSummary(null);
+        setPlanSummary(null);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => { controller.abort(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const summary = useMemo(() => {
-    const draftCount = events.filter((e) => e.status === "draft").length;
-    const endedCount = events.filter((e) => e.status === "ended").length;
-    return {
-      total: events.length,
-      public: kpis.hosting,
-      draft: draftCount,
-      ended: endedCount,
-      needsAction: kpis.needsAction,
-    };
-  }, [events, kpis.hosting, kpis.needsAction]);
+  const isPro = planSummary ? !planSummary.isFreePlan : false;
 
   const recentEvents = useMemo(() => [...events].slice(0, RECENT_LIMIT), [events]);
+  const draftCount = useMemo(() => events.filter((e) => e.status === "draft").length, [events]);
+  /** ダッシュボード取得後のみ。未設定なら参加費・協賛の受取に Stripe 連携が必要 */
+  const payoutSetupIncomplete =
+    billingSummary != null && billingSummary.paymentSetupStatus !== "ok";
+  const showFirstPublishHint = kpis.hosting === 0;
+
+  const insightItems: { key: string; node: ReactNode }[] = [];
+  if (!isPro) {
+    insightItems.push({
+      key: "pro",
+      node: (
+        <button
+          type="button"
+          onClick={() => setShowPlanModal(true)}
+          className="flex w-full items-center gap-2 rounded-[10px] bg-white px-3 py-2 text-left shadow-[0_1px_6px_rgba(0,0,0,0.05)] transition-opacity active:opacity-85 min-[900px]:gap-3 min-[900px]:rounded-[12px] min-[900px]:px-3.5 min-[900px]:py-3"
+          style={{ border: "0.5px solid #e8e6e0" }}
+        >
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full min-[900px]:h-2 min-[900px]:w-2" style={{ background: "#E8853A" }} />
+          <span className="min-w-0 flex-1 text-[11px] leading-snug min-[900px]:text-[12px]" style={{ color: "#333" }}>
+            Proで公開枠が無制限になります
+          </span>
+          <span className="shrink-0 text-[#bbb]" aria-hidden>›</span>
+        </button>
+      ),
+    });
+  }
+  if (payoutSetupIncomplete) {
+    insightItems.push({
+      key: "payout",
+      node: (
+        <Link
+          href="/organizer/settings/payouts"
+          className="flex items-center gap-2 rounded-[10px] bg-white px-3 py-2 shadow-[0_1px_6px_rgba(0,0,0,0.05)] transition-opacity active:opacity-85 min-[900px]:gap-3 min-[900px]:rounded-[12px] min-[900px]:px-3.5 min-[900px]:py-3"
+          style={{ border: "0.5px solid #e8e6e0" }}
+        >
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full min-[900px]:h-2 min-[900px]:w-2" style={{ background: "#E8708A" }} />
+          <span className="min-w-0 flex-1 text-[11px] font-medium leading-snug min-[900px]:text-[12px]" style={{ color: "#333" }}>
+            Stripeの売上受取設定が未完了です
+          </span>
+          <span className="shrink-0 text-[#bbb]" aria-hidden>›</span>
+        </Link>
+      ),
+    });
+  }
+  if (showFirstPublishHint) {
+    insightItems.push({
+      key: "first",
+      node: (
+        <Link
+          href="/organizer/events/new"
+          className="flex items-center gap-2 rounded-[10px] bg-white px-3 py-2 shadow-[0_1px_6px_rgba(0,0,0,0.05)] transition-opacity active:opacity-85 min-[900px]:gap-3 min-[900px]:rounded-[12px] min-[900px]:px-3.5 min-[900px]:py-3"
+          style={{ border: "0.5px solid #e8e6e0" }}
+        >
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full min-[900px]:h-2 min-[900px]:w-2" style={{ background: "#6BBF3E" }} />
+          <span className="min-w-0 flex-1 text-[11px] leading-snug min-[900px]:text-[12px]" style={{ color: "#333" }}>
+            最初のイベントを作成して公開しましょう
+          </span>
+          <span className="shrink-0 text-[#bbb]" aria-hidden>›</span>
+        </Link>
+      ),
+    });
+  }
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="-mx-5 -mt-5 h-[190px] animate-pulse bg-[#dde8db] sm:mx-0 sm:mt-0 sm:rounded-2xl" />
-        <div className="h-16 animate-pulse rounded-2xl bg-[#eef6f2]" />
-        <div className="h-[220px] animate-pulse rounded-[14px] bg-[#eef6f2]" />
-        <div className="h-14 animate-pulse rounded-[12px] bg-[#d8ece4]" />
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-2xl bg-slate-200/80" />
-          ))}
+      <OrganizerPageShell variant="hero" contentClassName="space-y-2 min-[900px]:space-y-2.5">
+        <OrganizerHeroBleed>
+          <div className={organizerHeroDenseSkeletonClass} />
+        </OrganizerHeroBleed>
+        <div className="mx-auto w-full max-w-2xl min-[900px]:max-w-5xl space-y-2 pt-1 min-[900px]:space-y-3">
+          <div className="h-[72px] animate-pulse rounded-[12px] bg-[#d8e4e0] min-[900px]:h-[90px] min-[900px]:rounded-[16px]" />
+          <div className="grid grid-cols-2 gap-1.5 min-[900px]:grid-cols-4 min-[900px]:gap-2">
+            <div className="h-[52px] animate-pulse rounded-[10px] bg-[#d8e4e0] min-[900px]:h-[68px]" />
+            <div className="h-[52px] animate-pulse rounded-[10px] bg-[#d8e4e0] min-[900px]:h-[68px]" />
+            <div className="h-[52px] animate-pulse rounded-[10px] bg-[#d8e4e0] min-[900px]:h-[68px]" />
+            <div className="h-[52px] animate-pulse rounded-[10px] bg-[#d8e4e0] min-[900px]:h-[68px]" />
+          </div>
         </div>
-      </div>
+      </OrganizerPageShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl pb-8">
-      {/* Hero banner */}
-      <OrganizerHeroBanner />
+    <OrganizerPageShell variant="hero" contentClassName="space-y-2 pb-16 sm:pb-8 min-[900px]:space-y-2.5 min-[900px]:pb-8">
+      <OrganizerHeroBleed>
+        <OrganizerManagementHeroBanner
+          compact
+          dense
+          labelEn="ORGANIZER"
+          titleJa="主催者ダッシュボード"
+          subtitleJa="― ダッシュボード ―"
+        />
+      </OrganizerHeroBleed>
 
-      {/* Organization info */}
-      <OrgAvatar name={organizationName} />
+      <div className="mx-auto w-full max-w-2xl min-[900px]:max-w-5xl space-y-2 pt-2 min-[900px]:space-y-3 min-[900px]:pt-3">
+        {/* プランカード */}
+        {planSummary && (
+          <PlanCard
+            planSummary={planSummary}
+            onChangePlan={() => setShowPlanModal(true)}
+            compact
+          />
+        )}
 
-      {/* Plan card */}
-      {planSummary && <PlanCard planSummary={planSummary} />}
+        {/* 注目・未完了（モバイルは1ブロックにまとめる） */}
+        {insightItems.length > 0 && (
+          <div className={insightItems.length > 1 ? "space-y-1.5 min-[900px]:space-y-2" : ""}>
+            {insightItems.map((item) => (
+              <div key={item.key}>{item.node}</div>
+            ))}
+          </div>
+        )}
 
-      {/* CTA */}
-      {planSummary && <PlanCtaButton isFreePlan={planSummary.isFreePlan} />}
+        {/* KPI + イベント作成（モバイルは1行に統合） */}
+        <div className="grid grid-cols-2 gap-1.5 min-[900px]:grid-cols-4 min-[900px]:gap-2">
+          <div
+            className="rounded-[10px] px-3 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)] min-[900px]:px-3.5 min-[900px]:py-3"
+            style={{ background: "#fff", border: "0.5px solid #e8e6e0" }}
+          >
+            <div className="text-[16px] font-semibold leading-none min-[900px]:text-[22px]" style={{ color: "#2B3A6B" }}>{kpis.hosting}</div>
+            <div className="mt-0.5 text-[9px] leading-tight min-[900px]:mt-1 min-[900px]:text-[10px]" style={{ color: "#999" }}>
+              <span className="min-[900px]:hidden">公開中</span>
+              <span className="hidden min-[900px]:inline">公開中イベント</span>
+            </div>
+          </div>
+          <div
+            className="rounded-[10px] px-3 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)] min-[900px]:px-3.5 min-[900px]:py-3"
+            style={{ background: "#fff", border: "0.5px solid #e8e6e0" }}
+          >
+            <div className="text-[16px] font-semibold leading-none min-[900px]:text-[22px]" style={{ color: "#b0b0b0" }}>{draftCount}</div>
+            <div className="mt-0.5 text-[9px] min-[900px]:mt-1 min-[900px]:text-[10px]" style={{ color: "#999" }}>下書き</div>
+          </div>
+          <div
+            className="rounded-[10px] px-3 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)] min-[900px]:px-3.5 min-[900px]:py-3"
+            style={{ background: "#fff", border: "0.5px solid #e8e6e0" }}
+          >
+            <div className="text-[16px] font-semibold leading-none min-[900px]:text-[22px]" style={{ color: "#b0b0b0" }}>{kpis.recruitingPublic}</div>
+            <div className="mt-0.5 text-[9px] leading-tight min-[900px]:mt-1 min-[900px]:text-[10px]" style={{ color: "#999" }}>
+              ボランティア募集中
+            </div>
+          </div>
+          <Link
+            href="/organizer/inbox"
+            className="block rounded-[10px] px-3 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-opacity active:opacity-85 min-[900px]:px-3.5 min-[900px]:py-3"
+            style={{ background: "#fff", border: "0.5px solid #e8e6e0" }}
+          >
+            <div className="text-[16px] font-semibold leading-none min-[900px]:text-[22px]" style={{ color: "#E8708A" }}>{kpis.unreadMessages}</div>
+            <div className="mt-0.5 text-[9px] leading-tight min-[900px]:mt-1 min-[900px]:text-[10px]" style={{ color: "#999" }}>
+              受信箱 未読
+            </div>
+          </Link>
+        </div>
 
-      {/* ── イベント管理セクション ─────────────────────────── */}
-      <Eyebrow label="イベント管理" />
-
-      {/* Quick action buttons */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Link
           href="/organizer/events/new"
-          className="inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-3 text-[15px] font-semibold text-white shadow-sm transition hover:opacity-90 sm:min-h-0 sm:w-auto sm:py-2.5 sm:text-sm sm:font-medium"
+          className="flex w-full items-center justify-center gap-2 rounded-[10px] px-3 py-2.5 text-[13px] font-medium text-white shadow-[0_2px_8px_rgba(74,140,45,0.28)] transition-opacity active:opacity-85 min-[900px]:justify-start min-[900px]:gap-3 min-[900px]:rounded-[12px] min-[900px]:px-4 min-[900px]:py-3 min-[900px]:text-[14px]"
+          style={{ background: "#6BBF3E" }}
+          aria-label="新しいイベントを作成"
         >
-          <CalendarPlus className="h-4 w-4 shrink-0" aria-hidden />
-          新しいイベントを作成
+          <svg className="shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+            <line x1="12" y1="14" x2="12" y2="18"/>
+            <line x1="10" y1="16" x2="14" y2="16"/>
+          </svg>
+          <span>新しいイベントを作成</span>
+          <svg className="hidden shrink-0 min-[900px]:block" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={2.5} strokeLinecap="round" aria-hidden>
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
         </Link>
-        <Link
-          href="/organizer/recruitments/new"
-          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 sm:min-h-0 sm:w-auto"
-        >
-          <Users className="h-4 w-4 shrink-0" aria-hidden />
-          スタッフ募集を作成
-        </Link>
-        <Link
-          href="/organizer/articles/new"
-          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 sm:min-h-0 sm:w-auto"
-        >
-          <FileText className="h-4 w-4 shrink-0" aria-hidden />
-          記事を作成
-        </Link>
-      </div>
 
-      {/* KPI stats grid */}
-      <section className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="イベント統計">
-        <div className="rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] px-4 py-4 shadow-sm">
-          <p className="font-serif text-2xl font-bold text-[#1e3020]">{summary.total}</p>
-          <p className="mt-1 text-xs text-[#6a6258]">全イベント</p>
-        </div>
-        <div className="rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] px-4 py-4 shadow-sm">
-          <p className="font-serif text-2xl font-bold text-emerald-700">{summary.public}</p>
-          <p className="mt-1 text-xs text-[#6a6258]">公開中</p>
-        </div>
-        <div className="rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] px-4 py-4 shadow-sm">
-          <p className="font-serif text-2xl font-bold text-[#1e3020]">{summary.draft}</p>
-          <p className="mt-1 text-xs text-[#6a6258]">下書き</p>
-        </div>
-        <div className="rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] px-4 py-4 shadow-sm">
-          <p className="font-serif text-2xl font-bold text-[#1e3020]">{summary.needsAction}</p>
-          <p className="mt-1 text-xs text-[#6a6258]">要対応</p>
-        </div>
-      </section>
-
-      {/* Todos */}
-      {todos.length > 0 && (
-        <section className="mt-4 rounded-2xl border border-amber-200/80 bg-amber-50/50 px-4 py-4 sm:px-5">
-          <h2 className="text-sm font-semibold text-amber-900">今やること</h2>
-          <ul className="mt-3 space-y-2">
-            {todos.slice(0, 5).map((todo) => (
-              <li key={todo.id}>
-                <Link
-                  href={todo.href}
-                  className="flex items-center justify-between gap-2 rounded-xl py-2 text-sm text-amber-900 transition hover:bg-amber-100/80"
-                >
-                  <span className="min-w-0 flex-1 truncate">{todo.title}</span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-amber-600" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* ── 最近のイベント ─────────────────────────────────── */}
-      <Eyebrow label="最近のイベント" />
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <section className="rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] shadow-sm lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-[#e8e4dc] px-4 py-3 sm:px-5">
-            <h2 className="text-base font-semibold text-[#1e3020]">最近のイベント</h2>
-            <Link
-              href="/organizer/events"
-              className="text-sm font-medium text-[#2c7a88] hover:underline"
-            >
-              すべて見る
-            </Link>
+        <div className="grid gap-2 min-[900px]:grid-cols-2 min-[900px]:gap-4 min-[900px]:items-stretch">
+        {/* 最近のイベント */}
+        <div className="overflow-hidden rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-col min-[900px]:rounded-[12px]" style={{ background: "#fff", border: "0.5px solid #e8e6e0" }}>
+          <div className="flex items-center justify-between px-3 py-2 min-[900px]:px-3.5 min-[900px]:py-2.5" style={{ borderBottom: "0.5px solid #e8e6e0" }}>
+            <div className="text-[11px] font-medium" style={{ color: "#1a1a1a" }}>最近のイベント</div>
+            <Link href="/organizer/events" className="text-[10px]" style={{ color: "#2B3A6B", opacity: 0.7 }}>すべて見る →</Link>
           </div>
-          <div className="divide-y divide-[#e8e4dc]">
-            {recentEvents.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
-                <CalendarDays className="h-10 w-10 text-[#a8a090]" aria-hidden />
-                <p className="mt-3 text-sm font-medium text-[#3a3428]">
-                  まだイベントがありません
-                </p>
-                <p className="mt-1 text-xs text-[#6a6258]">
-                  最初のイベントを作成してみましょう
-                </p>
-                <Link
-                  href="/organizer/events/new"
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-                >
-                  <CalendarPlus className="h-4 w-4" aria-hidden />
-                  イベントを作成する
-                </Link>
-              </div>
-            ) : (
-              recentEvents.map((event) => (
-                <Link
-                  key={event.id}
-                  href={`/organizer/events/${event.id}`}
-                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 transition hover:bg-[#f4f0e8]/60 sm:px-5"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-[#1e3020]">{event.title}</p>
-                    <p className="mt-0.5 text-xs text-[#6a6258]">
-                      {formatDate(event.date)}
-                      {event.location ? ` ・ ${event.location}` : ""}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <StatusBadge status={event.status} />
-                    <ChevronRight className="h-4 w-4 text-[#a8a090]" />
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </section>
-
-        <aside className="space-y-6">
-          <section className="rounded-2xl border border-[#ccc4b4] bg-[#faf8f2] p-4 shadow-sm sm:p-5">
-            <h2 className="text-sm font-semibold text-[#1e3020]">すぐ使う</h2>
-            <nav className="mt-3 space-y-1" aria-label="クイックアクション">
-              {[
-                { href: "/organizer/events", icon: CalendarDays, label: "イベント管理" },
-                { href: "/organizer/recruitments", icon: Users, label: "スタッフ募集管理" },
-                { href: "/organizer/articles", icon: FileText, label: "記事管理" },
-                { href: "/organizer/stories", icon: BookOpen, label: "ストーリー" },
-                { href: "/", icon: ExternalLink, label: "サイトを見る" },
-              ].map(({ href, icon: Icon, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#3a3428] transition hover:bg-[#f4f0e8]"
-                >
-                  <Icon className="h-4 w-4 shrink-0 text-[#6a6258]" aria-hidden />
-                  {label}
-                </Link>
-              ))}
-            </nav>
-          </section>
-
-          <section className="rounded-2xl border border-[#ccc4b4] bg-[#f4f0e8]/60 p-4 sm:p-5">
-            <h2 className="text-sm font-semibold text-[#1e3020]">最初にやること</h2>
-            <ul className="mt-3 space-y-2 text-sm text-[#6a6258]">
-              <li>・イベントを作成して内容を入力する</li>
-              <li>・公開前にプレビューで確認する</li>
-              <li>・必要に応じてスタッフ募集を作り、締切を設定する</li>
-            </ul>
-          </section>
-
-          {billingSummary && billingSummary.paymentSetupStatus !== "ok" && (
-            <Link
-              href="/organizer/settings/payouts"
-              className="block rounded-2xl border border-amber-200/80 bg-amber-50/80 p-4 text-sm transition hover:bg-amber-100/50 sm:p-5"
-            >
-              <p className="font-medium text-amber-900">売上受取設定がまだです</p>
-              <p className="mt-1 text-xs text-amber-700">
-                参加費を集めるには Stripe での受取設定が必要です
-              </p>
-            </Link>
+          {recentEvents.length === 0 ? (
+            <div className="px-3 py-5 text-center min-[900px]:px-3.5 min-[900px]:py-8">
+              <div className="text-[11px] min-[900px]:text-[12px]" style={{ color: "#bbb" }}>イベントはまだありません</div>
+              <Link
+                href="/organizer/events/new"
+                className="mt-2 inline-block rounded-[10px] px-3.5 py-1.5 text-[11px] font-medium text-white min-[900px]:mt-3 min-[900px]:px-4 min-[900px]:py-2"
+                style={{ background: "#6BBF3E" }}
+              >
+                作成する
+              </Link>
+            </div>
+          ) : (
+            <div>
+              {recentEvents.map((event, i) => {
+                const { day, month } = formatDate(event.date ?? "");
+                const isLast = i === recentEvents.length - 1;
+                return (
+                  <Link
+                    key={event.id}
+                    href={`/organizer/events/${event.id}`}
+                    className="flex items-center gap-2.5 px-3 py-2 transition-opacity active:opacity-80 min-[900px]:gap-3 min-[900px]:px-3.5 min-[900px]:py-2.5"
+                    style={{
+                      borderBottom: isLast ? "none" : "0.5px solid #e8e6e0",
+                    }}
+                  >
+                    <div
+                      className="flex h-[30px] w-[30px] shrink-0 flex-col items-center justify-center rounded-[6px] min-[900px]:h-[34px] min-[900px]:w-[34px] min-[900px]:rounded-[7px]"
+                      style={{ background: "#EEF4FB" }}
+                    >
+                      <span className="text-[13px] font-medium leading-none min-[900px]:text-[14px]" style={{ color: "#2B3A6B" }}>{day}</span>
+                      <span className="text-[7px]" style={{ color: "#2B3A6B", opacity: 0.6 }}>{month}</span>
+                    </div>
+                    <span className="min-w-0 flex-1 truncate text-[11px] font-medium" style={{ color: "#1a1a1a" }}>
+                      {event.title}
+                    </span>
+                    <span
+                      className="shrink-0 rounded-[8px] px-1.5 py-0.5 text-[9px] min-[900px]:rounded-[10px] min-[900px]:px-2"
+                      style={
+                        event.status === "public"
+                          ? { background: "#EAF6DE", color: "#3a7a10" }
+                          : { background: "#F3F2EF", color: "#888" }
+                      }
+                    >
+                      {event.status === "public" ? "公開中" : event.status === "draft" ? "下書き" : "終了"}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
           )}
-        </aside>
+        </div>
+
+        {/* ボランティア募集 */}
+        <div className="overflow-hidden rounded-[10px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] min-[900px]:mt-0 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-col min-[900px]:rounded-[12px]" style={{ background: "#fff", border: "0.5px solid #e8e6e0" }}>
+          <div className="flex items-center justify-between px-3 py-2 min-[900px]:px-3.5 min-[900px]:py-2.5" style={{ borderBottom: "0.5px solid #e8e6e0" }}>
+            <div className="text-[11px] font-medium" style={{ color: "#1a1a1a" }}>ボランティア募集</div>
+            <Link href="/organizer/recruitments" className="text-[10px]" style={{ color: "#2B3A6B", opacity: 0.7 }}>すべて見る →</Link>
+          </div>
+          <div className="flex items-center justify-between gap-2 px-3 py-2.5 min-[900px]:flex min-[900px]:flex-1 min-[900px]:flex-col min-[900px]:justify-center min-[900px]:px-3.5 min-[900px]:py-4 min-[900px]:text-center">
+            <p className="text-[11px]" style={{ color: "#bbb" }}>募集中の活動はありません</p>
+            <Link
+              href="/organizer/recruitments/new"
+              className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium transition-colors min-[900px]:hidden"
+              style={{ color: "#6BBF3E" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6BBF3E" strokeWidth={2.5} strokeLinecap="round" aria-hidden>
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              募集を作成
+            </Link>
+          </div>
+          <Link
+            href="/organizer/recruitments/new"
+            className="hidden items-center justify-center gap-1.5 px-3.5 py-2.5 text-[11px] font-medium transition-colors min-[900px]:flex"
+            style={{ borderTop: "0.5px solid #e8e6e0", color: "#6BBF3E" }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6BBF3E" strokeWidth={2.5} strokeLinecap="round" aria-hidden>
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            スタッフ募集を作成
+          </Link>
+        </div>
+        </div>
       </div>
-    </div>
+
+      {/* プラン変更モーダル */}
+      {showPlanModal && <PlanModal onClose={() => setShowPlanModal(false)} />}
+    </OrganizerPageShell>
   );
 }

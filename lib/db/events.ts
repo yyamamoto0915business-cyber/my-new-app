@@ -3,6 +3,7 @@ import type { DbEvent, Event, EventFormData } from "./types";
 import { filterOutSampleEvents, isPublicEventLike } from "../sample-events";
 import { getJstTodayYmd } from "../jst-date";
 import { normalizeEventStatus, PUBLIC_EVENT_STATUSES } from "../public-events";
+import { normalizeEventRecurrence, normalizeRecurrenceCount } from "../event-recurrence";
 
 function participationModeFromDb(
   db: DbEvent & { participation_mode?: string | null }
@@ -36,6 +37,7 @@ function dbEventToEvent(
   organizerContact?: string
 ): Event {
   const participationMode = participationModeFromDb(db);
+  const recurrence = normalizeEventRecurrence(db.recurrence);
   return {
     id: db.id,
     status: normalizeEventStatus(db.status),
@@ -71,14 +73,17 @@ function dbEventToEvent(
     participationMode,
     registrationDeadline: db.registration_deadline ?? undefined,
     registrationNote: db.registration_note ?? undefined,
+    recurrence,
+    recurrenceCount:
+      recurrence === "none" ? null : normalizeRecurrenceCount(db.recurrence_count, recurrence),
     createdAt: db.created_at,
     isPublic: db.is_public ?? null,
     isSample: db.is_sample ?? null,
   };
 }
 
-export async function fetchEvents(supabase: SupabaseClient): Promise<Event[]> {
-  const { data, error } = await supabase
+export async function fetchEvents(supabase: SupabaseClient, limit?: number): Promise<Event[]> {
+  let query = supabase
     .from("events")
     .select(
       `
@@ -97,6 +102,10 @@ export async function fetchEvents(supabase: SupabaseClient): Promise<Event[]> {
     // Legacy compatibility: older rows may use status="public"
     .in("status", [...PUBLIC_EVENT_STATUSES])
     .order("date", { ascending: true });
+
+  if (limit) query = query.limit(limit);
+
+  const { data, error } = await query;
 
   if (error) throw error;
 
@@ -588,16 +597,15 @@ export async function fetchPublishedEventsByIds(
     );
 }
 
-/** 主催者の公開イベント一覧（公開プロフィールページ用・未来のイベント優先） */
+/** 主催者の公開イベント一覧（公開プロフィールページ用・開催予定＋過去をそれぞれ取得） */
 export async function fetchPublishedEventsByOrganizer(
   supabase: SupabaseClient,
   organizerId: string,
   limit: number = 20
 ): Promise<Event[]> {
-  const { data, error } = await supabase
-    .from("events")
-    .select(
-      `
+  const today = getJstTodayYmd();
+  const perSide = Math.max(5, Math.ceil(limit / 2));
+  const select = `
       *,
       organizers!inner (
         organization_name,
@@ -608,33 +616,57 @@ export async function fetchPublishedEventsByOrganizer(
           email
         )
       )
-    `
-    )
-    .eq("organizer_id", organizerId)
-    .in("status", [...PUBLIC_EVENT_STATUSES])
-    .order("date", { ascending: true })
-    .limit(limit);
+    `;
 
-  if (error) return [];
+  const mapRows = (rows: Record<string, unknown>[] | null | undefined): Event[] =>
+    (rows ?? []).map((row) => {
+      const org = row.organizers as {
+        organization_name: string | null;
+        contact_email: string | null;
+        contact_phone: string | null;
+        profile: { display_name: string | null; email: string | null };
+      };
+      const name =
+        org?.organization_name ??
+        org?.profile?.display_name ??
+        org?.profile?.email ??
+        "主催者";
+      const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+      return dbEventToEvent(row as unknown as DbEvent, name, contact);
+    });
 
-  const events = (data ?? []).map((row: Record<string, unknown>) => {
-    const org = row.organizers as {
-      organization_name: string | null;
-      contact_email: string | null;
-      contact_phone: string | null;
-      profile: { display_name: string | null; email: string | null };
-    };
-    const name =
-      org?.organization_name ??
-      org?.profile?.display_name ??
-      org?.profile?.email ??
-      "主催者";
-    const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
-    return dbEventToEvent(row as unknown as DbEvent, name, contact);
-  });
+  const filterForProfile = (events: Event[], includeArchivedPast: boolean): Event[] =>
+    filterOutSampleEvents(events).filter((event) => {
+      if (isPublicEventLike(event)) return true;
+      if (includeArchivedPast && event.status === "archived") return true;
+      return false;
+    });
 
-  // 主催者公開ページもサンプル/非公開除外
-  return filterOutSampleEvents(events).filter((e) => isPublicEventLike(e));
+  const [upcomingRes, pastRes] = await Promise.all([
+    supabase
+      .from("events")
+      .select(select)
+      .eq("organizer_id", organizerId)
+      .in("status", [...PUBLIC_EVENT_STATUSES])
+      .gte("date", today)
+      .order("date", { ascending: true })
+      .limit(perSide),
+    supabase
+      .from("events")
+      .select(select)
+      .eq("organizer_id", organizerId)
+      .in("status", [...PUBLIC_EVENT_STATUSES, "archived"])
+      .lt("date", today)
+      .order("date", { ascending: false })
+      .limit(perSide),
+  ]);
+
+  if (upcomingRes.error && pastRes.error) return [];
+
+  const upcoming = filterForProfile(mapRows(upcomingRes.data as Record<string, unknown>[]), false);
+  const past = filterForProfile(mapRows(pastRes.data as Record<string, unknown>[]), true);
+
+  return [...upcoming, ...past];
 }
 
 export async function fetchEventsByOrganizer(
@@ -771,6 +803,7 @@ export async function createEvent(
 }
 
 function formToDb(form: EventFormData): Record<string, unknown> {
+  const recurrence = normalizeEventRecurrence(form.recurrence);
   return {
     title: form.title,
     description: form.description,
@@ -801,6 +834,9 @@ function formToDb(form: EventFormData): Record<string, unknown> {
     participation_mode: form.participationMode ?? (form.requiresRegistration ? "required" : "none"),
     registration_deadline: form.registrationDeadline || null,
     registration_note: form.registrationNote?.trim() || null,
+    recurrence,
+    recurrence_count:
+      recurrence === "none" ? null : normalizeRecurrenceCount(form.recurrenceCount, recurrence),
   };
 }
 

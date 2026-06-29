@@ -1,24 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { Bookmark, BookOpenText } from "lucide-react";
-import { TopModeTabs } from "@/components/navigation/top-mode-tabs";
+import Image from "next/image";
+import { Bookmark } from "lucide-react";
+import { TopModeTabs, type TopModeTabId } from "@/components/navigation/top-mode-tabs";
+import { setModeCookie } from "@/lib/mode-preference";
 import { NotificationBell } from "@/components/notification-bell";
 import { cn } from "@/lib/utils";
+import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 
 /** 通常時（探す・ボランティア中心）のモバイル上部の目安高さ（safe-area 除く） */
-export const MOBILE_TOP_HEADER_HEIGHT_PX = 132;
+export const MOBILE_TOP_HEADER_HEIGHT_PX = 118;
 
-/** 主催者ルートでコンパクトヘッダーにしたときの目安高さ（safe-area 除く・サブ行は2アイコンまで） */
-export const MOBILE_TOP_HEADER_HEIGHT_ORGANIZER_PX = 100;
+/** 主催者ルート（モードタブのみ）のフォールバック高さ（safe-area 除く・実測で上書き） */
+export const MOBILE_TOP_HEADER_HEIGHT_ORGANIZER_PX = 46;
+
+const MOBILE_TOP_HEADER_CSS_VAR = "--mg-mobile-top-header-h";
 
 export function getMobileTopHeaderHeightPx(pathname: string | null | undefined): number {
   if (!pathname) return MOBILE_TOP_HEADER_HEIGHT_PX;
-  if (pathname.startsWith("/organizer")) return MOBILE_TOP_HEADER_HEIGHT_ORGANIZER_PX;
+  if (isOrganizerDashboardPath(pathname)) return MOBILE_TOP_HEADER_HEIGHT_ORGANIZER_PX;
   return MOBILE_TOP_HEADER_HEIGHT_PX;
 }
 
@@ -28,6 +33,41 @@ type Props = {
 
 export function MobileTopHeader({ className }: Props) {
   const pathname = usePathname();
+  const headerRef = useRef<HTMLElement>(null);
+  const organizerArea = pathname ? isOrganizerDashboardPath(pathname) : false;
+
+  const handleTabClick = (id: TopModeTabId) => {
+    const mode =
+      id === "organizer" ? "ORGANIZER" : id === "volunteer" ? "VOLUNTEER" : "EVENT";
+    setModeCookie(mode);
+  };
+
+  useEffect(() => {
+    if (!organizerArea) return;
+
+    const el = headerRef.current;
+    if (!el) return;
+
+    const syncHeight = () => {
+      const safeTop = parseFloat(getComputedStyle(el).paddingTop) || 0;
+      const contentH = Math.ceil(el.getBoundingClientRect().height - safeTop);
+      document.documentElement.style.setProperty(
+        MOBILE_TOP_HEADER_CSS_VAR,
+        `${contentH}px`
+      );
+    };
+
+    syncHeight();
+    const ro = new ResizeObserver(syncHeight);
+    ro.observe(el);
+    window.addEventListener("resize", syncHeight);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", syncHeight);
+      document.documentElement.style.removeProperty(MOBILE_TOP_HEADER_CSS_VAR);
+    };
+  }, [organizerArea]);
+
   if (
     isEventDetailRoute(pathname ?? "") ||
     isMessagesConversationRoute(pathname ?? "")
@@ -35,93 +75,67 @@ export function MobileTopHeader({ className }: Props) {
     return null;
   }
 
-  const organizerArea = pathname?.startsWith("/organizer") ?? false;
-
   return (
     <header
+      ref={headerRef}
       className={cn(
-        "sticky top-0 z-30 sm:hidden",
-        "bg-gradient-to-b from-white/92 to-transparent backdrop-blur-md",
-        organizerArea ? "pt-[env(safe-area-inset-top,0px)] pb-1.5" : "pt-[env(safe-area-inset-top,0px)] pb-2",
+        "sticky top-0 sm:hidden",
+        organizerArea
+          ? "z-40 bg-white pt-[env(safe-area-inset-top,0px)] pb-0 shadow-[0_1px_0_rgba(15,23,42,0.06)]"
+          : "z-30 bg-[#f3f4f1] pb-1.5 pt-[env(safe-area-inset-top,0px)]",
         className
       )}
       aria-label="MachiGlyph 上部ヘッダー"
     >
-      <div className="mx-auto w-full max-w-screen-sm px-0">
-        <div className={cn("mx-4", organizerArea ? "mt-0.5" : "mt-1.5")}>
-          <TopModeTabs compact={organizerArea} emphasizeOrganizerActive={organizerArea} />
+      <div className="w-full px-2.5">
+        <div className={organizerArea ? "mt-0.5 pb-1.5" : "mt-1"}>
+          <TopModeTabs
+            compact={organizerArea}
+            emphasizeOrganizerActive={organizerArea}
+            onTabClick={handleTabClick}
+          />
         </div>
 
-        <div className={cn("mx-4", organizerArea ? "mt-1" : "mt-2")}>
-          <div
-            className={cn(
-              "border border-slate-200 bg-white/85 shadow-[0_1px_0_rgba(15,23,42,0.03)] backdrop-blur supports-[backdrop-filter]:bg-white/75",
-              organizerArea
-                ? "rounded-xl px-2 py-1"
-                : "rounded-[22px] px-3 py-2"
-            )}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <Link
-                href="/"
-                className={cn(
-                  "min-w-0 font-serif font-semibold tracking-[-0.01em] text-slate-900",
-                  organizerArea ? "max-w-[55%] text-[12px]" : "text-[15px]"
-                )}
-                aria-label="MachiGlyph ホームへ"
+        {organizerArea && <div aria-hidden className="h-2 w-full bg-white" />}
+
+        {!organizerArea && (
+          <div className="mt-1.5 flex items-center justify-between gap-2">
+            <Link
+              href="/"
+              className="flex min-w-0 items-center gap-1.5"
+              aria-label="MachiGlyph ホームへ"
+            >
+              <Image
+                src="/brand/machiglyph_icon_192.png"
+                alt=""
+                width={24}
+                height={24}
+                className="h-6 w-6 shrink-0 rounded-full"
+              />
+              <span
+                className="truncate text-[16px] font-semibold tracking-[-0.02em] text-[#1a2e22]"
+                style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
               >
-                <span className="block truncate">MachiGlyph</span>
+                MachiGlyph
+              </span>
+            </Link>
+
+            <div className="flex shrink-0 items-center justify-end gap-1.5">
+              <Link
+                href="/stories"
+                className="flex h-9 items-center gap-1 rounded-full border border-[#e3e8e4] bg-white px-2.5 text-[12px] font-medium text-[#3d5c48] shadow-sm active:bg-[#fafaf8]"
+                aria-label="ストーリー"
+              >
+                <Bookmark className="h-3.5 w-3.5 shrink-0 text-[#6a9080]" aria-hidden />
+                <span className="whitespace-nowrap">ストーリー</span>
               </Link>
 
-              <div
-                className={cn(
-                  "flex shrink-0 items-center justify-end",
-                  organizerArea ? "gap-1" : "gap-2"
-                )}
-              >
-                {!organizerArea && (
-                  <Link
-                    href="/saved"
-                    className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-700 transition-colors active:bg-slate-100"
-                    aria-label="保存したイベント"
-                  >
-                    <Bookmark className="h-5 w-5" aria-hidden />
-                  </Link>
-                )}
-
-                {organizerArea && (
-                  <Link
-                    href="/saved"
-                    className="relative flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/90 bg-white/90 text-slate-600 transition-colors active:bg-slate-100"
-                    aria-label="保存したイベント"
-                  >
-                    <Bookmark className="h-3.5 w-3.5" aria-hidden />
-                  </Link>
-                )}
-
-                {!organizerArea && (
-                  <Link
-                    href="/stories"
-                    className="flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-700 transition-colors active:bg-slate-100"
-                    aria-label="ストーリー"
-                  >
-                    <BookOpenText className="h-5 w-5 shrink-0" aria-hidden />
-                    <span className="whitespace-nowrap">ストーリー</span>
-                  </Link>
-                )}
-
-                <Suspense fallback={null}>
-                  <NotificationBell
-                    className={cn(
-                      "flex shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-700 active:bg-slate-100 hover:bg-white/80 hover:text-slate-900 dark:text-slate-200",
-                      organizerArea ? "h-8 w-8 [&_svg]:h-[17px] [&_svg]:w-[17px]" : "h-11 w-11"
-                    )}
-                  />
-                </Suspense>
-              </div>
+              <Suspense fallback={null}>
+                <NotificationBell className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e3e8e4] bg-white text-[#3d5c48] shadow-sm active:bg-[#fafaf8] hover:bg-white hover:text-[#1a2e22]" />
+              </Suspense>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </header>
   );

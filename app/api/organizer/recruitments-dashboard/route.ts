@@ -6,6 +6,10 @@ import {
   fetchRecruitmentsByOrganizer,
 } from "@/lib/db/recruitments-mvp";
 import type { RecruitmentMvp } from "@/lib/db/recruitments-mvp";
+import {
+  getStoreRecruitmentsByOrganizer,
+  getStoreApplicationsByRecruitment,
+} from "@/lib/created-recruitments-store";
 
 export type RecruitmentDashboardKpis = {
   active: number;
@@ -123,16 +127,6 @@ async function buildSupabaseDashboard(
     }
   }
 
-  const active = items.filter((r) => r.status === "public").length;
-  const totalApplications = items.reduce((s, r) => s + r.applicationCount, 0);
-
-  const kpis: RecruitmentDashboardKpis = {
-    active,
-    totalApplications,
-    pendingApproval,
-    todayCount,
-  };
-
   const sorted = [...items].sort((a, b) => {
     const aDate = a.start_at ? String(a.start_at).slice(0, 10) : "";
     const bDate = b.start_at ? String(b.start_at).slice(0, 10) : "";
@@ -142,8 +136,44 @@ async function buildSupabaseDashboard(
     return (b.created_at ?? "").localeCompare(a.created_at ?? "");
   });
 
+  const storeRecruitments = getStoreRecruitmentsByOrganizer(organizerId);
+  for (const sr of storeRecruitments) {
+    if (sorted.some((r) => r.id === sr.id)) continue;
+    const apps = getStoreApplicationsByRecruitment(sr.id);
+    const pending = apps.filter((a) => a.status === "pending").length;
+    const approved = apps.filter(
+      (a) => a.status === "accepted" || a.status === "confirmed"
+    ).length;
+    sorted.push({
+      ...(sr as unknown as RecruitmentMvp),
+      applicationCount: apps.length,
+      approvedCount: approved,
+      pendingCount: pending,
+      eventTitle: null,
+    });
+    if (pending > 0) {
+      pendingApproval += pending;
+      todos.push({
+        id: `pending-${sr.id}`,
+        type: "pending_approval",
+        title: `「${sr.title}」に${pending}件の承認待ち`,
+        recruitmentId: sr.id,
+        count: pending,
+        href: `/organizer/recruitments/${sr.id}`,
+      });
+    }
+  }
+
+  const active = sorted.filter((r) => r.status === "public").length;
+  const totalApplications = sorted.reduce((s, r) => s + r.applicationCount, 0);
+
   return {
-    kpis,
+    kpis: {
+      active,
+      totalApplications,
+      pendingApproval,
+      todayCount,
+    },
     todos,
     recruitments: sorted,
   };

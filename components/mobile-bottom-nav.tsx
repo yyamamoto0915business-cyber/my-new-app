@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUnreadCount } from "@/hooks/use-unread-count";
+import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 
 const MOBILE_ITEMS = [
@@ -14,7 +15,7 @@ const MOBILE_ITEMS = [
 ] as const;
 
 function NavIcon({ icon, active }: { icon: string; active: boolean }) {
-  const stroke = active ? "#1e3848" : "#7a7268";
+  const stroke = active ? "#4a9a68" : "#7a7268";
   if (icon === "home") {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
@@ -68,7 +69,7 @@ export function MobileBottomNav() {
     if (item.id === "home") {
       // 「ホーム」は常に探す側トップ（/events）へ戻す導線。
       // 主催/ボランティア配下では active にしない。
-      if (pathname?.startsWith("/organizer")) return false;
+      if (pathname && isOrganizerDashboardPath(pathname)) return false;
       if (pathname?.startsWith("/volunteer")) return false;
       // 他の下部ナビ項目に該当しない「探す側ページ群」でのみ active
       if (pathname?.startsWith("/messages")) return false;
@@ -92,7 +93,7 @@ export function MobileBottomNav() {
       aria-label="モバイルナビゲーション"
       role="navigation"
     >
-      <div className="mx-auto flex w-full max-w-lg items-stretch justify-around gap-0">
+      <div className="flex w-full items-stretch justify-around gap-0">
         {items.map((item) => {
           const href = getHref(item);
           const active = isActive(item);
@@ -103,12 +104,12 @@ export function MobileBottomNav() {
             prefetch
             aria-current={active ? "page" : undefined}
             className={`relative flex min-h-[44px] flex-1 touch-manipulation flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] transition-colors rounded-xl ${
-              active ? "text-[#1e3848]" : "text-[#7a7268]"
+              active ? "text-[#4a9a68]" : "text-[#7a7268]"
             }`}
           >
             {active && (
               <span
-                className="absolute left-1/2 top-0 h-0.5 w-9 -translate-x-1/2 rounded-full bg-[#1e3848]"
+                className="absolute left-1/2 top-0 h-0.5 w-9 -translate-x-1/2 rounded-full bg-[#4a9a68]"
                 aria-hidden
               />
             )}

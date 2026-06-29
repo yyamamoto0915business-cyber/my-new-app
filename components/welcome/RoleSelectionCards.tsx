@@ -6,7 +6,13 @@ import { RoleCard } from "./RoleCard";
 const CARDS = [
   {
     title: "イベントを探したい",
-    description: "地域で開かれているイベントを見つけて参加できます",
+    description: (
+      <>
+        <span className="whitespace-nowrap">地域で開催されるイベントを</span>
+        <br />
+        <span className="whitespace-nowrap">見つけて参加できます。</span>
+      </>
+    ),
     buttonLabel: "イベントを見る",
     href: "/events",
     icon: <CalendarDays className="h-5 w-5" strokeWidth={1.5} />,
@@ -14,16 +20,22 @@ const CARDS = [
   },
   {
     title: "募集を見たい",
-    description: "参加募集や、お手伝いの募集を探せます",
+    description: (
+      <>
+        <span className="whitespace-nowrap">ボランティアやまちおこしの</span>
+        <br />
+        <span className="whitespace-nowrap">募集を見つけられます。</span>
+      </>
+    ),
     buttonLabel: "募集を見る",
-    href: "/recruitments",
+    href: "/volunteer",
     icon: <HandHeart className="h-5 w-5" strokeWidth={1.5} />,
     primary: false,
   },
   {
-    title: "活動をはじめたい",
-    description: "イベントを開いたり、募集を掲載したりできます",
-    buttonLabel: "この使い方ではじめる",
+    title: "イベントを掲載したい",
+    description: "イベントを開いたり募集を掲載できます。",
+    buttonLabel: "使い方を見る",
     href: "/auth?next=/organizer",
     icon: <Megaphone className="h-5 w-5" strokeWidth={1.5} />,
     primary: false,

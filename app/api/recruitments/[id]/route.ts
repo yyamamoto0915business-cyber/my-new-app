@@ -13,6 +13,7 @@ import {
   updateStoreRecruitment,
   getDevOrganizerId,
 } from "@/lib/created-recruitments-store";
+import { getStoreRecruitmentIfExists } from "@/lib/store-recruitment-api";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -20,6 +21,11 @@ type Params = { params: Promise<{ id: string }> };
 export async function GET(_request: NextRequest, { params }: Params) {
   const { id } = await params;
   if (!id) return NextResponse.json(null, { status: 404 });
+
+  const storeRecruitment = getStoreRecruitmentIfExists(id);
+  if (storeRecruitment) {
+    return NextResponse.json(storeRecruitment);
+  }
 
   const supabase = await createClient();
 

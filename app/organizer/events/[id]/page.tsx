@@ -8,6 +8,8 @@ import { eventToForm } from "@/lib/organizer-event-to-form";
 import { EVENT_TAGS } from "@/lib/db/types";
 import { EventFormSection } from "@/components/organizer/events/EventFormSection";
 import { EventImageInput } from "@/components/organizer/events/EventImageInput";
+import { RecurrenceSelector } from "@/components/organizer/events/RecurrenceSelector";
+import type { EventRecurrence } from "@/lib/event-recurrence";
 import { getJstNowHm, getJstTodayYmd, toJstTimestamp } from "@/lib/jst-date";
 
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
@@ -60,6 +62,9 @@ function validateForm(data: EventFormData): FormErrors {
   if (data.price < 0) errors.price = "料金は0以上で入力してください";
   if (!data.organizerName?.trim())
     errors.organizerName = "主催者名を入力してください";
+  if (data.recurrence && data.recurrence !== "none" && (!data.recurrenceCount || data.recurrenceCount < 2)) {
+    errors.recurrenceCount = "繰り返し回数を選択してください";
+  }
   return errors;
 }
 
@@ -505,6 +510,30 @@ export default function EditEventPage() {
             </FormField>
           </div>
 
+          <div>
+            <p className="text-sm font-medium text-slate-700">開催パターン</p>
+            <div className="mt-2">
+              <RecurrenceSelector
+                value={(form.recurrence ?? "none") as EventRecurrence}
+                count={form.recurrenceCount}
+                onChange={(recurrence) =>
+                  setForm((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          recurrence,
+                          recurrenceCount: recurrence === "none" ? null : prev.recurrenceCount,
+                        }
+                      : prev
+                  )
+                }
+                onCountChange={(recurrenceCount) =>
+                  setForm((prev) => (prev ? { ...prev, recurrenceCount } : prev))
+                }
+              />
+            </div>
+          </div>
+
           <FormField
             id="location"
             label="開催場所"
@@ -883,6 +912,12 @@ export default function EditEventPage() {
               className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 px-6 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               詳細をプレビュー
+            </Link>
+            <Link
+              href={`/organizer/events/${id}/day`}
+              className="inline-flex items-center justify-center rounded-xl border border-[#2D7A4F] bg-[#EAF4ED] px-6 py-3 text-sm font-medium text-[#2D7A4F] transition hover:bg-[#D0ECD7]"
+            >
+              当日管理へ →
             </Link>
           </div>
         </div>

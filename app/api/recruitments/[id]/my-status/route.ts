@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getApplicationStatus } from "@/lib/db/recruitments-mvp";
 import { getStoreApplicationStatus } from "@/lib/created-recruitments-store";
+import { getStoreRecruitmentIfExists } from "@/lib/store-recruitment-api";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -16,6 +17,11 @@ export async function GET(_request: NextRequest, { params }: Params) {
   const { id: recruitmentId } = await params;
   if (!recruitmentId) {
     return NextResponse.json({ status: null }, { status: 400 });
+  }
+
+  if (getStoreRecruitmentIfExists(recruitmentId)) {
+    const status = getStoreApplicationStatus(recruitmentId, user.id);
+    return NextResponse.json({ status });
   }
 
   const supabase = await createClient();

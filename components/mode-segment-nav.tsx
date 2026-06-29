@@ -1,23 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { getModeFromCookie, setModeCookie } from "@/lib/mode-preference";
+import { setModeCookie } from "@/lib/mode-preference";
 import { TopModeTabs, type TopModeTabId } from "@/components/navigation/top-mode-tabs";
+import { getTopModeTabIdFromContext } from "@/lib/top-mode-active";
 
 export type ModeId = "discover" | "volunteer" | "organizer";
 
 /** パス名から現在のモードを判定（上部セグメント・下部ホームのactive/href決定用） */
-export function getActiveMode(pathname: string): ModeId {
-  // URL で明確にモードが分かる場合はそれを優先
-  if (pathname.startsWith("/organizer")) return "organizer";
-  if (pathname.startsWith("/volunteer")) return "volunteer";
-
-  // それ以外（ホームなど）の場合はモードクッキーを参照
-  const mode = getModeFromCookie();
-  if (mode === "ORGANIZER") return "organizer";
-  if (mode === "VOLUNTEER") return "volunteer";
-
-  return "discover";
+export function getActiveMode(pathname: string, returnPath?: string | null): ModeId {
+  return getTopModeTabIdFromContext(pathname, returnPath);
 }
 
 /** モード別ホームURL（下部タブのホーム押下先） */

@@ -8,10 +8,12 @@ import {
 } from "@/lib/db/recruitments-mvp";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  getStoreRecruitmentById,
   getStoreApplicationsByRecruitment,
-  getDevOrganizerId,
 } from "@/lib/created-recruitments-store";
+import {
+  canManageStoreRecruitment,
+  getStoreRecruitmentIfExists,
+} from "@/lib/store-recruitment-api";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -60,6 +62,17 @@ export async function GET(_request: NextRequest, { params }: Params) {
   if (!recruitmentId) return NextResponse.json(null, { status: 404 });
 
   const supabase = await createClient();
+  const storeRecruitment = getStoreRecruitmentIfExists(recruitmentId);
+
+  if (storeRecruitment) {
+    const allowed = await canManageStoreRecruitment(supabase, user.id, storeRecruitment);
+    if (!allowed) {
+      return NextResponse.json({ error: "権限がありません" }, { status: 403 });
+    }
+    const apps = getStoreApplicationsByRecruitment(recruitmentId);
+    const enrichedApps = await enrichApplicantProfiles(apps);
+    return NextResponse.json(enrichedApps);
+  }
 
   if (supabase) {
     try {
@@ -80,12 +93,5 @@ export async function GET(_request: NextRequest, { params }: Params) {
     }
   }
 
-  const recruitment = getStoreRecruitmentById(recruitmentId);
-  if (!recruitment) return NextResponse.json(null, { status: 404 });
-  if (recruitment.organizer_id !== getDevOrganizerId()) {
-    return NextResponse.json({ error: "権限がありません" }, { status: 403 });
-  }
-
-  const apps = getStoreApplicationsByRecruitment(recruitmentId);
-  return NextResponse.json(apps);
+  return NextResponse.json(null, { status: 404 });
 }

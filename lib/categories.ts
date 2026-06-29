@@ -25,7 +25,7 @@ export const CATEGORY_LABELS: Record<CategoryKey, string> = {
   sports: "スポーツ",
   music: "音楽",
   food: "食",
-  volunteer: "ボランティア",
+  volunteer: "ボランティア募集",
 };
 
 /** イベントタグID（EVENT_TAGS）→ カテゴリ内部キー */

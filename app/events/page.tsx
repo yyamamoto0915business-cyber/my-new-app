@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
 import {
@@ -13,24 +12,48 @@ import {
   filterEventsByRegion,
   searchEvents,
   sortEvents,
+  backfillWithRecentEndedEvents,
+  sortEventsForDiscover,
   type Event,
   type DateRangeFilter,
   type EventSort,
 } from "../../lib/events";
-import { isPrefecture, PREFECTURES } from "../../lib/prefectures";
+import { isPrefecture } from "../../lib/prefectures";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { getJstTodayYmd } from "@/lib/jst-date";
-import { ProfileLink } from "@/components/profile-link";
-import { Breadcrumb } from "@/components/breadcrumb";
-import { GlyphSectionTitle } from "@/components/glyph/glyph-section-title";
 import { EventCard } from "./event-card";
 import { EventCardSkeleton } from "./event-card-skeleton";
-import { EventSearchSection } from "./event-search-section";
 import { MapPageContainer } from "@/components/events-map/MapPageContainer";
+import { getPrimaryCategory, inferCategoryKeys } from "@/lib/inferCategory";
 import {
-  MobileSearchPanel,
-  type MobileSearchPanelDateRange,
-} from "@/components/search/mobile-search-panel";
+  Calendar,
+  CircleDollarSign,
+  Baby,
+  Sparkles,
+  Users,
+  LayoutGrid,
+  ChevronDown,
+} from "lucide-react";
+import {
+  EventsMobileHero,
+  type EventsMobileQuickChip,
+} from "@/components/events/list/mobile/EventsMobileHero";
+import { EventsMobileFilterBar } from "@/components/events/list/mobile/EventsMobileFilterBar";
+import { EventsMobileListHeader } from "@/components/events/list/mobile/EventsMobileListHeader";
+import { EventsMobileRowCard } from "@/components/events/list/mobile/EventsMobileRowCard";
+import { EventsMobileRowCardSkeleton } from "@/components/events/list/mobile/EventsMobileRowCardSkeleton";
+import { EventsPcHero } from "@/components/events/list/EventsPcHero";
+import { EventsPcFilterBar } from "@/components/events/list/EventsPcFilterBar";
+import { EventsPcFilterSidebar } from "@/components/events/list/EventsPcFilterSidebar";
+import { EventsPcResultsToolbar } from "@/components/events/list/EventsPcResultsToolbar";
+import { EventsPcPagination } from "@/components/events/list/EventsPcPagination";
+import { EventsListPcEventCard } from "@/components/events/list/EventsListPcEventCard";
+import {
+  EVENTS_PC_GRID_CLASS,
+  EVENTS_PC_MAX_WIDTH,
+  EVENTS_MOBILE_PAGE_STEP,
+} from "@/components/events/list/events-pc-constants";
+import { useRegionPreference } from "@/hooks/use-region-preference";
 
 type EventWithDistance = Event & { distanceKm?: number };
 
@@ -66,30 +89,27 @@ function EventsPageContent() {
   const [selectedArea, setSelectedArea] = useState(
     () => searchParams.get("prefecture") ?? ""
   );
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [events, setEvents] = useState<EventWithDistance[]>([]);
   const [mapEvents, setMapEvents] = useState<EventWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapLoading, setMapLoading] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [mobileVisibleCount, setMobileVisibleCount] = useState(EVENTS_MOBILE_PAGE_STEP);
+  const [indoorOnly, setIndoorOnly] = useState(false);
+  const [reservationOnly, setReservationOnly] = useState(false);
+  const [pcViewMode, setPcViewMode] = useState<"grid" | "list">("grid");
+  const [pageSize, setPageSize] = useState(12);
+  const [currentPage, setCurrentPage] = useState(1);
+  const { label: regionLabel } = useRegionPreference();
 
-  // マップ表示に切り替わる最初のフレームで mapLoading が false のままだと
-  // 「イベントなし」と誤表示される。paint 前にローディングへ寄せる。
+  // PC のみ一覧をデフォルトに（モバイルはモック準拠のリスト UI）
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
-    const isMobile = window.matchMedia("(max-width: 640px)").matches;
-    if (isMobile) {
-      setMapLoading(true);
-      setView("map");
-    } else {
+    if (window.matchMedia("(min-width: 900px)").matches) {
       setView("list");
     }
-  }, []);
-
-  const openMapView = useCallback(() => {
-    setMapLoading(true);
-    setView("map");
   }, []);
 
   const handleTagsChange = useCallback(
@@ -146,7 +166,7 @@ function EventsPageContent() {
     if (city) params.set("city", city);
     if (urlTags.length) params.set("tags", urlTags.join(","));
     const qs = params.toString();
-    fetchWithTimeout(`/api/events${qs ? `?${qs}` : ""}`, { cache: "no-store" })
+    fetchWithTimeout(`/api/events${qs ? `?${qs}` : ""}`)
       .then((res) => res.json())
       .then((data: Event[]) => setEvents(Array.isArray(data) ? data : []))
       .catch(() => {
@@ -206,21 +226,50 @@ function EventsPageContent() {
   }, []);
 
   const filteredEvents = useMemo(() => {
-    let result = events;
-    result = getEventsByDateRange(result, dateRange);
-    if (selectedArea) {
-      result = filterEventsByRegion(
-        result,
-        isPrefecture(selectedArea) ? selectedArea : undefined,
-        isPrefecture(selectedArea) ? undefined : selectedArea
-      );
+    const applySharedFilters = (list: Event[]) => {
+      let r = list;
+      if (selectedArea) {
+        r = filterEventsByRegion(
+          r,
+          isPrefecture(selectedArea) ? selectedArea : undefined,
+          isPrefecture(selectedArea) ? undefined : selectedArea
+        );
+      }
+      r = filterEventsByPrice(r, priceFilter);
+      r = filterEventsByChildFriendly(r, childFriendlyOnly);
+      r = filterEventsByTags(r, urlTags);
+      r = searchEvents(r, searchQuery);
+      if (selectedCategory) {
+        r = r.filter((e) => {
+          const primary = getPrimaryCategory(e);
+          if (selectedCategory === "volunteer") {
+            return primary === "volunteer" || inferCategoryKeys(e).includes("volunteer");
+          }
+          return primary === selectedCategory;
+        });
+      }
+      if (indoorOnly) {
+        r = r.filter((e) => e.tags?.includes("indoor"));
+      }
+      if (reservationOnly) {
+        r = r.filter(
+          (e) => (e as Event & { requiresReservation?: boolean }).requiresReservation
+        );
+      }
+      return r;
+    };
+
+    const sharedPool = applySharedFilters(events);
+    let result = getEventsByDateRange(sharedPool, dateRange);
+    if (!availableOnly) {
+      result = backfillWithRecentEndedEvents(result, sharedPool);
     }
-    result = filterEventsByPrice(result, priceFilter);
-    result = filterEventsByChildFriendly(result, childFriendlyOnly);
     result = filterEventsByAvailableOnly(result, availableOnly);
-    result = filterEventsByTags(result, urlTags);
-    result = searchEvents(result, searchQuery);
-    result = sortEvents(result, sortOrder);
+    if (sortOrder === "newest") {
+      result = sortEvents(result, "newest");
+    } else {
+      result = sortEventsForDiscover(result);
+    }
     return result;
   }, [
     events,
@@ -232,7 +281,61 @@ function EventsPageContent() {
     urlTags,
     searchQuery,
     sortOrder,
+    selectedCategory,
+    indoorOnly,
+    reservationOnly,
   ]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / pageSize));
+
+  const paginatedEvents = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredEvents.slice(start, start + pageSize);
+  }, [filteredEvents, currentPage, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    dateRange,
+    selectedArea,
+    priceFilter,
+    childFriendlyOnly,
+    availableOnly,
+    searchQuery,
+    selectedCategory,
+    indoorOnly,
+    reservationOnly,
+    pageSize,
+    sortOrder,
+    urlTags,
+  ]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setMobileVisibleCount(EVENTS_MOBILE_PAGE_STEP);
+  }, [
+    dateRange,
+    selectedArea,
+    priceFilter,
+    childFriendlyOnly,
+    availableOnly,
+    searchQuery,
+    selectedCategory,
+    indoorOnly,
+    reservationOnly,
+    sortOrder,
+    urlTags,
+  ]);
+
+  const visibleMobileEvents = useMemo(
+    () => filteredEvents.slice(0, mobileVisibleCount),
+    [filteredEvents, mobileVisibleCount]
+  );
+
+  const hasMoreMobile = mobileVisibleCount < filteredEvents.length;
 
   const handleSearch = useCallback(() => {
     eventListRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -292,336 +395,473 @@ function EventsPageContent() {
     [dateRange, start, end, priceFilter, childFriendlyOnly, prefecture, city, urlTags]
   );
 
+  const pcSortOrder: "date_asc" | "newest" =
+    sortOrder === "newest" ? "newest" : "date_asc";
+
+  const resetMobileFilters = useCallback(() => {
+    setDateRange("all");
+    setSelectedArea("");
+    setAvailableOnly(false);
+    setPriceFilter("all");
+    setChildFriendlyOnly(false);
+    setSearchQuery("");
+    setSelectedCategory("");
+    setIndoorOnly(false);
+    setReservationOnly(false);
+    handleTagsChange([]);
+    router.push("/events", { scroll: false });
+  }, [handleTagsChange, router]);
+
+  const mobileQuickChips = useMemo((): EventsMobileQuickChip[] => {
+    const weekendActive = dateRange === "today" || dateRange === "weekend";
+    const hasAnyFilter =
+      weekendActive ||
+      priceFilter === "free" ||
+      childFriendlyOnly ||
+      selectedCategory === "workshop" ||
+      selectedCategory === "community" ||
+      Boolean(searchQuery.trim()) ||
+      Boolean(selectedArea) ||
+      indoorOnly;
+
+    return [
+      {
+        key: "weekend",
+        label: "今週末",
+        Icon: Calendar,
+        active: weekendActive,
+        onClick: () => setDateRange(weekendActive ? "all" : "weekend"),
+      },
+      {
+        key: "free",
+        label: "¥0 無料",
+        Icon: CircleDollarSign,
+        active: priceFilter === "free",
+        onClick: () => setPriceFilter(priceFilter === "free" ? "all" : "free"),
+      },
+      {
+        key: "family",
+        label: "親子",
+        Icon: Baby,
+        active: childFriendlyOnly,
+        onClick: () => setChildFriendlyOnly(!childFriendlyOnly),
+      },
+      {
+        key: "workshop",
+        label: "体験",
+        Icon: Sparkles,
+        active: selectedCategory === "workshop",
+        onClick: () =>
+          setSelectedCategory(selectedCategory === "workshop" ? "" : "workshop"),
+      },
+      {
+        key: "community",
+        label: "交流会",
+        Icon: Users,
+        active: selectedCategory === "community",
+        onClick: () =>
+          setSelectedCategory(selectedCategory === "community" ? "" : "community"),
+      },
+      {
+        key: "all",
+        label: "すべて",
+        Icon: LayoutGrid,
+        active: !hasAnyFilter,
+        onClick: resetMobileFilters,
+      },
+    ];
+  }, [
+    dateRange,
+    priceFilter,
+    childFriendlyOnly,
+    selectedCategory,
+    searchQuery,
+    selectedArea,
+    indoorOnly,
+    resetMobileFilters,
+  ]);
+
   return (
-    <div className="min-h-screen bg-[#f4f0e8]">
-      <header className="sticky top-[var(--mg-mobile-top-header-h)] z-50 border-b border-[#ccc4b4] bg-[#faf8f2]/95 backdrop-blur-sm sm:top-0">
-        <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <Breadcrumb
-              items={[
-                { label: "トップ", href: "/" },
-                { label: "イベント情報", href: "/events" },
-                { label: "イベント検索" },
-              ]}
-              className="hidden sm:flex"
-            />
-            <ProfileLink />
-          </div>
-          <h1
-            className="mt-1 font-serif text-[18px] font-bold text-[#0e1610] hidden sm:block"
-            style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
-          >
-            全国のイベント
-          </h1>
-        </div>
-      </header>
+    <div className="relative z-10 min-h-screen bg-[#F5F8F5]">
+      {/* ===== PC Layout ===== */}
+      <div className="hidden min-[900px]:block px-4 py-4">
+        <div className={`mx-auto ${EVENTS_PC_MAX_WIDTH}`}>
+          <div className="overflow-hidden rounded-[14px] border border-[#E8EBE6] bg-white shadow-[0_2px_10px_rgba(15,23,42,0.04)]">
+            <EventsPcHero searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
 
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
-        <div className="mb-4 hidden gap-2 sm:flex">
-          <button
-            onClick={() => setView("list")}
-            className={`min-h-[36px] rounded-full px-5 text-[13px] font-medium transition-colors ${
-              view === "list"
-                ? "bg-[#1e3848] text-[#f4f0e8]"
-                : "border border-[#ccc4b4] bg-white text-[#3a3428] hover:bg-[#f0ece4]"
-            }`}
-          >
-            一覧
-          </button>
-          <button
-            type="button"
-            onClick={openMapView}
-            className={`min-h-[36px] rounded-full px-5 text-[13px] font-medium transition-colors ${
-              view === "map"
-                ? "bg-[#1e3848] text-[#f4f0e8]"
-                : "border border-[#ccc4b4] bg-white text-[#3a3428] hover:bg-[#f0ece4]"
-            }`}
-          >
-            地図
-          </button>
-        </div>
-
-        {view === "list" ? (
-          <>
-            {/* モバイル：重要な条件だけ＋絞り込みボタン */}
-            <div className="-mx-4 sm:mx-0">
-              <MobileSearchPanel
-                searchQuery={searchQuery}
-                onSearchQueryChange={setSearchQuery}
-                regionLabel={selectedArea ? selectedArea : "全国"}
-                dateRange={dateRange as MobileSearchPanelDateRange}
-                categoryLabel={urlTags.length ? `カテゴリ：${urlTags.length}件` : "カテゴリ：すべて"}
-                onOpenFilters={() => setFiltersOpen(true)}
-                onToggleMap={openMapView}
-                isMap={false}
+            <div className="border-b border-[#D5E5DA]/60 bg-[#EAF4ED] px-4">
+              <EventsPcFilterBar
+                selectedArea={selectedArea}
+                onAreaChange={handleAreaChange}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                priceFilter={priceFilter}
+                onPriceFilterChange={setPriceFilter}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+                childFriendlyOnly={childFriendlyOnly}
+                onChildFriendlyChange={setChildFriendlyOnly}
+                indoorOnly={indoorOnly}
+                onIndoorChange={setIndoorOnly}
+                sortOrder={pcSortOrder}
+                onSortChange={(s) => setSortOrder(s)}
               />
             </div>
 
-            <section ref={eventListRef} className="scroll-mt-4">
-              {loading ? (
-                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <li key={i}>
-                      <EventCardSkeleton />
-                    </li>
-                  ))}
-                </ul>
-              ) : listError ? (
-                <div className="rounded-[20px] border border-[#ccc4b4] bg-[#faf8f2] p-8 text-center">
-                  <p className="text-sm text-red-600">{listError}</p>
-                  <button
-                    type="button"
-                    onClick={() => window.location.reload()}
-                    className="mt-3 text-sm text-[#2c7a88] underline"
+            <div className="mg-events-pc-dots flex gap-4 p-3.5">
+            <EventsPcFilterSidebar
+              regionLabel={regionLabel || "全国"}
+              selectedArea={selectedArea}
+              onAreaChange={handleAreaChange}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+              childFriendlyOnly={childFriendlyOnly}
+              onChildFriendlyChange={setChildFriendlyOnly}
+              priceFilter={priceFilter}
+              onPriceFilterChange={setPriceFilter}
+              reservationOnly={reservationOnly}
+              onReservationOnlyChange={setReservationOnly}
+              indoorOnly={indoorOnly}
+              onIndoorChange={setIndoorOnly}
+            />
+
+            <div className="min-w-0 flex-1">
+            {view === "map" ? (
+              <div>
+                {!userPos && (
+                  <div className="mb-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-700">
+                    位置情報が許可されていません。地図は広い範囲で表示しています。
+                    <button
+                      type="button"
+                      onClick={handleCenterToCurrentLocation}
+                      className="ml-1.5 underline underline-offset-2"
+                    >
+                      現在地を取得
+                    </button>
+                  </div>
+                )}
+                {mapLoading ? (
+                  <div
+                    className="flex items-center justify-center rounded-[12px] border border-[#DDE8DF] bg-white"
+                    style={{ height: "60vh" }}
                   >
-                    再読み込み
-                  </button>
-                </div>
-              ) : filteredEvents.length === 0 ? (
-                <div className="rounded-[20px] border border-[#ccc4b4] bg-[#faf8f2] p-10 text-center">
-                  <p className="text-sm text-[#6a6258]">
-                    該当するイベントがありません
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDateRange("all");
-                      setSelectedArea("");
-                      setAvailableOnly(false);
-                      setPriceFilter("all");
-                      setChildFriendlyOnly(false);
-                      setSearchQuery("");
-                      handleTagsChange([]);
-                      router.push("/events", { scroll: false });
-                    }}
-                    className="mt-4 inline-flex h-10 items-center rounded-full bg-[#1e3848] px-5 text-sm font-medium text-[#f4f0e8]"
+                    <p className="text-[13px] text-[#566358]">地図データを読み込み中...</p>
+                  </div>
+                ) : mapEvents.length === 0 ? (
+                  filteredEvents.length > 0 ? (
+                    <div className="rounded-[12px] border border-[#DDE8DF] bg-white p-10 text-center">
+                      <p className="text-[13px] leading-relaxed text-[#566358]">
+                        地図に載せられる位置情報がない、または表示範囲外のイベントが含まれている可能性があります。
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setView("list")}
+                        className="mt-5 inline-flex h-11 items-center rounded-full bg-[#1A2214] px-6 text-[13px] font-medium text-white hover:bg-[#2D7A4F] transition-colors"
+                      >
+                        一覧で見る（全{filteredEvents.length}件）
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="rounded-[12px] border border-[#DDE8DF] bg-white p-10 text-center">
+                      <p className="text-[13px] text-[#566358]">
+                        この条件に合うイベントはまだありません
+                      </p>
+                    </div>
+                  )
+                ) : (
+                  <MapPageContainer
+                    mapEvents={mapEvents}
+                    mapLoading={mapLoading}
+                    userPos={userPos}
+                    availableOnly={availableOnly}
+                    sortOrder={sortOrder}
+                    onCenterToCurrentLocation={handleCenterToCurrentLocation}
+                    onSearchInBounds={handleSearchInBounds}
+                  />
+                )}
+              </div>
+            ) : (
+              <>
+                <EventsPcResultsToolbar
+                  totalCount={filteredEvents.length}
+                  pageSize={pageSize}
+                  onPageSizeChange={setPageSize}
+                  viewMode={pcViewMode}
+                  onViewModeChange={setPcViewMode}
+                />
+
+                {loading ? (
+                  <div
+                    className={
+                      pcViewMode === "grid"
+                        ? EVENTS_PC_GRID_CLASS
+                        : "flex flex-col gap-2"
+                    }
                   >
-                    条件を緩める
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <p className="mb-3 px-1 text-[12px] text-[#6a6258]">
-                    全{filteredEvents.length}件
-                  </p>
-                  <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {filteredEvents.map((event) => (
-                      <li key={event.id}>
-                        <EventCard event={event} />
+                    {Array.from({ length: pageSize > 8 ? 8 : pageSize }).map((_, i) => (
+                      <EventCardSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : listError ? (
+                  <div className="rounded-[12px] border border-[#DDE8DF] bg-white p-8 text-center">
+                    <p className="text-sm text-red-600">{listError}</p>
+                    <button
+                      type="button"
+                      onClick={() => window.location.reload()}
+                      className="mt-3 text-sm text-[#2D7A4F] underline"
+                    >
+                      再読み込み
+                    </button>
+                  </div>
+                ) : filteredEvents.length === 0 ? (
+                  <div className="rounded-[12px] border border-[#DDE8DF] bg-white p-10 text-center">
+                    <p className="mb-4 text-[13px] text-[#566358]">
+                      該当するイベントがありません
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDateRange("all");
+                        setSelectedArea("");
+                        setAvailableOnly(false);
+                        setPriceFilter("all");
+                        setChildFriendlyOnly(false);
+                        setSearchQuery("");
+                        setSelectedCategory("");
+                        setIndoorOnly(false);
+                        setReservationOnly(false);
+                        handleTagsChange([]);
+                        router.push("/events", { scroll: false });
+                      }}
+                      className="inline-flex h-10 items-center rounded-full bg-[#1A2214] px-5 text-[13px] font-medium text-white hover:bg-[#2D7A4F] transition-colors"
+                    >
+                      条件を緩める
+                    </button>
+                  </div>
+                ) : (
+                  <section ref={eventListRef} className="scroll-mt-4">
+                    <div
+                      className={
+                        pcViewMode === "grid"
+                          ? EVENTS_PC_GRID_CLASS
+                          : "flex flex-col gap-2"
+                      }
+                    >
+                      {paginatedEvents.map((event) =>
+                        pcViewMode === "grid" ? (
+                          <EventsListPcEventCard key={event.id} event={event} />
+                        ) : (
+                          <EventCard key={event.id} event={event} />
+                        )
+                      )}
+                    </div>
+
+                    <EventsPcPagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                      onLoadMore={() =>
+                        setCurrentPage((p) => Math.min(p + 1, totalPages))
+                      }
+                      hasMore={currentPage < totalPages}
+                    />
+                  </section>
+                )}
+              </>
+            )}
+
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== Mobile Layout ===== */}
+      <div className="mg-events-mobile-page min-[900px]:hidden min-h-screen pb-4">
+        <EventsMobileHero
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          quickChips={mobileQuickChips}
+        />
+
+        <div className="relative z-10 -mt-5 rounded-t-[20px] bg-[#FDFDFB] px-4 pt-4 shadow-[0_-4px_20px_rgba(34,51,68,0.04)]">
+          {view === "list" ? (
+            <>
+              <EventsMobileFilterBar
+                selectedCategory={selectedCategory}
+                dateRange={dateRange}
+                selectedArea={selectedArea}
+                childFriendlyOnly={childFriendlyOnly}
+                priceFilter={priceFilter}
+                indoorOnly={indoorOnly}
+                sortOrder={sortOrder === "date_desc" ? "date_asc" : sortOrder}
+                onCategoryChange={setSelectedCategory}
+                onAreaChange={handleAreaChange}
+                onChildFriendlyChange={setChildFriendlyOnly}
+                onPriceFilterChange={setPriceFilter}
+                onDateRangeChange={setDateRange}
+                onIndoorChange={setIndoorOnly}
+                onSortChange={(s) => setSortOrder(s)}
+              />
+
+              <section ref={eventListRef} className="scroll-mt-4">
+                <EventsMobileListHeader
+                  totalCount={filteredEvents.length}
+                  sortOrder={sortOrder}
+                  onSortChange={setSortOrder}
+                />
+
+                {loading ? (
+                  <ul className="space-y-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <li key={i}>
+                        <EventsMobileRowCardSkeleton />
                       </li>
                     ))}
                   </ul>
-                </>
-              )}
-            </section>
-
-            {/* PC向けの詳細検索セクション（モバイルでは下のドロワーに含める） */}
-            <div className="hidden sm:block">
-              <EventSearchSection
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-                selectedTags={urlTags}
-                onTagsChange={handleTagsChange}
-                selectedArea={selectedArea}
-                onAreaChange={handleAreaChange}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                onSearch={handleSearch}
-              />
-            </div>
-
-            {/* モバイル用フィルタードロワー */}
-            {filtersOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm sm:hidden"
-                  onClick={() => setFiltersOpen(false)}
-                  aria-hidden="true"
-                />
-                <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-hidden rounded-t-2xl border-t border-[#ccc4b4] bg-[#faf8f2] pb-[env(safe-area-inset-bottom,0px)] shadow-xl sm:hidden">
-                  <div className="flex items-center justify-between border-b border-[#ccc4b4] px-4 py-3">
-                    <h2
-                      className="text-[15px] font-bold text-[#0e1610]"
-                      style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
-                    >
-                      絞り込み
-                    </h2>
+                ) : listError ? (
+                  <div className="rounded-[12px] border border-[#E8EAE6] bg-white p-8 text-center">
+                    <p className="text-sm text-red-600">{listError}</p>
                     <button
                       type="button"
-                      onClick={() => setFiltersOpen(false)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ccc4b4] bg-white text-[#6a6258] transition-colors active:bg-[#f0ece4]"
-                      aria-label="閉じる"
+                      onClick={() => window.location.reload()}
+                      className="mt-3 text-sm text-[#4A8C5E] underline"
                     >
-                      ✕
+                      再読み込み
                     </button>
                   </div>
-                  <div className="max-h-[65dvh] overflow-y-auto px-4 py-4 space-y-5">
-                    <EventSearchSection
-                      dateRange={dateRange}
-                      onDateRangeChange={setDateRange}
-                      selectedTags={urlTags}
-                      onTagsChange={handleTagsChange}
-                      selectedArea={selectedArea}
-                      onAreaChange={handleAreaChange}
-                      searchQuery={searchQuery}
-                      onSearchChange={setSearchQuery}
-                      onSearch={handleSearch}
-                      variant="drawer"
-                    />
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between rounded-2xl border border-[#ccc4b4] bg-white px-4 py-3 text-[14px]">
-                        <label className="flex items-center gap-2 text-[#3a3428]">
-                          <input
-                            type="checkbox"
-                            checked={availableOnly}
-                            onChange={(e) => setAvailableOnly(e.target.checked)}
-                            className="rounded border-[#ccc4b4]"
-                          />
-                          募集中のみ
-                        </label>
-                        <label className="flex items-center gap-2 text-[#3a3428]">
-                          <input
-                            type="checkbox"
-                            checked={childFriendlyOnly}
-                            onChange={(e) => setChildFriendlyOnly(e.target.checked)}
-                            className="rounded border-[#ccc4b4]"
-                          />
-                          親子歓迎
-                        </label>
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-[11px] text-[#6a6258]">
-                          並び替え
-                        </label>
-                        <select
-                          value={sortOrder}
-                          onChange={(e) => setSortOrder(e.target.value as EventSort)}
-                          className="h-11 w-full rounded-2xl border border-[#ccc4b4] bg-white px-3 text-[14px] text-[#3a3428]"
-                        >
-                          <option value="date_asc">開催日が近い順</option>
-                          <option value="date_desc">開催日が遠い順</option>
-                          <option value="newest">新着順</option>
-                        </select>
-                      </div>
-                    </div>
+                ) : filteredEvents.length === 0 ? (
+                  <div className="rounded-[12px] border border-[#E8EAE6] bg-white p-10 text-center">
+                    <p className="text-[13px] text-[#666666]">
+                      該当するイベントがありません
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDateRange("all");
+                        setSelectedArea("");
+                        setAvailableOnly(false);
+                        setPriceFilter("all");
+                        setChildFriendlyOnly(false);
+                        setSearchQuery("");
+                        setSelectedCategory("");
+                        setIndoorOnly(false);
+                        setReservationOnly(false);
+                        handleTagsChange([]);
+                        router.push("/events", { scroll: false });
+                      }}
+                      className="mt-4 inline-flex h-10 items-center rounded-full bg-[#223344] px-5 text-[13px] font-medium text-white"
+                    >
+                      条件を緩める
+                    </button>
                   </div>
-                  <div className="border-t border-[#ccc4b4] bg-[#faf8f2]/95 px-4 py-3">
-                    <div className="flex gap-3">
+                ) : (
+                  <>
+                    <ul className="space-y-3">
+                      {visibleMobileEvents.map((event) => (
+                        <li key={event.id}>
+                          <EventsMobileRowCard event={event} />
+                        </li>
+                      ))}
+                    </ul>
+
+                    {hasMoreMobile ? (
                       <button
                         type="button"
-                        onClick={() => {
-                          setDateRange("all");
-                          setSelectedArea("");
-                          setAvailableOnly(false);
-                          setPriceFilter("all");
-                          setChildFriendlyOnly(false);
-                          setSearchQuery("");
-                          router.push("/events", { scroll: false });
-                          setFiltersOpen(false);
-                        }}
-                        className="h-11 flex-1 rounded-full border border-[#ccc4b4] bg-white text-[13px] font-medium text-[#3a3428] transition-colors active:bg-[#f0ece4]"
+                        onClick={() =>
+                          setMobileVisibleCount((n) =>
+                            Math.min(n + EVENTS_MOBILE_PAGE_STEP, filteredEvents.length)
+                          )
+                        }
+                        className="mt-5 flex h-11 w-full items-center justify-center gap-1 rounded-full border border-[#E0E6DE] bg-white text-[13px] font-medium text-[#666666] shadow-[0_1px_3px_rgba(34,51,68,0.04)] transition active:bg-[#F0F2EF]"
                       >
-                        条件をクリア
+                        もっと見る
+                        <ChevronDown className="h-4 w-4" aria-hidden />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFiltersOpen(false);
-                          handleSearch();
-                        }}
-                        className="h-11 flex-1 rounded-full bg-[#1e3848] text-[13px] font-medium text-[#f4f0e8] active:scale-[0.99]"
-                      >
-                        適用する
-                      </button>
-                    </div>
-                  </div>
+                    ) : null}
+                  </>
+                )}
+              </section>
+            </>
+          ) : (
+            <div className="pt-1">
+              {!userPos && (
+                <div className="mb-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-700">
+                  位置情報が許可されていません。地図は広い範囲で表示しています。
+                  <button
+                    type="button"
+                    onClick={handleCenterToCurrentLocation}
+                    className="ml-1.5 underline underline-offset-2"
+                  >
+                    現在地を取得
+                  </button>
                 </div>
-              </>
-            )}
-          </>
-        ) : (
-          <div className="mt-4">
-            {!userPos && (
-              <div className="mb-3 rounded-[16px] border border-[#f0d8a0] bg-[#fef8e8] px-4 py-3 text-[13px] text-[#8a6820]">
-                位置情報が許可されていません。地図は広い範囲で表示しています。
-                <button
-                  type="button"
-                  onClick={handleCenterToCurrentLocation}
-                  className="ml-1.5 underline underline-offset-2"
+              )}
+
+              {mapLoading ? (
+                <div
+                  className="flex items-center justify-center rounded-[12px] border border-[#DDE8DF] bg-white"
+                  style={{ height: "60vh", minHeight: "60vh" }}
                 >
-                  現在地を取得
-                </button>
-              </div>
-            )}
-
-            {mapLoading ? (
-              <div
-                className="flex items-center justify-center rounded-2xl border border-[#ccc4b4] bg-[#faf8f2]"
-                style={{ height: "60vh", minHeight: "60vh" }}
-              >
-                <p className="text-[13px] text-[#6a6258]">地図データを読み込み中...</p>
-              </div>
-            ) : mapEvents.length === 0 ? (
-              filteredEvents.length > 0 ? (
-                <div className="rounded-[20px] border border-[#ccc4b4] bg-[#faf8f2] p-10 text-center">
-                  <p className="text-[13px] leading-relaxed text-[#6a6258]">
-                    地図に載せられる位置情報がない、または表示範囲外のイベントが含まれている可能性があります。
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setView("list")}
-                    className="mt-5 inline-flex h-11 items-center rounded-full bg-[#1e3848] px-6 text-[13px] font-medium text-[#f4f0e8] active:scale-[0.99]"
-                  >
-                    一覧で見る（全{filteredEvents.length}件）
-                  </button>
+                  <p className="text-[13px] text-[#566358]">地図データを読み込み中...</p>
                 </div>
+              ) : mapEvents.length === 0 ? (
+                filteredEvents.length > 0 ? (
+                  <div className="rounded-[12px] border border-[#DDE8DF] bg-white p-10 text-center">
+                    <p className="text-[13px] leading-relaxed text-[#566358]">
+                      地図に載せられる位置情報がない、または表示範囲外のイベントが含まれている可能性があります。
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setView("list")}
+                      className="mt-5 inline-flex h-11 items-center rounded-full bg-[#1A2214] px-6 text-[13px] font-medium text-white"
+                    >
+                      一覧で見る（全{filteredEvents.length}件）
+                    </button>
+                  </div>
+                ) : (
+                  <div className="rounded-[12px] border border-[#DDE8DF] bg-white p-10 text-center">
+                    <p className="text-[13px] text-[#566358]">
+                      この条件に合うイベントはまだありません
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setView("list");
+                        setDateRange("all");
+                        setSelectedArea("");
+                        setAvailableOnly(false);
+                        setPriceFilter("all");
+                        setChildFriendlyOnly(false);
+                        setSearchQuery("");
+                        setSelectedCategory("");
+                        handleTagsChange([]);
+                        router.push("/events", { scroll: false });
+                      }}
+                      className="mt-4 inline-flex h-10 items-center rounded-full bg-[#1A2214] px-5 text-[13px] font-medium text-white"
+                    >
+                      条件を緩める
+                    </button>
+                  </div>
+                )
               ) : (
-                <div className="rounded-[20px] border border-[#ccc4b4] bg-[#faf8f2] p-10 text-center">
-                  <p className="text-[13px] text-[#6a6258]">
-                    この条件に合うイベントはまだありません
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setView("list");
-                      setDateRange("all");
-                      setSelectedArea("");
-                      setAvailableOnly(false);
-                      setPriceFilter("all");
-                      setChildFriendlyOnly(false);
-                      setSearchQuery("");
-                      handleTagsChange([]);
-                      router.push("/events", { scroll: false });
-                    }}
-                    className="mt-4 inline-flex h-10 items-center rounded-full bg-[#1e3848] px-5 text-[13px] font-medium text-[#f4f0e8]"
-                  >
-                    条件を緩める
-                  </button>
-                </div>
-              )
-            ) : (
-              <MapPageContainer
-                mapEvents={mapEvents}
-                mapLoading={mapLoading}
-                userPos={userPos}
-                availableOnly={availableOnly}
-                sortOrder={sortOrder}
-                onCenterToCurrentLocation={handleCenterToCurrentLocation}
-                onSearchInBounds={handleSearchInBounds}
-              />
-            )}
-          </div>
-        )}
-
-        <div className="mt-8 pb-8">
-          <Link
-            href="/organizer"
-            className="text-[13px] text-[#6a6258] underline-offset-4 hover:text-[#3a3428] hover:underline"
-          >
-            主催者向け：管理ページ →
-          </Link>
+                <MapPageContainer
+                  mapEvents={mapEvents}
+                  mapLoading={mapLoading}
+                  userPos={userPos}
+                  availableOnly={availableOnly}
+                  sortOrder={sortOrder}
+                  onCenterToCurrentLocation={handleCenterToCurrentLocation}
+                  onSearchInBounds={handleSearchInBounds}
+                />
+              )}
+            </div>
+          )}
         </div>
-      </main>
+
+      </div>
     </div>
   );
 }

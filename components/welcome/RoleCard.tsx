@@ -1,12 +1,13 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 type Props = {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
-  description: string;
+  description: ReactNode;
   buttonLabel: string;
   href: string;
   /** ほんの少し目立たせる（イベントカード用） */
@@ -36,7 +37,9 @@ export function RoleCard({
       <h2 className="font-semibold text-slate-900 group-hover:text-slate-800">
         {title}
       </h2>
-      <p className="mt-1 flex-1 text-sm leading-relaxed text-slate-600">
+      <p
+        className="mt-1 flex-1 text-sm leading-relaxed text-slate-600"
+      >
         {description}
       </p>
       <span

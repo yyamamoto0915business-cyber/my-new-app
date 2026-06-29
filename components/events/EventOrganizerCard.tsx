@@ -11,6 +11,7 @@ type EventOrganizerCardProps = {
   organizerRegion?: string | null;
   organizerBio?: string | null;
   eventCount?: number;
+  variant?: "default" | "embedded";
 };
 
 export function EventOrganizerCard({
@@ -20,28 +21,49 @@ export function EventOrganizerCard({
   organizerRegion,
   organizerBio,
   eventCount,
+  variant = "default",
 }: EventOrganizerCardProps) {
   const profileHref = organizerId ? `/organizers/${organizerId}` : null;
   const [avatarError, setAvatarError] = useState(false);
   const showAvatar = organizerAvatarUrl && !avatarError;
 
+  const isEmbedded = variant === "embedded";
+
   return (
     <aside
-      className="rounded-[24px] border border-slate-200/90 bg-white/95 p-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)] sm:p-5"
-      aria-labelledby="organizer-card-heading"
+      className={
+        isEmbedded
+          ? undefined
+          : "rounded-2xl border border-[var(--mg-line)] bg-white p-5"
+      }
+      aria-labelledby={isEmbedded ? undefined : "organizer-card-heading"}
     >
-      <h2
-        id="organizer-card-heading"
-        className="text-[16px] font-semibold text-slate-900"
-      >
-        このイベントの主催者
-      </h2>
+      {!isEmbedded ? (
+        <h2
+          id="organizer-card-heading"
+          className="text-base font-semibold text-[var(--mg-ink)]"
+        >
+          このイベントの主催者
+        </h2>
+      ) : null}
 
-      <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
+      <div
+        className={
+          isEmbedded
+            ? "flex flex-col items-center gap-3 text-center"
+            : "mt-4 flex flex-col gap-4 sm:flex-row sm:items-start"
+        }
+      >
         {/* アイコン */}
         <div className="shrink-0">
           {showAvatar ? (
-            <div className="relative h-14 w-14 overflow-hidden rounded-full bg-slate-100 sm:h-16 sm:w-16">
+            <div
+              className={
+                isEmbedded
+                  ? "relative h-12 w-12 overflow-hidden rounded-full bg-slate-100"
+                  : "relative h-14 w-14 overflow-hidden rounded-full bg-slate-100 sm:h-16 sm:w-16"
+              }
+            >
               <Image
                 src={organizerAvatarUrl}
                 alt=""
@@ -62,18 +84,24 @@ export function EventOrganizerCard({
         </div>
 
         {/* 情報 */}
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold text-slate-900">{organizerName}</p>
+        <div className={isEmbedded ? "min-w-0" : "min-w-0 flex-1"}>
+          <p className="font-semibold text-[var(--mg-ink)]">{organizerName}</p>
           {organizerRegion && (
-            <p className="mt-0.5 text-sm text-slate-500">{organizerRegion}</p>
+            <p className="mt-0.5 text-sm text-[var(--mg-muted)]">{organizerRegion}</p>
           )}
           {organizerBio && (
-            <p className="mt-2 line-clamp-3 text-sm text-slate-600">
+            <p
+              className={
+                isEmbedded
+                  ? "mt-2 line-clamp-4 text-xs leading-relaxed text-[var(--mg-muted)]"
+                  : "mt-2 line-clamp-3 text-sm leading-relaxed text-[var(--mg-muted)]"
+              }
+            >
               {organizerBio}
             </p>
           )}
-          {eventCount != null && eventCount > 0 && (
-            <p className="mt-2 text-xs text-slate-500">
+          {eventCount != null && eventCount > 0 && !isEmbedded && (
+            <p className="mt-2 text-xs text-[var(--mg-muted)]">
               他 {eventCount} 件のイベントを開催
             </p>
           )}
@@ -83,9 +111,14 @@ export function EventOrganizerCard({
       {profileHref && (
         <Link
           href={profileHref}
-          className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-colors active:bg-slate-50"
+          className={
+            isEmbedded
+              ? "mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[var(--accent)] hover:underline"
+              : "mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--accent)] hover:underline"
+          }
         >
-          主催者プロフィールを見る
+          プロフィールを見る
+          <span aria-hidden>›</span>
         </Link>
       )}
     </aside>

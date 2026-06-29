@@ -8,6 +8,7 @@ import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { InboxItem } from "@/lib/inbox-queries";
 import { ProfileEmptyCard } from "@/components/profile/profile-empty-card";
 import { getLoginUrl } from "@/lib/auth-utils";
+import { isAbortLikeError } from "@/lib/is-abort-like-error";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
@@ -103,8 +104,8 @@ function PersonRow({ item, activeId, avBg, avColor, activeBg, activeBorder, unre
   const active = item.conversation_id === activeId;
   return (
     <Link href={`/messages/${item.conversation_id}`} className="ms-pitem"
-      style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", cursor: "pointer", textDecoration: "none", borderLeft: `2.5px solid ${active ? activeBorder : "transparent"}`, background: active ? activeBg : "transparent", transition: "background .1s", position: "relative", borderBottom: `1px solid ${C.border2}` }}>
-      <div className="ms-av" style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, flexShrink: 0, background: avBg, color: avColor }}>
+      style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px", cursor: "pointer", textDecoration: "none", borderLeft: `2.5px solid ${active ? activeBorder : "transparent"}`, background: active ? activeBg : "transparent", transition: "background .1s", position: "relative", borderBottom: `1px solid ${C.border2}` }}>
+      <div className="ms-av" style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, flexShrink: 0, background: avBg, color: avColor }}>
         {initials(name)}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -120,7 +121,7 @@ function PersonRow({ item, activeId, avBg, avColor, activeBg, activeBorder, unre
 }
 
 function EvCard({ group, activeId, tab, search }: { group: EventGroup; activeId?: string; tab: Tab; search: string }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [sub, setSub] = useState<"pax" | "vol">("pax");
   const t = THEMES[group.themeIdx];
   const hasBoth = group.participants.length > 0 && group.volunteers.length > 0;
@@ -152,7 +153,7 @@ function EvCard({ group, activeId, tab, search }: { group: EventGroup; activeId?
       {/* Header row */}
       <div onClick={() => setOpen(!open)}
         style={{ display: "flex", alignItems: "center", cursor: "pointer", userSelect: "none" }}>
-        <div style={{ width: 56, minWidth: 56, height: 56, flexShrink: 0, borderRadius: 8, margin: "9px 0 9px 10px", overflow: "hidden", position: "relative" }}>
+        <div className="ms-ev-thumb" style={{ width: 48, minWidth: 48, height: 48, flexShrink: 0, borderRadius: 8, margin: "7px 0 7px 10px", overflow: "hidden", position: "relative" }}>
           {group.eventImageUrl ? (
             <img
               src={group.eventImageUrl}
@@ -165,15 +166,15 @@ function EvCard({ group, activeId, tab, search }: { group: EventGroup; activeId?
               }}
             />
           ) : null}
-          <div style={{ display: group.eventImageUrl ? "none" : "flex", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", background: t.thumbBg, borderRadius: 8, fontSize: 22, color: t.thumbColor, position: group.eventImageUrl ? "absolute" : undefined, inset: group.eventImageUrl ? 0 : undefined }}>
+          <div className="ms-ev-thumb-fallback" style={{ display: group.eventImageUrl ? "none" : "flex", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", background: t.thumbBg, borderRadius: 8, fontSize: 20, color: t.thumbColor, position: group.eventImageUrl ? "absolute" : undefined, inset: group.eventImageUrl ? 0 : undefined }}>
             📅
           </div>
         </div>
-        <div style={{ flex: 1, minWidth: 0, padding: "0 0 0 12px" }}>
+        <div style={{ flex: 1, minWidth: 0, padding: "0 0 0 10px" }}>
           <div className="ms-ev-name" style={{ fontSize: 12, fontWeight: 600, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-.1px" }}>
             {group.eventTitle ?? "イベント"}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
             {group.participants.length > 0 && (
               <span className="ms-ev-pill" style={{ fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 100, background: C.greenL, color: C.greenD }}>
                 参加者 {group.participants.length}
@@ -241,17 +242,31 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   useEffect(() => {
     if (!user && !AUTH_DISABLED) { setLoading(false); return; }
     if (AUTH_DISABLED) { setLoading(false); return; }
+
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
-    fetchWithTimeout("/api/messages/inbox", API_CREDENTIALS)
+
+    fetchWithTimeout("/api/messages/inbox", { ...API_CREDENTIALS, signal: controller.signal })
       .then(async (r) => {
+        if (controller.signal.aborted || r.status === 499) return null;
         const data = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(data?.error ?? "取得に失敗しました");
         return data as InboxItem[];
       })
-      .then((data) => setItems(data ?? []))
-      .catch((e) => setError(e?.message ?? "取得に失敗しました"))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (controller.signal.aborted || data == null) return;
+        setItems(data);
+      })
+      .catch((e) => {
+        if (controller.signal.aborted || isAbortLikeError(e)) return;
+        setError(e?.message ?? "取得に失敗しました");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+
+    return () => controller.abort();
   }, [user]);
 
   if (authLoading) {
@@ -298,15 +313,18 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const mainHidden = !conversationId;
 
   return (
-    <div className="ms-shell" style={{ display: "flex", height: "100dvh", overflow: "hidden", background: C.bg, fontFamily: "'Noto Sans JP', sans-serif" }}>
+    <div
+      className="ms-shell max-sm:h-[calc(100dvh-var(--mg-mobile-top-header-h,46px)-env(safe-area-inset-top,0px)-calc(72px+env(safe-area-inset-bottom,0px)))] sm:h-[100dvh]"
+      style={{ display: "flex", overflow: "hidden", background: C.bg, fontFamily: "'Noto Sans JP', sans-serif" }}
+    >
       {/* Sidebar */}
       <aside
         style={{ background: C.surface, borderRight: `1px solid ${C.border}`, flexDirection: "column", overflow: "hidden" }}
         className={sidebarHidden ? "hidden sm:flex sm:w-[304px] sm:shrink-0" : "flex flex-col w-full sm:w-[304px] sm:shrink-0"}
       >
         {/* Header */}
-        <div style={{ padding: "18px 16px 13px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-          <div style={{ fontFamily: "'Cormorant Garamond', 'Noto Serif JP', serif", fontStyle: "italic", fontSize: 17, fontWeight: 500, color: C.t1, marginBottom: 10, letterSpacing: "-.4px", lineHeight: 1 }}>
+        <div className="ms-sidebar-header" style={{ padding: "14px 14px 11px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+          <div className="ms-sidebar-title" style={{ fontFamily: "'Cormorant Garamond', 'Noto Serif JP', serif", fontStyle: "italic", fontSize: 16, fontWeight: 500, color: C.t1, marginBottom: 8, letterSpacing: "-.4px", lineHeight: 1 }}>
             メッセージ
           </div>
           <div style={{ position: "relative" }}>
@@ -320,7 +338,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               onChange={(e) => setSearch(e.target.value)}
               placeholder="イベント名・人名で検索…"
               className="ms-sbsearch-input"
-              style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 100, padding: "7px 12px 7px 32px", fontSize: 12, fontFamily: "inherit", color: C.t1, outline: "none", transition: "border-color .15s, box-shadow .15s" }}
+              style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 100, padding: "6px 11px 6px 30px", fontSize: 12, fontFamily: "inherit", color: C.t1, outline: "none", transition: "border-color .15s, box-shadow .15s" }}
             />
           </div>
         </div>
@@ -331,7 +349,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
             const on = tab === td.id;
             return (
               <button key={td.id} className="ms-tab-btn" onClick={() => setTab(td.id)}
-                style={{ flex: 1, padding: "10px 4px", background: "none", border: "none", borderBottom: `2px solid ${on ? td.onColor : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: on ? 500 : 400, color: on ? td.onColor : C.t3, transition: "all .13s", letterSpacing: ".02em", whiteSpace: "nowrap" }}>
+                style={{ flex: 1, padding: "9px 4px", background: "none", border: "none", borderBottom: `2px solid ${on ? td.onColor : "transparent"}`, marginBottom: -1, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: on ? 500 : 400, color: on ? td.onColor : C.t3, transition: "all .13s", letterSpacing: ".02em", whiteSpace: "nowrap" }}>
                 {td.label}
                 {td.badge > 0 && (
                   <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 14, height: 14, borderRadius: 100, fontSize: 9, fontWeight: 700, padding: "0 4px", marginLeft: 4, verticalAlign: "middle", background: td.onL, color: td.onColor }}>
@@ -367,9 +385,9 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
             </div>
           )}
           {!loading && !error && groups.length === 0 && (
-            <div style={{ padding: "32px 16px", textAlign: "center" }}>
-              <p style={{ fontSize: 13, color: C.t3 }}>まだメッセージがありません</p>
-              <Link href="/events" style={{ display: "inline-flex", alignItems: "center", marginTop: 16, borderRadius: 100, background: tabColor, color: "white", padding: "8px 20px", fontSize: 12, fontWeight: 500, textDecoration: "none" }}>
+            <div className="ms-empty-state" style={{ padding: "28px 14px", textAlign: "center" }}>
+              <p style={{ fontSize: 12, color: C.t3 }}>まだメッセージがありません</p>
+              <Link href="/events" style={{ display: "inline-flex", alignItems: "center", marginTop: 12, borderRadius: 100, background: tabColor, color: "white", padding: "7px 16px", fontSize: 11, fontWeight: 500, textDecoration: "none" }}>
                 イベントを探す
               </Link>
             </div>

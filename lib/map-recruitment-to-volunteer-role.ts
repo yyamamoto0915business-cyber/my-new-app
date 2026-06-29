@@ -8,7 +8,19 @@ export type VolunteerRoleFromRecruitment = VolunteerRoleWithEvent & {
   organizerId: string;
   hasTransportSupport: boolean;
   hasHonorarium: boolean;
+  /** DB recruitments 行から生成された募集 */
+  source: "recruitment";
 };
+
+export function isVolunteerRoleFromRecruitment(
+  role: unknown
+): role is VolunteerRoleFromRecruitment {
+  return (
+    typeof role === "object" &&
+    role !== null &&
+    (role as VolunteerRoleFromRecruitment).source === "recruitment"
+  );
+}
 
 /** `/volunteer/[id]` の応募先判定用（Supabase recruitments の id） */
 export const RECRUITMENT_UUID_RE =
@@ -146,6 +158,7 @@ export function recruitmentRowToVolunteerRole(row: RowWithJoins): VolunteerRoleF
     event,
     createdAt: row.created_at,
     organizerId: row.organizer_id,
+    source: "recruitment",
   };
 }
 

@@ -15,6 +15,7 @@ import {
 } from "@/lib/created-events-store";
 import { getEventById } from "@/lib/events";
 import type { EventFormData } from "@/lib/db/types";
+import { normalizeEventRecurrence, normalizeRecurrenceCount } from "@/lib/event-recurrence";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -117,6 +118,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     participationMode,
     registrationDeadline,
     registrationNote,
+    recurrence,
+    recurrenceCount,
   } = body;
 
   const t = String(title ?? "").trim();
@@ -129,6 +132,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       { status: 400 }
     );
   }
+
+  const normalizedRecurrence = normalizeEventRecurrence(recurrence);
+  const normalizedRecurrenceCount =
+    normalizedRecurrence === "none"
+      ? null
+      : normalizeRecurrenceCount(recurrenceCount, normalizedRecurrence);
 
   const formData: EventFormData = {
     title: String(title ?? "").trim(),
@@ -176,6 +185,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       registrationNote && String(registrationNote).trim()
         ? String(registrationNote).trim()
         : undefined,
+    recurrence: normalizedRecurrence,
+    recurrenceCount: normalizedRecurrenceCount,
   };
 
   const supabase = await createClient();

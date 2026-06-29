@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { createClient } from "@/lib/supabase/client";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { isAbortLikeError } from "@/lib/is-abort-like-error";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
@@ -103,10 +104,15 @@ export default function ConversationPage() {
 
   useEffect(() => {
     if (!conversationId) return;
+    const controller = new AbortController();
     setEventId(null); setEventTitle(null); setCounterpartName(null);
     setMyRole("volunteer"); setConversationKind("event_inquiry");
-    fetchWithTimeout(`/api/messages/conversations/${conversationId}/meta`, API_CREDENTIALS)
+    fetchWithTimeout(`/api/messages/conversations/${conversationId}/meta`, {
+      ...API_CREDENTIALS,
+      signal: controller.signal,
+    })
       .then(async (r) => {
+        if (controller.signal.aborted || r.status === 499) return;
         const data = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(data?.error ?? "メタ情報の取得に失敗しました");
         setEventId(data?.eventId ?? null);
@@ -115,7 +121,12 @@ export default function ConversationPage() {
         setConversationKind(typeof data?.conversationKind === "string" ? data.conversationKind : "event_inquiry");
         setCounterpartName(data?.counterpartDisplayName ?? null);
       })
-      .catch(() => {});
+      .catch((e) => {
+        if (!controller.signal.aborted && !isAbortLikeError(e)) {
+          console.warn("conversation meta fetch failed:", e);
+        }
+      });
+    return () => controller.abort();
   }, [conversationId]);
 
   const currentUserId = user?.id ?? (AUTH_DISABLED ? "dev-user" : null);
@@ -124,16 +135,30 @@ export default function ConversationPage() {
     if (!conversationId || !currentUserId) return;
     const supabase = createClient();
     if (!supabase) { setLoading(false); return; }
+    const controller = new AbortController();
     setLoading(true); setError(null);
 
     (async () => {
       try {
-        const msgRes = await fetchWithTimeout(`/api/messages/conversations/${conversationId}/messages`, API_CREDENTIALS);
+        const msgRes = await fetchWithTimeout(`/api/messages/conversations/${conversationId}/messages`, {
+          ...API_CREDENTIALS,
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted || msgRes.status === 499) return;
         if (msgRes.ok) setMessages(await msgRes.json());
         else setError("メッセージの取得に失敗しました");
-        await fetch(`/api/messages/conversations/${conversationId}/read`, { method: "POST", ...API_CREDENTIALS });
-      } catch { setError("通信に失敗しました"); }
-      finally { setLoading(false); }
+        await fetch(`/api/messages/conversations/${conversationId}/read`, {
+          method: "POST",
+          ...API_CREDENTIALS,
+          signal: controller.signal,
+        });
+      } catch (e) {
+        if (!controller.signal.aborted && !isAbortLikeError(e)) {
+          setError("通信に失敗しました");
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
     })();
 
     const channel = supabase.channel(`messages:${conversationId}`)
@@ -143,7 +168,10 @@ export default function ConversationPage() {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      controller.abort();
+      supabase.removeChannel(channel);
+    };
   }, [conversationId, currentUserId]);
 
   useEffect(() => {

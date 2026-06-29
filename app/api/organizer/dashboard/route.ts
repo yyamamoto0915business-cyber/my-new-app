@@ -29,7 +29,8 @@ function getEventStatus(event: {
   date: string;
   status?: string;
   endTime?: string | null;
-}): "public" | "draft" | "ended" {
+}): "public" | "draft" | "ended" | "archived" {
+  if (event.status === "archived") return "archived";
   if (event.status === "draft") return "draft";
   if (event.status && !isPublicEventStatus(event.status)) return "ended";
   const endAtJst = getEventEndAtJst(event.date, event.endTime);
@@ -37,7 +38,7 @@ function getEventStatus(event: {
 }
 
 export type DashboardEvent = Omit<Event, "status"> & {
-  status: "public" | "draft" | "ended";
+  status: "public" | "draft" | "ended" | "archived";
   /** DB上の公開状態（公開/非公開の実体） */
   visibilityStatus: "draft" | "published" | "archived";
   participantCount: number;
@@ -62,6 +63,8 @@ export type DashboardKpis = {
   needsAction: number;
   pendingApplications: number;
   unreadMessages: number;
+  /** 公開中（募集中）のスタッフ募集件数 */
+  recruitingPublic: number;
 };
 
 export type BillingSummary = {
@@ -117,6 +120,7 @@ async function buildMockDashboard(): Promise<DashboardResponse> {
       needsAction: 0,
       pendingApplications: 0,
       unreadMessages: 0,
+      recruitingPublic: 0,
     },
     todos,
     events: events.sort((a, b) => (a.date >= today && b.date >= today ? a.date.localeCompare(b.date) : a.date > b.date ? 1 : -1)),
@@ -312,6 +316,7 @@ async function buildSupabaseDashboard(
 
   const hosting = events.filter((e) => e.status === "public").length;
   const needsAction = Math.min(todos.length, 99);
+  const recruitingPublic = recruitmentsData.filter((r) => r.status === "public").length;
 
   const [orgRes, planRes] = organizerRow as unknown as [SbResult<OrgRow>, SbResult<PlanStateRow>];
   const orgRow = orgRes?.data && !orgRes.error ? orgRes.data : null;
@@ -337,6 +342,7 @@ async function buildSupabaseDashboard(
       needsAction,
       pendingApplications: pendingApplications + pendingEventParticipants,
       unreadMessages,
+      recruitingPublic,
     },
     todos,
     events: events.sort((a, b) => (a.date >= today && b.date >= today ? a.date.localeCompare(b.date) : a.date > b.date ? 1 : -1)),

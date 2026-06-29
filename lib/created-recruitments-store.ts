@@ -165,6 +165,10 @@ export function getStoreRecruitmentsByOrganizer(organizerId: string): StoreRecru
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
+export function findStoreRecruitmentByNotesMarker(marker: string): StoreRecruitment | null {
+  return recruitments.find((r) => r.notes?.includes(marker)) ?? null;
+}
+
 export function addStoreApplication(
   recruitmentId: string,
   userId: string,

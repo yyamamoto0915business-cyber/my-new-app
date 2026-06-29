@@ -38,28 +38,29 @@ export function EventQnASection({ eventId }: Props) {
     load();
   }, [load]);
 
+  const shellClass = "pt-1";
+  const titleClass =
+    "text-[15px] font-semibold text-[var(--ed-ink,var(--mg-ink))] min-[900px]:text-lg";
+  const cardClass = "ed-qna-card p-3.5";
+
   if (loading) {
     return (
-      <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-700">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          よくある質問
-        </h2>
-        <p className="mt-2 text-sm text-zinc-500">読み込み中...</p>
+      <div className={shellClass}>
+        <h2 className={titleClass}>よくある質問</h2>
+        <p className="mt-2 text-sm text-[var(--ed-muted,var(--mg-muted))]">読み込み中...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-700">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          よくある質問
-        </h2>
-        <p className="mt-2 text-sm text-red-600">{error}</p>
+      <div className={shellClass}>
+        <h2 className={titleClass}>よくある質問</h2>
+        <p className="mt-2 text-sm text-red-600/90">{error}</p>
         <button
           type="button"
           onClick={load}
-          className="mt-2 text-sm text-[var(--accent)] underline"
+          className="mt-2 text-sm font-medium text-[var(--ed-forest,var(--ed-accent))] underline"
         >
           再読み込み
         </button>
@@ -70,24 +71,21 @@ export function EventQnASection({ eventId }: Props) {
   if (items.length === 0) return null;
 
   return (
-    <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-700">
-      <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+    <div className={shellClass}>
+      <h2 className="sr-only min-[900px]:not-sr-only min-[900px]:mb-3 min-[900px]:text-lg min-[900px]:font-semibold min-[900px]:text-[var(--mg-ink)]">
         よくある質問
       </h2>
-      <ul className="mt-3 space-y-3">
+      <ul className="space-y-2.5">
         {items.map((q) => (
-          <li
-            key={q.id}
-            className="rounded-lg border border-zinc-200/60 bg-zinc-50/50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50"
-          >
-            <span className="text-xs text-zinc-500">
+          <li key={q.id} className={cardClass}>
+            <span className="text-[10px] font-medium tracking-wide text-[var(--ed-forest,var(--ed-accent))]">
               {QNA_CATEGORY_LABELS[q.category as QnACategory] ?? q.category}
             </span>
-            <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">
+            <p className="mt-1 text-[13px] font-semibold text-[var(--ed-ink,var(--mg-ink))]">
               Q. {q.question}
             </p>
             {q.answer && (
-              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="mt-2 text-[13px] leading-relaxed text-[var(--ed-muted,var(--mg-muted))]">
                 A. {q.answer}
               </p>
             )}

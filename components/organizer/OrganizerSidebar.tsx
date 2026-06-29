@@ -2,49 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  ORGANIZER_SIDEBAR_NAV_ITEMS,
+  ORGANIZER_LITE_NAV_ITEMS,
+  organizerSidebarNavIsActive,
+  type OrganizerNavVariant,
+} from "@/lib/organizer/organizer-nav";
+import {
+  OrganizerSidebarAdminIcon,
+  OrganizerSidebarBackIcon,
+  OrganizerSidebarBrandLogo,
+  OrganizerSidebarDashboardIcon,
+  OrganizerSidebarInboxIcon,
+  OrganizerSidebarSettingsIcon,
+} from "@/components/organizer/OrganizerSidebarIcons";
 
-type OrganizerNavVariant = "full" | "lite";
+const SIDEBAR_ICONS = {
+  "/organizer": OrganizerSidebarDashboardIcon,
+  "/organizer/inbox": OrganizerSidebarInboxIcon,
+  "/organizer/settings": OrganizerSidebarSettingsIcon,
+} as const;
 
-const FULL_NAV_ITEMS = [
-  { label: "ダッシュボード", href: "/organizer" },
-  { label: "イベント管理", href: "/organizer/events" },
-  { label: "主催者プラン", href: "/organizer/settings/plan" },
-  { label: "売上受取", href: "/organizer/settings/payouts" },
-  { label: "スタッフ募集", href: "/organizer/recruitments" },
-  { label: "記事管理", href: "/organizer/articles" },
-  { label: "ストーリー", href: "/organizer/stories" },
-  { label: "受信箱", href: "/organizer/inbox" },
-  { label: "設定", href: "/organizer/settings" },
-] as const;
-
-const LITE_NAV_ITEMS = [
-  { label: "主催者登録", href: "/organizer/register" },
-  { label: "料金プラン", href: "/organizer/settings/plan" },
-  { label: "イベントを探す", href: "/events" },
-] as const;
-
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/organizer") {
-    return pathname === "/organizer" || pathname === "/organizer/";
-  }
-  if (href === "/organizer/events") {
-    return pathname === "/organizer/events" || pathname === "/organizer/events/";
-  }
-  if (href === "/organizer/settings/plan") {
-    return pathname === "/organizer/settings/plan" || pathname.startsWith("/organizer/settings/plan/");
-  }
-  if (href === "/organizer/settings/payouts") {
-    return pathname === "/organizer/settings/payouts" || pathname.startsWith("/organizer/settings/payouts/");
-  }
-  if (href === "/organizer/settings") {
-    if (pathname.startsWith("/organizer/settings/plan")) return false;
-    if (pathname.startsWith("/organizer/settings/payouts")) return false;
-    return pathname === "/organizer/settings" || pathname.startsWith("/organizer/settings/");
-  }
-  return pathname === href || pathname.startsWith(href + "/");
-}
-
+/** 主催者 PC サイドバー — モック準拠カード型 */
 export default function OrganizerSidebar({
   variant = "full",
   showAdminLink = false,
@@ -53,74 +34,74 @@ export default function OrganizerSidebar({
   showAdminLink?: boolean;
 }) {
   const pathname = usePathname();
-  const navItems = variant === "lite" ? LITE_NAV_ITEMS : FULL_NAV_ITEMS;
+  const navItems = variant === "lite" ? ORGANIZER_LITE_NAV_ITEMS : ORGANIZER_SIDEBAR_NAV_ITEMS;
 
   return (
-    <aside className="hidden min-[900px]:sticky min-[900px]:top-[var(--mg-pc-top-nav-h)] min-[900px]:z-20 min-[900px]:flex min-[900px]:max-h-[calc(100dvh-var(--mg-pc-top-nav-h))] min-[900px]:w-[200px] min-[900px]:shrink-0 min-[900px]:self-start min-[900px]:flex-col min-[900px]:border-r min-[900px]:border-[#ccc4b4]">
-      {/* Organizer brand block */}
-      <div className="relative shrink-0 overflow-hidden rounded-b-[18px] bg-[#6f9562] px-[22px] py-[20px]">
-        <svg
-          className="absolute right-4 top-3 h-10 w-10 opacity-65"
-          viewBox="0 0 48 48"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden
-        >
-          <circle cx="24" cy="24" r="17" fill="none" stroke="#8faa67" strokeWidth="1.5" />
-          <circle cx="24" cy="24" r="11" fill="none" stroke="#8faa67" strokeWidth="1" />
-          <path d="M24 7v34M7 24h34M12 12l24 24M36 12 12 36" stroke="#8faa67" strokeWidth="1" />
-        </svg>
-
-        <div className="relative z-10">
-          <div
-            className="whitespace-nowrap text-[14px] font-semibold text-[#f5fbf7]"
-            style={{ fontFamily: "'Shippori Mincho', serif" }}
-          >
-            MachiGlyph
-          </div>
-          <div className="mt-0.5 whitespace-nowrap text-[11px] tracking-[0.07em] text-[rgba(245,251,247,0.95)]">
-            {variant === "lite" ? "主催者ページ" : "主催者管理"}
+    <aside className="org-sidebar hidden min-[900px]:sticky min-[900px]:top-0 min-[900px]:z-20 min-[900px]:flex min-[900px]:w-[252px] min-[900px]:shrink-0 min-[900px]:self-start min-[900px]:flex-col min-[900px]:px-3 min-[900px]:pb-3 min-[900px]:pt-2">
+      <div className="flex flex-col overflow-visible rounded-[20px] border border-[#cfe0d6] bg-white shadow-[0_2px_16px_rgba(30,56,40,0.07)]">
+        <div className="org-sidebar__brand shrink-0 px-4 pt-4 pb-4">
+          <div className="flex min-h-11 items-center gap-2.5">
+            <OrganizerSidebarBrandLogo />
+            <div className="min-w-0">
+              <p className="text-[16px] font-bold tracking-tight text-[#1a4d32]">MachiGlyph</p>
+              <p className="text-[11px] font-medium text-[#7a9485]">
+                {variant === "lite" ? "主催者ページ" : "主催者管理"}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Menu items */}
-      <nav className="min-h-0 flex-1 overflow-y-auto bg-[#faf8f2]" aria-label="主催者メニュー">
-        {navItems.map((item) => {
-          const active = isActive(pathname, item.href);
-          return (
+        <nav className="shrink-0 px-3 pt-0.5 pb-1" aria-label="主催者メニュー">
+          <ul className="space-y-1">
+            {navItems.map((item) => {
+              const active = organizerSidebarNavIsActive(pathname ?? "", item.href);
+              const Icon =
+                variant === "full" && item.href in SIDEBAR_ICONS
+                  ? SIDEBAR_ICONS[item.href as keyof typeof SIDEBAR_ICONS]
+                  : null;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] leading-snug transition-all duration-150",
+                      active
+                        ? "bg-[#E8F3EC] font-semibold text-[#1a4d32] shadow-[0_1px_4px_rgba(45,90,63,0.1)]"
+                        : "font-medium text-[#2d5a3f] hover:bg-[#f4f8f5] active:bg-[#eaf4ed]/70"
+                    )}
+                  >
+                    {Icon ? (
+                      <Icon active={active} />
+                    ) : (
+                      <span className="w-[22px] shrink-0" aria-hidden />
+                    )}
+                    <span className="min-w-0">{item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        <div className="shrink-0 space-y-2 border-t border-[#e8ede9] px-3 py-2.5">
+          {showAdminLink && (
             <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center whitespace-nowrap border-b border-[#ece6dc] px-[14px] py-[10px] text-[13px] transition-colors",
-                active
-                  ? "border-l-2 border-l-[#1e3848] bg-[#eef6f2] font-medium text-[#1e3848]"
-                  : "text-[#3a3428] hover:bg-[#f4f0e8]"
-              )}
+              href="/admin"
+              className="flex w-full items-center gap-2.5 rounded-xl bg-[#2d5a3f] px-3 py-2.5 text-[13px] font-semibold text-white shadow-[0_1px_3px_rgba(30,56,40,0.2)] transition hover:bg-[#264f37] active:bg-[#1f422e]"
             >
-              {item.label}
+              <OrganizerSidebarAdminIcon />
+              <span className="min-w-0 flex-1">管理者画面</span>
+              <ChevronRight size={16} className="shrink-0 opacity-90" aria-hidden />
             </Link>
-          );
-        })}
-      </nav>
-
-      {/* Bottom links */}
-      <div className="shrink-0 border-t border-[#c8dcd0] bg-[#f4faf6] p-3 space-y-1">
-        {showAdminLink && (
+          )}
           <Link
-            href="/admin"
-            className="flex items-center whitespace-nowrap rounded-lg px-3 py-2 text-[12px] font-medium transition"
-            style={{ background: "#1e3848", color: "#70c8e0" }}
+            href="/"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#b8d4c4] bg-white px-3 py-2.5 text-[13px] font-semibold text-[#2d5a3f] transition hover:bg-[#f8fbf9] active:bg-[#f0f6f2]"
           >
-            🔐 管理者画面
+            <OrganizerSidebarBackIcon />
+            サイトへ戻る
           </Link>
-        )}
-        <Link
-          href="/"
-          className="flex items-center whitespace-nowrap rounded-lg px-3 py-2 text-[13px] text-[#3a5848] transition hover:bg-[#ecf6ee] hover:text-[#1e3828]"
-        >
-          ← サイトへ戻る
-        </Link>
+        </div>
       </div>
     </aside>
   );

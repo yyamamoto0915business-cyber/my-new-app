@@ -4,6 +4,7 @@ import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { createOrganizerWithGrants } from "@/lib/db/organizers-with-grants";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { truncateShortBio } from "@/lib/organizer/organizer-display";
 
 /**
  * POST: 主催者登録（Earlybird/Founder30付与付き）
@@ -79,17 +80,22 @@ export async function POST(request: NextRequest) {
       contactPhone: body.contactPhone?.trim() || undefined,
     });
 
-    const activityArea = body.activityArea?.trim();
-    const bio = body.bio?.trim();
-    if (activityArea || bio) {
-      const { error: profErr } = await supabase.from("organizer_profiles").insert({
-        organizer_id: organizer.id,
-        activity_area: activityArea || null,
-        bio: bio || null,
-      });
-      if (profErr) {
-        console.error("organizer register: organizer_profiles insert failed", profErr);
-      }
+    const activityArea = body.activityArea?.trim() || null;
+    const bio = body.bio?.trim() || null;
+    const shortBio = bio ? truncateShortBio(bio) : null;
+
+    const { error: profErr } = await supabase.from("organizer_profiles").insert({
+      organizer_id: organizer.id,
+      activity_area: activityArea,
+      bio,
+      short_bio: shortBio,
+    });
+    if (profErr) {
+      console.error("organizer register: organizer_profiles insert failed", profErr);
+      return NextResponse.json(
+        { error: "公開プロフィールの作成に失敗しました。もう一度お試しください。" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(organizer, { status: 201 });

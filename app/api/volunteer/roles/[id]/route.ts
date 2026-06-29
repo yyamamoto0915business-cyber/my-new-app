@@ -11,6 +11,10 @@ import {
   recruitmentRowToVolunteerRole,
   type VolunteerRoleFromRecruitment,
 } from "@/lib/map-recruitment-to-volunteer-role";
+import {
+  findRecruitmentIdForVolunteerRole,
+  findRecruitmentIdForVolunteerRoleAsync,
+} from "@/lib/volunteer-role-recruitment-bridge";
 import type { VolunteerRole } from "@/lib/volunteer-roles-mock";
 import type { CreatedVolunteerRole } from "@/lib/created-volunteer-roles-store";
 
@@ -51,11 +55,23 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  let recruitmentId: string | null = isRecruitmentRowId(id) ? id : findRecruitmentIdForVolunteerRole(id);
+  if (!recruitmentId && !isRecruitmentRowId(id)) {
+    const supabase = await createClient();
+    if (supabase) {
+      const oid = getOrganizerIdByEventId(role.eventId);
+      if (oid) {
+        recruitmentId = await findRecruitmentIdForVolunteerRoleAsync(supabase, id, oid);
+      }
+    }
+  }
+
   const oid = (role as { organizerId?: string | null }).organizerId;
   if (typeof oid === "string" && oid.length > 0) {
     return NextResponse.json({
       ...role,
       organizerId: oid,
+      recruitmentId,
     });
   }
 
@@ -73,6 +89,7 @@ export async function GET(
         }
       : null,
     organizerId: organizerId ?? null,
+    recruitmentId,
   };
 
   return NextResponse.json(withEvent);

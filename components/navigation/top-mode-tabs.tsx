@@ -2,11 +2,20 @@
 
 import Link from "next/link";
 import type { ComponentType } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Search, HandHeart, BriefcaseBusiness } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useOrganizerPro } from "@/lib/organizer-pro-store";
+import {
+  getTopModeTabIdFromContext,
+  isDiscoverPath,
+  isOrganizerDashboardPath,
+  resolveAuthReturnPath,
+  type TopModeTabId,
+} from "@/lib/top-mode-active";
+import { useModeFromCookie } from "@/hooks/use-mode-from-cookie";
 
-export type TopModeTabId = "discover" | "volunteer" | "organizer";
+export type { TopModeTabId };
 
 const TABS = [
   {
@@ -14,33 +23,34 @@ const TABS = [
     label: "探す",
     href: "/",
     icon: Search,
-    active: "bg-rose-50 text-rose-600 shadow-sm border-rose-100",
-    pressed: "active:bg-rose-100/80",
   },
   {
     id: "volunteer" as const,
     label: "ボランティア",
     href: "/volunteer",
     icon: HandHeart,
-    active: "bg-blue-50 text-blue-600 shadow-sm border-blue-100",
-    pressed: "active:bg-blue-100/80",
   },
   {
     id: "organizer" as const,
     label: "主催",
     href: "/organizer",
     icon: BriefcaseBusiness,
-    active: "bg-green-50 text-green-700 shadow-sm border-green-100",
-    pressed: "active:bg-green-100/80",
   },
 ] as const satisfies ReadonlyArray<{
   id: TopModeTabId;
   label: string;
   href: string;
   icon: ComponentType<{ className?: string }>;
-  active: string;
-  pressed: string;
 }>;
+
+const TAB_BASE =
+  "flex touch-manipulation items-center justify-center gap-1.5 font-medium leading-none transition-all duration-200 select-none rounded-full border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3848]/40 focus-visible:ring-offset-1 active:scale-[0.98]";
+
+const TAB_INACTIVE =
+  "border-slate-200 bg-white text-slate-800 shadow-sm active:bg-slate-50 [&_svg]:text-[#4a9a68]";
+
+const TAB_ACTIVE =
+  "border-[#1e3848] bg-[#1e3848] text-white shadow-[0_0_0_1px_rgba(255,255,255,0.9),0_1px_2px_rgba(15,23,42,0.1)] ring-2 ring-slate-200/90 ring-offset-1";
 
 type Props = {
   onTabClick?: (id: TopModeTabId) => void;
@@ -51,20 +61,39 @@ type Props = {
   emphasizeOrganizerActive?: boolean;
 };
 
-function getActiveIdFromPathname(pathname: string): TopModeTabId {
-  if (pathname.startsWith("/organizer")) return "organizer";
-  if (pathname.startsWith("/volunteer")) return "volunteer";
-  return "discover";
+function tabSizeClass(compact?: boolean) {
+  return compact
+    ? "min-h-[36px] px-3 py-2 text-[12px]"
+    : "min-h-[38px] px-3.5 py-2 text-[13px]";
+}
+
+function tabWidthClass(isVolunteer: boolean) {
+  return isVolunteer ? "shrink-0" : "min-w-0 flex-1";
 }
 
 export function TopModeTabs({ onTabClick, className, compact, emphasizeOrganizerActive }: Props) {
-  const pathname = usePathname();
-  const activeId = getActiveIdFromPathname(pathname ?? "");
+  const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
+  const modeFromCookie = useModeFromCookie();
+  const returnPath = resolveAuthReturnPath(
+    searchParams.get("next"),
+    searchParams.get("returnTo"),
+    searchParams.get("redirect"),
+    searchParams.get("callbackUrl")
+  );
+  const activeId = (() => {
+    if (isOrganizerDashboardPath(pathname)) return "organizer" as const;
+    if (pathname.startsWith("/volunteer")) return "volunteer" as const;
+    if (isDiscoverPath(pathname)) return "discover" as const;
+    return getTopModeTabIdFromContext(pathname, returnPath, modeFromCookie);
+  })();
+  const isProOrganizer = useOrganizerPro();
+
   return (
     <div
       className={cn(
-        "flex min-w-0 gap-1.5 rounded-[24px] bg-[#e4ede0]/70 p-1 backdrop-blur supports-[backdrop-filter]:bg-[#e4ede0]/60",
-        compact && "rounded-[20px] gap-1 p-0.5",
+        "flex min-w-0 items-stretch gap-1.5",
+        compact && "gap-1",
         className
       )}
     >
@@ -72,37 +101,47 @@ export function TopModeTabs({ onTabClick, className, compact, emphasizeOrganizer
         const isActive = activeId === tab.id;
         const Icon = tab.icon;
         const isVolunteer = tab.id === "volunteer";
+        const isPaidOrganizerTab = tab.id === "organizer" && isProOrganizer;
+        const widthClass = tabWidthClass(isVolunteer);
+        const linkClass = cn(
+          TAB_BASE,
+          tabSizeClass(compact),
+          widthClass,
+          isActive ? TAB_ACTIVE : TAB_INACTIVE,
+          isActive &&
+            emphasizeOrganizerActive &&
+            tab.id === "organizer" &&
+            "ring-[#cbd5e1]"
+        );
+
+        if (isPaidOrganizerTab && isActive) {
+          return (
+            <span key={tab.id} className={cn("relative inline-flex", widthClass)}>
+              <Link
+                href={tab.href}
+                prefetch
+                onClick={() => onTabClick?.(tab.id)}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(linkClass, "w-full")}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{tab.label}</span>
+              </Link>
+              <span className="org-pro-tab-badge">PRO</span>
+            </span>
+          );
+        }
+
         return (
           <Link
             key={tab.id}
             href={tab.href}
             prefetch
             onClick={() => onTabClick?.(tab.id)}
-            className={cn(
-              "flex touch-manipulation items-center justify-center gap-1.5 font-medium leading-none transition-all duration-200 select-none",
-              "border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3848]/40 focus-visible:ring-offset-1",
-              "active:scale-[0.98]",
-              compact
-                ? "min-h-[34px] rounded-[20px] px-3 py-[7px] text-[12px]"
-                : "min-h-[34px] rounded-[20px] px-[14px] py-[7px] text-[12px]",
-              isVolunteer ? "shrink-0" : "min-w-0 flex-1",
-              isActive
-                ? cn(
-                    "border-[#1e3848] bg-[#1e3848] text-[#f4f0e8] shadow-sm",
-                    emphasizeOrganizerActive &&
-                      tab.id === "organizer" &&
-                      "ring-2 ring-[#1e3848]/40 ring-offset-1"
-                  )
-                : "border-transparent bg-white/60 text-[#2e2820] active:bg-white/80"
-            )}
+            className={linkClass}
             aria-current={isActive ? "page" : undefined}
           >
-            <Icon
-              className={cn(
-                "shrink-0",
-                compact ? "h-3.5 w-3.5" : "h-3.5 w-3.5"
-              )}
-            />
+            <Icon className="h-3.5 w-3.5 shrink-0" />
             <span className={isVolunteer ? "whitespace-nowrap" : "truncate"}>
               {tab.label}
             </span>
@@ -112,4 +151,3 @@ export function TopModeTabs({ onTabClick, className, compact, emphasizeOrganizer
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bookmark, BookmarkCheck, Share2 } from "lucide-react";
 import { isBookmarked, toggleBookmark } from "@/lib/bookmark-storage";
@@ -15,7 +15,11 @@ type Props = {
 };
 
 export function MobileEventHeader({ eventId, title, shareUrl, className }: Props) {
-  const [saved, setSaved] = useState(() => isBookmarked(eventId));
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setSaved(isBookmarked(eventId));
+  }, [eventId]);
 
   const handleShare = useCallback(async () => {
     try {
@@ -38,9 +42,9 @@ export function MobileEventHeader({ eventId, title, shareUrl, className }: Props
       )}
     >
       <Link
-        href="/events"
+        href="/"
         className="inline-flex h-11 min-h-[var(--mg-touch-min)] w-11 min-w-[var(--mg-touch-min)] shrink-0 items-center justify-center rounded-[var(--mg-radius)] border border-[var(--mg-line)] bg-white text-[var(--mg-ink)] shadow-[var(--mg-shadow)] transition-colors active:bg-zinc-50"
-        aria-label="イベント一覧に戻る"
+        aria-label="ホームに戻る"
       >
         <ArrowLeft className="h-5 w-5" aria-hidden />
       </Link>

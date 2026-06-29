@@ -67,7 +67,12 @@ export function RecruitmentDetailClient({
   }, [currentUserId, recruitmentId, recruitment]);
 
   useEffect(() => {
-    if (!applicationStatus || applicationStatus === "rejected" || applicationStatus === "canceled")
+    if (
+      !applicationStatus ||
+      applicationStatus === "rejected" ||
+      applicationStatus === "canceled" ||
+      applicationStatus === "pending"
+    )
       return;
     fetchWithTimeout(`/api/recruitments/${recruitmentId}/chat-room`)
       .then((r) => r.json())
@@ -224,12 +229,17 @@ export function RecruitmentDetailClient({
                 <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
                   ✓ 応募済み
                   {applicationStatus === "accepted" || applicationStatus === "confirmed"
-                    ? "（採用）"
+                    ? "（承認）"
                     : applicationStatus === "pending"
-                      ? "（確認中）"
+                      ? "（主催者確認中）"
                       : ""}
                 </p>
-                {roomId && (
+                {applicationStatus === "pending" ? (
+                  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                    主催者が応募内容を確認しています。承認されるとチャットで連絡が可能になります。
+                  </p>
+                ) : null}
+                {roomId && applicationStatus !== "pending" ? (
                   <div className="mt-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
                     <h3 className="font-semibold">チャット</h3>
                     <div className="mt-2 h-64 overflow-y-auto">
@@ -242,7 +252,7 @@ export function RecruitmentDetailClient({
                       />
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
             ) : recruitment.status === "public" ? (
               <div>

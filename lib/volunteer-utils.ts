@@ -29,6 +29,7 @@ export type VolunteerRoleWithEvent = {
   thumbnailUrl?: string;
   emergency?: { isEmergency?: boolean; urgencyLevel?: number; activeTo?: string };
   event?: { id: string; title: string; date: string; prefecture?: string } | null;
+  recruitmentId?: string | null;
 };
 
 /** 既存データから benefits を解決（後方互換） */
