@@ -9,7 +9,7 @@ import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-rout
 const MOBILE_ITEMS = [
   { id: "home" as const, href: "/", label: "ホーム", icon: "home" },
   { id: "messages", href: "/messages", label: "メッセージ", icon: "messages" },
-  { id: "saved", href: "/saved", label: "保存", icon: "saved" },
+  { id: "checkin", href: "/checkin", label: "チェックイン", icon: "checkin" },
   { id: "notifications", href: "/notifications", label: "通知", icon: "notifications" },
   { id: "profile", href: "/profile", label: "マイページ", icon: "profile" },
 ] as const;
@@ -23,10 +23,10 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
       </svg>
     );
   }
-  if (icon === "saved") {
+  if (icon === "checkin") {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     );
   }
@@ -79,6 +79,7 @@ export function MobileBottomNav() {
       return true;
     }
     if (item.id === "notifications") return pathname?.startsWith("/notifications");
+    if (item.id === "checkin") return pathname?.startsWith("/checkin");
     return pathname?.startsWith(item.href) ?? false;
   };
 

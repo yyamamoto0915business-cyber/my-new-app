@@ -381,7 +381,7 @@ export function DayManagementMobileView({
           )}
           <button
             type="button"
-            onClick={() => onOpenModal("qr")}
+            onClick={() => onOpenModal("checkin_list")}
             disabled={emptyMode}
             className="mt-1.5 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-[#DDE8DF] bg-[#F5F8F5] py-1 text-[9px] font-medium text-[#2D7A4F] disabled:opacity-50"
           >

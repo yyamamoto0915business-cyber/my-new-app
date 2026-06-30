@@ -98,6 +98,7 @@ export default function DayManagementPage() {
         modal={modal}
         onClose={closeModal}
         eventId={eventId}
+        eventTitle={event.title}
         announceText={announceText}
         onAnnounceChange={setAnnounceText}
         messageText={messageText}

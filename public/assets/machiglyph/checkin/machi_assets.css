@@ -1,0 +1,25 @@
+/* MachiGlyph Check-in UI Assets */
+:root {
+  --mg-green: #315c4b;
+  --mg-green-dark: #163d32;
+  --mg-green-soft: #eaf4ee;
+  --mg-gold: #c28f13;
+  --mg-bg: #fbfaf6;
+  --mg-border: #d8e3dc;
+  --mg-text: #172033;
+  --mg-muted: #6f7b72;
+}
+
+.checkin-pattern-bg {
+  background-color: var(--mg-bg);
+  background-image: url('/assets/backgrounds/machi_pattern_background.svg');
+  background-repeat: repeat;
+  background-size: 120px 120px;
+}
+
+.checkin-primary-button {
+  background: linear-gradient(135deg, #d49a05, #b68100);
+  color: white;
+  border-radius: 20px;
+  box-shadow: 0 12px 24px rgba(194, 143, 19, 0.24);
+}

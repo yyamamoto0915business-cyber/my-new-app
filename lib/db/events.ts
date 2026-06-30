@@ -320,40 +320,10 @@ export type EventWithOrganizerInfo = Event & {
   organizerBio?: string | null;
 };
 
-/** 公開イベント1件 + 主催者情報（イベント詳細ページ用） */
-export async function fetchPublishedEventWithOrganizerInfo(
-  supabase: SupabaseClient,
-  id: string
-): Promise<EventWithOrganizerInfo | null> {
-  const { data, error } = await supabase
-    .from("events")
-    .select(
-      `
-      *,
-      organizers (
-        id,
-        profile_id,
-        organization_name,
-        contact_email,
-        contact_phone,
-        profile:profile_id (
-          display_name,
-          email,
-          avatar_url,
-          region,
-          bio
-        )
-      )
-    `
-    )
-    .eq("id", id)
-    .in("status", [...PUBLIC_EVENT_STATUSES])
-    .single();
-
-  if (error || !data) return null;
-
-  const row = data as Record<string, unknown>;
-  const org = row.organizers as {
+function mapJoinedRowToEventWithOrganizerInfo(
+  data: Record<string, unknown>
+): EventWithOrganizerInfo | null {
+  const org = data.organizers as {
     id?: string;
     profile_id?: string | null;
     organization_name: string | null;
@@ -375,10 +345,7 @@ export async function fetchPublishedEventWithOrganizerInfo(
     "主催者";
   const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
 
-  const event = dbEventToEvent(row as unknown as DbEvent, name, contact);
-
-  // 公開詳細: サンプル/非公開イベントは 404 扱い
-  if (!isPublicEventLike(event)) return null;
+  const event = dbEventToEvent(data as unknown as DbEvent, name, contact);
 
   return {
     ...event,
@@ -389,6 +356,60 @@ export async function fetchPublishedEventWithOrganizerInfo(
     organizerRegion: org?.profile?.region ?? null,
     organizerBio: org?.profile?.bio ?? null,
   };
+}
+
+const EVENT_WITH_ORGANIZER_SELECT = `
+  *,
+  organizers (
+    id,
+    profile_id,
+    organization_name,
+    contact_email,
+    contact_phone,
+    profile:profile_id (
+      display_name,
+      email,
+      avatar_url,
+      region,
+      bio
+    )
+  )
+`;
+
+/** 公開イベント1件 + 主催者情報（イベント詳細ページ用） */
+export async function fetchPublishedEventWithOrganizerInfo(
+  supabase: SupabaseClient,
+  id: string
+): Promise<EventWithOrganizerInfo | null> {
+  const { data, error } = await supabase
+    .from("events")
+    .select(EVENT_WITH_ORGANIZER_SELECT)
+    .eq("id", id)
+    .in("status", [...PUBLIC_EVENT_STATUSES])
+    .single();
+
+  if (error || !data) return null;
+
+  const eventWithOrg = mapJoinedRowToEventWithOrganizerInfo(data as Record<string, unknown>);
+  if (!eventWithOrg || !isPublicEventLike(eventWithOrg)) return null;
+
+  return eventWithOrg;
+}
+
+/** 主催者プレビュー用: 公開状態に関わらずイベント1件 + 主催者情報 */
+export async function fetchEventWithOrganizerInfo(
+  supabase: SupabaseClient,
+  id: string
+): Promise<EventWithOrganizerInfo | null> {
+  const { data, error } = await supabase
+    .from("events")
+    .select(EVENT_WITH_ORGANIZER_SELECT)
+    .eq("id", id)
+    .single();
+
+  if (error || !data) return null;
+
+  return mapJoinedRowToEventWithOrganizerInfo(data as Record<string, unknown>);
 }
 
 /** 同じ主催者の他の公開イベント（指定件数・現在のイベント除外） */

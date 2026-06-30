@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
-import { Download, Send, Save, AlertTriangle } from "lucide-react";
+import React, { useEffect, type ReactNode } from "react";
+import { Send, Save, AlertTriangle } from "lucide-react";
 import { getJstTodayYmd } from "@/lib/jst-date";
 
 // ---------------------------------------------------------------------------
@@ -54,7 +54,7 @@ export const MOCK_NOTICES = [
   { type: "info" as const, text: "お昼休憩は12:00〜13:00です", time: "8:45" },
 ];
 
-export type ModalType = "qr" | "announce" | "message" | "emergency" | "memo" | null;
+export type ModalType = "qr" | "checkin_list" | "announce" | "message" | "emergency" | "memo" | null;
 
 export type EventDayPhase = "live" | "upcoming" | "past";
 
@@ -322,6 +322,7 @@ type ModalsProps = {
   modal: ModalType;
   onClose: () => void;
   eventId: string;
+  eventTitle?: string;
   announceText: string;
   onAnnounceChange: (v: string) => void;
   messageText: string;
@@ -336,6 +337,7 @@ export function DayManagementModals({
   modal,
   onClose,
   eventId,
+  eventTitle = "",
   announceText,
   onAnnounceChange,
   messageText,
@@ -345,26 +347,37 @@ export function DayManagementModals({
   memoText,
   onMemoChange,
 }: ModalsProps) {
+  // QRモーダルと受付リストは動的インポートで読み込む
+  const [QrModal, setQrModal] = React.useState<React.ComponentType<{ open: boolean; onClose: () => void; eventId: string; eventTitle: string }> | null>(null);
+  const [ListModal, setListModal] = React.useState<React.ComponentType<{ open: boolean; onClose: () => void; eventId: string; eventTitle: string }> | null>(null);
+
+  React.useEffect(() => {
+    if (modal === "qr" && !QrModal) {
+      import("./CheckinQrModal").then((m) => setQrModal(() => m.CheckinQrModal));
+    }
+    if (modal === "checkin_list" && !ListModal) {
+      import("./CheckinListModal").then((m) => setListModal(() => m.CheckinListModal));
+    }
+  }, [modal, QrModal, ListModal]);
+
   return (
     <>
-      <Modal open={modal === "qr"} onClose={onClose} title="受付QRコード">
-        <p className="mb-4 text-[13px] text-[#566358]">
-          来場者にこのQRコードをスキャンしてもらうことでチェックインできます。
-        </p>
-        <div className="rounded-xl border border-[#DDE8DF] bg-[#F5F8F5] p-4">
-          <QrPlaceholder />
-        </div>
-        <p className="mt-3 text-center text-[11px] text-[#566358]">
-          イベントID: {eventId || "—"} の受付QRコード
-        </p>
-        <button
-          type="button"
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2D7A4F] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#245f3e]"
-        >
-          <Download size={15} />
-          QRコードをダウンロード
-        </button>
-      </Modal>
+      {QrModal && <QrModal open={modal === "qr"} onClose={onClose} eventId={eventId} eventTitle={eventTitle} />}
+      {!QrModal && modal === "qr" && (
+        <Modal open onClose={onClose} title="受付QRコード">
+          <div className="flex items-center justify-center py-10">
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#2D7A4F] border-t-transparent" />
+          </div>
+        </Modal>
+      )}
+      {ListModal && <ListModal open={modal === "checkin_list"} onClose={onClose} eventId={eventId} eventTitle={eventTitle} />}
+      {!ListModal && modal === "checkin_list" && (
+        <Modal open onClose={onClose} title="受付リスト">
+          <div className="flex items-center justify-center py-10">
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#2D7A4F] border-t-transparent" />
+          </div>
+        </Modal>
+      )}
 
       <Modal open={modal === "announce"} onClose={onClose} title="アナウンス送信">
         <p className="mb-3 text-[13px] text-[#566358]">
