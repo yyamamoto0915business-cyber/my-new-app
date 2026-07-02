@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CalendarDays, ChevronDown, Check } from "lucide-react";
+import { CalendarDays, ChevronDown, Check, Calendar, MapPin, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJstTodayYmd } from "@/lib/jst-date";
 import type { DashboardEvent } from "@/app/api/organizer/dashboard/route";
@@ -11,6 +11,7 @@ import {
   getEventDayPhaseFromDashboard,
   eventDayPhaseLabel,
   eventDayPhaseBadgeClass,
+  type EventDayPhase,
 } from "./day-management-shared";
 
 function formatEventDateShort(date: string) {
@@ -72,6 +73,10 @@ function groupPastEvents(events: DashboardEvent[]): DashboardEvent[] {
 type Props = {
   currentEventId?: string;
   currentTitle?: string;
+  currentDate?: string;
+  currentVenue?: string;
+  currentStatus?: string;
+  currentDayPhase?: EventDayPhase;
   events: DashboardEvent[];
   loading?: boolean;
   variant?: "current" | "empty";
@@ -140,6 +145,10 @@ function EventDropdownList({
 export function DayManagementEventSwitcher({
   currentEventId = "",
   currentTitle = "",
+  currentDate,
+  currentVenue,
+  currentStatus,
+  currentDayPhase,
   events,
   loading = false,
   variant = "current",
@@ -196,8 +205,8 @@ export function DayManagementEventSwitcher({
     }
   };
 
-  const dropdownPanelClass =
-    "absolute top-[calc(100%+6px)] z-20 max-h-[min(320px,60vh)] overflow-y-auto rounded-xl border border-[#DDE8DF] bg-white py-2 shadow-lg";
+  const overlayDropdownClass =
+    "absolute top-[calc(100%+6px)] z-30 max-h-[min(320px,50vh)] overflow-y-auto rounded-xl border border-[#DDE8DF] bg-white py-2 shadow-lg";
 
   if (loading) {
     return (
@@ -254,7 +263,7 @@ export function DayManagementEventSwitcher({
                 </button>
                 {selectOpen && hasSelectable ? (
                   <div
-                    className={`${dropdownPanelClass} left-0 right-0 min-[900px]:w-full`}
+                    className={`${overlayDropdownClass} left-0 right-0`}
                     role="listbox"
                     aria-label="イベントを選択"
                   >
@@ -266,7 +275,7 @@ export function DayManagementEventSwitcher({
           </div>
 
           {pastEvents.length > 0 ? (
-            <div className="relative shrink-0 min-[900px]:ml-auto">
+            <div className="relative shrink-0 min-[900px]:ml-auto min-[900px]:w-[220px]">
               <button
                 type="button"
                 onClick={() => {
@@ -275,7 +284,7 @@ export function DayManagementEventSwitcher({
                 }}
                 aria-expanded={pastOpen}
                 aria-haspopup="listbox"
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#DDE8DF] bg-[#F5F8F5] px-3 py-2 text-[12px] font-medium text-[#2D7A4F] transition-colors hover:border-[#2D7A4F] hover:bg-[#EAF4ED] min-[900px]:w-auto min-[900px]:bg-white"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#DDE8DF] bg-[#F5F8F5] px-3 py-2 text-[12px] font-medium text-[#2D7A4F] transition-colors hover:border-[#2D7A4F] hover:bg-[#EAF4ED] min-[900px]:bg-white"
               >
                 過去のイベントを見る
                 <ChevronDown
@@ -286,7 +295,7 @@ export function DayManagementEventSwitcher({
               </button>
               {pastOpen ? (
                 <div
-                  className={`${dropdownPanelClass} left-0 right-0 min-[900px]:left-auto min-[900px]:w-[min(100vw-2rem,360px)] min-[900px]:right-0`}
+                  className={`${overlayDropdownClass} left-0 right-0 min-[900px]:left-auto min-[900px]:w-[min(100vw-2rem,360px)]`}
                   role="listbox"
                   aria-label="過去のイベント"
                 >
@@ -316,61 +325,132 @@ export function DayManagementEventSwitcher({
 
   if (events.length === 0) return null;
 
+  const statusBadgeClass =
+    currentDayPhase != null ? eventDayPhaseBadgeClass(currentDayPhase) : "bg-[#EAF4ED] text-[#2D7A4F]";
+
   return (
     <div ref={rootRef} className={`relative ${className}`}>
-      <p className="text-[11px] font-semibold tracking-wide text-[#566358] min-[900px]:text-[12px]">
-        イベントを切り替え
-      </p>
+      {!compact ? (
+        <p className="text-[11px] font-semibold tracking-wide text-[#566358] min-[900px]:text-[12px]">
+          イベントを切り替え
+        </p>
+      ) : null}
 
-      <div className="mt-2 flex flex-col gap-2 rounded-xl border border-[#DDE8DF] bg-white/95 p-3 shadow-sm min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between min-[900px]:gap-4 min-[900px]:px-4 min-[900px]:py-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EAF4ED]">
-            <CalendarDays size={16} className="text-[#2D7A4F]" />
+      <div
+        className={cn(
+          "flex flex-col gap-2 rounded-xl border border-[#DDE8DF] bg-white/95 shadow-sm min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between",
+          compact
+            ? "p-2 min-[900px]:gap-3 min-[900px]:px-3 min-[900px]:py-2"
+            : "mt-2 p-3 min-[900px]:gap-4 min-[900px]:px-4 min-[900px]:py-3"
+        )}
+      >
+        <div className="flex min-w-0 flex-1 items-start gap-2.5 min-[900px]:items-center min-[900px]:gap-3">
+          <span
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded-full bg-[#EAF4ED]",
+              compact ? "h-7 w-7" : "h-9 w-9"
+            )}
+          >
+            <CalendarDays size={compact ? 14 : 16} className="text-[#2D7A4F]" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="truncate text-[14px] font-semibold text-[#1A2214] min-[900px]:text-[15px]">
+            <div className="flex flex-wrap items-center gap-1.5 min-[900px]:gap-2">
+              <p
+                className={cn(
+                  "truncate font-semibold text-[#1A2214]",
+                  compact ? "text-[13px] min-[900px]:text-[14px]" : "text-[14px] min-[900px]:text-[15px]"
+                )}
+              >
                 {currentTitle}
               </p>
-              <span className="shrink-0 rounded-full bg-[#EAF4ED] px-2 py-0.5 text-[10px] font-bold text-[#2D7A4F]">
-                現在のイベント
-              </span>
+              {currentStatus ? (
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                    statusBadgeClass
+                  )}
+                >
+                  {currentStatus}
+                </span>
+              ) : (
+                <span className="shrink-0 rounded-full bg-[#EAF4ED] px-2 py-0.5 text-[10px] font-bold text-[#2D7A4F]">
+                  現在のイベント
+                </span>
+              )}
             </div>
-          </div>
-        </div>
-
-        {toggleLabel && hasAlternatives ? (
-          <div className="relative shrink-0 min-[900px]:ml-auto">
-            <button
-              type="button"
-              onClick={() => setSelectOpen((v) => !v)}
-              aria-expanded={selectOpen}
-              aria-haspopup="listbox"
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#DDE8DF] bg-[#F5F8F5] px-3 py-2 text-[12px] font-medium text-[#2D7A4F] transition-colors hover:border-[#2D7A4F] hover:bg-[#EAF4ED] min-[900px]:w-auto min-[900px]:bg-white"
-            >
-              {toggleLabel}
-              <ChevronDown
-                size={14}
-                className={`shrink-0 transition-transform ${selectOpen ? "rotate-180" : ""}`}
-                aria-hidden
-              />
-            </button>
-
-            {selectOpen ? (
-              <div
-                className={`${dropdownPanelClass} left-0 right-0 min-[900px]:left-auto min-[900px]:w-[min(100vw-2rem,360px)] min-[900px]:right-0`}
-                role="listbox"
-                aria-label="切り替え先のイベント"
-              >
-                <EventDropdownList
-                  groups={switchGroups}
-                  currentEventId={currentEventId}
-                  onSelect={handleSelect}
-                />
+            {compact && (currentDate || currentVenue) ? (
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[#566358] min-[900px]:text-[12px]">
+                {currentDate ? (
+                  <span className="inline-flex min-w-0 items-center gap-1">
+                    <Calendar size={11} className="shrink-0 text-[#2D7A4F]" aria-hidden />
+                    <span className="truncate">{currentDate}</span>
+                  </span>
+                ) : null}
+                {currentVenue ? (
+                  <span className="inline-flex min-w-0 items-center gap-1">
+                    <MapPin size={11} className="shrink-0 text-[#2D7A4F]" aria-hidden />
+                    <span className="truncate">{currentVenue}</span>
+                  </span>
+                ) : null}
               </div>
             ) : null}
           </div>
-        ) : null}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2 min-[900px]:ml-auto">
+          {currentEventId ? (
+            <Link
+              href={`/events/${currentEventId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "inline-flex items-center justify-center gap-1 rounded-lg border border-[#DDE8DF] bg-white font-medium text-[#2D7A4F] transition-colors hover:border-[#2D7A4F] hover:bg-[#EAF4ED]",
+                compact
+                  ? "px-2.5 py-1.5 text-[11px] min-[900px]:text-[12px]"
+                  : "px-3 py-2 text-[12px]"
+              )}
+            >
+              <ExternalLink size={12} aria-hidden />
+              <span className="min-[900px]:inline">詳細</span>
+            </Link>
+          ) : null}
+
+          {toggleLabel && hasAlternatives ? (
+            <div className="relative min-w-0 flex-1 min-[900px]:w-[200px] min-[900px]:flex-none">
+              <button
+                type="button"
+                onClick={() => setSelectOpen((v) => !v)}
+                aria-expanded={selectOpen}
+                aria-haspopup="listbox"
+                className={cn(
+                  "inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#DDE8DF] bg-[#F5F8F5] font-medium text-[#2D7A4F] transition-colors hover:border-[#2D7A4F] hover:bg-[#EAF4ED] min-[900px]:bg-white",
+                  compact ? "px-2.5 py-1.5 text-[11px] min-[900px]:text-[12px]" : "px-3 py-2 text-[12px]"
+                )}
+              >
+                {toggleLabel}
+                <ChevronDown
+                  size={14}
+                  className={`shrink-0 transition-transform ${selectOpen ? "rotate-180" : ""}`}
+                  aria-hidden
+                />
+              </button>
+
+              {selectOpen ? (
+                <div
+                  className={`${overlayDropdownClass} left-0 right-0 min-[900px]:left-auto min-[900px]:w-[min(100vw-2rem,360px)]`}
+                  role="listbox"
+                  aria-label="切り替え先のイベント"
+                >
+                  <EventDropdownList
+                    groups={switchGroups}
+                    currentEventId={currentEventId}
+                    onSelect={handleSelect}
+                  />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );

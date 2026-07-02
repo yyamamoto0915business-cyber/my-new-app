@@ -42,15 +42,24 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   let token = event.checkin_token;
   let code = event.checkin_code;
+  const needsIssue = !token || !code;
 
-  if (!token) {
-    token = generateCheckinToken();
-    code = generateCheckinCode();
+  if (needsIssue) {
+    if (!token) token = generateCheckinToken();
+    if (!code) code = generateCheckinCode();
     await supabase
       .from("events")
-      .update({ checkin_token: token, checkin_code: code })
+      .update({
+        checkin_token: token,
+        checkin_code: code,
+        checkin_enabled: true,
+      })
       .eq("id", id);
+  } else if (!event.checkin_enabled) {
+    await supabase.from("events").update({ checkin_enabled: true }).eq("id", id);
   }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.machiglyph.jp";
 
   const { data: checkins } = await supabase
     .from("event_checkins")
@@ -71,8 +80,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
   return NextResponse.json({
     token,
     code,
-    checkinEnabled: event.checkin_enabled,
-    checkinUrl: `https://www.machiglyph.jp/checkin/t/${token}`,
+    checkinEnabled: true,
+    checkinUrl: `${siteUrl}/checkin/t/${token}`,
     checkinCount,
     list,
   });

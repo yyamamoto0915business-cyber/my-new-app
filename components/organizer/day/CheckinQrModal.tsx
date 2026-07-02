@@ -25,7 +25,8 @@ type Props = {
 export function CheckinQrModal({ open, onClose, eventId, eventTitle }: Props) {
   const [data, setData] = useState<CheckinData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   const qrRef = useRef<SVGSVGElement>(null);
 
   const load = useCallback(async () => {
@@ -43,11 +44,18 @@ export function CheckinQrModal({ open, onClose, eventId, eventTitle }: Props) {
     if (open && eventId) load();
   }, [open, eventId, load]);
 
-  const handleCopy = async () => {
+  const handleCopyUrl = async () => {
     if (!data?.checkinUrl) return;
     await navigator.clipboard.writeText(data.checkinUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2000);
+  };
+
+  const handleCopyCode = async () => {
+    if (!data?.code) return;
+    await navigator.clipboard.writeText(data.code);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   const handleDownload = () => {
@@ -75,9 +83,11 @@ export function CheckinQrModal({ open, onClose, eventId, eventTitle }: Props) {
   // イベント未選択
   if (!eventId) {
     return (
-      <Modal open={open} onClose={onClose} title="受付QRコード">
+      <Modal open={open} onClose={onClose} title="受付QR・コード">
         <div className="rounded-xl bg-[#F5F8F5] p-5 text-center">
-          <p className="text-[13px] font-medium text-[#1A2214]">QRコードを表示するには、先にイベントを作成または選択してください。</p>
+          <p className="text-[13px] font-medium text-[#1A2214]">
+            QRコードと受付コードを表示するには、先にイベントを作成または選択してください。
+          </p>
         </div>
         <div className="mt-4 flex flex-col gap-2">
           <Link
@@ -100,9 +110,9 @@ export function CheckinQrModal({ open, onClose, eventId, eventTitle }: Props) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="受付QRコード">
-      <p className="mb-4 text-[13px] text-[#566358]">
-        来場者にこのQRコードを読み取ってもらうことで、イベント受付を完了できます。
+    <Modal open={open} onClose={onClose} title="受付QR・コード">
+      <p className="mb-4 text-[13px] leading-relaxed text-[#566358]">
+        来場者にはQRコードの読み取り、または受付コードの入力のどちらでも受付できます。
       </p>
 
       {loading ? (
@@ -111,7 +121,7 @@ export function CheckinQrModal({ open, onClose, eventId, eventTitle }: Props) {
         </div>
       ) : data ? (
         <>
-          <div className="rounded-xl border border-[#DDE8DF] bg-[#EAF4ED] p-5 flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-[#DDE8DF] bg-[#EAF4ED] p-5">
             <div className="rounded-xl bg-white p-3 shadow-sm">
               <QRCodeSVG
                 ref={qrRef as React.Ref<SVGSVGElement>}
@@ -122,15 +132,34 @@ export function CheckinQrModal({ open, onClose, eventId, eventTitle }: Props) {
                 level="M"
               />
             </div>
-            <div className="text-center">
-              <p className="text-[12px] font-bold text-[#172033]">{eventTitle}</p>
-              <p className="mt-0.5 text-[10px] font-mono text-[#566358]">受付コード：{data.code}</p>
+            <p className="text-center text-[12px] font-bold text-[#172033]">{eventTitle}</p>
+          </div>
+
+          <div className="mt-3 rounded-xl border border-[#DDE8DF] bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-medium tracking-wide text-[#566358]">受付コード</p>
+                <p className="mt-1 font-mono text-[28px] font-bold leading-none tracking-[0.2em] text-[#1A2214]">
+                  {data.code}
+                </p>
+                <p className="mt-2 text-[10px] leading-relaxed text-[#566358]">
+                  会場でQRが読み取れない場合に、来場者が手入力できます。
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyCode}
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#DDE8DF] bg-[#F5F8F5] px-2.5 py-2 text-[11px] font-medium text-[#566358]"
+              >
+                {copiedCode ? <Check size={13} className="text-[#2D7A4F]" /> : <Copy size={13} />}
+                {copiedCode ? "コピー済み" : "コピー"}
+              </button>
             </div>
           </div>
 
           <div className="mt-3 rounded-lg bg-[#F5F8F5] px-3 py-2">
-            <p className="text-[10px] text-[#566358] mb-0.5">受付URL</p>
-            <p className="text-[11px] font-mono text-[#1A2214] break-all">{data.checkinUrl}</p>
+            <p className="mb-0.5 text-[10px] text-[#566358]">受付URL</p>
+            <p className="break-all font-mono text-[11px] text-[#1A2214]">{data.checkinUrl}</p>
           </div>
 
           <div className="mt-3 flex flex-col gap-2">
@@ -154,11 +183,11 @@ export function CheckinQrModal({ open, onClose, eventId, eventTitle }: Props) {
               </Link>
               <button
                 type="button"
-                onClick={handleCopy}
+                onClick={handleCopyUrl}
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#DDE8DF] bg-[#F5F8F5] py-2.5 text-[12px] font-medium text-[#566358]"
               >
-                {copied ? <Check size={13} className="text-[#2D7A4F]" /> : <Copy size={13} />}
-                {copied ? "コピー済み" : "URLをコピー"}
+                {copiedUrl ? <Check size={13} className="text-[#2D7A4F]" /> : <Copy size={13} />}
+                {copiedUrl ? "コピー済み" : "URLをコピー"}
               </button>
             </div>
           </div>
@@ -173,7 +202,7 @@ export function CheckinQrModal({ open, onClose, eventId, eventTitle }: Props) {
           </button>
         </>
       ) : (
-        <p className="text-center text-[13px] text-[#566358] py-6">読み込みに失敗しました</p>
+        <p className="py-6 text-center text-[13px] text-[#566358]">読み込みに失敗しました</p>
       )}
     </Modal>
   );

@@ -26,7 +26,7 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
   if (icon === "checkin") {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7V5a1 1 0 011-1h2M16 4h2a1 1 0 011 1v2M20 16v2a1 1 0 01-1 1h-2M8 20H6a1 1 0 01-1-1v-2M8 11h8" />
       </svg>
     );
   }
@@ -104,13 +104,17 @@ export function MobileBottomNav() {
             href={href}
             prefetch
             aria-current={active ? "page" : undefined}
-            className={`relative flex min-h-[44px] flex-1 touch-manipulation flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] transition-colors rounded-xl ${
-              active ? "text-[#4a9a68]" : "text-[#7a7268]"
+            className={`relative mx-0.5 flex min-h-[44px] flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 px-0.5 py-1.5 text-[10px] transition-colors ${
+              active
+                ? item.id === "checkin"
+                  ? "rounded-xl bg-[#e9f2ed] text-[#2d4635]"
+                  : "rounded-xl text-[#4a9a68]"
+                : "text-[#7a7268]"
             }`}
           >
-            {active && (
+            {active && item.id !== "checkin" && (
               <span
-                className="absolute left-1/2 top-0 h-0.5 w-9 -translate-x-1/2 rounded-full bg-[#4a9a68]"
+                className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[#4a9a68]"
                 aria-hidden
               />
             )}
@@ -122,7 +126,7 @@ export function MobileBottomNav() {
                 </span>
               )}
             </span>
-            <span className="whitespace-nowrap text-center text-[11px] leading-tight">
+            <span className="whitespace-nowrap text-center text-[10px] leading-tight">
               {item.label}
             </span>
           </Link>

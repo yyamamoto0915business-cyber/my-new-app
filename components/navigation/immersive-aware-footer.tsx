@@ -18,6 +18,14 @@ export function ImmersiveAwareFooter() {
   }
   // ホームはモックアップ準拠でフッターを非表示
   if (pathname === "/") return null;
+  // チェックインはモバイル下部ナビ専用画面のためフッターを出さない
+  if (pathname?.startsWith("/checkin")) {
+    return (
+      <div className="hidden sm:block">
+        <SiteFooter />
+      </div>
+    );
+  }
   if (pathname === "/auth" || pathname?.startsWith("/auth/")) return null;
   return (
     <div className="sm:block">

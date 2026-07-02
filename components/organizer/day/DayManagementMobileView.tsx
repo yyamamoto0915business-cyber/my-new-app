@@ -1,14 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
 import {
   UserCheck,
   Users,
   Calendar,
   Bell,
-  MapPin,
-  ExternalLink,
   ClipboardList,
   Megaphone,
   Plus,
@@ -32,7 +29,6 @@ import {
   type EventInfo,
   type EventDayPhase,
   type ModalType,
-  eventDayPhaseBadgeClass,
 } from "./day-management-shared";
 import { DayManagementEventSwitcher } from "./DayManagementEventSwitcher";
 
@@ -151,15 +147,19 @@ export function DayManagementMobileView({
       <DayManagementEventSwitcher
         currentEventId={eventId}
         currentTitle={event.title}
+        currentDate={emptyMode ? undefined : event.date}
+        currentVenue={emptyMode ? undefined : event.venue}
+        currentStatus={emptyMode ? undefined : event.status}
+        currentDayPhase={emptyMode ? undefined : dayPhase}
         events={allEvents}
         loading={eventsLoading}
         variant={emptyMode ? "empty" : "current"}
         compact
       />
 
-      <header className="mg-day-mgmt-m__hero relative overflow-hidden">
-        <div className="relative z-10 flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1 pt-0.5">
+      {emptyMode ? (
+        <header className="mg-day-mgmt-m__hero relative overflow-hidden">
+          <div className="relative z-10">
             <div className="flex flex-wrap items-center gap-1.5">
               <h1 className="mg-day-mgmt-m__title">ダッシュボード</h1>
               <span className="inline-flex rounded-full bg-[#EAF4ED] px-2 py-0.5 text-[9px] font-bold text-[#2D7A4F]">
@@ -167,57 +167,15 @@ export function DayManagementMobileView({
               </span>
             </div>
             <p className="mg-day-mgmt-m__desc mt-0.5">{descText}</p>
+            <div className="mg-day-mgmt-m__event-card mt-2">
+              <p className="text-[11px] font-semibold leading-snug text-[#1A2214]">本日の開催はありません</p>
+              <p className="mt-1 text-[9px] leading-snug text-[#566358]">
+                開催予定のイベントを選択してください
+              </p>
+            </div>
           </div>
-
-          <div className="mg-day-mgmt-m__event-card shrink-0">
-            {emptyMode ? (
-              <>
-                <p className="text-[11px] font-semibold leading-snug text-[#1A2214]">本日の開催はありません</p>
-                <p className="mt-1 text-[9px] leading-snug text-[#566358]">
-                  開催予定のイベントを選択してください
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="flex items-start justify-between gap-1">
-                  <p className="line-clamp-2 text-[11px] font-semibold leading-snug text-[#1A2214]">
-                    {event.title}
-                  </p>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-bold",
-                      eventDayPhaseBadgeClass(dayPhase)
-                    )}
-                  >
-                    {event.status}
-                  </span>
-                </div>
-                <div className="mt-1.5 space-y-0.5 text-[9px] text-[#566358]">
-                  <div className="flex items-start gap-1">
-                    <Calendar size={10} className="mt-0.5 shrink-0 text-[#2D7A4F]" />
-                    <span className="line-clamp-2">{event.date}</span>
-                  </div>
-                  <div className="flex items-start gap-1">
-                    <MapPin size={10} className="mt-0.5 shrink-0 text-[#2D7A4F]" />
-                    <span className="line-clamp-1">{event.venue}</span>
-                  </div>
-                </div>
-                {eventId ? (
-                  <Link
-                    href={`/events/${eventId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1.5 inline-flex w-full items-center justify-center gap-1 rounded-md border border-[#DDE8DF] bg-white px-2 py-1 text-[8px] font-medium text-[#2D7A4F]"
-                  >
-                    <ExternalLink size={9} />
-                    イベント詳細を開く
-                  </Link>
-                ) : null}
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+        </header>
+      ) : null}
 
       <section className="grid grid-cols-2 gap-1.5">
         <KpiCard

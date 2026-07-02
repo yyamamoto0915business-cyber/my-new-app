@@ -1,14 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
 import {
   UserCheck,
   Users,
   Calendar,
   Bell,
-  MapPin,
-  ExternalLink,
   ChevronRight,
   Clock,
   Plus,
@@ -36,7 +33,6 @@ import {
   type EventInfo,
   type EventDayPhase,
   type ModalType,
-  eventDayPhaseBadgeClass,
 } from "./day-management-shared";
 import { DayManagementEventSwitcher } from "./DayManagementEventSwitcher";
 
@@ -92,6 +88,7 @@ export function DayManagementPcView({
 }: Props) {
   const isPast = dayPhase === "past";
   const isLive = dayPhase === "live";
+  const showHero = emptyMode || !isPast;
   const scheduleTitle = emptyMode ? "本日のスケジュール" : isPast ? "スケジュール" : "本日のスケジュール";
   const descText = emptyMode
     ? "イベント当日の受付・進行状況をリアルタイムで確認できます。"
@@ -154,71 +151,42 @@ export function DayManagementPcView({
   ];
 
   return (
-    <div className={cn("mg-day-mgmt-pc", emptyMode && "mg-day-mgmt-pc--compact")}>
-      {/* Hero */}
-      <section className={cn("mg-day-mgmt-pc__hero", emptyMode && "mg-day-mgmt-pc__hero--compact")}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="mg-day-mgmt-pc__title">ダッシュボード</h1>
-              <span className="rounded-full bg-[#EAF4ED] px-2.5 py-0.5 text-[10px] font-bold text-[#2D7A4F]">
-                本日の運営
+    <div className={cn("mg-day-mgmt-pc", emptyMode ? "mg-day-mgmt-pc--compact" : "mg-day-mgmt-pc--selected")}>
+      {showHero ? (
+        <section
+          className={cn(
+            "mg-day-mgmt-pc__hero",
+            emptyMode ? "mg-day-mgmt-pc__hero--compact" : "mg-day-mgmt-pc__hero--selected"
+          )}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="mg-day-mgmt-pc__title">ダッシュボード</h1>
+            <span className="rounded-full bg-[#EAF4ED] px-2.5 py-0.5 text-[10px] font-bold text-[#2D7A4F]">
+              本日の運営
+            </span>
+            {emptyMode ? (
+              <span className="rounded-full bg-[#f0f0f0] px-2 py-0.5 text-[10px] font-bold text-[#566358]">
+                本日の開催なし
               </span>
-              {emptyMode ? (
-                <span className="rounded-full bg-[#f0f0f0] px-2 py-0.5 text-[10px] font-bold text-[#566358]">
-                  本日の開催なし
-                </span>
-              ) : null}
-            </div>
-            {!emptyMode ? <p className="mg-day-mgmt-pc__desc mt-1.5">{descText}</p> : null}
-            <DayManagementEventSwitcher
-              currentEventId={eventId}
-              currentTitle={event.title}
-              events={allEvents}
-              loading={eventsLoading}
-              variant={emptyMode ? "empty" : "current"}
-              compact={emptyMode}
-              className="mt-1.5"
-            />
-          </div>
-
-          {!emptyMode ? (
-          <div className="mg-day-mgmt-pc__event-card shrink-0">
-            <div className="flex items-start justify-between gap-2">
-              <span className="text-[14px] font-semibold leading-snug text-[#1A2214]">
-                {event.title}
-              </span>
-              <span
-                className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${eventDayPhaseBadgeClass(dayPhase)}`}
-              >
-                {event.status}
-              </span>
-            </div>
-            <div className="mt-2 space-y-1 text-[12px] text-[#566358]">
-              <div className="flex items-center gap-1.5">
-                <Calendar size={12} className="shrink-0 text-[#2D7A4F]" />
-                <span>{event.date}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <MapPin size={12} className="shrink-0 text-[#2D7A4F]" />
-                <span>{event.venue}</span>
-              </div>
-            </div>
-            {eventId ? (
-              <Link
-                href={`/events/${eventId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mg-day-mgmt-pc__btn-outline mt-2.5 w-full justify-center"
-              >
-                <ExternalLink size={12} />
-                イベント詳細を開く
-              </Link>
             ) : null}
           </div>
-          ) : null}
-        </div>
-      </section>
+          {emptyMode ? <p className="mg-day-mgmt-pc__desc mt-1.5">{descText}</p> : null}
+        </section>
+      ) : null}
+
+      <DayManagementEventSwitcher
+        currentEventId={eventId}
+        currentTitle={event.title}
+        currentDate={emptyMode ? undefined : event.date}
+        currentVenue={emptyMode ? undefined : event.venue}
+        currentStatus={emptyMode ? undefined : event.status}
+        currentDayPhase={emptyMode ? undefined : dayPhase}
+        events={allEvents}
+        loading={eventsLoading}
+        variant={emptyMode ? "empty" : "current"}
+        compact
+        className={showHero ? "mt-2" : undefined}
+      />
 
       {/* KPI */}
       <div className="mg-day-mgmt-pc__kpi-grid grid grid-cols-4 gap-3">

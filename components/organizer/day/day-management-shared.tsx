@@ -364,7 +364,7 @@ export function DayManagementModals({
     <>
       {QrModal && <QrModal open={modal === "qr"} onClose={onClose} eventId={eventId} eventTitle={eventTitle} />}
       {!QrModal && modal === "qr" && (
-        <Modal open onClose={onClose} title="受付QRコード">
+        <Modal open onClose={onClose} title="受付QR・コード">
           <div className="flex items-center justify-center py-10">
             <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#2D7A4F] border-t-transparent" />
           </div>
