@@ -36,13 +36,15 @@ export default function DayManagementPage() {
 
   useEffect(() => {
     if (!eventId) return;
-    let cancelled = false;
+    const controller = new AbortController();
     (async () => {
       try {
-        const res = await fetchWithTimeout(`/api/organizer/events/${eventId}`);
-        if (!res.ok || cancelled) return;
+        const res = await fetchWithTimeout(`/api/organizer/events/${eventId}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok || controller.signal.aborted) return;
         const data = await res.json();
-        if (cancelled || !data?.title) return;
+        if (controller.signal.aborted || !data?.title) return;
         const phase = getEventDayPhase({
           date: data.date ?? "",
           status: data.status,
@@ -63,7 +65,7 @@ export default function DayManagementPage() {
       }
     })();
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [eventId]);
 

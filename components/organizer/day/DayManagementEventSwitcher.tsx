@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CalendarDays, ChevronDown, Check, Calendar, MapPin, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -84,14 +83,18 @@ type Props = {
   className?: string;
 };
 
+function eventDayHref(eventId: string) {
+  return `/organizer/events/${eventId}/day`;
+}
+
 function EventDropdownList({
   groups,
   currentEventId,
-  onSelect,
+  onNavigate,
 }: {
   groups: EventGroup[];
   currentEventId?: string;
-  onSelect: (id: string) => void;
+  onNavigate: () => void;
 }) {
   return (
     <>
@@ -106,11 +109,14 @@ function EventDropdownList({
               const selected = event.id === currentEventId;
               return (
                 <li key={event.id}>
-                  <button
-                    type="button"
+                  <Link
+                    href={eventDayHref(event.id)}
                     role="option"
                     aria-selected={selected}
-                    onClick={() => onSelect(event.id)}
+                    onClick={(e) => {
+                      if (selected) e.preventDefault();
+                      onNavigate();
+                    }}
                     className="flex w-full items-start gap-2 px-3 py-2.5 text-left transition-colors hover:bg-[#F5F8F5]"
                   >
                     <div className="min-w-0 flex-1">
@@ -131,7 +137,7 @@ function EventDropdownList({
                     {selected ? (
                       <Check size={14} className="mt-0.5 shrink-0 text-[#2D7A4F]" aria-hidden />
                     ) : null}
-                  </button>
+                  </Link>
                 </li>
               );
             })}
@@ -155,7 +161,6 @@ export function DayManagementEventSwitcher({
   compact = false,
   className = "",
 }: Props) {
-  const router = useRouter();
   const [selectOpen, setSelectOpen] = useState(false);
   const [pastOpen, setPastOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -197,12 +202,9 @@ export function DayManagementEventSwitcher({
     };
   }, [selectOpen, pastOpen]);
 
-  const handleSelect = (id: string) => {
+  const closeMenus = () => {
     setSelectOpen(false);
     setPastOpen(false);
-    if (id !== currentEventId) {
-      router.push(`/organizer/events/${id}/day`);
-    }
   };
 
   const overlayDropdownClass =
@@ -267,7 +269,7 @@ export function DayManagementEventSwitcher({
                     role="listbox"
                     aria-label="イベントを選択"
                   >
-                    <EventDropdownList groups={selectGroups} onSelect={handleSelect} />
+                    <EventDropdownList groups={selectGroups} currentEventId={currentEventId} onNavigate={closeMenus} />
                   </div>
                 ) : null}
               </>
@@ -301,7 +303,8 @@ export function DayManagementEventSwitcher({
                 >
                   <EventDropdownList
                     groups={[{ key: "past", label: "過去", events: pastEvents }]}
-                    onSelect={handleSelect}
+                    currentEventId={currentEventId}
+                    onNavigate={closeMenus}
                   />
                 </div>
               ) : null}
@@ -444,7 +447,7 @@ export function DayManagementEventSwitcher({
                   <EventDropdownList
                     groups={switchGroups}
                     currentEventId={currentEventId}
-                    onSelect={handleSelect}
+                    onNavigate={closeMenus}
                   />
                 </div>
               ) : null}

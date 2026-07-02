@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getJstTodayYmd } from "@/lib/jst-date";
 import { useManageableDayEvents } from "@/hooks/use-manageable-day-events";
@@ -21,11 +21,13 @@ export function DayManagementHub() {
   const [emergencyText, setEmergencyText] = useState("");
   const [memoText, setMemoText] = useState("");
   const today = useMemo(() => getJstTodayYmd(), []);
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || redirectedRef.current) return;
     const todayPublic = events.filter((e) => e.date === today && e.status === "public");
     if (todayPublic.length === 1) {
+      redirectedRef.current = true;
       router.replace(`/organizer/events/${todayPublic[0].id}/day`);
     }
   }, [events, loading, router, today]);
