@@ -914,7 +914,7 @@ export default function EditEventPage() {
               詳細をプレビュー
             </Link>
             <Link
-              href={`/organizer/events/${id}/day`}
+              href={`/organizer?event=${encodeURIComponent(id)}`}
               className="inline-flex items-center justify-center rounded-xl border border-[#2D7A4F] bg-[#EAF4ED] px-6 py-3 text-sm font-medium text-[#2D7A4F] transition hover:bg-[#D0ECD7]"
             >
               当日管理へ →

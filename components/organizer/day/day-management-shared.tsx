@@ -108,6 +108,10 @@ export function isManageableDayEvent(event: {
   return event.status === "public" || event.status === "ended";
 }
 
+export function organizerDayEventHref(eventId: string) {
+  return `/organizer?event=${encodeURIComponent(eventId)}`;
+}
+
 // ---------------------------------------------------------------------------
 // Donut Chart
 // ---------------------------------------------------------------------------

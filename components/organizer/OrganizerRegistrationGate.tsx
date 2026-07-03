@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { isAbortLikeError } from "@/lib/is-abort-like-error";
 
 type GateState = "loading" | "registered" | "unregistered";
 
@@ -15,17 +16,18 @@ export function OrganizerRegistrationGate({
   const [state, setState] = useState<GateState>("loading");
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
     (async () => {
       try {
         const res = await fetch("/api/organizer/registration-status", {
           cache: "no-store",
+          signal: controller.signal,
         });
         const json = (await res.json()) as { registered?: boolean };
         const registered = !!json?.registered;
 
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
 
         if (!registered) {
           setState("unregistered");
@@ -35,17 +37,16 @@ export function OrganizerRegistrationGate({
         }
 
         setState("registered");
-      } catch {
-        if (!cancelled) {
-          setState("unregistered");
-          const next = encodeURIComponent(pathname || "/organizer");
-          router.replace(`/organizer?next=${next}`);
-        }
+      } catch (err) {
+        if (controller.signal.aborted || isAbortLikeError(err)) return;
+        setState("unregistered");
+        const next = encodeURIComponent(pathname || "/organizer");
+        router.replace(`/organizer?next=${next}`);
       }
     })();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [pathname, router]);
 

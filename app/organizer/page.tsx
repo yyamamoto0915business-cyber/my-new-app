@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Megaphone, Sparkles, UsersRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { DayManagementHub } from "@/components/organizer/day/DayManagementHub";
@@ -47,7 +48,9 @@ export default async function OrganizerPage() {
   if (organizerRegistered) {
     return (
       <OrganizerRegistrationGate>
-        <DayManagementHub />
+        <Suspense fallback={<div className="flex min-h-[240px] items-center justify-center text-sm text-slate-500">読み込み中...</div>}>
+          <DayManagementHub />
+        </Suspense>
       </OrganizerRegistrationGate>
     );
   }
