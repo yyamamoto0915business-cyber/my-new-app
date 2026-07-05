@@ -39,10 +39,10 @@ create policy "checkin_select_own" on event_checkins
 create policy "checkin_select_organizer" on event_checkins
   for select
   using (
-    exists (
-      select 1 from events e
-      join organizer_profiles op on op.id = e.organizer_id
-      where e.id = event_checkins.event_id
-        and op.profile_id = auth.uid()
+    event_id in (
+      select id from events
+      where organizer_id in (
+        select id from organizers where profile_id = auth.uid()
+      )
     )
   );
