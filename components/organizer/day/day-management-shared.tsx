@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, type ReactNode } from "react";
+import React, { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Send, Save, AlertTriangle } from "lucide-react";
 import { getJstTodayYmd } from "@/lib/jst-date";
 
@@ -180,6 +181,10 @@ export function Modal({
   titleClassName?: string;
   children: ReactNode;
 }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -189,21 +194,30 @@ export function Modal({
     return () => document.removeEventListener("keydown", handleKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
 
-  return (
+  if (!open || !mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div className="absolute inset-0 bg-black/40" />
       <div
-        className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+        className="relative z-10 flex max-h-[min(88vh,720px)] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between border-b border-[#EAF4ED] px-6 py-4">
           <h2 className={`text-base font-bold ${titleClassName ?? "text-[#1A2214]"}`}>{title}</h2>
           <button
             type="button"
@@ -216,9 +230,10 @@ export function Modal({
             </span>
           </button>
         </div>
-        {children}
+        <div className="overflow-y-auto overscroll-contain px-6 py-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
