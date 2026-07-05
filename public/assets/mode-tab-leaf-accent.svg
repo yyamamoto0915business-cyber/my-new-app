@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 44" fill="none" aria-hidden="true">
+  <defs>
+    <path
+      id="mg-sparkle"
+      d="M0 -4.5 L1.1 0 L0 4.5 L-1.1 0 Z M-4.5 0 L0 1.1 L4.5 0 L0 -1.1 Z"
+    />
+    <radialGradient id="mg-sparkle-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffc8dc" stop-opacity="0.72"/>
+      <stop offset="55%" stop-color="#ffb8d0" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ffb8d0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <ellipse cx="77" cy="22" rx="18" ry="19" fill="url(#mg-sparkle-glow)"/>
+
+  <use href="#mg-sparkle" transform="translate(76 14) scale(1.55)" fill="rgba(255,190,215,0.95)"/>
+  <use href="#mg-sparkle" transform="translate(76 14) scale(0.8)" fill="rgba(255,252,254,0.92)"/>
+  <use href="#mg-sparkle" transform="translate(82 22) scale(1.2)" fill="rgba(255,165,200,0.88)"/>
+  <use href="#mg-sparkle" transform="translate(82 22) scale(0.55)" fill="rgba(255,248,252,0.8)"/>
+  <use href="#mg-sparkle" transform="translate(70 26) scale(1)" fill="rgba(255,200,222,0.78)"/>
+  <use href="#mg-sparkle" transform="translate(84 10) scale(0.95)" fill="rgba(255,150,190,0.82)"/>
+  <use href="#mg-sparkle" transform="translate(78 32) scale(0.85)" fill="rgba(255,185,210,0.72)"/>
+  <use href="#mg-sparkle" transform="translate(86 18) scale(0.75)" fill="rgba(255,210,228,0.68)"/>
+  <use href="#mg-sparkle" transform="translate(72 12) scale(0.68)" fill="rgba(255,220,235,0.65)"/>
+  <use href="#mg-sparkle" transform="translate(66 22) scale(0.6)" fill="rgba(255,225,238,0.58)"/>
+
+  <circle cx="80" cy="17" r="1.85" fill="rgba(255,240,246,0.9)"/>
+  <circle cx="73" cy="19" r="1.3" fill="rgba(255,175,205,0.78)"/>
+  <circle cx="85" cy="28" r="1.2" fill="rgba(255,195,218,0.75)"/>
+  <circle cx="68" cy="30" r="1.05" fill="rgba(255,160,195,0.68)"/>
+  <circle cx="74" cy="10" r="0.9" fill="rgba(255,235,244,0.72)"/>
+  <circle cx="84" cy="34" r="0.85" fill="rgba(255,205,225,0.65)"/>
+  <circle cx="64" cy="16" r="0.7" fill="rgba(255,225,238,0.6)"/>
+</svg>

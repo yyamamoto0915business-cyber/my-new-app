@@ -10,6 +10,7 @@ import {
   Users,
   LayoutGrid,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const HERO_IMAGE = "/home/pc/hero-townscape.png";
 
@@ -19,7 +20,7 @@ const FILTER_CHIPS = [
   { key: "family", label: "親子", Icon: Baby },
   { key: "workshop", label: "体験", Icon: Sparkles },
   { key: "community", label: "交流会", Icon: Users },
-  { key: "all", label: "すべて", Icon: LayoutGrid },
+  { key: "all", label: "すべて", Icon: LayoutGrid, isAll: true },
 ] as const;
 
 type Props = {
@@ -37,67 +38,78 @@ export function MobileDiscoverHero({
 }: Props) {
   return (
     <section
-      className="overflow-hidden rounded-[14px] bg-white shadow-[0_2px_10px_rgba(15,23,42,0.05)]"
+      className="mg-mobile-section overflow-hidden p-0"
       aria-label="まちの出来事を探す"
     >
-      <div className="relative min-h-[148px]">
+      {/* イラスト＋コピー */}
+      <div className="relative h-[104px]">
         <Image
           src={HERO_IMAGE}
           alt=""
           fill
           priority
-          className="object-cover object-[70%_30%]"
+          className="object-cover object-[68%_32%]"
           sizes="100vw"
         />
         <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#eef4ee]/90 via-[#eef4ee]/40 to-transparent"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#f7fbf8]/96 via-[#f7fbf8]/58 to-[#f7fbf8]/25"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 w-[72%] bg-gradient-to-r from-[#f7fbf8]/98 to-transparent"
           aria-hidden
         />
 
-        <div className="relative px-2.5 pt-2.5">
+        <div className="relative flex h-full flex-col justify-center px-4 py-3">
           <p className="text-[10px] font-semibold text-[#d4843a]">イベントを探す</p>
           <h1
-            className="mt-0.5 text-[20px] font-semibold leading-[1.28] text-[#1a2e22]"
+            className="mt-0.5 text-[18px] font-semibold leading-[1.28] text-[#163828]"
             style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
           >
-            まちの出来事に、
-            <br />
-            出会いにいく。
+            まちの出来事に、出会いにいく。
           </h1>
-          <p className="mt-1 text-[11px] leading-snug text-[#3d5c48]">
+          <p className="mt-1 text-[10px] leading-snug text-[#3d5c48]">
             地域でひらかれる催しや活動を、見つけられます。
           </p>
         </div>
       </div>
 
-      <div className="space-y-2 px-2.5 pb-2.5 pt-1">
-        <div className="flex h-11 items-center gap-2 rounded-full bg-white px-3.5 shadow-[0_2px_12px_rgba(15,23,42,0.08)] ring-1 ring-[#e8ebe6]">
+      {/* 検索・フィルター */}
+      <div className="relative z-10 space-y-2 px-4 pb-3.5 pt-2.5">
+        <div className="flex h-10 items-center gap-2 rounded-full border border-[#dde9e1] bg-white px-3.5 shadow-[0_4px_16px_rgba(22,56,40,0.06)]">
           <Search className="h-4 w-4 shrink-0 text-[#8a9088]" aria-hidden />
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
             placeholder="地域やイベント名で探す"
-            className="min-w-0 flex-1 bg-transparent text-[12px] text-[#1a2e22] placeholder:text-[#6a7068] outline-none"
+            className="min-w-0 flex-1 bg-transparent text-[12px] text-[#163828] placeholder:text-[#6a7068] outline-none"
           />
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
-          {FILTER_CHIPS.map(({ key, label, Icon }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onChipClick(key)}
-              className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-3 text-[10px] font-medium transition ${
-                activeChip === key
-                  ? "bg-[#2D7A4F] text-white ring-1 ring-[#2D7A4F]/60"
-                  : "bg-white text-[#3d5c48] ring-1 ring-[#e8ebe6] active:bg-[#f5f7f4]"
-              }`}
-            >
-              <Icon className="h-3 w-3" aria-hidden />
-              {label}
-            </button>
-          ))}
+          {FILTER_CHIPS.map(({ key, label, Icon, ...rest }) => {
+            const isAll = "isAll" in rest;
+            const isActive = activeChip === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onChipClick(key)}
+                className={cn(
+                  "mg-mobile-chip",
+                  isAll && isActive
+                    ? "mg-mobile-chip-all"
+                    : isActive
+                      ? "mg-mobile-chip-active"
+                      : "mg-mobile-chip-inactive"
+                )}
+              >
+                <Icon className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden />
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </section>

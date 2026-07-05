@@ -31,17 +31,18 @@ import {
   Baby,
   Sparkles,
   Users,
-  LayoutGrid,
   ChevronDown,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   EventsMobileHero,
   type EventsMobileQuickChip,
 } from "@/components/events/list/mobile/EventsMobileHero";
-import { EventsMobileFilterBar } from "@/components/events/list/mobile/EventsMobileFilterBar";
 import { EventsMobileListHeader } from "@/components/events/list/mobile/EventsMobileListHeader";
 import { EventsMobileRowCard } from "@/components/events/list/mobile/EventsMobileRowCard";
 import { EventsMobileRowCardSkeleton } from "@/components/events/list/mobile/EventsMobileRowCardSkeleton";
+import { EventsMobileGridCard } from "@/components/events/list/mobile/EventsMobileGridCard";
+import { EventsMobileGridCardSkeleton } from "@/components/events/list/mobile/EventsMobileGridCardSkeleton";
 import { EventsPcHero } from "@/components/events/list/EventsPcHero";
 import { EventsPcFilterBar } from "@/components/events/list/EventsPcFilterBar";
 import { EventsPcFilterSidebar } from "@/components/events/list/EventsPcFilterSidebar";
@@ -52,6 +53,7 @@ import {
   EVENTS_PC_GRID_CLASS,
   EVENTS_PC_MAX_WIDTH,
   EVENTS_MOBILE_PAGE_STEP,
+  EVENTS_MOBILE_GRID_CLASS,
 } from "@/components/events/list/events-pc-constants";
 import { useRegionPreference } from "@/hooks/use-region-preference";
 
@@ -100,6 +102,7 @@ function EventsPageContent() {
   const [indoorOnly, setIndoorOnly] = useState(false);
   const [reservationOnly, setReservationOnly] = useState(false);
   const [pcViewMode, setPcViewMode] = useState<"grid" | "list">("grid");
+  const [mobileViewMode, setMobileViewMode] = useState<"grid" | "list">("grid");
   const [pageSize, setPageSize] = useState(12);
   const [currentPage, setCurrentPage] = useState(1);
   const { label: regionLabel } = useRegionPreference();
@@ -465,8 +468,9 @@ function EventsPageContent() {
       {
         key: "all",
         label: "すべて",
-        Icon: LayoutGrid,
+        Icon: SlidersHorizontal,
         active: !hasAnyFilter,
+        isAll: true,
         onClick: resetMobileFilters,
       },
     ];
@@ -679,41 +683,32 @@ function EventsPageContent() {
       </div>
 
       {/* ===== Mobile Layout ===== */}
-      <div className="mg-events-mobile-page min-[900px]:hidden min-h-screen pb-4">
+      <div className="mg-events-mobile-page min-[900px]:hidden min-h-screen bg-[#F5F8F5] pb-4">
         <EventsMobileHero
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           quickChips={mobileQuickChips}
         />
 
-        <div className="relative z-10 -mt-5 rounded-t-[20px] bg-[#FDFDFB] px-4 pt-4 shadow-[0_-4px_20px_rgba(34,51,68,0.04)]">
+        <div className="px-3.5">
           {view === "list" ? (
-            <>
-              <EventsMobileFilterBar
-                selectedCategory={selectedCategory}
-                dateRange={dateRange}
-                selectedArea={selectedArea}
-                childFriendlyOnly={childFriendlyOnly}
-                priceFilter={priceFilter}
-                indoorOnly={indoorOnly}
-                sortOrder={sortOrder === "date_desc" ? "date_asc" : sortOrder}
-                onCategoryChange={setSelectedCategory}
-                onAreaChange={handleAreaChange}
-                onChildFriendlyChange={setChildFriendlyOnly}
-                onPriceFilterChange={setPriceFilter}
-                onDateRangeChange={setDateRange}
-                onIndoorChange={setIndoorOnly}
-                onSortChange={(s) => setSortOrder(s)}
+            <section ref={eventListRef} className="scroll-mt-4">
+              <EventsMobileListHeader
+                totalCount={filteredEvents.length}
+                sortOrder={sortOrder}
+                onSortChange={setSortOrder}
+                viewMode={mobileViewMode}
+                onViewModeChange={setMobileViewMode}
               />
 
-              <section ref={eventListRef} className="scroll-mt-4">
-                <EventsMobileListHeader
-                  totalCount={filteredEvents.length}
-                  sortOrder={sortOrder}
-                  onSortChange={setSortOrder}
-                />
-
-                {loading ? (
+              {loading ? (
+                mobileViewMode === "grid" ? (
+                  <div className={EVENTS_MOBILE_GRID_CLASS}>
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <EventsMobileGridCardSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : (
                   <ul className="space-y-3">
                     {Array.from({ length: 6 }).map((_, i) => (
                       <li key={i}>
@@ -721,44 +716,52 @@ function EventsPageContent() {
                       </li>
                     ))}
                   </ul>
-                ) : listError ? (
-                  <div className="rounded-[12px] border border-[#E8EAE6] bg-white p-8 text-center">
-                    <p className="text-sm text-red-600">{listError}</p>
-                    <button
-                      type="button"
-                      onClick={() => window.location.reload()}
-                      className="mt-3 text-sm text-[#4A8C5E] underline"
-                    >
-                      再読み込み
-                    </button>
-                  </div>
-                ) : filteredEvents.length === 0 ? (
-                  <div className="rounded-[12px] border border-[#E8EAE6] bg-white p-10 text-center">
-                    <p className="text-[13px] text-[#666666]">
-                      該当するイベントがありません
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDateRange("all");
-                        setSelectedArea("");
-                        setAvailableOnly(false);
-                        setPriceFilter("all");
-                        setChildFriendlyOnly(false);
-                        setSearchQuery("");
-                        setSelectedCategory("");
-                        setIndoorOnly(false);
-                        setReservationOnly(false);
-                        handleTagsChange([]);
-                        router.push("/events", { scroll: false });
-                      }}
-                      className="mt-4 inline-flex h-10 items-center rounded-full bg-[#223344] px-5 text-[13px] font-medium text-white"
-                    >
-                      条件を緩める
-                    </button>
-                  </div>
-                ) : (
-                  <>
+                )
+              ) : listError ? (
+                <div className="rounded-[12px] border border-[#E8EAE6] bg-white p-8 text-center">
+                  <p className="text-sm text-red-600">{listError}</p>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="mt-3 text-sm text-[#4A8C5E] underline"
+                  >
+                    再読み込み
+                  </button>
+                </div>
+              ) : filteredEvents.length === 0 ? (
+                <div className="rounded-[12px] border border-[#E8EAE6] bg-white p-10 text-center">
+                  <p className="text-[13px] text-[#666666]">
+                    該当するイベントがありません
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateRange("all");
+                      setSelectedArea("");
+                      setAvailableOnly(false);
+                      setPriceFilter("all");
+                      setChildFriendlyOnly(false);
+                      setSearchQuery("");
+                      setSelectedCategory("");
+                      setIndoorOnly(false);
+                      setReservationOnly(false);
+                      handleTagsChange([]);
+                      router.push("/events", { scroll: false });
+                    }}
+                    className="mt-4 inline-flex h-10 items-center rounded-full bg-[#223344] px-5 text-[13px] font-medium text-white"
+                  >
+                    条件を緩める
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {mobileViewMode === "grid" ? (
+                    <div className={EVENTS_MOBILE_GRID_CLASS}>
+                      {visibleMobileEvents.map((event) => (
+                        <EventsMobileGridCard key={event.id} event={event} />
+                      ))}
+                    </div>
+                  ) : (
                     <ul className="space-y-3">
                       {visibleMobileEvents.map((event) => (
                         <li key={event.id}>
@@ -766,25 +769,25 @@ function EventsPageContent() {
                         </li>
                       ))}
                     </ul>
+                  )}
 
-                    {hasMoreMobile ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setMobileVisibleCount((n) =>
-                            Math.min(n + EVENTS_MOBILE_PAGE_STEP, filteredEvents.length)
-                          )
-                        }
-                        className="mt-5 flex h-11 w-full items-center justify-center gap-1 rounded-full border border-[#E0E6DE] bg-white text-[13px] font-medium text-[#666666] shadow-[0_1px_3px_rgba(34,51,68,0.04)] transition active:bg-[#F0F2EF]"
-                      >
-                        もっと見る
-                        <ChevronDown className="h-4 w-4" aria-hidden />
-                      </button>
-                    ) : null}
-                  </>
-                )}
-              </section>
-            </>
+                  {hasMoreMobile ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMobileVisibleCount((n) =>
+                          Math.min(n + EVENTS_MOBILE_PAGE_STEP, filteredEvents.length)
+                        )
+                      }
+                      className="mt-5 flex h-11 w-full items-center justify-center gap-1 rounded-full border border-[#E0E6DE] bg-white text-[13px] font-medium text-[#666666] shadow-[0_1px_3px_rgba(34,51,68,0.04)] transition active:bg-[#F0F2EF]"
+                    >
+                      もっと見る
+                      <ChevronDown className="h-4 w-4" aria-hidden />
+                    </button>
+                  ) : null}
+                </>
+              )}
+            </section>
           ) : (
             <div className="pt-1">
               {!userPos && (

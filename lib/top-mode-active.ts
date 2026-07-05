@@ -70,8 +70,7 @@ export function getTopModeTabIdFromContext(
   if (authLike) {
     if (returnPath && isOrganizerDashboardPath(returnPath)) return "organizer";
     if (returnPath?.startsWith("/volunteer")) return "volunteer";
-    if (modeFromCookie === "ORGANIZER") return "organizer";
-    if (modeFromCookie === "VOLUNTEER") return "volunteer";
+    return "discover";
   }
 
   return "discover";

@@ -9,15 +9,16 @@ import {
   Users,
   Music,
   Heart,
+  Home,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type CategoryItem = {
   label: string;
   categoryKey: string;
   href: string;
   icon: LucideIcon;
-  bg: string;
   iconColor: string;
 };
 
@@ -27,7 +28,6 @@ const CATEGORIES: CategoryItem[] = [
     categoryKey: "community",
     href: "/events",
     icon: PartyPopper,
-    bg: "#fef3e8",
     iconColor: "#d4843a",
   },
   {
@@ -35,15 +35,13 @@ const CATEGORIES: CategoryItem[] = [
     categoryKey: "sports",
     href: "/events",
     icon: Dumbbell,
-    bg: "#eef6f2",
-    iconColor: "#48a878",
+    iconColor: "#2f7d4e",
   },
   {
     label: "体験・ワークショップ",
     categoryKey: "workshop",
     href: "/events",
     icon: Palette,
-    bg: "#f3eef8",
     iconColor: "#8868b8",
   },
   {
@@ -51,7 +49,6 @@ const CATEGORIES: CategoryItem[] = [
     categoryKey: "study",
     href: "/events",
     icon: BookOpen,
-    bg: "#eef4fb",
     iconColor: "#4a78b8",
   },
   {
@@ -59,7 +56,6 @@ const CATEGORIES: CategoryItem[] = [
     categoryKey: "community",
     href: "/events",
     icon: Users,
-    bg: "#fef8e8",
     iconColor: "#b89838",
   },
   {
@@ -67,7 +63,6 @@ const CATEGORIES: CategoryItem[] = [
     categoryKey: "music",
     href: "/events",
     icon: Music,
-    bg: "#fceef4",
     iconColor: "#b85888",
   },
   {
@@ -75,72 +70,99 @@ const CATEGORIES: CategoryItem[] = [
     categoryKey: "volunteer",
     href: "/volunteer",
     icon: Heart,
-    bg: "#eaf4ed",
-    iconColor: "#2d7d52",
+    iconColor: "#2f6b4f",
   },
 ];
+
+const ICON_BG = "#f3f8f5";
 
 type Props = {
   selectedCategory?: string;
   onSelectCategory?: (key: string) => void;
+  /** 親セクション内に埋め込む場合 */
+  embedded?: boolean;
 };
 
-/** モック準拠：カテゴリは横スクロールの正方形カード */
-export function MobileCategoryGrid({ selectedCategory, onSelectCategory }: Props) {
+function CategoryCard({
+  label,
+  categoryKey,
+  href,
+  icon: Icon,
+  iconColor,
+  isActive,
+  onSelect,
+}: CategoryItem & {
+  isActive: boolean;
+  onSelect?: (key: string) => void;
+}) {
+  const cardClass = cn(
+    "flex h-[82px] w-[76px] shrink-0 flex-col items-center justify-center gap-1 rounded-[18px] border p-2 transition active:bg-[#fafcf9]",
+    isActive
+      ? "border-[#b8dcc8] bg-[#eef6f2]"
+      : "border-[#dde9e1] bg-white shadow-[0_4px_12px_rgba(22,56,40,0.04)]"
+  );
+
+  const inner = (
+    <>
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px]"
+        style={{ backgroundColor: ICON_BG }}
+      >
+        <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={2} aria-hidden />
+      </span>
+      <span className="line-clamp-2 text-center text-[9px] font-medium leading-[1.15] text-[#163828]">
+        {label}
+      </span>
+    </>
+  );
+
+  if (onSelect && categoryKey !== "volunteer") {
+    return (
+      <button type="button" onClick={() => onSelect(categoryKey)} className={cardClass}>
+        {inner}
+      </button>
+    );
+  }
+
   return (
-    <section aria-label="カテゴリから探す" className="space-y-2">
-      <h2 className="text-[13px] font-semibold text-[#0e1610]">カテゴリから探す</h2>
-      <div className="-mx-2.5 flex gap-2.5 overflow-x-auto px-2.5 pb-0.5 scrollbar-hide">
-        {CATEGORIES.map(({ label, categoryKey, href, icon: Icon, bg, iconColor }) => {
+    <Link href={href} className={cardClass}>
+      {inner}
+    </Link>
+  );
+}
+
+export function MobileCategoryGrid({ selectedCategory, onSelectCategory, embedded }: Props) {
+  const content = (
+    <>
+      <div className="mb-1.5 flex items-center gap-1.5">
+        <Home className="h-3.5 w-3.5 text-[#2f7d4e]" aria-hidden />
+        <h2 className="mg-mobile-section-title">カテゴリから探す</h2>
+      </div>
+      <div className={embedded ? "-mx-2.5 flex gap-2 overflow-x-auto px-2.5 pr-4 scrollbar-hide" : "-mx-3 flex gap-2 overflow-x-auto px-3 pr-5 scrollbar-hide"}>
+        {CATEGORIES.map((item) => {
           const isActive =
             onSelectCategory !== undefined &&
-            selectedCategory === categoryKey &&
-            categoryKey !== "";
-
-          if (onSelectCategory && categoryKey !== "volunteer") {
-            return (
-              <button
-                key={label}
-                type="button"
-                onClick={() => onSelectCategory(categoryKey)}
-                className={`flex w-[92px] shrink-0 flex-col items-center gap-1.5 rounded-[14px] p-2.5 ring-1 transition active:bg-[#fafaf8] ${
-                  isActive ? "bg-[#eef6f2] ring-[#4a9a68]" : "bg-white ring-[#e8ebe6]"
-                }`}
-              >
-                <span
-                  className="flex h-10 w-10 items-center justify-center rounded-[10px]"
-                  style={{ backgroundColor: bg }}
-                >
-                  <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} aria-hidden />
-                </span>
-                <span className="text-center text-[9px] font-medium leading-tight text-[#3d5c48]">
-                  {label}
-                </span>
-              </button>
-            );
-          }
+            selectedCategory === item.categoryKey &&
+            item.categoryKey !== "";
 
           return (
-            <Link
-              key={label}
-              href={href}
-              className={`flex w-[92px] shrink-0 flex-col items-center gap-1.5 rounded-[14px] bg-white p-2.5 ring-1 ring-[#e8ebe6] active:bg-[#fafaf8] ${
-                isActive ? "bg-[#eef6f2] ring-[#4a9a68]" : ""
-              }`}
-            >
-              <span
-                className="flex h-10 w-10 items-center justify-center rounded-[10px]"
-                style={{ backgroundColor: bg }}
-              >
-                <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} aria-hidden />
-              </span>
-              <span className="text-center text-[9px] font-medium leading-tight text-[#3d5c48]">
-                {label}
-              </span>
-            </Link>
+            <CategoryCard
+              key={item.label}
+              {...item}
+              isActive={isActive}
+              onSelect={onSelectCategory}
+            />
           );
         })}
       </div>
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <section aria-label="カテゴリから探す" className="mg-mobile-section">
+      {content}
     </section>
   );
 }

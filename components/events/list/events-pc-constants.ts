@@ -12,6 +12,9 @@ import {
 
 export const EVENTS_PC_HERO_IMAGE = "/events/pc-hero-landscape.jpg";
 
+/** モバイル一覧ヒーロー（水彩イラスト） */
+export const EVENTS_MOBILE_HERO_IMAGE = "/events/day-mgmt-mobile-hero.png";
+
 /** PC 一覧の最大幅（横に広げて4列を確保） */
 export const EVENTS_PC_MAX_WIDTH = "max-w-[1320px]";
 
@@ -46,3 +49,6 @@ export const EVENTS_PC_PAGE_SIZES = [12, 24, 48] as const;
 
 /** モバイル一覧の「もっと見る」1回あたりの件数 */
 export const EVENTS_MOBILE_PAGE_STEP = 10;
+
+/** モバイル一覧グリッド（2列・コンパクト） */
+export const EVENTS_MOBILE_GRID_CLASS = "grid grid-cols-2 gap-2";

@@ -327,6 +327,20 @@ function VolunteerPageContent() {
     setDraftKeyword(mobileKeyword);
   };
 
+  const handleMobileKeywordChange = (value: string) => {
+    setMobileKeyword(value);
+    setKeyword(value);
+    setDraftKeyword(value);
+  };
+
+  const hasMobileActiveFilters =
+    Boolean(prefecture) ||
+    Boolean(roleType) ||
+    Boolean(dateFilter) ||
+    Boolean(benefitFilter) ||
+    Boolean(keyword) ||
+    conditionTags.size > 0;
+
   const resetAllFilters = () => {
     setKeyword("");
     setDraftKeyword("");
@@ -447,16 +461,21 @@ function VolunteerPageContent() {
       </div>
 
       {/* ─── Mobile (below 900px) ─── */}
-      <div className="mg-volunteer-mobile-page min-[900px]:hidden min-h-screen space-y-2 pb-20 pt-1">
+      <div className="mg-volunteer-mobile-page min-[900px]:hidden min-h-screen w-full space-y-2 px-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1">
         <MobileVolunteerHero
           keyword={mobileKeyword}
           prefecture={prefecture}
           roleType={roleType}
           dateFilter={dateFilter}
           benefitFilter={benefitFilter}
-          onKeywordChange={setMobileKeyword}
+          onKeywordChange={handleMobileKeywordChange}
           onSearch={handleMobileSearch}
           onOpenFilter={setMobileFilterOpen}
+          hasActiveFilters={hasMobileActiveFilters}
+          onSettingsClick={() => {
+            if (hasMobileActiveFilters) resetAllFilters();
+            else setMobileFilterOpen("benefit");
+          }}
         />
 
         <MobileVolunteerPopularTags active={conditionTags} onToggle={toggleConditionTag} />
@@ -484,7 +503,7 @@ function VolunteerPageContent() {
         />
 
         {error && (
-          <div className="mx-3 rounded-[12px] border border-[#DDE8DF] bg-white p-4">
+          <div className="rounded-[18px] border border-[#dde9e1] bg-white p-4">
             <p className="text-[13px] text-red-600">{error}</p>
             <button
               type="button"

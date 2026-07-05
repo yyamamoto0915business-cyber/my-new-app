@@ -143,20 +143,12 @@ export function HomeOtonami() {
       </main>
 
       {/* モバイル（モックアップ準拠） */}
-      <main className="w-full space-y-3.5 bg-[#f3f4f1] px-2.5 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] pt-0 min-[900px]:hidden sm:max-w-none">
+      <main className="w-full space-y-2 bg-[#f7fbf8] px-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1 min-[900px]:hidden sm:max-w-none">
         <MobileDiscoverHero
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           activeChip={activeChip}
           onChipClick={handleChipClick}
-        />
-        <MobileRegionSection
-          selectedArea={selectedArea}
-          onSelectArea={handleSelectArea}
-        />
-        <MobileCategoryGrid
-          selectedCategory={selectedCategory}
-          onSelectCategory={handleSelectCategory}
         />
         <MobileRecommendedCarousel
           events={allEvents}
@@ -166,6 +158,20 @@ export function HomeOtonami() {
           areaPreference={effectiveArea}
           categoryPrefs={categoryPrefs}
         />
+        <section aria-label="カテゴリと地域で探す" className="mg-mobile-section space-y-2">
+          <MobileCategoryGrid
+            embedded
+            selectedCategory={selectedCategory}
+            onSelectCategory={handleSelectCategory}
+          />
+          <div className="border-t border-[#eef2ef] pt-2">
+            <MobileRegionSection
+              embedded
+              selectedArea={selectedArea}
+              onSelectArea={handleSelectArea}
+            />
+          </div>
+        </section>
         <MobileCtaBanners />
       </main>
     </div>

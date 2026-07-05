@@ -42,29 +42,27 @@ function FilterChip({
   open,
   onClick,
   icon: Icon,
-  compact,
 }: {
   label: string;
   active?: boolean;
   open?: boolean;
   onClick: () => void;
   icon?: React.ElementType;
-  compact?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-expanded={open}
-      className={`inline-flex h-9 w-full min-w-0 items-center justify-center gap-0.5 rounded-full border px-1.5 text-[10px] font-medium leading-tight transition sm:text-[11px] ${
+      className={`inline-flex h-8 w-full min-w-0 items-center justify-center gap-0.5 rounded-full border px-1.5 text-[10px] font-medium leading-tight transition ${
         active || open
-          ? "border-[#C5D9C9] bg-[#E8F2EA] text-[#4A8C5E]"
-          : "border-[#E0E6DE] bg-white text-[#666666] active:bg-[#F7F8F6]"
-      } ${compact ? "px-1" : "px-2"}`}
+          ? "border-[#b8dcc8] bg-[#eef6f2] text-[#2f6b4f]"
+          : "border-[#e0e6de] bg-white text-[#666666] active:bg-[#f7f8f6]"
+      }`}
     >
       {Icon ? (
         <Icon
-          className={`h-3 w-3 shrink-0 ${active || open ? "text-[#4A8C5E]" : "text-[#666666]"}`}
+          className={`h-3 w-3 shrink-0 ${active || open ? "text-[#2f6b4f]" : "text-[#666666]"}`}
           aria-hidden
         />
       ) : null}
@@ -169,95 +167,94 @@ export function EventsMobileFilterBar({
   const weekendActive = dateRange === "today" || dateRange === "weekend";
 
   return (
-    <div className="relative grid grid-cols-4 gap-2">
-      <FilterMenuAnchor
-        menu="category"
-        openMenu={openMenu}
-        options={CATEGORY_OPTIONS}
-        value={selectedCategory}
-        onSelect={onCategoryChange}
-        onToggle={() => toggle("category")}
-        chip={
-          <FilterChip
-            label={getCategoryLabel(selectedCategory)}
-            active={Boolean(selectedCategory)}
-            open={openMenu === "category"}
-            onClick={() => toggle("category")}
-          />
-        }
-      />
+    <div className="space-y-2">
+      <div className="grid grid-cols-4 gap-2">
+        <FilterMenuAnchor
+          menu="category"
+          openMenu={openMenu}
+          options={CATEGORY_OPTIONS}
+          value={selectedCategory}
+          onSelect={onCategoryChange}
+          onToggle={() => toggle("category")}
+          chip={
+            <FilterChip
+              label={getCategoryLabel(selectedCategory)}
+              active={Boolean(selectedCategory)}
+              open={openMenu === "category"}
+              onClick={() => toggle("category")}
+            />
+          }
+        />
 
-      <FilterMenuAnchor
-        menu="date"
-        openMenu={openMenu}
-        options={EVENTS_PC_DATE_OPTIONS}
-        value={dateRange}
-        onSelect={(v) => onDateRangeChange(v as DateRangeFilter)}
-        onToggle={() => toggle("date")}
-        chip={
-          <FilterChip
-            label={getDateLabel(dateRange)}
-            active={dateRange !== "all"}
-            open={openMenu === "date"}
-            onClick={() => toggle("date")}
-          />
-        }
-      />
+        <FilterMenuAnchor
+          menu="date"
+          openMenu={openMenu}
+          options={EVENTS_PC_DATE_OPTIONS}
+          value={dateRange}
+          onSelect={(v) => onDateRangeChange(v as DateRangeFilter)}
+          onToggle={() => toggle("date")}
+          chip={
+            <FilterChip
+              label={getDateLabel(dateRange)}
+              active={dateRange !== "all"}
+              open={openMenu === "date"}
+              onClick={() => toggle("date")}
+            />
+          }
+        />
 
-      <FilterMenuAnchor
-        menu="area"
-        openMenu={openMenu}
-        scrollable
-        options={AREA_OPTIONS}
-        value={selectedArea}
-        onSelect={onAreaChange}
-        onToggle={() => toggle("area")}
-        chip={
-          <FilterChip
-            label={selectedArea || "エリア"}
-            active={Boolean(selectedArea)}
-            open={openMenu === "area"}
-            onClick={() => toggle("area")}
-          />
-        }
-      />
+        <FilterMenuAnchor
+          menu="area"
+          openMenu={openMenu}
+          scrollable
+          options={AREA_OPTIONS}
+          value={selectedArea}
+          onSelect={onAreaChange}
+          onToggle={() => toggle("area")}
+          chip={
+            <FilterChip
+              label={selectedArea || "エリア"}
+              active={Boolean(selectedArea)}
+              open={openMenu === "area"}
+              onClick={() => toggle("area")}
+            />
+          }
+        />
 
-      <FilterChip
-        label="親子向け"
-        active={childFriendlyOnly}
-        onClick={() => onChildFriendlyChange(!childFriendlyOnly)}
-        icon={Baby}
-        compact
-      />
+        <FilterChip
+          label="親子向け"
+          active={childFriendlyOnly}
+          onClick={() => onChildFriendlyChange(!childFriendlyOnly)}
+          icon={Baby}
+        />
+      </div>
 
-      <FilterChip
-        label="無料"
-        active={priceFilter === "free"}
-        onClick={() => onPriceFilterChange(priceFilter === "free" ? "all" : "free")}
-        icon={CircleDollarSign}
-        compact
-      />
-      <FilterChip
-        label="今日・今週末"
-        active={weekendActive}
-        onClick={() => onDateRangeChange(weekendActive ? "all" : "weekend")}
-        icon={Calendar}
-        compact
-      />
-      <FilterChip
-        label="屋内"
-        active={indoorOnly}
-        onClick={() => onIndoorChange(!indoorOnly)}
-        icon={Building2}
-        compact
-      />
-      <FilterChip
-        label="人気順"
-        active={popularActive}
-        onClick={() => onSortChange(popularActive ? "date_asc" : "newest")}
-        icon={TrendingUp}
-        compact
-      />
+      <div className="grid grid-cols-4 gap-2">
+        <FilterChip
+          label="無料"
+          active={priceFilter === "free"}
+          onClick={() => onPriceFilterChange(priceFilter === "free" ? "all" : "free")}
+          icon={CircleDollarSign}
+        />
+        <FilterChip
+          label="今日・今週末"
+          active={weekendActive}
+          onClick={() => onDateRangeChange(weekendActive ? "all" : "weekend")}
+          icon={Calendar}
+        />
+        <FilterChip
+          label="屋内"
+          active={indoorOnly}
+          onClick={() => onIndoorChange(!indoorOnly)}
+          icon={Building2}
+        />
+        <FilterChip
+          label="人気順"
+          active={popularActive}
+          onClick={() => onSortChange(popularActive ? "date_asc" : "newest")}
+          icon={TrendingUp}
+        />
+      </div>
     </div>
   );
 }

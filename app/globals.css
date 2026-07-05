@@ -207,13 +207,15 @@ body::before {
   background-size: 22px 22px;
 }
 
-/* イベント一覧モバイル — モック準拠の温かみのあるクリーム系 */
+/* イベント一覧モバイル — モック準拠のライトグレー背景 */
 .mg-events-mobile-page {
-  background-color: #faf8f2;
+  background-color: #f5f8f5;
 }
 
 /* ボランティア募集モバイル — body::before の幾何学パターンを透けさせない */
 .mg-volunteer-mobile-page {
+  position: relative;
+  z-index: 1;
   background-color: #f5f8f5;
 }
 
@@ -993,6 +995,82 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   gap: 4px;
   text-shadow: none;
 }
+/* 上部モードタブ（探す / ボランティア / 主催） */
+.mg-top-mode-tab-active {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  border-color: #2f6b4f;
+  box-shadow: 0 2px 6px rgba(22, 56, 40, 0.14);
+  background-color: #2f7d4e;
+  background-image:
+    url("/assets/mode-tab-leaf-accent.svg"),
+    linear-gradient(155deg, #2f6b4f 0%, #2f7d4e 55%, #2a7048 100%);
+  background-position: right center, center;
+  background-size: auto 130%, cover;
+  background-repeat: no-repeat, no-repeat;
+}
+.mg-top-mode-tab-active svg {
+  color: #fff;
+}
+.mg-top-mode-tab-inactive {
+  border-color: #dde9e1;
+  background-color: #fff;
+  color: #163828;
+  box-shadow: 0 1px 2px rgba(22, 56, 40, 0.04);
+}
+.mg-top-mode-tab-inactive svg {
+  color: #2f6b4f;
+}
+
+/* モバイルホーム：親セクションカード */
+.mg-mobile-section {
+  position: relative;
+  z-index: 1;
+  border-radius: 24px;
+  border: 1px solid #dde9e1;
+  background-color: #ffffff;
+  padding: 10px;
+  box-shadow: 0 8px 24px rgba(22, 56, 40, 0.06);
+}
+.mg-mobile-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #163828;
+  line-height: 1.25;
+}
+.mg-mobile-chip {
+  display: inline-flex;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 5px;
+  border-radius: 9999px;
+  padding: 0 12px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+.mg-mobile-chip-active {
+  border: 1px solid #b8dcc8;
+  background-color: #eef6f2;
+  color: #2f6b4f;
+}
+.mg-mobile-chip-inactive {
+  border: 1px solid #dde9e1;
+  background-color: #fff;
+  color: #163828;
+}
+.mg-mobile-chip-all {
+  border: 1px solid #2f7d4e;
+  background-color: #2f7d4e;
+  color: #fff;
+}
+.mg-mobile-chip-all svg {
+  color: #fff;
+}
+
 .org-pro-tab-badge {
   position: absolute;
   top: -9px; right: -12px;
