@@ -1,7 +1,7 @@
 import { isAbortLikeError, isNetworkFetchError } from "@/lib/is-abort-like-error";
 
-/** タイムアウト付きfetch（10秒） */
-const DEFAULT_TIMEOUT_MS = 10_000;
+/** タイムアウト付きfetch（5秒） */
+const DEFAULT_TIMEOUT_MS = 5_000;
 
 class FetchTimeoutError extends Error {
   constructor(message: string) {

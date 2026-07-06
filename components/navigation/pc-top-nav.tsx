@@ -197,6 +197,7 @@ export function PcTopNav() {
               <span key={link.href} className="relative inline-block">
                 <Link
                   href={link.href}
+                  prefetch
                   className="org-tab-pro-shiny"
                   aria-current="page"
                   onClick={() => syncModeCookieForNav(link.href)}
@@ -216,6 +217,7 @@ export function PcTopNav() {
               <span key={link.href} className="relative inline-block">
                 <Link
                   href={link.href}
+                  prefetch
                   onClick={() => syncModeCookieForNav(link.href)}
                   className="whitespace-nowrap rounded-[20px] px-[12px] py-[5px] text-[13px] font-medium text-[#3a5848] transition-colors hover:text-[#1e3828]"
                 >
@@ -230,6 +232,7 @@ export function PcTopNav() {
             <Link
               key={link.href}
               href={link.href}
+              prefetch
               onClick={() => syncModeCookieForNav(link.href)}
               className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[20px] px-[14px] py-[6px] text-[13px] font-medium transition-colors ${
                 active
