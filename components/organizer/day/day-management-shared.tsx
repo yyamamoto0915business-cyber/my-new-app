@@ -3,7 +3,7 @@
 import React, { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Send, Save, AlertTriangle } from "lucide-react";
-import { getJstTodayYmd } from "@/lib/jst-date";
+import { getJstNowHm, getJstTodayYmd } from "@/lib/jst-date";
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -50,10 +50,22 @@ export const MOCK_SCHEDULE = [
   { time: "14:45 - 15:30", name: "クロージング", status: "wait" as const },
 ];
 
-export const MOCK_NOTICES = [
-  { type: "urg" as const, text: "ワークショップ会場をBからAに変更しました", time: "9:15" },
-  { type: "info" as const, text: "お昼休憩は12:00〜13:00です", time: "8:45" },
+export type DayNotice = {
+  type: "urg" | "info";
+  text: string;
+  time: string;
+};
+
+export const MOCK_NOTICES: DayNotice[] = [
+  { type: "urg", text: "ワークショップ会場をBからAに変更しました", time: "9:15" },
+  { type: "info", text: "お昼休憩は12:00〜13:00です", time: "8:45" },
 ];
+
+export function formatNoticeTime(baseDate: Date = new Date()): string {
+  const hm = getJstNowHm(baseDate);
+  const [h, m] = hm.split(":");
+  return `${Number(h)}:${m}`;
+}
 
 export type ModalType = "qr" | "checkin_list" | "announce" | "message" | "emergency" | "memo" | null;
 
@@ -379,6 +391,8 @@ type ModalsProps = {
   onEmergencyChange: (v: string) => void;
   memoText: string;
   onMemoChange: (v: string) => void;
+  onSendMessage: (text: string) => void;
+  onSendEmergency: (text: string) => void;
 };
 
 export function DayManagementModals({
@@ -394,7 +408,11 @@ export function DayManagementModals({
   onEmergencyChange,
   memoText,
   onMemoChange,
+  onSendMessage,
+  onSendEmergency,
 }: ModalsProps) {
+  const messageTrimmed = messageText.trim();
+  const emergencyTrimmed = emergencyText.trim();
   // QRモーダルと受付リストは動的インポートで読み込む
   const [QrModal, setQrModal] = React.useState<React.ComponentType<{ open: boolean; onClose: () => void; eventId: string; eventTitle: string }> | null>(null);
   const [ListModal, setListModal] = React.useState<React.ComponentType<{ open: boolean; onClose: () => void; eventId: string; eventTitle: string }> | null>(null);
@@ -460,7 +478,13 @@ export function DayManagementModals({
         />
         <button
           type="button"
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1976D2] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#1565c0]"
+          disabled={!messageTrimmed}
+          onClick={() => {
+            if (!messageTrimmed) return;
+            onSendMessage(messageTrimmed);
+            onClose();
+          }}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1976D2] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#1565c0] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Send size={15} />
           送信する
@@ -487,7 +511,13 @@ export function DayManagementModals({
         />
         <button
           type="button"
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#E53935] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#c62828]"
+          disabled={!emergencyTrimmed}
+          onClick={() => {
+            if (!emergencyTrimmed) return;
+            onSendEmergency(emergencyTrimmed);
+            onClose();
+          }}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#E53935] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#c62828] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <AlertTriangle size={15} />
           緊急連絡を送信する

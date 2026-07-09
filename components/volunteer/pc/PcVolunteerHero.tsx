@@ -109,7 +109,7 @@ export function PcVolunteerHero({
 }: Props) {
   return (
     <section aria-label="ボランティア募集" className="overflow-hidden rounded-t-[16px] bg-white">
-      <div className="relative h-[148px] overflow-hidden">
+      <div className="relative h-[132px] overflow-hidden">
         <Image
           src={HERO_IMAGE}
           alt=""
@@ -123,7 +123,7 @@ export function PcVolunteerHero({
           aria-hidden
         />
 
-        <div className="relative z-10 px-6 pt-4">
+        <div className="relative z-10 px-6 pt-3">
           <nav
             aria-label="パンくず"
             className="mb-1.5 flex items-center gap-1 text-[11px] text-[#566358]"

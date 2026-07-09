@@ -78,15 +78,78 @@ const NOTE_ITEMS_RIGHT = [
 
 /** Tailwind でグリッドを明示（globals.css だけに依存しない） */
 const PAYOUTS_GRID =
-  "grid grid-cols-1 gap-2.5 min-[720px]:grid-cols-2 min-[720px]:items-stretch min-[720px]:gap-3";
+  "grid grid-cols-1 gap-2 max-[899px]:gap-2 min-[720px]:grid-cols-2 min-[720px]:items-stretch min-[720px]:gap-3";
 const PAYOUTS_CARD =
-  "org-payouts-card flex h-full min-h-0 flex-col overflow-hidden rounded-[14px] border border-[#dde8df] bg-white p-3 shadow-[0_2px_10px_rgba(26,34,20,0.05)] sm:p-3.5";
+  "org-payouts-card flex h-full min-h-0 flex-col overflow-hidden rounded-[14px] border border-[#dde8df] bg-white p-2.5 shadow-[0_2px_10px_rgba(26,34,20,0.05)] max-[899px]:p-2.5 sm:p-3.5";
 const PAYOUTS_NOTES =
-  "org-payouts-notes rounded-[14px] border border-[#dde8df] bg-white p-3 shadow-[0_2px_8px_rgba(26,34,20,0.04)] sm:p-3.5";
+  "org-payouts-notes rounded-[14px] border border-[#dde8df] bg-white p-2.5 shadow-[0_2px_8px_rgba(26,34,20,0.04)] max-[899px]:p-2.5 sm:p-3.5";
+
+function PayoutsStatusRows({
+  isConnected,
+  className = "",
+}: {
+  isConnected: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-col divide-y divide-[#eef2ee] ${className}`}>
+      <div className="flex items-center justify-between gap-2 py-1.5 min-[900px]:py-2">
+        <span className="text-[11px] text-[#7a8a7e]">状態：</span>
+        {isConnected ? (
+          <span className="rounded-full bg-[#eaf4ed] px-2.5 py-0.5 text-[10px] font-bold text-[#2d7a4f]">
+            設定済み
+          </span>
+        ) : (
+          <span className="rounded-full border border-[#e7d39a] bg-[#fff8e6] px-2.5 py-0.5 text-[10px] font-bold text-[#7a5800]">
+            未設定
+          </span>
+        )}
+      </div>
+      <div className="flex items-center justify-between gap-2 py-1.5 min-[900px]:py-2">
+        <span className="text-[11px] text-[#7a8a7e]">受け取り：</span>
+        <span className="text-[12px] font-semibold text-[#1a2214]">
+          {isConnected ? "受け取り可能" : "未開始"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PayoutsNotesLists() {
+  return (
+    <div className="grid grid-cols-1 gap-1.5 min-[720px]:grid-cols-2 min-[720px]:gap-4">
+      <ul className="space-y-0.5 text-[10px] leading-snug text-[#566358] min-[900px]:space-y-1 min-[900px]:leading-relaxed [&_li]:relative [&_li]:pl-3 [&_li]:before:absolute [&_li]:before:left-0 [&_li]:before:text-[#9aab9e] [&_li]:before:content-['•']">
+        {NOTE_ITEMS_LEFT.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+      <ul className="space-y-0.5 text-[10px] leading-snug text-[#566358] min-[900px]:space-y-1 min-[900px]:leading-relaxed [&_li]:relative [&_li]:pl-3 [&_li]:before:absolute [&_li]:before:left-0 [&_li]:before:text-[#9aab9e] [&_li]:before:content-['•']">
+        {NOTE_ITEMS_RIGHT.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PayoutsNotesHead({ toggle = false }: { toggle?: boolean }) {
+  return (
+    <>
+      <PayoutIcon src="/organizer/payouts/alert.png" size={22} className="max-[899px]:!h-5 max-[899px]:!w-5" />
+      <h2 className="org-payouts-notes__title flex-1 text-[12px] font-bold text-[#1a2214]">ご注意</h2>
+      {toggle ? (
+        <span className="text-[10px] font-semibold text-[#7a8a7e]" aria-hidden>
+          <span className="group-open:hidden">開く</span>
+          <span className="hidden group-open:inline">閉じる</span>
+        </span>
+      ) : null}
+    </>
+  );
+}
 
 function PayoutsFlowStepper() {
   return (
-    <div className="mb-2.5 rounded-[10px] border border-[#eef2ee] bg-[#fafbfa] p-2">
+    <div className="mb-2.5 hidden rounded-[10px] border border-[#eef2ee] bg-[#fafbfa] p-2 min-[900px]:block">
       <div className="flex items-start justify-between gap-0.5">
         {FLOW_STEPS.map((step, i) => (
           <Fragment key={step.title}>
@@ -184,10 +247,11 @@ export function OrganizerPayoutsPageBody() {
   return (
     <OrganizerPageShell
       className="org-payouts-page"
-      contentClassName="mx-auto w-full max-w-6xl space-y-3 min-[900px]:space-y-3"
+      contentClassName="mx-auto w-full max-w-6xl space-y-2 max-[899px]:space-y-2 min-[900px]:space-y-3"
     >
       <OrganizerWorkspacePageHeader
         className="min-[900px]:hidden"
+        compact
         title="売上受取設定"
         subtitle="Stripeで参加費などの売上を受け取るための設定です。"
       />
@@ -234,8 +298,11 @@ export function OrganizerPayoutsPageBody() {
         {data && (
           <>
             <div className={PAYOUTS_GRID}>
-              {/* 左上：Stripeで売上を受け取る */}
-              <section className={PAYOUTS_CARD} aria-labelledby="payouts-intro-heading">
+              {/* 左上：Stripeで売上を受け取る（モバイルでは Stripe カードと重複するため非表示） */}
+              <section
+                className={`${PAYOUTS_CARD} hidden min-[900px]:flex`}
+                aria-labelledby="payouts-intro-heading"
+              >
                 <div className="org-payouts-card__header mb-2 flex items-center gap-2">
                   <PayoutIcon src="/organizer/payouts/stripe-intro.png" size={32} />
                   <h2 id="payouts-intro-heading" className="org-payouts-card__title text-[13px] font-bold text-[#1a2214]">
@@ -253,15 +320,27 @@ export function OrganizerPayoutsPageBody() {
                 </Link>
               </section>
 
-              {/* 右上：Stripe 設定の流れ */}
-              <section className={`${PAYOUTS_CARD} org-payouts-card--stripe`} aria-labelledby="payouts-stripe-heading">
-                <div className="org-payouts-stripe-head mb-2 flex shrink-0 items-center gap-2.5">
-                  <PayoutIcon src="/organizer/payouts/stripe-logo.png" size={40} className="!rounded-xl" />
+              {/* 右上：Stripe 設定の流れ（モバイルでは先頭に表示） */}
+              <section
+                className={`${PAYOUTS_CARD} org-payouts-card--stripe max-[899px]:order-first`}
+                aria-labelledby="payouts-stripe-heading"
+              >
+                <div className="org-payouts-stripe-head mb-1.5 flex shrink-0 items-center gap-2 min-[900px]:mb-2 min-[900px]:gap-2.5">
+                  <PayoutIcon
+                    src="/organizer/payouts/stripe-logo.png"
+                    size={40}
+                    className="!rounded-xl max-[899px]:!h-8 max-[899px]:!w-8"
+                  />
                   <div className="min-w-0">
-                    <div id="payouts-stripe-heading" className="org-payouts-stripe-head__name text-[15px] font-bold text-[#635bff]">
+                    <div
+                      id="payouts-stripe-heading"
+                      className="org-payouts-stripe-head__name text-[14px] font-bold text-[#635bff] min-[900px]:text-[15px]"
+                    >
                       Stripe
                     </div>
-                    <p className="org-payouts-stripe-head__sub text-[10px] text-[#7a6a58]">安全な決済インフラで売上を管理</p>
+                    <p className="org-payouts-stripe-head__sub hidden text-[10px] text-[#7a6a58] min-[900px]:block">
+                      安全な決済インフラで売上を管理
+                    </p>
                   </div>
                 </div>
 
@@ -302,13 +381,13 @@ export function OrganizerPayoutsPageBody() {
                   </div>
                 ) : (
                   <div className="flex flex-1 flex-col">
-                    <p className="mb-1.5 text-[12px] font-bold text-[#1a2214]">設定の流れ</p>
+                    <p className="mb-1.5 hidden text-[12px] font-bold text-[#1a2214] min-[900px]:block">設定の流れ</p>
                     <PayoutsFlowStepper />
                     <button
                       type="button"
                       onClick={handleConnect}
                       disabled={connectLoading || !stripeConfigured}
-                      className="mt-auto flex w-full items-center justify-center gap-2 rounded-[10px] bg-[#2d7a4f] px-3.5 py-2.5 text-[12px] font-bold text-white shadow-[0_2px_8px_rgba(45,122,79,0.24)] hover:opacity-92 disabled:opacity-50"
+                      className="mt-auto flex w-full items-center justify-center gap-2 rounded-[10px] bg-[#2d7a4f] px-3.5 py-2 text-[12px] font-bold text-white shadow-[0_2px_8px_rgba(45,122,79,0.24)] hover:opacity-92 disabled:opacity-50 min-[900px]:py-2.5"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
                         <rect x="1" y="4" width="22" height="16" rx="2" />
@@ -320,8 +399,11 @@ export function OrganizerPayoutsPageBody() {
                 )}
               </section>
 
-              {/* 左下：受取の状態 */}
-              <section className={PAYOUTS_CARD} aria-labelledby="payouts-status-heading">
+              {/* 左下：受取の状態（モバイルでは進捗カードに統合） */}
+              <section
+                className={`${PAYOUTS_CARD} hidden min-[900px]:flex`}
+                aria-labelledby="payouts-status-heading"
+              >
                 <div className="org-payouts-card__header mb-2 flex items-center gap-2">
                   <PayoutIcon src="/organizer/payouts/payout-status.png" size={32} />
                   <h2 id="payouts-status-heading" className="org-payouts-card__title text-[13px] font-bold text-[#1a2214]">
@@ -329,47 +411,33 @@ export function OrganizerPayoutsPageBody() {
                   </h2>
                 </div>
                 <div className="flex flex-1 flex-col">
-                <div className="flex flex-col divide-y divide-[#eef2ee]">
-                  <div className="flex items-center justify-between gap-2 py-2">
-                    <span className="text-[11px] text-[#7a8a7e]">状態：</span>
-                    {isConnected ? (
-                      <span className="rounded-full bg-[#eaf4ed] px-2.5 py-0.5 text-[10px] font-bold text-[#2d7a4f]">
-                        設定済み
-                      </span>
-                    ) : (
-                      <span className="rounded-full border border-[#e7d39a] bg-[#fff8e6] px-2.5 py-0.5 text-[10px] font-bold text-[#7a5800]">
-                        未設定
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between gap-2 py-2">
-                    <span className="text-[11px] text-[#7a8a7e]">受け取り：</span>
-                    <span className="text-[12px] font-semibold text-[#1a2214]">
-                      {isConnected ? "受け取り可能" : "未開始"}
-                    </span>
-                  </div>
-                </div>
-                {!isConnected && (
-                  <div className="mt-auto flex items-start gap-2 rounded-[10px] border border-dashed border-[#e7d39a] bg-[#fffaf0] p-2.5 pt-2">
-                    <PayoutIcon src="/organizer/payouts/alert.png" size={18} className="mt-0.5 shrink-0" />
-                    <p className="text-[10px] leading-relaxed text-[#72530f]">
-                      参加費や協賛金の受け取りには Stripe の設定が必要です。現在はまだ完了していないため、売上の受け取りは開始されていません。
-                    </p>
-                  </div>
-                )}
+                  <PayoutsStatusRows isConnected={isConnected} />
+                  {!isConnected && (
+                    <div className="mt-auto flex items-start gap-2 rounded-[10px] border border-dashed border-[#e7d39a] bg-[#fffaf0] p-2.5 pt-2">
+                      <PayoutIcon src="/organizer/payouts/alert.png" size={18} className="mt-0.5 shrink-0" />
+                      <p className="text-[10px] leading-relaxed text-[#72530f]">
+                        参加費や協賛金の受け取りには Stripe の設定が必要です。現在はまだ完了していないため、売上の受け取りは開始されていません。
+                      </p>
+                    </div>
+                  )}
                 </div>
               </section>
 
-              {/* 右下：設定の進捗状況 */}
+              {/* 右下：設定の進捗状況（モバイルでは受取状態もここに表示） */}
               <section className={`${PAYOUTS_CARD} org-payouts-card--progress`} aria-labelledby="payouts-progress-heading">
-                <div className="org-payouts-card__header mb-2 flex items-center gap-2">
-                  <PayoutIcon src="/organizer/payouts/progress-flag.png" size={32} />
+                <div className="org-payouts-card__header mb-1.5 flex items-center gap-2 min-[900px]:mb-2">
+                  <PayoutIcon
+                    src="/organizer/payouts/progress-flag.png"
+                    size={32}
+                    className="max-[899px]:!h-7 max-[899px]:!w-7"
+                  />
                   <h2 id="payouts-progress-heading" className="org-payouts-card__title text-[13px] font-bold text-[#1a2214]">
                     設定の進捗状況
                   </h2>
                 </div>
+                <PayoutsStatusRows isConnected={isConnected} className="mb-2 min-[900px]:hidden" />
                 <div className="flex flex-1 gap-2">
-                  <ol className="min-w-0 flex-1 space-y-2">
+                  <ol className="min-w-0 flex-1 space-y-1.5 min-[900px]:space-y-2">
                     {PROGRESS_STEPS.map((step) => {
                       const done = progress[step.key as keyof typeof progress];
                       return (
@@ -415,23 +483,21 @@ export function OrganizerPayoutsPageBody() {
               </section>
             </div>
 
-            {/* ご注意 */}
+            {/* ご注意（モバイルは折りたたみ） */}
             <section className={PAYOUTS_NOTES} aria-label="ご注意">
-              <div className="org-payouts-notes__head flex items-center gap-2 mb-2">
-                <PayoutIcon src="/organizer/payouts/alert.png" size={22} />
-                <h2 className="org-payouts-notes__title text-[12px] font-bold text-[#1a2214]">ご注意</h2>
-              </div>
-              <div className="grid grid-cols-1 gap-2 min-[720px]:grid-cols-2 min-[720px]:gap-4">
-                <ul className="space-y-1 text-[10px] leading-relaxed text-[#566358] [&_li]:relative [&_li]:pl-3 [&_li]:before:absolute [&_li]:before:left-0 [&_li]:before:text-[#9aab9e] [&_li]:before:content-['•']">
-                  {NOTE_ITEMS_LEFT.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-                <ul className="space-y-1 text-[10px] leading-relaxed text-[#566358] [&_li]:relative [&_li]:pl-3 [&_li]:before:absolute [&_li]:before:left-0 [&_li]:before:text-[#9aab9e] [&_li]:before:content-['•']">
-                  {NOTE_ITEMS_RIGHT.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
+              <details className="group min-[900px]:hidden [&_summary::-webkit-details-marker]:hidden">
+                <summary className="org-payouts-notes__head flex cursor-pointer list-none items-center gap-2">
+                  <PayoutsNotesHead toggle />
+                </summary>
+                <div className="mt-2">
+                  <PayoutsNotesLists />
+                </div>
+              </details>
+              <div className="hidden min-[900px]:block">
+                <div className="org-payouts-notes__head mb-2 flex items-center gap-2">
+                  <PayoutsNotesHead />
+                </div>
+                <PayoutsNotesLists />
               </div>
             </section>
           </>

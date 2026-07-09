@@ -11,6 +11,10 @@ import {
   Plus,
   Clock,
   ChevronRight,
+  QrCode,
+  MessageCircle,
+  AlertTriangle,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DashboardEvent } from "@/app/api/organizer/dashboard/route";
@@ -18,7 +22,6 @@ import {
   MOCK_CHECKIN,
   MOCK_STAFF,
   MOCK_SCHEDULE,
-  MOCK_NOTICES,
   DonutChart,
   staffChip,
   scheduleChip,
@@ -26,6 +29,7 @@ import {
   countStaffPresent,
   countScheduleProgress,
   EMPTY_CHECKIN,
+  type DayNotice,
   type EventInfo,
   type EventDayPhase,
   type ModalType,
@@ -39,6 +43,7 @@ type Props = {
   allEvents: DashboardEvent[];
   eventsLoading?: boolean;
   emptyMode?: boolean;
+  notices: DayNotice[];
   onOpenModal: (type: ModalType) => void;
 };
 
@@ -115,6 +120,7 @@ export function DayManagementMobileView({
   allEvents,
   eventsLoading = false,
   emptyMode = false,
+  notices,
   onOpenModal,
 }: Props) {
   const isPast = dayPhase === "past";
@@ -131,7 +137,7 @@ export function DayManagementMobileView({
   const staffTotal = emptyMode ? 0 : MOCK_STAFF.length;
   const schedDone = emptyMode ? 0 : countScheduleProgress(MOCK_SCHEDULE);
   const schedTotal = emptyMode ? 0 : MOCK_SCHEDULE.length;
-  const unreadNotices = emptyMode ? 0 : MOCK_NOTICES.length;
+  const unreadNotices = emptyMode ? 0 : notices.length;
   const checkinPct = checkin.total > 0 ? Math.round((checkin.checkedIn / checkin.total) * 100) : 0;
   const staffPct = staffTotal > 0 ? Math.round((staffPresent / staffTotal) * 100) : 0;
   const schedPct = schedTotal > 0 ? Math.round((schedDone / schedTotal) * 100) : 0;
@@ -140,6 +146,48 @@ export function DayManagementMobileView({
     { color: "#4CAF50", value: checkin.checkedIn },
     { color: "#e0e0e0", value: checkin.notChecked },
     { color: "#ef9a9a", value: checkin.cancelled },
+  ];
+
+  const quickActions: {
+    key: ModalType;
+    label: string;
+    icon: ReactNode;
+    iconBg: string;
+    btnClass?: string;
+    labelClass?: string;
+  }[] = [
+    {
+      key: "qr",
+      label: "受付QRコード表示",
+      icon: <QrCode size={14} className="text-[#2D7A4F]" />,
+      iconBg: "bg-[#EAF4ED]",
+    },
+    {
+      key: "announce",
+      label: "アナウンス送信",
+      icon: <Megaphone size={14} className="text-[#2D7A4F]" />,
+      iconBg: "bg-[#EAF4ED]",
+    },
+    {
+      key: "message",
+      label: "来場者にメッセージ",
+      icon: <MessageCircle size={14} className="text-[#1976D2]" />,
+      iconBg: "bg-[#E3F2FD]",
+    },
+    {
+      key: "emergency",
+      label: "緊急連絡",
+      icon: <AlertTriangle size={14} className="text-[#E53935]" />,
+      iconBg: "bg-[#FFCDD2]",
+      btnClass: "border-[#FFCDD2] bg-[#FFEBEE]",
+      labelClass: "text-[#E53935]",
+    },
+    {
+      key: "memo",
+      label: "記録・メモ",
+      icon: <FileText size={14} className="text-[#CF9010]" />,
+      iconBg: "bg-[#FDF6E3]",
+    },
   ];
 
   return (
@@ -401,14 +449,14 @@ export function DayManagementMobileView({
           actionLabel={emptyMode ? undefined : "すべて見る"}
           onAction={() => onOpenModal("announce")}
         />
-        {emptyMode || MOCK_NOTICES.length === 0 ? (
+        {emptyMode || notices.length === 0 ? (
           <div className="mt-2 flex flex-col items-center rounded-lg bg-[#F5F8F5] py-3 text-center">
             <Megaphone size={18} className="text-[#DDE8DF]" aria-hidden />
             <p className="mt-1.5 text-[9px] text-[#566358]">現在、お知らせはありません</p>
           </div>
         ) : (
           <ul className="mt-1.5 space-y-1.5">
-            {MOCK_NOTICES.map((notice, i) => (
+            {notices.map((notice, i) => (
               <li
                 key={i}
                 className={cn(
@@ -425,6 +473,36 @@ export function DayManagementMobileView({
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mg-day-mgmt-m__panel py-2">
+        <div className="mg-day-mgmt-m__quick-scroll -mx-0.5 px-0.5">
+          {quickActions.map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              onClick={() => onOpenModal(action.key)}
+              className={cn("mg-day-mgmt-m__quick-btn shrink-0", action.btnClass)}
+            >
+              <span
+                className={cn(
+                  "flex h-7 w-7 items-center justify-center rounded-full",
+                  action.iconBg
+                )}
+              >
+                {action.icon}
+              </span>
+              <span
+                className={cn(
+                  "text-[8px] font-medium leading-tight text-[#1A2214]",
+                  action.labelClass
+                )}
+              >
+                {action.label}
+              </span>
+            </button>
+          ))}
+        </div>
       </section>
     </div>
   );

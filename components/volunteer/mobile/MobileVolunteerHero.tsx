@@ -62,7 +62,7 @@ export function MobileVolunteerHero({
       aria-label="ボランティア募集"
       className="mg-mobile-section overflow-hidden p-0"
     >
-      <div className="relative h-[116px] overflow-hidden bg-white">
+      <div className="relative h-[92px] overflow-hidden bg-white">
         <Image
           src={HERO_IMAGE}
           alt=""
@@ -72,11 +72,11 @@ export function MobileVolunteerHero({
           sizes="100vw"
         />
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 w-[44%] bg-gradient-to-r from-white via-white/82 to-transparent"
+          className="pointer-events-none absolute inset-y-0 left-0 w-[58%] bg-gradient-to-r from-white via-white/82 to-transparent"
           aria-hidden
         />
 
-        <div className="relative z-10 flex h-full max-w-[58%] flex-col justify-center px-4 py-2">
+        <div className="relative z-10 flex h-full flex-col justify-center px-4 py-1.5">
           <nav
             aria-label="パンくず"
             className="mb-0.5 flex items-center gap-1 text-[9px] text-[#6a7068]"
@@ -94,13 +94,13 @@ export function MobileVolunteerHero({
           >
             ボランティア募集
           </h1>
-          <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-[#3d5c48]">
+          <p className="mt-0.5 whitespace-nowrap text-[10px] leading-snug text-[#3d5c48]">
             地域のイベントや活動で、お手伝いできる募集を見つけられます。
           </p>
         </div>
       </div>
 
-      <div className="space-y-2 bg-white px-4 pb-3.5 pt-2.5">
+      <div className="space-y-2 bg-white px-4 pb-3 pt-2">
         <form
           onSubmit={(e) => {
             e.preventDefault();

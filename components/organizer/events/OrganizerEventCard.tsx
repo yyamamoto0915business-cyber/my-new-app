@@ -550,19 +550,19 @@ export function OrganizerEventCard({
       </div>
 
       {/* ── モバイル ── */}
-      <div className="p-2.5 min-[900px]:hidden">
+      <div className="org-event-row-card__mobile p-2 min-[900px]:hidden">
         {/* 上段: タイトル + ステータス */}
         <div className="flex items-start gap-1.5 min-[900px]:gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-1.5 min-[900px]:block">
               <Link
                 href={`/events/${event.id}`}
-                className="min-w-0 flex-1 text-[14px] font-semibold leading-snug text-[#1a1a1a] hover:underline min-[900px]:text-[15px] min-[900px]:font-semibold min-[900px]:text-slate-900"
+                className="org-event-row-card__mobile-title min-w-0 flex-1 hover:underline min-[900px]:text-[15px] min-[900px]:font-semibold min-[900px]:text-slate-900"
               >
                 {event.title}
               </Link>
               <span
-                className={`shrink-0 rounded-md px-1.5 py-px text-[9px] font-medium min-[900px]:hidden ${statusPillClass}`}
+                className={`org-event-row-card__mobile-badge shrink-0 min-[900px]:hidden ${statusPillClass}`}
               >
                 {STATUS_LABELS[displayStatus] ?? displayStatus}
               </span>
@@ -586,7 +586,7 @@ export function OrganizerEventCard({
                 </span>
               )}
             </div>
-            <p className="mt-1 text-[10px] leading-snug text-[#888] min-[900px]:hidden">
+            <p className="org-event-row-card__mobile-meta mt-0.5 min-[900px]:hidden">
               <span>{dateTimeStr}</span>
               {event.location ? (
                 <>

@@ -22,7 +22,6 @@ import {
   MOCK_CHECKIN,
   MOCK_STAFF,
   MOCK_SCHEDULE,
-  MOCK_NOTICES,
   DonutChart,
   staffChip,
   scheduleChip,
@@ -30,6 +29,7 @@ import {
   countStaffPresent,
   countScheduleProgress,
   EMPTY_CHECKIN,
+  type DayNotice,
   type EventInfo,
   type EventDayPhase,
   type ModalType,
@@ -43,6 +43,7 @@ type Props = {
   allEvents: DashboardEvent[];
   eventsLoading?: boolean;
   emptyMode?: boolean;
+  notices: DayNotice[];
   onOpenModal: (type: ModalType) => void;
 };
 
@@ -84,6 +85,7 @@ export function DayManagementPcView({
   allEvents,
   eventsLoading = false,
   emptyMode = false,
+  notices,
   onOpenModal,
 }: Props) {
   const isPast = dayPhase === "past";
@@ -100,7 +102,7 @@ export function DayManagementPcView({
   const staffTotal = emptyMode ? 0 : MOCK_STAFF.length;
   const schedDone = emptyMode ? 0 : countScheduleProgress(MOCK_SCHEDULE);
   const schedTotal = emptyMode ? 0 : MOCK_SCHEDULE.length;
-  const unreadNotices = emptyMode ? 0 : MOCK_NOTICES.length;
+  const unreadNotices = emptyMode ? 0 : notices.length;
   const checkinPct = checkin.total > 0 ? Math.round((checkin.checkedIn / checkin.total) * 100) : 0;
   const staffPct = staffTotal > 0 ? Math.round((staffPresent / staffTotal) * 100) : 0;
 
@@ -430,7 +432,7 @@ export function DayManagementPcView({
 
           <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact flex min-h-0 flex-col">
             <h2 className="mg-day-mgmt-pc__panel-title shrink-0">お知らせ</h2>
-            {emptyMode ? (
+            {emptyMode || notices.length === 0 ? (
               <div className="mg-day-mgmt-pc__empty-inline flex-1">
                 <Inbox size={20} className="shrink-0 text-[#DDE8DF]" aria-hidden />
                 <p className="mg-day-mgmt-pc__empty-text">
@@ -439,7 +441,7 @@ export function DayManagementPcView({
               </div>
             ) : (
             <ul className="mt-1.5 min-h-0 flex-1 space-y-1.5 overflow-y-auto">
-              {MOCK_NOTICES.map((notice, i) => (
+              {notices.map((notice, i) => (
                 <li
                   key={i}
                   className={cn(

@@ -100,13 +100,24 @@ export function OrganizerPlanPageBody() {
   const paid = data ? isPaidPlan(data) : false;
   const founder = data ? isFounderActive(data) : false;
 
+  const shellClass = [
+    "org-plan-page",
+    "org-plan-page--compact",
+    pageBottomPad,
+    paid ? "org-plan-page--pro-active" : "",
+    founder ? "org-plan-page--founder" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <OrganizerPageShell
-      className={`org-plan-page ${pageBottomPad}`}
-      contentClassName="mx-auto w-full max-w-5xl space-y-3 min-[900px]:space-y-3.5"
+      className={shellClass}
+      contentClassName="mx-auto w-full max-w-5xl space-y-2 min-[900px]:space-y-3.5"
     >
       <OrganizerWorkspacePageHeader
         className="min-[900px]:hidden"
+        compact
         title="主催者プラン"
         subtitle="Starter（無料）と Pro（月額980円）から選べます。公開枠や特典をここで確認できます。"
       />
@@ -114,7 +125,7 @@ export function OrganizerPlanPageBody() {
         <OrganizerPlanHero />
       </div>
 
-      <div className="w-full space-y-3 min-[900px]:space-y-3.5">
+      <div className="w-full space-y-2 min-[900px]:space-y-3.5">
         {error ? (
           <p className="text-[12px] text-red-600 sm:text-sm">{error}</p>
         ) : data ? (
@@ -143,7 +154,7 @@ export function OrganizerPlanPageBody() {
                 </div>
                 <div className="org-plan-usage-card__body">
                   <div className="org-plan-usage-card__stats">
-                    <div className="org-plan-usage-card__stat-row">
+                    <div className="org-plan-usage-card__stat-row org-plan-usage-card__stat-row--plan">
                       <span className="org-plan-usage-card__stat-label">
                         <PlanIcon src="/organizer/plan/usage-status.png" size={18} className="org-plan-usage-card__stat-icon" />
                         現在のプラン
@@ -164,7 +175,7 @@ export function OrganizerPlanPageBody() {
                       </div>
                     )}
                     {paid ? (
-                      <div className="org-plan-usage-card__stat-row">
+                      <div className="org-plan-usage-card__stat-row org-plan-usage-card__stat-row--slots">
                         <span className="org-plan-usage-card__stat-label">
                           <PlanIcon src="/organizer/plan/calendar.png" size={18} className="org-plan-usage-card__stat-icon" />
                           今月公開できる件数
@@ -410,7 +421,7 @@ export function OrganizerPlanPageBody() {
             )}
 
             <div
-              className="max-[639px]:block min-[640px]:hidden h-[calc(4.5rem+env(safe-area-inset-bottom,0px))] shrink-0"
+              className="max-[639px]:block min-[640px]:hidden h-[calc(3.5rem+env(safe-area-inset-bottom,0px))] shrink-0"
               aria-hidden
             />
           </>

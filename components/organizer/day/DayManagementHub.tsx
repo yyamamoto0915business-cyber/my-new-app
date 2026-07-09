@@ -10,9 +10,12 @@ import { DayManagementMobileView } from "@/components/organizer/day/DayManagemen
 import {
   EMPTY_DAY_EVENT,
   MOCK_EVENT,
+  MOCK_NOTICES,
   DayManagementModals,
+  formatNoticeTime,
   getEventDayPhase,
   eventDayPhaseLabel,
+  type DayNotice,
   type EventInfo,
   type EventDayPhase,
   type ModalType,
@@ -31,6 +34,7 @@ export function DayManagementHub() {
   const [messageText, setMessageText] = useState("");
   const [emergencyText, setEmergencyText] = useState("");
   const [memoText, setMemoText] = useState("");
+  const [notices, setNotices] = useState<DayNotice[]>([]);
   const today = useMemo(() => getJstTodayYmd(), []);
   const redirectedRef = useRef(false);
 
@@ -86,8 +90,22 @@ export function DayManagementHub() {
     };
   }, [eventId]);
 
+  useEffect(() => {
+    setNotices(eventId ? MOCK_NOTICES : []);
+  }, [eventId]);
+
   const openModal = (type: ModalType) => setModal(type);
   const closeModal = () => setModal(null);
+
+  const handleSendMessage = (text: string) => {
+    setNotices((prev) => [{ type: "info", text, time: formatNoticeTime() }, ...prev]);
+    setMessageText("");
+  };
+
+  const handleSendEmergency = (text: string) => {
+    setNotices((prev) => [{ type: "urg", text, time: formatNoticeTime() }, ...prev]);
+    setEmergencyText("");
+  };
 
   const displayEvent = emptyMode ? EMPTY_DAY_EVENT : event;
 
@@ -101,6 +119,7 @@ export function DayManagementHub() {
           allEvents={events}
           eventsLoading={eventsLoading}
           emptyMode={emptyMode}
+          notices={notices}
           onOpenModal={openModal}
         />
       </div>
@@ -113,6 +132,7 @@ export function DayManagementHub() {
           allEvents={events}
           eventsLoading={eventsLoading}
           emptyMode={emptyMode}
+          notices={notices}
           onOpenModal={openModal}
         />
       </div>
@@ -130,6 +150,8 @@ export function DayManagementHub() {
         onEmergencyChange={setEmergencyText}
         memoText={memoText}
         onMemoChange={setMemoText}
+        onSendMessage={handleSendMessage}
+        onSendEmergency={handleSendEmergency}
       />
     </div>
   );

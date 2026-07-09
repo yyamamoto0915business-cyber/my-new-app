@@ -12,7 +12,7 @@ const MOBILE_ITEMS = [
   { id: "home" as const, href: "/", label: "ホーム", icon: "home" },
   { id: "discover" as const, href: "/events", label: "探す", icon: "discover" },
   { id: "checkin" as const, href: "/checkin", label: "チェックイン", icon: "checkin" },
-  { id: "notifications" as const, href: "/notifications", label: "通知", icon: "notifications" },
+  { id: "messages" as const, href: "/messages", label: "チャット", icon: "messages" },
   { id: "profile" as const, href: "/profile", label: "マイページ", icon: "profile" },
 ] as const;
 
@@ -32,10 +32,10 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
       </svg>
     );
   }
-  if (icon === "notifications") {
+  if (icon === "messages") {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
       </svg>
     );
   }
@@ -56,7 +56,7 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
   return null;
 }
 
-/** モバイル用5項目ナビ（ホーム/探す/チェックイン/通知/マイページ）。役割切替は上部セグメントで行う。 */
+/** モバイル用5項目ナビ（ホーム/探す/チェックイン/チャット/マイページ）。役割切替は上部セグメントで行う。 */
 export function MobileBottomNav() {
   /** 初回から DOM に Link を出す（SSR 含む）→ ビューポート内プリフェッチが効き、モバイルのタップが速くなりやすい */
   const pathname = usePathname() ?? "";
@@ -75,13 +75,13 @@ export function MobileBottomNav() {
       if (pathname?.startsWith("/volunteer")) return false;
       return pathname?.startsWith("/events") ?? false;
     }
-    if (item.id === "notifications") return pathname?.startsWith("/notifications");
+    if (item.id === "messages") return pathname?.startsWith("/messages");
     if (item.id === "checkin") return pathname?.startsWith("/checkin");
     return pathname?.startsWith(item.href) ?? false;
   };
 
   const showBadge = (icon: string) =>
-    (icon === "profile" || icon === "notifications") && unreadCount > 0;
+    (icon === "profile" || icon === "messages") && unreadCount > 0;
 
   if (isMessagesConversationRoute(pathname)) return null;
 
