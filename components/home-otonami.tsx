@@ -143,7 +143,7 @@ export function HomeOtonami() {
       </main>
 
       {/* モバイル（モックアップ準拠） */}
-      <main className="w-full space-y-2 bg-[#f7fbf8] px-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1 min-[900px]:hidden sm:max-w-none">
+      <main className="w-full space-y-2 bg-[#f7fbf8] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1 min-[900px]:hidden sm:max-w-none">
         <MobileDiscoverHero
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
@@ -158,7 +158,7 @@ export function HomeOtonami() {
           areaPreference={effectiveArea}
           categoryPrefs={categoryPrefs}
         />
-        <section aria-label="カテゴリと地域で探す" className="mg-mobile-section space-y-2">
+        <section aria-label="カテゴリと地域で探す" className="mg-mobile-section space-y-2.5">
           <MobileCategoryGrid
             embedded
             selectedCategory={selectedCategory}

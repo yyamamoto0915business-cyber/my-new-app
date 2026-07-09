@@ -446,6 +446,7 @@ export function DayManagementMobileView({
       <section className="mg-day-mgmt-m__panel">
         <PanelHeader
           title="お知らせ"
+          subtitle="参加者の画面にも表示されます"
           actionLabel={emptyMode ? undefined : "すべて見る"}
           onAction={() => onOpenModal("announce")}
         />

@@ -9,7 +9,7 @@ import {
 } from "./MobileVolunteerCard";
 
 const VISIBLE_COUNT = 3;
-const GAP_PX = 8;
+const GAP_PX = 6;
 const SKELETON_COUNT = 3;
 
 type Props = {
@@ -50,7 +50,7 @@ export function MobileVolunteerRecommendedCarousel({
 
   return (
     <section aria-label="おすすめのボランティア" className="mg-mobile-section">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
+      <div className="mb-1 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <ThumbsUp className="h-3.5 w-3.5 fill-[#2f6b4f] text-[#2f6b4f]" aria-hidden />
           <h2 className="mg-mobile-section-title">
@@ -68,7 +68,7 @@ export function MobileVolunteerRecommendedCarousel({
       </div>
 
       {!loading && totalCount === 0 ? (
-        <div className="rounded-[18px] border border-[#dde9e1] bg-[#f7fbf8] p-4 text-center">
+        <div className="rounded-[14px] border border-[#dde9e1] bg-[#f7fbf8] p-3 text-center">
           <p className="text-[11px] text-[#6a6258]">条件に合う募集がありません</p>
           {onResetFilters && (
             <button
@@ -84,7 +84,7 @@ export function MobileVolunteerRecommendedCarousel({
         <>
           <div
             ref={scrollRef}
-            className="flex gap-2 overflow-x-auto pl-1 pr-1 pb-0.5 scrollbar-hide snap-x snap-mandatory"
+            className="flex gap-1.5 overflow-x-auto pl-0.5 pr-0.5 pb-0.5 scrollbar-hide snap-x snap-mandatory"
           >
             {loading
               ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (

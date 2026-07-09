@@ -62,7 +62,7 @@ export function MobileVolunteerHero({
       aria-label="ボランティア募集"
       className="mg-mobile-section overflow-hidden p-0"
     >
-      <div className="relative h-[92px] overflow-hidden bg-white">
+      <div className="relative h-[84px] overflow-hidden bg-white">
         <Image
           src={HERO_IMAGE}
           alt=""
@@ -76,7 +76,7 @@ export function MobileVolunteerHero({
           aria-hidden
         />
 
-        <div className="relative z-10 flex h-full flex-col justify-center px-4 py-1.5">
+        <div className="relative z-10 flex h-full flex-col justify-center px-3 py-1">
           <nav
             aria-label="パンくず"
             className="mb-0.5 flex items-center gap-1 text-[9px] text-[#6a7068]"
@@ -100,21 +100,21 @@ export function MobileVolunteerHero({
         </div>
       </div>
 
-      <div className="space-y-2 bg-white px-4 pb-3 pt-2">
+      <div className="space-y-1.5 bg-white px-3 pb-2.5 pt-1.5">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             onSearch?.();
           }}
-          className="flex h-10 items-center gap-2 rounded-full border border-[#dde9e1] bg-white px-3.5 shadow-[0_4px_16px_rgba(22,56,40,0.06)]"
+          className="flex h-9 items-center gap-1.5 rounded-full border border-[#dde9e1] bg-white px-3 shadow-[0_2px_10px_rgba(22,56,40,0.05)]"
         >
-          <Search className="h-4 w-4 shrink-0 text-[#8a9088]" aria-hidden />
+          <Search className="h-3.5 w-3.5 shrink-0 text-[#8a9088]" aria-hidden />
           <input
             type="search"
             value={keyword}
             onChange={(e) => onKeywordChange(e.target.value)}
             placeholder="キーワードで探す"
-            className="min-w-0 flex-1 bg-transparent text-[12px] text-[#163828] outline-none placeholder:text-[#6a7068]"
+            className="min-w-0 flex-1 bg-transparent text-[11px] text-[#163828] outline-none placeholder:text-[#6a7068]"
           />
           {keyword ? (
             <button
@@ -128,8 +128,8 @@ export function MobileVolunteerHero({
           ) : null}
         </form>
 
-        <div className="flex items-center gap-2">
-          <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
+        <div className="flex items-center gap-1.5">
+          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
             {FILTER_BUTTONS.map(({ kind, icon: Icon }) => {
               const active = isMobileFilterActive(kind, filterValues);
               const label = getMobileFilterButtonLabel(kind, filterValues);

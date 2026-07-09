@@ -432,6 +432,9 @@ export function DayManagementPcView({
 
           <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact flex min-h-0 flex-col">
             <h2 className="mg-day-mgmt-pc__panel-title shrink-0">お知らせ</h2>
+            <p className="mt-0.5 text-[10px] leading-snug text-[#566358]">
+              参加者の画面にも表示されます
+            </p>
             {emptyMode || notices.length === 0 ? (
               <div className="mg-day-mgmt-pc__empty-inline flex-1">
                 <Inbox size={20} className="shrink-0 text-[#DDE8DF]" aria-hidden />

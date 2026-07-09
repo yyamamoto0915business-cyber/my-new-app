@@ -86,13 +86,13 @@ export function MobileTopHeader({ className }: Props) {
           ? "bg-white pt-[env(safe-area-inset-top,0px)] pb-0 shadow-[0_1px_0_rgba(15,23,42,0.06)]"
           : authArea
             ? "bg-transparent pb-1.5 pt-[env(safe-area-inset-top,0px)]"
-            : "border-b border-[#dde9e1] bg-white pb-1.5 pt-[env(safe-area-inset-top,0px)]",
+            : "border-b border-[#dde9e1] bg-white pb-1 pt-[env(safe-area-inset-top,0px)]",
         className
       )}
       aria-label="MachiGlyph 上部ヘッダー"
     >
-      <div className="w-full px-4">
-        <div className={organizerArea ? "mt-0.5 pb-1.5" : "pt-1"}>
+      <div className="w-full px-3">
+        <div className={organizerArea ? "mt-0.5 pb-1" : "pt-0.5"}>
           <TopModeTabs compact={organizerArea} onTabClick={handleTabClick} />
         </div>
 

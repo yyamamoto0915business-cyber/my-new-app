@@ -36,8 +36,8 @@ type Props = {
   priority?: boolean;
   /** true のとき親の aspect に合わせて fill（absolute inset-0） */
   fill?: boolean;
-  /** プレースホルダー文言のサイズ（compact フォーム向け） */
-  placeholderSize?: "default" | "sm";
+  /** プレースホルダー文言のサイズ（compact / icon はカルーセル向け） */
+  placeholderSize?: "default" | "sm" | "icon";
 };
 
 /** 16:9 サムネイル。アスペクト比固定で高さ伸び防止。imageUrl が空/壊れならプレースホルダー。 */
@@ -61,11 +61,17 @@ export function EventThumbnail({
 
   const placeholderText =
     placeholderSize === "sm" ? "text-[10px]" : "text-[11px]";
-  const iconSize = placeholderSize === "sm" ? 16 : 20;
+  const iconSize =
+    placeholderSize === "icon" ? 14 : placeholderSize === "sm" ? 16 : 20;
+  const isIconOnly = placeholderSize === "icon";
 
   const Placeholder = () => (
     <div
-      className={`absolute inset-0 flex flex-col items-center justify-center gap-1 text-[#aaa] ${placeholderText}`}
+      className={`absolute inset-0 flex flex-col items-center justify-center gap-1 ${
+        isIconOnly
+          ? "bg-gradient-to-br from-[#e8f4ec] via-[#eef6f2] to-[#f5f0e6] text-[#b8c8bc]"
+          : `text-[#aaa] ${placeholderText}`
+      }`}
     >
       <svg
         width={iconSize}
@@ -75,14 +81,14 @@ export function EventThumbnail({
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
-        className="opacity-60"
+        className={isIconOnly ? "opacity-40" : "opacity-60"}
         aria-hidden
       >
         <rect x="3" y="3" width="18" height="18" rx="2" />
         <circle cx="8.5" cy="8.5" r="1.5" />
         <path d="M21 15l-5-5L5 21" />
       </svg>
-      <span>画像なし</span>
+      {!isIconOnly && <span>画像なし</span>}
     </div>
   );
 

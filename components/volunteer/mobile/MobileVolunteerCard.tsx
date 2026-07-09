@@ -7,8 +7,8 @@ import { MapPin } from "lucide-react";
 import { BookmarkToggle } from "@/components/ui/BookmarkToggle";
 import { isBookmarked, toggleBookmark } from "@/lib/bookmark-storage";
 
-/** 横並び3枚（gap-2 × 2 = 1rem） */
-export const MOBILE_VOLUNTEER_CARD_WIDTH = "calc((100% - 1rem) / 3)";
+/** 横並び3枚（gap-1.5 × 2 = 0.75rem） */
+export const MOBILE_VOLUNTEER_CARD_WIDTH = "calc((100% - 0.75rem) / 3)";
 
 export type MobileVolunteerCardItem = {
   id: string;
@@ -32,7 +32,7 @@ export function MobileVolunteerCard({ item }: Props) {
       tabIndex={0}
       onClick={() => router.push(item.href)}
       onKeyDown={(e) => e.key === "Enter" && router.push(item.href)}
-      className="flex shrink-0 snap-start cursor-pointer flex-col overflow-hidden rounded-[18px] border border-[#dde9e1] bg-white shadow-[0_4px_12px_rgba(22,56,40,0.05)]"
+      className="flex shrink-0 snap-start cursor-pointer flex-col overflow-hidden rounded-[14px] border border-[#dde9e1] bg-white shadow-[0_4px_12px_rgba(22,56,40,0.05)]"
       style={{ width: MOBILE_VOLUNTEER_CARD_WIDTH }}
       aria-label={`${item.title}の詳細を見る`}
     >
@@ -59,7 +59,7 @@ export function MobileVolunteerCard({ item }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-0.5 px-2 py-1.5">
+      <div className="flex flex-col gap-0.5 px-2 py-1 min-h-[46px]">
         <p className="truncate text-[9px] leading-none text-[#6a6258]">{item.dateLabel}</p>
         <h3 className="line-clamp-1 text-[11px] font-semibold leading-tight text-[#163828]">
           {item.title}
@@ -88,11 +88,11 @@ export function MobileVolunteerCard({ item }: Props) {
 export function MobileVolunteerCardSkeleton() {
   return (
     <div
-      className="shrink-0 overflow-hidden rounded-[18px] border border-[#dde9e1] bg-white"
+      className="shrink-0 overflow-hidden rounded-[14px] border border-[#dde9e1] bg-white"
       style={{ width: MOBILE_VOLUNTEER_CARD_WIDTH }}
     >
       <div className="aspect-[3/2] animate-pulse bg-[#e8ede4]" />
-      <div className="space-y-1 px-2 py-1.5">
+      <div className="space-y-1 px-2 py-1">
         <div className="h-2 w-3/4 animate-pulse rounded bg-[#e8ede4]" />
         <div className="h-2.5 w-full animate-pulse rounded bg-[#e8ede4]" />
         <div className="h-2 w-2/3 animate-pulse rounded bg-[#e8ede4]" />

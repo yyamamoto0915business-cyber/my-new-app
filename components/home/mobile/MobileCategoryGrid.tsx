@@ -96,7 +96,7 @@ function CategoryCard({
   onSelect?: (key: string) => void;
 }) {
   const cardClass = cn(
-    "flex h-[82px] w-[76px] shrink-0 flex-col items-center justify-center gap-1 rounded-[18px] border p-2 transition active:bg-[#fafcf9]",
+    "flex h-[86px] w-[76px] shrink-0 flex-col items-center justify-center gap-1.5 rounded-[18px] border p-2 transition active:bg-[#fafcf9]",
     isActive
       ? "border-[#b8dcc8] bg-[#eef6f2]"
       : "border-[#dde9e1] bg-white shadow-[0_4px_12px_rgba(22,56,40,0.04)]"
@@ -110,7 +110,7 @@ function CategoryCard({
       >
         <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={2} aria-hidden />
       </span>
-      <span className="line-clamp-2 text-center text-[9px] font-medium leading-[1.15] text-[#163828]">
+      <span className="line-clamp-2 min-h-[2.3em] w-full text-center text-[9px] font-medium leading-[1.15] text-[#163828]">
         {label}
       </span>
     </>
@@ -138,7 +138,7 @@ export function MobileCategoryGrid({ selectedCategory, onSelectCategory, embedde
         <Home className="h-3.5 w-3.5 text-[#2f7d4e]" aria-hidden />
         <h2 className="mg-mobile-section-title">カテゴリから探す</h2>
       </div>
-      <div className={embedded ? "-mx-2.5 flex gap-2 overflow-x-auto px-2.5 pr-4 scrollbar-hide" : "-mx-3 flex gap-2 overflow-x-auto px-3 pr-5 scrollbar-hide"}>
+      <div className={embedded ? "-mx-2 flex gap-2 overflow-x-auto px-2 pr-3 scrollbar-hide" : "-mx-2 flex gap-2 overflow-x-auto px-2 pr-4 scrollbar-hide"}>
         {CATEGORIES.map((item) => {
           const isActive =
             onSelectCategory !== undefined &&

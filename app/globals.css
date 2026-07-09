@@ -1060,11 +1060,11 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 .mg-mobile-section {
   position: relative;
   z-index: 1;
-  border-radius: 24px;
+  border-radius: 18px;
   border: 1px solid #dde9e1;
   background-color: #ffffff;
-  padding: 10px;
-  box-shadow: 0 8px 24px rgba(22, 56, 40, 0.06);
+  padding: 8px;
+  box-shadow: 0 4px 16px rgba(22, 56, 40, 0.05);
 }
 .mg-mobile-section-title {
   font-size: 13px;
@@ -3460,8 +3460,8 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 @media (max-width: 899px) {
   .org-events-mgmt--compact {
     gap: 8px;
-    font-size: 13px;
-    line-height: 1.45;
+    font-size: 12px;
+    line-height: 1.4;
   }
 
   .org-events-mgmt--compact .org-events-account-status {
@@ -3478,32 +3478,32 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   }
 
   .org-events-mgmt--compact .org-events-account-status > .org-events-status-card {
-    flex: 0 0 min(72vw, 240px);
+    flex: 0 0 min(68vw, 220px);
     scroll-snap-align: start;
-    padding: 9px 11px;
-    border-radius: 12px;
+    padding: 8px 10px;
+    border-radius: 11px;
   }
 
   .org-events-mgmt--compact .org-events-status-card__icon {
-    height: 26px;
-    width: 26px;
-    border-radius: 8px;
+    height: 24px;
+    width: 24px;
+    border-radius: 7px;
   }
 
   .org-events-mgmt--compact .org-events-status-card__icon svg {
-    height: 13px;
-    width: 13px;
+    height: 12px;
+    width: 12px;
   }
 
   .org-events-mgmt--compact .org-events-status-card__label {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
     line-height: 1.3;
     color: #7a8a7e;
   }
 
   .org-events-mgmt--compact .org-events-status-card__value {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     line-height: 1.35;
   }
@@ -3513,49 +3513,49 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   }
 
   .org-events-mgmt--compact .org-events-status-card__badge {
-    margin-top: 3px;
-    padding: 1px 7px;
-    font-size: 10px;
+    margin-top: 2px;
+    padding: 1px 6px;
+    font-size: 9px;
     font-weight: 600;
     line-height: 1.4;
   }
 
   .org-events-mgmt--compact .org-events-status-card__link {
-    margin-top: 3px;
-    font-size: 10px;
+    margin-top: 2px;
+    font-size: 9px;
     font-weight: 600;
     line-height: 1.3;
   }
 
   .org-events-mgmt--compact section[aria-label="イベントの概要"] > div {
-    gap: 6px;
+    gap: 5px;
   }
 
   .org-events-mgmt--compact .org-events-stat-card {
-    padding: 7px 9px;
-    border-radius: 11px;
-    gap: 7px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    gap: 6px;
   }
 
   .org-events-mgmt--compact .org-events-stat-card__icon {
-    height: 26px;
-    width: 26px;
-    border-radius: 8px;
+    height: 24px;
+    width: 24px;
+    border-radius: 7px;
   }
 
   .org-events-mgmt--compact .org-events-stat-card__icon svg {
-    height: 13px;
-    width: 13px;
+    height: 12px;
+    width: 12px;
   }
 
   .org-events-mgmt--compact .org-events-stat-card__value {
-    font-size: 17px;
+    font-size: 14px;
     font-weight: 700;
     line-height: 1.1;
   }
 
   .org-events-mgmt--compact .org-events-stat-card__label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 500;
     line-height: 1.25;
     color: #566358;
@@ -3564,15 +3564,15 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   .org-events-mgmt--compact .org-events-list-tabs {
     flex-direction: column;
     align-items: stretch;
-    gap: 6px;
-    padding: 8px 10px 6px;
+    gap: 5px;
+    padding: 7px 9px 5px;
   }
 
   .org-events-mgmt--compact .org-events-list-tabs__row {
     width: 100%;
     min-width: 0;
     flex-wrap: nowrap;
-    gap: 3px;
+    gap: 2px;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
@@ -3584,11 +3584,11 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 
   .org-events-mgmt--compact .org-events-list-tabs__tab {
     flex-shrink: 0;
-    padding: 5px 9px;
-    font-size: 12px;
+    padding: 4px 8px;
+    font-size: 11px;
     font-weight: 500;
     line-height: 1.25;
-    border-radius: 8px;
+    border-radius: 7px;
   }
 
   .org-events-mgmt--compact .org-events-list-tabs__tab.is-active {
@@ -3596,7 +3596,7 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   }
 
   .org-events-mgmt--compact .org-events-list-tabs__count {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
   }
 
@@ -3604,12 +3604,12 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
     width: 100%;
     flex-shrink: 0;
     justify-content: space-between;
-    gap: 6px;
+    gap: 5px;
   }
 
   .org-events-mgmt--compact .org-events-list-tabs__toggle-label {
     min-width: 0;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 500;
     line-height: 1.3;
     color: #566358;
@@ -3619,87 +3619,95 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   }
 
   .org-events-mgmt--compact .org-events-list-tabs__switch {
-    height: 20px;
-    width: 36px;
+    height: 18px;
+    width: 32px;
   }
 
   .org-events-mgmt--compact .org-events-list-tabs__switch-knob {
-    height: 14px;
-    width: 14px;
+    height: 12px;
+    width: 12px;
   }
 
   .org-events-mgmt--compact .org-events-list-tabs__switch.is-on .org-events-list-tabs__switch-knob {
-    transform: translateX(16px);
+    transform: translateX(14px);
   }
 
   .org-events-mgmt--compact .org-events-toolbar--embedded {
-    padding: 7px 10px 9px;
+    padding: 6px 9px 8px;
   }
 
   .org-events-mgmt--compact .org-events-toolbar__search {
-    padding: 8px 10px 8px 34px;
-    font-size: 14px;
-    line-height: 1.35;
-    border-radius: 10px;
+    padding: 7px 9px 7px 30px;
+    font-size: 12px;
+    line-height: 1.3;
+    border-radius: 9px;
   }
 
   .org-events-mgmt--compact .org-events-toolbar__select {
-    padding: 7px 10px;
-    font-size: 12px;
+    padding: 6px 9px;
+    font-size: 11px;
     line-height: 1.3;
-    border-radius: 10px;
+    border-radius: 9px;
   }
 
   .org-events-mgmt--compact .org-events-toolbar__filter-btn {
-    padding: 7px 11px;
-    font-size: 12px;
+    padding: 6px 10px;
+    font-size: 11px;
     font-weight: 600;
     line-height: 1.3;
-    border-radius: 10px;
+    border-radius: 9px;
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    .org-events-mgmt--compact .org-events-toolbar__search,
+    .org-events-mgmt--compact .org-events-toolbar__select,
+    .org-events-mgmt--compact .org-events-pagination__size-select {
+      font-size: 12px !important;
+    }
   }
 
   .org-events-mgmt--compact .org-events-list-shell__body {
-    padding: 8px 10px 10px;
+    padding: 7px 9px 9px;
   }
 
   .org-events-mgmt--compact .org-events-list-shell__footer {
-    padding: 0 10px 10px;
+    padding: 0 9px 9px;
   }
 
   .org-events-mgmt--compact .org-events-list-shell__hint {
     margin-bottom: 4px;
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.35;
     color: #9aa89c;
   }
 
   .org-events-mgmt--compact .org-events-list-shell__archive-hint {
-    padding: 6px 10px 0;
-    font-size: 11px;
+    padding: 5px 9px 0;
+    font-size: 10px;
     line-height: 1.4;
   }
 
   .org-events-mgmt--compact .org-event-row-card__mobile {
-    padding: 8px;
+    padding: 7px;
   }
 
   .org-events-mgmt--compact .org-event-row-card__mobile-title {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     line-height: 1.35;
     color: #1a2214;
   }
 
   .org-events-mgmt--compact .org-event-row-card__mobile-badge {
-    border-radius: 5px;
-    padding: 1px 6px;
-    font-size: 10px;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 9px;
     font-weight: 600;
     line-height: 1.35;
   }
 
   .org-events-mgmt--compact .org-event-row-card__mobile-meta {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.4;
     color: #7a8a7e;
   }
@@ -3709,50 +3717,51 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   }
 
   .org-events-mgmt--compact .org-events-pagination {
-    gap: 6px;
-    margin-top: 6px;
-    padding-top: 8px;
+    gap: 5px;
+    margin-top: 5px;
+    padding-top: 7px;
   }
 
   .org-events-mgmt--compact .org-events-pagination__meta {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.35;
   }
 
   .org-events-mgmt--compact .org-events-pagination__page {
-    height: 28px;
-    min-width: 28px;
-    font-size: 11px;
+    height: 26px;
+    min-width: 26px;
+    font-size: 10px;
   }
 
   .org-events-mgmt--compact .org-events-pagination__nav-btn {
-    height: 28px;
-    width: 28px;
+    height: 26px;
+    width: 26px;
   }
 
   .org-events-mgmt--compact .org-events-pagination__size-select {
-    padding: 4px 8px;
-    font-size: 11px;
+    padding: 3px 7px;
+    font-size: 10px;
     line-height: 1.3;
   }
 
   .org-events-mgmt--compact .org-events-next-action > a {
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.35;
+    padding: 6px 10px;
   }
 
   .org-events-mgmt--compact #needs-action-section h2 {
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.35;
   }
 
   .org-events-mgmt--compact #needs-action-section p {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.4;
   }
 
   .org-events-mgmt--compact #needs-action-section a {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.3;
   }
 

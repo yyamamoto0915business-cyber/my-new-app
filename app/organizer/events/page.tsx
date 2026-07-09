@@ -369,14 +369,14 @@ export default function OrganizerEventsPage() {
               {filteredAndSortedEvents.length === 0 ? (
                 <div className="org-events-list-shell__body">
                   <div className="org-events-list-shell__empty">
-                    <p className="text-[15px] font-medium text-[#1a2214]">
+                    <p className="text-[13px] font-medium text-[#1a2214] min-[900px]:text-[15px]">
                       {listTab === "archived"
                         ? "アーカイブボックスは空です"
                         : events.length > 0
                           ? "該当するイベントがありません"
                           : "まだイベントがありません"}
                     </p>
-                    <p className="mt-2 text-[13px] leading-relaxed text-[#566358]">
+                    <p className="mt-2 text-[11px] leading-relaxed text-[#566358] min-[900px]:text-[13px]">
                       {listTab === "archived"
                         ? "メニューの「アーカイブ」から、不要になったイベントを保管できます"
                         : events.length > 0

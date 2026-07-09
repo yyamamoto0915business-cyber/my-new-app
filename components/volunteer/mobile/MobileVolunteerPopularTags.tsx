@@ -28,7 +28,7 @@ type Props = {
 export function MobileVolunteerPopularTags({ active, onToggle }: Props) {
   return (
     <section aria-label="人気の条件から探す" className="mg-mobile-section">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
+      <div className="mb-1 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <Sprout className="h-3.5 w-3.5 text-[#2f7d4e]" aria-hidden />
           <h2 className="mg-mobile-section-title">人気の条件から探す</h2>
@@ -38,7 +38,7 @@ export function MobileVolunteerPopularTags({ active, onToggle }: Props) {
         </button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
+      <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
         {TAGS.map(({ key, label, Icon }) => {
           const isActive = active.has(key);
           return (

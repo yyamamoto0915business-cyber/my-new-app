@@ -42,7 +42,7 @@ export function MobileDiscoverHero({
       aria-label="まちの出来事を探す"
     >
       {/* イラスト＋コピー */}
-      <div className="relative h-[104px]">
+      <div className="relative h-[100px]">
         <Image
           src={HERO_IMAGE}
           alt=""
@@ -52,38 +52,38 @@ export function MobileDiscoverHero({
           sizes="100vw"
         />
         <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#f7fbf8]/68 via-[#f7fbf8]/28 to-[#f7fbf8]/6"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#f7fbf8]/82 via-[#f7fbf8]/42 to-[#f7fbf8]/10"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 w-[68%] bg-gradient-to-r from-[#f7fbf8]/76 to-transparent"
+          className="pointer-events-none absolute inset-y-0 left-0 w-[76%] bg-gradient-to-r from-[#f7fbf8]/96 via-[#f7fbf8]/84 to-transparent"
           aria-hidden
         />
 
-        <div className="relative flex h-full flex-col justify-center px-4 py-3">
-          <p className="text-[10px] font-semibold text-[#d4843a]">イベントを探す</p>
+        <div className="relative flex h-full flex-col justify-center px-3 py-2.5">
+          <p className="text-[11px] font-bold tracking-[0.04em] text-[#c46828]">イベントを探す</p>
           <h1
-            className="mt-0.5 text-[18px] font-semibold leading-[1.28] text-[#163828]"
+            className="mt-0.5 text-[20px] font-bold leading-[1.26] tracking-[0.01em] text-[#0f2318] [text-shadow:0_1px_0_rgba(247,251,248,0.95),0_0_12px_rgba(247,251,248,0.75)]"
             style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
           >
             まちの出来事に、出会いにいく。
           </h1>
-          <p className="mt-1 text-[10px] leading-snug text-[#3d5c48]">
+          <p className="mt-1 text-[11px] font-medium leading-snug text-[#1a3a2a]">
             地域でひらかれる催しや活動を、見つけられます。
           </p>
         </div>
       </div>
 
       {/* 検索・フィルター */}
-      <div className="relative z-10 space-y-2 px-4 pb-3.5 pt-2.5">
-        <div className="flex h-10 items-center gap-2 rounded-full border border-[#dde9e1] bg-white px-3.5 shadow-[0_4px_16px_rgba(22,56,40,0.06)]">
-          <Search className="h-4 w-4 shrink-0 text-[#8a9088]" aria-hidden />
+      <div className="relative z-10 space-y-2 px-3 pb-3 pt-2">
+        <div className="flex h-9 items-center gap-2 rounded-full border border-[#dde9e1] bg-white px-3 shadow-[0_2px_10px_rgba(22,56,40,0.05)]">
+          <Search className="h-3.5 w-3.5 shrink-0 text-[#8a9088]" aria-hidden />
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
             placeholder="地域やイベント名で探す"
-            className="min-w-0 flex-1 bg-transparent text-[12px] text-[#163828] placeholder:text-[#6a7068] outline-none"
+            className="min-w-0 flex-1 bg-transparent text-[11px] text-[#163828] placeholder:text-[#6a7068] outline-none"
           />
         </div>
 

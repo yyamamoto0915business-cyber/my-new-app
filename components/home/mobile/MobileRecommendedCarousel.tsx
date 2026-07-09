@@ -52,11 +52,11 @@ export function MobileRecommendedCarousel({
       </div>
 
       {loading ? (
-        <div className="flex gap-2 pl-1 pr-4">
+        <div className="-mx-2 flex gap-1.5 overflow-x-auto px-2 scrollbar-hide">
           {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
             <div
               key={i}
-              className="shrink-0 overflow-hidden rounded-[18px] border border-[#dde9e1] bg-white"
+              className="shrink-0 overflow-hidden rounded-[16px] border border-[#dde9e1] bg-white"
               style={{ width: MOBILE_EVENT_CARD_WIDTH }}
             >
               <div className="aspect-[3/2] animate-pulse bg-[#e8ede4]" />
@@ -83,7 +83,7 @@ export function MobileRecommendedCarousel({
           </Link>
         </div>
       ) : (
-        <div className="flex gap-2 overflow-x-auto pl-1 pr-4 scrollbar-hide snap-x snap-mandatory">
+        <div className="-mx-2 flex gap-1.5 overflow-x-auto px-2 pb-0.5 scrollbar-hide snap-x snap-mandatory">
           {displayEvents.map((event) => (
             <MobileEventCard key={event.id} event={event} />
           ))}

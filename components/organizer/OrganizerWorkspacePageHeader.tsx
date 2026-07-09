@@ -28,7 +28,7 @@ export function OrganizerWorkspacePageHeader({
       <div className="min-w-0">
         <h1
           className={`font-[family-name:var(--font-shippori-mincho),var(--font-serif-display),serif] font-medium tracking-[0.03em] text-[#1a2214] min-[900px]:text-[24px] ${
-            compact ? "text-[17px] leading-snug" : "text-[22px]"
+            compact ? "text-[15px] leading-snug" : "text-[22px]"
           }`}
         >
           {title}

@@ -8,8 +8,8 @@ const ORGANIZER_IMAGE = "/home/pc/cta-organizer.png";
 
 export function MobileVolunteerCtaBanners() {
   return (
-    <section aria-label="次のアクション" className="grid grid-cols-2 gap-2">
-      <div className="relative min-h-[88px] overflow-hidden rounded-[24px] border border-[#dde9e1] shadow-[0_8px_24px_rgba(22,56,40,0.06)]">
+    <section aria-label="次のアクション" className="grid grid-cols-2 gap-1.5">
+      <div className="relative min-h-[80px] overflow-hidden rounded-[18px] border border-[#dde9e1] shadow-[0_4px_16px_rgba(22,56,40,0.05)]">
         <Image
           src={NOTIFY_IMAGE}
           alt=""
@@ -21,7 +21,7 @@ export function MobileVolunteerCtaBanners() {
           className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#eef6f0]/97 via-[#eef6f0]/65 to-transparent"
           aria-hidden
         />
-        <div className="relative z-10 flex flex-col justify-center p-2.5 pr-[40%]">
+        <div className="relative z-10 flex flex-col justify-center p-2 pr-[38%]">
           <h3
             className="text-[11px] font-semibold leading-snug text-[#163828]"
             style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
@@ -40,7 +40,7 @@ export function MobileVolunteerCtaBanners() {
         </div>
       </div>
 
-      <div className="relative min-h-[88px] overflow-hidden rounded-[24px] border border-[#dde9e1] shadow-[0_8px_24px_rgba(22,56,40,0.06)]">
+      <div className="relative min-h-[80px] overflow-hidden rounded-[18px] border border-[#dde9e1] shadow-[0_4px_16px_rgba(22,56,40,0.05)]">
         <Image
           src={ORGANIZER_IMAGE}
           alt=""
@@ -52,7 +52,7 @@ export function MobileVolunteerCtaBanners() {
           className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#fef8e8]/97 via-[#fef8e8]/65 to-transparent"
           aria-hidden
         />
-        <div className="relative z-10 flex flex-col justify-center p-2.5 pr-[40%]">
+        <div className="relative z-10 flex flex-col justify-center p-2 pr-[38%]">
           <h3
             className="text-[11px] font-semibold leading-snug text-[#3a2810]"
             style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
