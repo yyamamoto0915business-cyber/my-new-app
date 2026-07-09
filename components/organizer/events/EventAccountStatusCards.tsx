@@ -22,7 +22,7 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
 
   return (
     <section
-      className="grid gap-2 min-[900px]:grid-cols-3 min-[900px]:gap-3"
+      className="org-events-account-status -mx-4 grid gap-2 px-4 sm:-mx-6 sm:px-6 min-[900px]:mx-0 min-[900px]:grid-cols-3 min-[900px]:gap-3 min-[900px]:px-0"
       aria-label="アカウント状況"
     >
       <div className="org-events-status-card">

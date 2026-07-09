@@ -122,11 +122,19 @@ export interface DonutSegment {
   value: number;
 }
 
-export function DonutChart({ segments, total }: { segments: DonutSegment[]; total: number }) {
-  const r = 44;
-  const cx = 54;
-  const cy = 54;
-  const strokeWidth = 10;
+export function DonutChart({
+  segments,
+  total,
+  size = 108,
+}: {
+  segments: DonutSegment[];
+  total: number;
+  size?: number;
+}) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const strokeWidth = Math.max(8, Math.round(size * 0.09));
+  const r = cx - strokeWidth;
   const gap = 2;
   const circumference = 2 * Math.PI * r;
 
@@ -144,7 +152,7 @@ export function DonutChart({ segments, total }: { segments: DonutSegment[]; tota
   });
 
   return (
-    <svg width="108" height="108" style={{ transform: "rotate(-90deg)" }} aria-hidden="true">
+    <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }} aria-hidden="true">
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e0e0e0" strokeWidth={strokeWidth} />
       {computed.map((seg, i) => (
         <circle
@@ -271,21 +279,42 @@ export function QrPlaceholder() {
   );
 }
 
-export function staffChip(status: "ok" | "late" | "absent") {
+export function staffChip(
+  status: "ok" | "late" | "absent",
+  { compact = false }: { compact?: boolean } = {}
+) {
   if (status === "ok")
     return (
-      <span className="rounded-full bg-[#EAF4ED] px-2 py-0.5 text-[11px] font-medium text-[#2D7A4F]">
+      <span
+        className={
+          compact
+            ? "shrink-0 rounded-full bg-[#EAF4ED] px-1.5 py-0.5 text-[9px] font-medium leading-none text-[#2D7A4F]"
+            : "rounded-full bg-[#EAF4ED] px-2 py-0.5 text-[11px] font-medium text-[#2D7A4F]"
+        }
+      >
         出勤中
       </span>
     );
   if (status === "late")
     return (
-      <span className="rounded-full bg-[#FDF6E3] px-2 py-0.5 text-[11px] font-medium text-[#CF9010]">
-        遅刻気味
+      <span
+        className={
+          compact
+            ? "shrink-0 rounded-full bg-[#FDF6E3] px-1.5 py-0.5 text-[9px] font-medium leading-none text-[#CF9010]"
+            : "rounded-full bg-[#FDF6E3] px-2 py-0.5 text-[11px] font-medium text-[#CF9010]"
+        }
+      >
+        {compact ? "遅れ" : "遅刻気味"}
       </span>
     );
   return (
-    <span className="rounded-full bg-[#FFEBEE] px-2 py-0.5 text-[11px] font-medium text-[#E53935]">
+    <span
+      className={
+        compact
+          ? "shrink-0 rounded-full bg-[#FFEBEE] px-1.5 py-0.5 text-[9px] font-medium leading-none text-[#E53935]"
+          : "rounded-full bg-[#FFEBEE] px-2 py-0.5 text-[11px] font-medium text-[#E53935]"
+      }
+    >
       未出勤
     </span>
   );

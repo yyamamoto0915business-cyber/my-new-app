@@ -109,7 +109,7 @@ export function PcVolunteerHero({
 }: Props) {
   return (
     <section aria-label="ボランティア募集" className="overflow-hidden rounded-t-[16px] bg-white">
-      <div className="relative h-[168px] overflow-hidden">
+      <div className="relative h-[148px] overflow-hidden">
         <Image
           src={HERO_IMAGE}
           alt=""
@@ -123,7 +123,7 @@ export function PcVolunteerHero({
           aria-hidden
         />
 
-        <div className="relative z-10 px-6 pt-5">
+        <div className="relative z-10 px-6 pt-4">
           <nav
             aria-label="パンくず"
             className="mb-1.5 flex items-center gap-1 text-[11px] text-[#566358]"
@@ -153,7 +153,7 @@ export function PcVolunteerHero({
             e.preventDefault();
             onSearch();
           }}
-          className="-mt-10 rounded-[12px] border border-[#DDE8DF] bg-white p-3.5 shadow-[0_2px_16px_rgba(45,122,79,0.07)]"
+          className="-mt-8 rounded-[12px] border border-[#DDE8DF] bg-white p-3.5 shadow-[0_2px_16px_rgba(45,122,79,0.07)]"
         >
           <div className="mb-2.5 flex items-center gap-2 border-b border-[#EAF4ED] pb-2.5">
             <Search className="h-4 w-4 shrink-0 text-[#8a9e98]" aria-hidden />

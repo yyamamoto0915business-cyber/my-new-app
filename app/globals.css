@@ -219,6 +219,13 @@ body::before {
   background-color: #f5f8f5;
 }
 
+/* マイページモバイル — body::before の幾何学パターンを透けさせない */
+.mg-profile-mobile-page {
+  position: relative;
+  z-index: 1;
+  background-color: #edece7;
+}
+
 .mg-volunteer-cta-btn {
   display: inline-flex !important;
   width: fit-content;
@@ -2279,12 +2286,16 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   --mg-day-ink: #1a2214;
   --mg-day-muted: #566358;
   color: var(--mg-day-ink);
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
 }
 .mg-day-mgmt-pc__hero {
   position: relative;
   overflow: hidden;
-  border-radius: 14px;
-  padding: 14px 18px 20px;
+  border-radius: 12px;
+  padding: 10px 14px 14px;
   background:
     linear-gradient(
       100deg,
@@ -2297,7 +2308,7 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   box-shadow: 0 2px 12px rgba(26, 34, 20, 0.06);
 }
 .mg-day-mgmt-pc__hero--compact {
-  padding: 8px 14px 12px;
+  padding: 6px 12px 10px;
   background:
     linear-gradient(
       100deg,
@@ -2309,7 +2320,7 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
     url("/events/pc-hero-landscape.jpg") center 40% / cover no-repeat;
 }
 .mg-day-mgmt-pc__hero--selected {
-  padding: 10px 14px;
+  padding: 6px 12px;
   background: #fff;
   border: 1px solid var(--mg-day-border);
   box-shadow: 0 1px 6px rgba(26, 34, 20, 0.04);
@@ -2318,32 +2329,32 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   display: none;
 }
 .mg-day-mgmt-pc--selected .mg-day-mgmt-pc__title {
-  font-size: 18px;
+  font-size: 16px;
 }
 .mg-day-mgmt-pc--selected .mg-day-mgmt-pc__kpi-grid {
-  margin-top: 8px;
-  gap: 10px;
+  margin-top: 6px;
+  gap: 8px;
 }
 .mg-day-mgmt-pc--selected .mg-day-mgmt-pc__sections {
-  margin-top: 8px;
-  gap: 8px;
+  margin-top: 6px;
+  gap: 6px;
 }
 .mg-day-mgmt-pc--compact .mg-day-mgmt-pc__kpi-grid {
-  margin-top: 8px;
-  gap: 10px;
-}
-.mg-day-mgmt-pc--compact .mg-day-mgmt-pc__sections {
-  margin-top: 8px;
+  margin-top: 6px;
   gap: 8px;
 }
+.mg-day-mgmt-pc--compact .mg-day-mgmt-pc__sections {
+  margin-top: 6px;
+  gap: 6px;
+}
 .mg-day-mgmt-pc--compact .mg-day-mgmt-pc__kpi {
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 .mg-day-mgmt-pc--compact .mg-day-mgmt-pc__panel--compact {
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 .mg-day-mgmt-pc--compact .mg-day-mgmt-pc__quick-actions {
-  padding: 8px 10px;
+  padding: 6px 8px;
   gap: 6px;
 }
 .mg-day-mgmt-pc--compact .mg-day-mgmt-pc__event-card {
@@ -2366,18 +2377,18 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 }
 .mg-day-mgmt-pc__title {
   font-family: var(--font-shippori-mincho), var(--font-serif-display), var(--font-heading), serif;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 500;
   letter-spacing: 0.06em;
   line-height: 1.2;
   color: var(--mg-day-ink);
 }
 .mg-day-mgmt-pc__hero--compact .mg-day-mgmt-pc__title {
-  font-size: 18px;
+  font-size: 16px;
 }
 .mg-day-mgmt-pc__desc {
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 11px;
+  line-height: 1.4;
   color: var(--mg-day-muted);
   max-width: 28rem;
 }
@@ -2411,22 +2422,22 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 }
 .mg-day-mgmt-pc__kpi-grid {
   position: relative;
-  margin-top: 8px;
+  margin-top: 6px;
   padding: 0 2px;
 }
 .mg-day-mgmt-pc__kpi {
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--mg-day-border);
   background: #fff;
-  padding: 10px 12px;
+  padding: 8px 10px;
   box-shadow: 0 2px 10px rgba(26, 34, 20, 0.05);
 }
 .mg-day-mgmt-pc__kpi-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
 }
 .mg-day-mgmt-pc__kpi-icon--green {
@@ -2442,76 +2453,82 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   background: #ffebeb;
 }
 .mg-day-mgmt-pc__kpi-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   color: var(--mg-day-muted);
 }
 .mg-day-mgmt-pc__kpi-value {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--mg-day-ink);
   line-height: 1.1;
 }
 .mg-day-mgmt-pc__kpi-unit {
   margin-left: 4px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 400;
   color: var(--mg-day-muted);
 }
 .mg-day-mgmt-pc__sections {
   display: flex;
+  min-height: 0;
+  flex: 1;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 6px;
+}
+.mg-day-mgmt-pc__row {
+  min-height: 0;
+  flex: 1;
 }
 .mg-day-mgmt-pc__panel {
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--mg-day-border);
   background: #fff;
   box-shadow: 0 2px 10px rgba(26, 34, 20, 0.04);
 }
 .mg-day-mgmt-pc__panel--compact {
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 .mg-day-mgmt-pc__panel-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--mg-day-ink);
 }
 .mg-day-mgmt-pc__empty-inline {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 6px;
   padding: 2px 0;
 }
 .mg-day-mgmt-pc__empty-ring {
   display: flex;
-  height: 52px;
-  width: 52px;
+  height: 44px;
+  width: 44px;
   shrink: 0;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  border: 6px solid #e8e6e0;
-  font-size: 11px;
+  border: 5px solid #e8e6e0;
+  font-size: 10px;
   color: var(--mg-day-muted);
 }
 .mg-day-mgmt-pc__empty-text {
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 11px;
+  line-height: 1.4;
   color: var(--mg-day-muted);
 }
 .mg-day-mgmt-pc__btn-list {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  border-radius: 10px;
+  gap: 4px;
+  border-radius: 8px;
   border: 1px solid var(--mg-day-border);
   background: #f5f8f5;
-  padding: 8px 12px;
-  font-size: 12px;
+  padding: 6px 10px;
+  font-size: 11px;
   font-weight: 500;
   color: #2d7a4f;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -2520,48 +2537,46 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   background: #eaf4ed;
   border-color: #b8d4c4;
 }
-.mg-day-mgmt-pc__staff-row {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+.mg-day-mgmt-pc__staff-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  align-content: start;
   scrollbar-width: thin;
 }
 .mg-day-mgmt-pc__staff-card {
   display: flex;
-  min-width: 136px;
-  flex: 1;
+  min-width: 0;
   align-items: center;
   gap: 8px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid var(--mg-day-border);
   background: #f5f8f5;
-  padding: 8px 10px;
+  padding: 6px 8px;
 }
 .mg-day-mgmt-pc__staff-avatar {
   display: flex;
-  height: 32px;
-  width: 32px;
+  height: 28px;
+  width: 28px;
   shrink: 0;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   background: #dde8df;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #566358;
 }
 .mg-day-mgmt-pc__staff-add {
   display: flex;
-  min-width: 120px;
-  flex-direction: column;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px dashed var(--mg-day-border);
   background: #fff;
-  padding: 10px 12px;
+  padding: 6px 8px;
   font-size: 11px;
   font-weight: 500;
   color: var(--mg-day-muted);
@@ -2574,22 +2589,22 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 .mg-day-mgmt-pc__quick-actions {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  border-radius: 12px;
+  gap: 6px;
+  border-radius: 10px;
   border: 1px solid var(--mg-day-border);
   background: #fff;
-  padding: 10px 12px;
+  padding: 6px 8px;
   box-shadow: 0 2px 10px rgba(26, 34, 20, 0.04);
 }
 .mg-day-mgmt-pc__quick-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  border-radius: 10px;
+  gap: 4px;
+  border-radius: 8px;
   border: 1px solid var(--mg-day-border);
   background: #f5f8f5;
-  padding: 8px 6px;
+  padding: 6px 4px;
   text-align: center;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
@@ -2599,8 +2614,8 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 }
 .mg-day-mgmt-pc__quick-icon {
   display: flex;
-  height: 34px;
-  width: 34px;
+  height: 28px;
+  width: 28px;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
@@ -3410,6 +3425,109 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 .org-events-pagination__page.is-active {
   background: #2d7a4f;
   color: #fff;
+}
+
+/* ── イベント管理（モバイルコンパクト） ── */
+@media (max-width: 899px) {
+  .org-events-mgmt--compact {
+    gap: 8px;
+  }
+
+  .org-events-mgmt--compact .org-events-account-status {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .org-events-mgmt--compact .org-events-account-status::-webkit-scrollbar {
+    display: none;
+  }
+
+  .org-events-mgmt--compact .org-events-account-status > .org-events-status-card {
+    flex: 0 0 min(72vw, 240px);
+    scroll-snap-align: start;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .org-events-mgmt--compact .org-events-status-card__icon {
+    height: 28px;
+    width: 28px;
+    border-radius: 9px;
+  }
+
+  .org-events-mgmt--compact .org-events-status-card__icon svg {
+    height: 14px;
+    width: 14px;
+  }
+
+  .org-events-mgmt--compact .org-events-status-card__value {
+    font-size: 13px;
+  }
+
+  .org-events-mgmt--compact .org-events-status-card__hint {
+    display: none;
+  }
+
+  .org-events-mgmt--compact .org-events-status-card__link {
+    margin-top: 4px;
+    font-size: 10px;
+  }
+
+  .org-events-mgmt--compact section[aria-label="イベントの概要"] > div {
+    gap: 6px;
+  }
+
+  .org-events-mgmt--compact .org-events-stat-card {
+    padding: 8px 10px;
+    border-radius: 12px;
+    gap: 8px;
+  }
+
+  .org-events-mgmt--compact .org-events-stat-card__icon {
+    height: 28px;
+    width: 28px;
+    border-radius: 9px;
+  }
+
+  .org-events-mgmt--compact .org-events-stat-card__icon svg {
+    height: 14px;
+    width: 14px;
+  }
+
+  .org-events-mgmt--compact .org-events-stat-card__value {
+    font-size: 18px;
+  }
+
+  .org-events-mgmt--compact .org-events-stat-card__label {
+    font-size: 10px;
+  }
+
+  .org-events-mgmt--compact .org-events-list-tabs {
+    padding: 8px 12px 6px;
+  }
+
+  .org-events-mgmt--compact .org-events-list-tabs__tab {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  .org-events-mgmt--compact .org-events-toolbar--embedded {
+    padding: 8px 12px 10px;
+  }
+
+  .org-events-mgmt--compact .org-events-list-shell__hint {
+    margin-bottom: 4px;
+    font-size: 10px;
+  }
+
+  .org-main-chrome:has(.org-events-mgmt--compact) .org-main-chrome__bg {
+    height: min(120px, 16vh);
+    opacity: 0.78;
+  }
 }
 
 /* ── イベント管理（PCコンパクト・ダッシュボード同系） ── */

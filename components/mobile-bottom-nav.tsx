@@ -6,6 +6,7 @@ import { useUnreadCount } from "@/hooks/use-unread-count";
 import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { cn } from "@/lib/utils";
+import { prefetchMypageSummary } from "@/lib/prefetch-mypage-summary";
 
 const MOBILE_ITEMS = [
   { id: "home" as const, href: "/", label: "ホーム", icon: "home" },
@@ -99,6 +100,8 @@ export function MobileBottomNav() {
             key={item.id}
             href={href}
             prefetch
+            onTouchStart={item.id === "profile" ? () => void prefetchMypageSummary() : undefined}
+            onMouseEnter={item.id === "profile" ? () => void prefetchMypageSummary() : undefined}
             aria-current={active ? "page" : undefined}
             className={cn(
               "relative mx-0.5 flex min-h-[48px] flex-1 touch-manipulation flex-col items-center justify-center gap-px px-0.5 py-1 text-[10px] transition-colors",

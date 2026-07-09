@@ -65,6 +65,26 @@ export async function getEventReactionCounts(
   return { planned, interested };
 }
 
+/** 自分の参加予定・気になる件数（マイページ統計用・イベント本体は取得しない） */
+export async function getMyReactionCounts(
+  supabase: SupabaseClient,
+  profileId: string
+): Promise<{ planned: number; interested: number }> {
+  const { data } = await supabase
+    .from("event_reactions")
+    .select("reaction_type")
+    .eq("profile_id", profileId);
+
+  if (!data) return { planned: 0, interested: 0 };
+  let planned = 0;
+  let interested = 0;
+  for (const row of data as { reaction_type: string }[]) {
+    if (row.reaction_type === "planned") planned++;
+    else if (row.reaction_type === "interested") interested++;
+  }
+  return { planned, interested };
+}
+
 /** 自分の参加予定・気になるイベントID一覧（マイページ用） */
 export async function getMyReactionEventIds(
   supabase: SupabaseClient,

@@ -6,30 +6,17 @@ import Link from "next/link";
 import type { Event, EventFormData } from "@/lib/events";
 import { eventToForm } from "@/lib/organizer-event-to-form";
 import { EVENT_TAGS } from "@/lib/db/types";
-import { EventFormSection } from "@/components/organizer/events/EventFormSection";
-import { EventImageInput } from "@/components/organizer/events/EventImageInput";
-import { RecurrenceSelector } from "@/components/organizer/events/RecurrenceSelector";
-import type { EventRecurrence } from "@/lib/event-recurrence";
+import { EventFormStepContent } from "@/components/organizer/events/EventFormStepContent";
+import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import { getJstNowHm, getJstTodayYmd, toJstTimestamp } from "@/lib/jst-date";
+import {
+  EventFormPcStepIndicator,
+  EventFormSidePanel,
+  EventFormStepIndicator,
+  type EventFormStep,
+} from "@/components/organizer/events/event-form-ui";
 
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
-
-const PREFECTURES = [
-  "東京都",
-  "大阪府",
-  "北海道",
-  "福岡県",
-  "愛知県",
-  "神奈川県",
-  "埼玉県",
-  "千葉県",
-  "京都府",
-];
-
-const CITIES_BY_PREF: Record<string, string[]> = {
-  東京都: ["渋谷区", "新宿区", "港区", "中央区", "その他"],
-  大阪府: ["大阪市", "その他"],
-};
 
 const STATUS_LABELS: Record<string, string> = {
   published: "公開中",
@@ -62,48 +49,14 @@ function validateForm(data: EventFormData): FormErrors {
   if (data.price < 0) errors.price = "料金は0以上で入力してください";
   if (!data.organizerName?.trim())
     errors.organizerName = "主催者名を入力してください";
-  if (data.recurrence && data.recurrence !== "none" && (!data.recurrenceCount || data.recurrenceCount < 2)) {
+  if (
+    data.recurrence &&
+    data.recurrence !== "none" &&
+    (!data.recurrenceCount || data.recurrenceCount < 2)
+  ) {
     errors.recurrenceCount = "繰り返し回数を選択してください";
   }
   return errors;
-}
-
-const inputBase =
-  "mt-2 w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/50";
-const inputError = "border-red-300 focus:border-red-400 focus:ring-red-200/50";
-
-function FormField({
-  id,
-  label,
-  required,
-  error,
-  hint,
-  children,
-}: {
-  id: string;
-  label: string;
-  required?: boolean;
-  error?: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-slate-700">
-        {label}
-        {required && (
-          <span className="ml-1.5 text-xs text-amber-600">必須</span>
-        )}
-      </label>
-      {children}
-      {hint && <p className="mt-1.5 text-xs text-slate-500">{hint}</p>}
-      {error && (
-        <p className="mt-1.5 text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
-  );
 }
 
 function formatDate(iso: string) {
@@ -118,6 +71,85 @@ function formatDate(iso: string) {
   } catch {
     return iso;
   }
+}
+
+function EditPcStepBar({
+  current,
+  onGo,
+  onBack,
+  onSave,
+  submitting,
+  statusLabel,
+}: {
+  current: EventFormStep;
+  onGo: (s: EventFormStep) => void;
+  onBack: () => void;
+  onSave: () => void;
+  submitting: boolean;
+  statusLabel: string;
+}) {
+  const backLabels: Record<EventFormStep, string> = {
+    1: "イベント一覧へ",
+    2: "基本情報に戻る",
+    3: "開催情報に戻る",
+    4: "詳細情報に戻る",
+  };
+
+  return (
+    <header className="z-10 hidden shrink-0 border-b border-[#d8d4cc] bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)] min-[900px]:block">
+      <div className="flex items-center gap-4 px-6 py-1.5">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex w-[9rem] shrink-0 items-center gap-1 text-left text-[11px] font-medium text-[#4a4844] hover:text-[#2B3A6B]"
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="shrink-0"
+          >
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          <span className="truncate">{backLabels[current]}</span>
+        </button>
+        <EventFormPcStepIndicator
+          current={current}
+          onGo={onGo}
+          finalLabel="確認・保存"
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#edeae4] bg-[#fafaf8] px-6 py-1.5">
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5 rounded-full border border-[#d0ccc4] bg-white px-3 py-1 text-[11px] text-[#5c5a54]">
+          <span className="text-[#888]">状態</span>
+          <strong className="font-semibold text-[#1a1a1a]">{statusLabel}</strong>
+        </div>
+
+        <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <Link
+            href="/organizer/events"
+            className="rounded-[8px] border border-[#d0ccc4] bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#1a1a1a] hover:bg-[#f5f4f0]"
+          >
+            一覧へ戻る
+          </Link>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={submitting}
+            className="min-w-[6rem] rounded-[8px] bg-[#2B3A6B] px-4 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#243159] disabled:opacity-50"
+          >
+            {submitting ? "保存中…" : "変更を保存"}
+          </button>
+        </div>
+      </div>
+    </header>
+  );
 }
 
 export default function EditEventPage() {
@@ -136,6 +168,7 @@ export default function EditEventPage() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [currentStep, setCurrentStep] = useState<EventFormStep>(1);
 
   const fetchEvent = useCallback(async () => {
     if (!id) return;
@@ -149,7 +182,9 @@ export default function EditEventPage() {
       const data = await res.json();
       setEvent(data);
       setForm(eventToForm(data));
-      setItemsInput(Array.isArray(data.itemsToBring) ? data.itemsToBring.join("、") : "");
+      setItemsInput(
+        Array.isArray(data.itemsToBring) ? data.itemsToBring.join("、") : ""
+      );
     } catch {
       router.replace("/organizer/events");
     } finally {
@@ -169,24 +204,16 @@ export default function EditEventPage() {
     if (!form) return;
     const { name, value } = e.target;
     if (name === "price") {
-      setForm((prev) => (prev ? { ...prev, [name]: parseInt(value, 10) || 0 } : prev));
+      setForm((prev) =>
+        prev ? { ...prev, [name]: parseInt(value, 10) || 0 } : prev
+      );
     } else if (name === "prefecture") {
-      setForm((prev) => (prev ? { ...prev, prefecture: value, city: "" } : prev));
+      setForm((prev) =>
+        prev ? { ...prev, prefecture: value, city: "" } : prev
+      );
     } else {
       setForm((prev) => (prev ? { ...prev, [name]: value } : prev));
     }
-  };
-
-  const handleTagToggle = (tagId: string) => {
-    if (!form) return;
-    setForm((prev) => {
-      if (!prev) return prev;
-      const tags = prev.tags ?? [];
-      if (tags.includes(tagId)) {
-        return { ...prev, tags: tags.filter((t) => t !== tagId) };
-      }
-      return { ...prev, tags: [...tags, tagId] };
-    });
   };
 
   const handleItemsBlur = () => {
@@ -200,8 +227,7 @@ export default function EditEventPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const saveChanges = async () => {
     if (!form || !id) return;
     const formErrors = validateForm(form);
     if (Object.keys(formErrors).length > 0) {
@@ -269,7 +295,7 @@ export default function EditEventPage() {
 
   if (loading || !form) {
     return (
-      <div className="space-y-6 pb-24">
+      <div className="space-y-6 pb-24 min-[900px]:pb-0">
         <div className="h-32 animate-pulse rounded-2xl bg-slate-200/80" />
         <div className="h-96 animate-pulse rounded-2xl bg-slate-200/80" />
       </div>
@@ -279,687 +305,421 @@ export default function EditEventPage() {
   const todayJst = getJstTodayYmd();
   const nowJstHm = getJstNowHm();
   const startTimeMin = form.date === todayJst ? nowJstHm : undefined;
-
-  const hasRequired =
-    form.participationMode === "required" ||
-    form.participationMode === "optional";
   const statusLabel =
     STATUS_LABELS[event?.status ?? ""] ?? (event?.status || "下書き");
 
+  const goToStep = (s: EventFormStep) => setCurrentStep(s);
+  const goNext = () => {
+    if (currentStep < 4) setCurrentStep((s) => (s + 1) as EventFormStep);
+  };
+  const goPrev = () => {
+    if (currentStep === 1) router.push("/organizer/events");
+    else setCurrentStep((s) => (s - 1) as EventFormStep);
+  };
+
+  const stepLabels: Record<EventFormStep, string> = {
+    1: "基本情報",
+    2: "開催情報",
+    3: "詳細情報",
+    4: "確認・保存",
+  };
+  const nextLabels: Record<EventFormStep, string> = {
+    1: "開催情報へ",
+    2: "詳細情報へ",
+    3: "確認・保存へ",
+    4: "",
+  };
+
+  const selectedTagLabels =
+    (form.tags ?? [])
+      .map((tagId) => EVENT_TAGS.find((t) => t.id === tagId)?.label ?? tagId)
+      .join("、") || "—";
+  const dateStr =
+    form.date && form.startTime
+      ? formatEventScheduleLabel(
+          form.date,
+          form.startTime,
+          form.endTime || undefined,
+          form.recurrence ?? "none",
+          form.recurrenceCount
+        )
+      : "—";
+  const missingRequired =
+    !form.location.trim() ||
+    !form.address.trim() ||
+    !form.date ||
+    !form.startTime ||
+    !form.title.trim() ||
+    !form.description.trim() ||
+    !form.organizerName?.trim();
+
   return (
-    <div className="space-y-6 pb-24 sm:pb-8" ref={formTopRef}>
-      {/* ページヘッダー */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link
-            href="/organizer/events"
-            className="text-sm text-slate-500 hover:text-slate-700 hover:underline"
-          >
-            ← イベント一覧へ
-          </Link>
-          <h1 className="mt-2 text-xl font-bold text-slate-800 sm:text-2xl">
-            イベントを編集
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            イベント内容や公開設定を更新できます
-          </p>
-          {event?.title && (
-            <p className="mt-1 text-sm font-medium text-slate-700">
-              {event.title}
-            </p>
-          )}
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-3">
-          <Link
-            href="/organizer/events"
-            className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
-            一覧へ戻る
-          </Link>
+    <div
+      ref={formTopRef}
+      className="relative z-[1] flex flex-col min-[900px]:-mx-8 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
+    >
+      <EditPcStepBar
+        current={currentStep}
+        onGo={goToStep}
+        onBack={goPrev}
+        onSave={saveChanges}
+        submitting={submitting}
+        statusLabel={statusLabel}
+      />
+
+      <div className="sticky top-0 z-10 -mx-4 border-b border-[#e8e6e0] bg-white sm:-mx-6 min-[900px]:hidden">
+        <div className="flex items-center gap-2 px-3 py-2">
           <button
-            type="submit"
-            form="event-edit-form"
-            disabled={submitting}
-            className="inline-flex items-center justify-center rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
+            type="button"
+            onClick={goPrev}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F3F2EF]"
           >
-            {submitting ? "保存中..." : "変更を保存"}
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#555"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
           </button>
+          <div className="flex-1 truncate text-[13px] font-[600]">
+            {currentStep === 1 ? "イベントを編集" : `${stepLabels[currentStep]}を入力`}
+          </div>
+          <button
+            type="button"
+            onClick={saveChanges}
+            disabled={submitting}
+            className="shrink-0 rounded-[8px] bg-[#2B3A6B] px-2.5 py-1 text-[11px] font-[500] text-white disabled:opacity-50"
+          >
+            {submitting ? "保存中…" : "保存"}
+          </button>
+        </div>
+        <div className="flex items-center px-3 pb-2">
+          <EventFormStepIndicator current={currentStep} onGo={goToStep} />
         </div>
       </div>
 
       {submitSuccess && (
         <div
-          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          className="mx-4 mt-3 min-[900px]:mx-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
           role="status"
         >
           保存しました
         </div>
       )}
-
       {submitError && (
         <div
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="mx-4 mt-3 min-[900px]:mx-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
           role="alert"
         >
           {submitError}
         </div>
       )}
 
-      <form
-        id="event-edit-form"
-        onSubmit={handleSubmit}
-        className="space-y-6"
-      >
-        {/* A. 基本情報 */}
-        <EventFormSection
-          title="基本情報"
-          description="イベントの名前や概要、見た目を設定します"
-        >
-          <FormField
-            id="title"
-            label="イベント名"
-            required
-            error={errors.title}
-          >
-            <input
-              id="title"
-              name="title"
-              value={form.title}
-              onChange={handleChange}
-              placeholder="例：春の地域マルシェ"
-              className={`${inputBase} ${errors.title ? inputError : ""}`}
-            />
-          </FormField>
-
-          <FormField
-            id="description"
-            label="イベント概要"
-            required
-            error={errors.description}
-            hint="参加者に伝えたい内容を入力してください"
-          >
-            <textarea
-              id="description"
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              rows={4}
-              placeholder="イベントの内容や魅力を簡潔に紹介してください"
-              className={`${inputBase} resize-y min-h-[100px] ${errors.description ? inputError : ""}`}
-            />
-          </FormField>
-
-          <FormField
-            id="imageUrl"
-            label="アイキャッチ画像"
-            hint="画像URLを貼り付けるか、「ファイルから選ぶ」「写真を撮る」からアップロードできます。未入力の場合はプレースホルダーが表示されます。"
-          >
-            <EventImageInput
-              url={form.imageUrl ?? ""}
-              onChangeUrl={(url) =>
-                setForm((prev) => (prev ? { ...prev, imageUrl: url } : prev))
+      <div className="flex min-h-0 flex-1 flex-col min-[900px]:flex-row min-[900px]:overflow-hidden min-[900px]:bg-white min-[900px]:border-t min-[900px]:border-[#e8e6e0]">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col min-[900px]:overflow-hidden min-[900px]:bg-white">
+          {currentStep < 4 && (
+            <EventFormStepContent
+              currentStep={currentStep}
+              mode="edit"
+              form={form}
+              errors={errors}
+              itemsInput={itemsInput}
+              setItemsInput={setItemsInput}
+              handleChange={handleChange}
+              handleItemsBlur={handleItemsBlur}
+              setForm={
+                setForm as React.Dispatch<React.SetStateAction<EventFormData>>
               }
-              alt={form.title || "プレビュー"}
+              todayJst={todayJst}
+              startTimeMin={startTimeMin}
+              eventId={id}
             />
-          </FormField>
+          )}
 
-          <div>
-            <p className="text-sm font-medium text-slate-700">
-              カテゴリー・特徴タグ
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              複数選択できます
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {EVENT_TAGS.map((tag) => (
-                <label
-                  key={tag.id}
-                  className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 text-sm shadow-sm transition hover:border-slate-300 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/80"
-                >
-                  <input
-                    type="checkbox"
-                    checked={(form.tags ?? []).includes(tag.id)}
-                    onChange={() => handleTagToggle(tag.id)}
-                    className="h-4 w-4 rounded border-slate-300"
-                  />
-                  <span>{tag.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-6">
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                checked={form.childFriendly ?? false}
-                onChange={(e) =>
-                  setForm((prev) =>
-                    prev ? { ...prev, childFriendly: e.target.checked } : prev
-                  )
-                }
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              <span className="text-sm text-slate-700">子連れOK</span>
-            </label>
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                checked={form.englishGuideAvailable ?? false}
-                onChange={(e) =>
-                  setForm((prev) =>
-                    prev
-                      ? { ...prev, englishGuideAvailable: e.target.checked }
-                      : prev
-                  )
-                }
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              <span className="text-sm text-slate-700">英語対応あり</span>
-            </label>
-          </div>
-        </EventFormSection>
-
-        {/* B. 開催情報 */}
-        <EventFormSection
-          title="開催情報"
-          description="日時と場所を入力してください"
-        >
-          <div className="grid gap-5 sm:grid-cols-3">
-            <FormField id="date" label="開催日" required error={errors.date}>
-              <input
-                id="date"
-                name="date"
-                type="date"
-                value={form.date}
-                onChange={handleChange}
-                min={todayJst}
-                className={`${inputBase} ${errors.date ? inputError : ""}`}
-              />
-            </FormField>
-            <FormField
-              id="startTime"
-              label="開始時刻"
-              required
-              error={errors.startTime}
-            >
-              <input
-                id="startTime"
-                name="startTime"
-                type="time"
-                value={form.startTime}
-                onChange={handleChange}
-                min={startTimeMin}
-                className={`${inputBase} ${errors.startTime ? inputError : ""}`}
-              />
-            </FormField>
-            <FormField
-              id="endTime"
-              label="終了時刻"
-              error={errors.endTime}
-              hint="任意。開始時刻より後にしてください"
-            >
-              <input
-                id="endTime"
-                name="endTime"
-                type="time"
-                value={form.endTime || ""}
-                onChange={handleChange}
-                className={`${inputBase} ${errors.endTime ? inputError : ""}`}
-              />
-            </FormField>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-slate-700">開催パターン</p>
-            <div className="mt-2">
-              <RecurrenceSelector
-                value={(form.recurrence ?? "none") as EventRecurrence}
-                count={form.recurrenceCount}
-                onChange={(recurrence) =>
-                  setForm((prev) =>
-                    prev
-                      ? {
-                          ...prev,
-                          recurrence,
-                          recurrenceCount: recurrence === "none" ? null : prev.recurrenceCount,
-                        }
-                      : prev
-                  )
-                }
-                onCountChange={(recurrenceCount) =>
-                  setForm((prev) => (prev ? { ...prev, recurrenceCount } : prev))
-                }
-              />
-            </div>
-          </div>
-
-          <FormField
-            id="location"
-            label="開催場所"
-            required
-            error={errors.location}
-            hint="会場名や施設名を入力"
-          >
-            <input
-              id="location"
-              name="location"
-              value={form.location}
-              onChange={handleChange}
-              placeholder="例：市民ホール 多目的室 / オンライン開催"
-              className={`${inputBase} ${errors.location ? inputError : ""}`}
-            />
-          </FormField>
-
-          <FormField
-            id="address"
-            label="住所"
-            required
-            error={errors.address}
-          >
-            <input
-              id="address"
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-              placeholder="例：東京都渋谷区〇〇町1-2-3"
-              className={`${inputBase} ${errors.address ? inputError : ""}`}
-            />
-          </FormField>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <FormField id="prefecture" label="都道府県">
-              <select
-                id="prefecture"
-                name="prefecture"
-                value={form.prefecture ?? ""}
-                onChange={handleChange}
-                className={inputBase}
-              >
-                <option value="">選択してください</option>
-                {PREFECTURES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-            {form.prefecture &&
-              (CITIES_BY_PREF[form.prefecture] ?? []).length > 0 && (
-                <FormField id="city" label="市区町村">
-                  <select
-                    id="city"
-                    name="city"
-                    value={form.city ?? ""}
-                    onChange={handleChange}
-                    className={inputBase}
+          {currentStep === 4 && (
+            <div className="p-4 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden min-[900px]:p-0">
+              <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7">
+                <div className="mb-[10px] flex items-center justify-between">
+                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">
+                    基本情報
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => goToStep(1)}
+                    className="text-[12px] font-[500] text-[#2B3A6B]"
                   >
-                    <option value="">選択してください</option>
-                    {CITIES_BY_PREF[form.prefecture]?.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </FormField>
-              )}
-          </div>
-
-          <FormField id="access" label="アクセス" hint="最寄り駅や目印など">
-            <input
-              id="access"
-              name="access"
-              value={form.access || ""}
-              onChange={handleChange}
-              placeholder="例：最寄り駅から徒歩10分"
-              className={inputBase}
-            />
-          </FormField>
-
-          <FormField id="rainPolicy" label="雨天時対応">
-            <input
-              id="rainPolicy"
-              name="rainPolicy"
-              value={form.rainPolicy || ""}
-              onChange={handleChange}
-              placeholder="例：雨天決行 / 小雨決行・荒天中止"
-              className={inputBase}
-            />
-          </FormField>
-
-          <FormField
-            id="itemsToBring"
-            label="持ち物"
-            hint="カンマまたは改行で区切って入力"
-          >
-            <input
-              id="itemsToBring"
-              value={itemsInput}
-              onChange={(e) => setItemsInput(e.target.value)}
-              onBlur={handleItemsBlur}
-              placeholder="例：レジャーシート、飲み物"
-              className={inputBase}
-            />
-          </FormField>
-        </EventFormSection>
-
-        {/* C. 参加設定 */}
-        <EventFormSection
-          title="参加設定"
-          description="参加登録が必要なイベントかどうかで設定が変わります"
-        >
-          <div>
-            <p className="text-sm font-medium text-slate-700">
-              参加登録 <span className="text-xs text-amber-600">設定</span>
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              参加申込が必要なイベントのときだけ「参加登録あり」を選んでください
-            </p>
-            <div className="mt-4 space-y-3">
-              {[
-                {
-                  mode: "required" as const,
-                  label: "参加登録あり",
-                  desc: "申込必須。参加者は「申し込む」から応募します",
-                },
-                {
-                  mode: "optional" as const,
-                  label: "参加登録任意",
-                  desc: "「参加予定にする」で関心を表明。申込も可能",
-                },
-                {
-                  mode: "none" as const,
-                  label: "参加登録なし",
-                  desc: "自由参加。参加予定・気になるボタンのみ",
-                },
-              ].map(({ mode, label, desc }) => (
-                <label
-                  key={mode}
-                  className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50/50"
-                >
-                  <input
-                    type="radio"
-                    name="participationMode"
-                    checked={(form.participationMode ?? "none") === mode}
-                    onChange={() =>
-                      setForm((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              participationMode: mode,
-                              requiresRegistration: mode === "required",
-                            }
-                          : prev
-                      )
-                    }
-                    className="mt-0.5 h-4 w-4"
-                  />
-                  <div>
-                    <span className="text-sm font-medium text-slate-800">
+                    編集
+                  </button>
+                </div>
+                {[
+                  { label: "イベント名", val: form.title || null },
+                  { label: "概要", val: form.description || null },
+                  { label: "主催者名", val: form.organizerName || null },
+                  { label: "連絡先", val: form.organizerContact || null },
+                  {
+                    label: "タグ",
+                    val: selectedTagLabels !== "—" ? selectedTagLabels : null,
+                  },
+                  { label: "画像", val: form.imageUrl ? "設定済み" : null },
+                ].map(({ label, val }) => (
+                  <div
+                    key={label}
+                    className="flex items-start justify-between gap-[10px] border-b border-[#f5f3ef] py-[9px] last:border-b-0"
+                  >
+                    <span className="w-[90px] shrink-0 text-[12px] text-[#888]">
                       {label}
                     </span>
-                    <p className="mt-0.5 text-xs text-slate-500">{desc}</p>
+                    <span
+                      className="flex-1 text-right text-[13px] leading-[1.5]"
+                      style={{
+                        color: val ? "#1a1a1a" : "#ccc",
+                        fontWeight: val ? 500 : 400,
+                      }}
+                    >
+                      {val ?? "未入力"}
+                    </span>
                   </div>
-                </label>
-              ))}
-            </div>
-          </div>
+                ))}
+              </div>
 
-          {(form.participationMode ?? "none") === "required" && (
-            <div className="space-y-5 border-t border-slate-100 pt-5">
-              <FormField id="capacity" label="定員" hint="任意">
-                <input
-                  id="capacity"
-                  name="capacity"
-                  type="number"
-                  min={0}
-                  value={form.capacity ?? ""}
-                  onChange={(e) =>
-                    setForm((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            capacity: e.target.value
-                              ? Number(e.target.value)
-                              : undefined,
-                          }
-                        : prev
-                    )
-                  }
-                  placeholder="例：50"
-                  className={inputBase}
-                />
-              </FormField>
-              <FormField
-                id="registrationDeadline"
-                label="申込締切"
-                hint="任意。締切日時を指定"
-              >
-                <input
-                  id="registrationDeadline"
-                  name="registrationDeadline"
-                  type="datetime-local"
-                  value={
-                    form.registrationDeadline
-                      ? (() => {
-                          const d = new Date(form.registrationDeadline);
-                          const pad = (n: number) =>
-                            String(n).padStart(2, "0");
-                          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                        })()
-                      : ""
-                  }
-                  onChange={(e) =>
-                    setForm((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            registrationDeadline: e.target.value
-                              ? new Date(e.target.value).toISOString()
-                              : undefined,
-                          }
-                        : prev
-                    )
-                  }
-                  className={inputBase}
-                />
-              </FormField>
-              <FormField
-                id="registrationNote"
-                label="申込メモ・注意事項"
-                hint="例：定員に達し次第締め切ります"
-              >
-                <textarea
-                  id="registrationNote"
-                  name="registrationNote"
-                  rows={2}
-                  value={form.registrationNote ?? ""}
-                  onChange={(e) =>
-                    setForm((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            registrationNote:
-                              e.target.value || undefined,
-                          }
-                        : prev
-                    )
-                  }
-                  placeholder="参加者への連絡事項や注意書き"
-                  className={`${inputBase} resize-y min-h-[60px]`}
-                />
-              </FormField>
+              <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7">
+                <div className="mb-[10px] flex items-center justify-between">
+                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">
+                    開催情報
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => goToStep(2)}
+                    className="text-[12px] font-[500] text-[#2B3A6B]"
+                  >
+                    編集
+                  </button>
+                </div>
+                {[
+                  { label: "開催日時", val: dateStr !== "—" ? dateStr : null },
+                  { label: "開催場所", val: form.location || null },
+                  { label: "都道府県", val: form.prefecture || null },
+                  {
+                    label: "参加費",
+                    val: `${form.price}円${form.price === 0 ? "（無料）" : ""}`,
+                  },
+                ].map(({ label, val }) => (
+                  <div
+                    key={label}
+                    className="flex items-start justify-between gap-[10px] border-b border-[#f5f3ef] py-[9px] last:border-b-0"
+                  >
+                    <span className="w-[90px] shrink-0 text-[12px] text-[#888]">
+                      {label}
+                    </span>
+                    <span
+                      className="flex-1 text-right text-[13px] font-[500] leading-[1.5]"
+                      style={{
+                        color: val ? "#1a1a1a" : "#ccc",
+                        fontWeight: val ? 500 : 400,
+                      }}
+                    >
+                      {val ?? "未入力"}
+                    </span>
+                  </div>
+                ))}
+                <div className="mt-[20px] mb-[10px] flex items-center justify-between">
+                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">
+                    詳細情報
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => goToStep(3)}
+                    className="text-[12px] font-[500] text-[#2B3A6B]"
+                  >
+                    編集
+                  </button>
+                </div>
+                {[
+                  {
+                    label: "定員",
+                    val: form.capacity ? `${form.capacity}人` : "未設定（無制限）",
+                  },
+                  {
+                    label: "持ち物",
+                    val: form.itemsToBring?.length
+                      ? form.itemsToBring.join("、")
+                      : null,
+                  },
+                  { label: "備考", val: form.registrationNote || null },
+                ].map(({ label, val }) => (
+                  <div
+                    key={label}
+                    className="flex items-start justify-between gap-[10px] border-b border-[#f5f3ef] py-[9px] last:border-b-0"
+                  >
+                    <span className="w-[90px] shrink-0 text-[12px] text-[#888]">
+                      {label}
+                    </span>
+                    <span
+                      className="flex-1 text-right text-[13px] leading-[1.5]"
+                      style={{
+                        color:
+                          val && val !== "未設定（無制限）" ? "#1a1a1a" : "#999",
+                        fontWeight:
+                          val && val !== "未設定（無制限）" ? 500 : 400,
+                      }}
+                    >
+                      {val ?? "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:p-6 pb-20 min-[900px]:pb-7">
+                <div className="mb-[10px] text-[12px] font-[600] tracking-[.05em] text-[#888]">
+                  保存の確認
+                </div>
+                {missingRequired && (
+                  <div className="mb-[16px] flex gap-[9px] rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] p-[14px]">
+                    <p className="text-[13px] leading-[1.6] text-[#c04060]">
+                      必須項目が未入力です。保存する前に入力内容をご確認ください。
+                    </p>
+                  </div>
+                )}
+                <div className="mb-[16px] rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] p-[14px]">
+                  <p className="text-[13px] leading-[1.7] text-[#555]">
+                    現在の状態：
+                    <strong className="ml-1 text-[#1a1a1a]">{statusLabel}</strong>
+                  </p>
+                  <p className="mt-2 text-[12px] text-[#888]">
+                    公開・非公開の切り替えはイベント一覧から行えます
+                  </p>
+                  {event?.createdAt && (
+                    <p className="mt-2 text-[12px] text-[#888]">
+                      作成日：{formatDate(event.createdAt)}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-[7px]">
+                  <button
+                    type="button"
+                    onClick={saveChanges}
+                    disabled={submitting || missingRequired}
+                    className="w-full rounded-[9px] bg-[#2B3A6B] py-[12px] text-[14px] font-[600] text-white transition hover:bg-[#243159] disabled:opacity-50"
+                  >
+                    {submitting ? "保存中…" : "変更を保存"}
+                  </button>
+                  <Link
+                    href={`/events/${id}`}
+                    className="flex w-full items-center justify-center rounded-[9px] border border-[#e8e6e0] bg-white py-[12px] text-[14px] font-[500] text-[#1a1a1a] hover:bg-[#f5f4f0]"
+                  >
+                    詳細をプレビュー
+                  </Link>
+                  <Link
+                    href={`/organizer?event=${encodeURIComponent(id)}`}
+                    className="flex w-full items-center justify-center rounded-[9px] border border-[#2D7A4F] bg-[#EAF4ED] py-[12px] text-[14px] font-[500] text-[#2D7A4F] hover:bg-[#D0ECD7]"
+                  >
+                    当日管理へ →
+                  </Link>
+                </div>
+
+                <div className="mt-6 rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] p-4">
+                  <p className="text-[13px] font-[600] text-[#1a1a1a]">危険な操作</p>
+                  <p className="mt-1 text-[12px] leading-[1.6] text-[#888]">
+                    イベントを削除すると元に戻せません。
+                  </p>
+                  {!deleteConfirm ? (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirm(true)}
+                      className="mt-3 rounded-[8px] border border-[#E8708A] bg-white px-3 py-1.5 text-[12px] font-medium text-[#c04060] hover:bg-[#fff5f7]"
+                    >
+                      削除する
+                    </button>
+                  ) : (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={deleting}
+                        className="rounded-[8px] bg-[#E8708A] px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-50"
+                      >
+                        {deleting ? "削除中…" : "本当に削除する"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirm(false)}
+                        disabled={deleting}
+                        className="rounded-[8px] border border-[#e8e6e0] bg-white px-3 py-1.5 text-[12px] text-[#555]"
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
-
-          <FormField
-            id="price"
-            label="参加費（円）"
-            required
-            error={errors.price}
-            hint="0で無料イベント"
-          >
-            <input
-              id="price"
-              name="price"
-              type="number"
-              min={0}
-              value={form.price}
-              onChange={handleChange}
-              placeholder="0"
-              className={`${inputBase} ${errors.price ? inputError : ""}`}
-            />
-          </FormField>
-
-          <FormField id="priceNote" label="料金補足">
-            <input
-              id="priceNote"
-              name="priceNote"
-              value={form.priceNote || ""}
-              onChange={handleChange}
-              placeholder="例：材料費込み"
-              className={inputBase}
-            />
-          </FormField>
-
-          {hasRequired && (
-            <FormField id="prioritySlots" label="優先枠数" hint="任意">
-              <input
-                id="prioritySlots"
-                name="prioritySlots"
-                type="number"
-                min={0}
-                value={form.prioritySlots ?? 0}
-                onChange={(e) =>
-                  setForm((prev) =>
-                    prev
-                      ? {
-                          ...prev,
-                          prioritySlots: Math.max(
-                            0,
-                            Number(e.target.value) || 0
-                          ),
-                        }
-                      : prev
-                  )
-                }
-                className={inputBase}
-              />
-            </FormField>
-          )}
-        </EventFormSection>
-
-        {/* D. 公開設定（表示のみ・変更は一覧から） */}
-        <EventFormSection
-          title="公開設定"
-          description="現在の公開状態です。公開・非公開の切り替えはイベント一覧から行えます"
-        >
-          <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3">
-            <p className="text-sm font-medium text-slate-700">
-              現在の状態：{" "}
-              <span
-                className={
-                  event?.status === "published"
-                    ? "text-emerald-700"
-                    : "text-slate-600"
-                }
-              >
-                {statusLabel}
-              </span>
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              イベント一覧から「公開する」「公開/非公開切替」で変更できます
-            </p>
-          </div>
-        </EventFormSection>
-
-        {/* E. 補助情報 */}
-        {event && (
-          <EventFormSection
-            title="補助情報"
-            description="イベントの管理情報"
-          >
-            <div className="space-y-2 text-sm text-slate-600">
-              {event.createdAt && (
-                <p>作成日：{formatDate(event.createdAt)}</p>
-              )}
-              <p className="text-xs text-slate-500">ID: {event.id}</p>
-            </div>
-          </EventFormSection>
-        )}
-
-        {/* 保存エリア */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
-          <p className="text-sm text-slate-500">
-            変更後は「変更を保存」を押すと反映されます
-          </p>
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex items-center justify-center rounded-xl bg-[var(--mg-accent,theme(colors.amber.600))] px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
-            >
-              {submitting ? "保存中..." : "変更を保存"}
-            </button>
-            <Link
-              href="/organizer/events"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 px-6 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              キャンセル
-            </Link>
-            <Link
-              href={`/events/${id}`}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200/80 px-6 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              詳細をプレビュー
-            </Link>
-            <Link
-              href={`/organizer?event=${encodeURIComponent(id)}`}
-              className="inline-flex items-center justify-center rounded-xl border border-[#2D7A4F] bg-[#EAF4ED] px-6 py-3 text-sm font-medium text-[#2D7A4F] transition hover:bg-[#D0ECD7]"
-            >
-              当日管理へ →
-            </Link>
-          </div>
         </div>
-      </form>
 
-      {/* 危険操作 */}
-      <div className="rounded-2xl border border-red-200/80 bg-red-50/50 p-5 sm:p-6">
-        <h2 className="text-base font-semibold text-slate-800">
-          危険な操作
-        </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          イベントを削除すると元に戻せません。募集や参加情報も削除されます。
-        </p>
-        {!deleteConfirm ? (
-          <button
-            type="button"
-            onClick={() => setDeleteConfirm(true)}
-            className="mt-4 rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
-          >
-            削除する
-          </button>
-        ) : (
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleting}
-              className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
-            >
-              {deleting ? "削除中..." : "本当に削除する"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setDeleteConfirm(false)}
-              disabled={deleting}
-              className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-            >
-              キャンセル
-            </button>
-          </div>
+        {currentStep < 4 && (
+          <EventFormSidePanel
+            form={form}
+            currentStep={currentStep}
+            onNext={goNext}
+            onPrev={goPrev}
+            nextLabel={nextLabels[currentStep]}
+            footerNote={
+              <p className="text-[11px] leading-[1.5] text-[#2A5A74]">
+                公開状態の変更は
+                <Link href="/organizer/events" className="font-medium hover:underline">
+                  イベント一覧
+                </Link>
+                から行えます。
+              </p>
+            }
+          />
         )}
       </div>
+
+      {currentStep < 4 && (
+        <div className="sticky bottom-0 z-10 shrink-0 -mx-4 flex items-center justify-between border-t border-[#e8e6e0] bg-white px-3 py-1.5 sm:-mx-6 min-[900px]:hidden">
+          <button
+            type="button"
+            onClick={goPrev}
+            className="flex items-center gap-1 rounded-[9px] border border-[#e8e6e0] bg-white px-3 py-2 text-[13px] font-[500]"
+            style={{ visibility: currentStep === 1 ? "hidden" : "visible" }}
+          >
+            戻る
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            className="flex items-center gap-1 rounded-[9px] border-none bg-[#2B3A6B] px-4 py-2 text-[13px] font-[600] text-white"
+          >
+            {nextLabels[currentStep]}
+          </button>
+        </div>
+      )}
+      {currentStep === 4 && (
+        <div className="sticky bottom-0 z-10 flex gap-[8px] border-t border-[#e8e6e0] bg-white px-4 py-2 min-[900px]:hidden">
+          <button
+            type="button"
+            onClick={goPrev}
+            className="flex items-center rounded-[10px] border border-[#e8e6e0] bg-white px-[18px] py-[11px] text-[13px] font-[500]"
+          >
+            戻る
+          </button>
+          <button
+            type="button"
+            onClick={saveChanges}
+            disabled={submitting || missingRequired}
+            className="flex flex-1 items-center justify-center rounded-[10px] bg-[#2B3A6B] py-[11px] text-[13px] font-[600] text-white disabled:opacity-50"
+          >
+            {submitting ? "保存中…" : "変更を保存"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

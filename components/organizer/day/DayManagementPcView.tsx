@@ -71,7 +71,7 @@ function KpiProgressBar({
           : "bg-transparent";
 
   return (
-    <div className={cn("mt-2 h-1.5 w-full overflow-hidden rounded-full", track)}>
+    <div className={cn("mt-1.5 h-1 w-full overflow-hidden rounded-full", track)}>
       <div className={cn("h-full rounded-full transition-all", fill)} style={{ width: `${pct}%` }} />
     </div>
   );
@@ -120,42 +120,47 @@ export function DayManagementPcView({
     {
       key: "qr",
       label: "受付QRコード表示",
-      icon: <QrCode size={18} className="text-[#2D7A4F]" />,
+      icon: <QrCode size={15} className="text-[#2D7A4F]" />,
       iconBg: "bg-[#EAF4ED]",
     },
     {
       key: "announce",
       label: "アナウンス送信",
-      icon: <Megaphone size={18} className="text-[#2D7A4F]" />,
+      icon: <Megaphone size={15} className="text-[#2D7A4F]" />,
       iconBg: "bg-[#EAF4ED]",
     },
     {
       key: "message",
       label: "来場者にメッセージ",
-      icon: <MessageCircle size={18} className="text-[#1976D2]" />,
+      icon: <MessageCircle size={15} className="text-[#1976D2]" />,
       iconBg: "bg-[#E3F2FD]",
     },
     {
       key: "emergency",
       label: "緊急連絡",
-      icon: <AlertTriangle size={18} className="text-[#E53935]" />,
+      icon: <AlertTriangle size={15} className="text-[#E53935]" />,
       iconBg: "bg-[#FFCDD2]",
       cardClass: "border-[#FFCDD2] bg-[#FFEBEE] hover:border-[#E53935] hover:bg-[#FFCDD2]",
     },
     {
       key: "memo",
       label: "記録・メモ",
-      icon: <FileText size={18} className="text-[#CF9010]" />,
+      icon: <FileText size={15} className="text-[#CF9010]" />,
       iconBg: "bg-[#FDF6E3]",
     },
   ];
 
   return (
-    <div className={cn("mg-day-mgmt-pc", emptyMode ? "mg-day-mgmt-pc--compact" : "mg-day-mgmt-pc--selected")}>
+    <div
+      className={cn(
+        "mg-day-mgmt-pc",
+        emptyMode ? "mg-day-mgmt-pc--compact" : "mg-day-mgmt-pc--selected"
+      )}
+    >
       {showHero ? (
         <section
           className={cn(
-            "mg-day-mgmt-pc__hero",
+            "mg-day-mgmt-pc__hero shrink-0",
             emptyMode ? "mg-day-mgmt-pc__hero--compact" : "mg-day-mgmt-pc__hero--selected"
           )}
         >
@@ -170,7 +175,7 @@ export function DayManagementPcView({
               </span>
             ) : null}
           </div>
-          {emptyMode ? <p className="mg-day-mgmt-pc__desc mt-1.5">{descText}</p> : null}
+          {emptyMode ? <p className="mg-day-mgmt-pc__desc mt-1">{descText}</p> : null}
         </section>
       ) : null}
 
@@ -185,19 +190,19 @@ export function DayManagementPcView({
         loading={eventsLoading}
         variant={emptyMode ? "empty" : "current"}
         compact
-        className={showHero ? "mt-2" : undefined}
+        className={cn("shrink-0", showHero ? "mt-1.5" : undefined)}
       />
 
       {/* KPI */}
-      <div className="mg-day-mgmt-pc__kpi-grid grid grid-cols-4 gap-3">
+      <div className="mg-day-mgmt-pc__kpi-grid grid shrink-0 grid-cols-4 gap-2">
         <div className="mg-day-mgmt-pc__kpi">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="mg-day-mgmt-pc__kpi-icon mg-day-mgmt-pc__kpi-icon--green">
-              <UserCheck size={15} className="text-[#2D7A4F]" />
+              <UserCheck size={13} className="text-[#2D7A4F]" />
             </span>
             <span className="mg-day-mgmt-pc__kpi-label">来場者チェックイン</span>
           </div>
-          <p className="mg-day-mgmt-pc__kpi-value mt-1.5">
+          <p className="mg-day-mgmt-pc__kpi-value mt-1">
             {checkin.checkedIn}
             <span className="mg-day-mgmt-pc__kpi-unit">/ {checkin.total}人</span>
           </p>
@@ -208,13 +213,13 @@ export function DayManagementPcView({
         </div>
 
         <div className="mg-day-mgmt-pc__kpi">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="mg-day-mgmt-pc__kpi-icon mg-day-mgmt-pc__kpi-icon--blue">
-              <Users size={15} className="text-[#1976D2]" />
+              <Users size={13} className="text-[#1976D2]" />
             </span>
             <span className="mg-day-mgmt-pc__kpi-label">スタッフ出勤</span>
           </div>
-          <p className="mg-day-mgmt-pc__kpi-value mt-1.5">
+          <p className="mg-day-mgmt-pc__kpi-value mt-1">
             {staffPresent}
             <span className="mg-day-mgmt-pc__kpi-unit">/ {staffTotal}名</span>
           </p>
@@ -225,20 +230,20 @@ export function DayManagementPcView({
         </div>
 
         <div className="mg-day-mgmt-pc__kpi">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="mg-day-mgmt-pc__kpi-icon mg-day-mgmt-pc__kpi-icon--amber">
-              <Clock size={15} className="text-[#CF9010]" />
+              <Clock size={13} className="text-[#CF9010]" />
             </span>
             <span className="mg-day-mgmt-pc__kpi-label">プログラム進行</span>
           </div>
-          <p className="mg-day-mgmt-pc__kpi-value mt-1.5">
+          <p className="mg-day-mgmt-pc__kpi-value mt-1">
             {schedDone}
             <span className="mg-day-mgmt-pc__kpi-unit">/ {schedTotal}</span>
           </p>
-          <div className="mt-2 flex justify-end">
+          <div className="mt-1.5 flex justify-end">
             {!emptyMode ? (
             <span
-              className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                 isPast
                   ? "bg-[#f0f0f0] text-[#566358]"
                   : isLive
@@ -249,7 +254,7 @@ export function DayManagementPcView({
               {isPast ? "終了" : isLive ? "進行中" : "開催前"}
             </span>
             ) : (
-              <span className="rounded-full bg-[#f0f0f0] px-2.5 py-0.5 text-[11px] font-semibold text-[#566358]">
+              <span className="rounded-full bg-[#f0f0f0] px-2 py-0.5 text-[10px] font-semibold text-[#566358]">
                 —
               </span>
             )}
@@ -257,17 +262,17 @@ export function DayManagementPcView({
         </div>
 
         <div className="mg-day-mgmt-pc__kpi">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="mg-day-mgmt-pc__kpi-icon mg-day-mgmt-pc__kpi-icon--danger">
-              <Bell size={15} className="text-[#E53935]" />
+              <Bell size={13} className="text-[#E53935]" />
             </span>
             <span className="mg-day-mgmt-pc__kpi-label">お知らせ未読</span>
           </div>
-          <p className="mg-day-mgmt-pc__kpi-value mt-1.5">
+          <p className="mg-day-mgmt-pc__kpi-value mt-1">
             {unreadNotices}
             <span className="mg-day-mgmt-pc__kpi-unit">件</span>
           </p>
-          <p className="mt-2 text-[10px] leading-snug text-[#566358]">
+          <p className="mt-1.5 text-[10px] leading-snug text-[#566358]">
             {emptyMode
               ? "未読はありません"
               : isPast
@@ -279,36 +284,36 @@ export function DayManagementPcView({
 
       <div className="mg-day-mgmt-pc__sections">
         {/* Reception + Schedule */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact">
-            <h2 className="mg-day-mgmt-pc__panel-title">受付状況</h2>
+        <div className="mg-day-mgmt-pc__row grid min-h-0 grid-cols-2 gap-2">
+          <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact flex min-h-0 flex-col">
+            <h2 className="mg-day-mgmt-pc__panel-title shrink-0">受付状況</h2>
             {emptyMode ? (
-              <div className="mg-day-mgmt-pc__empty-inline">
+              <div className="mg-day-mgmt-pc__empty-inline flex-1">
                 <div className="mg-day-mgmt-pc__empty-ring">—</div>
                 <p className="mg-day-mgmt-pc__empty-text">イベントを選択すると受付状況が表示されます</p>
               </div>
             ) : (
-            <div className="mt-3 flex items-center gap-6">
+            <div className="mt-2 flex min-h-0 flex-1 items-center gap-4">
               <div className="relative shrink-0">
-                <DonutChart segments={donutSegments} total={checkin.total} />
+                <DonutChart segments={donutSegments} total={checkin.total} size={84} />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-[20px] font-bold text-[#1A2214]">{checkin.checkedIn}</span>
-                  <span className="text-[10px] text-[#566358]">入場</span>
+                  <span className="text-[16px] font-bold text-[#1A2214]">{checkin.checkedIn}</span>
+                  <span className="text-[9px] text-[#566358]">入場</span>
                 </div>
               </div>
-              <div className="flex min-w-0 flex-1 flex-col gap-3 text-[13px]">
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5 text-[12px]">
                 <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 shrink-0 rounded-full bg-[#4CAF50]" />
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#4CAF50]" />
                   <span className="text-[#566358]">チェックイン済</span>
                   <span className="ml-auto font-semibold text-[#1A2214]">{checkin.checkedIn}人</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 shrink-0 rounded-full bg-[#e0e0e0]" />
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#e0e0e0]" />
                   <span className="text-[#566358]">未チェックイン</span>
                   <span className="ml-auto font-semibold text-[#1A2214]">{checkin.notChecked}人</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 shrink-0 rounded-full bg-[#ef9a9a]" />
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#ef9a9a]" />
                   <span className="text-[#566358]">キャンセル</span>
                   <span className="ml-auto font-semibold text-[#1A2214]">{checkin.cancelled}人</span>
                 </div>
@@ -319,46 +324,46 @@ export function DayManagementPcView({
               type="button"
               onClick={() => onOpenModal("qr")}
               disabled={emptyMode}
-              className="mg-day-mgmt-pc__btn-list mt-3 w-full disabled:cursor-not-allowed disabled:opacity-50"
+              className="mg-day-mgmt-pc__btn-list mt-2 w-full shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
             >
               受付リストを開く
-              <ChevronRight size={16} />
+              <ChevronRight size={14} />
             </button>
           </div>
 
-          <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact">
-            <h2 className="mg-day-mgmt-pc__panel-title">{scheduleTitle}</h2>
+          <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact flex min-h-0 flex-col">
+            <h2 className="mg-day-mgmt-pc__panel-title shrink-0">{scheduleTitle}</h2>
             {emptyMode ? (
-              <div className="mg-day-mgmt-pc__empty-inline">
-                <Calendar size={22} className="shrink-0 text-[#DDE8DF]" aria-hidden />
+              <div className="mg-day-mgmt-pc__empty-inline flex-1">
+                <Calendar size={20} className="shrink-0 text-[#DDE8DF]" aria-hidden />
                 <p className="mg-day-mgmt-pc__empty-text">
                   開催予定のイベントを選択すると、スケジュールがここに表示されます。
                 </p>
               </div>
             ) : (
-            <ul className="mt-3 space-y-1.5">
+            <ul className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto">
               {MOCK_SCHEDULE.map((item, i) => (
                 <li
                   key={i}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-3",
+                    "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5",
                     item.status === "live"
                       ? "border-l-[3px] border-[#2D7A4F] bg-[#EAF4ED]"
                       : "border-l-[3px] border-transparent bg-[#F5F8F5]"
                   )}
                 >
                   <Clock
-                    size={13}
+                    size={12}
                     className={cn(
                       "shrink-0",
                       item.status === "live" ? "text-[#2D7A4F]" : "text-[#566358]"
                     )}
                   />
                   <div className="min-w-0 flex-1">
-                    <span className="text-[11px] text-[#566358]">{item.time}</span>
+                    <span className="text-[10px] text-[#566358]">{item.time}</span>
                     <p
                       className={cn(
-                        "truncate text-[13px] font-medium leading-snug",
+                        "truncate text-[12px] font-medium leading-snug",
                         item.status === "live" ? "text-[#2D7A4F]" : "text-[#1A2214]"
                       )}
                     >
@@ -374,35 +379,41 @@ export function DayManagementPcView({
         </div>
 
         {/* Staff + Notices */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact">
-            <h2 className="mg-day-mgmt-pc__panel-title">スタッフステータス</h2>
+        <div className="mg-day-mgmt-pc__row grid min-h-0 grid-cols-2 gap-2">
+          <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact flex min-h-0 flex-col">
+            <h2 className="mg-day-mgmt-pc__panel-title shrink-0">スタッフステータス</h2>
             {emptyMode ? (
-              <div className="mt-2">
+              <div className="mt-1.5 flex-1">
                 <div className="flex gap-2">
                   {[1, 2, 3].map((i) => (
                     <div
                       key={i}
-                      className="flex h-12 flex-1 items-center justify-center rounded-xl border border-[#DDE8DF] bg-[#F5F8F5]"
+                      className="flex h-10 flex-1 items-center justify-center rounded-xl border border-[#DDE8DF] bg-[#F5F8F5]"
                     >
-                      <div className="h-7 w-7 rounded-full bg-[#e8e6e0]" />
+                      <div className="h-6 w-6 rounded-full bg-[#e8e6e0]" />
                     </div>
                   ))}
                 </div>
-                <p className="mg-day-mgmt-pc__empty-text mt-2">
+                <p className="mg-day-mgmt-pc__empty-text mt-1.5">
                   イベントを選択するとスタッフが表示されます。
                 </p>
               </div>
             ) : (
-            <div className="mg-day-mgmt-pc__staff-row mt-3">
+            <div className="mg-day-mgmt-pc__staff-grid mt-1.5 min-h-0 flex-1 overflow-y-auto">
               {MOCK_STAFF.map((staff, i) => (
                 <div key={i} className="mg-day-mgmt-pc__staff-card">
                   <div className="mg-day-mgmt-pc__staff-avatar">{staff.name.charAt(0)}</div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12px] font-semibold text-[#1A2214]">{staff.name}</p>
-                    <p className="text-[10px] text-[#566358]">{staff.role}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="truncate text-[12px] font-semibold leading-tight text-[#1A2214]">
+                        {staff.name}
+                      </p>
+                      {staffChip(staff.status, { compact: true })}
+                    </div>
+                    <p className="mt-0.5 truncate text-[10px] leading-tight text-[#566358]">
+                      {staff.role}
+                    </p>
                   </div>
-                  {staffChip(staff.status)}
                 </div>
               ))}
               <button
@@ -410,36 +421,36 @@ export function DayManagementPcView({
                 className="mg-day-mgmt-pc__staff-add"
                 aria-label="スタッフを追加"
               >
-                <Plus size={16} />
+                <Plus size={14} />
                 <span>スタッフ追加</span>
               </button>
             </div>
             )}
           </div>
 
-          <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact">
-            <h2 className="mg-day-mgmt-pc__panel-title">お知らせ</h2>
+          <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact flex min-h-0 flex-col">
+            <h2 className="mg-day-mgmt-pc__panel-title shrink-0">お知らせ</h2>
             {emptyMode ? (
-              <div className="mg-day-mgmt-pc__empty-inline">
-                <Inbox size={22} className="shrink-0 text-[#DDE8DF]" aria-hidden />
+              <div className="mg-day-mgmt-pc__empty-inline flex-1">
+                <Inbox size={20} className="shrink-0 text-[#DDE8DF]" aria-hidden />
                 <p className="mg-day-mgmt-pc__empty-text">
                   お知らせはまだありません。配信するとここに表示されます。
                 </p>
               </div>
             ) : (
-            <ul className="mt-3 space-y-2">
+            <ul className="mt-1.5 min-h-0 flex-1 space-y-1.5 overflow-y-auto">
               {MOCK_NOTICES.map((notice, i) => (
                 <li
                   key={i}
                   className={cn(
-                    "flex items-start gap-2.5 rounded-xl p-3",
+                    "flex items-start gap-2 rounded-lg p-2",
                     notice.type === "urg" ? "bg-[#FFEBEE]" : "bg-[#E3F2FD]"
                   )}
                 >
                   {noticeBadge(notice.type)}
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] leading-snug text-[#1A2214]">{notice.text}</p>
-                    <p className="mt-0.5 text-[11px] text-[#566358]">{notice.time}</p>
+                    <p className="text-[12px] leading-snug text-[#1A2214]">{notice.text}</p>
+                    <p className="mt-0.5 text-[10px] text-[#566358]">{notice.time}</p>
                   </div>
                 </li>
               ))}
@@ -449,7 +460,7 @@ export function DayManagementPcView({
         </div>
 
         {/* Quick actions */}
-        <div className="mg-day-mgmt-pc__quick-actions">
+        <div className="mg-day-mgmt-pc__quick-actions shrink-0">
           {quickActions.map((action) => (
             <button
               key={action.key}
@@ -460,7 +471,7 @@ export function DayManagementPcView({
               <span className={cn("mg-day-mgmt-pc__quick-icon", action.iconBg)}>{action.icon}</span>
               <span
                 className={cn(
-                  "text-[12px] font-medium leading-tight",
+                  "text-[11px] font-medium leading-tight",
                   action.key === "emergency" ? "text-[#E53935]" : "text-[#1A2214]"
                 )}
               >

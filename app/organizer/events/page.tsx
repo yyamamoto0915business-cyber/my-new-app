@@ -247,7 +247,7 @@ export default function OrganizerEventsPage() {
   const createEventButton = (
     <Link
       href="/organizer/events/new"
-      className="inline-flex items-center gap-1.5 rounded-xl bg-[#2D7A4F] px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_2px_10px_rgba(45,122,79,0.28)] transition-opacity hover:opacity-90 min-[900px]:px-3.5 min-[900px]:py-2 min-[900px]:text-[12px]"
+      className="inline-flex items-center gap-1.5 rounded-xl bg-[#2D7A4F] px-3 py-2 text-[12px] font-semibold text-white shadow-[0_2px_10px_rgba(45,122,79,0.28)] transition-opacity hover:opacity-90 min-[900px]:px-3.5 min-[900px]:py-2 min-[900px]:text-[12px]"
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -263,9 +263,10 @@ export default function OrganizerEventsPage() {
         className="flex min-h-0 flex-1 flex-col"
         contentClassName="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col pb-16 min-[900px]:pb-0"
       >
-        <div className="org-events-mgmt org-events-mgmt--compact flex min-h-0 flex-1 flex-col space-y-3 min-[900px]:space-y-0">
+        <div className="org-events-mgmt org-events-mgmt--compact flex min-h-0 flex-1 flex-col space-y-2 min-[900px]:space-y-0">
         <OrganizerWorkspacePageHeader
           className="min-[900px]:hidden"
+          compact
           title="イベント管理"
           subtitle="公開・編集・募集・売上受取の設定をまとめて管理できます。"
           actions={createEventButton}
@@ -295,14 +296,6 @@ export default function OrganizerEventsPage() {
             />
 
             <div className="space-y-1.5 min-[900px]:hidden">
-              {stripeNotOk && (
-                <Link
-                  href={PAYOUTS_HREF}
-                  className="flex items-center gap-2 rounded-lg border border-[#e8e6e0] bg-white px-2.5 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
-                >
-                  <span className="block text-[12px] font-semibold text-[#1a1a1a]">売上受取を設定</span>
-                </Link>
-              )}
               {!stripeNotOk && nextAction.href !== PAYOUTS_HREF && (
                 <Link
                   href={nextAction.href}

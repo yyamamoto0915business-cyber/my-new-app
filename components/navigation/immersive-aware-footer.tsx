@@ -27,6 +27,15 @@ export function ImmersiveAwareFooter() {
     );
   }
   if (pathname === "/auth" || pathname?.startsWith("/auth/")) return null;
+  // 主催者ワークスペースは画面内操作を優先しフッターを出さない
+  if (pathname === "/organizer" || pathname?.startsWith("/organizer/")) return null;
+  if (pathname === "/profile") {
+    return (
+      <div className="hidden min-[900px]:block">
+        <SiteFooter />
+      </div>
+    );
+  }
   return (
     <div className="sm:block">
       <SiteFooter />

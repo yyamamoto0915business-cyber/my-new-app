@@ -62,7 +62,7 @@ export function MobileVolunteerHero({
       aria-label="ボランティア募集"
       className="mg-mobile-section overflow-hidden p-0"
     >
-      <div className="relative h-[132px] overflow-hidden bg-white">
+      <div className="relative h-[116px] overflow-hidden bg-white">
         <Image
           src={HERO_IMAGE}
           alt=""
@@ -76,7 +76,7 @@ export function MobileVolunteerHero({
           aria-hidden
         />
 
-        <div className="relative z-10 flex h-full max-w-[58%] flex-col justify-center px-4 py-2.5">
+        <div className="relative z-10 flex h-full max-w-[58%] flex-col justify-center px-4 py-2">
           <nav
             aria-label="パンくず"
             className="mb-0.5 flex items-center gap-1 text-[9px] text-[#6a7068]"

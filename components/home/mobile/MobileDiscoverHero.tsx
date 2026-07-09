@@ -48,15 +48,15 @@ export function MobileDiscoverHero({
           alt=""
           fill
           priority
-          className="object-cover object-[68%_32%]"
+          className="object-cover object-[68%_32%] brightness-[1.04] saturate-[1.18]"
           sizes="100vw"
         />
         <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#f7fbf8]/96 via-[#f7fbf8]/58 to-[#f7fbf8]/25"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#f7fbf8]/68 via-[#f7fbf8]/28 to-[#f7fbf8]/6"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 w-[72%] bg-gradient-to-r from-[#f7fbf8]/98 to-transparent"
+          className="pointer-events-none absolute inset-y-0 left-0 w-[68%] bg-gradient-to-r from-[#f7fbf8]/76 to-transparent"
           aria-hidden
         />
 

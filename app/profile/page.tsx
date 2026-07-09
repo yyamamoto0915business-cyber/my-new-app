@@ -3,27 +3,21 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { syncSupabaseSessionFromServerWithRetries } from "@/lib/supabase/sync-session-from-server";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { useRouter } from "next/navigation";
 import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
 import { useUnreadCount } from "@/hooks/use-unread-count";
-import type { User } from "@supabase/supabase-js";
 import { ProfilePageSkeleton } from "@/components/profile/ProfilePageSkeleton";
+import { MypageMobileProfileCard } from "@/components/profile/mypage-mobile-profile-card";
+import { MypageMobileFooterLinks } from "@/components/profile/mypage-mobile-footer-links";
+import { ProfileBannerAvatar } from "@/components/profile/profile-banner-avatar";
 import {
-  buildProfileInitials,
-  normalizeProfileAvatarRole,
-  resolveAvatarUrlByRole,
-} from "@/lib/profile-avatar";
+  prefetchMypageSummary,
+  resetMypageSummaryPrefetch,
+  type MypageSummaryResponse,
+} from "@/lib/prefetch-mypage-summary";
 
 type Tab = "quick" | "join" | "organize";
-
-/** マイページタブの色 */
-const PROFILE_TABS: { id: Tab; label: string; color: string; bg: string; border: string }[] = [
-  { id: "quick", label: "よく使う", color: "#2B6CB0", bg: "#EBF8FF", border: "#4299E1" },
-  { id: "join", label: "参加する", color: "#276749", bg: "#F0FFF4", border: "#48BB78" },
-  { id: "organize", label: "主催・設定", color: "#C05621", bg: "#FFFAF0", border: "#ED8936" },
-];
 
 /** セクション見出し・アイコン・カード左線の色 */
 const SECTION_THEME = {
@@ -128,24 +122,16 @@ function rowLinkStyle(theme: RowThemeKey): React.CSSProperties {
 const ROW_LINK_HOVER =
   "hover:[background-color:var(--row-hover-bg)] transition-colors";
 
-function profileTabStyle(id: Tab, active: boolean): React.CSSProperties {
-  const t = PROFILE_TABS.find((x) => x.id === id)!;
-  if (active) {
-    return {
-      color: t.color,
-      backgroundColor: t.bg,
-      borderBottomColor: t.border,
-    };
-  }
-  return {
-    color: "#9a968f",
-    backgroundColor: "transparent",
-    borderBottomColor: "transparent",
-  };
-}
-
-function isMissingAvatarColumnsError(msg: string) {
-  return /participant_avatar_url|organizer_avatar_url|active_profile_role|42703/i.test(msg);
+function fallbackDisplayName(user: {
+  user_metadata?: Record<string, unknown>;
+  email?: string | null;
+}): string {
+  return (
+    (user.user_metadata?.display_name as string | undefined) ??
+    (user.user_metadata?.name as string | undefined) ??
+    user.email?.split("@")[0] ??
+    "ゲスト"
+  );
 }
 
 function Chev({ stroke = "#DEDAD2" }: { stroke?: string }) {
@@ -156,34 +142,89 @@ function Chev({ stroke = "#DEDAD2" }: { stroke?: string }) {
   );
 }
 
-/** バナー用アバター（固定サイズ・任意URLの img で表示） */
-function ProfileBannerAvatar({
-  avatarUrl,
-  displayName,
-}: {
-  avatarUrl: string | null;
-  displayName: string;
-}) {
-  const [failed, setFailed] = useState(false);
-  const showImage = avatarUrl && !failed;
+const MG_GREEN = "#3d8a5c";
+const MG_GREEN_SOFT = "#eaf4ee";
 
-  if (showImage) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- 外部URLもそのまま表示
-      <img
-        src={avatarUrl}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover"
-        decoding="async"
-        onError={() => setFailed(true)}
-      />
-    );
-  }
+const MOBILE_TABS: {
+  id: Tab;
+  label: string;
+  icon: (active: boolean) => React.ReactNode;
+}[] = [
+  {
+    id: "quick",
+    label: "よく使う",
+    icon: (active) => (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={active ? MG_GREEN : "#9a968f"} strokeWidth="2" strokeLinecap="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      </svg>
+    ),
+  },
+  {
+    id: "join",
+    label: "参加する",
+    icon: (active) => (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={active ? MG_GREEN : "#9a968f"} strokeWidth="2" strokeLinecap="round">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 00-3-3.87" />
+        <path d="M16 3.13a4 4 0 010 7.75" />
+      </svg>
+    ),
+  },
+  {
+    id: "organize",
+    label: "主催・設定",
+    icon: (active) => (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={active ? MG_GREEN : "#9a968f"} strokeWidth="2" strokeLinecap="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+      </svg>
+    ),
+  },
+];
 
+function MobileChev() {
   return (
-    <span className="absolute inset-0 flex items-center justify-center bg-[#2C5282] text-[11px] font-bold text-white/90">
-      {buildProfileInitials(displayName)}
-    </span>
+    <svg className="shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c5c2ba" strokeWidth="2" strokeLinecap="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+type MobileRowProps = {
+  icon: React.ReactNode;
+  title: string;
+  sub: string;
+  href: string;
+  badge?: number;
+};
+
+function MobileRow({ icon, title, sub, href, badge }: MobileRowProps) {
+  return (
+    <Link
+      href={href}
+      className="flex min-h-[60px] items-center gap-3 border-b border-[#eceae3] bg-[#ffffff] px-4 py-3 transition-colors last:border-b-0 hover:bg-[#fafaf8]"
+    >
+      <div
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+        style={{ backgroundColor: MG_GREEN_SOFT, color: MG_GREEN }}
+      >
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px] font-medium text-[#18181a]">{title}</div>
+        <div className="mt-0.5 truncate text-[11px] text-[#8c8a84]">{sub}</div>
+      </div>
+      {badge !== undefined && badge > 0 && (
+        <span
+          className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums"
+          style={{ backgroundColor: MG_GREEN_SOFT, color: MG_GREEN }}
+        >
+          {badge}
+        </span>
+      )}
+      <MobileChev />
+    </Link>
   );
 }
 
@@ -377,6 +418,138 @@ function SRow({ theme, iconBg, icon, title, sub, href, badge, cta, fill }: SRowP
       )}
       {cta !== undefined ? cta : <Chev stroke={t?.chev} />}
     </Link>
+  );
+}
+
+function MobileQuickItems({ unreadCount }: { unreadCount: number }) {
+  const messageSub =
+    unreadCount > 0
+      ? `${unreadCount}件の未読メッセージがあります`
+      : "未読メッセージはありません";
+
+  return (
+    <>
+      <MobileRow
+        icon={
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+          </svg>
+        }
+        title="メッセージ"
+        sub={messageSub}
+        href="/messages"
+        badge={unreadCount}
+      />
+      <MobileRow
+        icon={
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+          </svg>
+        }
+        title="保存したイベント"
+        sub="気になるイベントを一覧で確認できます"
+        href="/saved"
+      />
+      <MobileRow
+        icon={
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 00-3-3.87" />
+            <path d="M16 3.13a4 4 0 010 7.75" />
+          </svg>
+        }
+        title="応募中のボランティア"
+        sub="応募したボランティアの状況を確認できます"
+        href="/volunteer"
+      />
+      <MobileRow
+        icon={
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v12M9 9h4.5a2 2 0 010 4H9" />
+          </svg>
+        }
+        title="マイポイント"
+        sub="保有ポイントと履歴を確認できます"
+        href="/points"
+      />
+    </>
+  );
+}
+
+function MobileJoinItems({
+  plannedCount,
+  savedCount,
+  unreadCount,
+}: {
+  plannedCount: number;
+  savedCount: number;
+  unreadCount: number;
+}) {
+  return (
+    <>
+      <MobileRow
+        icon={
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        }
+        title="参加予定のイベント"
+        sub="「参加予定にする」を押すと表示されます"
+        href="/profile/events/planned"
+        badge={plannedCount}
+      />
+      <MobileRow
+        icon={
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+          </svg>
+        }
+        title="あとで見るイベント"
+        sub="保存したイベント一覧"
+        href="/saved"
+        badge={savedCount}
+      />
+      <MobileRow
+        icon={
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+          </svg>
+        }
+        title="未読メッセージ"
+        sub="主催者・参加者とのやりとり"
+        href="/messages"
+        badge={unreadCount}
+      />
+      <Link
+        href="/"
+        className="flex min-h-[60px] items-center gap-3 border-b border-[#eceae3] bg-[#ffffff] px-4 py-3 transition-colors last:border-b-0 hover:bg-[#fafaf8]"
+      >
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+          style={{ backgroundColor: MG_GREEN_SOFT, color: MG_GREEN }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-medium text-[#18181a]">イベントを探す</div>
+          <div className="mt-0.5 truncate text-[11px] text-[#8c8a84]">地域のイベントを検索・一覧で見る</div>
+        </div>
+        <span
+          className="shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold text-white"
+          style={{ backgroundColor: MG_GREEN }}
+        >
+          探す
+        </span>
+      </Link>
+    </>
   );
 }
 
@@ -625,126 +798,64 @@ const BANNER_SHINE_STYLE: React.CSSProperties = {
 
 function ProfileContent() {
   const { user, loading: authLoading } = useSupabaseUser();
-  const [sessionUser, setSessionUser] = useState<User | null>(null);
-  const effectiveUser = user ?? sessionUser;
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("quick");
   const [profile, setProfile] = useState({
     displayName: "",
     avatarUrl: null as string | null,
+    bio: null as string | null,
+    region: null as string | null,
     isOrganizerRegistered: false,
   });
   const [plannedCount, setPlannedCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [noSupabase, setNoSupabase] = useState(false);
-  const unreadCount = useUnreadCount(!!effectiveUser);
+  const [noSupabase] = useState(() => createClient() === null);
+  const unreadCount = useUnreadCount(!!user);
 
   useEffect(() => {
-    const supabase = createClient();
-    if (!supabase) {
-      setNoSupabase(true);
-      setSessionUser(null);
-      setLoading(false);
-      return;
-    }
-    (async () => {
-      try {
-        let authUser = (await supabase.auth.getUser()).data.user ?? null;
-        if (!authUser && user) authUser = user;
-        if (!authUser) {
-          await syncSupabaseSessionFromServerWithRetries(supabase);
-          authUser = (await supabase.auth.getUser()).data.user ?? null;
-        }
-        if (!authUser && user) authUser = user;
-        setSessionUser(authUser);
-        if (!authUser) { setLoading(false); return; }
+    if (!user) return;
 
-        const fallbackName =
-          (authUser.user_metadata?.display_name as string) ??
-          (authUser.user_metadata?.name as string) ??
-          authUser.email?.split("@")[0] ?? "";
+    setProfile((prev) => ({
+      ...prev,
+      displayName: prev.displayName || fallbackDisplayName(user),
+    }));
 
-        const [{ data: organizerRow }, { data: profileData, error: profileError }] =
-          await Promise.all([
-            supabase.from("organizers").select("id").eq("profile_id", authUser.id).maybeSingle(),
-            supabase
-              .from("profiles")
-              .select("display_name, avatar_url, participant_avatar_url, organizer_avatar_url, active_profile_role")
-              .eq("id", authUser.id)
-              .single(),
-          ]);
-
-        let avatarUrl: string | null = null;
-        let displayName = fallbackName;
-
-        if (profileError && isMissingAvatarColumnsError(profileError.message ?? "")) {
-          const { data: leg } = await supabase
-            .from("profiles")
-            .select("display_name, avatar_url")
-            .eq("id", authUser.id)
-            .single();
-          if (leg) {
-            displayName = leg.display_name ?? fallbackName;
-            avatarUrl = leg.avatar_url ?? null;
-          }
-        } else if (profileData) {
-          displayName = profileData.display_name ?? fallbackName;
-          avatarUrl = resolveAvatarUrlByRole(
-            {
-              avatar_url: profileData.avatar_url,
-              participant_avatar_url: profileData.participant_avatar_url,
-              organizer_avatar_url: profileData.organizer_avatar_url,
-              active_profile_role: normalizeProfileAvatarRole(profileData.active_profile_role),
-            },
-            "participant"
-          );
-        }
-
-        setProfile({
-          displayName: displayName || "ゲスト",
-          avatarUrl,
-          isOrganizerRegistered: !!organizerRow,
-        });
-      } catch {
-        setSessionUser(null);
-        setProfile({ displayName: "ゲスト", avatarUrl: null, isOrganizerRegistered: false });
-      } finally {
-        setLoading(false);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (!effectiveUser) return;
-    fetch("/api/me/event-reactions")
-      .then((r) => r.json())
-      .then((d: { planned?: unknown[]; interested?: unknown[] }) => {
-        setPlannedCount(Array.isArray(d.planned) ? d.planned.length : 0);
-        setSavedCount(Array.isArray(d.interested) ? d.interested.length : 0);
+    let cancelled = false;
+    prefetchMypageSummary()
+      .then((data: MypageSummaryResponse | null) => {
+        if (cancelled || !data?.profile) return;
+        setProfile(data.profile);
+        setPlannedCount(data.counts?.planned ?? 0);
+        setSavedCount(data.counts?.interested ?? 0);
       })
       .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveUser?.id]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const handleLogout = async () => {
+    resetMypageSummaryPrefetch();
     const supabase = createClient();
     if (supabase) await supabase.auth.signOut();
     router.push("/");
   };
 
-  if (authLoading || loading) return <ProfilePageSkeleton />;
+  if (authLoading) return <ProfilePageSkeleton />;
+
+  const displayName =
+    profile.displayName || (user ? fallbackDisplayName(user) : "ゲスト");
 
   const avatarSmEl = (
     <ProfileBannerAvatar
       avatarUrl={profile.avatarUrl}
-      displayName={profile.displayName}
+      displayName={displayName}
     />
   );
 
   return (
-    <div className="bg-[#EDECE7] max-[899px]:overflow-x-hidden min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-col min-[900px]:bg-[#F7FAFC]">
+    <div className="mg-profile-mobile-page max-[899px]:overflow-x-hidden min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-col min-[900px]:bg-[#F7FAFC]">
       <style>{`@keyframes mg-bgs { from { background-position: -200% center; } to { background-position: 200% center; } }`}</style>
 
       {noSupabase && (
@@ -758,7 +869,7 @@ function ProfileContent() {
         </div>
       )}
 
-      {!effectiveUser && !noSupabase && (
+      {!user && !noSupabase && (
         <div className="flex min-h-screen items-center justify-center px-4">
           <div className="w-full max-w-sm rounded-2xl border border-[#DEDAD2] bg-white px-6 py-8 text-center" style={{ boxShadow: "0 4px 16px rgba(0,0,0,.08)" }}>
             <p className="text-[#52504c]">ログインするとプロフィールや参加予定を確認できます。</p>
@@ -772,66 +883,30 @@ function ProfileContent() {
         </div>
       )}
 
-      {effectiveUser && (
+      {user && (
         <>
           {/* ── Mobile（ヘッダーと同じ max-w-screen-sm・同一 px で幅を揃える） */}
-          <div className="mx-auto flex w-full max-w-screen-sm flex-col gap-2 px-4 pt-1.5 pb-4 min-[900px]:hidden">
-            {/* Banner */}
-            <div className="w-full rounded-[12px] p-[2px]" style={BANNER_BORDER_STYLE}>
-              <div className="rounded-[10px] overflow-hidden relative" style={BANNER_INNER_STYLE}>
-                <div style={BANNER_PATTERN_STYLE} />
-                <div style={BANNER_SHINE_STYLE} />
-                <svg
-                  style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 96, opacity: 0.22, pointerEvents: "none" }}
-                  viewBox="0 0 110 80"
-                  xmlns="http://www.w3.org/2000/svg"
-                  preserveAspectRatio="xMaxYMin meet"
-                >
-                  <ellipse cx="84" cy="68" rx="6" ry="16" fill="#2d5a2d" opacity=".85" />
-                  <ellipse cx="80" cy="50" rx="32" ry="17" fill="#2d6e3a" opacity=".82" />
-                  <ellipse cx="76" cy="34" rx="24" ry="14" fill="#357a40" opacity=".78" />
-                  <ellipse cx="72" cy="20" rx="17" ry="11" fill="#3d8a48" opacity=".72" />
-                  <circle cx="32" cy="18" r="16" fill="rgba(255,255,255,.04)" />
-                </svg>
-                <div className="flex min-h-0 items-center gap-2.5 px-3 py-2.5 relative z-[1]">
-                  <Link href="/profile/edit" className="relative shrink-0" aria-label="プロフィールを編集">
-                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full" style={{ border: "2px solid rgba(255,255,255,.4)", boxShadow: "0 0 10px rgba(56,178,172,.25)" }}>
-                      {avatarSmEl}
-                    </div>
-                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#48BB78]" style={{ border: "2px solid #1A365D" }} />
-                  </Link>
-                  <div className="flex-1 min-w-0 pr-1">
-                    <div className="text-[8px] tracking-[.16em] font-semibold mb-0.5" style={{ color: "rgba(144,205,244,.9)" }}>MYPAGE</div>
-                    <div className="text-base font-normal text-white leading-tight truncate" style={{ fontFamily: "'Noto Serif JP', serif" }}>
-                      {profile.displayName}
-                    </div>
-                    <div className="text-[10px] mt-0.5 line-clamp-1 font-medium" style={{ color: "rgba(255,255,255,.82)" }}>地域のイベントに参加してみよう</div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Link
-                      href="/profile/edit"
-                      className="rounded-[14px] px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap transition-colors hover:bg-white/35"
-                      style={BANNER_BTN_PRIMARY}
-                    >
-                      編集
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="cursor-pointer rounded-[14px] px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap transition-colors hover:bg-black/25"
-                      style={BANNER_BTN_SECONDARY}
-                    >
-                      ログアウト
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="mx-auto flex w-full max-w-screen-sm flex-col gap-3 px-4 pt-1.5 pb-6 min-[900px]:hidden">
+            <MypageMobileProfileCard
+              displayName={displayName}
+              avatarUrl={profile.avatarUrl}
+              bio={profile.bio}
+              region={profile.region}
+              stats={{
+                participated: plannedCount,
+                volunteer: 0,
+                favorites: savedCount,
+                points: 0,
+              }}
+              onLogout={handleLogout}
+            />
 
-            {/* タブ + リスト（1枚のカード・sticky なしで重なり防止） */}
-            <div className={LIST_CARD_CLASS} style={LIST_CARD_STYLE}>
-              <div className="flex border-b border-[#DEDAD2] bg-[#FAFAF8]" role="tablist">
-                {PROFILE_TABS.map(({ id, label, border }) => {
+            <div
+              className="relative z-[1] overflow-hidden rounded-2xl border border-[#e8e6e0] bg-[#ffffff]"
+              style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 12px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04)" }}
+            >
+              <div className="flex border-b border-[#eceae3] bg-[#ffffff]" role="tablist">
+                {MOBILE_TABS.map(({ id, label, icon }) => {
                   const isActive = tab === id;
                   return (
                     <button
@@ -840,38 +915,41 @@ function ProfileContent() {
                       role="tab"
                       aria-selected={isActive}
                       onClick={() => setTab(id)}
-                      className={`relative flex-1 border-b-[3px] py-2.5 text-center text-[11px] font-semibold transition-colors cursor-pointer -mb-px ${
-                        isActive ? "" : "hover:bg-white/70"
+                      className={`relative flex flex-1 flex-col items-center gap-1 border-b-[3px] px-1 py-3 text-[11px] font-semibold transition-colors ${
+                        isActive ? "text-[#3d8a5c]" : "text-[#9a968f] hover:bg-[#fafaf8]"
                       }`}
-                      style={profileTabStyle(id, isActive)}
+                      style={{ borderBottomColor: isActive ? MG_GREEN : "transparent" }}
                     >
-                      <span
-                        className="mr-1 inline-block h-1.5 w-1.5 rounded-full align-middle"
-                        style={{ backgroundColor: border, opacity: isActive ? 1 : 0.45 }}
-                        aria-hidden
-                      />
+                      {icon(isActive)}
                       {label}
                     </button>
                   );
                 })}
               </div>
 
-              {tab === "quick" && <QuickItems sz={15} bare />}
+              {tab === "quick" && (
+                <div className="bg-[#ffffff]">
+                  <MobileQuickItems unreadCount={unreadCount} />
+                </div>
+              )}
               {tab === "join" && (
-                <JoinItems
-                  bare
-                  plannedCount={plannedCount}
-                  savedCount={savedCount}
-                  unreadCount={unreadCount}
-                />
+                <div className="bg-[#ffffff]">
+                  <MobileJoinItems
+                    plannedCount={plannedCount}
+                    savedCount={savedCount}
+                    unreadCount={unreadCount}
+                  />
+                </div>
               )}
               {tab === "organize" && (
-                <div className="flex flex-col gap-3 p-3">
+                <div className="flex flex-col gap-3 bg-[#ffffff] p-3">
                   <OrganizerSection isOrganizerRegistered={profile.isOrganizerRegistered} />
                   <SettingsSection />
                 </div>
               )}
             </div>
+
+            <MypageMobileFooterLinks />
           </div>
 
           {/* ── PC（4カラム・カード単位） ── */}
@@ -895,7 +973,7 @@ function ProfileContent() {
                       className="truncate text-[22px] font-normal leading-tight text-white"
                       style={{ fontFamily: "'Noto Serif JP', serif" }}
                     >
-                      {profile.displayName}
+                      {displayName}
                     </div>
                     <div className="mt-1 text-[13px] font-medium" style={{ color: "rgba(255,255,255,.82)" }}>
                       地域のイベントに参加してみよう

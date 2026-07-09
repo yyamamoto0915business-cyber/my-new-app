@@ -101,7 +101,7 @@ export default async function OrganizerLayout({
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col min-[900px]:overflow-y-auto">
           <OrganizerMainChrome variant={navVariant}>
-            <main className="relative z-[1] flex min-h-0 flex-1 flex-col px-4 py-2 pb-[calc(12px+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-3 sm:pb-4 min-[900px]:px-6 min-[900px]:py-3 min-[900px]:pb-4">
+            <main className="relative z-[1] flex min-h-0 flex-1 flex-col px-4 py-2 pb-[calc(12px+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-3 sm:pb-4 min-[900px]:px-6 min-[900px]:py-2.5 min-[900px]:pb-2.5">
               {children}
             </main>
           </OrganizerMainChrome>
