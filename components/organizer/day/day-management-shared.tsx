@@ -391,8 +391,8 @@ type ModalsProps = {
   onEmergencyChange: (v: string) => void;
   memoText: string;
   onMemoChange: (v: string) => void;
-  onSendMessage: (text: string) => void;
-  onSendEmergency: (text: string) => void;
+  onSendMessage: (text: string) => Promise<boolean>;
+  onSendEmergency: (text: string) => Promise<boolean>;
 };
 
 export function DayManagementModals({
@@ -413,6 +413,15 @@ export function DayManagementModals({
 }: ModalsProps) {
   const messageTrimmed = messageText.trim();
   const emergencyTrimmed = emergencyText.trim();
+  const [sending, setSending] = React.useState<"message" | "emergency" | null>(null);
+  const [sendError, setSendError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!modal) {
+      setSendError(null);
+      setSending(null);
+    }
+  }, [modal]);
   // QRモーダルと受付リストは動的インポートで読み込む
   const [QrModal, setQrModal] = React.useState<React.ComponentType<{ open: boolean; onClose: () => void; eventId: string; eventTitle: string }> | null>(null);
   const [ListModal, setListModal] = React.useState<React.ComponentType<{ open: boolean; onClose: () => void; eventId: string; eventTitle: string }> | null>(null);
@@ -478,17 +487,28 @@ export function DayManagementModals({
         />
         <button
           type="button"
-          disabled={!messageTrimmed}
-          onClick={() => {
-            if (!messageTrimmed) return;
-            onSendMessage(messageTrimmed);
-            onClose();
+          disabled={!messageTrimmed || sending !== null || !eventId}
+          onClick={async () => {
+            if (!messageTrimmed || sending) return;
+            setSending("message");
+            setSendError(null);
+            try {
+              const ok = await onSendMessage(messageTrimmed);
+              if (ok) onClose();
+            } catch (e) {
+              setSendError(e instanceof Error ? e.message : "送信に失敗しました");
+            } finally {
+              setSending(null);
+            }
           }}
           className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1976D2] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#1565c0] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Send size={15} />
-          送信する
+          {sending === "message" ? "送信中..." : "送信する"}
         </button>
+        {sendError && modal === "message" ? (
+          <p className="mt-2 text-center text-[12px] text-[#E53935]">{sendError}</p>
+        ) : null}
       </Modal>
 
       <Modal
@@ -511,17 +531,28 @@ export function DayManagementModals({
         />
         <button
           type="button"
-          disabled={!emergencyTrimmed}
-          onClick={() => {
-            if (!emergencyTrimmed) return;
-            onSendEmergency(emergencyTrimmed);
-            onClose();
+          disabled={!emergencyTrimmed || sending !== null || !eventId}
+          onClick={async () => {
+            if (!emergencyTrimmed || sending) return;
+            setSending("emergency");
+            setSendError(null);
+            try {
+              const ok = await onSendEmergency(emergencyTrimmed);
+              if (ok) onClose();
+            } catch (e) {
+              setSendError(e instanceof Error ? e.message : "送信に失敗しました");
+            } finally {
+              setSending(null);
+            }
           }}
           className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#E53935] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#c62828] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <AlertTriangle size={15} />
-          緊急連絡を送信する
+          {sending === "emergency" ? "送信中..." : "緊急連絡を送信する"}
         </button>
+        {sendError && modal === "emergency" ? (
+          <p className="mt-2 text-center text-[12px] text-[#E53935]">{sendError}</p>
+        ) : null}
       </Modal>
 
       <Modal open={modal === "memo"} onClose={onClose} title="記録・メモ">

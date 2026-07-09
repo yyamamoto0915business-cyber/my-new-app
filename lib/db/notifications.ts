@@ -98,3 +98,65 @@ export async function markAllAsRead(
 
   return !error;
 }
+
+export type EventParticipantNotifyKind = "message" | "emergency";
+
+export async function fetchEventParticipantUserIds(
+  supabase: SupabaseClient,
+  eventId: string
+): Promise<string[]> {
+  const [{ data: participants }, { data: checkins }] = await Promise.all([
+    supabase
+      .from("event_participants")
+      .select("user_id")
+      .eq("event_id", eventId)
+      .not("status", "eq", "declined"),
+    supabase
+      .from("event_checkins")
+      .select("user_id")
+      .eq("event_id", eventId)
+      .not("user_id", "is", null),
+  ]);
+
+  const ids = new Set<string>();
+  for (const row of participants ?? []) {
+    if (row.user_id) ids.add(row.user_id);
+  }
+  for (const row of checkins ?? []) {
+    if (row.user_id) ids.add(row.user_id);
+  }
+  return Array.from(ids);
+}
+
+export async function notifyEventParticipants(
+  supabase: SupabaseClient,
+  input: {
+    eventId: string;
+    eventTitle: string;
+    kind: EventParticipantNotifyKind;
+    content: string;
+    excludeUserId?: string;
+  }
+): Promise<{ sent: number; total: number }> {
+  const recipientIds = await fetchEventParticipantUserIds(supabase, input.eventId);
+  const targets = input.excludeUserId
+    ? recipientIds.filter((id) => id !== input.excludeUserId)
+    : recipientIds;
+
+  const title =
+    input.kind === "emergency"
+      ? `【重要】${input.eventTitle}`
+      : `${input.eventTitle}からのお知らせ`;
+  const link = `/events/${input.eventId}`;
+
+  let sent = 0;
+  for (const userId of targets) {
+    const notif = await createNotification(supabase, userId, "system_message", title, {
+      body: input.content,
+      link,
+    });
+    if (notif) sent++;
+  }
+
+  return { sent, total: targets.length };
+}

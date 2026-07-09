@@ -12,7 +12,6 @@ import { PcTopNav } from "@/components/navigation/pc-top-nav";
 import { ImmersiveAwareFooter } from "@/components/navigation/immersive-aware-footer";
 import { OrganizerProGlobalSyncer } from "@/components/organizer/OrganizerProGlobalSyncer";
 import { AbortErrorRecovery } from "@/components/abort-error-recovery";
-import { NavigationProgress } from "@/components/navigation/NavigationProgress";
 import "./globals.css";
 import { Geist, Noto_Serif_JP, Shippori_Mincho } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -95,7 +94,6 @@ export default function RootLayout({
     <html lang="ja" className={cn("font-sans", geist.variable, notoSerifJP.variable, shipporiMincho.variable)}>
       <body className="font-sans antialiased min-h-screen bg-[var(--mg-paper)]">
         <LanguageProvider>
-          <NavigationProgress />
           <AbortErrorRecovery />
           <OrganizerProGlobalSyncer />
           <SplashScreen />

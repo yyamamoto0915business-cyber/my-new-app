@@ -97,14 +97,40 @@ export function DayManagementHub() {
   const openModal = (type: ModalType) => setModal(type);
   const closeModal = () => setModal(null);
 
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = async (text: string): Promise<boolean> => {
+    if (!eventId) throw new Error("イベントを選択してください");
+
+    const res = await fetchWithTimeout(`/api/organizer/events/${eventId}/notify-participants`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "message", content: text }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(typeof data.error === "string" ? data.error : "送信に失敗しました");
+    }
+
     setNotices((prev) => [{ type: "info", text, time: formatNoticeTime() }, ...prev]);
     setMessageText("");
+    return true;
   };
 
-  const handleSendEmergency = (text: string) => {
+  const handleSendEmergency = async (text: string): Promise<boolean> => {
+    if (!eventId) throw new Error("イベントを選択してください");
+
+    const res = await fetchWithTimeout(`/api/organizer/events/${eventId}/notify-participants`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "emergency", content: text }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(typeof data.error === "string" ? data.error : "送信に失敗しました");
+    }
+
     setNotices((prev) => [{ type: "urg", text, time: formatNoticeTime() }, ...prev]);
     setEmergencyText("");
+    return true;
   };
 
   const displayEvent = emptyMode ? EMPTY_DAY_EVENT : event;
