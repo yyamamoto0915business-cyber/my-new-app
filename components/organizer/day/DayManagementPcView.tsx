@@ -127,7 +127,7 @@ export function DayManagementPcView({
     },
     {
       key: "announce",
-      label: "アナウンス送信",
+      label: "スタッフに送信",
       icon: <Megaphone size={15} className="text-[#2D7A4F]" />,
       iconBg: "bg-[#EAF4ED]",
     },

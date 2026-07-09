@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useUnreadCount } from "@/hooks/use-unread-count";
 import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
+import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 import { cn } from "@/lib/utils";
 import { prefetchMypageSummary } from "@/lib/prefetch-mypage-summary";
 
@@ -83,7 +84,7 @@ export function MobileBottomNav() {
   const showBadge = (icon: string) =>
     (icon === "profile" || icon === "messages") && unreadCount > 0;
 
-  if (isMessagesConversationRoute(pathname)) return null;
+  if (isMessagesConversationRoute(pathname) || isProfileEditRoute(pathname)) return null;
 
   return (
     <nav

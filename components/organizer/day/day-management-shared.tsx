@@ -454,7 +454,7 @@ export function DayManagementModals({
         </Modal>
       )}
 
-      <Modal open={modal === "announce"} onClose={onClose} title="アナウンス送信">
+      <Modal open={modal === "announce"} onClose={onClose} title="スタッフに送信">
         <p className="mb-3 text-[13px] text-[#566358]">
           参加者全員にアナウンスを送信します。重要な変更やお知らせにご利用ください。
         </p>

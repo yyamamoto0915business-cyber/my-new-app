@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { getMobileTopHeaderHeightPx } from "@/components/navigation/mobile-top-header";
 import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
+import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 import { isAuthRoute } from "@/lib/is-auth-route";
 
 type Props = {
@@ -22,7 +23,8 @@ export function MobileMainShell({ children }: Props) {
   const eventDetail = isEventDetailRoute(pathname ?? "");
   const chatConversation = isMessagesConversationRoute(pathname ?? "");
   /** モバイルでグローバル上・下を外し、画面専用UIに任せる */
-  const immersiveMobile = eventDetail || chatConversation;
+  const profileEdit = isProfileEditRoute(pathname ?? "");
+  const immersiveMobile = eventDetail || chatConversation || profileEdit;
   const topHeaderH = getMobileTopHeaderHeightPx(pathname ?? "");
   const organizerArea = pathname?.startsWith("/organizer") ?? false;
   const authRoute = isAuthRoute(pathname ?? "");
@@ -31,12 +33,14 @@ export function MobileMainShell({ children }: Props) {
     ? "min-[900px]:pt-0"
     : "min-[900px]:pt-[var(--mg-pc-top-nav-h)]";
 
-  const sidePad = authRoute
+  const sidePad = authRoute || immersiveMobile
     ? "min-[900px]:pl-0 max-[899px]:bg-transparent"
     : "sm:pl-20 min-[900px]:pl-20";
 
   const mobileShellLayoutClass = immersiveMobile
-    ? "flex min-h-screen flex-col pt-0 pb-0 sm:pb-0"
+    ? profileEdit
+      ? "flex h-[calc(100dvh-var(--mg-mobile-top-header-h,88px))] max-h-[calc(100dvh-var(--mg-mobile-top-header-h,88px))] min-h-0 flex-col overflow-hidden pt-0 pb-0 sm:pb-0"
+      : "flex min-h-screen flex-col pt-0 pb-0 sm:pb-0"
     : authRoute
       ? "flex h-[100dvh] min-h-0 flex-col overflow-hidden max-[899px]:pb-0 min-[640px]:max-[899px]:pt-0 sm:pb-0"
       : "flex min-h-screen flex-col max-[639px]:pb-[calc(88px+env(safe-area-inset-bottom,0px))] min-[640px]:max-[899px]:pt-0 sm:pb-0";

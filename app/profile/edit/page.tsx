@@ -196,15 +196,15 @@ function StepInd({ steps, current, mode, onGo }: {
   const activeCircle = mode === "p" ? "bg-[#2B3A6B] text-white" : "bg-[#c8a84b] text-white";
   const activeLabel = mode === "p" ? "text-[#2B3A6B] font-[500]" : "text-[#86620a] font-[500]";
   return (
-    <div className="border-b border-[#DEDAD2] px-[14px] pt-[7px] pb-[9px] flex items-center flex-shrink-0 bg-white">
+    <div className="border-b border-[#DEDAD2] px-2 min-[380px]:px-3 pt-[7px] pb-[9px] flex items-center flex-shrink-0 bg-white overflow-x-auto">
       {steps.map((label, i) => {
         const step = i + 1;
         const done = step < current;
         const active = step === current;
         return (
-          <div key={step} className="flex items-center flex-1">
-            <div className="flex flex-col items-center gap-[3px] cursor-pointer" onClick={() => onGo(step)}>
-              <div className={["w-[24px] h-[24px] rounded-full flex items-center justify-center text-[10px] font-[700] transition-all",
+          <div key={step} className="flex items-center flex-1 min-w-[68px]">
+            <div className="flex flex-col items-center gap-[3px] cursor-pointer w-full" onClick={() => onGo(step)}>
+              <div className={["w-[22px] h-[22px] min-[380px]:w-[24px] min-[380px]:h-[24px] rounded-full flex items-center justify-center text-[10px] font-[700] transition-all",
                 done ? "bg-[#4fa82a] text-white" : active ? activeCircle : "bg-[#F5F4EF] text-[#8c8a84] border-[1.5px] border-[#DEDAD2]"].join(" ")}>
                 {done ? (
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -212,12 +212,12 @@ function StepInd({ steps, current, mode, onGo }: {
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={active ? "#fff" : "#8c8a84"} strokeWidth="2.5" strokeLinecap="round"><polyline points="9 11 12 14 22 4" /></svg>
                 ) : step}
               </div>
-              <div className={["text-[8px] whitespace-nowrap", done ? "text-[#4fa82a]" : active ? activeLabel : "text-[#8c8a84]"].join(" ")}>
+              <div className={["text-[7px] min-[380px]:text-[8px] text-center leading-tight max-w-full px-0.5", done ? "text-[#4fa82a]" : active ? activeLabel : "text-[#8c8a84]"].join(" ")}>
                 {label}
               </div>
             </div>
             {i < steps.length - 1 && (
-              <div className={["flex-1 h-[1.5px] mx-[3px] mb-[13px]", done ? "bg-[#4fa82a]" : "bg-[#DEDAD2]"].join(" ")} />
+              <div className={["flex-1 h-[1.5px] mx-[2px] min-[380px]:mx-[3px] mb-[13px] min-w-[8px]", done ? "bg-[#4fa82a]" : "bg-[#DEDAD2]"].join(" ")} />
             )}
           </div>
         );
@@ -727,7 +727,7 @@ export default function ProfileEditPage() {
   const mobileTitle = tab === "participant" ? pStepTitles[pStep - 1] : oStepTitles[oStep - 1];
 
   return (
-    <div className="-mx-4 -mt-3 min-[900px]:mx-0 min-[900px]:mt-0 min-[900px]:flex min-[900px]:h-full min-[900px]:min-h-0 min-[900px]:max-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px))] min-[900px]:flex-1 min-[900px]:flex-col min-[900px]:overflow-hidden min-[900px]:w-full bg-[#EDECE7]">
+    <div className="mg-profile-mobile-page flex min-h-0 w-full flex-1 flex-col min-[900px]:mx-0 min-[900px]:mt-0 min-[900px]:flex min-[900px]:h-full min-[900px]:min-h-0 min-[900px]:max-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px))] min-[900px]:flex-1 min-[900px]:flex-col min-[900px]:overflow-hidden min-[900px]:w-full bg-[#EDECE7]">
       {/* Hidden file inputs */}
       <input ref={pFileRef} type="file" accept="image/*" className="hidden" onChange={handlePAvatarFile} />
       <input ref={pCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePAvatarFile} />
@@ -738,9 +738,9 @@ export default function ProfileEditPage() {
       <input ref={orgGalleryRef} type="file" accept="image/*" multiple className="hidden" onChange={handleOrgGalleryFiles} />
 
       {/* ══ MOBILE ══ */}
-      <div className="min-[900px]:hidden flex flex-col min-h-[calc(100dvh-var(--mg-mobile-top-header-h,46px))]">
+      <div className="flex min-[900px]:hidden flex-1 min-h-0 flex-col overflow-hidden">
         {/* Sticky header */}
-        <div className="sticky top-[var(--mg-mobile-top-header-h,46px)] z-[29] bg-white border-b border-[#DEDAD2] px-[14px] py-[9px] flex items-center gap-[9px] flex-shrink-0">
+        <div className="sticky top-0 z-[29] bg-white border-b border-[#DEDAD2] px-3 py-2 flex items-center gap-2 flex-shrink-0">
           <button type="button"
             onClick={() => {
               if (tab === "participant" && pStep > 1) setPStep(s => (s - 1) as PStep);
@@ -752,11 +752,11 @@ export default function ProfileEditPage() {
               <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
             </svg>
           </button>
-          <div className="text-[14px] font-[600] flex-1">{mobileTitle}</div>
+          <div className="text-[14px] font-[600] flex-1 min-w-0 truncate">{mobileTitle}</div>
           <button type="button"
             onClick={tab === "participant" ? saveParticipant : saveOrganizer}
             disabled={mobileSaveDisabled}
-            className={["px-[16px] py-[7px] rounded-[9px] text-[12px] font-[600] text-white flex-shrink-0 disabled:opacity-50",
+            className={["px-3 min-[380px]:px-4 py-[7px] rounded-[9px] text-[11px] min-[380px]:text-[12px] font-[600] text-white flex-shrink-0 disabled:opacity-50",
               tab === "participant" ? "bg-[#4fa82a]" : "bg-[#c8a84b]"].join(" ")}>
             保存する
           </button>
@@ -766,14 +766,14 @@ export default function ProfileEditPage() {
         <div className="bg-white border-b border-[#DEDAD2] flex flex-shrink-0">
           {(["participant", "organizer"] as const).map(t => (
             <button key={t} type="button" onClick={() => setTab(t)}
-              className={["flex-1 py-[9px] text-center text-[12px] font-[500] border-b-[2px] transition-all",
+              className={["flex-1 py-2 min-[380px]:py-[9px] text-center text-[11px] min-[380px]:text-[12px] font-[500] border-b-[2px] transition-all",
                 tab === t
                   ? t === "participant" ? "text-[#2B3A6B] border-[#2B3A6B]" : "text-[#86620a] border-[#c8a84b]"
                   : "text-[#8c8a84] border-transparent"].join(" ")}>
               {t === "participant" ? (
-                <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="inline mr-1 align-middle"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>参加者プロフィール</>
+                <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="inline mr-1 align-middle"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg><span className="min-[380px]:hidden">参加者</span><span className="hidden min-[380px]:inline">参加者プロフィール</span></>
               ) : (
-                <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="inline mr-1 align-middle"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 00-4 0v2M8 7V5a2 2 0 00-4 0v2" /></svg>主催者プロフィール</>
+                <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="inline mr-1 align-middle"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 00-4 0v2M8 7V5a2 2 0 00-4 0v2" /></svg><span className="min-[380px]:hidden">主催者</span><span className="hidden min-[380px]:inline">主催者プロフィール</span></>
               )}
             </button>
           ))}
@@ -785,10 +785,10 @@ export default function ProfileEditPage() {
           : <StepInd steps={oStepLabels} current={oStep} mode="o" onGo={s => setOStep(s as OStep)} />}
 
         {/* Step content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
           {/* Participant steps */}
           {tab === "participant" && pStep === 1 && (
-            <div className="px-[13px] pt-[13px]">
+            <div className="px-3 pt-3 pb-2">
               <MCard>
                 <MCardTitle><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5060b0" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>基本情報</MCardTitle>
                 <MCardSub>表示名とメールアドレスを確認・編集できます</MCardSub>
@@ -807,7 +807,7 @@ export default function ProfileEditPage() {
             </div>
           )}
           {tab === "participant" && pStep === 2 && (
-            <div className="px-[13px] pt-[13px]">
+            <div className="px-3 pt-3 pb-2">
               <MCard>
                 <MCardTitle><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a07a28" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" /></svg>アイコン設定</MCardTitle>
                 <MCardSub>参加者用・主催者用で別々に設定できます（任意）</MCardSub>
@@ -818,7 +818,7 @@ export default function ProfileEditPage() {
             </div>
           )}
           {tab === "participant" && pStep === 3 && (
-            <div className="px-[13px] pt-[13px]">
+            <div className="px-3 pt-3 pb-2">
               <MCard>
                 <MCardTitle><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3a8a25" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>現在の表示モード</MCardTitle>
                 <MCardSub>参加者と主催者でアイコンが切り替わります</MCardSub>
@@ -844,7 +844,7 @@ export default function ProfileEditPage() {
             </div>
           )}
           {tab === "participant" && pStep === 4 && (
-            <div className="px-[13px] pt-[13px]">
+            <div className="px-3 pt-3 pb-2">
               <MCard>
                 <div className="flex justify-between items-center mb-[10px]">
                   <span className="text-[12px] font-[600] text-[#8c8a84]">基本情報</span>
@@ -879,7 +879,7 @@ export default function ProfileEditPage() {
 
           {/* Organizer steps */}
           {tab === "organizer" && !isOrganizer && (
-            <div className="px-[13px] pt-[13px]">
+            <div className="px-3 pt-3 pb-2">
               <MCard>
                 <MCardTitle>主催者登録が必要です</MCardTitle>
                 <MCardSub>主催者プロフィールを編集するには、先に主催者登録を完了してください。</MCardSub>
@@ -887,7 +887,7 @@ export default function ProfileEditPage() {
             </div>
           )}
           {tab === "organizer" && isOrganizer && oStep === 1 && (
-            <div className="px-[13px] pt-[13px]">
+            <div className="px-3 pt-3 pb-2">
               <MCard>
                 <MCardTitle color="#86620a"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>紹介文</MCardTitle>
                 <MCardSub>信頼感・雰囲気・活動内容が伝わるように記載できます</MCardSub>
@@ -900,7 +900,7 @@ export default function ProfileEditPage() {
             </div>
           )}
           {tab === "organizer" && isOrganizer && oStep === 2 && (
-            <div className="px-[13px] pt-[13px]">
+            <div className="px-3 pt-3 pb-2">
               <MCard>
                 <MCardTitle color="#86620a"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>画像</MCardTitle>
                 <MCardSub>画像はアップロード後すぐにプレビューできます（未設定でもOK）</MCardSub>
@@ -940,7 +940,7 @@ export default function ProfileEditPage() {
             </div>
           )}
           {tab === "organizer" && isOrganizer && oStep === 3 && (
-            <div className="px-[13px] pt-[13px]">
+            <div className="px-3 pt-3 pb-2">
               <MCard>
                 <MCardTitle color="#86620a"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>SNS / 外部リンク</MCardTitle>
                 <MCardSub>すべて任意です</MCardSub>
@@ -978,7 +978,7 @@ export default function ProfileEditPage() {
             </div>
           )}
           {tab === "organizer" && isOrganizer && oStep === 4 && (
-            <div className="px-[13px] pt-[13px]">
+            <div className="px-3 pt-3 pb-2">
               {[
                 { label: "紹介文", val: shortBio || orgBio ? "入力済み" : "一言紹介・詳細紹介 — 未入力", onEdit: () => setOStep(1) },
                 { label: "画像", val: coverImageUrl || orgAvatarUrl ? "設定済み" : "カバー・プロフィール画像 — 未設定", onEdit: () => setOStep(2) },
@@ -1000,7 +1000,7 @@ export default function ProfileEditPage() {
         </div>
 
         {/* Footer nav */}
-        <div className="bg-white border-t border-[#DEDAD2] px-[13px] pt-[10px] pb-[14px] flex-shrink-0">
+        <div className="bg-white border-t border-[#DEDAD2] px-3 pt-2.5 pb-[max(12px,env(safe-area-inset-bottom,0px))] flex-shrink-0">
           <div className="flex gap-[8px]">
             {((tab === "participant" && pStep > 1) || (tab === "organizer" && oStep > 1)) && (
               <button type="button"
