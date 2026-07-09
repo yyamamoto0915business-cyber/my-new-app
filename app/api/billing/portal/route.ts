@@ -45,10 +45,17 @@ export async function POST(request: NextRequest) {
   const stripe = new Stripe(stripeKey);
   const appUrl = getAppUrl();
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer: organizer.stripe_customer_id,
-    return_url: `${appUrl}/organizer/settings/plan`,
-  });
-
-  return NextResponse.json({ url: session.url });
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: organizer.stripe_customer_id,
+      return_url: `${appUrl}/organizer/settings/plan`,
+    });
+    return NextResponse.json({ url: session.url });
+  } catch (err: unknown) {
+    console.error("[api/billing/portal]", err);
+    if (err instanceof Stripe.errors.StripeError) {
+      return NextResponse.json({ error: `決済管理ページを開けませんでした（${err.message}）` }, { status: 502 });
+    }
+    return NextResponse.json({ error: "決済管理ページを開けませんでした。しばらく経ってから再度お試しください。" }, { status: 500 });
+  }
 }
