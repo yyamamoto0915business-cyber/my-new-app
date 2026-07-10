@@ -608,7 +608,7 @@ export function EventPrimaryActions({
 
   return (
     <section id="event-cta" className="space-y-4">
-      <div className="space-y-4 sm:hidden">
+      <div className="space-y-4 min-[900px]:hidden">
         {participationMode === "required" && (
           <>
             {applied ? (
@@ -717,7 +717,7 @@ export function EventPrimaryActions({
         )}
       </div>
 
-      <div className="hidden space-y-2 min-[900px]:hidden sm:block">
+      <div className="hidden">
         {participationMode === "required" && (
           <>
             {applied ? (
@@ -833,7 +833,7 @@ export function EventPrimaryActions({
         )}
       </div>
 
-      <div className="hidden sm:block min-[900px]:hidden">{renderSubActions()}</div>
+      <div className="hidden">{renderSubActions()}</div>
     </section>
   );
 }

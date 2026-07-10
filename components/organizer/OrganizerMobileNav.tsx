@@ -88,7 +88,7 @@ export default function OrganizerMobileNav({
   );
 
   return (
-    <div className="shrink-0 md:hidden">
+    <div className="shrink-0 min-[900px]:hidden">
       <Sheet>
         <SheetTrigger
           render={

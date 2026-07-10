@@ -164,7 +164,7 @@ export function EventBottomActionBar({
 
   return (
     <div
-      className="fixed inset-x-0 z-40 border-t border-[var(--mg-line)] bg-[var(--mg-paper)]/95 shadow-[0_-6px_24px_rgba(15,23,42,0.08)] backdrop-blur-md supports-[backdrop-filter]:bg-[var(--mg-paper)]/90 sm:hidden"
+      className="fixed inset-x-0 z-40 border-t border-[var(--mg-line)] bg-[var(--mg-paper)]/95 shadow-[0_-6px_24px_rgba(15,23,42,0.08)] backdrop-blur-md supports-[backdrop-filter]:bg-[var(--mg-paper)]/90 min-[900px]:hidden"
       style={{
         bottom: `calc(${MOBILE_BOTTOM_NAV_CLEARANCE_PX}px + env(safe-area-inset-bottom, 0px))`,
       }}

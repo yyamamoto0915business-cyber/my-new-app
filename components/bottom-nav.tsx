@@ -118,7 +118,7 @@ function NavLink({
   );
 }
 
-/** PC用6項目サイドナビ（sm以上表示・モバイル時は非表示） */
+/** PC用6項目サイドナビ（900px以上表示・モバイル時は非表示） */
 export function BottomNav() {
   const pathname = usePathname();
   const unreadCount = useUnreadCount(true);
@@ -139,7 +139,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 top-0 right-auto z-50 hidden h-screen w-20 flex-col items-center border-r border-[#e8ebe6] bg-white py-5 sm:flex"
+      className="fixed bottom-0 left-0 top-0 right-auto z-50 hidden h-screen w-20 flex-col items-center border-r border-[#e8ebe6] bg-white py-5 min-[900px]:flex"
       aria-label="PCナビゲーション"
     >
       <div className="flex w-full flex-col items-center justify-start gap-0">

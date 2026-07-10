@@ -461,7 +461,7 @@ function VolunteerPageContent() {
       </div>
 
       {/* ─── Mobile (below 900px) ─── */}
-      <div className="mg-volunteer-mobile-page min-[900px]:hidden min-h-screen w-full space-y-1.5 px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-0.5">
+      <div className="mg-volunteer-mobile-page min-[900px]:hidden min-h-screen w-full space-y-1.5 bg-[#f7fbf8] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-0.5">
         <MobileVolunteerHero
           keyword={mobileKeyword}
           prefecture={prefecture}

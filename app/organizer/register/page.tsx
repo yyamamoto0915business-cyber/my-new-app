@@ -242,7 +242,7 @@ export default function OrganizerRegisterPage() {
           )}
 
           {/* デスクトップ CTA */}
-          <div className="mt-8 hidden flex-col gap-4 border-t border-slate-100 pt-8 sm:flex">
+          <div className="mt-8 hidden flex-col gap-4 border-t border-slate-100 pt-8 min-[900px]:flex">
             <div className="flex flex-row-reverse flex-wrap justify-end gap-3">
               <button
                 type="submit"
@@ -267,12 +267,12 @@ export default function OrganizerRegisterPage() {
           </div>
         </div>
 
-        <div className="h-32 sm:hidden" aria-hidden />
+        <div className="h-32 min-[900px]:hidden" aria-hidden />
       </form>
 
       {/* スマホ固定 CTA（下部ナビの上） */}
       <div
-        className="fixed inset-x-0 z-40 border-t border-slate-200/80 bg-[var(--mg-paper)]/96 px-5 py-3 shadow-[0_-6px_20px_rgba(15,23,42,0.06)] backdrop-blur-md sm:hidden"
+        className="fixed inset-x-0 z-40 border-t border-slate-200/80 bg-[var(--mg-paper)]/96 px-5 py-3 shadow-[0_-6px_20px_rgba(15,23,42,0.06)] backdrop-blur-md min-[900px]:hidden"
         style={{
           bottom: "calc(72px + env(safe-area-inset-bottom, 0px))",
         }}

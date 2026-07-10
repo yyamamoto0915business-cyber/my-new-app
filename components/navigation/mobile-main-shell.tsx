@@ -35,15 +35,15 @@ export function MobileMainShell({ children }: Props) {
 
   const sidePad = authRoute || immersiveMobile
     ? "min-[900px]:pl-0 max-[899px]:bg-transparent"
-    : "sm:pl-20 min-[900px]:pl-20";
+    : "min-[900px]:pl-20";
 
   const mobileShellLayoutClass = immersiveMobile
     ? profileEdit
-      ? "flex h-[calc(100dvh-var(--mg-mobile-top-header-h,88px))] max-h-[calc(100dvh-var(--mg-mobile-top-header-h,88px))] min-h-0 flex-col overflow-hidden pt-0 pb-0 sm:pb-0"
-      : "flex min-h-screen flex-col pt-0 pb-0 sm:pb-0"
+      ? "flex h-[calc(100dvh-var(--mg-mobile-top-header-h,88px))] max-h-[calc(100dvh-var(--mg-mobile-top-header-h,88px))] min-h-0 flex-col overflow-hidden pt-0 pb-0 min-[900px]:pb-0"
+      : "flex min-h-screen flex-col pt-0 pb-0 min-[900px]:pb-0"
     : authRoute
-      ? "flex h-[100dvh] min-h-0 flex-col overflow-hidden max-[899px]:pb-0 min-[640px]:max-[899px]:pt-0 sm:pb-0"
-      : "flex min-h-screen flex-col max-[639px]:pb-[calc(88px+env(safe-area-inset-bottom,0px))] min-[640px]:max-[899px]:pt-0 sm:pb-0";
+      ? "flex h-[100dvh] min-h-0 flex-col overflow-hidden max-[899px]:pb-0 min-[900px]:pb-0"
+      : "flex min-h-screen flex-col max-[899px]:pb-[calc(88px+env(safe-area-inset-bottom,0px))] min-[900px]:pb-0";
 
   return (
     <div

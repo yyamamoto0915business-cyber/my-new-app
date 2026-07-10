@@ -11,7 +11,7 @@ export function ImmersiveAwareFooter() {
   if (pathname?.startsWith("/profile/edit")) return null;
   if (pathname?.startsWith("/messages")) {
     return (
-      <div className="hidden sm:block">
+      <div className="hidden min-[900px]:block">
         <SiteFooter />
       </div>
     );
@@ -21,7 +21,7 @@ export function ImmersiveAwareFooter() {
   // チェックインはモバイル下部ナビ専用画面のためフッターを出さない
   if (pathname?.startsWith("/checkin")) {
     return (
-      <div className="hidden sm:block">
+      <div className="hidden min-[900px]:block">
         <SiteFooter />
       </div>
     );
@@ -37,7 +37,7 @@ export function ImmersiveAwareFooter() {
     );
   }
   return (
-    <div className="sm:block">
+    <div className="hidden min-[900px]:block">
       <SiteFooter />
     </div>
   );

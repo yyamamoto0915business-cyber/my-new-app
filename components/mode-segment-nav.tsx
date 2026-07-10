@@ -34,7 +34,7 @@ export function ModeSegmentNav() {
 
   return (
     <nav
-      className="fixed left-0 right-0 top-0 z-40 list-none bg-gradient-to-b from-white/90 to-transparent pt-[env(safe-area-inset-top,0px)] pb-2 backdrop-blur-md before:content-none after:content-none sm:hidden dark:from-[var(--background)]/85 dark:to-transparent"
+      className="fixed left-0 right-0 top-0 z-40 list-none bg-gradient-to-b from-white/90 to-transparent pt-[env(safe-area-inset-top,0px)] pb-2 backdrop-blur-md before:content-none after:content-none min-[900px]:hidden dark:from-[var(--background)]/85 dark:to-transparent"
       aria-label="モード切替"
     >
       <div className="mx-auto w-full max-w-screen-sm px-0 sm:max-w-lg">

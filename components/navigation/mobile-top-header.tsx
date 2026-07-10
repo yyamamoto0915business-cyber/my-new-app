@@ -81,7 +81,7 @@ export function MobileTopHeader({ className }: Props) {
     <header
       ref={headerRef}
       className={cn(
-        "sticky top-0 z-40 sm:hidden",
+        "sticky top-0 z-40 min-[900px]:hidden",
         organizerArea
           ? "bg-white pt-[env(safe-area-inset-top,0px)] pb-0 shadow-[0_1px_0_rgba(15,23,42,0.06)]"
           : authArea

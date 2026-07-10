@@ -229,7 +229,7 @@ export default async function EventDetailPage({ params }: Props) {
           プレビュー表示です。未公開のため、一般ユーザーには表示されません。
         </div>
       ) : null}
-      <div className="mx-auto w-full max-w-2xl max-sm:max-w-none max-sm:px-0 max-sm:py-0 px-4 py-4 min-[900px]:max-w-6xl min-[900px]:px-6 min-[900px]:py-4">
+      <div className="mx-auto w-full max-w-2xl max-[899px]:max-w-none max-[899px]:px-0 max-[899px]:py-0 px-4 py-4 min-[900px]:max-w-6xl min-[900px]:px-6 min-[900px]:py-4">
         <Breadcrumb
           items={[
             { label: "ホーム", href: "/" },

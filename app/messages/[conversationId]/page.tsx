@@ -267,7 +267,7 @@ export default function ConversationPage() {
         </div>
         <div style={{ display: "flex", gap: 6, paddingRight: 14, alignItems: "center" }}>
           {/* Back button (mobile) */}
-          <Link href="/messages" className="sm:hidden"
+          <Link href="/messages" className="min-[900px]:hidden"
             style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.t2, padding: 0, marginRight: 4, textDecoration: "none" }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ width: 15, height: 15, strokeWidth: 2 }}><polyline points="15 18 9 12 15 6"/></svg>
             戻る
@@ -361,7 +361,7 @@ export default function ConversationPage() {
             onChange={(e) => { setContent(e.target.value); if (error) setError(null); }}
             onKeyDown={handleKeyDown}
             onFocus={() => {
-              if (typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches) return;
+              if (typeof window !== "undefined" && window.matchMedia("(min-width: 900px)").matches) return;
               requestAnimationFrame(() => inputRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
             }}
             placeholder="メッセージを入力…"

@@ -18,22 +18,22 @@ export function MobileCtaBanners() {
           sizes="50vw"
         />
         <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#eef6f0]/97 via-[#eef6f0]/65 to-transparent"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#eef6f0]/97 via-[#eef6f0]/72 to-transparent"
           aria-hidden
         />
-        <div className="relative z-10 flex flex-col justify-center p-2 pr-[38%]">
+        <div className="relative z-10 flex flex-col justify-center p-2 pr-[28%]">
           <h3
-            className="text-[11px] font-semibold leading-snug text-[#163828]"
+            className="whitespace-nowrap text-[10px] font-semibold leading-none text-[#163828]"
             style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
           >
             地域で手伝いたい方へ
           </h3>
-          <p className="mt-0.5 line-clamp-2 text-[8px] leading-snug text-[#3d5c48]">
+          <p className="mt-1 whitespace-nowrap text-[8px] leading-none text-[#3d5c48]">
             募集中のボランティア活動を探せます
           </p>
           <Link
             href="/volunteer"
-            className="mt-1.5 inline-flex w-fit items-center rounded-full bg-[#2f6b4f] px-2.5 py-1 text-[9px] font-semibold text-white"
+            className="mt-1.5 inline-flex w-fit items-center whitespace-nowrap rounded-full bg-[#2f6b4f] px-2 py-1 text-[8px] font-semibold text-white"
           >
             ボランティアを探す →
           </Link>
@@ -49,22 +49,22 @@ export function MobileCtaBanners() {
           sizes="50vw"
         />
         <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#fef8e8]/97 via-[#fef8e8]/65 to-transparent"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#fef8e8]/97 via-[#fef8e8]/72 to-transparent"
           aria-hidden
         />
-        <div className="relative z-10 flex flex-col justify-center p-2 pr-[38%]">
+        <div className="relative z-10 flex flex-col justify-center p-2 pr-[28%]">
           <h3
-            className="text-[11px] font-semibold leading-snug text-[#3a2810]"
+            className="whitespace-nowrap text-[10px] font-semibold leading-none text-[#3a2810]"
             style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
           >
             イベントを主催したい方へ
           </h3>
-          <p className="mt-0.5 line-clamp-2 text-[8px] leading-snug text-[#5a4818]">
+          <p className="mt-1 whitespace-nowrap text-[8px] leading-none text-[#5a4818]">
             掲載・募集・参加者管理ができます
           </p>
           <Link
             href="/organizer"
-            className="mt-1.5 inline-flex w-fit items-center rounded-full bg-[#c8a030] px-2.5 py-1 text-[9px] font-semibold text-white"
+            className="mt-1.5 inline-flex w-fit items-center whitespace-nowrap rounded-full bg-[#c8a030] px-2 py-1 text-[8px] font-semibold text-white"
           >
             主催者になる →
           </Link>

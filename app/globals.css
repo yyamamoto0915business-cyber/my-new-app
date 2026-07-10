@@ -238,11 +238,11 @@ a[role="button"]:not([aria-disabled="true"]) {
   background-color: #f5f8f5;
 }
 
-/* ボランティア募集モバイル — body::before の幾何学パターンを透けさせない */
+/* ボランティア募集モバイル — ホームと同じライト背景 */
 .mg-volunteer-mobile-page {
   position: relative;
   z-index: 1;
-  background-color: #f5f8f5;
+  background-color: #f7fbf8;
 }
 
 /* マイページモバイル — body::before の幾何学パターンを透けさせない */

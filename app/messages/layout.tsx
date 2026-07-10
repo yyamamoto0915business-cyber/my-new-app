@@ -314,13 +314,13 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
 
   return (
     <div
-      className="ms-shell max-sm:h-[calc(100dvh-var(--mg-mobile-top-header-h,46px)-env(safe-area-inset-top,0px)-calc(72px+env(safe-area-inset-bottom,0px)))] sm:h-[100dvh]"
+      className="ms-shell max-[899px]:h-[calc(100dvh-var(--mg-mobile-top-header-h,46px)-env(safe-area-inset-top,0px)-calc(72px+env(safe-area-inset-bottom,0px)))] min-[900px]:h-[100dvh]"
       style={{ display: "flex", overflow: "hidden", background: C.bg, fontFamily: "'Noto Sans JP', sans-serif" }}
     >
       {/* Sidebar */}
       <aside
         style={{ background: C.surface, borderRight: `1px solid ${C.border}`, flexDirection: "column", overflow: "hidden" }}
-        className={sidebarHidden ? "hidden sm:flex sm:w-[304px] sm:shrink-0" : "flex flex-col w-full sm:w-[304px] sm:shrink-0"}
+        className={sidebarHidden ? "hidden min-[900px]:flex min-[900px]:w-[304px] min-[900px]:shrink-0" : "flex flex-col w-full min-[900px]:w-[304px] min-[900px]:shrink-0"}
       >
         {/* Header */}
         <div className="ms-sidebar-header" style={{ padding: "14px 14px 11px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
@@ -402,7 +402,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       {/* Main area */}
       <main
         style={{ flexDirection: "column", overflow: "hidden", background: C.bg }}
-        className={mainHidden ? "hidden sm:flex sm:flex-1 sm:flex-col" : "flex flex-1 flex-col"}
+        className={mainHidden ? "hidden min-[900px]:flex min-[900px]:flex-1 min-[900px]:flex-col" : "flex flex-1 flex-col"}
       >
         {children}
       </main>

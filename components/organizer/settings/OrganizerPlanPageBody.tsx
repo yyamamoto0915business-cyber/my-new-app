@@ -38,7 +38,7 @@ const cardBase =
   "rounded-2xl bg-white p-3 shadow-[0_1px_8px_rgba(0,0,0,0.05)] sm:p-4 dark:bg-zinc-900";
 const cardBorderSoft = "border-[0.5px] border-[#e8e6e0] dark:border-zinc-700";
 const pageBottomPad =
-  "max-[639px]:pb-[calc(2rem+env(safe-area-inset-bottom,0px))] min-[640px]:max-[899px]:pb-12 min-[900px]:pb-8";
+  "max-[899px]:pb-[calc(2rem+env(safe-area-inset-bottom,0px))] min-[900px]:pb-8";
 
 const PRO_FEATURES = [
   "公開枠無制限",
@@ -421,7 +421,7 @@ export function OrganizerPlanPageBody() {
             )}
 
             <div
-              className="max-[639px]:block min-[640px]:hidden h-[calc(3.5rem+env(safe-area-inset-bottom,0px))] shrink-0"
+              className="max-[899px]:block min-[900px]:hidden h-[calc(3.5rem+env(safe-area-inset-bottom,0px))] shrink-0"
               aria-hidden
             />
           </>

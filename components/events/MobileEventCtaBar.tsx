@@ -125,7 +125,7 @@ export function MobileEventCtaBar({
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/75 sm:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/75 min-[900px]:hidden"
       aria-label="参加・保存"
     >
       <div className="mx-auto flex max-w-screen-md items-center gap-3 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)]">
