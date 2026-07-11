@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import jsQR from "jsqr";
 import { parseCheckinQr } from "@/lib/checkin/parse-checkin-qr";
 
 type ScanState = "starting" | "scanning" | "unsupported" | "denied" | "error";
@@ -19,6 +20,7 @@ declare global {
 export default function CheckinScanPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanningRef = useRef(false);
   const handledRef = useRef(false);
@@ -68,8 +70,37 @@ export default function CheckinScanPage() {
     let cancelled = false;
     let frameId = 0;
 
+    const detectWithJsQr = (video: HTMLVideoElement): string | null => {
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      if (!w || !h) return null;
+
+      if (!canvasRef.current) {
+        canvasRef.current = document.createElement("canvas");
+      }
+      const canvas = canvasRef.current;
+      // 処理負荷を抑えるため解像度を制限
+      const maxSide = 480;
+      const scale = Math.min(1, maxSide / Math.max(w, h));
+      const cw = Math.max(1, Math.round(w * scale));
+      const ch = Math.max(1, Math.round(h * scale));
+      if (canvas.width !== cw || canvas.height !== ch) {
+        canvas.width = cw;
+        canvas.height = ch;
+      }
+
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return null;
+      ctx.drawImage(video, 0, 0, cw, ch);
+      const imageData = ctx.getImageData(0, 0, cw, ch);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "dontInvert",
+      });
+      return code?.data ?? null;
+    };
+
     const start = async () => {
-      if (!window.BarcodeDetector) {
+      if (!navigator.mediaDevices?.getUserMedia) {
         setScanState("unsupported");
         return;
       }
@@ -91,25 +122,44 @@ export default function CheckinScanPage() {
         video.srcObject = stream;
         await video.play();
 
-        const detector = new window.BarcodeDetector!({ formats: ["qr_code"] });
+        const useNative = typeof window.BarcodeDetector === "function";
+        const detector = useNative
+          ? new window.BarcodeDetector!({ formats: ["qr_code"] })
+          : null;
+
         setScanState("scanning");
         setStatusMessage("QRコードを枠内に合わせてください");
 
-        const scanFrame = async () => {
-          if (cancelled || handledRef.current || !video.videoWidth) {
+        // jsQR は CPU 負荷が高いため間引き、BarcodeDetector は毎フレーム可
+        const scheduleNext = () => {
+          if (cancelled || handledRef.current) return;
+          if (detector) {
             frameId = requestAnimationFrame(scanFrame);
-            return;
+          } else {
+            frameId = window.setTimeout(() => {
+              frameId = requestAnimationFrame(scanFrame);
+            }, 120) as unknown as number;
           }
-          if (scanningRef.current) {
-            frameId = requestAnimationFrame(scanFrame);
+        };
+
+        const scanFrame = async () => {
+          if (cancelled || handledRef.current) return;
+          if (!video.videoWidth || scanningRef.current) {
+            scheduleNext();
             return;
           }
 
           scanningRef.current = true;
           try {
-            const codes = await detector.detect(video);
-            if (codes[0]?.rawValue) {
-              await handleScanResult(codes[0].rawValue);
+            let raw: string | null = null;
+            if (detector) {
+              const codes = await detector.detect(video);
+              raw = codes[0]?.rawValue ?? null;
+            } else {
+              raw = detectWithJsQr(video);
+            }
+            if (raw) {
+              await handleScanResult(raw);
             }
           } catch {
             // フレーム単位の検出失敗は無視して継続
@@ -117,7 +167,7 @@ export default function CheckinScanPage() {
             scanningRef.current = false;
           }
 
-          frameId = requestAnimationFrame(scanFrame);
+          scheduleNext();
         };
 
         frameId = requestAnimationFrame(scanFrame);
@@ -134,6 +184,7 @@ export default function CheckinScanPage() {
     return () => {
       cancelled = true;
       cancelAnimationFrame(frameId);
+      clearTimeout(frameId);
       stopCamera();
     };
   }, [handleScanResult, stopCamera]);
@@ -200,7 +251,7 @@ export default function CheckinScanPage() {
                 {scanState === "denied"
                   ? "カメラの使用が許可されていません"
                   : scanState === "unsupported"
-                    ? "このブラウザではQR読み取りに対応していません"
+                    ? "このブラウザではカメラを利用できません"
                     : "カメラを起動できませんでした"}
               </h2>
               <p className="mt-2 text-[12px] leading-relaxed text-[#607083]">

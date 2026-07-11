@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Bookmark, MapPin } from "lucide-react";
+import { Heart, MapPin } from "lucide-react";
 import type { Event } from "@/lib/db/types";
 import { getEventStatus } from "@/lib/events";
 import { formatEventScheduleLabel } from "@/lib/event-recurrence";
@@ -82,7 +82,7 @@ export function EventsMobileRowCard({ event }: Props) {
       tabIndex={0}
       onClick={handleOpen}
       onKeyDown={(e) => e.key === "Enter" && handleOpen()}
-      className={`flex items-stretch gap-3 overflow-hidden rounded-[14px] border border-[#e8eae6] bg-white p-3 shadow-[0_1px_4px_rgba(34,51,68,0.05)] transition active:scale-[0.995] ${
+      className={`flex items-stretch gap-3 overflow-hidden rounded-[14px] border border-[#dde9e1] bg-white p-3 shadow-[0_2px_10px_rgba(22,56,40,0.05)] transition active:scale-[0.995] ${
         status === "ended" ? "opacity-65" : ""
       }`}
       aria-label={`${event.title}の詳細を見る`}
@@ -122,27 +122,27 @@ export function EventsMobileRowCard({ event }: Props) {
         <button
           type="button"
           aria-label={saved ? "お気に入り解除" : "お気に入りに追加"}
-          className="absolute right-0 top-0 flex h-7 w-7 items-center justify-center text-[#999999]"
+          className="absolute right-0 top-0 flex h-7 w-7 items-center justify-center"
           onClick={(e) => {
             e.stopPropagation();
             setSaved(toggleBookmark(event.id));
           }}
         >
-          <Bookmark
+          <Heart
             className="h-4 w-4"
             style={{
-              color: saved ? "#2f7d4e" : "#999999",
-              fill: saved ? "#2f7d4e" : "none",
+              color: saved ? "#2f6b4f" : "#8a9088",
+              fill: saved ? "#2f6b4f" : "none",
             }}
           />
         </button>
 
-        <p className="text-[11px] leading-snug text-[#666666]">{scheduleLabel}</p>
-        <h3 className="mt-0.5 line-clamp-2 text-[14px] font-bold leading-[1.35] text-[#223344]">
+        <p className="text-[11px] font-medium leading-snug text-[#2f6b4f]">{scheduleLabel}</p>
+        <h3 className="mt-0.5 line-clamp-2 text-[14px] font-bold leading-[1.35] text-[#163828]">
           {event.title}
         </h3>
-        <p className="mt-1 flex items-start gap-1 text-[11px] text-[#666666]">
-          <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-[#2f7d4e]" aria-hidden />
+        <p className="mt-1 flex items-start gap-1 text-[11px] text-[#6a7068]">
+          <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-[#2f6b4f]" aria-hidden />
           <span className="line-clamp-2">{event.location}</span>
         </p>
         {displayTags.length > 0 ? (
@@ -150,7 +150,7 @@ export function EventsMobileRowCard({ event }: Props) {
             {displayTags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex rounded-full bg-[#f4f5f3] px-2 py-0.5 text-[10px] text-[#666666]"
+                className="inline-flex rounded-full border border-[#dde9e1] bg-[#f7fbf8] px-2 py-0.5 text-[10px] text-[#3d5c48]"
               >
                 {tag}
               </span>

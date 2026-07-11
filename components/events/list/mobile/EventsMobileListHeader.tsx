@@ -34,10 +34,10 @@ export function EventsMobileListHeader({
   const sortAnchorRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="flex items-center justify-between gap-3 py-2.5">
-      <p className="shrink-0 text-[12px] leading-none text-[#666666]">
+    <div className="flex items-center justify-between gap-3 py-2">
+      <p className="shrink-0 text-[12px] leading-none text-[#6a7068]">
         全{" "}
-        <span className="font-semibold text-[#223344]">{totalCount}</span>
+        <span className="font-semibold text-[#163828]">{totalCount}</span>
         件
       </p>
 
@@ -49,7 +49,7 @@ export function EventsMobileListHeader({
             className={`inline-flex h-8 max-w-[148px] items-center gap-0.5 rounded-full border px-2.5 text-[10px] font-medium transition ${
               sortOpen
                 ? "border-[#b8dcc8] bg-[#eef6f2] text-[#2f6b4f]"
-                : "border-[#e0e6de] bg-white text-[#666666] active:bg-[#f7f8f6]"
+                : "border-[#dde9e1] bg-white text-[#6a7068] active:bg-[#f7fbf8]"
             }`}
             aria-expanded={sortOpen}
             aria-haspopup="listbox"
@@ -75,17 +75,17 @@ export function EventsMobileListHeader({
         </div>
 
         <div
-          className="flex shrink-0 rounded-[8px] border border-[#e0e6de] bg-white p-px"
+          className="flex shrink-0 rounded-[10px] border border-[#dde9e1] bg-white p-px"
           role="group"
           aria-label="表示形式"
         >
           <button
             type="button"
             onClick={() => onViewModeChange("grid")}
-            className={`flex h-7 w-8 items-center justify-center rounded-[7px] transition ${
+            className={`flex h-7 w-8 items-center justify-center rounded-[9px] transition ${
               viewMode === "grid"
-                ? "bg-[#2f7d4e] text-white"
-                : "text-[#666666] active:bg-[#f7f8f6]"
+                ? "bg-[#2f6b4f] text-white"
+                : "text-[#6a7068] active:bg-[#f7fbf8]"
             }`}
             aria-label="グリッド表示"
             aria-pressed={viewMode === "grid"}
@@ -95,10 +95,10 @@ export function EventsMobileListHeader({
           <button
             type="button"
             onClick={() => onViewModeChange("list")}
-            className={`flex h-7 w-8 items-center justify-center rounded-[7px] transition ${
+            className={`flex h-7 w-8 items-center justify-center rounded-[9px] transition ${
               viewMode === "list"
-                ? "bg-[#2f7d4e] text-white"
-                : "text-[#666666] active:bg-[#f7f8f6]"
+                ? "bg-[#2f6b4f] text-white"
+                : "text-[#6a7068] active:bg-[#f7fbf8]"
             }`}
             aria-label="リスト表示"
             aria-pressed={viewMode === "list"}

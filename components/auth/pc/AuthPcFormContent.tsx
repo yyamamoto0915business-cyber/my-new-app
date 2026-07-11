@@ -34,7 +34,7 @@ type Props = {
 };
 
 const inputClass =
-  "h-[46px] w-full rounded-[10px] border border-[#d8e0da] bg-white px-3.5 text-[13px] text-[#1e3828] placeholder:text-[#9aab9f] focus-visible:border-[#7aab8a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e8d8]";
+  "h-[44px] w-full rounded-[10px] border border-[#d8e0da] bg-white px-3.5 text-[13px] text-[#1e3828] placeholder:text-[#9aab9f] focus-visible:border-[#7aab8a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e8d8]";
 
 export function AuthPcFormContent({
   tab,
@@ -67,7 +67,7 @@ export function AuthPcFormContent({
   return (
     <AuthPcFormShell isLogin={isLogin}>
       {isLogin ? (
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label
               htmlFor="auth-pc-email"
@@ -84,7 +84,7 @@ export function AuthPcFormContent({
               required
               placeholder="メールアドレスを入力"
               autoComplete="email"
-              className={`mt-2 ${inputClass}`}
+              className={`mt-1.5 ${inputClass}`}
             />
           </div>
 
@@ -96,7 +96,7 @@ export function AuthPcFormContent({
               <Lock className="h-3.5 w-3.5 text-[#6a9080]" aria-hidden />
               パスワード
             </label>
-            <div className="relative mt-2">
+            <div className="relative mt-1.5">
               <input
                 id="auth-pc-password"
                 type={showPassword ? "text" : "password"}
@@ -129,13 +129,13 @@ export function AuthPcFormContent({
           <button
             type="submit"
             disabled={loading}
-            className="flex h-[46px] w-full items-center justify-center gap-1 rounded-[10px] bg-gradient-to-r from-[#2a5540] via-[#315f48] to-[#3a6b50] px-4 text-[13px] font-medium text-white shadow-[0_6px_18px_rgba(42,85,64,0.28)] transition hover:opacity-95 disabled:opacity-60"
+            className="flex h-[44px] w-full items-center justify-center gap-1 rounded-[10px] bg-gradient-to-r from-[#2a5540] via-[#315f48] to-[#3a6b50] px-4 text-[13px] font-medium text-white shadow-[0_6px_18px_rgba(42,85,64,0.28)] transition hover:opacity-95 disabled:opacity-60"
           >
             {loading ? "ログイン中..." : "ログインする"}
             {!loading && <ChevronRight className="h-4 w-4" aria-hidden />}
           </button>
 
-          <div className="flex items-center gap-3 py-1">
+          <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-[#e8ebe6]" />
             <span className="text-[12px] text-[#8a9a90]">または</span>
             <div className="h-px flex-1 bg-[#e8ebe6]" />
@@ -145,13 +145,13 @@ export function AuthPcFormContent({
             type="button"
             onClick={handleGoogleLogin}
             disabled={googleLoading}
-            className="flex h-[46px] w-full items-center justify-center gap-2.5 rounded-[10px] border border-[#d8e0da] bg-white text-[13px] font-medium text-[#1e3828] transition hover:bg-[#fafaf8] disabled:opacity-60"
+            className="flex h-[44px] w-full items-center justify-center gap-2.5 rounded-[10px] border border-[#d8e0da] bg-white text-[13px] font-medium text-[#1e3828] transition hover:bg-[#fafaf8] disabled:opacity-60"
           >
             <GoogleIcon />
             {googleLoading ? "接続中..." : "Googleでログイン"}
           </button>
 
-          <div className="space-y-2.5 pt-1 text-center text-[13px]">
+          <div className="space-y-2 pt-0.5 text-center text-[13px]">
             <p>
               <Link
                 href="/auth/reset-password"

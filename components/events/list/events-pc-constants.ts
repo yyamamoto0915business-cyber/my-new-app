@@ -50,5 +50,5 @@ export const EVENTS_PC_PAGE_SIZES = [12, 24, 48] as const;
 /** モバイル一覧の「もっと見る」1回あたりの件数 */
 export const EVENTS_MOBILE_PAGE_STEP = 10;
 
-/** モバイル一覧グリッド（2列・コンパクト） */
-export const EVENTS_MOBILE_GRID_CLASS = "grid grid-cols-2 gap-2";
+/** モバイル一覧グリッド（2列） */
+export const EVENTS_MOBILE_GRID_CLASS = "grid grid-cols-2 gap-2.5";

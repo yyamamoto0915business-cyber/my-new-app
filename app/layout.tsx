@@ -92,7 +92,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className={cn("font-sans", geist.variable, notoSerifJP.variable, shipporiMincho.variable)}>
-      <body className="font-sans antialiased min-h-screen bg-[var(--mg-paper)]">
+      <body className="font-sans antialiased min-h-screen bg-[#f3f4f1]">
         <LanguageProvider>
           <AbortErrorRecovery />
           <OrganizerProGlobalSyncer />

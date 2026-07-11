@@ -437,7 +437,7 @@ function EventsPageContent() {
       },
       {
         key: "free",
-        label: "¥0 無料",
+        label: "無料",
         Icon: CircleDollarSign,
         active: priceFilter === "free",
         onClick: () => setPriceFilter(priceFilter === "free" ? "all" : "free"),
@@ -683,14 +683,14 @@ function EventsPageContent() {
       </div>
 
       {/* ===== Mobile Layout ===== */}
-      <div className="mg-events-mobile-page min-[900px]:hidden min-h-screen bg-[#F5F8F5] pb-4">
+      <div className="mg-events-mobile-page min-[900px]:hidden min-h-screen w-full space-y-1.5 bg-[#f7fbf8] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-0.5">
         <EventsMobileHero
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           quickChips={mobileQuickChips}
         />
 
-        <div className="px-3.5">
+        <div className="min-w-0">
           {view === "list" ? (
             <section ref={eventListRef} className="scroll-mt-4">
               <EventsMobileListHeader
@@ -709,7 +709,7 @@ function EventsPageContent() {
                     ))}
                   </div>
                 ) : (
-                  <ul className="space-y-3">
+                  <ul className="space-y-2.5">
                     {Array.from({ length: 6 }).map((_, i) => (
                       <li key={i}>
                         <EventsMobileRowCardSkeleton />
@@ -718,19 +718,19 @@ function EventsPageContent() {
                   </ul>
                 )
               ) : listError ? (
-                <div className="rounded-[12px] border border-[#E8EAE6] bg-white p-8 text-center">
+                <div className="rounded-[14px] border border-[#dde9e1] bg-white p-8 text-center shadow-[0_2px_10px_rgba(22,56,40,0.05)]">
                   <p className="text-sm text-red-600">{listError}</p>
                   <button
                     type="button"
                     onClick={() => window.location.reload()}
-                    className="mt-3 text-sm text-[#4A8C5E] underline"
+                    className="mt-3 text-sm text-[#2f6b4f] underline"
                   >
                     再読み込み
                   </button>
                 </div>
               ) : filteredEvents.length === 0 ? (
-                <div className="rounded-[12px] border border-[#E8EAE6] bg-white p-10 text-center">
-                  <p className="text-[13px] text-[#666666]">
+                <div className="rounded-[14px] border border-[#dde9e1] bg-white p-10 text-center shadow-[0_2px_10px_rgba(22,56,40,0.05)]">
+                  <p className="text-[13px] text-[#6a7068]">
                     該当するイベントがありません
                   </p>
                   <button
@@ -748,7 +748,7 @@ function EventsPageContent() {
                       handleTagsChange([]);
                       router.push("/events", { scroll: false });
                     }}
-                    className="mt-4 inline-flex h-10 items-center rounded-full bg-[#223344] px-5 text-[13px] font-medium text-white"
+                    className="mt-4 inline-flex h-10 items-center rounded-full bg-[#163828] px-5 text-[13px] font-medium text-white"
                   >
                     条件を緩める
                   </button>
@@ -762,7 +762,7 @@ function EventsPageContent() {
                       ))}
                     </div>
                   ) : (
-                    <ul className="space-y-3">
+                    <ul className="space-y-2.5">
                       {visibleMobileEvents.map((event) => (
                         <li key={event.id}>
                           <EventsMobileRowCard event={event} />
@@ -779,7 +779,7 @@ function EventsPageContent() {
                           Math.min(n + EVENTS_MOBILE_PAGE_STEP, filteredEvents.length)
                         )
                       }
-                      className="mt-5 flex h-11 w-full items-center justify-center gap-1 rounded-full border border-[#E0E6DE] bg-white text-[13px] font-medium text-[#666666] shadow-[0_1px_3px_rgba(34,51,68,0.04)] transition active:bg-[#F0F2EF]"
+                      className="mt-4 flex h-11 w-full items-center justify-center gap-1 rounded-full border border-[#dde9e1] bg-white text-[13px] font-medium text-[#6a7068] shadow-[0_2px_10px_rgba(22,56,40,0.05)] transition active:bg-[#f7fbf8]"
                     >
                       もっと見る
                       <ChevronDown className="h-4 w-4" aria-hidden />

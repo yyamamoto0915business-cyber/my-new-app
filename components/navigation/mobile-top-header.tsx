@@ -81,12 +81,10 @@ export function MobileTopHeader({ className }: Props) {
     <header
       ref={headerRef}
       className={cn(
-        "sticky top-0 z-40 min-[900px]:hidden",
+        "sticky top-0 z-40 min-[900px]:hidden bg-[#ffffff]",
         organizerArea
-          ? "bg-white pt-[env(safe-area-inset-top,0px)] pb-0 shadow-[0_1px_0_rgba(15,23,42,0.06)]"
-          : authArea
-            ? "bg-transparent pb-1.5 pt-[env(safe-area-inset-top,0px)]"
-            : "border-b border-[#dde9e1] bg-white pb-1 pt-[env(safe-area-inset-top,0px)]",
+          ? "pt-[env(safe-area-inset-top,0px)] pb-0 shadow-[0_1px_0_rgba(15,23,42,0.06)]"
+          : "border-b border-[#dde9e1] pb-1 pt-[env(safe-area-inset-top,0px)]",
         className
       )}
       aria-label="MachiGlyph 上部ヘッダー"

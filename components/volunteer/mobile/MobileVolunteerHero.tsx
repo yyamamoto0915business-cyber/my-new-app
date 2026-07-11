@@ -79,7 +79,7 @@ export function MobileVolunteerHero({
         <div className="relative z-10 flex h-full flex-col justify-center px-3 py-1">
           <nav
             aria-label="パンくず"
-            className="mb-0.5 flex items-center gap-1 text-[9px] text-[#6a7068]"
+            className="mb-0.5 flex items-center gap-1 text-[9px] text-[#6a7068] [text-shadow:0_1px_0_rgba(247,251,248,0.95),0_0_10px_rgba(247,251,248,0.85),0_0_18px_rgba(247,251,248,0.7)]"
           >
             <Link href="/" className="transition-colors hover:text-[#2f6b4f]">
               ホーム
@@ -89,12 +89,12 @@ export function MobileVolunteerHero({
           </nav>
 
           <h1
-            className="text-[18px] font-semibold leading-[1.28] text-[#163828]"
+            className="text-[18px] font-semibold leading-[1.28] text-[#163828] [text-shadow:0_1px_0_rgba(247,251,248,0.95),0_0_12px_rgba(247,251,248,0.85),0_0_20px_rgba(247,251,248,0.7)]"
             style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
           >
             ボランティア募集
           </h1>
-          <p className="mt-0.5 whitespace-nowrap text-[10px] leading-snug text-[#3d5c48]">
+          <p className="mt-0.5 whitespace-nowrap text-[10px] leading-snug text-[#3d5c48] [text-shadow:0_1px_0_rgba(247,251,248,0.95),0_0_10px_rgba(247,251,248,0.85),0_0_18px_rgba(247,251,248,0.7)]">
             地域のイベントや活動で、お手伝いできる募集を見つけられます。
           </p>
         </div>

@@ -376,7 +376,7 @@ function VolunteerPageContent() {
   return (
     <>
       {/* ─── PC (900px+) ─── */}
-      <div className="hidden min-[900px]:block bg-[#eef2ee] px-6 py-4">
+      <div className="hidden min-[900px]:block bg-[#f3f4f1] px-6 py-4">
         <div className="mx-auto max-w-[1280px] overflow-hidden rounded-[16px] border border-[#DDE8DF]/80 shadow-sm">
           <PcVolunteerHero
             keyword={draftKeyword}

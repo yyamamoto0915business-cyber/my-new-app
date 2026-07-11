@@ -29,7 +29,7 @@ export function MobileMainShell({ children }: Props) {
   const organizerArea = pathname?.startsWith("/organizer") ?? false;
   const authRoute = isAuthRoute(pathname ?? "");
 
-  const pcTopPad = organizerArea
+  const pcTopPad = organizerArea || authRoute
     ? "min-[900px]:pt-0"
     : "min-[900px]:pt-[var(--mg-pc-top-nav-h)]";
 

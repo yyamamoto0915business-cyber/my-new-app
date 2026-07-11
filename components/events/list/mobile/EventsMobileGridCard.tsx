@@ -20,7 +20,7 @@ function CardCoverImage({ imageUrl, alt }: { imageUrl: string | null; alt: strin
 
   if (!imageUrl?.trim() || failed) {
     return (
-      <div className="absolute inset-0 flex items-center justify-center bg-[#E8EBE6] text-[8px] text-[#AABCAA]">
+      <div className="absolute inset-0 flex items-center justify-center bg-[#e8ebe6] text-[10px] text-[#8a9088]">
         画像なし
       </div>
     );
@@ -87,75 +87,71 @@ export function EventsMobileGridCard({ event }: Props) {
       tabIndex={0}
       onClick={handleOpen}
       onKeyDown={(e) => e.key === "Enter" && handleOpen()}
-      className={`flex cursor-pointer flex-col overflow-hidden rounded-[8px] border border-[#E8EBE6] bg-white shadow-[0_1px_4px_rgba(15,23,42,0.04)] transition active:scale-[0.99] ${
+      className={`flex cursor-pointer flex-col overflow-hidden rounded-[14px] border border-[#dde9e1] bg-white shadow-[0_2px_10px_rgba(22,56,40,0.05)] transition active:scale-[0.99] ${
         status === "ended" ? "opacity-70" : ""
       }`}
       aria-label={`${event.title}の詳細を見る`}
     >
-      <div className="relative aspect-video w-full overflow-hidden bg-[#E8EBE6]">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#e8ebe6]">
         <CardCoverImage imageUrl={event.imageUrl} alt={event.title} />
 
-        <div className="absolute left-1 top-1 z-10 flex max-w-[calc(100%-24px)] flex-wrap gap-0.5">
+        <div className="absolute left-1.5 top-1.5 z-10 flex max-w-[calc(100%-28px)] flex-wrap gap-1">
           <span
-            className={`inline-flex h-4 items-center rounded px-1 text-[8px] font-semibold shadow-sm ${
+            className={`inline-flex h-[18px] items-center rounded-md px-1.5 text-[9px] font-semibold ${
               isFree
-                ? "bg-[#E8F5EC] text-[#2D7A4F] ring-1 ring-[#B8DFC5]/90"
-                : "bg-[#EEF4FC] text-[#2B5A9E] ring-1 ring-[#B8CCE8]/90"
+                ? "bg-[#e8f5ec] text-[#2f6b4f]"
+                : "bg-[#eef4fc] text-[#2b5a9e]"
             }`}
           >
             {isFree ? "無料" : "有料"}
           </span>
-          {status === "available" ? (
-            <span className="inline-flex h-4 items-center rounded bg-[#F5F8F5] px-1 text-[8px] font-semibold text-[#566358] shadow-sm ring-1 ring-[#DDE8DF]/90">
-              募集中
-            </span>
-          ) : status === "full" ? (
-            <span className="inline-flex h-4 items-center rounded bg-[#F5F8F5] px-1 text-[8px] font-semibold text-[#566358] shadow-sm ring-1 ring-[#DDE8DF]/90">
-              満員
-            </span>
-          ) : (
-            <span className="inline-flex h-4 items-center rounded bg-[#F5F8F5] px-1 text-[8px] font-semibold text-[#566358] shadow-sm ring-1 ring-[#DDE8DF]/90">
+          {status === "ended" ? (
+            <span className="inline-flex h-[18px] items-center rounded-md bg-white/95 px-1.5 text-[9px] font-semibold text-[#6a7068]">
               終了
             </span>
-          )}
+          ) : status === "full" ? (
+            <span className="inline-flex h-[18px] items-center rounded-md bg-white/95 px-1.5 text-[9px] font-semibold text-[#6a7068]">
+              満員
+            </span>
+          ) : null}
         </div>
 
         <button
           type="button"
           aria-label={saved ? "お気に入り解除" : "お気に入りに追加"}
-          className="absolute right-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-white/95 shadow-sm"
+          className="absolute right-1.5 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 shadow-[0_1px_4px_rgba(22,56,40,0.12)]"
           onClick={(e) => {
             e.stopPropagation();
             setSaved(toggleBookmark(event.id));
           }}
         >
           <Heart
-            className="h-3 w-3"
+            className="h-3.5 w-3.5"
             style={{
-              color: saved ? "#2D7A4F" : "#8A9088",
-              fill: saved ? "#2D7A4F" : "none",
+              color: saved ? "#2f6b4f" : "#8a9088",
+              fill: saved ? "#2f6b4f" : "none",
             }}
           />
         </button>
       </div>
 
-      <div className="space-y-0.5 px-1.5 py-1">
-        <p className="truncate text-[9px] font-medium leading-none text-[#566358]">
+      <div className="flex flex-1 flex-col gap-1 px-2.5 pb-2.5 pt-2">
+        <p className="truncate text-[10px] font-medium leading-none text-[#2f6b4f]">
           {scheduleLabel}
         </p>
-        <h3 className="line-clamp-2 text-[10px] font-bold leading-[1.25] text-[#1A2214]">
+        <h3 className="line-clamp-2 text-[12px] font-bold leading-[1.35] text-[#163828]">
           {event.title}
         </h3>
-        <p className="flex items-center gap-0.5 text-[9px] leading-none text-[#6A7068]">
-          <MapPin className="h-2 w-2 shrink-0 text-[#2D7A4F]" aria-hidden />
+        <p className="flex items-center gap-0.5 text-[10px] leading-none text-[#6a7068]">
+          <MapPin className="h-2.5 w-2.5 shrink-0 text-[#2f6b4f]" aria-hidden />
           <span className="truncate">{event.location}</span>
         </p>
         {displayTags.length > 0 ? (
-          <div className="flex h-4 gap-0.5 overflow-hidden pt-px">
+          <div className="mt-auto flex gap-1 overflow-hidden pt-0.5">
             {displayTags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex h-4 max-w-full shrink items-center truncate rounded-full border border-[#E8EBE6] bg-[#F8FAF8] px-1 text-[8px] text-[#566358]"
+                className="inline-flex h-[18px] max-w-full shrink items-center truncate rounded-full border border-[#dde9e1] bg-[#f7fbf8] px-1.5 text-[9px] text-[#3d5c48]"
               >
                 {tag}
               </span>

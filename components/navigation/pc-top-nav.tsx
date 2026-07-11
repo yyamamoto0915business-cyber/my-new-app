@@ -174,7 +174,7 @@ export function PcTopNav() {
   );
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-[100] hidden h-[var(--mg-pc-top-nav-h)] min-h-[var(--mg-pc-top-nav-h)] items-center gap-4 border-b border-[#e8ebe6] bg-white/98 px-7 backdrop-blur-sm min-[900px]:left-20 min-[900px]:flex">
+    <header className="fixed left-0 right-0 top-0 z-[100] hidden h-[var(--mg-pc-top-nav-h)] min-h-[var(--mg-pc-top-nav-h)] items-center gap-4 border-b border-[#e8ebe6] bg-[#ffffff] px-7 min-[900px]:left-20 min-[900px]:flex">
       {/* Logo */}
       <Link
         href="/"
