@@ -656,12 +656,8 @@ export async function fetchPublishedEventsByOrganizer(
       return dbEventToEvent(row as unknown as DbEvent, name, contact);
     });
 
-  const filterForProfile = (events: Event[], includeArchivedPast: boolean): Event[] =>
-    filterOutSampleEvents(events).filter((event) => {
-      if (isPublicEventLike(event)) return true;
-      if (includeArchivedPast && event.status === "archived") return true;
-      return false;
-    });
+  const filterForProfile = (events: Event[]): Event[] =>
+    filterOutSampleEvents(events).filter((event) => isPublicEventLike(event));
 
   const [upcomingRes, pastRes] = await Promise.all([
     supabase
@@ -676,7 +672,7 @@ export async function fetchPublishedEventsByOrganizer(
       .from("events")
       .select(select)
       .eq("organizer_id", organizerId)
-      .in("status", [...PUBLIC_EVENT_STATUSES, "archived"])
+      .in("status", [...PUBLIC_EVENT_STATUSES])
       .lt("date", today)
       .order("date", { ascending: false })
       .limit(perSide),
@@ -684,8 +680,8 @@ export async function fetchPublishedEventsByOrganizer(
 
   if (upcomingRes.error && pastRes.error) return [];
 
-  const upcoming = filterForProfile(mapRows(upcomingRes.data as Record<string, unknown>[]), false);
-  const past = filterForProfile(mapRows(pastRes.data as Record<string, unknown>[]), true);
+  const upcoming = filterForProfile(mapRows(upcomingRes.data as Record<string, unknown>[]));
+  const past = filterForProfile(mapRows(pastRes.data as Record<string, unknown>[]));
 
   return [...upcoming, ...past];
 }
