@@ -13,6 +13,7 @@ import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { isAuthRoute } from "@/lib/is-auth-route";
 import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
+import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 
 /** 通常時（探す・ボランティア中心）のモバイル上部の目安高さ（safe-area 除く） */
 export const MOBILE_TOP_HEADER_HEIGHT_PX = 88;
@@ -72,7 +73,8 @@ export function MobileTopHeader({ className }: Props) {
 
   if (
     isEventDetailRoute(pathname ?? "") ||
-    isMessagesConversationRoute(pathname ?? "")
+    isMessagesConversationRoute(pathname ?? "") ||
+    isProfileEditRoute(pathname ?? "")
   ) {
     return null;
   }

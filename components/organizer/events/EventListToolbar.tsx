@@ -34,7 +34,7 @@ export function EventListToolbar({
   return (
     <div className="org-events-toolbar org-events-toolbar--embedded">
       <div className="flex flex-col gap-2 min-[900px]:flex-row min-[900px]:items-center min-[900px]:gap-3">
-        <div className="relative min-w-0 flex-1">
+        <div className="org-events-toolbar__search-wrap relative min-w-0 flex-1">
           <svg
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa89c]"
             viewBox="0 0 24 24"

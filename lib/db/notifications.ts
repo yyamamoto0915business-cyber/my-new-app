@@ -101,6 +101,8 @@ export async function markAllAsRead(
 
 export type EventParticipantNotifyKind = "message" | "emergency";
 
+const STAFF_ACTIVE_STATUSES = ["accepted", "confirmed", "checked_in", "completed"] as const;
+
 export async function fetchEventParticipantUserIds(
   supabase: SupabaseClient,
   eventId: string
@@ -128,6 +130,34 @@ export async function fetchEventParticipantUserIds(
   return Array.from(ids);
 }
 
+/** このイベントのスタッフ募集で採用済みのユーザーID */
+export async function fetchEventStaffUserIds(
+  supabase: SupabaseClient,
+  eventId: string
+): Promise<string[]> {
+  const { data: recruitments, error: recError } = await supabase
+    .from("recruitments")
+    .select("id")
+    .eq("event_id", eventId);
+
+  if (recError || !recruitments?.length) return [];
+
+  const recruitmentIds = recruitments.map((r) => r.id as string);
+  const { data: applications, error: appError } = await supabase
+    .from("recruitment_applications")
+    .select("user_id, status")
+    .in("recruitment_id", recruitmentIds)
+    .in("status", [...STAFF_ACTIVE_STATUSES]);
+
+  if (appError || !applications?.length) return [];
+
+  const ids = new Set<string>();
+  for (const row of applications) {
+    if (row.user_id) ids.add(row.user_id as string);
+  }
+  return Array.from(ids);
+}
+
 export async function notifyEventParticipants(
   supabase: SupabaseClient,
   input: {
@@ -147,6 +177,36 @@ export async function notifyEventParticipants(
     input.kind === "emergency"
       ? `【重要】${input.eventTitle}`
       : `${input.eventTitle}からのお知らせ`;
+  const link = `/events/${input.eventId}`;
+
+  let sent = 0;
+  for (const userId of targets) {
+    const notif = await createNotification(supabase, userId, "system_message", title, {
+      body: input.content,
+      link,
+    });
+    if (notif) sent++;
+  }
+
+  return { sent, total: targets.length };
+}
+
+/** イベントに登録されたスタッフへお知らせ通知を送信 */
+export async function notifyEventStaff(
+  supabase: SupabaseClient,
+  input: {
+    eventId: string;
+    eventTitle: string;
+    content: string;
+    excludeUserId?: string;
+  }
+): Promise<{ sent: number; total: number }> {
+  const recipientIds = await fetchEventStaffUserIds(supabase, input.eventId);
+  const targets = input.excludeUserId
+    ? recipientIds.filter((id) => id !== input.excludeUserId)
+    : recipientIds;
+
+  const title = `【スタッフ連絡】${input.eventTitle}`;
   const link = `/events/${input.eventId}`;
 
   let sent = 0;

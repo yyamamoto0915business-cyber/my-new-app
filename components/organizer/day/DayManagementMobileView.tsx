@@ -6,7 +6,6 @@ import {
   Users,
   Calendar,
   Bell,
-  ClipboardList,
   Megaphone,
   Plus,
   Clock,
@@ -22,7 +21,6 @@ import {
   MOCK_CHECKIN,
   MOCK_STAFF,
   MOCK_SCHEDULE,
-  DonutChart,
   staffChip,
   scheduleChip,
   noticeBadge,
@@ -35,6 +33,7 @@ import {
   type ModalType,
 } from "./day-management-shared";
 import { DayManagementEventSwitcher } from "./DayManagementEventSwitcher";
+import { TicketSalesAttendanceCard } from "./TicketSalesAttendanceCard";
 
 type Props = {
   event: EventInfo;
@@ -141,12 +140,6 @@ export function DayManagementMobileView({
   const checkinPct = checkin.total > 0 ? Math.round((checkin.checkedIn / checkin.total) * 100) : 0;
   const staffPct = staffTotal > 0 ? Math.round((staffPresent / staffTotal) * 100) : 0;
   const schedPct = schedTotal > 0 ? Math.round((schedDone / schedTotal) * 100) : 0;
-
-  const donutSegments = [
-    { color: "#4CAF50", value: checkin.checkedIn },
-    { color: "#e0e0e0", value: checkin.notChecked },
-    { color: "#ef9a9a", value: checkin.cancelled },
-  ];
 
   const quickActions: {
     key: ModalType;
@@ -308,95 +301,46 @@ export function DayManagementMobileView({
         />
       </section>
 
-      <div className="grid grid-cols-2 gap-1.5">
-        <section className="mg-day-mgmt-m__panel">
-          <PanelHeader
-            title={scheduleTitle}
-            actionLabel={emptyMode ? undefined : "すべて見る"}
-            onAction={() => onOpenModal("memo")}
-          />
-          {emptyMode ? (
-            <div className="mt-2 flex flex-col items-center py-2 text-center">
-              <Calendar size={18} className="text-[#DDE8DF]" aria-hidden />
-              <p className="mt-1.5 text-[9px] leading-snug text-[#566358]">
-                イベントを選択すると表示されます
-              </p>
-            </div>
-          ) : (
-            <ul className="mt-1.5 space-y-1">
-              {MOCK_SCHEDULE.map((item, i) => (
-                <li
-                  key={i}
-                  className={cn(
-                    "flex items-center gap-1 rounded-lg px-1.5 py-1",
-                    item.status === "live" ? "bg-[#EAF4ED]" : "bg-[#F5F8F5]"
-                  )}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[7px] leading-none text-[#566358]">{item.time}</p>
-                    <p className="truncate text-[9px] font-medium leading-tight text-[#1A2214]">{item.name}</p>
-                  </div>
-                  <div className="shrink-0 scale-[0.82] origin-right">{scheduleChip(item.status)}</div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+      <TicketSalesAttendanceCard
+        eventId={eventId}
+        emptyMode={emptyMode}
+        compact
+        onOpenCheckinList={() => onOpenModal("checkin_list")}
+      />
 
-        <section className="mg-day-mgmt-m__panel">
-          <PanelHeader
-            title="受付状況"
-            subtitle={emptyMode ? undefined : "リアルタイムのチェックイン状況"}
-          />
-          {emptyMode ? (
-            <div className="mt-2 flex flex-col items-center py-1.5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border-[5px] border-[#e8e6e0] text-[8px] text-[#566358]">
-                —
-              </div>
-              <p className="mt-1.5 text-center text-[8px] text-[#566358]">受付状況が表示されます</p>
-            </div>
-          ) : (
-            <>
-              <div className="mt-1 flex justify-center">
-                <div className="relative shrink-0 scale-[0.58] origin-top">
-                  <DonutChart segments={donutSegments} total={checkin.total} />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[15px] font-bold text-[#1A2214]">{checkin.checkedIn}</span>
-                    <span className="text-[7px] text-[#566358]">入場</span>
-                  </div>
+      <section className="mg-day-mgmt-m__panel">
+        <PanelHeader
+          title={scheduleTitle}
+          actionLabel={emptyMode ? undefined : "すべて見る"}
+          onAction={() => onOpenModal("memo")}
+        />
+        {emptyMode ? (
+          <div className="mt-2 flex flex-col items-center py-2 text-center">
+            <Calendar size={18} className="text-[#DDE8DF]" aria-hidden />
+            <p className="mt-1.5 text-[9px] leading-snug text-[#566358]">
+              イベントを選択すると表示されます
+            </p>
+          </div>
+        ) : (
+          <ul className="mt-1.5 space-y-1">
+            {MOCK_SCHEDULE.map((item, i) => (
+              <li
+                key={i}
+                className={cn(
+                  "flex items-center gap-1 rounded-lg px-1.5 py-1",
+                  item.status === "live" ? "bg-[#EAF4ED]" : "bg-[#F5F8F5]"
+                )}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-[7px] leading-none text-[#566358]">{item.time}</p>
+                  <p className="truncate text-[9px] font-medium leading-tight text-[#1A2214]">{item.name}</p>
                 </div>
-              </div>
-              <div className="-mt-1 space-y-0.5 text-[8px]">
-                <div className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#4CAF50]" />
-                  <span className="text-[#566358]">済</span>
-                  <span className="ml-auto font-semibold">{checkin.checkedIn}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#e0e0e0]" />
-                  <span className="text-[#566358]">未</span>
-                  <span className="ml-auto font-semibold">{checkin.notChecked}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#ef9a9a]" />
-                  <span className="text-[#566358]">取消</span>
-                  <span className="ml-auto font-semibold">{checkin.cancelled}</span>
-                </div>
-              </div>
-            </>
-          )}
-          <button
-            type="button"
-            onClick={() => onOpenModal("checkin_list")}
-            disabled={emptyMode}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-[#DDE8DF] bg-[#F5F8F5] py-1 text-[9px] font-medium text-[#2D7A4F] disabled:opacity-50"
-          >
-            <ClipboardList size={10} />
-            受付リストを見る
-            <ChevronRight size={10} />
-          </button>
-        </section>
-      </div>
+                <div className="shrink-0 scale-[0.82] origin-right">{scheduleChip(item.status)}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="mg-day-mgmt-m__panel">
         <PanelHeader

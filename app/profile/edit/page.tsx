@@ -196,7 +196,7 @@ function StepInd({ steps, current, mode, onGo }: {
   const activeCircle = mode === "p" ? "bg-[#2B3A6B] text-white" : "bg-[#c8a84b] text-white";
   const activeLabel = mode === "p" ? "text-[#2B3A6B] font-[500]" : "text-[#86620a] font-[500]";
   return (
-    <div className="border-b border-[#DEDAD2] px-2 min-[380px]:px-3 pt-[7px] pb-[9px] flex items-center flex-shrink-0 bg-white overflow-x-auto">
+    <div className="flex shrink-0 items-center overflow-x-auto border-b border-[#DEDAD2] bg-white px-2 pb-[9px] pt-[7px] min-[380px]:px-3">
       {steps.map((label, i) => {
         const step = i + 1;
         const done = step < current;
@@ -727,7 +727,7 @@ export default function ProfileEditPage() {
   const mobileTitle = tab === "participant" ? pStepTitles[pStep - 1] : oStepTitles[oStep - 1];
 
   return (
-    <div className="mg-profile-mobile-page flex min-h-0 w-full flex-1 flex-col min-[900px]:mx-0 min-[900px]:mt-0 min-[900px]:flex min-[900px]:h-full min-[900px]:min-h-0 min-[900px]:max-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px))] min-[900px]:flex-1 min-[900px]:flex-col min-[900px]:overflow-hidden min-[900px]:w-full bg-[#EDECE7]">
+    <div className="mg-profile-mobile-page flex min-h-0 w-full flex-1 flex-col bg-[#EDECE7] max-[899px]:h-dvh max-[899px]:max-h-dvh max-[899px]:overflow-hidden min-[900px]:mx-0 min-[900px]:mt-0 min-[900px]:h-full min-[900px]:max-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px))] min-[900px]:w-full min-[900px]:overflow-hidden">
       {/* Hidden file inputs */}
       <input ref={pFileRef} type="file" accept="image/*" className="hidden" onChange={handlePAvatarFile} />
       <input ref={pCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePAvatarFile} />
@@ -737,10 +737,10 @@ export default function ProfileEditPage() {
       <input ref={orgCoverRef} type="file" accept="image/*" className="hidden" onChange={handleOrgCoverFile} />
       <input ref={orgGalleryRef} type="file" accept="image/*" multiple className="hidden" onChange={handleOrgGalleryFiles} />
 
-      {/* ══ MOBILE ══ */}
-      <div className="flex min-[900px]:hidden flex-1 min-h-0 flex-col overflow-hidden">
-        {/* Sticky header */}
-        <div className="sticky top-0 z-[29] bg-white border-b border-[#DEDAD2] px-3 py-2 flex items-center gap-2 flex-shrink-0">
+      {/* ══ MOBILE — 明示的な h-dvh 連鎖でヘッダー/フッターを常時表示、中央のみスクロール ══ */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden min-[900px]:hidden">
+        {/* Header（グローバル MobileTopHeader 非表示のため safe-area をここで確保） */}
+        <div className="flex shrink-0 items-center gap-2 border-b border-[#DEDAD2] bg-white px-3 pb-2 pt-[max(8px,env(safe-area-inset-top,0px))]">
           <button type="button"
             onClick={() => {
               if (tab === "participant" && pStep > 1) setPStep(s => (s - 1) as PStep);
@@ -763,7 +763,7 @@ export default function ProfileEditPage() {
         </div>
 
         {/* Profile tabs */}
-        <div className="bg-white border-b border-[#DEDAD2] flex flex-shrink-0">
+        <div className="flex shrink-0 border-b border-[#DEDAD2] bg-white">
           {(["participant", "organizer"] as const).map(t => (
             <button key={t} type="button" onClick={() => setTab(t)}
               className={["flex-1 py-2 min-[380px]:py-[9px] text-center text-[11px] min-[380px]:text-[12px] font-[500] border-b-[2px] transition-all",
@@ -785,7 +785,7 @@ export default function ProfileEditPage() {
           : <StepInd steps={oStepLabels} current={oStep} mode="o" onGo={s => setOStep(s as OStep)} />}
 
         {/* Step content */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           {/* Participant steps */}
           {tab === "participant" && pStep === 1 && (
             <div className="px-3 pt-3 pb-2">
@@ -1000,7 +1000,7 @@ export default function ProfileEditPage() {
         </div>
 
         {/* Footer nav */}
-        <div className="bg-white border-t border-[#DEDAD2] px-3 pt-2.5 pb-[max(12px,env(safe-area-inset-bottom,0px))] flex-shrink-0">
+        <div className="shrink-0 border-t border-[#DEDAD2] bg-white px-3 pt-2.5 pb-[max(12px,env(safe-area-inset-bottom,0px))]">
           <div className="flex gap-[8px]">
             {((tab === "participant" && pStep > 1) || (tab === "organizer" && oStep > 1)) && (
               <button type="button"

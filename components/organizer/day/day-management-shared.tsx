@@ -4,6 +4,7 @@ import React, { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Send, Save, AlertTriangle } from "lucide-react";
 import { getJstNowHm, getJstTodayYmd } from "@/lib/jst-date";
+import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -332,37 +333,43 @@ export function staffChip(
   );
 }
 
-export function scheduleChip(status: "done" | "live" | "wait") {
+export function scheduleChip(
+  status: "done" | "live" | "wait",
+  opts?: { compact?: boolean }
+) {
+  const compact = opts?.compact;
+  const base = compact
+    ? "rounded-full px-1.5 py-px text-[9px] font-medium leading-none"
+    : "rounded-full px-2.5 py-0.5 text-[11px] font-medium";
   if (status === "done")
     return (
-      <span className="rounded-full bg-[#f0f0f0] px-2.5 py-0.5 text-[11px] font-medium text-[#566358]">
-        終了
-      </span>
+      <span className={cn(base, "bg-[#f0f0f0] text-[#566358]")}>終了</span>
     );
   if (status === "live")
     return (
-      <span className="rounded-full bg-[#EAF4ED] px-2.5 py-0.5 text-[11px] font-medium text-[#2D7A4F]">
-        進行中
-      </span>
+      <span className={cn(base, "bg-[#EAF4ED] text-[#2D7A4F]")}>進行中</span>
     );
   return (
-    <span className="rounded-full border border-[#DDE8DF] bg-white px-2.5 py-0.5 text-[11px] font-medium text-[#566358]">
+    <span className={cn(base, "border border-[#DDE8DF] bg-white text-[#566358]")}>
       未開始
     </span>
   );
 }
 
-export function noticeBadge(type: "urg" | "info") {
+export function noticeBadge(
+  type: "urg" | "info",
+  opts?: { compact?: boolean }
+) {
+  const compact = opts?.compact;
+  const base = compact
+    ? "shrink-0 rounded-full px-1.5 py-px text-[9px] font-bold leading-none"
+    : "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold";
   if (type === "urg")
     return (
-      <span className="shrink-0 rounded-full bg-[#FFEBEE] px-2 py-0.5 text-[10px] font-bold text-[#E53935]">
-        重要
-      </span>
+      <span className={cn(base, "bg-[#FFEBEE] text-[#E53935]")}>重要</span>
     );
   return (
-    <span className="shrink-0 rounded-full bg-[#E3F2FD] px-2 py-0.5 text-[10px] font-bold text-[#1976D2]">
-      更新
-    </span>
+    <span className={cn(base, "bg-[#E3F2FD] text-[#1976D2]")}>更新</span>
   );
 }
 
@@ -391,6 +398,7 @@ type ModalsProps = {
   onEmergencyChange: (v: string) => void;
   memoText: string;
   onMemoChange: (v: string) => void;
+  onSendAnnounce: (text: string) => Promise<boolean>;
   onSendMessage: (text: string) => Promise<boolean>;
   onSendEmergency: (text: string) => Promise<boolean>;
 };
@@ -408,12 +416,14 @@ export function DayManagementModals({
   onEmergencyChange,
   memoText,
   onMemoChange,
+  onSendAnnounce,
   onSendMessage,
   onSendEmergency,
 }: ModalsProps) {
+  const announceTrimmed = announceText.trim();
   const messageTrimmed = messageText.trim();
   const emergencyTrimmed = emergencyText.trim();
-  const [sending, setSending] = React.useState<"message" | "emergency" | null>(null);
+  const [sending, setSending] = React.useState<"announce" | "message" | "emergency" | null>(null);
   const [sendError, setSendError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -456,7 +466,7 @@ export function DayManagementModals({
 
       <Modal open={modal === "announce"} onClose={onClose} title="スタッフに送信">
         <p className="mb-3 text-[13px] text-[#566358]">
-          参加者全員にアナウンスを送信します。重要な変更やお知らせにご利用ください。
+          このイベントのスタッフとして登録されている人にアナウンスを送信します。重要な変更やお知らせにご利用ください。
         </p>
         <textarea
           value={announceText}
@@ -467,11 +477,28 @@ export function DayManagementModals({
         />
         <button
           type="button"
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2D7A4F] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#245f3e]"
+          disabled={!announceTrimmed || sending !== null || !eventId}
+          onClick={async () => {
+            if (!announceTrimmed || sending) return;
+            setSending("announce");
+            setSendError(null);
+            try {
+              const ok = await onSendAnnounce(announceTrimmed);
+              if (ok) onClose();
+            } catch (e) {
+              setSendError(e instanceof Error ? e.message : "送信に失敗しました");
+            } finally {
+              setSending(null);
+            }
+          }}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2D7A4F] py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-[#245f3e] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Send size={15} />
-          送信する
+          {sending === "announce" ? "送信中..." : "送信する"}
         </button>
+        {sendError && modal === "announce" ? (
+          <p className="mt-2 text-center text-[12px] text-[#E53935]">{sendError}</p>
+        ) : null}
       </Modal>
 
       <Modal open={modal === "message"} onClose={onClose} title="来場者にメッセージ">

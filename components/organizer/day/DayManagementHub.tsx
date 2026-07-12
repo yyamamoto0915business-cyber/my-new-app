@@ -97,6 +97,27 @@ export function DayManagementHub() {
   const openModal = (type: ModalType) => setModal(type);
   const closeModal = () => setModal(null);
 
+  const handleSendAnnounce = async (text: string): Promise<boolean> => {
+    if (!eventId) throw new Error("イベントを選択してください");
+
+    const res = await fetchWithTimeout(`/api/organizer/events/${eventId}/notify-staff`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: text }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(typeof data.error === "string" ? data.error : "送信に失敗しました");
+    }
+    if (typeof data.message === "string" && data.total === 0) {
+      throw new Error(data.message);
+    }
+
+    setNotices((prev) => [{ type: "info", text, time: formatNoticeTime() }, ...prev]);
+    setAnnounceText("");
+    return true;
+  };
+
   const handleSendMessage = async (text: string): Promise<boolean> => {
     if (!eventId) throw new Error("イベントを選択してください");
 
@@ -176,6 +197,7 @@ export function DayManagementHub() {
         onEmergencyChange={setEmergencyText}
         memoText={memoText}
         onMemoChange={setMemoText}
+        onSendAnnounce={handleSendAnnounce}
         onSendMessage={handleSendMessage}
         onSendEmergency={handleSendEmergency}
       />

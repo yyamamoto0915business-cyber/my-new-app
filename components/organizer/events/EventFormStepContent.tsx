@@ -246,10 +246,20 @@ function ParticipationSettings({
   );
 }
 
-function PostPublishFeatures({ eventId }: { eventId?: string }) {
+function PostPublishFeatures({
+  eventId,
+  price,
+}: {
+  eventId?: string;
+  price: number;
+}) {
   const staffHref = eventId
     ? `/organizer/events/${eventId}/sponsors`
     : "/organizer/events";
+  const hasPaidFee = price > 0;
+  const payoutDesc = hasPaidFee
+    ? "このイベントは参加費ありです。カード決済で受け取るには、公開前に売上受取設定（Stripe）を済ませておくと安心です。プランとは別の設定です。"
+    : "参加費をカード決済で受け取るには、売上受取設定（Stripe）が必要です。プランとは別の設定です。公開前でも設定できます。";
 
   return (
     <div className="flex flex-col gap-[12px]">
@@ -265,10 +275,10 @@ function PostPublishFeatures({ eventId }: { eventId?: string }) {
         {
           bg: "#FFF8EC",
           stroke: "#c8a84b",
-          title: "協賛を受け付ける",
-          desc: "売上受取設定（Stripe）完了後に利用できます。協賛金の受け取りが可能になります。",
-          btn: eventId ? "協賛設定へ →" : "公開後に設定できます",
-          href: eventId ? `/organizer/events/${eventId}/sponsors` : "#",
+          title: "売上受取設定",
+          desc: payoutDesc,
+          btn: "売上受取設定へ →",
+          href: "/organizer/settings/payouts",
         },
         {
           bg: "#EAF6DE",
@@ -1016,7 +1026,7 @@ export function EventFormStepContent({
                   イベント公開後にこれらの機能を追加できます
                 </p>
               </div>
-              <PostPublishFeatures eventId={eventId} />
+              <PostPublishFeatures eventId={eventId} price={form.price} />
             </>
           ) : (
             <>

@@ -477,7 +477,7 @@ export function EventFormSidePanel({
         <p className="text-[11px] leading-[1.5] text-[#2A5A74]">
           参加費ありの場合は
           <Link
-            href="/organizer/settings/payout"
+            href="/organizer/settings/payouts"
             className="font-medium hover:underline"
           >
             売上受取設定

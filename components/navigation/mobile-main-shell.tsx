@@ -33,13 +33,19 @@ export function MobileMainShell({ children }: Props) {
     ? "min-[900px]:pt-0"
     : "min-[900px]:pt-[var(--mg-pc-top-nav-h)]";
 
-  const sidePad = authRoute || immersiveMobile
+  // auth のみ PC でフルブリード（ページ側で left-20 を扱う）。
+  // プロフィール編集など immersive も PC ではサイドバー幅分の余白が必要。
+  const sidePad = authRoute
     ? "min-[900px]:pl-0 max-[899px]:bg-transparent"
-    : "min-[900px]:pl-20";
+    : immersiveMobile
+      ? "min-[900px]:pl-20 max-[899px]:bg-transparent"
+      : "min-[900px]:pl-20";
 
+  // プロフィール編集: グローバル上下ナビを外し画面専用UI。
+  // h-dvh +（PCのみ）pt(トップナビ) で border-box により可視領域いっぱいに収める。
   const mobileShellLayoutClass = immersiveMobile
     ? profileEdit
-      ? "flex h-[calc(100dvh-var(--mg-mobile-top-header-h,88px))] max-h-[calc(100dvh-var(--mg-mobile-top-header-h,88px))] min-h-0 flex-col overflow-hidden pt-0 pb-0 min-[900px]:pb-0"
+      ? "flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden pt-0 pb-0 min-[900px]:pb-0"
       : "flex min-h-screen flex-col pt-0 pb-0 min-[900px]:pb-0"
     : authRoute
       ? "flex h-[100dvh] min-h-0 flex-col overflow-hidden max-[899px]:pb-0 min-[900px]:pb-0"
