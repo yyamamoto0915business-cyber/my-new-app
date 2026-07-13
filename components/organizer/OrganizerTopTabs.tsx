@@ -21,6 +21,7 @@ export function OrganizerTopTabs({ className }: { className?: string }) {
         {ORGANIZER_TOP_TAB_ITEMS.map((item, index) => {
           const active = organizerTopTabIsActive(pathname, item.href);
           const isLast = index === ORGANIZER_TOP_TAB_ITEMS.length - 1;
+          const multiline = "multiline" in item && item.multiline;
           return (
             <Link
               key={item.href}
@@ -28,7 +29,8 @@ export function OrganizerTopTabs({ className }: { className?: string }) {
               className={cn(
                 "org-top-tabs__tab",
                 active && "is-active",
-                !isLast && "org-top-tabs__tab--divided"
+                !isLast && "org-top-tabs__tab--divided",
+                multiline && "org-top-tabs__tab--multiline"
               )}
               aria-current={active ? "page" : undefined}
             >

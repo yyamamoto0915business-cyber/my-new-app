@@ -4,6 +4,10 @@ import { mockEvents } from "../../../lib/events-mock";
 import { getCreatedEvents } from "../../../lib/created-events-store";
 import { filterEventsByRegion, filterEventsByTags } from "../../../lib/events";
 import { fetchEvents } from "../../../lib/db/events";
+import {
+  normalizeCheckInMethod,
+  normalizePaymentMethod,
+} from "@/lib/event-pass-settings";
 
 function getFallbackEvents() {
   return [...mockEvents, ...getCreatedEvents()];
@@ -121,6 +125,9 @@ export async function POST(request: NextRequest) {
       capacity,
       requiresRegistration,
       participationMode,
+      paymentMethod,
+      checkInMethod,
+      passConfigured,
       registrationDeadline,
       registrationNote,
       recurrence,
@@ -208,6 +215,9 @@ export async function POST(request: NextRequest) {
           : requiresRegistration
             ? "required"
             : "none",
+      paymentMethod: normalizePaymentMethod(paymentMethod),
+      checkInMethod: normalizeCheckInMethod(checkInMethod),
+      passConfigured: Boolean(passConfigured),
       registrationDeadline: safeRegistrationDeadlineIso(registrationDeadline),
       registrationNote:
         registrationNote && String(registrationNote).trim()

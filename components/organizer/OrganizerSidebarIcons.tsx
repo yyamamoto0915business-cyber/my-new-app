@@ -6,7 +6,7 @@ const GREEN_MUTED = "#5A8F6E";
 export function OrganizerSidebarBrandLogo() {
   return (
     <img
-      src="/organizer/sidebar-brand-logo.png"
+      src="/organizer/sidebar-brand-logo-v2.png"
       alt=""
       width={44}
       height={44}

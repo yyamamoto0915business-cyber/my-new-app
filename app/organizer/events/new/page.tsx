@@ -8,6 +8,7 @@ import type { Event, EventFormData } from "@/lib/events";
 import { eventToForm } from "@/lib/organizer-event-to-form";
 import { EVENT_TAGS } from "@/lib/db/types";
 import { EventFormStepContent } from "@/components/organizer/events/EventFormStepContent";
+import { PassSettingsPcView } from "@/components/organizer/events/PassSettingsPcView";
 import {
   EventFormPcStepIndicator,
   EventFormSidePanel,
@@ -29,7 +30,8 @@ const initialForm: EventFormData = {
   rainPolicy:"",itemsToBring:[],access:"",childFriendly:false,prefecture:"",city:"",
   area:"",tags:[],sponsorTicketPrices:[],sponsorPerks:{},prioritySlots:0,
   englishGuideAvailable:false,capacity:undefined,requiresRegistration:false,
-  participationMode:"none",registrationDeadline:undefined,registrationNote:undefined,
+  participationMode:"none",paymentMethod:null,checkInMethod:null,passConfigured:false,
+  registrationDeadline:undefined,registrationNote:undefined,
   recurrence:"none",recurrenceCount:null,
 };
 
@@ -61,15 +63,16 @@ function validateForm(data: EventFormData): FormErrors {
 
 // ── PC step bar ──
 function PcStepBar({
-  current, onGo, onBack, onDraft, onPublish, submitting, planSummary, publishDisabledReason,
+  current, onGo, onBack, onDraft, onPublish, submitting, planSummary, publishDisabledReason, backLabelOverride,
 }: {
   current: Step; onGo: (s: Step) => void; onBack: () => void;
   onDraft: () => void; onPublish: () => void;
   submitting: null | "draft" | "publish";
   planSummary: PlanSummary | null;
   publishDisabledReason: null | "required_missing" | "no_slots";
+  backLabelOverride?: string;
 }) {
-  const backLabel = current === 1 ? "イベント一覧へ" : ["","基本情報に戻る","開催情報に戻る","詳細情報に戻る",""][current];
+  const backLabel = backLabelOverride ?? (current === 1 ? "イベント一覧へ" : ["","基本情報に戻る","開催情報に戻る","詳細情報に戻る",""][current]);
   const planLabel = planSummary
     ? planSummary.publishLimit === null
       ? "公開枠 無制限"
@@ -161,6 +164,7 @@ function NewEventPageContent() {
   const [toast, setToast] = useState<null | { type: "success" | "error"; message: string }>(null);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>(1);
+  const [showPassSettings, setShowPassSettings] = useState(false);
   const { user } = useSupabaseUser();
 
   const showToast = (type: "success" | "error", message: string) => {
@@ -331,9 +335,19 @@ function NewEventPageContent() {
   const nowJstHm = getJstNowHm();
   const startTimeMin = form.date === todayJst ? nowJstHm : undefined;
 
-  const goToStep = (s: Step) => setCurrentStep(s);
-  const goNext = () => { if (currentStep < 4) setCurrentStep(s => (s + 1) as Step); };
+  const goToStep = (s: Step) => {
+    setShowPassSettings(false);
+    setCurrentStep(s);
+  };
+  const goNext = () => {
+    setShowPassSettings(false);
+    if (currentStep < 4) setCurrentStep(s => (s + 1) as Step);
+  };
   const goPrev = () => {
+    if (showPassSettings) {
+      setShowPassSettings(false);
+      return;
+    }
     if (currentStep === 1) router.push("/organizer/events");
     else setCurrentStep(s => (s - 1) as Step);
   };
@@ -356,11 +370,15 @@ function NewEventPageContent() {
   const missingRequired = !form.location.trim() || !form.address.trim() || !form.date || !form.startTime || !form.title.trim() || !form.description.trim();
 
   return (
-    <div ref={formTopRef} className="relative z-[1] flex flex-col min-[900px]:-mx-8 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white">
+    <div
+      ref={formTopRef}
+      className="relative z-[1] flex flex-col min-[900px]:-mx-8 min-[900px]:flex min-[900px]:min-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px)-5rem)] min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
+    >
 
       {/* ── PC step bar ── */}
       <PcStepBar
         current={currentStep} onGo={goToStep} onBack={goPrev}
+        backLabelOverride={showPassSettings ? "詳細情報に戻る" : undefined}
         onDraft={saveDraft} onPublish={() => { if (!agreedToTerms) { showToast("error","利用規約への同意が必要です"); return; } setShowPublishConfirm(true); }}
         submitting={submitting} planSummary={planSummary} publishDisabledReason={publishDisabledReason}
       />
@@ -398,20 +416,54 @@ function NewEventPageContent() {
         {/* Left/main panels */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col min-[900px]:overflow-hidden min-[900px]:bg-white">
 
-          {currentStep < 4 && (
-            <EventFormStepContent
-              currentStep={currentStep}
-              mode="create"
+          {showPassSettings && currentStep === 3 ? (
+            <PassSettingsPcView
               form={form}
-              errors={errors}
-              itemsInput={itemsInput}
-              setItemsInput={setItemsInput}
-              handleChange={handleChange}
-              handleItemsBlur={handleItemsBlur}
-              setForm={setForm}
-              todayJst={todayJst}
-              startTimeMin={startTimeMin}
+              onCancel={() => setShowPassSettings(false)}
+              onEditEventInfo={() => {
+                setShowPassSettings(false);
+                setCurrentStep(2);
+              }}
+              onSave={(next) => {
+                setForm((prev) => ({
+                  ...prev,
+                  participationMode: next.participationMode,
+                  paymentMethod: next.paymentMethod,
+                  checkInMethod: next.checkInMethod,
+                  passConfigured: next.passConfigured,
+                  requiresRegistration: next.requiresRegistration,
+                }));
+                setShowPassSettings(false);
+                showToast("success", "参加パス設定を保存しました");
+              }}
             />
+          ) : null}
+
+          {currentStep < 4 && (
+            <div
+              className={
+                showPassSettings
+                  ? "flex min-h-0 flex-1 flex-col min-[900px]:hidden"
+                  : "contents"
+              }
+            >
+              <EventFormStepContent
+                currentStep={currentStep}
+                form={form}
+                errors={errors}
+                itemsInput={itemsInput}
+                setItemsInput={setItemsInput}
+                handleChange={handleChange}
+                handleItemsBlur={handleItemsBlur}
+                setForm={setForm}
+                todayJst={todayJst}
+                startTimeMin={startTimeMin}
+                onOpenPassSettings={() => {
+                  setCurrentStep(3);
+                  setShowPassSettings(true);
+                }}
+              />
+            </div>
           )}
 
           {/* ══ STEP 4: 確認・公開 ══ */}
@@ -517,7 +569,7 @@ function NewEventPageContent() {
         </div>
 
         {/* ── Side panel (PC, steps 1–3) ── */}
-        {currentStep < 4 && (
+        {currentStep < 4 && !showPassSettings && (
           <EventFormSidePanel
             form={form}
             currentStep={currentStep}

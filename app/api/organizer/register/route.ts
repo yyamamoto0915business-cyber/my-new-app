@@ -1,47 +1,105 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getApiUser } from "@/lib/api-auth";
+import { getAuth } from "@/lib/get-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { createOrganizerWithGrants } from "@/lib/db/organizers-with-grants";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { truncateShortBio } from "@/lib/organizer/organizer-display";
 
+type RegisterBody = {
+  organizationName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  activityArea?: string;
+  bio?: string;
+};
+
+function isAuthDisabled(): boolean {
+  return (
+    process.env.AUTH_DISABLED === "true" ||
+    (process.env.NODE_ENV === "development" && process.env.AUTH_DISABLED !== "false")
+  );
+}
+
 /**
  * POST: 主催者登録（Earlybird/Founder30付与付き）
  */
 export async function POST(request: NextRequest) {
-  const user = await getApiUser();
-  if (!user) {
-    return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
+  let body: RegisterBody;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const organizationName = String(body.organizationName ?? "").trim();
+  if (!organizationName) {
+    return NextResponse.json({ error: "団体名は必須です" }, { status: 400 });
   }
 
   const supabase = await createClient();
+  let userId: string | null = null;
+  let userEmail: string | null = null;
+  let userName: string | null = null;
+
+  if (supabase) {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (!error && user) {
+      userId = user.id;
+      userEmail = user.email ?? null;
+      userName =
+        (user.user_metadata?.display_name as string) ??
+        (user.user_metadata?.name as string) ??
+        user.email?.split("@")[0] ??
+        "ユーザー";
+    }
+  }
+
+  if (!userId && isAuthDisabled()) {
+    const session = await getAuth();
+    if (session?.user) {
+      userId = session.user.id;
+      userEmail = session.user.email ?? null;
+      userName = session.user.name ?? null;
+    }
+  }
+
+  if (!userId) {
+    return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
+  }
+
   if (!supabase) {
     return NextResponse.json({ error: "データベースに接続できません" }, { status: 503 });
   }
 
-  const existing = await getOrganizerIdByProfileId(supabase, user.id);
+  const activityArea = body.activityArea?.trim() || null;
+  const bio = body.bio?.trim() || null;
+  const shortBio = bio ? truncateShortBio(bio) : null;
+  const contactEmail = body.contactEmail?.trim() || undefined;
+  const contactPhone = body.contactPhone?.trim() || undefined;
+
+  const [existing, profileResult] = await Promise.all([
+    getOrganizerIdByProfileId(supabase, userId),
+    supabase.from("profiles").select("id").eq("id", userId).maybeSingle(),
+  ]);
+
   if (existing) {
     return NextResponse.json({ error: "既に主催者登録済みです" }, { status: 400 });
   }
 
-  // RLS で organizers の INSERT は「profiles に id = auth.uid() の行があること」が条件。
-  // トリガで自動作成されない環境ではプロフィールが無いため、ここで 1 件だけ作成する。
-  const { data: profileRow } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!profileRow) {
+  if (!profileResult.data) {
     // profiles の INSERT は RLS で弾かれることがあるため、サーバー側では Service Role で補完する。
     const admin = createAdminClient();
     const writer = admin ?? supabase;
 
     const { error: profileErr } = await writer.from("profiles").upsert(
       {
-        id: user.id,
-        email: user.email ?? undefined,
-        display_name: user.name ?? user.email ?? undefined,
+        id: userId,
+        email: userEmail ?? undefined,
+        display_name: userName ?? userEmail ?? undefined,
       },
       { onConflict: "id" }
     );
@@ -54,35 +112,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  let body: {
-    organizationName?: string;
-    contactEmail?: string;
-    contactPhone?: string;
-    activityArea?: string;
-    bio?: string;
-  };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const organizationName = String(body.organizationName ?? "").trim();
-  if (!organizationName) {
-    return NextResponse.json({ error: "団体名は必須です" }, { status: 400 });
-  }
-
   try {
     const organizer = await createOrganizerWithGrants(supabase, {
-      profileId: user.id,
+      profileId: userId,
       organizationName,
-      contactEmail: body.contactEmail?.trim() || undefined,
-      contactPhone: body.contactPhone?.trim() || undefined,
+      contactEmail,
+      contactPhone,
     });
-
-    const activityArea = body.activityArea?.trim() || null;
-    const bio = body.bio?.trim() || null;
-    const shortBio = bio ? truncateShortBio(bio) : null;
 
     const { error: profErr } = await supabase.from("organizer_profiles").insert({
       organizer_id: organizer.id,

@@ -78,11 +78,6 @@ export async function createOrganizerWithGrants(
     console.error("maybe_grant_founder30 failed:", inserted.id);
   }
 
-  const { data: updated } = await supabase
-    .from("organizers")
-    .select("*")
-    .eq("id", inserted.id)
-    .single();
-
-  return (updated ?? inserted) as Organizer;
+  // 再 select は省略（insert 行を返し、Founder30 付与の詳細は次画面で再取得）
+  return inserted as Organizer;
 }

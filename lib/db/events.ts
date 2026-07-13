@@ -4,6 +4,10 @@ import { filterOutSampleEvents, isPublicEventLike } from "../sample-events";
 import { getJstTodayYmd } from "../jst-date";
 import { normalizeEventStatus, PUBLIC_EVENT_STATUSES } from "../public-events";
 import { normalizeEventRecurrence, normalizeRecurrenceCount } from "../event-recurrence";
+import {
+  normalizeCheckInMethod,
+  normalizePaymentMethod,
+} from "../event-pass-settings";
 
 function participationModeFromDb(
   db: DbEvent & { participation_mode?: string | null }
@@ -71,6 +75,15 @@ function dbEventToEvent(
     capacity: db.capacity ?? undefined,
     requiresRegistration: participationMode === "required",
     participationMode,
+    paymentMethod: normalizePaymentMethod(
+      (db as DbEvent & { payment_method?: string | null }).payment_method
+    ),
+    checkInMethod: normalizeCheckInMethod(
+      (db as DbEvent & { check_in_method?: string | null }).check_in_method
+    ),
+    passConfigured: Boolean(
+      (db as DbEvent & { pass_configured?: boolean | null }).pass_configured
+    ),
     registrationDeadline: db.registration_deadline ?? undefined,
     registrationNote: db.registration_note ?? undefined,
     recurrence,
@@ -784,6 +797,9 @@ export async function createEvent(
     requires_registration:
       (form.participationMode ?? (form.requiresRegistration ? "required" : "none")) === "required",
     participation_mode: form.participationMode ?? (form.requiresRegistration ? "required" : "none"),
+    payment_method: form.paymentMethod ?? null,
+    check_in_method: form.checkInMethod ?? null,
+    pass_configured: form.passConfigured ?? false,
     registration_deadline: form.registrationDeadline || null,
     registration_note: form.registrationNote?.trim() || null,
     image_url: form.imageUrl?.trim() || null,
@@ -795,6 +811,9 @@ export async function createEvent(
     const rest = { ...fullPayload };
     delete (rest as { requires_registration?: unknown }).requires_registration;
     delete (rest as { participation_mode?: unknown }).participation_mode;
+    delete (rest as { payment_method?: unknown }).payment_method;
+    delete (rest as { check_in_method?: unknown }).check_in_method;
+    delete (rest as { pass_configured?: unknown }).pass_configured;
     delete (rest as { registration_deadline?: unknown }).registration_deadline;
     delete (rest as { registration_note?: unknown }).registration_note;
     console.warn(
@@ -849,6 +868,9 @@ function formToDb(form: EventFormData): Record<string, unknown> {
     capacity: form.capacity ?? null,
     requires_registration: (form.participationMode ?? (form.requiresRegistration ? "required" : "none")) === "required",
     participation_mode: form.participationMode ?? (form.requiresRegistration ? "required" : "none"),
+    payment_method: form.paymentMethod ?? null,
+    check_in_method: form.checkInMethod ?? null,
+    pass_configured: form.passConfigured ?? false,
     registration_deadline: form.registrationDeadline || null,
     registration_note: form.registrationNote?.trim() || null,
     recurrence,
@@ -862,10 +884,32 @@ export async function updateEvent(
   id: string,
   form: EventFormData
 ): Promise<void> {
-  const { error } = await supabase
-    .from("events")
-    .update({ ...formToDb(form), updated_at: new Date().toISOString() })
-    .eq("id", id);
+  const payload = { ...formToDb(form), updated_at: new Date().toISOString() };
+  let { error } = await supabase.from("events").update(payload).eq("id", id);
+
+  if (error && isMissingEventsColumnError(error)) {
+    const wantsPassColumns =
+      Boolean(form.passConfigured) ||
+      form.paymentMethod != null ||
+      form.checkInMethod != null;
+    if (wantsPassColumns) {
+      throw new Error(
+        "参加パス設定を保存できません。DBマイグレーション（00054_events_pass_settings）の適用が必要です"
+      );
+    }
+    const rest = { ...payload };
+    delete (rest as { requires_registration?: unknown }).requires_registration;
+    delete (rest as { participation_mode?: unknown }).participation_mode;
+    delete (rest as { payment_method?: unknown }).payment_method;
+    delete (rest as { check_in_method?: unknown }).check_in_method;
+    delete (rest as { pass_configured?: unknown }).pass_configured;
+    delete (rest as { registration_deadline?: unknown }).registration_deadline;
+    delete (rest as { registration_note?: unknown }).registration_note;
+    console.warn(
+      "[updateEvent] Retrying without registration/participation columns (DB migration may be pending)"
+    );
+    ({ error } = await supabase.from("events").update(rest).eq("id", id));
+  }
 
   if (error) throw error;
 }

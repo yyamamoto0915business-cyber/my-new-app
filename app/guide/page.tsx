@@ -333,7 +333,7 @@ export default function GuidePage() {
 
             <div className="mt-4 flex flex-col gap-[6px]">
               <Link
-                href="/signup"
+                href="/auth?tab=signup"
                 className="block w-full rounded-[10px] bg-[#c8a84b] py-[10px] text-center text-[13px] font-[600] text-[#0A0D18]"
               >
                 主催者として登録する →
@@ -364,7 +364,7 @@ export default function GuidePage() {
                   MachiGlyphでイベントを公開し、スタッフを募集して運営できます。Starterプランは無料です。
                 </p>
                 <div className="flex gap-[7px]">
-                  <Link href="/signup" className="flex-1 rounded-[9px] bg-[#c8a84b] py-[9px] text-center text-[12px] font-[600] text-[#0A0D18]">
+                  <Link href="/auth?tab=signup" className="flex-1 rounded-[9px] bg-[#c8a84b] py-[9px] text-center text-[12px] font-[600] text-[#0A0D18]">
                     主催者として登録 →
                   </Link>
                   <Link href="/login" className="flex-1 rounded-[9px] border border-white/35 py-[8px] text-center text-[12px] font-[500] text-white">

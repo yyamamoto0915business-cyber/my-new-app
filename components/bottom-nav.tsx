@@ -8,6 +8,7 @@ import { useRegionPreference } from "@/hooks/use-region-preference";
 import { setModeCookie } from "@/lib/mode-preference";
 import { RegionSettingModal } from "@/components/region/RegionSettingModal";
 import { MapPin, HelpCircle } from "lucide-react";
+import { isAuthRoute } from "@/lib/is-auth-route";
 
 const DESKTOP_NAV_ITEMS = [
   { href: "/", label: "ホーム", icon: "home" },
@@ -120,8 +121,9 @@ function NavLink({
 
 /** PC用6項目サイドナビ（900px以上表示・モバイル時は非表示） */
 export function BottomNav() {
-  const pathname = usePathname();
-  const unreadCount = useUnreadCount(true);
+  const pathname = usePathname() ?? "";
+  const authRoute = isAuthRoute(pathname);
+  const unreadCount = useUnreadCount(!authRoute);
 
   useEffect(() => {
     if (pathname.startsWith("/organizer")) {
@@ -136,6 +138,8 @@ export function BottomNav() {
 
   const showBadge = (icon: string) =>
     (icon === "messages" || icon === "profile") && unreadCount > 0;
+
+  if (authRoute) return null;
 
   return (
     <nav

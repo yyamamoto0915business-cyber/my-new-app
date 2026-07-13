@@ -269,7 +269,17 @@ export default function OrganizerEventsPage() {
           compact
           title="イベント管理"
           subtitle="公開・編集・募集・売上受取の設定をまとめて管理できます。"
-          actions={createEventButton}
+          actions={
+            <Link
+              href="/organizer/events/new"
+              className="inline-flex items-center gap-1 rounded-lg bg-[#2D7A4F] px-2.5 py-1.5 text-[11px] font-semibold leading-none text-white shadow-[0_2px_8px_rgba(45,122,79,0.24)] transition-opacity hover:opacity-90"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              イベントを作成
+            </Link>
+          }
         />
 
         <EventsManagementHero actions={createEventButton} />

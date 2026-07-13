@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
 import { getAuth } from "@/lib/get-auth";
+import { getCachedAuthUser } from "@/lib/supabase/get-cached-auth-user";
 
 type MaybeUser =
   | (Partial<User> & {
@@ -80,24 +80,17 @@ export type DeveloperAdminContext = {
 };
 
 export async function getDeveloperAdminContext(): Promise<DeveloperAdminContext | null> {
-  const supabase = await createClient();
+  const user = await getCachedAuthUser();
 
-  if (supabase) {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (!error && user && isDeveloperAdminFromSupabaseUser(user)) {
-      return {
-        id: user.id,
-        email: user.email ?? null,
-        role:
-          typeof user.user_metadata?.role === "string"
-            ? (user.user_metadata.role as string)
-            : null,
-      };
-    }
+  if (user && isDeveloperAdminFromSupabaseUser(user)) {
+    return {
+      id: user.id,
+      email: user.email ?? null,
+      role:
+        typeof user.user_metadata?.role === "string"
+          ? (user.user_metadata.role as string)
+          : null,
+    };
   }
 
   const isAuthDisabled =
@@ -107,14 +100,14 @@ export async function getDeveloperAdminContext(): Promise<DeveloperAdminContext 
 
   if (isAuthDisabled) {
     const session = await getAuth();
-    const user = session?.user;
-    if (!user) return null;
+    const sessionUser = session?.user;
+    if (!sessionUser) return null;
 
-    const id = user.id;
-    const email = user.email ?? null;
+    const id = sessionUser.id;
+    const email = sessionUser.email ?? null;
     const role =
-      typeof (user as { role?: string }).role === "string"
-        ? ((user as { role?: string }).role as string)
+      typeof (sessionUser as { role?: string }).role === "string"
+        ? ((sessionUser as { role?: string }).role as string)
         : null;
 
     if (isDeveloperAdminCore({ id, email, role })) {

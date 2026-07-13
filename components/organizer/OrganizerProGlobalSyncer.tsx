@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { isPaidOrganizer } from "@/lib/billing";
 import { setOrganizerPro } from "@/lib/organizer-pro-store";
+import { isAuthRoute } from "@/lib/is-auth-route";
 
 type BillingJson = {
   organizer?: {
@@ -18,6 +19,11 @@ type BillingJson = {
 /** ホームなど主催レイアウト外でも有料フラグを保持する（トップナビの PRO 表示用） */
 export function OrganizerProGlobalSyncer() {
   const pathname = usePathname() ?? "";
+  if (isAuthRoute(pathname)) return null;
+  return <OrganizerProGlobalSyncerInner pathname={pathname} />;
+}
+
+function OrganizerProGlobalSyncerInner({ pathname }: { pathname: string }) {
   const { user, loading } = useSupabaseUser();
 
   useEffect(() => {

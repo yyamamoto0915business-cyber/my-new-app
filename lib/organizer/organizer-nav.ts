@@ -16,7 +16,11 @@ export const ORGANIZER_TOP_TAB_ITEMS = [
   { label: "イベント管理", href: "/organizer/events" },
   { label: "スタッフ募集", href: "/organizer/recruitments" },
   { label: "主催者プラン", href: "/organizer/settings/plan" },
-  { label: "売上受取", href: "/organizer/settings/payouts" },
+  {
+    label: "クレジット決済・オンライン支払い設定",
+    href: "/organizer/settings/payouts",
+    multiline: true,
+  },
 ] as const;
 
 export const ORGANIZER_LITE_NAV_ITEMS = [

@@ -16,7 +16,7 @@ import {
   FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DashboardEvent } from "@/app/api/organizer/dashboard/route";
+import type { DayManageableEvent } from "@/lib/organizer/day-manageable-events";
 import {
   MOCK_CHECKIN,
   MOCK_STAFF,
@@ -39,7 +39,7 @@ type Props = {
   event: EventInfo;
   eventId: string;
   dayPhase: EventDayPhase;
-  allEvents: DashboardEvent[];
+  allEvents: DayManageableEvent[];
   eventsLoading?: boolean;
   emptyMode?: boolean;
   notices: DayNotice[];

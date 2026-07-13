@@ -16,12 +16,24 @@ import {
 import { getEventById } from "@/lib/events";
 import type { EventFormData } from "@/lib/db/types";
 import { normalizeEventRecurrence, normalizeRecurrenceCount } from "@/lib/event-recurrence";
+import {
+  normalizeCheckInMethod,
+  normalizePaymentMethod,
+} from "@/lib/event-pass-settings";
 
 type Params = { params: Promise<{ id: string }> };
 
+/** DB の "14:00:00" とフォームの "14:00" を同一視する */
+function normalizeHm(time: unknown): string {
+  const s = String(time ?? "").trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return s;
+  return `${m[1].padStart(2, "0")}:${m[2]}`;
+}
+
 function toJstTimestamp(dateYmd: string, timeHm: string): number | null {
   const d = String(dateYmd ?? "").trim();
-  const t = String(timeHm ?? "").trim();
+  const t = normalizeHm(timeHm);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
   if (!/^\d{2}:\d{2}$/.test(t)) return null;
   const ts = Date.parse(`${d}T${t}:00+09:00`);
@@ -116,6 +128,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     capacity,
     requiresRegistration,
     participationMode,
+    paymentMethod,
+    checkInMethod,
+    passConfigured,
     registrationDeadline,
     registrationNote,
     recurrence,
@@ -144,8 +159,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     imageUrl: (typeof imageUrl === "string" ? imageUrl.trim() : "") || "",
     description: String(description ?? "").trim(),
     date: String(date),
-    startTime: String(startTime),
-    endTime: endTime ? String(endTime) : "",
+    startTime: normalizeHm(startTime),
+    endTime: endTime ? normalizeHm(endTime) : "",
     location: String(location ?? "").trim(),
     address: String(address ?? "").trim(),
     price: Number(price) || 0,
@@ -164,7 +179,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     sponsorPerks: sponsorPerks && typeof sponsorPerks === "object" ? (sponsorPerks as Record<number, string>) : {},
     prioritySlots: Number(prioritySlots) || 0,
     englishGuideAvailable: Boolean(englishGuideAvailable),
-    capacity: capacity != null ? Number(capacity) : undefined,
+    capacity: capacity != null && capacity !== "" ? Number(capacity) : undefined,
     requiresRegistration:
       participationMode === "required" ||
       requiresRegistration === true ||
@@ -177,6 +192,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         : requiresRegistration
           ? "required"
           : "none",
+    paymentMethod: normalizePaymentMethod(paymentMethod),
+    checkInMethod: normalizeCheckInMethod(checkInMethod),
+    passConfigured: Boolean(passConfigured),
     registrationDeadline:
       registrationDeadline && String(registrationDeadline).trim()
         ? new Date(String(registrationDeadline)).toISOString()
@@ -208,8 +226,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
       const scheduleChanged =
         String(existing.date ?? "") !== String(formData.date ?? "") ||
-        String(existing.startTime ?? "") !== String(formData.startTime ?? "") ||
-        String(existing.endTime ?? "") !== String(formData.endTime ?? "");
+        normalizeHm(existing.startTime) !== normalizeHm(formData.startTime) ||
+        normalizeHm(existing.endTime) !== normalizeHm(formData.endTime);
 
       if (scheduleChanged) {
         const existingWasPublished = Boolean(existing.publishedAt);
@@ -245,10 +263,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       return NextResponse.json(updated ?? { id, ...formData });
     } catch (e) {
       console.error("organizer events PATCH:", e);
-      return NextResponse.json(
-        { error: "更新に失敗しました" },
-        { status: 500 }
-      );
+      const message =
+        e instanceof Error && e.message.trim()
+          ? e.message
+          : "更新に失敗しました";
+      return NextResponse.json({ error: message }, { status: 500 });
     }
   }
 

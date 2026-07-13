@@ -86,13 +86,8 @@ export default async function EventDetailPage({ params }: Props) {
     <EventPrimaryActions {...primaryActionsProps} layout="mobile" />
   ) : null;
 
-  const pcActions = isAvailable ? (
-    <EventPrimaryActions
-      {...primaryActionsProps}
-      layout="sidebar"
-      showOrganizerConsult
-    />
-  ) : null;
+  /** PCの参加CTAは EventPurchaseCard に統合済み */
+  const pcActions = null;
 
   const participationNotes =
     event.access || event.registrationNote ? (

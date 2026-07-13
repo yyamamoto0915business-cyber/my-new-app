@@ -8,7 +8,7 @@ const SUB_NAV_ITEMS = [
   { href: "/organizer/recruitments", label: "スタッフ募集管理" },
   { href: "/organizer/stories", label: "ストーリー" },
   { href: "/organizer/settings/plan", label: "主催者プラン（公開枠）" },
-  { href: "/organizer/settings/payouts", label: "売上受取" },
+  { href: "/organizer/settings/payouts", label: "クレジット決済・オンライン支払い設定" },
   { href: "/organizer/settings", label: "設定" },
 ] as const;
 

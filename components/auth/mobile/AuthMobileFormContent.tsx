@@ -316,7 +316,7 @@ export function AuthMobileFormContent({
           <SubmitButton
             loading={signupLoading}
             label="登録してはじめる"
-            loadingLabel="登録中..."
+            loadingLabel="確認メールを送信しています..."
             disabled={!agreedToTerms}
             compact
           />

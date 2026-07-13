@@ -105,6 +105,9 @@ export type DbEvent = {
   capacity?: number | null;
   requires_registration?: boolean | null;
   participation_mode?: "required" | "optional" | "none" | null;
+  payment_method?: "online" | "onsite" | "both" | null;
+  check_in_method?: "qr" | "manual" | null;
+  pass_configured?: boolean | null;
   registration_deadline?: string | null;
   registration_note?: string | null;
   /** 開催パターン: none=単発, weekly=毎週, monthly=毎月 */
@@ -190,6 +193,12 @@ export type Event = {
   requiresRegistration?: boolean;
   /** 参加方式: 申込必須 / 申込任意 / 申込不要 */
   participationMode?: "required" | "optional" | "none";
+  /** 参加パス: 支払い方法（無料・申込不要時は null） */
+  paymentMethod?: "online" | "onsite" | "both" | null;
+  /** 参加パス: 当日受付方法 */
+  checkInMethod?: "qr" | "manual" | null;
+  /** 参加パス設定画面で保存済みか */
+  passConfigured?: boolean;
   registrationDeadline?: string;
   registrationNote?: string;
   /** 開催パターン: none=単発, weekly=毎週, monthly=毎月 */

@@ -6,6 +6,7 @@ import { useUnreadCount } from "@/hooks/use-unread-count";
 import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
+import { isAuthRoute } from "@/lib/is-auth-route";
 import { cn } from "@/lib/utils";
 import { prefetchMypageSummary } from "@/lib/prefetch-mypage-summary";
 
@@ -61,7 +62,8 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
 export function MobileBottomNav() {
   /** 初回から DOM に Link を出す（SSR 含む）→ ビューポート内プリフェッチが効き、モバイルのタップが速くなりやすい */
   const pathname = usePathname() ?? "";
-  const unreadCount = useUnreadCount(true);
+  const authRoute = isAuthRoute(pathname);
+  const unreadCount = useUnreadCount(!authRoute);
 
   const items = MOBILE_ITEMS;
 
@@ -84,7 +86,13 @@ export function MobileBottomNav() {
   const showBadge = (icon: string) =>
     (icon === "profile" || icon === "messages") && unreadCount > 0;
 
-  if (isMessagesConversationRoute(pathname) || isProfileEditRoute(pathname)) return null;
+  if (
+    authRoute ||
+    isMessagesConversationRoute(pathname) ||
+    isProfileEditRoute(pathname)
+  ) {
+    return null;
+  }
 
   return (
     <nav

@@ -17,6 +17,7 @@ import { useOrganizerPro } from "@/lib/organizer-pro-store";
 import { isDiscoverPath } from "@/lib/top-mode-active";
 import { Search } from "lucide-react";
 import { setModeCookie } from "@/lib/mode-preference";
+import { isAuthRoute } from "@/lib/is-auth-route";
 
 function isMissingAvatarColumnsError(message: string): boolean {
   return /participant_avatar_url|organizer_avatar_url|active_profile_role|42703/i.test(
@@ -94,6 +95,12 @@ function PcAuthNavButtons() {
 }
 
 export function PcTopNav() {
+  const pathname = usePathname() ?? "";
+  if (isAuthRoute(pathname)) return null;
+  return <PcTopNavInner />;
+}
+
+function PcTopNavInner() {
   const pathname = usePathname() ?? "";
   const { user } = useSupabaseUser();
   const isProOrganizer = useOrganizerPro();

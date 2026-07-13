@@ -1,5 +1,14 @@
 /** 認証フロー専用画面（グローバルナビを隠す） */
 export function isAuthRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
-  return pathname === "/auth" || pathname.startsWith("/auth/");
+  return (
+    pathname === "/auth" ||
+    pathname.startsWith("/auth/") ||
+    pathname === "/signup" ||
+    pathname.startsWith("/signup/") ||
+    pathname === "/login" ||
+    pathname.startsWith("/login/") ||
+    pathname === "/onboarding" ||
+    pathname.startsWith("/onboarding/")
+  );
 }

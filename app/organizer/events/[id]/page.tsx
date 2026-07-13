@@ -7,6 +7,7 @@ import type { Event, EventFormData } from "@/lib/events";
 import { eventToForm } from "@/lib/organizer-event-to-form";
 import { EVENT_TAGS } from "@/lib/db/types";
 import { EventFormStepContent } from "@/components/organizer/events/EventFormStepContent";
+import { PassSettingsPcView } from "@/components/organizer/events/PassSettingsPcView";
 import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import { getJstNowHm, getJstTodayYmd, toJstTimestamp } from "@/lib/jst-date";
 import {
@@ -80,6 +81,7 @@ function EditPcStepBar({
   onSave,
   submitting,
   statusLabel,
+  backLabelOverride,
 }: {
   current: EventFormStep;
   onGo: (s: EventFormStep) => void;
@@ -87,6 +89,7 @@ function EditPcStepBar({
   onSave: () => void;
   submitting: boolean;
   statusLabel: string;
+  backLabelOverride?: string;
 }) {
   const backLabels: Record<EventFormStep, string> = {
     1: "イベント一覧へ",
@@ -94,6 +97,7 @@ function EditPcStepBar({
     3: "開催情報に戻る",
     4: "詳細情報に戻る",
   };
+  const backLabel = backLabelOverride ?? backLabels[current];
 
   return (
     <header className="z-10 hidden shrink-0 border-b border-[#d8d4cc] bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)] min-[900px]:block">
@@ -116,7 +120,7 @@ function EditPcStepBar({
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
-          <span className="truncate">{backLabels[current]}</span>
+          <span className="truncate">{backLabel}</span>
         </button>
         <EventFormPcStepIndicator
           current={current}
@@ -169,6 +173,8 @@ export default function EditEventPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [currentStep, setCurrentStep] = useState<EventFormStep>(1);
+  const [showPassSettings, setShowPassSettings] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const fetchEvent = useCallback(async () => {
     if (!id) return;
@@ -308,11 +314,19 @@ export default function EditEventPage() {
   const statusLabel =
     STATUS_LABELS[event?.status ?? ""] ?? (event?.status || "下書き");
 
-  const goToStep = (s: EventFormStep) => setCurrentStep(s);
+  const goToStep = (s: EventFormStep) => {
+    setShowPassSettings(false);
+    setCurrentStep(s);
+  };
   const goNext = () => {
+    setShowPassSettings(false);
     if (currentStep < 4) setCurrentStep((s) => (s + 1) as EventFormStep);
   };
   const goPrev = () => {
+    if (showPassSettings) {
+      setShowPassSettings(false);
+      return;
+    }
     if (currentStep === 1) router.push("/organizer/events");
     else setCurrentStep((s) => (s - 1) as EventFormStep);
   };
@@ -356,7 +370,7 @@ export default function EditEventPage() {
   return (
     <div
       ref={formTopRef}
-      className="relative z-[1] flex flex-col min-[900px]:-mx-8 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
+      className="relative z-[1] flex flex-col min-[900px]:-mx-8 min-[900px]:flex min-[900px]:min-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px)-5rem)] min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
     >
       <EditPcStepBar
         current={currentStep}
@@ -365,6 +379,7 @@ export default function EditEventPage() {
         onSave={saveChanges}
         submitting={submitting}
         statusLabel={statusLabel}
+        backLabelOverride={showPassSettings ? "詳細情報に戻る" : undefined}
       />
 
       <div className="sticky top-0 z-10 -mx-4 border-b border-[#e8e6e0] bg-white sm:-mx-6 min-[900px]:hidden">
@@ -404,6 +419,14 @@ export default function EditEventPage() {
         </div>
       </div>
 
+      {toast && (
+        <div
+          className="mx-4 mt-3 min-[900px]:mx-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          role="status"
+        >
+          {toast}
+        </div>
+      )}
       {submitSuccess && (
         <div
           className="mx-4 mt-3 min-[900px]:mx-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
@@ -423,23 +446,86 @@ export default function EditEventPage() {
 
       <div className="flex min-h-0 flex-1 flex-col min-[900px]:flex-row min-[900px]:overflow-hidden min-[900px]:bg-white min-[900px]:border-t min-[900px]:border-[#e8e6e0]">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col min-[900px]:overflow-hidden min-[900px]:bg-white">
-          {currentStep < 4 && (
-            <EventFormStepContent
-              currentStep={currentStep}
-              mode="edit"
+          {showPassSettings && currentStep === 3 ? (
+            <PassSettingsPcView
               form={form}
-              errors={errors}
-              itemsInput={itemsInput}
-              setItemsInput={setItemsInput}
-              handleChange={handleChange}
-              handleItemsBlur={handleItemsBlur}
-              setForm={
-                setForm as React.Dispatch<React.SetStateAction<EventFormData>>
-              }
-              todayJst={todayJst}
-              startTimeMin={startTimeMin}
-              eventId={id}
+              onCancel={() => setShowPassSettings(false)}
+              onEditEventInfo={() => {
+                setShowPassSettings(false);
+                setCurrentStep(2);
+              }}
+              onSave={async (next) => {
+                const nextForm = form
+                  ? {
+                      ...form,
+                      participationMode: next.participationMode,
+                      paymentMethod: next.paymentMethod,
+                      checkInMethod: next.checkInMethod,
+                      passConfigured: next.passConfigured,
+                      requiresRegistration: next.requiresRegistration,
+                    }
+                  : null;
+                if (!nextForm || !id) return;
+                setForm(nextForm);
+                setSubmitError(null);
+                try {
+                  const res = await fetch(`/api/organizer/events/${id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      ...nextForm,
+                      imageUrl: nextForm.imageUrl?.trim() || undefined,
+                    }),
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) {
+                    setSubmitError(
+                      typeof data.error === "string"
+                        ? data.error
+                        : "参加パス設定の保存に失敗しました"
+                    );
+                    return;
+                  }
+                  setEvent(data);
+                  setForm(eventToForm(data));
+                  setShowPassSettings(false);
+                  setToast("参加パス設定を保存しました");
+                  setTimeout(() => setToast(null), 2600);
+                } catch {
+                  setSubmitError("参加パス設定の保存に失敗しました");
+                }
+              }}
             />
+          ) : null}
+
+          {currentStep < 4 && (
+            <div
+              className={
+                showPassSettings
+                  ? "flex min-h-0 flex-1 flex-col min-[900px]:hidden"
+                  : "contents"
+              }
+            >
+              <EventFormStepContent
+                currentStep={currentStep}
+                form={form}
+                errors={errors}
+                itemsInput={itemsInput}
+                setItemsInput={setItemsInput}
+                handleChange={handleChange}
+                handleItemsBlur={handleItemsBlur}
+                setForm={
+                  setForm as React.Dispatch<React.SetStateAction<EventFormData>>
+                }
+                todayJst={todayJst}
+                startTimeMin={startTimeMin}
+                eventId={id}
+                onOpenPassSettings={() => {
+                  setCurrentStep(3);
+                  setShowPassSettings(true);
+                }}
+              />
+            </div>
           )}
 
           {currentStep === 4 && (
@@ -503,6 +589,17 @@ export default function EditEventPage() {
                 </div>
                 {[
                   { label: "開催日時", val: dateStr !== "—" ? dateStr : null },
+                  ...(form.recurrence && form.recurrence !== "none"
+                    ? [
+                        {
+                          label: "開催パターン",
+                          val:
+                            form.recurrence === "weekly"
+                              ? `毎週開催（全${form.recurrenceCount ?? 4}回）`
+                              : `毎月開催（全${form.recurrenceCount ?? 4}回）`,
+                        },
+                      ]
+                    : []),
                   { label: "開催場所", val: form.location || null },
                   { label: "都道府県", val: form.prefecture || null },
                   {
@@ -544,6 +641,12 @@ export default function EditEventPage() {
                   {
                     label: "定員",
                     val: form.capacity ? `${form.capacity}人` : "未設定（無制限）",
+                  },
+                  {
+                    label: "締め切り",
+                    val: form.registrationDeadline
+                      ? new Date(form.registrationDeadline).toLocaleDateString("ja-JP")
+                      : null,
                   },
                   {
                     label: "持ち物",
@@ -662,22 +765,13 @@ export default function EditEventPage() {
           )}
         </div>
 
-        {currentStep < 4 && (
+        {currentStep < 4 && !showPassSettings && (
           <EventFormSidePanel
             form={form}
             currentStep={currentStep}
             onNext={goNext}
             onPrev={goPrev}
             nextLabel={nextLabels[currentStep]}
-            footerNote={
-              <p className="text-[11px] leading-[1.5] text-[#2A5A74]">
-                公開状態の変更は
-                <Link href="/organizer/events" className="font-medium hover:underline">
-                  イベント一覧
-                </Link>
-                から行えます。
-              </p>
-            }
           />
         )}
       </div>
@@ -687,35 +781,42 @@ export default function EditEventPage() {
           <button
             type="button"
             onClick={goPrev}
-            className="flex items-center gap-1 rounded-[9px] border border-[#e8e6e0] bg-white px-3 py-2 text-[13px] font-[500]"
+            className="flex items-center gap-1 rounded-[9px] border border-[#e8e6e0] bg-white px-3 py-2 text-[13px] font-[500] min-[900px]:gap-[6px] min-[900px]:px-5 min-[900px]:py-[9px]"
             style={{ visibility: currentStep === 1 ? "hidden" : "visible" }}
           >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             戻る
           </button>
+          <div className="hidden min-[900px]:block text-center text-[12px] text-[#888]">
+            STEP {currentStep} / 4 — {stepLabels[currentStep]}
+          </div>
           <button
             type="button"
             onClick={goNext}
-            className="flex items-center gap-1 rounded-[9px] border-none bg-[#2B3A6B] px-4 py-2 text-[13px] font-[600] text-white"
+            className="flex items-center gap-1 rounded-[9px] border-none bg-[#2B3A6B] px-4 py-2 text-[13px] font-[600] text-white min-[900px]:gap-[6px] min-[900px]:px-6 min-[900px]:py-[9px]"
           >
             {nextLabels[currentStep]}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         </div>
       )}
       {currentStep === 4 && (
-        <div className="sticky bottom-0 z-10 flex gap-[8px] border-t border-[#e8e6e0] bg-white px-4 py-2 min-[900px]:hidden">
+        <div className="min-[900px]:hidden sticky bottom-0 z-10 border-t border-[#e8e6e0] bg-white px-4 py-2 flex gap-[8px]">
           <button
             type="button"
             onClick={goPrev}
             className="flex items-center rounded-[10px] border border-[#e8e6e0] bg-white px-[18px] py-[11px] text-[13px] font-[500]"
           >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             戻る
           </button>
           <button
             type="button"
             onClick={saveChanges}
             disabled={submitting || missingRequired}
-            className="flex flex-1 items-center justify-center rounded-[10px] bg-[#2B3A6B] py-[11px] text-[13px] font-[600] text-white disabled:opacity-50"
+            className="flex flex-1 items-center justify-center gap-[6px] rounded-[10px] bg-[#2B3A6B] py-[11px] text-[13px] font-[600] text-white disabled:opacity-50"
           >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
             {submitting ? "保存中…" : "変更を保存"}
           </button>
         </div>

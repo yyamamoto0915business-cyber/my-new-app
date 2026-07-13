@@ -6,7 +6,7 @@ import Link from "next/link";
 import { CalendarDays, ChevronDown, Check, Calendar, MapPin, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJstTodayYmd } from "@/lib/jst-date";
-import type { DashboardEvent } from "@/app/api/organizer/dashboard/route";
+import type { DayManageableEvent } from "@/lib/organizer/day-manageable-events";
 import {
   getEventDayPhaseFromDashboard,
   eventDayPhaseLabel,
@@ -28,10 +28,10 @@ function formatEventDateShort(date: string) {
 type EventGroup = {
   key: "today" | "upcoming" | "past";
   label: string;
-  events: DashboardEvent[];
+  events: DayManageableEvent[];
 };
 
-function groupSwitchableEvents(events: DashboardEvent[], currentId: string, today: string): EventGroup[] {
+function groupSwitchableEvents(events: DayManageableEvent[], currentId: string, today: string): EventGroup[] {
   const others = events.filter((e) => e.id !== currentId);
 
   const todayEvents = others.filter((e) => e.date === today && e.status === "public");
@@ -51,7 +51,7 @@ function groupSwitchableEvents(events: DashboardEvent[], currentId: string, toda
   return groups;
 }
 
-function groupSelectableEvents(events: DashboardEvent[], today: string): EventGroup[] {
+function groupSelectableEvents(events: DayManageableEvent[], today: string): EventGroup[] {
   const todayEvents = events.filter((e) => e.date === today && e.status === "public");
   const upcomingEvents = events
     .filter((e) => e.status === "public" && e.date > today)
@@ -65,7 +65,7 @@ function groupSelectableEvents(events: DashboardEvent[], today: string): EventGr
   return groups;
 }
 
-function groupPastEvents(events: DashboardEvent[]): DashboardEvent[] {
+function groupPastEvents(events: DayManageableEvent[]): DayManageableEvent[] {
   return events
     .filter((e) => e.status === "ended")
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -78,7 +78,7 @@ type Props = {
   currentVenue?: string;
   currentStatus?: string;
   currentDayPhase?: EventDayPhase;
-  events: DashboardEvent[];
+  events: DayManageableEvent[];
   loading?: boolean;
   variant?: "current" | "empty";
   compact?: boolean;

@@ -10,7 +10,35 @@ function isAuthDisabled(): boolean {
   );
 }
 
+/** Supabase Auth のセッション Cookie があるか（未ログイン訪問の getUser を避ける） */
+function hasSupabaseAuthCookie(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some((c) => c.name.includes("auth-token") && c.value.length > 0);
+}
+
+function isAuthPagePath(path: string): boolean {
+  return (
+    path === "/onboarding" ||
+    path.startsWith("/onboarding/") ||
+    path === "/auth" ||
+    path.startsWith("/auth/") ||
+    path === "/login" ||
+    path.startsWith("/login/") ||
+    path === "/signup" ||
+    path.startsWith("/signup/")
+  );
+}
+
 export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const isAuthPage = isAuthPagePath(path);
+
+  // 認証画面かつセッション Cookie なし → getUser 往復をスキップ（新規登録の初回表示を高速化）
+  if (isAuthPage && !hasSupabaseAuthCookie(request)) {
+    return NextResponse.next({ request });
+  }
+
   const proxyClient = createProxySupabase(request);
   if (!proxyClient) {
     return NextResponse.next({ request });
@@ -28,17 +56,9 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  const path = request.nextUrl.pathname;
   const isAdminAppPage =
     path === "/admin" || path.startsWith("/admin/");
   const isAdminApiRoute = path.startsWith("/api/admin/");
-
-  const isAuthPage =
-    path === "/onboarding" ||
-    path === "/auth" ||
-    path.startsWith("/auth/") ||
-    path.startsWith("/login") ||
-    path.startsWith("/signup");
 
   if (isAuthPage) {
     return response;

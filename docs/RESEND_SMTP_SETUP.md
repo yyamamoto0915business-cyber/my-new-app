@@ -1,6 +1,8 @@
 # Resend で Custom SMTP を設定する（確認メール届くようにする）
 
-Supabase 標準のメールは届きにくいことがあるため、Resend の Custom SMTP を使うことで確認メールを安定して届けられます。
+Supabase 標準のメールは届きにくい・遅いことがあるため、Resend の Custom SMTP を使うことで確認メールを安定して早く届けられます。
+
+> **本番チェック**: 登録後のメールが遅い／届かないときは、まず Supabase Dashboard → Auth → SMTP Settings で Custom SMTP（Resend）が ON か、Sender が認証済みドメイン（例: `noreply@machiglyph.jp`）かを確認してください。アプリ側では送信速度をほぼ制御できません。
 
 ---
 

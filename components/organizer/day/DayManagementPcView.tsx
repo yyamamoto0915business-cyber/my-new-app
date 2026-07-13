@@ -16,7 +16,7 @@ import {
   Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DashboardEvent } from "@/app/api/organizer/dashboard/route";
+import type { DayManageableEvent } from "@/lib/organizer/day-manageable-events";
 import {
   MOCK_CHECKIN,
   MOCK_STAFF,
@@ -39,7 +39,7 @@ type Props = {
   event: EventInfo;
   eventId: string;
   dayPhase: EventDayPhase;
-  allEvents: DashboardEvent[];
+  allEvents: DayManageableEvent[];
   eventsLoading?: boolean;
   emptyMode?: boolean;
   notices: DayNotice[];
@@ -185,11 +185,11 @@ export function DayManagementPcView({
         loading={eventsLoading}
         variant={emptyMode ? "empty" : "current"}
         compact
-        className={cn("shrink-0", showHero ? "mt-1.5" : undefined)}
+        className="shrink-0"
       />
 
       {/* KPI */}
-      <div className="mg-day-mgmt-pc__kpi-grid grid shrink-0 grid-cols-4 gap-2">
+      <div className="mg-day-mgmt-pc__kpi-grid grid shrink-0 grid-cols-4">
         <div className="mg-day-mgmt-pc__kpi">
           <div className="flex items-center gap-1.5">
             <span className="mg-day-mgmt-pc__kpi-icon mg-day-mgmt-pc__kpi-icon--green">

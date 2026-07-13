@@ -27,29 +27,6 @@ export async function signUpWithEmail(formData: {
 
   const emailRedirectTo = await getSignupEmailRedirectToServer();
 
-  // #region agent log
-  fetch("http://127.0.0.1:7242/ingest/089f2869-4b0b-45dc-b221-b1a3b9e2669a", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "6ef341",
-    },
-    body: JSON.stringify({
-      sessionId: "6ef341",
-      runId: "signup-pre-fix",
-      hypothesisId: "H-signup-1",
-      location: "app/auth/actions.ts:before-signUp",
-      message: "About to call supabase.auth.signUp",
-      data: {
-        hasSupabase: !!supabase,
-        emailRedirectTo,
-        emailLength: email.length,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion agent log
-
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -61,29 +38,6 @@ export async function signUpWithEmail(formData: {
       },
     },
   });
-
-  // #region agent log
-  fetch("http://127.0.0.1:7242/ingest/089f2869-4b0b-45dc-b221-b1a3b9e2669a", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "6ef341",
-    },
-    body: JSON.stringify({
-      sessionId: "6ef341",
-      runId: "signup-pre-fix",
-      hypothesisId: "H-signup-1",
-      location: "app/auth/actions.ts:after-signUp",
-      message: "Result of supabase.auth.signUp",
-      data: {
-        hasError: !!error,
-        errorMessage: error?.message,
-        errorCode: error?.code,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion agent log
 
   if (error) {
     // デバッグ用: サーバーログに出力

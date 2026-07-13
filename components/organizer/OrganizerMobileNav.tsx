@@ -39,11 +39,15 @@ function NavDrawerHeader({
     <div className="relative shrink-0 border-b border-[#e5e8e3] bg-white px-4 pb-4 pt-4">
       <div className="relative z-10 pr-10">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF4ED]" aria-hidden>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M12 2C12 2 6 8 6 13a6 6 0 1012 0c0-5-6-11-6-11z" fill="#2D7A4F" opacity="0.9" />
-            </svg>
-          </span>
+          <img
+            src="/organizer/sidebar-brand-logo-v2.png"
+            alt=""
+            width={32}
+            height={32}
+            decoding="async"
+            className="block h-8 w-8 shrink-0 object-contain"
+            aria-hidden
+          />
           <p className="text-[17px] font-semibold text-[#1e3828]">MachiGlyph</p>
         </div>
         <p className="mt-1 pl-10 text-[10px] font-medium tracking-[0.14em] text-[#8a9488]">{subtitle}</p>

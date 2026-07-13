@@ -19,6 +19,7 @@ type Props = {
   shareUrl: string;
   receptionLabel: string;
   participationReception: string;
+  /** @deprecated 購入CTAは EventPurchaseCard に統合。互換のため残す */
   pcActionsSlot?: React.ReactNode;
 };
 
@@ -33,7 +34,6 @@ export function EventDetailPcView({
   shareUrl,
   receptionLabel,
   participationReception,
-  pcActionsSlot,
 }: Props) {
   const isAvailable = getEventStatus(event) === "available";
   const { recruitment, hasRecruitment } = useEventVolunteerRecruitment(eventId);
@@ -72,8 +72,9 @@ export function EventDetailPcView({
           />
         </div>
 
-        <div className="sticky top-[calc(56px+16px)] flex flex-col gap-2.5 py-2">
+        <div className="sticky top-[90px] flex flex-col gap-2.5 py-2">
           <EventDetailPcSidebar
+            event={event}
             shareUrl={shareUrl}
             date={event.date}
             startTime={event.startTime}
@@ -82,9 +83,7 @@ export function EventDetailPcView({
             recurrenceCount={event.recurrenceCount}
             location={event.location}
             address={event.address}
-            participationReception={participationReception}
             receptionLabel={receptionLabel}
-            price={event.price ?? 0}
             priceNote={event.priceNote}
             organizerId={organizerId}
             organizerAvatarUrl={organizerAvatarUrl}
@@ -92,11 +91,6 @@ export function EventDetailPcView({
             organizerName={organizerName}
             isAvailable={isAvailable}
           />
-          {pcActionsSlot ? (
-            <div className="rounded-2xl border border-[#e8edd8] bg-white p-4">
-              {pcActionsSlot}
-            </div>
-          ) : null}
         </div>
       </div>
     </div>

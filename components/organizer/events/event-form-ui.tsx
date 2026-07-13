@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { EVENT_TAGS } from "@/lib/db/types";
 
 export type EventFormStep = 1 | 2 | 3 | 4;
@@ -390,25 +389,25 @@ export function EventFormSidePanel({
   const pct = Math.round((filled / prog.length) * 100);
 
   return (
-    <aside className="hidden min-[900px]:flex w-[272px] shrink-0 flex-col gap-2.5 border-l border-[#e8e6e0] bg-[#fafaf8] p-3.5 min-[900px]:min-h-0 min-[900px]:overflow-y-auto">
-      <div className="rounded-[10px] border border-[#e8e6e0] bg-white p-3 shadow-sm">
-        <div className="mb-2.5 flex items-center text-[12px] font-semibold text-[#1a1a1a]">
+    <aside className="hidden min-[900px]:flex w-[260px] shrink-0 flex-col gap-2 border-l border-[#e8e6e0] bg-[#fafaf8] p-3 min-[900px]:min-h-0 min-[900px]:overflow-y-auto">
+      <div className="rounded-[10px] border border-[#e8e6e0] bg-white p-2.5 shadow-sm">
+        <div className="mb-2 flex items-center text-[12px] font-semibold text-[#1a1a1a]">
           入力の進捗
           <span className="ml-auto tabular-nums text-[#2B3A6B]">
             {filled}/{prog.length}
           </span>
         </div>
-        <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[#f0eeea]">
+        <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-[#f0eeea]">
           <div
             className="h-full rounded-full bg-[#6BBF3E] transition-all duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
-        <ul className="space-y-1">
+        <ul className="space-y-0.5">
           {prog.map(({ key, done }) => (
             <li
               key={key}
-              className="flex items-center gap-2 rounded-[6px] px-1 py-1"
+              className="flex items-center gap-2 rounded-[6px] px-1 py-0.5"
             >
               <div
                 className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
@@ -429,12 +428,12 @@ export function EventFormSidePanel({
         </ul>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         {currentStep > 1 && (
           <button
             type="button"
             onClick={onPrev}
-            className="flex w-full items-center justify-center gap-1.5 rounded-[9px] border border-[#e8e6e0] bg-white px-4 py-2.5 text-[13px] font-medium text-[#1a1a1a] hover:bg-[#f5f4f0]"
+            className="flex w-full items-center justify-center gap-1.5 rounded-[9px] border border-[#e8e6e0] bg-white px-4 py-2 text-[13px] font-medium text-[#1a1a1a] hover:bg-[#f5f4f0]"
           >
             <svg
               width="14"
@@ -454,7 +453,7 @@ export function EventFormSidePanel({
         <button
           type="button"
           onClick={onNext}
-          className="flex w-full items-center justify-center gap-1.5 rounded-[9px] bg-[#2B3A6B] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#243159]"
+          className="flex w-full items-center justify-center gap-1.5 rounded-[9px] bg-[#2B3A6B] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#243159]"
         >
           {nextLabel}
           <svg
@@ -473,18 +472,13 @@ export function EventFormSidePanel({
         <p className="text-center text-[11px] text-[#888]">STEP {currentStep} / 4</p>
       </div>
 
-      {footerNote ?? (
-        <p className="text-[11px] leading-[1.5] text-[#2A5A74]">
-          参加費ありの場合は
-          <Link
-            href="/organizer/settings/payouts"
-            className="font-medium hover:underline"
-          >
-            売上受取設定
-          </Link>
-          をご確認ください。
+      {footerNote !== undefined ? (
+        footerNote
+      ) : form.price > 0 ? (
+        <p className="text-[11px] leading-[1.55] text-[#2A5A74]">
+          参加費ありのイベントは、クレジット決済・オンライン支払い設定をご確認ください。
         </p>
-      )}
+      ) : null}
     </aside>
   );
 }
