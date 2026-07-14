@@ -593,6 +593,17 @@ export function EventFormStepContent({
   }
 
   if (currentStep === 3) {
+    const noteLen = (form.registrationNote ?? "").length;
+    const postPublishForm = {
+      price: form.price,
+      capacity: form.capacity,
+      registrationDeadline: form.registrationDeadline,
+      participationMode: form.participationMode,
+      paymentMethod: form.paymentMethod,
+      checkInMethod: form.checkInMethod,
+      passConfigured: form.passConfigured,
+    };
+
     return (
       <div className="flex flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
         <div className="min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] p-4 min-[900px]:px-5 min-[900px]:py-4">
@@ -606,57 +617,21 @@ export function EventFormStepContent({
             </p>
           </div>
 
-          <div className="min-[900px]:hidden">
-            <EventFormCard title="詳細情報（任意）" icon={infoIcon}>
-              <div className="mb-[11px] grid grid-cols-2 gap-[9px]">
-                <div>
-                  <EventFormLabel label="定員" opt="任意" />
-                  <input
-                    name="capacity"
-                    type="number"
-                    min={0}
-                    value={form.capacity ?? ""}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        capacity: e.target.value ? Number(e.target.value) : undefined,
-                      }))
-                    }
-                    placeholder="未入力で無制限"
-                    className={eventFormInpSm}
-                  />
-                </div>
+          <div
+            id="event-form-pass-fields"
+            className="space-y-3.5 rounded-[10px] border border-[#e8e6e0] bg-white p-3 min-[900px]:rounded-none min-[900px]:border-0 min-[900px]:bg-transparent min-[900px]:p-0"
+          >
+            {/* モバイル: カード内見出し */}
+            <div className="min-[900px]:hidden border-b border-[#e8e6e0] pb-2.5">
+              <div className="mb-0.5 flex items-center gap-1.5 text-[13px] font-[600]">
+                {infoIcon}
+                詳細情報（任意）
               </div>
-              <div className={eventFormFieldM}>
-                <EventFormLabel label="持ち物・服装" opt="任意" />
-                <input
-                  value={itemsInput}
-                  onChange={(e) => setItemsInput(e.target.value)}
-                  onBlur={handleItemsBlur}
-                  placeholder="例：動きやすい服装、飲み物"
-                  className={eventFormInpSm}
-                />
-              </div>
-              <div>
-                <EventFormLabel label="備考・注意事項" opt="任意" />
-                <textarea
-                  name="registrationNote"
-                  value={form.registrationNote ?? ""}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      registrationNote: e.target.value || undefined,
-                    }))
-                  }
-                  rows={2}
-                  placeholder="参加者への特記事項があれば入力してください"
-                  className={`${eventFormInpSm} resize-y min-h-[4rem] max-h-24`}
-                />
-              </div>
-            </EventFormCard>
-          </div>
+              <p className="text-[11px] text-[#888]">
+                必要なときだけ入力してください。あとから編集できます
+              </p>
+            </div>
 
-          <div id="event-form-pass-fields" className={eventFormPcFieldStack}>
             <div>
               <EventFormLabel label="定員" opt="任意" />
               <input
@@ -715,14 +690,35 @@ export function EventFormStepContent({
                 onChange={(e) =>
                   setForm((prev) => ({
                     ...prev,
-                    registrationNote: e.target.value || undefined,
+                    registrationNote: e.target.value.slice(0, 500) || undefined,
                   }))
                 }
                 rows={4}
+                maxLength={500}
                 placeholder="参加者への特記事項があれば入力してください。キャンセルポリシーや注意事項など。"
                 className={`${eventFormInp} resize-none`}
               />
+              <div className="mt-1 flex justify-end">
+                <span className="tabular-nums text-[11px] text-[#888]">
+                  {noteLen}/500
+                </span>
+              </div>
             </div>
+          </div>
+
+          {/* モバイル: 公開後設定カード */}
+          <div className="mt-4 min-[900px]:hidden pb-2">
+            <div className="mb-0.5 text-[13px] font-[600] text-[#888]">
+              公開後に設定できること
+            </div>
+            <p className="mb-2.5 text-[11px] leading-snug text-[#888]">
+              イベント公開後にこれらの機能を追加できます
+            </p>
+            <PostPublishFeatures
+              eventId={eventId}
+              onOpenPassSettings={onOpenPassSettings}
+              form={postPublishForm}
+            />
           </div>
         </div>
 
@@ -739,15 +735,7 @@ export function EventFormStepContent({
             <PostPublishFeatures
               eventId={eventId}
               onOpenPassSettings={onOpenPassSettings}
-              form={{
-                price: form.price,
-                capacity: form.capacity,
-                registrationDeadline: form.registrationDeadline,
-                participationMode: form.participationMode,
-                paymentMethod: form.paymentMethod,
-                checkInMethod: form.checkInMethod,
-                passConfigured: form.passConfigured,
-              }}
+              form={postPublishForm}
             />
           </div>
         </div>

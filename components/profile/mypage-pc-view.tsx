@@ -370,16 +370,16 @@ export function MypagePcView({
             }}
           />
 
-          <div className="relative z-[1] flex min-h-[148px] items-center gap-6 px-7 py-5 lg:px-8">
+          <div className="relative z-[1] flex min-h-[160px] items-center gap-6 px-7 py-5 lg:px-8">
             {/* 左：プロフィール情報（視覚的なまとまり） */}
-            <div className="flex min-w-0 items-center gap-4">
+            <div className="flex min-w-0 items-center gap-5">
               <Link
                 href="/profile/edit"
                 className="relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F8F57] focus-visible:ring-offset-2"
                 aria-label="プロフィールを編集"
               >
                 <div
-                  className="relative h-[60px] w-[60px] overflow-hidden rounded-full"
+                  className="relative h-[72px] w-[72px] overflow-hidden rounded-full"
                   style={{
                     border: "2.5px solid rgba(255,255,255,.95)",
                     boxShadow: "0 2px 8px rgba(0,0,0,.08)",
@@ -388,11 +388,11 @@ export function MypagePcView({
                   <ProfileBannerAvatar avatarUrl={avatarUrl} displayName={displayName} />
                 </div>
                 <span
-                  className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white"
+                  className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white"
                   style={{ backgroundColor: C.main }}
                   aria-hidden
                 >
-                  <Camera className="h-2.5 w-2.5 text-white" strokeWidth={2.5} />
+                  <Camera className="h-3 w-3 text-white" strokeWidth={2.5} />
                 </span>
               </Link>
 
@@ -404,7 +404,7 @@ export function MypagePcView({
                   MY PAGE
                 </p>
                 <h1
-                  className="mt-0.5 truncate text-[21px] font-bold leading-tight"
+                  className="mt-0.5 truncate text-[24px] font-bold leading-tight"
                   style={{ color: C.ink, fontFamily: "'Noto Serif JP', serif" }}
                 >
                   {displayName}

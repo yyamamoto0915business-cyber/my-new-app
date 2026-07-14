@@ -198,18 +198,13 @@ function AuthPageContent() {
   return (
     <>
       <AuthMobileBackground />
-      {/* PC: サイドバー右・上部ナビ下に固定配置（余白ずれ防止） */}
-      <div className="fixed bottom-0 left-0 right-0 top-[var(--mg-pc-top-nav-h)] z-[10] hidden min-[900px]:left-20 min-[900px]:flex">
+      {/* PC: 上部ナビ＋左サイドバー内に収める（fixed だと入場アニメの transform で下端が切れる） */}
+      <div className="relative z-[10] hidden min-h-0 min-[900px]:ml-20 min-[900px]:mt-[var(--mg-pc-top-nav-h)] min-[900px]:flex min-[900px]:h-[calc(100dvh-var(--mg-pc-top-nav-h))] min-[900px]:w-[calc(100%-5rem)]">
         <AuthPcPageLayout>
           <AuthPcHeroPanel />
           <AuthPcFormContent {...formProps} />
         </AuthPcPageLayout>
       </div>
-      {/* 固定レイアウト分のスペーサー（フッター等の押し下げ用） */}
-      <div
-        className="hidden min-[900px]:block min-[900px]:h-[calc(100vh-var(--mg-pc-top-nav-h))]"
-        aria-hidden
-      />
 
       {/* モバイル: 水彩背景 + 新デザインフォーム（新規登録時は縦スクロール） */}
       <div

@@ -34,7 +34,7 @@ type Props = {
 };
 
 const inputClass =
-  "h-[44px] w-full rounded-[10px] border border-[#d8e0da] bg-white px-3.5 text-[13px] text-[#1e3828] placeholder:text-[#9aab9f] focus-visible:border-[#7aab8a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e8d8]";
+  "h-10 w-full rounded-[10px] border border-[#d8e0da] bg-white px-3.5 text-[13px] text-[#1e3828] placeholder:text-[#9aab9f] focus-visible:border-[#7aab8a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e8d8]";
 
 export function AuthPcFormContent({
   tab,
@@ -67,7 +67,7 @@ export function AuthPcFormContent({
   return (
     <AuthPcFormShell isLogin={isLogin}>
       {isLogin ? (
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-3">
           <div>
             <label
               htmlFor="auth-pc-email"
@@ -129,7 +129,7 @@ export function AuthPcFormContent({
           <button
             type="submit"
             disabled={loading}
-            className="flex h-[44px] w-full items-center justify-center gap-1 rounded-[10px] bg-gradient-to-r from-[#2a5540] via-[#315f48] to-[#3a6b50] px-4 text-[13px] font-medium text-white shadow-[0_6px_18px_rgba(42,85,64,0.28)] transition hover:opacity-95 disabled:opacity-60"
+            className="flex h-10 w-full items-center justify-center gap-1 rounded-[10px] bg-gradient-to-r from-[#2a5540] via-[#315f48] to-[#3a6b50] px-4 text-[13px] font-medium text-white shadow-[0_6px_18px_rgba(42,85,64,0.28)] transition hover:opacity-95 disabled:opacity-60"
           >
             {loading ? "ログイン中..." : "ログインする"}
             {!loading && <ChevronRight className="h-4 w-4" aria-hidden />}
@@ -145,7 +145,7 @@ export function AuthPcFormContent({
             type="button"
             onClick={handleGoogleLogin}
             disabled={googleLoading}
-            className="flex h-[44px] w-full items-center justify-center gap-2.5 rounded-[10px] border border-[#d8e0da] bg-white text-[13px] font-medium text-[#1e3828] transition hover:bg-[#fafaf8] disabled:opacity-60"
+            className="flex h-10 w-full items-center justify-center gap-2.5 rounded-[10px] border border-[#d8e0da] bg-white text-[13px] font-medium text-[#1e3828] transition hover:bg-[#fafaf8] disabled:opacity-60"
           >
             <GoogleIcon />
             {googleLoading ? "接続中..." : "Googleでログイン"}

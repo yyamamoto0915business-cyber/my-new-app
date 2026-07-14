@@ -8,11 +8,12 @@ import { useRegionPreference } from "@/hooks/use-region-preference";
 import { setModeCookie } from "@/lib/mode-preference";
 import { RegionSettingModal } from "@/components/region/RegionSettingModal";
 import { MapPin, HelpCircle } from "lucide-react";
-import { isAuthRoute } from "@/lib/is-auth-route";
+import { shouldHidePcGlobalNav } from "@/lib/is-auth-route";
+import { ParticipationPassIcon } from "@/components/pass/ParticipationPassIcon";
 
 const DESKTOP_NAV_ITEMS = [
   { href: "/", label: "ホーム", icon: "home" },
-  { href: "/stories", label: "ストーリー", icon: "story" },
+  { href: "/pass", label: "参加パス", icon: "pass" },
   { href: "/volunteer", label: "ボランティア", icon: "volunteer" },
   { href: "/messages", label: "メッセージ", icon: "messages" },
   { href: "/organizer", label: "主催", icon: "organizer" },
@@ -28,12 +29,9 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
       </svg>
     );
   }
-  if (icon === "story") {
-    return (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-      </svg>
-    );
+  if (icon === "pass") {
+    // 画像アイコンはSVGより余白感が出やすいので一回り大きく
+    return <ParticipationPassIcon className="h-8 w-8" stroke={stroke} />;
   }
   if (icon === "volunteer") {
     return (
@@ -122,8 +120,8 @@ function NavLink({
 /** PC用6項目サイドナビ（900px以上表示・モバイル時は非表示） */
 export function BottomNav() {
   const pathname = usePathname() ?? "";
-  const authRoute = isAuthRoute(pathname);
-  const unreadCount = useUnreadCount(!authRoute);
+  const hideOnAuth = shouldHidePcGlobalNav(pathname);
+  const unreadCount = useUnreadCount(!hideOnAuth);
 
   useEffect(() => {
     if (pathname.startsWith("/organizer")) {
@@ -139,11 +137,11 @@ export function BottomNav() {
   const showBadge = (icon: string) =>
     (icon === "messages" || icon === "profile") && unreadCount > 0;
 
-  if (authRoute) return null;
+  if (hideOnAuth) return null;
 
   return (
     <nav
-      className="fixed bottom-0 left-0 top-0 right-auto z-50 hidden h-screen w-20 flex-col items-center border-r border-[#e8ebe6] bg-white py-5 min-[900px]:flex"
+      className="fixed inset-y-0 left-0 z-50 hidden w-20 flex-col items-center border-r border-[#e8ebe6] bg-white py-5 min-[900px]:flex"
       aria-label="PCナビゲーション"
     >
       <div className="flex w-full flex-col items-center justify-start gap-0">
@@ -171,7 +169,7 @@ function SidebarFooter() {
   const displayLabel = hydrated ? label || "未設定" : "未設定";
 
   return (
-    <div className="mt-auto flex w-full flex-col items-center gap-3 px-1 pb-2">
+    <div className="mt-auto flex w-full shrink-0 flex-col items-center gap-3 px-1 pb-3">
       <button
         ref={triggerRef}
         type="button"

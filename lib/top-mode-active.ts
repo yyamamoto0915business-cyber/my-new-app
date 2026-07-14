@@ -25,10 +25,10 @@ export function resolveAuthReturnPath(
  * パス名と戻り先から、上部モードタブの選択状態を決める。
  * /auth?next=/organizer のように認証画面へ飛んだ場合も「主催」を選ぶ。
  */
-/** 「探す」モード配下のパス（主催・ボランティア・ストーリー一覧を除く） */
+/** 「探す」モード配下のパス（主催・ボランティア・参加パス一覧を除く） */
 export function isDiscoverPath(pathname: string): boolean {
   if (isOrganizerDashboardPath(pathname)) return false;
-  if (pathname.startsWith("/volunteer") || pathname.startsWith("/stories")) {
+  if (pathname.startsWith("/volunteer") || pathname.startsWith("/pass") || pathname.startsWith("/stories")) {
     return false;
   }
   if (
@@ -46,10 +46,10 @@ export function isDiscoverPath(pathname: string): boolean {
   );
 }
 
-/** 未ログイン時、リロードでタイトル画面へ戻すモード（探す・ストーリー・ボランティア） */
+/** 未ログイン時、リロードでタイトル画面へ戻すモード（探す・参加パス・ボランティア） */
 export function isGuestSplashReturnPath(pathname: string): boolean {
   if (pathname === "/" || pathname.startsWith("/events")) return true;
-  if (pathname.startsWith("/stories")) return true;
+  if (pathname.startsWith("/pass") || pathname.startsWith("/stories")) return true;
   if (pathname.startsWith("/volunteer")) return true;
   return false;
 }

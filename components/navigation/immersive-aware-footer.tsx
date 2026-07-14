@@ -36,6 +36,8 @@ export function ImmersiveAwareFooter() {
       </div>
     );
   }
+  // 参加パスはPCで1画面完結のためフッターを出さない
+  if (pathname === "/pass" || pathname?.startsWith("/pass/")) return null;
   return (
     <div className="hidden min-[900px]:block">
       <SiteFooter />

@@ -184,13 +184,13 @@ body::before {
 }
 
 /* ─── ページ遷移アニメーション（app/template.tsx 経由） ─── */
+/* transform / will-change:transform は fixed 子孫の包含ブロックになるため使わない */
 @keyframes mg-page-enter {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 .mg-page-enter {
   animation: mg-page-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: opacity, transform;
 }
 @media (prefers-reduced-motion: reduce) {
   .mg-page-enter { animation: none; }

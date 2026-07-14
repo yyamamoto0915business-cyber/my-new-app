@@ -12,7 +12,7 @@ export function AuthPcPageLayout({ children, className }: Props) {
     <div
       data-auth-pc-layout
       className={cn(
-        "relative isolate flex h-full w-full overflow-hidden bg-[#f3f4f1]",
+        "relative isolate flex h-full min-h-0 w-full overflow-hidden bg-[#f3f4f1]",
         className
       )}
     >

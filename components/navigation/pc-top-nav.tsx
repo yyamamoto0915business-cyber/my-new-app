@@ -17,7 +17,8 @@ import { useOrganizerPro } from "@/lib/organizer-pro-store";
 import { isDiscoverPath } from "@/lib/top-mode-active";
 import { Search } from "lucide-react";
 import { setModeCookie } from "@/lib/mode-preference";
-import { isAuthRoute } from "@/lib/is-auth-route";
+import { shouldHidePcGlobalNav } from "@/lib/is-auth-route";
+import { ParticipationPassIcon } from "@/components/pass/ParticipationPassIcon";
 
 function isMissingAvatarColumnsError(message: string): boolean {
   return /participant_avatar_url|organizer_avatar_url|active_profile_role|42703/i.test(
@@ -34,7 +35,7 @@ const NAV_LINKS = [
 function isNavActive(pathname: string, href: string) {
   if (href === "/organizer") return pathname.startsWith("/organizer");
   if (href === "/volunteer") return pathname.startsWith("/volunteer");
-  if (href === "/stories") return pathname.startsWith("/stories");
+  if (href === "/pass") return pathname.startsWith("/pass");
   if (href === "/") return isDiscoverPath(pathname);
   return pathname.startsWith(href);
 }
@@ -96,7 +97,7 @@ function PcAuthNavButtons() {
 
 export function PcTopNav() {
   const pathname = usePathname() ?? "";
-  if (isAuthRoute(pathname)) return null;
+  if (shouldHidePcGlobalNav(pathname)) return null;
   return <PcTopNavInner />;
 }
 
@@ -259,28 +260,14 @@ function PcTopNavInner() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* 右側: ストーリー・通知・ユーザー */}
+      {/* 右側: 参加パス・通知・ユーザー */}
       <div className="flex items-center gap-2">
         <Link
-          href="/stories"
+          href="/pass"
           className="inline-flex h-9 items-center gap-1.5 rounded-[20px] border border-[#c8dcd0] bg-white px-3.5 text-[13px] font-medium text-[#1e3848] transition hover:bg-[#ecf6ee]"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-            />
-          </svg>
-          ストーリー
+          <ParticipationPassIcon className="h-[22px] w-[22px]" stroke="currentColor" />
+          参加パス
         </Link>
         <Suspense fallback={null}>
           <NotificationBell />

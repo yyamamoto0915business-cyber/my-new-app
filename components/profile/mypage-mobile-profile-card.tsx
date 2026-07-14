@@ -154,8 +154,8 @@ export function MypageMobileProfileCard({
           }}
         />
 
-        <div className="relative z-[1] flex items-center justify-between gap-3 px-4 py-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+        <div className="relative z-[1] flex items-start justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 flex-1 items-start gap-2.5">
             <Link href="/profile/edit" className="relative shrink-0" aria-label="プロフィールを編集">
               <div
                 className="relative h-14 w-14 overflow-hidden rounded-full"
@@ -184,7 +184,7 @@ export function MypageMobileProfileCard({
               >
                 {displayName}
               </h1>
-              <p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-[#52504c]">
+              <p className="mt-0.5 line-clamp-2 break-words text-[11px] leading-snug text-[#52504c]">
                 {statusText}
               </p>
               {region && (
@@ -199,7 +199,7 @@ export function MypageMobileProfileCard({
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="flex shrink-0 flex-col items-end gap-1.5 pt-0.5">
             <Link
               href="/profile/edit"
               className="inline-flex min-h-[30px] items-center gap-1.5 rounded-full border bg-white px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-[#fafaf8]"

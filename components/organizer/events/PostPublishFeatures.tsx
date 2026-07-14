@@ -23,7 +23,10 @@ type PassFormSlice = {
 
 /** 参加パス設定の補助ステータス */
 function resolvePassStatus(form: PassFormSlice): FeatureSettingStatus {
-  if (form.passConfigured) return "設定済み";
+  if (form.passConfigured) {
+    if (form.price > 0) return "有料";
+    return "設定済み";
+  }
   if (form.price > 0) return "有料";
 
   const hasPassConfig =
@@ -33,7 +36,7 @@ function resolvePassStatus(form: PassFormSlice): FeatureSettingStatus {
 
   if (form.participationMode === "none") return "未設定";
   if (hasPassConfig) return "設定済み";
-  return "無料";
+  return "未設定";
 }
 
 /** Stripe / 振込先設定の補助ステータス */

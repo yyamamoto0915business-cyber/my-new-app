@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { Bookmark } from "lucide-react";
+import { ParticipationPassIcon } from "@/components/pass/ParticipationPassIcon";
 import { TopModeTabs, type TopModeTabId } from "@/components/navigation/top-mode-tabs";
 import { setModeCookie } from "@/lib/mode-preference";
 import { NotificationBell } from "@/components/notification-bell";
@@ -125,12 +125,12 @@ export function MobileTopHeader({ className }: Props) {
 
             <div className="flex shrink-0 items-center justify-end gap-1">
               <Link
-                href="/stories"
+                href="/pass"
                 className="flex h-8 items-center gap-1 rounded-full border border-[#dde9e1] bg-white px-2 text-[11px] font-medium text-[#163828] active:bg-[#f7fbf8]"
-                aria-label="ストーリー"
+                aria-label="参加パス"
               >
-                <Bookmark className="h-3.5 w-3.5 shrink-0 text-[#2f6b4f]" aria-hidden />
-                <span className="whitespace-nowrap">ストーリー</span>
+                <ParticipationPassIcon className="h-4 w-4 shrink-0" stroke="#2f6b4f" />
+                <span className="whitespace-nowrap">参加パス</span>
               </Link>
 
               <Suspense fallback={null}>

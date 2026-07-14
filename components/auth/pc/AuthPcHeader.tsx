@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import { ParticipationPassIcon } from "@/components/pass/ParticipationPassIcon";
 
 type Props = {
   onSignupClick?: () => void;
@@ -33,11 +33,11 @@ export function AuthPcHeader({ onSignupClick }: Props) {
 
       <nav className="flex items-center gap-3" aria-label="認証ページナビゲーション">
         <Link
-          href="/stories"
+          href="/pass"
           className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium text-[#3d5c48] transition-colors hover:bg-[#f4f6f4] hover:text-[#1e3828]"
         >
-          <BookOpen className="h-4 w-4 text-[#6a9080]" aria-hidden />
-          ストーリーを見る
+          <ParticipationPassIcon className="h-5 w-5" stroke="#6a9080" />
+          参加パスを見る
         </Link>
         <Link
           href="/auth?tab=signup"
