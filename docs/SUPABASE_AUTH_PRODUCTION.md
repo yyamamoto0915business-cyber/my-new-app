@@ -109,6 +109,29 @@ Magic Link テンプレートも同様にする場合の例です。
 
 ---
 
+## 4.1 ボット／スパム登録対策（推奨）
+
+アプリ側では次を実装済みです。
+
+- ハニーポット・利用規約のサーバー側必須
+- Gmail のドット過多メール拒否
+- 乱数っぽい表示名の拒否
+- IP／メール単位の簡易レート制限
+- （任意）Cloudflare Turnstile
+
+**Turnstile を有効にする手順**
+
+1. [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) でサイトキー／シークレットを作成
+2. Vercel / `.env.local` に設定:
+   - `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+   - `TURNSTILE_SECRET_KEY`
+3. **重要**: Supabase Dashboard → **Authentication** → **Attack Protection**（または Bot and Abuse Protection）で **Enable CAPTCHA protection** を Turnstile にし、同じシークレットを登録する  
+   → anon key からの Auth API 直叩きも含めて防げます
+
+アプリのフォーム検証だけだと、Supabase Auth API を直接叩くボットはすり抜けます。本番では 3 を必ず行ってください。
+
+---
+
 ## 5. 本番運用での独自 SMTP（おすすめ）
 
 Supabase 標準のメール送信では、送信元ドメインや到達率に制限があり、届かないことがあります。  
@@ -125,4 +148,5 @@ Supabase 標準のメール送信では、送信元ドメインや到達率に�
 - [ ] Redirect URLs に `/auth/callback` を追加（`www` とルートドメインの両方を使うなら両方）
 - [ ] Confirm signup の件名を「【MachiGlyph】メールアドレス確認のお願い」に、本文を [EMAIL_CONFIRM_SIGNUP_JA.md](./EMAIL_CONFIRM_SIGNUP_JA.md) の HTML に変更
 - [ ] 本番環境変数に `NEXT_PUBLIC_SITE_URL` を設定（アクセスに使うオリジンと揃える。`www` 有無に注意）
+- [ ] （推奨）Turnstile キー設定＋Supabase の CAPTCHA protection 有効化
 - [ ] （任意）独自 SMTP の検討（再設定メールの到達率向上）

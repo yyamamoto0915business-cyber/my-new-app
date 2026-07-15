@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 import { cn } from "@/lib/utils";
 import { AuthMobileFormShell, FIELD_ICON_OFFSET, FIELD_ICON_OFFSET_COMPACT } from "./AuthMobileFormShell";
 
@@ -31,6 +32,9 @@ type Props = {
   signupLoading: boolean;
   agreedToTerms: boolean;
   setAgreedToTerms: (v: boolean) => void;
+  website: string;
+  setWebsite: (v: string) => void;
+  onCaptchaToken: (token: string | null) => void;
   handleSignup: (e: React.FormEvent) => void;
 };
 
@@ -154,6 +158,9 @@ export function AuthMobileFormContent({
   signupLoading,
   agreedToTerms,
   setAgreedToTerms,
+  website,
+  setWebsite,
+  onCaptchaToken,
   handleSignup,
 }: Props) {
   const isLogin = tab === "login";
@@ -234,6 +241,23 @@ export function AuthMobileFormContent({
         </form>
       ) : (
         <form onSubmit={handleSignup} className="space-y-2.5">
+          {/* ボット用ハニーポット（視覚的に隠す） */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0"
+          >
+            <label htmlFor="auth-mobile-signup-website">Website</label>
+            <input
+              id="auth-mobile-signup-website"
+              name="website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+            />
+          </div>
+
           <div>
             <label htmlFor="auth-mobile-signup-name" className="mb-1 block text-[12px] font-medium text-[#1e3828]">
               表示名（任意）
@@ -244,6 +268,7 @@ export function AuthMobileFormContent({
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="表示名を入力"
+              maxLength={40}
               className={inputClassCompact}
             />
           </div>
@@ -312,6 +337,8 @@ export function AuthMobileFormContent({
               </span>
             </label>
           </div>
+
+          <TurnstileWidget onToken={onCaptchaToken} className="flex justify-center" />
 
           <SubmitButton
             loading={signupLoading}

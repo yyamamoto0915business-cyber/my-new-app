@@ -9,6 +9,7 @@ import { AuthPcHeroPanel } from "@/components/auth/pc/AuthPcHeroPanel";
 import { AuthPcFormContent } from "@/components/auth/pc/AuthPcFormContent";
 import { AuthMobileBackground } from "@/components/auth/mobile/AuthMobileBackground";
 import { AuthMobileFormContent } from "@/components/auth/mobile/AuthMobileFormContent";
+import { isTurnstileEnabledOnClient } from "@/components/auth/TurnstileWidget";
 
 type Tab = "login" | "signup";
 
@@ -142,11 +143,18 @@ function AuthPageContent() {
   const [signupError, setSignupError] = useState<string | null>(null);
   const [signupLoading, setSignupLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [website, setWebsite] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileEnabled = isTurnstileEnabledOnClient();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreedToTerms) {
       setSignupError("利用規約とプライバシーポリシーへの同意が必要です。");
+      return;
+    }
+    if (turnstileEnabled && !captchaToken) {
+      setSignupError("下の認証チェックを完了してください。");
       return;
     }
     setSignupError(null);
@@ -156,11 +164,15 @@ function AuthPageContent() {
       email: signupEmail.trim().toLowerCase(),
       password: signupPassword,
       displayName: displayName.trim() || undefined,
+      agreedToTerms,
+      website,
+      captchaToken: captchaToken ?? undefined,
     });
 
     setSignupLoading(false);
 
     if (!result.ok) {
+      setCaptchaToken(null);
       setSignupError(result.message ?? "エラーが発生しました。しばらくしてからもう一度お試しください。");
       return;
     }
@@ -190,6 +202,9 @@ function AuthPageContent() {
     signupLoading,
     agreedToTerms,
     setAgreedToTerms,
+    website,
+    setWebsite,
+    onCaptchaToken: setCaptchaToken,
     handleSignup,
     googleLoading,
     handleGoogleLogin,

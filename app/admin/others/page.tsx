@@ -37,6 +37,55 @@ function RoleBadge({ role }: { role: ProfileRole | null | undefined }) {
   );
 }
 
+function ConfirmBadge({ confirmed }: { confirmed: boolean | null }) {
+  if (confirmed === null) {
+    return <span className="text-[11px] text-slate-400">—</span>;
+  }
+  if (confirmed) {
+    return (
+      <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800 ring-1 ring-emerald-100">
+        確認済
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-100">
+      未確認
+    </span>
+  );
+}
+
+/** Auth ユーザーのメール確認状態を取得（Service Role がある場合のみ） */
+async function fetchEmailConfirmedMap(
+  profileIds: string[]
+): Promise<Map<string, boolean> | null> {
+  const admin = createAdminClient();
+  if (!admin || profileIds.length === 0) return null;
+
+  const idSet = new Set(profileIds);
+  const confirmed = new Map<string, boolean>();
+  const perPage = 200;
+  let page = 1;
+
+  // 新しいユーザー中心のため先頭ページから。一覧上限と揃える。
+  while (page <= 5) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error || !data?.users?.length) break;
+
+    for (const u of data.users) {
+      if (idSet.has(u.id)) {
+        confirmed.set(u.id, Boolean(u.email_confirmed_at));
+      }
+    }
+
+    if (data.users.length < perPage) break;
+    if (confirmed.size >= idSet.size) break;
+    page += 1;
+  }
+
+  return confirmed;
+}
+
 export default async function AdminOthersPage() {
   const adminSupabase = createAdminClient();
   const supabase = adminSupabase ?? (await createClient());
@@ -97,6 +146,7 @@ export default async function AdminOthersPage() {
   );
 
   const profiles = (profileRows ?? []) as ProfileRow[];
+  const confirmedMap = await fetchEmailConfirmedMap(profiles.map((p) => p.id));
 
   return (
     <div className="space-y-6">
@@ -107,6 +157,7 @@ export default async function AdminOthersPage() {
             アカウント登録済みユーザー（
             <code className="rounded bg-slate-100 px-1 text-xs">profiles</code>
             ）の一覧です。メールはログイン用アカウントに紐づく値です。
+            「未確認」は確認メール未完了（スパム登録も多くここに出ます）。
           </p>
         </div>
         <div className="text-xs text-slate-500">
@@ -139,6 +190,7 @@ export default async function AdminOthersPage() {
                   <th className="px-3 py-1 text-left">登録日時</th>
                   <th className="px-3 py-1 text-left">メール</th>
                   <th className="px-3 py-1 text-left">表示名</th>
+                  <th className="px-3 py-1 text-left">メール確認</th>
                   <th className="px-3 py-1 text-left">ロール</th>
                   <th className="px-3 py-1 text-left">主催者として</th>
                 </tr>
@@ -146,6 +198,8 @@ export default async function AdminOthersPage() {
               <tbody>
                 {profiles.map((p) => {
                   const orgName = orgNameByProfileId.get(p.id) ?? null;
+                  const confirmed =
+                    confirmedMap == null ? null : (confirmedMap.get(p.id) ?? null);
                   return (
                     <tr
                       key={p.id}
@@ -161,6 +215,9 @@ export default async function AdminOthersPage() {
                         <span className="line-clamp-2 break-all">
                           {p.display_name ?? "—"}
                         </span>
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        <ConfirmBadge confirmed={confirmed} />
                       </td>
                       <td className="px-3 py-2 align-top">
                         <RoleBadge role={p.role} />

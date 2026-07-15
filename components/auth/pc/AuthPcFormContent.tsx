@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ChevronRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 import { AuthPcFormShell } from "./AuthPcFormShell";
 
 type Tab = "login" | "signup";
@@ -28,6 +29,9 @@ type Props = {
   signupLoading: boolean;
   agreedToTerms: boolean;
   setAgreedToTerms: (v: boolean) => void;
+  website: string;
+  setWebsite: (v: string) => void;
+  onCaptchaToken: (token: string | null) => void;
   handleSignup: (e: React.FormEvent) => void;
   googleLoading: boolean;
   handleGoogleLogin: () => void;
@@ -58,6 +62,9 @@ export function AuthPcFormContent({
   signupLoading,
   agreedToTerms,
   setAgreedToTerms,
+  website,
+  setWebsite,
+  onCaptchaToken,
   handleSignup,
   googleLoading,
   handleGoogleLogin,
@@ -175,6 +182,23 @@ export function AuthPcFormContent({
         </form>
       ) : (
         <form onSubmit={handleSignup} className="space-y-3">
+          {/* ボット用ハニーポット（視覚的に隠す） */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0"
+          >
+            <label htmlFor="auth-pc-signup-website">Website</label>
+            <input
+              id="auth-pc-signup-website"
+              name="website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+            />
+          </div>
+
           <div>
             <label
               htmlFor="auth-pc-signup-name"
@@ -188,6 +212,7 @@ export function AuthPcFormContent({
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="表示名を入力"
+              maxLength={40}
               className={`mt-1.5 h-[42px] ${inputClass}`}
             />
           </div>
@@ -260,6 +285,8 @@ export function AuthPcFormContent({
               </span>
             </label>
           </div>
+
+          <TurnstileWidget onToken={onCaptchaToken} className="flex justify-center" />
 
           <button
             type="submit"
