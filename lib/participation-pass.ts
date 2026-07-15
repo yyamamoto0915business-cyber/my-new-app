@@ -99,11 +99,21 @@ export const SAMPLE_PARTICIPATION_PASSES: ParticipationPass[] = [
   },
 ];
 
+/** JST のカレンダー日差（開催日 − 今日） */
 export function getDaysUntil(startAt: string, now = new Date()): number {
-  const start = new Date(startAt);
-  const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-  const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.round((startDay.getTime() - nowDay.getTime()) / (1000 * 60 * 60 * 24));
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const startYmd = fmt.format(new Date(startAt));
+  const nowYmd = fmt.format(now);
+  const [sy, sm, sd] = startYmd.split("-").map(Number);
+  const [ny, nm, nd] = nowYmd.split("-").map(Number);
+  const startDay = Date.UTC(sy, sm - 1, sd);
+  const nowDay = Date.UTC(ny, nm - 1, nd);
+  return Math.round((startDay - nowDay) / (1000 * 60 * 60 * 24));
 }
 
 export function formatPassDateRange(startAt: string, endAt: string): string {
@@ -152,13 +162,10 @@ export function filterPassesByTab(
     .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
 }
 
-/**
- * 「次の参加予定」: 基準日以降で最も近い upcoming。
- * すべて過去なら配列先頭を返す（サンプルUI用フォールバック）。
- */
+/** 「次の参加予定」: 今日以降で最も近い upcoming */
 export function getNextPass(
   passes: ParticipationPass[],
-  now: Date = SAMPLE_PASS_REFERENCE_NOW
+  now: Date = new Date()
 ): ParticipationPass | null {
   const upcoming = filterPassesByTab(passes, "upcoming");
   if (upcoming.length === 0) return null;

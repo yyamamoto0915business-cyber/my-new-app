@@ -46,10 +46,10 @@ export function isDiscoverPath(pathname: string): boolean {
   );
 }
 
-/** 未ログイン時、リロードでタイトル画面へ戻すモード（探す・参加パス・ボランティア） */
+/** 未ログイン時、リロードでタイトル画面へ戻すモード（探す・ストーリー・ボランティア） */
 export function isGuestSplashReturnPath(pathname: string): boolean {
   if (pathname === "/" || pathname.startsWith("/events")) return true;
-  if (pathname.startsWith("/pass") || pathname.startsWith("/stories")) return true;
+  if (pathname.startsWith("/stories")) return true;
   if (pathname.startsWith("/volunteer")) return true;
   return false;
 }

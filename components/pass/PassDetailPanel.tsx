@@ -20,6 +20,10 @@ type Props = {
   pass: ParticipationPass | null;
   onClose: () => void;
   compact?: boolean;
+  emptyMessage?: {
+    title: string;
+    description: string;
+  };
 };
 
 function DetailNotches() {
@@ -86,14 +90,22 @@ function QrConfirmBlock({ pass }: { pass: ParticipationPass }) {
   );
 }
 
-export function PassDetailPanel({ pass, onClose, compact = false }: Props) {
+export function PassDetailPanel({
+  pass,
+  onClose,
+  compact = false,
+  emptyMessage,
+}: Props) {
   if (!pass) {
     return (
       <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-dashed border-[#d8e2d8] bg-white/70 px-5 text-center">
         <div>
-          <p className="text-[13px] font-medium text-[#3a4840]">参加パスを選択してください</p>
+          <p className="text-[13px] font-medium text-[#3a4840]">
+            {emptyMessage?.title ?? "参加パスを選択してください"}
+          </p>
           <p className="mt-1.5 text-[12px] leading-relaxed text-[#6a7468]">
-            一覧からパスを選ぶと、こちらに詳細が表示されます
+            {emptyMessage?.description ??
+              "一覧からパスを選ぶと、こちらに詳細が表示されます"}
           </p>
         </div>
       </div>

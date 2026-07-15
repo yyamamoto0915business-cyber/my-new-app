@@ -32,6 +32,7 @@ type Props = {
   website: string;
   setWebsite: (v: string) => void;
   onCaptchaToken: (token: string | null) => void;
+  captchaResetKey: number;
   handleSignup: (e: React.FormEvent) => void;
   googleLoading: boolean;
   handleGoogleLogin: () => void;
@@ -65,6 +66,7 @@ export function AuthPcFormContent({
   website,
   setWebsite,
   onCaptchaToken,
+  captchaResetKey,
   handleSignup,
   googleLoading,
   handleGoogleLogin,
@@ -132,6 +134,12 @@ export function AuthPcFormContent({
           {error && (
             <p className="text-sm leading-relaxed text-red-600">{error}</p>
           )}
+
+          <TurnstileWidget
+            key={`login-${captchaResetKey}`}
+            onToken={onCaptchaToken}
+            className="flex justify-center"
+          />
 
           <button
             type="submit"
@@ -286,7 +294,11 @@ export function AuthPcFormContent({
             </label>
           </div>
 
-          <TurnstileWidget onToken={onCaptchaToken} className="flex justify-center" />
+          <TurnstileWidget
+            key={`signup-${captchaResetKey}`}
+            onToken={onCaptchaToken}
+            className="flex justify-center"
+          />
 
           <button
             type="submit"

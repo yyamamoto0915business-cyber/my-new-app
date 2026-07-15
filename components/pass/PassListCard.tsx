@@ -8,7 +8,6 @@ import {
   formatPassDateRange,
   formatTicketQuantity,
   getDaysUntil,
-  SAMPLE_PASS_REFERENCE_NOW,
   type ParticipationPass,
 } from "@/lib/participation-pass";
 import {
@@ -51,7 +50,7 @@ export function PassListCard({
   onOpenPass,
 }: Props) {
   const isFeatured = size === "featured";
-  const days = getDaysUntil(pass.startAt, SAMPLE_PASS_REFERENCE_NOW);
+  const days = getDaysUntil(pass.startAt);
   const daysLabel = formatDaysUntilLabel(days);
   const actionWidth = isFeatured ? 132 : 112;
   const imageWidth = isFeatured ? 108 : 72;

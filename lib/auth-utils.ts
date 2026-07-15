@@ -11,6 +11,7 @@ function isAuthRequiredPath(path: string): boolean {
   if (path === "/points" || path.startsWith("/points/")) return true;
   if (path === "/report/new") return true;
   if (path === "/notifications" || path.startsWith("/notifications/")) return true;
+  if (path === "/pass" || path.startsWith("/pass/")) return true;
   // /events/[id]/chat などのチャットページ
   if (/^\/events\/[^/]+\/chat(\/|$)/.test(path)) return true;
   return false;

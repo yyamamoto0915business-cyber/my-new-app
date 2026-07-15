@@ -35,6 +35,7 @@ type Props = {
   website: string;
   setWebsite: (v: string) => void;
   onCaptchaToken: (token: string | null) => void;
+  captchaResetKey: number;
   handleSignup: (e: React.FormEvent) => void;
 };
 
@@ -161,6 +162,7 @@ export function AuthMobileFormContent({
   website,
   setWebsite,
   onCaptchaToken,
+  captchaResetKey,
   handleSignup,
 }: Props) {
   const isLogin = tab === "login";
@@ -220,6 +222,12 @@ export function AuthMobileFormContent({
           {error && (
             <p className="text-sm leading-relaxed text-red-600">{error}</p>
           )}
+
+          <TurnstileWidget
+            key={`login-${captchaResetKey}`}
+            onToken={onCaptchaToken}
+            className="flex justify-center"
+          />
 
           <SubmitButton loading={loading} label="ログインする" loadingLabel="ログイン中..." />
 
@@ -338,7 +346,11 @@ export function AuthMobileFormContent({
             </label>
           </div>
 
-          <TurnstileWidget onToken={onCaptchaToken} className="flex justify-center" />
+          <TurnstileWidget
+            key={`signup-${captchaResetKey}`}
+            onToken={onCaptchaToken}
+            className="flex justify-center"
+          />
 
           <SubmitButton
             loading={signupLoading}

@@ -26,20 +26,22 @@ function AuthPageContent() {
     else if (tabParam === "login" || !tabParam) setTab("login");
   }, [tabParam]);
 
-  const switchTab = (t: Tab) => {
-    setTab(t);
-    const url = new URL(window.location.href);
-    if (t === "signup") url.searchParams.set("tab", "signup");
-    else url.searchParams.delete("tab");
-    window.history.replaceState({}, "", url.pathname + url.search);
-  };
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [signupError, setSignupError] = useState<string | null>(null);
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [website, setWebsite] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const turnstileEnabled = isTurnstileEnabledOnClient();
 
   const isAbortLikeError = (err: unknown): boolean => {
     if (err instanceof DOMException && err.name === "AbortError") return true;
@@ -56,9 +58,25 @@ function AuthPageContent() {
     return false;
   };
 
+  const switchTab = (t: Tab) => {
+    setTab(t);
+    setCaptchaToken(null);
+    setCaptchaResetKey((k) => k + 1);
+    const url = new URL(window.location.href);
+    if (t === "signup") url.searchParams.set("tab", "signup");
+    else url.searchParams.delete("tab");
+    window.history.replaceState({}, "", url.pathname + url.search);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (turnstileEnabled && !captchaToken) {
+      setError("下の認証チェックを完了してください。");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -69,19 +87,37 @@ function AuthPageContent() {
         return;
       }
 
+      const signInOptions =
+        turnstileEnabled && captchaToken ? { captchaToken } : undefined;
+
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
+        options: signInOptions,
       });
 
       if (signInError) {
         setLoading(false);
+        setCaptchaToken(null);
+        setCaptchaResetKey((k) => k + 1);
+        // Next.js の開発オーバーレイを出さない（画面上の error 文言で案内）
+        console.warn("[signIn] Supabase error:", signInError.message, signInError.code);
         if (signInError.message.includes("Invalid login credentials")) {
           setError("メールアドレスまたはパスワードが正しくありません");
         } else if (signInError.message.includes("Email not confirmed")) {
           setError("メールアドレスの確認がまだ完了していません。確認メールをご確認ください");
+        } else if (/captcha/i.test(signInError.message)) {
+          setError(
+            turnstileEnabled
+              ? "認証の確認に失敗しました。もう一度お試しください。"
+              : "ボット対策（Turnstile）の設定が必要です。NEXT_PUBLIC_TURNSTILE_SITE_KEY を .env.local に追加して、開発サーバーを再起動してください。"
+          );
         } else {
-          setError("エラーが発生しました。しばらくしてからもう一度お試しください。");
+          const devMessage =
+            process.env.NODE_ENV === "development"
+              ? `${signInError.message} (${signInError.code || "unknown"})`
+              : "エラーが発生しました。しばらくしてからもう一度お試しください。";
+          setError(devMessage);
         }
         return;
       }
@@ -137,16 +173,6 @@ function AuthPageContent() {
     }
   };
 
-  const [signupEmail, setSignupEmail] = useState("");
-  const [signupPassword, setSignupPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [signupError, setSignupError] = useState<string | null>(null);
-  const [signupLoading, setSignupLoading] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [website, setWebsite] = useState("");
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const turnstileEnabled = isTurnstileEnabledOnClient();
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreedToTerms) {
@@ -173,6 +199,7 @@ function AuthPageContent() {
 
     if (!result.ok) {
       setCaptchaToken(null);
+      setCaptchaResetKey((k) => k + 1);
       setSignupError(result.message ?? "エラーが発生しました。しばらくしてからもう一度お試しください。");
       return;
     }
@@ -205,6 +232,7 @@ function AuthPageContent() {
     website,
     setWebsite,
     onCaptchaToken: setCaptchaToken,
+    captchaResetKey,
     handleSignup,
     googleLoading,
     handleGoogleLogin,

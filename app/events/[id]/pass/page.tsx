@@ -29,7 +29,11 @@ export default async function EventPassPage({ params }: Props) {
   let hasPass = false;
   if (supabase) {
     const status = await getParticipantStatus(supabase, id, user.id);
-    hasPass = Boolean(status);
+    hasPass =
+      status === "applied" ||
+      status === "confirmed" ||
+      status === "checked_in" ||
+      status === "completed";
   }
 
   return (
