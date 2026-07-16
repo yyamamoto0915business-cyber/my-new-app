@@ -8,6 +8,8 @@ export const EVENT_IMAGE_ALLOWED_HOSTS = [
 export function isEventImageHostAllowed(url: string): boolean {
   try {
     const host = new URL(url).hostname;
+    // Supabase Storage（*.supabase.co）は next.config.ts の remotePatterns で許可済み
+    if (host.endsWith(".supabase.co")) return true;
     return EVENT_IMAGE_ALLOWED_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
   } catch {
     return false;

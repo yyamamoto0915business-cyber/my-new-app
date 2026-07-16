@@ -12,6 +12,7 @@ const ALLOWED_IMAGE_HOSTS = [
 function isAllowedHost(url: string): boolean {
   try {
     const host = new URL(url).hostname;
+    if (host.endsWith(".supabase.co")) return true;
     return ALLOWED_IMAGE_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
   } catch {
     return false;
