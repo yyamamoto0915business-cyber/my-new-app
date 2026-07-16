@@ -32,7 +32,7 @@ export async function GET() {
 
     const { data: organizer } = await supabase
       .from("organizers")
-      .select("id, plan, earlybird_eligible, full_feature_trial_end_at, founder30_granted_at, founder30_end_at, subscription_status, stripe_status, current_period_end, manual_grant_active, manual_grant_expires_at, stripe_account_charges_enabled, stripe_account_details_submitted")
+      .select("*")
       .eq("id", organizerId)
       .single();
 

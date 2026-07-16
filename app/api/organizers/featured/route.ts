@@ -13,7 +13,7 @@ export async function GET() {
   try {
     const organizers = await fetchFeaturedOrganizers(supabase, 6);
     return NextResponse.json(organizers, {
-      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+      headers: { "Cache-Control": "no-store, max-age=60" },
     });
   } catch (e) {
     console.error("organizers featured GET:", e);

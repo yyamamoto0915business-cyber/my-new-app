@@ -242,7 +242,7 @@ function VolunteerPageContent() {
     try {
       const res = await fetchWithTimeout("/api/volunteer/roles", {
         signal: controller.signal,
-        next: { revalidate: 120 },
+        cache: "no-store",
       });
       if (controller.signal.aborted || res.status === 499) return;
       if (!res.ok) {

@@ -140,20 +140,18 @@ export default function ConversationPage() {
 
     (async () => {
       try {
-        const [msgRes] = await Promise.all([
-          fetchWithTimeout(`/api/messages/conversations/${conversationId}/messages`, {
-            ...API_CREDENTIALS,
-            signal: controller.signal,
-          }),
-          fetch(`/api/messages/conversations/${conversationId}/read`, {
-            method: "POST",
-            ...API_CREDENTIALS,
-            signal: controller.signal,
-          }),
-        ]);
+        const msgRes = await fetchWithTimeout(`/api/messages/conversations/${conversationId}/messages`, {
+          ...API_CREDENTIALS,
+          signal: controller.signal,
+        });
         if (controller.signal.aborted || msgRes.status === 499) return;
         if (msgRes.ok) setMessages(await msgRes.json());
         else setError("メッセージの取得に失敗しました");
+        await fetch(`/api/messages/conversations/${conversationId}/read`, {
+          method: "POST",
+          ...API_CREDENTIALS,
+          signal: controller.signal,
+        });
       } catch (e) {
         if (!controller.signal.aborted && !isAbortLikeError(e)) {
           setError("通信に失敗しました");
