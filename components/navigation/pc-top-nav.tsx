@@ -201,38 +201,33 @@ function PcTopNavInner() {
           const isPaidOrganizerLink =
             link.href === "/organizer" && isProOrganizer;
 
-          if (isPaidOrganizerLink && active) {
+          if (isPaidOrganizerLink) {
             return (
-              <span key={link.href} className="relative inline-block">
+              <span
+                key={link.href}
+                className="relative z-10 inline-block overflow-visible"
+              >
                 <Link
                   href={link.href}
                   prefetch
-                  className="org-tab-pro-shiny"
-                  aria-current="page"
+                  className={
+                    active
+                      ? "org-tab-pro-shiny"
+                      : "whitespace-nowrap rounded-[20px] px-[12px] py-[5px] text-[13px] font-medium text-[#3a5848] transition-colors hover:text-[#1e3828]"
+                  }
+                  aria-current={active ? "page" : undefined}
                   onClick={() => syncModeCookieForNav(link.href)}
                 >
                   {link.label}
                 </Link>
                 <span className="org-pro-tab-badge">PRO</span>
-                <span className="org-pro-star org-pro-star-1" aria-hidden />
-                <span className="org-pro-star org-pro-star-2" aria-hidden />
-                <span className="org-pro-star org-pro-star-3" aria-hidden />
-              </span>
-            );
-          }
-
-          if (isPaidOrganizerLink && !active) {
-            return (
-              <span key={link.href} className="relative inline-block">
-                <Link
-                  href={link.href}
-                  prefetch
-                  onClick={() => syncModeCookieForNav(link.href)}
-                  className="whitespace-nowrap rounded-[20px] px-[12px] py-[5px] text-[13px] font-medium text-[#3a5848] transition-colors hover:text-[#1e3828]"
-                >
-                  {link.label}
-                </Link>
-                <span className="org-pro-tab-badge">PRO</span>
+                {active ? (
+                  <>
+                    <span className="org-pro-star org-pro-star-1" aria-hidden />
+                    <span className="org-pro-star org-pro-star-2" aria-hidden />
+                    <span className="org-pro-star org-pro-star-3" aria-hidden />
+                  </>
+                ) : null}
               </span>
             );
           }

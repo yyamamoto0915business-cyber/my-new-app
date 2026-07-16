@@ -7,7 +7,6 @@ import {
   Calendar,
   Bell,
   Clock,
-  Plus,
   QrCode,
   ScanLine,
   Megaphone,
@@ -25,7 +24,6 @@ import {
 import {
   MOCK_STAFF,
   MOCK_SCHEDULE,
-  staffChip,
   scheduleChip,
   noticeBadge,
   countStaffPresent,
@@ -38,6 +36,8 @@ import {
 } from "./day-management-shared";
 import { DayManagementEventSwitcher } from "./DayManagementEventSwitcher";
 import { TicketSalesAttendanceCard } from "./TicketSalesAttendanceCard";
+import { StaffStatusCard } from "./StaffStatusCard";
+import { useStaffStatus } from "@/hooks/use-staff-status";
 
 type Props = {
   event: EventInfo;
@@ -93,6 +93,12 @@ export function DayManagementPcView({
 }: Props) {
   const { data: dayOps, loading: dayOpsLoading, error: dayOpsError, refreshing: dayOpsRefreshing, reload: reloadDayOps } =
     useDayOpsSummary({ eventId, emptyMode });
+  const {
+    members: staffMembers,
+    loading: staffLoading,
+    error: staffError,
+    reload: reloadStaff,
+  } = useStaffStatus({ eventId, emptyMode });
   const isPast = dayPhase === "past";
   const isLive = dayPhase === "live";
   const showHero = emptyMode || !isPast;
@@ -349,55 +355,21 @@ export function DayManagementPcView({
           )}
         </div>
 
-        <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact flex min-h-0 flex-col">
-          <h2 className="mg-day-mgmt-pc__panel-title shrink-0">スタッフステータス</h2>
-          {emptyMode ? (
-            <div className="mt-1.5 flex-1">
-              <div className="flex gap-2">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="flex h-10 flex-1 items-center justify-center rounded-xl border border-[#DDE8DF] bg-[#F5F8F5]"
-                  >
-                    <div className="h-6 w-6 rounded-full bg-[#e8e6e0]" />
-                  </div>
-                ))}
-              </div>
-              <p className="mg-day-mgmt-pc__empty-text mt-1.5">
-                イベントを選択するとスタッフが表示されます。
-              </p>
-            </div>
-          ) : (
-            <div className="mg-day-mgmt-pc__staff-grid mt-1.5">
-              {MOCK_STAFF.map((staff, i) => (
-                <div key={i} className="mg-day-mgmt-pc__staff-card">
-                  <div className="mg-day-mgmt-pc__staff-avatar">{staff.name.charAt(0)}</div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <p className="truncate text-[11px] font-semibold leading-tight text-[#1A2214]">
-                        {staff.name}
-                      </p>
-                      {staffChip(staff.status, { compact: true })}
-                    </div>
-                    <p className="mt-0.5 truncate text-[9px] leading-tight text-[#566358]">
-                      {staff.role}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              <button
-                type="button"
-                className="mg-day-mgmt-pc__staff-add"
-                aria-label="スタッフを追加"
-              >
-                <Plus size={12} />
-                <span>スタッフ追加</span>
-              </button>
-            </div>
-          )}
-        </div>
+        <StaffStatusCard
+          emptyMode={emptyMode}
+          dayPhase={dayPhase}
+          members={staffMembers}
+          loading={staffLoading}
+          error={staffError}
+          onRetry={() => void reloadStaff()}
+        />
 
-        <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact flex min-h-0 flex-col">
+        <div
+          className={cn(
+            "mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact mg-day-mgmt-pc__panel--notices flex min-h-0 flex-col",
+            emptyMode && "mg-day-mgmt-pc__panel--notices-empty"
+          )}
+        >
           <h2 className="mg-day-mgmt-pc__panel-title shrink-0">お知らせ</h2>
           <p className="mt-0.5 text-[9px] leading-snug text-[#566358]">
             参加者の画面にも表示されます

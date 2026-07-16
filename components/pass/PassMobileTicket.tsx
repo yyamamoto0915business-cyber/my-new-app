@@ -83,7 +83,9 @@ export function PassMobileTicket({ pass, onClose }: Props) {
           </p>
 
           <div className="rounded-lg bg-[#f2f4f1] px-2.5 py-2 text-[12px] leading-snug text-[#2a3a30]">
-            <span className="text-[#6a7468]">参加者</span>{" "}
+            <span className="text-[#6a7468]">
+              {pass.kind === "volunteer" ? "スタッフ" : "参加者"}
+            </span>{" "}
             <span className="font-semibold">{pass.attendeeName}</span>
             <span className="mx-1.5 text-[#c5cdc5]">·</span>
             <span className="text-[#6a7468]">受付番号</span>{" "}
@@ -91,10 +93,16 @@ export function PassMobileTicket({ pass, onClose }: Props) {
           </div>
 
           <div className="flex flex-wrap gap-1">
-            <span className="inline-flex items-center gap-0.5 rounded-full border border-[#b8dcc8] bg-[#eef6f0] px-2 py-0.5 text-[11px] font-medium text-[#2d7a4f]">
-              <Check className="h-2.5 w-2.5" aria-hidden />
-              {PAYMENT_STATUS_LABEL[pass.paymentStatus]}
-            </span>
+            {pass.kind === "volunteer" ? (
+              <span className="inline-flex items-center rounded-full border border-[#c8b8e0] bg-[#f5f0fa] px-2 py-0.5 text-[11px] font-medium text-[#6b4a9e]">
+                ボランティア
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-0.5 rounded-full border border-[#b8dcc8] bg-[#eef6f0] px-2 py-0.5 text-[11px] font-medium text-[#2d7a4f]">
+                <Check className="h-2.5 w-2.5" aria-hidden />
+                {PAYMENT_STATUS_LABEL[pass.paymentStatus]}
+              </span>
+            )}
             <span className="inline-flex items-center rounded-full border border-[#b8dcc8] bg-[#eef6f0] px-2 py-0.5 text-[11px] font-medium text-[#2d7a4f]">
               {RECEPTION_TYPE_LABEL[pass.receptionType]}
             </span>

@@ -3,9 +3,17 @@ import { formatTimeToHm } from "@/lib/format-date";
 import { getJstTodayYmd } from "@/lib/jst-date";
 import type { ParticipationPass } from "@/lib/participation-pass";
 import type { EventParticipantStatus } from "@/lib/db/types";
+import type { ApplicationStatus } from "@/lib/db/recruitments-mvp";
 
 const PASS_ELIGIBLE_STATUSES: EventParticipantStatus[] = [
   "applied",
+  "confirmed",
+  "checked_in",
+  "completed",
+];
+
+const VOLUNTEER_PASS_STATUSES: ApplicationStatus[] = [
+  "accepted",
   "confirmed",
   "checked_in",
   "completed",
@@ -40,9 +48,40 @@ type OrderRow = {
   status: "pending" | "paid" | "refunded" | "failed";
 };
 
+type VolunteerAppJoinRow = {
+  id: string;
+  recruitment_id: string;
+  status: ApplicationStatus;
+  role_assigned: string | null;
+  recruitments: {
+    id: string;
+    event_id: string | null;
+    title: string | null;
+    role: string | null;
+    roles: unknown;
+    meeting_place: string | null;
+    events: EventJoinRow | EventJoinRow[] | null;
+  } | {
+    id: string;
+    event_id: string | null;
+    title: string | null;
+    role: string | null;
+    roles: unknown;
+    meeting_place: string | null;
+    events: EventJoinRow | EventJoinRow[] | null;
+  }[] | null;
+};
+
 function asEventRow(events: EventJoinRow | EventJoinRow[] | null): EventJoinRow | null {
   if (!events) return null;
   return Array.isArray(events) ? (events[0] ?? null) : events;
+}
+
+function asRecruitmentRow(
+  recruitments: VolunteerAppJoinRow["recruitments"]
+): NonNullable<Exclude<VolunteerAppJoinRow["recruitments"], unknown[]>> | null {
+  if (!recruitments) return null;
+  return Array.isArray(recruitments) ? (recruitments[0] ?? null) : recruitments;
 }
 
 function toHmPadded(time?: string | null, fallback = "00:00"): string {
@@ -55,8 +94,8 @@ function toEventIso(dateYmd: string, timeHm: string): string {
   return `${dateYmd}T${toHmPadded(timeHm)}:00+09:00`;
 }
 
-function buildReceptionNumber(participantId: string): string {
-  const short = participantId.replace(/-/g, "").slice(0, 8).toUpperCase();
+export function buildReceptionNumber(id: string): string {
+  const short = id.replace(/-/g, "").slice(0, 8).toUpperCase();
   return `MG-${short}`;
 }
 
@@ -125,6 +164,18 @@ function resolveUiStatus(
   return "completed";
 }
 
+function firstRoleName(roles: unknown, fallback: string | null): string | null {
+  if (typeof fallback === "string" && fallback.trim()) return fallback.trim();
+  if (!Array.isArray(roles)) return null;
+  for (const r of roles) {
+    if (r != null && typeof r === "object" && "name" in r) {
+      const name = String((r as { name?: unknown }).name ?? "").trim();
+      if (name) return name;
+    }
+  }
+  return null;
+}
+
 function toParticipationPass(options: {
   participantId: string;
   event: EventJoinRow;
@@ -167,15 +218,58 @@ function toParticipationPass(options: {
       receptionType === "qr" ? `mg-pass:${participantId}` : undefined,
     expiresAt: endAt,
     status: resolveUiStatus(event.date, cancelled, now),
+    kind: "visitor",
   };
 }
 
-/** ログイン中ユーザーの取得済み参加パスを返す */
-export async function fetchMyParticipationPasses(
+function toVolunteerPass(options: {
+  applicationId: string;
+  recruitmentId: string;
+  event: EventJoinRow;
+  attendeeName: string;
+  roleLabel: string;
+  now: Date;
+}): ParticipationPass {
+  const { applicationId, recruitmentId, event, attendeeName, roleLabel, now } =
+    options;
+  const startAt = toEventIso(event.date, event.start_time || "00:00");
+  const endAt = toEventIso(
+    event.date,
+    event.end_time || event.start_time || "23:59"
+  );
+  const receptionNumber = buildReceptionNumber(applicationId);
+  // スタッフパスは常に QR 受付（来場者の check_in_method に依存しない）
+  const receptionType = "qr" as const;
+
+  return {
+    id: applicationId,
+    eventId: event.id,
+    eventTitle: event.title,
+    eventImage: event.image_url?.trim() || FALLBACK_EVENT_IMAGE,
+    startAt,
+    endAt,
+    venueName: event.location?.trim() || "会場未設定",
+    venueAddress: event.address?.trim() || undefined,
+    attendeeName,
+    receptionNumber,
+    paymentStatus: "free",
+    receptionType,
+    ticketLabel: roleLabel,
+    quantity: 1,
+    qrValue: `mg-pass:${applicationId}`,
+    expiresAt: endAt,
+    status: resolveUiStatus(event.date, false, now),
+    kind: "volunteer",
+    roleLabel,
+    recruitmentId,
+  };
+}
+
+async function fetchVisitorPasses(
   supabase: SupabaseClient,
   userId: string,
   attendeeName: string,
-  now: Date = new Date()
+  now: Date
 ): Promise<ParticipationPass[]> {
   const { data: rows, error } = await supabase
     .from("event_participants")
@@ -204,7 +298,7 @@ export async function fetchMyParticipationPasses(
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("fetchMyParticipationPasses:", error.message);
+    console.error("fetchMyParticipationPasses visitors:", error.message);
     return [];
   }
 
@@ -264,7 +358,98 @@ export async function fetchMyParticipationPasses(
     );
   }
 
-  return passes.sort(
+  return passes;
+}
+
+async function fetchVolunteerPasses(
+  supabase: SupabaseClient,
+  userId: string,
+  attendeeName: string,
+  now: Date
+): Promise<ParticipationPass[]> {
+  const { data: rows, error } = await supabase
+    .from("recruitment_applications")
+    .select(
+      `
+      id,
+      recruitment_id,
+      status,
+      role_assigned,
+      recruitments (
+        id,
+        event_id,
+        title,
+        role,
+        roles,
+        meeting_place,
+        events (
+          id,
+          title,
+          image_url,
+          date,
+          start_time,
+          end_time,
+          location,
+          address,
+          price,
+          payment_method,
+          check_in_method
+        )
+      )
+    `
+    )
+    .eq("user_id", userId)
+    .in("status", VOLUNTEER_PASS_STATUSES)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("fetchMyParticipationPasses volunteers:", error.message);
+    return [];
+  }
+
+  const apps = (rows ?? []) as VolunteerAppJoinRow[];
+  const passes: ParticipationPass[] = [];
+
+  for (const app of apps) {
+    const recruitment = asRecruitmentRow(app.recruitments);
+    if (!recruitment?.event_id) continue;
+
+    const event = asEventRow(recruitment.events);
+    if (!event) continue;
+
+    const roleLabel =
+      (typeof app.role_assigned === "string" && app.role_assigned.trim()) ||
+      firstRoleName(recruitment.roles, recruitment.role) ||
+      "ボランティア";
+
+    passes.push(
+      toVolunteerPass({
+        applicationId: app.id,
+        recruitmentId: recruitment.id,
+        event,
+        attendeeName,
+        roleLabel,
+        now,
+      })
+    );
+  }
+
+  return passes;
+}
+
+/** ログイン中ユーザーの取得済み参加パスを返す（来場者＋承認済みボランティア） */
+export async function fetchMyParticipationPasses(
+  supabase: SupabaseClient,
+  userId: string,
+  attendeeName: string,
+  now: Date = new Date()
+): Promise<ParticipationPass[]> {
+  const [visitorPasses, volunteerPasses] = await Promise.all([
+    fetchVisitorPasses(supabase, userId, attendeeName, now),
+    fetchVolunteerPasses(supabase, userId, attendeeName, now),
+  ]);
+
+  return [...visitorPasses, ...volunteerPasses].sort(
     (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
   );
 }

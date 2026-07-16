@@ -56,12 +56,16 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const updates: { status?: string; checked_in_at?: string | null; role_assigned?: string | null } = {};
     if (
       body.status != null &&
-      ["accepted", "rejected", "canceled", "confirmed", "pending"].includes(String(body.status))
+      ["accepted", "rejected", "canceled", "confirmed", "pending", "checked_in"].includes(
+        String(body.status)
+      )
     ) {
       updates.status = body.status as string;
     }
     if (body.checked_in_at === true) {
       updates.checked_in_at = new Date().toISOString();
+      // 手動到着時も status を checked_in に揃える
+      if (!updates.status) updates.status = "checked_in";
     }
     if (body.role_assigned !== undefined) {
       updates.role_assigned = typeof body.role_assigned === "string" ? body.role_assigned : null;
@@ -95,7 +99,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
       if (body.status != null) {
         const s = body.status as string;
-        if (["accepted", "rejected", "canceled", "confirmed", "pending"].includes(s)) {
+        if (
+          ["accepted", "rejected", "canceled", "confirmed", "pending", "checked_in"].includes(s)
+        ) {
           updates.status = s as ApplicationStatus;
         }
       }
@@ -103,6 +109,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         updates.checked_in_at = body.checked_in_at === true || body.checked_in_at
           ? new Date().toISOString()
           : null;
+        // 手動到着時も status を checked_in に揃える
+        if (updates.checked_in_at && !updates.status) {
+          updates.status = "checked_in";
+        }
       }
       if (body.role_assigned !== undefined) {
         updates.role_assigned = typeof body.role_assigned === "string" ? body.role_assigned : null;

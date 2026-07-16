@@ -86,7 +86,7 @@ export function OrganizerProfilePcHero({
             )}
           </div>
 
-          <div className="min-w-0 flex-1 pt-1">
+          <div className="relative z-[1] min-w-0 flex-1 pt-8">
             <h1 className="text-[20px] font-bold leading-tight tracking-[-0.02em]" style={{ color: "#1a2818" }}>
               {organizationName}
             </h1>

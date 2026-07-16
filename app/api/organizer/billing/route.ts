@@ -6,7 +6,7 @@ import {
   getMonthlyPublishedCount,
   FREE_PLAN_NORMAL_SLOTS,
   FOUNDER_BONUS_SLOTS,
-  isPaidOrganizer,
+  isPaidOrganizerWithPlanState,
 } from "@/lib/billing";
 import { isStripeServerConfigured } from "@/lib/stripe";
 
@@ -47,26 +47,16 @@ export async function GET() {
       .maybeSingle();
 
     /** plan_state 未移行・部分的な行でも、主催レイアウトと同じく organizers 行を参照する */
-    const mergedStripeStatus =
-      planState?.stripe_status ?? organizer.stripe_status ?? null;
-
     const monthlyPublished = await getMonthlyPublishedCount(supabase, organizerId);
     const founderActive = !!(
       organizer.founder30_end_at && new Date(organizer.founder30_end_at) >= new Date()
     );
-    const publishLimit =
-      isPaidOrganizer({
-        subscription_status: organizer.subscription_status ?? null,
-        stripe_status: mergedStripeStatus,
-        manual_grant_active:
-          planState?.manual_grant_active ?? organizer.manual_grant_active ?? false,
-        manual_grant_expires_at:
-          planState?.manual_grant_expires_at ?? organizer.manual_grant_expires_at ?? null,
-      })
-        ? null
-        : founderActive
-          ? FREE_PLAN_NORMAL_SLOTS + FOUNDER_BONUS_SLOTS // 4
-          : FREE_PLAN_NORMAL_SLOTS; // 1
+    const isPaid = isPaidOrganizerWithPlanState(organizer, planState);
+    const publishLimit = isPaid
+      ? null
+      : founderActive
+        ? FREE_PLAN_NORMAL_SLOTS + FOUNDER_BONUS_SLOTS // 4
+        : FREE_PLAN_NORMAL_SLOTS; // 1
 
     return NextResponse.json({
       stripeConnectConfigured: isStripeServerConfigured(),
@@ -78,7 +68,7 @@ export async function GET() {
         founder30_granted_at: organizer.founder30_granted_at,
         founder30_end_at: organizer.founder30_end_at,
         subscription_status: organizer.subscription_status,
-        stripe_status: mergedStripeStatus,
+        stripe_status: planState?.stripe_status ?? organizer.stripe_status ?? null,
         current_period_end: organizer.current_period_end,
         manual_grant_active:
           planState?.manual_grant_active ?? organizer.manual_grant_active ?? false,

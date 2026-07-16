@@ -6,8 +6,8 @@ export const NORMAL_SLOTS = FREE_PLAN_NORMAL_SLOTS;
 export const FOUNDER_BONUS_SLOTS_UI = FOUNDER_BONUS_SLOTS;
 
 export function getPlanLabel(data: OrganizerBillingData): string {
-  if (isPaidOrganizer(data.organizer)) return "Starterプラン";
-  return "無料プラン";
+  if (isPaidOrganizer(data.organizer)) return "Proプラン";
+  return "Starterプラン";
 }
 
 export function isPaidPlan(data: OrganizerBillingData): boolean {

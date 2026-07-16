@@ -1,3 +1,5 @@
+export type ParticipationPassKind = "visitor" | "volunteer";
+
 export type ParticipationPass = {
   id: string;
   eventId: string;
@@ -16,6 +18,12 @@ export type ParticipationPass = {
   qrValue?: string;
   expiresAt?: string;
   status: "upcoming" | "today" | "completed" | "cancelled";
+  /** 来場者 or ボランティア（未指定は来場者扱い） */
+  kind?: ParticipationPassKind;
+  /** ボランティアの担当 / 希望役割 */
+  roleLabel?: string;
+  /** ボランティア応募の募集 ID */
+  recruitmentId?: string;
 };
 
 export type PassTabId = "upcoming" | "today" | "history";
@@ -60,6 +68,7 @@ export const SAMPLE_PARTICIPATION_PASSES: ParticipationPass[] = [
     qrValue: "MG-PASS-MIDORI-240524-018",
     expiresAt: "2025-05-24T16:00:00+09:00",
     status: "upcoming",
+    kind: "visitor",
   },
   {
     id: "pass-patakara",
@@ -77,6 +86,7 @@ export const SAMPLE_PARTICIPATION_PASSES: ParticipationPass[] = [
     ticketLabel: "大人",
     quantity: 1,
     status: "upcoming",
+    kind: "visitor",
   },
   {
     id: "pass-namioto",
@@ -96,6 +106,7 @@ export const SAMPLE_PARTICIPATION_PASSES: ParticipationPass[] = [
     qrValue: "MG-PASS-NAMIOTO-250516-041",
     expiresAt: "2025-05-16T16:00:00+09:00",
     status: "upcoming",
+    kind: "visitor",
   },
 ];
 
@@ -144,6 +155,9 @@ export function formatDaysUntilLabel(days: number): string {
 }
 
 export function formatTicketQuantity(pass: ParticipationPass): string {
+  if (pass.kind === "volunteer") {
+    return pass.roleLabel?.trim() || pass.ticketLabel || "ボランティア";
+  }
   return `${pass.ticketLabel}${pass.quantity}名`;
 }
 

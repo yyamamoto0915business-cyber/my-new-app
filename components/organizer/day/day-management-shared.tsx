@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Send, Save, AlertTriangle } from "lucide-react";
 import { getJstNowHm, getJstTodayYmd } from "@/lib/jst-date";
 import { cn } from "@/lib/utils";
+import type { DashboardStaffMember } from "@/lib/organizer/day-ops-types";
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -40,6 +41,124 @@ export const MOCK_STAFF = [
   { name: "田中美映", role: "案内", status: "late" as const },
   { name: "高橋健", role: "音響", status: "absent" as const },
   { name: "小林誠", role: "記録", status: "ok" as const },
+];
+
+/** 応募〜当日を同一メンバーで扱うダッシュボード用モック */
+export const MOCK_STAFF_MEMBERS: DashboardStaffMember[] = [
+  {
+    id: "staff-1",
+    name: "山田 花子",
+    role: "受付スタッフ",
+    status: "checked_in",
+    appliedAtLabel: "2時間前に応募",
+    detailLabel: "09:32",
+  },
+  {
+    id: "staff-2",
+    name: "佐藤 健太",
+    role: "会場案内",
+    status: "on_duty",
+    appliedAtLabel: "昨日18:30に応募",
+    detailLabel: "エントランス",
+  },
+  {
+    id: "staff-3",
+    name: "鈴木 美咲",
+    role: "設営スタッフ",
+    status: "on_break",
+    appliedAtLabel: "昨日16:10に応募",
+    detailLabel: "11:20まで",
+  },
+  {
+    id: "staff-4",
+    name: "高橋 駿",
+    role: "誘導担当",
+    status: "absent",
+    appliedAtLabel: "3日前に応募",
+    detailLabel: "連絡待ち",
+  },
+  {
+    id: "staff-5",
+    name: "伊藤 直樹",
+    role: "受付スタッフ",
+    status: "pending_review",
+    appliedAtLabel: "1時間前に応募",
+  },
+  {
+    id: "staff-6",
+    name: "中村 あゆみ",
+    role: "会場案内",
+    status: "pending_review",
+    appliedAtLabel: "4時間前に応募",
+  },
+  {
+    id: "staff-7",
+    name: "小林 誠",
+    role: "記録担当",
+    status: "approved",
+    appliedAtLabel: "昨日12:00に応募",
+  },
+  {
+    id: "staff-8",
+    name: "加藤 翼",
+    role: "音響担当",
+    status: "scheduled",
+    appliedAtLabel: "2日前に応募",
+    detailLabel: "待機中",
+  },
+  {
+    id: "staff-9",
+    name: "渡辺 里奈",
+    role: "設営スタッフ",
+    status: "rejected",
+    appliedAtLabel: "1週間前に応募",
+  },
+  {
+    id: "staff-10",
+    name: "松本 大輔",
+    role: "誘導担当",
+    status: "scheduled",
+    appliedAtLabel: "3日前に応募",
+    detailLabel: "待機中",
+  },
+  {
+    id: "staff-11",
+    name: "井上 優",
+    role: "受付スタッフ",
+    status: "checked_in",
+    appliedAtLabel: "5日前に応募",
+    detailLabel: "09:45",
+  },
+  {
+    id: "staff-12",
+    name: "木村 沙織",
+    role: "運営補助",
+    status: "on_duty",
+    appliedAtLabel: "1週間前に応募",
+    detailLabel: "メイン会場",
+  },
+  {
+    id: "staff-13",
+    name: "林 拓也",
+    role: "会場案内",
+    status: "approved",
+    appliedAtLabel: "昨日09:00に応募",
+  },
+  {
+    id: "staff-14",
+    name: "斎藤 恵",
+    role: "受付スタッフ",
+    status: "pending_review",
+    appliedAtLabel: "30分前に応募",
+  },
+  {
+    id: "staff-15",
+    name: "清水 剛",
+    role: "設営スタッフ",
+    status: "scheduled",
+    appliedAtLabel: "4日前に応募",
+    detailLabel: "待機中",
+  },
 ];
 
 export const MOCK_SCHEDULE = [

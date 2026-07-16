@@ -11,6 +11,7 @@ import {
   type ParticipationPass,
 } from "@/lib/participation-pass";
 import {
+  PassKindBadge,
   PassPaymentBadge,
   PassQuantityBadge,
   PassReceptionBadge,
@@ -118,7 +119,10 @@ export function PassListCard({
             <span className="truncate">{pass.venueName}</span>
           </p>
           <div className={`flex flex-wrap gap-1 ${isFeatured ? "mt-2" : "mt-1.5"}`}>
-            <PassPaymentBadge status={pass.paymentStatus} />
+            <PassKindBadge kind={pass.kind} />
+            {pass.kind === "volunteer" ? null : (
+              <PassPaymentBadge status={pass.paymentStatus} />
+            )}
             <PassReceptionBadge type={pass.receptionType} />
             <PassQuantityBadge label={formatTicketQuantity(pass)} />
           </div>

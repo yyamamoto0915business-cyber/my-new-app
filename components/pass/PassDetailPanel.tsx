@@ -12,6 +12,7 @@ import {
   type ParticipationPass,
 } from "@/lib/participation-pass";
 import {
+  PassKindBadge,
   PassPaymentBadge,
   PassReceptionBadge,
 } from "@/components/pass/PassBadges";
@@ -42,12 +43,19 @@ function DetailNotches() {
 }
 
 function StaffConfirmBlock({ pass }: { pass: ParticipationPass }) {
-  const rows = [
-    { label: "参加者名", value: pass.attendeeName },
-    { label: "受付番号", value: pass.receptionNumber },
-    { label: "申込人数", value: formatTicketQuantity(pass) },
-    { label: "支払い状況", value: PAYMENT_STATUS_LABEL[pass.paymentStatus] },
-  ];
+  const isVolunteer = pass.kind === "volunteer";
+  const rows = isVolunteer
+    ? [
+        { label: "スタッフ名", value: pass.attendeeName },
+        { label: "受付番号", value: pass.receptionNumber },
+        { label: "担当", value: formatTicketQuantity(pass) },
+      ]
+    : [
+        { label: "参加者名", value: pass.attendeeName },
+        { label: "受付番号", value: pass.receptionNumber },
+        { label: "申込人数", value: formatTicketQuantity(pass) },
+        { label: "支払い状況", value: PAYMENT_STATUS_LABEL[pass.paymentStatus] },
+      ];
 
   return (
     <div className="space-y-2 px-4 py-3">
@@ -153,7 +161,9 @@ export function PassDetailPanel({
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-[#eef2ee] pt-2 text-[11.5px]">
             <p className="flex items-center gap-1 text-[#3a4840]">
               <User className="h-3 w-3 text-[#6a8a72]" aria-hidden />
-              <span className="text-[#6a7468]">参加者</span>
+              <span className="text-[#6a7468]">
+                {pass.kind === "volunteer" ? "スタッフ" : "参加者"}
+              </span>
               <span className="font-semibold">{pass.attendeeName}</span>
             </p>
             <p className="flex items-center gap-1 text-[#3a4840]">
@@ -161,10 +171,19 @@ export function PassDetailPanel({
               <span className="text-[#6a7468]">受付番号</span>
               <span className="font-semibold tracking-wide">{pass.receptionNumber}</span>
             </p>
+            {pass.kind === "volunteer" && pass.roleLabel ? (
+              <p className="flex items-center gap-1 text-[#3a4840]">
+                <span className="text-[#6a7468]">担当</span>
+                <span className="font-semibold">{pass.roleLabel}</span>
+              </p>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap gap-1 pb-0.5">
-            <PassPaymentBadge status={pass.paymentStatus} />
+            <PassKindBadge kind={pass.kind} />
+            {pass.kind === "volunteer" ? null : (
+              <PassPaymentBadge status={pass.paymentStatus} />
+            )}
             <PassReceptionBadge type={pass.receptionType} />
           </div>
         </div>

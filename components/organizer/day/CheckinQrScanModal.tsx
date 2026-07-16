@@ -9,7 +9,13 @@ import { parsePassQr } from "@/lib/checkin/parse-pass-qr";
 
 type ScanState = "starting" | "scanning" | "unsupported" | "denied" | "error";
 type ResultState =
-  | { kind: "ok"; name: string; receptionNumber: string; alreadyCheckedIn: boolean }
+  | {
+      kind: "ok";
+      name: string;
+      receptionNumber: string;
+      alreadyCheckedIn: boolean;
+      passKind: "visitor" | "volunteer";
+    }
   | { kind: "error"; message: string }
   | null;
 
@@ -91,9 +97,10 @@ export function CheckinQrScanModal({ open, onClose, eventId, eventTitle }: Props
         stopCamera();
         setResult({
           kind: "ok",
-          name: data.name ?? "来場者",
+          name: data.name ?? (data.kind === "volunteer" ? "スタッフ" : "来場者"),
           receptionNumber: data.receptionNumber ?? "",
           alreadyCheckedIn: Boolean(data.alreadyCheckedIn),
+          passKind: data.kind === "volunteer" ? "volunteer" : "visitor",
         });
       } catch {
         handledRef.current = false;
@@ -280,8 +287,8 @@ export function CheckinQrScanModal({ open, onClose, eventId, eventTitle }: Props
     <Modal open={open} onClose={onClose} title="受付QRコード読み取り">
       <p className="mb-3 text-[13px] leading-relaxed text-[#566358]">
         {eventTitle
-          ? `「${eventTitle}」の来場者の参加パスQRを読み取って受付します。`
-          : "来場者の参加パスQRを読み取って受付します。"}
+          ? `「${eventTitle}」の参加パスQRを読み取って受付します（来場者・スタッフ共通）。`
+          : "参加パスQRを読み取って受付します（来場者・スタッフ共通）。"}
       </p>
 
       {result?.kind === "ok" ? (
@@ -290,9 +297,16 @@ export function CheckinQrScanModal({ open, onClose, eventId, eventTitle }: Props
             <Check size={24} className="text-[#2D7A4F]" />
           </div>
           <p className="mt-3 text-[15px] font-bold text-[#1A2214]">
-            {result.alreadyCheckedIn ? "すでに受付済みです" : "受付完了"}
+            {result.alreadyCheckedIn
+              ? "すでに受付済みです"
+              : result.passKind === "volunteer"
+                ? "スタッフ受付完了"
+                : "来場受付完了"}
           </p>
           <p className="mt-1 text-[18px] font-bold text-[#1A2214]">{result.name}</p>
+          {result.passKind === "volunteer" ? (
+            <p className="mt-1 text-[11px] font-medium text-[#2D7A4F]">ボランティア</p>
+          ) : null}
           {result.receptionNumber ? (
             <p className="mt-1 font-mono text-[12px] tracking-wide text-[#566358]">
               {result.receptionNumber}

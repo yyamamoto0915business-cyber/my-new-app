@@ -5,7 +5,7 @@ import { OrganizerAccountMenu } from "@/components/organizer/OrganizerAccountMen
 import { OrganizerProSyncer } from "@/components/organizer/OrganizerProSyncer";
 import { getOrganizerNavState } from "@/lib/organizer/get-organizer-nav-state";
 import { getDeveloperAdminContext } from "@/lib/admin-auth";
-import { isPaidOrganizer } from "@/lib/billing";
+import { isPaidOrganizerWithPlanState } from "@/lib/billing";
 
 function MachiGlyphAvatarLogo({ isPro }: { isPro: boolean }) {
   const bg = isPro ? "#0A0D18" : "#2B3A6B";
@@ -50,7 +50,7 @@ export default async function OrganizerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { supabase, user, organizerRegistered } = await getOrganizerNavState();
+  const { supabase, user, organizerRegistered, organizerId } = await getOrganizerNavState();
   const navVariant = organizerRegistered ? "full" : "lite";
   const admin = await getDeveloperAdminContext();
   const showAdminLink = Boolean(admin);
@@ -58,14 +58,23 @@ export default async function OrganizerLayout({
   let organizerName: string | undefined;
   let isPro = false;
 
-  if (organizerRegistered && supabase && user) {
-    const { data } = await supabase
-      .from("organizers")
-      .select("organization_name, subscription_status, stripe_status, manual_grant_active, manual_grant_expires_at")
-      .eq("profile_id", user.id)
-      .maybeSingle();
+  if (organizerRegistered && supabase && user && organizerId) {
+    const [{ data }, { data: planState }] = await Promise.all([
+      supabase
+        .from("organizers")
+        .select(
+          "organization_name, subscription_status, stripe_status, manual_grant_active, manual_grant_expires_at"
+        )
+        .eq("id", organizerId)
+        .maybeSingle(),
+      supabase
+        .from("organizer_plan_state")
+        .select("stripe_status, manual_grant_active, manual_grant_expires_at")
+        .eq("organizer_id", organizerId)
+        .maybeSingle(),
+    ]);
     organizerName = data?.organization_name ?? undefined;
-    isPro = isPaidOrganizer(data ?? {});
+    isPro = isPaidOrganizerWithPlanState(data ?? {}, planState);
   }
 
   return (

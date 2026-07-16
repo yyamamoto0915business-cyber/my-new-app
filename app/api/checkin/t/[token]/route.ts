@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
+import {
+  checkInVolunteerApplication,
+  findApprovedVolunteerForEvent,
+} from "@/lib/checkin/resolve-pass-qr";
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -96,6 +100,49 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   if (!userId && !guestName) {
     return NextResponse.json({ error: "お名前を入力してください" }, { status: 400 });
+  }
+
+  // ログインユーザーが承認済みボランティアならスタッフチェックインへ分岐
+  if (userId) {
+    const volunteer = await findApprovedVolunteerForEvent(
+      supabase,
+      event.id,
+      userId
+    );
+    if (volunteer && volunteer.kind === "volunteer") {
+      const already =
+        volunteer.status === "checked_in" ||
+        volunteer.status === "completed" ||
+        Boolean(volunteer.checkedInAt);
+      if (already) {
+        return NextResponse.json(
+          {
+            error: "すでにチェックイン済みです",
+            alreadyCheckedIn: true,
+            kind: "volunteer",
+            checkedInAt: volunteer.checkedInAt,
+          },
+          { status: 409 }
+        );
+      }
+      try {
+        const { checkedInAt } = await checkInVolunteerApplication(
+          supabase,
+          volunteer.applicationId
+        );
+        return NextResponse.json({
+          success: true,
+          kind: "volunteer",
+          checkedInAt,
+        });
+      } catch (err) {
+        console.error("checkin volunteer self:", err);
+        return NextResponse.json(
+          { error: "スタッフチェックインに失敗しました" },
+          { status: 500 }
+        );
+      }
+    }
   }
 
   let participant: { id: string; status: string } | null = null;

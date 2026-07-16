@@ -43,3 +43,30 @@ export type DayOpsStaffMember = {
   avatarUrl?: string | null;
   updatedAt: string;
 };
+
+/** 応募〜当日運営までを一本化したスタッフライフサイクル */
+export type StaffLifecycleStatus =
+  | "applied"
+  | "pending_review"
+  | "approved"
+  | "confirmed"
+  | "scheduled"
+  | "checked_in"
+  | "on_duty"
+  | "on_break"
+  | "finished"
+  | "rejected"
+  | "declined"
+  | "absent";
+
+export type DashboardStaffMember = {
+  id: string;
+  name: string;
+  role: string;
+  avatarUrl?: string | null;
+  status: StaffLifecycleStatus;
+  /** 応募ビュー用（例: "2時間前に応募"） */
+  appliedAtLabel?: string;
+  /** 当日ビュー用（例: "09:32" / "エントランス" / "連絡待ち"） */
+  detailLabel?: string;
+};

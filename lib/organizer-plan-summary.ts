@@ -5,13 +5,13 @@ import { FREE_PLAN_NORMAL_SLOTS, FOUNDER_BONUS_SLOTS } from "@/lib/billing";
 import { isPaidOrganizer } from "@/lib/billing";
 
 export type PlanSummary = {
-  /** 表示用プラン名（例: 無料プラン / Starterプラン） */
+  /** 表示用プラン名（例: Starterプラン / Proプラン） */
   planLabel: string;
-  /** 無料プラン（Starter 未契約）かどうか */
+  /** 無料プラン（Pro 未契約）かどうか */
   isFreePlan: boolean;
   /** JST 当月に公開した件数 */
   monthlyPublished: number;
-  /** 今月の公開上限。null は無制限（Starter 等） */
+  /** 今月の公開上限。null は無制限（Pro 等） */
   publishLimit: number | null;
   /** 例: 0/1 ・ 無制限 */
   slotsDisplay: string;
@@ -39,15 +39,15 @@ export function buildPlanSummary(
   organizer: OrganizerLike,
   monthlyPublished: number
 ): PlanSummary {
-  const isStarter = isPaidOrganizer(organizer);
-  const planLabel = isStarter ? "Starterプラン" : "無料プラン";
+  const isPaid = isPaidOrganizer(organizer);
+  const planLabel = isPaid ? "Proプラン" : "Starterプラン";
   const publishLimit = computePublishLimit(organizer);
   const slotsDisplay =
     publishLimit === null ? "無制限" : `${monthlyPublished}/${publishLimit}`;
 
   return {
     planLabel,
-    isFreePlan: !isStarter,
+    isFreePlan: !isPaid,
     monthlyPublished,
     publishLimit,
     slotsDisplay,

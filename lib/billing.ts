@@ -120,7 +120,7 @@ export async function canPublishEvent(
     current,
     message:
       current >= limit
-        ? `今月の無料公開枠（${limit}本）を超えています。月980円のStarterプランで無制限に公開できます。`
+        ? `今月の無料公開枠（${limit}本）を超えています。月980円のProプランで無制限に公開できます。`
         : undefined,
   };
 }
@@ -148,4 +148,28 @@ export function isPaidOrganizer(organizer: {
   const exp = organizer.manual_grant_expires_at;
   if (!exp) return true; // 無期限付与
   return new Date(exp) > new Date();
+}
+
+/** organizers 行と organizer_plan_state を billing API と同じ優先度でマージして有料判定 */
+export function isPaidOrganizerWithPlanState(
+  organizer: {
+    subscription_status?: string | null;
+    stripe_status?: string | null;
+    manual_grant_active?: boolean | null;
+    manual_grant_expires_at?: string | null;
+  },
+  planState?: {
+    stripe_status?: string | null;
+    manual_grant_active?: boolean | null;
+    manual_grant_expires_at?: string | null;
+  } | null
+): boolean {
+  return isPaidOrganizer({
+    subscription_status: organizer.subscription_status ?? null,
+    stripe_status: planState?.stripe_status ?? organizer.stripe_status ?? null,
+    manual_grant_active:
+      planState?.manual_grant_active ?? organizer.manual_grant_active ?? false,
+    manual_grant_expires_at:
+      planState?.manual_grant_expires_at ?? organizer.manual_grant_expires_at ?? null,
+  });
 }

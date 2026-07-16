@@ -50,3 +50,16 @@ export function PassQuantityBadge({ label }: { label: string }) {
     </span>
   );
 }
+
+export function PassKindBadge({
+  kind,
+}: {
+  kind?: ParticipationPass["kind"];
+}) {
+  if (kind !== "volunteer") return null;
+  return (
+    <span className="inline-flex items-center rounded-full border border-[#c8b8e0] bg-[#f5f0fa] px-1.5 py-0.5 text-[10.5px] font-medium text-[#6b4a9e]">
+      ボランティア
+    </span>
+  );
+}

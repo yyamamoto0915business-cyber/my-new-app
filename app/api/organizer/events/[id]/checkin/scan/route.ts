@@ -4,10 +4,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerIdByEventId } from "@/lib/db/events";
+import { buildReceptionNumber } from "@/lib/checkin/parse-pass-qr";
 import {
-  buildReceptionNumber,
-  parsePassQr,
-} from "@/lib/checkin/parse-pass-qr";
+  checkInVolunteerApplication,
+  resolvePassQr,
+} from "@/lib/checkin/resolve-pass-qr";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -22,6 +23,20 @@ function displayNameOf(row: ParticipantRow): string {
   const profiles = row.profiles;
   const profile = Array.isArray(profiles) ? profiles[0] : profiles;
   return profile?.display_name?.trim() || "来場者";
+}
+
+async function fetchDisplayName(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  fallback: string
+): Promise<string> {
+  if (!supabase) return fallback;
+  const { data } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+  return data?.display_name?.trim() || fallback;
 }
 
 /** POST: 参加パスQRを読み取り、主催者が受付（チェックイン）する */
@@ -47,35 +62,72 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   const raw = typeof body.qr === "string" ? body.qr : "";
-  const parsed = parsePassQr(raw);
-  if (!parsed) {
+  const resolved = await resolvePassQr(supabase, raw, eventId);
+  if (!resolved) {
     return NextResponse.json(
-      { error: "参加パスのQRコードとして認識できませんでした" },
-      { status: 400 }
+      { error: "このイベントの参加パスが見つかりません" },
+      { status: 404 }
     );
   }
 
+  // ── ボランティア分岐 ──
+  if (resolved.kind === "volunteer") {
+    const name = await fetchDisplayName(supabase, resolved.userId, "スタッフ");
+    const receptionNumber = buildReceptionNumber(resolved.applicationId);
+    const alreadyCheckedIn =
+      resolved.status === "checked_in" ||
+      resolved.status === "completed" ||
+      Boolean(resolved.checkedInAt);
+
+    if (alreadyCheckedIn) {
+      return NextResponse.json({
+        success: true,
+        alreadyCheckedIn: true,
+        kind: "volunteer",
+        name,
+        receptionNumber,
+        roleLabel: resolved.roleAssigned,
+        checkedInAt: resolved.checkedInAt,
+      });
+    }
+
+    try {
+      const { checkedInAt } = await checkInVolunteerApplication(
+        supabase,
+        resolved.applicationId
+      );
+      return NextResponse.json({
+        success: true,
+        alreadyCheckedIn: false,
+        kind: "volunteer",
+        name,
+        receptionNumber,
+        roleLabel: resolved.roleAssigned,
+        checkedInAt,
+      });
+    } catch (err) {
+      console.error("checkin scan volunteer:", err);
+      return NextResponse.json(
+        { error: "スタッフ受付に失敗しました" },
+        { status: 500 }
+      );
+    }
+  }
+
+  // ── 来場者分岐（既存） ──
   const { data: rows, error: listError } = await supabase
     .from("event_participants")
     .select("id, user_id, status, profiles(display_name)")
-    .eq("event_id", eventId);
+    .eq("event_id", eventId)
+    .eq("id", resolved.participantId)
+    .maybeSingle();
 
   if (listError) {
     console.error("checkin scan list:", listError);
     return NextResponse.json({ error: "参加者の取得に失敗しました" }, { status: 500 });
   }
 
-  const participants = (rows ?? []) as ParticipantRow[];
-  let participant: ParticipantRow | undefined;
-
-  if (parsed.type === "participant") {
-    participant = participants.find((p) => p.id === parsed.participantId);
-  } else {
-    participant = participants.find(
-      (p) => buildReceptionNumber(p.id) === parsed.receptionNumber
-    );
-  }
-
+  const participant = rows as ParticipantRow | null;
   if (!participant) {
     return NextResponse.json(
       { error: "このイベントの参加パスが見つかりません" },
@@ -91,7 +143,6 @@ export async function POST(req: NextRequest, { params }: Params) {
   const alreadyCheckedIn =
     participant.status === "checked_in" || participant.status === "completed";
 
-  // 既存チェックイン確認
   const { data: existingCheckin } = await supabase
     .from("event_checkins")
     .select("id, checked_in_at")
@@ -103,13 +154,13 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({
       success: true,
       alreadyCheckedIn: true,
+      kind: "visitor",
       name,
       receptionNumber: buildReceptionNumber(participant.id),
       checkedInAt: existingCheckin?.checked_in_at ?? null,
     });
   }
 
-  // 参加者ステータス更新（主催者は RLS で update 可）
   const { error: statusError } = await supabase
     .from("event_participants")
     .update({ status: "checked_in" })
@@ -121,7 +172,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "受付ステータスの更新に失敗しました" }, { status: 500 });
   }
 
-  // event_checkins への insert は RLS が本人のみのため admin を使用
   const admin = createAdminClient();
   const writer = admin ?? supabase;
   const { data: checkin, error: insertError } = await writer
@@ -136,10 +186,10 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   if (insertError) {
     console.error("checkin scan insert:", insertError);
-    // ステータスは更新済みなので成功扱い（一覧はステータスでも拾える）
     return NextResponse.json({
       success: true,
       alreadyCheckedIn: false,
+      kind: "visitor",
       name,
       receptionNumber: buildReceptionNumber(participant.id),
       checkedInAt: new Date().toISOString(),
@@ -150,6 +200,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   return NextResponse.json({
     success: true,
     alreadyCheckedIn: false,
+    kind: "visitor",
     name,
     receptionNumber: buildReceptionNumber(participant.id),
     checkedInAt: checkin.checked_in_at,

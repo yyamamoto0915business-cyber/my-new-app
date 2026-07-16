@@ -7,7 +7,6 @@ import {
   Calendar,
   Bell,
   Megaphone,
-  Plus,
   Clock,
   ChevronRight,
   QrCode,
@@ -25,7 +24,6 @@ import {
 import {
   MOCK_STAFF,
   MOCK_SCHEDULE,
-  staffChip,
   scheduleChip,
   noticeBadge,
   countStaffPresent,
@@ -38,6 +36,8 @@ import {
 } from "./day-management-shared";
 import { DayManagementEventSwitcher } from "./DayManagementEventSwitcher";
 import { TicketSalesAttendanceCard } from "./TicketSalesAttendanceCard";
+import { StaffStatusCard } from "./StaffStatusCard";
+import { useStaffStatus } from "@/hooks/use-staff-status";
 
 type Props = {
   event: EventInfo;
@@ -128,6 +128,12 @@ export function DayManagementMobileView({
 }: Props) {
   const { data: dayOps, loading: dayOpsLoading, error: dayOpsError, refreshing: dayOpsRefreshing, reload: reloadDayOps } =
     useDayOpsSummary({ eventId, emptyMode });
+  const {
+    members: staffMembers,
+    loading: staffLoading,
+    error: staffError,
+    reload: reloadStaff,
+  } = useStaffStatus({ eventId, emptyMode });
   const isPast = dayPhase === "past";
   const isUpcoming = dayPhase === "upcoming";
   const scheduleTitle = emptyMode ? "本日のスケジュール" : isPast ? "スケジュール" : "本日のスケジュール";
@@ -359,50 +365,15 @@ export function DayManagementMobileView({
         )}
       </section>
 
-      <section className="mg-day-mgmt-m__panel">
-        <PanelHeader
-          title="スタッフステータス"
-          actionLabel={emptyMode ? undefined : "すべて見る"}
-          onAction={() => onOpenModal("message")}
-        />
-        {emptyMode ? (
-          <div className="mg-day-mgmt-m__staff-scroll mt-1.5">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="mg-day-mgmt-m__staff-item">
-                <div className="h-8 w-8 rounded-full bg-[#e8e6e0]" />
-                <span className="text-[8px] text-[#566358]">—</span>
-              </div>
-            ))}
-            <button
-              type="button"
-              disabled
-              className="flex min-w-[64px] flex-col items-center justify-center gap-0.5 rounded-[10px] border border-dashed border-[#DDE8DF] px-2 py-2 opacity-50"
-              aria-label="スタッフを追加"
-            >
-              <Plus size={13} className="text-[#566358]" />
-              <span className="text-[8px] text-[#566358]">追加</span>
-            </button>
-          </div>
-        ) : (
-          <div className="mg-day-mgmt-m__staff-scroll mt-1.5">
-            {MOCK_STAFF.map((staff, i) => (
-              <div key={i} className="mg-day-mgmt-m__staff-item">
-                <div className="mg-day-mgmt-m__staff-avatar">{staff.name.charAt(0)}</div>
-                <p className="max-w-[68px] truncate text-[9px] font-semibold text-[#1A2214]">{staff.name}</p>
-                <div className="scale-[0.82]">{staffChip(staff.status)}</div>
-              </div>
-            ))}
-            <button
-              type="button"
-              className="flex min-w-[64px] flex-col items-center justify-center gap-0.5 rounded-[10px] border border-dashed border-[#DDE8DF] bg-white px-2 py-2"
-              aria-label="スタッフを追加"
-            >
-              <Plus size={13} className="text-[#566358]" />
-              <span className="text-[8px] font-medium text-[#566358]">追加</span>
-            </button>
-          </div>
-        )}
-      </section>
+      <StaffStatusCard
+        emptyMode={emptyMode}
+        dayPhase={dayPhase}
+        members={staffMembers}
+        loading={staffLoading}
+        error={staffError}
+        onRetry={() => void reloadStaff()}
+        variant="mobile"
+      />
 
       <section className="mg-day-mgmt-m__panel">
         <PanelHeader
