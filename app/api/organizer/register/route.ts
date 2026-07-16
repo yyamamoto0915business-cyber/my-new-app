@@ -87,7 +87,8 @@ export async function POST(request: NextRequest) {
   ]);
 
   if (existing) {
-    return NextResponse.json({ error: "既に主催者登録済みです" }, { status: 400 });
+    // 初回オンボーディングなどからの再実行を許容
+    return NextResponse.json({ id: existing, alreadyRegistered: true }, { status: 200 });
   }
 
   if (!profileResult.data) {

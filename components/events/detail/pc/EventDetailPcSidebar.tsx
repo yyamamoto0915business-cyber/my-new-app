@@ -78,6 +78,7 @@ export function EventDetailPcSidebar({
                 fill
                 className="object-cover"
                 sizes="48px"
+                unoptimized
                 onError={() => setAvatarError(true)}
               />
             ) : (

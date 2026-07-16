@@ -8,16 +8,13 @@ export default function VerifiedPage() {
     <AuthResultScreen
       icon="check"
       title="登録が完了しました"
-      description="メールアドレスの確認が完了しました。MachiGlyphをはじめましょう。"
+      description="メールアドレスの確認が完了しました。つづいて使い方を選び、プロフィールを整えましょう。"
     >
       <Link href="/" className={authResultButtonClass.primary}>
-        ホームへ進む
+        はじめる
       </Link>
-      <Link href="/organizer" className={authResultButtonClass.secondary}>
-        イベントを主催する
-      </Link>
-      <Link href="/profile" className={authResultButtonClass.secondary}>
-        マイページへ進む
+      <Link href="/events" className={authResultButtonClass.secondary}>
+        まずはイベントを見る
       </Link>
     </AuthResultScreen>
   );

@@ -11,6 +11,7 @@ import {
   Clock,
   ChevronRight,
   QrCode,
+  ScanLine,
   MessageCircle,
   AlertTriangle,
   FileText,
@@ -18,7 +19,10 @@ import {
 import { cn } from "@/lib/utils";
 import type { DayManageableEvent } from "@/lib/organizer/day-manageable-events";
 import {
-  MOCK_CHECKIN,
+  attendanceToCheckinKpi,
+  useDayOpsSummary,
+} from "@/hooks/use-day-ops-summary";
+import {
   MOCK_STAFF,
   MOCK_SCHEDULE,
   staffChip,
@@ -122,6 +126,8 @@ export function DayManagementMobileView({
   notices,
   onOpenModal,
 }: Props) {
+  const { data: dayOps, loading: dayOpsLoading, error: dayOpsError, refreshing: dayOpsRefreshing, reload: reloadDayOps } =
+    useDayOpsSummary({ eventId, emptyMode });
   const isPast = dayPhase === "past";
   const isUpcoming = dayPhase === "upcoming";
   const scheduleTitle = emptyMode ? "本日のスケジュール" : isPast ? "スケジュール" : "本日のスケジュール";
@@ -131,7 +137,7 @@ export function DayManagementMobileView({
       ? "イベント当日の受付・進行状況を振り返れます。"
       : "イベント当日の受付・進行状況をリアルタイムで確認できます。";
 
-  const checkin = emptyMode ? EMPTY_CHECKIN : MOCK_CHECKIN;
+  const checkin = emptyMode ? EMPTY_CHECKIN : attendanceToCheckinKpi(dayOps);
   const staffPresent = emptyMode ? 0 : countStaffPresent(MOCK_STAFF);
   const staffTotal = emptyMode ? 0 : MOCK_STAFF.length;
   const schedDone = emptyMode ? 0 : countScheduleProgress(MOCK_SCHEDULE);
@@ -153,6 +159,12 @@ export function DayManagementMobileView({
       key: "qr",
       label: "受付QRコード表示",
       icon: <QrCode size={14} className="text-[#2D7A4F]" />,
+      iconBg: "bg-[#EAF4ED]",
+    },
+    {
+      key: "qr_scan",
+      label: "受付QRコード読み取り",
+      icon: <ScanLine size={14} className="text-[#2D7A4F]" />,
       iconBg: "bg-[#EAF4ED]",
     },
     {
@@ -306,6 +318,11 @@ export function DayManagementMobileView({
         emptyMode={emptyMode}
         compact
         onOpenCheckinList={() => onOpenModal("checkin_list")}
+        summary={dayOps}
+        summaryLoading={dayOpsLoading}
+        summaryError={dayOpsError}
+        summaryRefreshing={dayOpsRefreshing}
+        onRefreshSummary={reloadDayOps}
       />
 
       <section className="mg-day-mgmt-m__panel">

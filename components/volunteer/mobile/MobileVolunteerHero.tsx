@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import {
   Search,
   MapPin,
@@ -17,6 +16,10 @@ import {
   type MobileVolunteerFilterKind,
 } from "./MobileVolunteerFilterSheet";
 import type { BenefitFilter } from "@/lib/volunteer-utils";
+import {
+  SectionHeroCopy,
+  SearchLeafIcon,
+} from "@/components/home/SectionHeroCopy";
 
 const HERO_IMAGE = "/volunteer/mobile-hero-watercolor.png";
 
@@ -43,6 +46,15 @@ type Props = {
   hasActiveFilters?: boolean;
 };
 
+function VolunteerTitle() {
+  return (
+    <>
+      <span className="shrink-0 text-[#5B9E5A]">ボランティア</span>
+      <span className="shrink-0">募集</span>
+    </>
+  );
+}
+
 export function MobileVolunteerHero({
   keyword,
   prefecture,
@@ -58,76 +70,68 @@ export function MobileVolunteerHero({
   const filterValues = { prefecture, roleType, dateFilter, benefitFilter };
 
   return (
-    <section
-      aria-label="ボランティア募集"
-      className="mg-mobile-section overflow-hidden p-0"
-    >
-      <div className="relative h-[84px] overflow-hidden bg-white">
-        <Image
-          src={HERO_IMAGE}
-          alt=""
-          fill
-          priority
-          className="object-cover object-right saturate-[1.14] contrast-[1.06]"
-          sizes="100vw"
-        />
-        <div
-          className="pointer-events-none absolute inset-y-0 left-0 w-[58%] bg-gradient-to-r from-white via-white/82 to-transparent"
-          aria-hidden
-        />
+    <section aria-label="ボランティア募集" className="mg-mobile-section overflow-hidden p-0">
+      <div className="relative overflow-hidden rounded-[14px]">
+        <div className="absolute inset-0">
+          <Image
+            src={HERO_IMAGE}
+            alt=""
+            fill
+            priority
+            className="object-cover object-right saturate-[1.14] contrast-[1.06]"
+            sizes="100vw"
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-[#fbfcfb] via-[#fbfcfb]/88 to-transparent"
+            aria-hidden
+          />
+          <div
+            className="absolute inset-y-0 left-0 w-[58%] bg-gradient-to-r from-[#fbfcfb] to-transparent"
+            aria-hidden
+          />
+        </div>
 
-        <div className="relative z-10 flex h-full flex-col justify-center px-3 py-1">
-          <nav
-            aria-label="パンくず"
-            className="mb-0.5 flex items-center gap-1 text-[9px] text-[#6a7068] [text-shadow:0_1px_0_rgba(247,251,248,0.95),0_0_10px_rgba(247,251,248,0.85),0_0_18px_rgba(247,251,248,0.7)]"
-          >
-            <Link href="/" className="transition-colors hover:text-[#2f6b4f]">
-              ホーム
-            </Link>
-            <span aria-hidden>&gt;</span>
-            <span aria-current="page">ボランティア募集</span>
-          </nav>
+        <div className="relative flex flex-col px-3 pb-1.5 pt-1.5">
+          <SectionHeroCopy
+            size="mobile"
+            label="ボランティアを探す"
+            title={<VolunteerTitle />}
+            subcopy="地域のイベントや活動で、お手伝いできる募集を見つけられます。"
+            underlineTail="見つけられます。"
+          />
 
-          <h1
-            className="text-[18px] font-semibold leading-[1.28] text-[#163828] [text-shadow:0_1px_0_rgba(247,251,248,0.95),0_0_12px_rgba(247,251,248,0.85),0_0_20px_rgba(247,251,248,0.7)]"
-            style={{ fontFamily: "'Shippori Mincho', 'Noto Serif JP', serif" }}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSearch?.();
+            }}
+            className="mt-2 flex h-8 items-center gap-1.5 rounded-full border border-[#cfe0d4] bg-white px-3 shadow-[0_2px_10px_rgba(22,56,40,0.06)]"
           >
-            ボランティア募集
-          </h1>
-          <p className="mt-0.5 whitespace-nowrap text-[10px] leading-snug text-[#3d5c48] [text-shadow:0_1px_0_rgba(247,251,248,0.95),0_0_10px_rgba(247,251,248,0.85),0_0_18px_rgba(247,251,248,0.7)]">
-            地域のイベントや活動で、お手伝いできる募集を見つけられます。
-          </p>
+            <Search className="h-3.5 w-3.5 shrink-0 text-[#5B9E5A]" aria-hidden />
+            <input
+              type="search"
+              value={keyword}
+              onChange={(e) => onKeywordChange(e.target.value)}
+              placeholder="キーワードで探す"
+              className="min-w-0 flex-1 bg-transparent text-[11px] text-[#163828] outline-none placeholder:text-[#6a7068]"
+            />
+            {keyword ? (
+              <button
+                type="button"
+                onClick={() => onKeywordChange("")}
+                className="text-[#6a7068]"
+                aria-label="検索をクリア"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : (
+              <SearchLeafIcon className="h-3.5 w-3.5" />
+            )}
+          </form>
         </div>
       </div>
 
-      <div className="space-y-1.5 bg-white px-3 pb-2.5 pt-1.5">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSearch?.();
-          }}
-          className="flex h-9 items-center gap-1.5 rounded-full border border-[#dde9e1] bg-white px-3 shadow-[0_2px_10px_rgba(22,56,40,0.05)]"
-        >
-          <Search className="h-3.5 w-3.5 shrink-0 text-[#8a9088]" aria-hidden />
-          <input
-            type="search"
-            value={keyword}
-            onChange={(e) => onKeywordChange(e.target.value)}
-            placeholder="キーワードで探す"
-            className="min-w-0 flex-1 bg-transparent text-[11px] text-[#163828] outline-none placeholder:text-[#6a7068]"
-          />
-          {keyword ? (
-            <button
-              type="button"
-              onClick={() => onKeywordChange("")}
-              className="text-[#6a7068]"
-              aria-label="検索をクリア"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
-        </form>
-
+      <div className="space-y-1.5 bg-white px-3 pb-2.5 pt-2">
         <div className="flex items-center gap-1.5">
           <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
             {FILTER_BUTTONS.map(({ kind, icon: Icon }) => {

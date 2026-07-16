@@ -33,8 +33,6 @@ export const EMPTY_DAY_EVENT: EventInfo = {
 
 export const EMPTY_CHECKIN = { checkedIn: 0, notChecked: 0, cancelled: 0, total: 0 };
 
-export const MOCK_CHECKIN = { checkedIn: 28, notChecked: 18, cancelled: 4, total: 50 };
-
 export const MOCK_STAFF = [
   { name: "山本雄太", role: "リーダー", status: "ok" as const },
   { name: "佐藤花子", role: "受付", status: "ok" as const },
@@ -68,7 +66,15 @@ export function formatNoticeTime(baseDate: Date = new Date()): string {
   return `${Number(h)}:${m}`;
 }
 
-export type ModalType = "qr" | "checkin_list" | "announce" | "message" | "emergency" | "memo" | null;
+export type ModalType =
+  | "qr"
+  | "qr_scan"
+  | "checkin_list"
+  | "announce"
+  | "message"
+  | "emergency"
+  | "memo"
+  | null;
 
 export type EventDayPhase = "live" | "upcoming" | "past";
 
@@ -432,24 +438,44 @@ export function DayManagementModals({
       setSending(null);
     }
   }, [modal]);
-  // QRモーダルと受付リストは動的インポートで読み込む
-  const [QrModal, setQrModal] = React.useState<React.ComponentType<{ open: boolean; onClose: () => void; eventId: string; eventTitle: string }> | null>(null);
-  const [ListModal, setListModal] = React.useState<React.ComponentType<{ open: boolean; onClose: () => void; eventId: string; eventTitle: string }> | null>(null);
+  // QRモーダル・読み取り・受付リストは動的インポートで読み込む
+  type SharedModalProps = {
+    open: boolean;
+    onClose: () => void;
+    eventId: string;
+    eventTitle: string;
+  };
+  const [QrModal, setQrModal] = React.useState<React.ComponentType<SharedModalProps> | null>(null);
+  const [QrScanModal, setQrScanModal] = React.useState<React.ComponentType<SharedModalProps> | null>(null);
+  const [ListModal, setListModal] = React.useState<React.ComponentType<SharedModalProps> | null>(null);
 
   React.useEffect(() => {
     if (modal === "qr" && !QrModal) {
       import("./CheckinQrModal").then((m) => setQrModal(() => m.CheckinQrModal));
     }
+    if (modal === "qr_scan" && !QrScanModal) {
+      import("./CheckinQrScanModal").then((m) => setQrScanModal(() => m.CheckinQrScanModal));
+    }
     if (modal === "checkin_list" && !ListModal) {
       import("./CheckinListModal").then((m) => setListModal(() => m.CheckinListModal));
     }
-  }, [modal, QrModal, ListModal]);
+  }, [modal, QrModal, QrScanModal, ListModal]);
 
   return (
     <>
       {QrModal && <QrModal open={modal === "qr"} onClose={onClose} eventId={eventId} eventTitle={eventTitle} />}
       {!QrModal && modal === "qr" && (
         <Modal open onClose={onClose} title="受付QR・コード">
+          <div className="flex items-center justify-center py-10">
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#2D7A4F] border-t-transparent" />
+          </div>
+        </Modal>
+      )}
+      {QrScanModal && (
+        <QrScanModal open={modal === "qr_scan"} onClose={onClose} eventId={eventId} eventTitle={eventTitle} />
+      )}
+      {!QrScanModal && modal === "qr_scan" && (
+        <Modal open onClose={onClose} title="受付QRコード読み取り">
           <div className="flex items-center justify-center py-10">
             <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#2D7A4F] border-t-transparent" />
           </div>

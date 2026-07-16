@@ -167,6 +167,7 @@ export function EventDetailPcMainSections({
                     fill
                     className="object-cover"
                     sizes="54px"
+                    unoptimized
                     onError={() => setAvatarError(true)}
                   />
                 ) : (

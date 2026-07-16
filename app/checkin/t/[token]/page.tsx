@@ -13,9 +13,11 @@ type EventInfo = {
   startTime: string | null;
   endTime: string | null;
   location: string | null;
+  participationMode?: "required" | "optional" | "none";
+  walkInAllowed?: boolean;
 };
 
-type Phase = "loading" | "confirm" | "done" | "already" | "error";
+type Phase = "loading" | "confirm" | "done" | "already" | "error" | "needs_registration";
 
 export default function CheckinTokenPage() {
   const params = useParams();
@@ -77,6 +79,12 @@ export default function CheckinTokenPage() {
         setSubmitting(false);
         return;
       }
+      if (res.status === 403 && data.code === "registration_required") {
+        setPhase("needs_registration");
+        setErrorMsg(data.error ?? "このイベントは事前申し込みが必要です");
+        setSubmitting(false);
+        return;
+      }
       if (!res.ok) {
         setErrorMsg(data.error ?? "チェックインに失敗しました");
         setSubmitting(false);
@@ -127,6 +135,31 @@ export default function CheckinTokenPage() {
           <Link href={`/events/${event?.id}`} className="mt-5 block rounded-xl bg-[#315c4b] py-3 text-[14px] font-bold text-white">
             イベント詳細を見る
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "needs_registration") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#f5f8f5] px-4">
+        <div className="rounded-2xl bg-white p-8 text-center shadow-sm border border-[#d8e3dc] max-w-sm w-full">
+          <h1 className="text-lg font-bold text-[#172033]">事前申し込みが必要です</h1>
+          <p className="mt-2 text-[13px] text-[#607083]">
+            {errorMsg || "このイベントは申し込み後にチェックインできます。"}
+          </p>
+          {event?.id ? (
+            <Link
+              href={`/events/${event.id}`}
+              className="mt-5 block rounded-xl bg-[#315c4b] py-3 text-[14px] font-bold text-white"
+            >
+              イベント詳細で申し込む
+            </Link>
+          ) : (
+            <Link href="/" className="mt-5 block rounded-xl bg-[#315c4b] py-3 text-[14px] font-bold text-white">
+              ホームへ戻る
+            </Link>
+          )}
         </div>
       </div>
     );
@@ -236,6 +269,15 @@ export default function CheckinTokenPage() {
             </div>
           )}
         </div>
+
+        {event?.walkInAllowed === false ? (
+          <div className="rounded-2xl border border-[#e4d8b8] bg-[#faf6ea] p-4">
+            <p className="text-[12px] font-semibold text-[#8a6a28]">事前申し込みが必要なイベントです</p>
+            <p className="mt-1 text-[11px] text-[#607083]">
+              申し込み済みのアカウントでログインしてからチェックインしてください。
+            </p>
+          </div>
+        ) : null}
 
         <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#d8e3dc]">
           <p className="text-[12px] font-semibold text-[#607083] mb-2">

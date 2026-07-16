@@ -30,6 +30,12 @@ const nextConfig: NextConfig = {
         hostname: "i.imgur.com",
         pathname: "/**",
       },
+      // env 未読込時でも Supabase Storage 画像を許可（主催者アイコン等）
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
       ...(() => {
         try {
           const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

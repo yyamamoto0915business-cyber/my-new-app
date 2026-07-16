@@ -87,7 +87,7 @@ export async function getTicketSalesAttendanceSummary(
     (p) => p.status === "checked_in" || p.status === "completed"
   ).length;
 
-  // チェックイン数は event_checkins を優先。無い場合は参加者ステータスをフォールバック
+  // チェックイン数は event_checkins（当日参加のゲスト含む）を優先
   const checkedIn = Math.max(checkinCount, participantCheckedIn);
 
   let notCheckedIn: number;
@@ -95,11 +95,14 @@ export async function getTicketSalesAttendanceSummary(
 
   if (salesMode === "stripe") {
     cancelled = refundedOrders.length + declined;
-    notCheckedIn = Math.max(0, validHolders - checkedIn);
+    // 券所持者ベースの未チェックイン（ウォークインは checkedIn に加算される）
+    notCheckedIn = Math.max(0, validHolders - participantCheckedIn);
   } else {
     cancelled = declined + refundedOrders.length;
-    const base = salesMode === "free" ? activeParticipants : Math.max(activeParticipants, validHolders);
-    notCheckedIn = Math.max(0, base - checkedIn);
+    // 申込者の未チェックイン。当日参加分は checkedIn 側に載る
+    const registeredBase =
+      salesMode === "free" ? activeParticipants : Math.max(activeParticipants, validHolders);
+    notCheckedIn = Math.max(0, registeredBase - participantCheckedIn);
   }
 
   const purchased =

@@ -30,9 +30,9 @@ export function CheckinListModal({ open, onClose, eventId, eventTitle }: Props) 
   const [list, setList] = useState<CheckinRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
     if (!eventId) return;
-    setLoading(true);
+    if (!opts?.silent) setLoading(true);
     try {
       const res = await fetch(`/api/organizer/events/${eventId}/checkin`);
       if (res.ok) {
@@ -40,12 +40,20 @@ export function CheckinListModal({ open, onClose, eventId, eventTitle }: Props) 
         setList(data.list ?? []);
       }
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, [eventId]);
 
   useEffect(() => {
-    if (open && eventId) load();
+    if (open && eventId) void load();
+  }, [open, eventId, load]);
+
+  useEffect(() => {
+    if (!open || !eventId) return;
+    const id = window.setInterval(() => {
+      void load({ silent: true });
+    }, 10_000);
+    return () => window.clearInterval(id);
   }, [open, eventId, load]);
 
   const handleCsv = () => {
@@ -72,7 +80,7 @@ export function CheckinListModal({ open, onClose, eventId, eventTitle }: Props) 
           {eventTitle} — {list.length}人受付済み
         </p>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={load} className="flex items-center gap-1 text-[11px] text-[#566358]">
+          <button type="button" onClick={() => void load()} className="flex items-center gap-1 text-[11px] text-[#566358]">
             <RefreshCw size={11} />
             更新
           </button>

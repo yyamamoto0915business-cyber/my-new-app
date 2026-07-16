@@ -11,6 +11,7 @@ import { EventDetailAccessBlock } from "@/components/events/detail/EventDetailAc
 import { MobileEventOverviewTab } from "@/components/events/detail/MobileEventOverviewTab";
 import { EventDetailSupportBanner } from "@/components/events/detail/EventDetailSupportBanner";
 import { EventDetailSectionCard } from "@/components/events/detail/EventDetailSectionCard";
+import { EventPurchasePrimaryCta } from "@/components/events/detail/purchase/EventPurchasePrimaryCta";
 
 const SITE_BASE =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://my-new-app-self-iota.vercel.app";
@@ -82,8 +83,15 @@ export default async function EventDetailPage({ params }: Props) {
     hideSave: true,
   };
 
+  /** 申込制のみ購入/申込CTA。任意・自由参加は参加予定のまま */
   const primaryActions = isAvailable ? (
-    <EventPrimaryActions {...primaryActionsProps} layout="mobile" />
+    <div className="w-full">
+      {participationModeProp === "required" ? (
+        <EventPurchasePrimaryCta event={event} variant="mobile" />
+      ) : (
+        <EventPrimaryActions {...primaryActionsProps} layout="mobile" />
+      )}
+    </div>
   ) : null;
 
   /** PCの参加CTAは EventPurchaseCard に統合済み */
@@ -136,8 +144,8 @@ export default async function EventDetailPage({ params }: Props) {
           <EventDetailSectionCard title="持ち物・雨天時" compact>
             {event.itemsToBring && event.itemsToBring.length > 0 && (
               <ul className="space-y-2 text-sm text-[var(--mg-muted)]">
-                {event.itemsToBring.map((item) => (
-                  <li key={item} className="flex gap-2">
+                {event.itemsToBring.map((item, index) => (
+                  <li key={`bring-pc-${index}-${item}`} className="flex gap-2">
                     <span className="text-[var(--accent)]" aria-hidden>
                       •
                     </span>
@@ -179,8 +187,8 @@ export default async function EventDetailPage({ params }: Props) {
           <div className="ed-content-card p-3.5">
             {event.itemsToBring && event.itemsToBring.length > 0 && (
               <ul className="space-y-1.5 text-[13px] text-[var(--mg-muted)]">
-                {event.itemsToBring.map((item) => (
-                  <li key={item} className="flex gap-2">
+                {event.itemsToBring.map((item, index) => (
+                  <li key={`bring-mobile-${index}-${item}`} className="flex gap-2">
                     <span className="text-[var(--accent)]" aria-hidden>
                       •
                     </span>

@@ -212,14 +212,14 @@ export function PassSettingsPcView({
   };
 
   return (
-    <div className="hidden min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden min-[900px]:flex-row">
       {/* 左メイン */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col border-r border-[#e8e6e0]">
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3.5">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col min-[900px]:border-r min-[900px]:border-[#e8e6e0]">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3.5 min-[900px]:px-5">
           <button
             type="button"
             onClick={onCancel}
-            className="mb-2.5 flex items-center gap-1 text-[11px] font-medium text-[#5c5a54] hover:text-[#2d7a32]"
+            className="mb-2.5 hidden min-[900px]:flex items-center gap-1 text-[11px] font-medium text-[#5c5a54] hover:text-[#2d7a32]"
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
               <line x1="19" y1="12" x2="5" y2="12" />
@@ -280,7 +280,7 @@ export function PassSettingsPcView({
             <h3 className="mb-1.5 text-[13px] font-semibold text-[#1a1a1a]">
               1. 申込方法を選ぶ
             </h3>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[900px]:grid-cols-2">
               <OptionCard
                 selected={applicationType === "none"}
                 title="申込不要で開催する"
@@ -319,7 +319,7 @@ export function PassSettingsPcView({
                 </p>
               ) : (
                 <>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 gap-2 min-[900px]:grid-cols-3">
                     {(
                       [
                         {
@@ -417,7 +417,7 @@ export function PassSettingsPcView({
               <h3 className="mb-1.5 text-[13px] font-semibold text-[#1a1a1a]">
                 3. 当日の受付方法
               </h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 min-[900px]:grid-cols-2">
                 {(
                   [
                     {
@@ -454,18 +454,18 @@ export function PassSettingsPcView({
           ) : null}
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-[#eeebe5] bg-white px-5 py-2.5">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-[#eeebe5] bg-white px-4 py-2.5 min-[900px]:px-5">
           <button
             type="button"
             onClick={handleSave}
-            className="rounded-[9px] bg-[#2d7a32] px-5 py-2 text-[12px] font-semibold text-white hover:bg-[#256a2a]"
+            className="min-h-[40px] flex-1 rounded-[9px] bg-[#2d7a32] px-5 py-2 text-[12px] font-semibold text-white hover:bg-[#256a2a] min-[900px]:flex-none"
           >
             設定内容を保存
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-[9px] border border-[#d0ccc4] bg-white px-4 py-2 text-[12px] font-medium text-[#4a4844] hover:bg-[#fafaf8]"
+            className="min-h-[40px] flex-1 rounded-[9px] border border-[#d0ccc4] bg-white px-4 py-2 text-[12px] font-medium text-[#4a4844] hover:bg-[#fafaf8] min-[900px]:flex-none"
           >
             キャンセル
           </button>

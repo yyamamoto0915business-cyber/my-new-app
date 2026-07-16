@@ -299,7 +299,9 @@ export function MobileEventDetailView({
           </div>
         ) : null}
 
-        {primaryActionsSlot}
+        {primaryActionsSlot ? (
+          <div className="w-full">{primaryActionsSlot}</div>
+        ) : null}
 
         <div className="grid grid-cols-3 gap-2">
           {mapsHref ? (
@@ -371,9 +373,9 @@ export function MobileEventDetailView({
         </div>
 
         <div className="ed-tab-panel -mx-4">
-          {tab === "概要" && overviewChildren}
-          {tab === "参加方法" && participationChildren}
-          {tab === "Q&A" && qnaChildren}
+          {tab === "概要" ? <div>{overviewChildren}</div> : null}
+          {tab === "参加方法" ? <div>{participationChildren}</div> : null}
+          {tab === "Q&A" ? <div>{qnaChildren}</div> : null}
         </div>
       </div>
     </div>

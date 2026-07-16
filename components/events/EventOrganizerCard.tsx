@@ -70,6 +70,7 @@ export function EventOrganizerCard({
                 fill
                 className="object-cover"
                 sizes="64px"
+                unoptimized
                 onError={() => setAvatarError(true)}
               />
             </div>

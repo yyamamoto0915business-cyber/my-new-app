@@ -76,8 +76,8 @@ export function EventQnASection({ eventId }: Props) {
         よくある質問
       </h2>
       <ul className="space-y-2.5">
-        {items.map((q) => (
-          <li key={q.id} className={cardClass}>
+        {items.map((q, index) => (
+          <li key={q.id || `qna-${index}`} className={cardClass}>
             <span className="text-[10px] font-medium tracking-wide text-[var(--ed-forest,var(--ed-accent))]">
               {QNA_CATEGORY_LABELS[q.category as QnACategory] ?? q.category}
             </span>

@@ -35,7 +35,9 @@ export async function POST(request: NextRequest) {
 
   const { data: eventRow } = await supabase
     .from("events")
-    .select("id, title, price, stripe_price_id, participation_mode, requires_registration")
+    .select(
+      "id, title, price, stripe_price_id, participation_mode, requires_registration, payment_method"
+    )
     .eq("id", eventId)
     .eq("status", "published")
     .single();
@@ -58,6 +60,18 @@ export async function POST(request: NextRequest) {
   if (price <= 0) {
     return NextResponse.json(
       { error: "無料イベントは通常の申込導線をご利用ください" },
+      { status: 400 }
+    );
+  }
+
+  const paymentMethod = (eventRow as { payment_method?: string | null })
+    .payment_method;
+  if (paymentMethod !== "online" && paymentMethod !== "both") {
+    return NextResponse.json(
+      {
+        error:
+          "このイベントはオンライン事前決済に対応していません。参加申込からお進みください。",
+      },
       { status: 400 }
     );
   }

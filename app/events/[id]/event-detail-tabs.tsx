@@ -56,6 +56,7 @@ export function EventDetailTabs({
       organizerName={organizerName}
     >
       <MobileEventDetailView
+        key="mobile-event-detail"
         eventId={eventId}
         eventTitle={eventTitle}
         shareUrl={shareUrl}
@@ -69,6 +70,7 @@ export function EventDetailTabs({
       />
 
       <EventDetailPcView
+        key="pc-event-detail"
         eventId={eventId}
         event={event}
         organizerId={organizerId}

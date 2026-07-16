@@ -403,7 +403,11 @@ export default function EditEventPage() {
             </svg>
           </button>
           <div className="flex-1 truncate text-[13px] font-[600]">
-            {currentStep === 1 ? "イベントを編集" : `${stepLabels[currentStep]}を入力`}
+            {showPassSettings
+              ? "参加パス設定"
+              : currentStep === 1
+                ? "イベントを編集"
+                : `${stepLabels[currentStep]}を入力`}
           </div>
           <button
             type="button"
@@ -415,7 +419,9 @@ export default function EditEventPage() {
           </button>
         </div>
         <div className="flex items-center px-3 pb-2">
-          <EventFormStepIndicator current={currentStep} onGo={goToStep} />
+          {!showPassSettings ? (
+            <EventFormStepIndicator current={currentStep} onGo={goToStep} />
+          ) : null}
         </div>
       </div>
 
@@ -498,14 +504,8 @@ export default function EditEventPage() {
             />
           ) : null}
 
-          {currentStep < 4 && (
-            <div
-              className={
-                showPassSettings
-                  ? "flex min-h-0 flex-1 flex-col min-[900px]:hidden"
-                  : "contents"
-              }
-            >
+          {currentStep < 4 && !showPassSettings && (
+            <div className="contents">
               <EventFormStepContent
                 currentStep={currentStep}
                 form={form}
@@ -776,7 +776,7 @@ export default function EditEventPage() {
         )}
       </div>
 
-      {currentStep < 4 && (
+      {currentStep < 4 && !showPassSettings && (
         <div className="sticky bottom-0 z-10 shrink-0 -mx-4 flex items-center justify-between border-t border-[#e8e6e0] bg-white px-3 py-1.5 sm:-mx-6 min-[900px]:hidden">
           <button
             type="button"

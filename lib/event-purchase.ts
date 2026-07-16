@@ -1,5 +1,7 @@
 import type { Event } from "@/lib/db/types";
 import { getEventStatus } from "@/lib/events";
+import type { EventPassSettings } from "@/lib/event-pass-settings";
+import { normalizePaymentMethod } from "@/lib/event-pass-settings";
 
 /** 参加パス購入判定に使うイベント情報 */
 export type EventPurchaseData = {
@@ -12,6 +14,8 @@ export type EventPurchaseData = {
   salesStartAt: string | null;
   salesEndAt: string | null;
   status: "draft" | "published" | "ended";
+  /** 支払い方法。未設定の有料は現地払い扱い */
+  paymentMethod: EventPassSettings["paymentMethod"];
 };
 
 export type PurchaseCtaState =
@@ -48,6 +52,22 @@ export function canPurchaseEvent(
 /** 仕様どおりの別名 */
 export const canPurchase = canPurchaseEvent;
 
+/** オンライン事前決済が必要か（現地のみ・未設定の有料は false） */
+export function requiresOnlineCheckout(
+  event: Pick<EventPurchaseData, "isPaid" | "paymentMethod">
+): boolean {
+  if (!event.isPaid) return false;
+  return event.paymentMethod === "online" || event.paymentMethod === "both";
+}
+
+/** 現地払い（当日支払い）か */
+export function isOnsitePayment(
+  event: Pick<EventPurchaseData, "isPaid" | "paymentMethod">
+): boolean {
+  if (!event.isPaid) return false;
+  return !requiresOnlineCheckout(event);
+}
+
 /** 既存 Event 型から購入用データを組み立てる */
 export function toEventPurchaseData(event: Event): EventPurchaseData {
   const price = event.price ?? 0;
@@ -69,6 +89,7 @@ export function toEventPurchaseData(event: Event): EventPurchaseData {
     salesStartAt: null,
     salesEndAt: event.registrationDeadline ?? null,
     status,
+    paymentMethod: normalizePaymentMethod(event.paymentMethod ?? null),
   };
 }
 
@@ -85,7 +106,7 @@ export function resolvePurchaseCtaState(options: {
 
   if (!canPurchaseEvent(event, now)) return "closed";
 
-  return event.isPaid ? "purchase" : "free_apply";
+  return requiresOnlineCheckout(event) ? "purchase" : "free_apply";
 }
 
 export function getPurchaseCtaLabel(state: PurchaseCtaState): string {
@@ -101,6 +122,22 @@ export function getPurchaseCtaLabel(state: PurchaseCtaState): string {
     case "purchased":
       return "参加パスを表示する";
   }
+}
+
+export function getPurchaseCtaHint(
+  state: PurchaseCtaState,
+  event: Pick<EventPurchaseData, "isPaid" | "paymentMethod">
+): string | null {
+  if (state === "purchase") {
+    return "購入後、受付用QRコードが発行されます";
+  }
+  if (state === "free_apply") {
+    if (isOnsitePayment(event)) {
+      return "申込後、受付用QRコードが発行されます。お支払いは当日会場にて。";
+    }
+    return "申込後、受付用QRコードが発行されます";
+  }
+  return null;
 }
 
 export function isPurchaseCtaDisabled(state: PurchaseCtaState): boolean {

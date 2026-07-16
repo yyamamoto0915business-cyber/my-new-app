@@ -59,6 +59,8 @@ export function AvatarChangeModal({
         .from("profiles")
         .update({
           [avatarColumn]: urlData.publicUrl,
+          // 参加者アイコンは旧 avatar_url も同期（ナビ等のフォールバック用）
+          ...(role === "participant" ? { avatar_url: urlData.publicUrl } : {}),
           active_profile_role: role,
           updated_at: new Date().toISOString(),
         })
@@ -103,7 +105,11 @@ export function AvatarChangeModal({
         role === "organizer" ? "organizer_avatar_url" : "participant_avatar_url";
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ [avatarColumn]: null, updated_at: new Date().toISOString() })
+        .update({
+          [avatarColumn]: null,
+          ...(role === "participant" ? { avatar_url: null } : {}),
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", userId);
       if (updateError) {
         const msg = updateError.message ?? "";

@@ -333,61 +333,70 @@ export type EventWithOrganizerInfo = Event & {
   organizerBio?: string | null;
 };
 
-function mapJoinedRowToEventWithOrganizerInfo(
+/**
+ * 公開ページ向け主催者情報。
+ * `organizers` は RLS で本人/admin 以外読めないため、
+ * 公開ビュー `organizer_public_profiles` から名前・アイコン・紹介を取る。
+ */
+async function enrichEventWithPublicOrganizerInfo(
+  supabase: SupabaseClient,
   data: Record<string, unknown>
-): EventWithOrganizerInfo | null {
-  const org = data.organizers as {
-    id?: string;
-    profile_id?: string | null;
+): Promise<EventWithOrganizerInfo | null> {
+  const organizerId =
+    typeof data.organizer_id === "string" && data.organizer_id.length > 0
+      ? (data.organizer_id as string)
+      : null;
+
+  type PublicOrg = {
     organization_name: string | null;
-    contact_email: string | null;
-    contact_phone: string | null;
-    profile?: {
-      display_name: string | null;
-      email: string | null;
-      avatar_url?: string | null;
-      region?: string | null;
-      bio?: string | null;
-    };
-  } | null;
+    avatar_url: string | null;
+    short_bio: string | null;
+    bio: string | null;
+    activity_area: string | null;
+  };
 
-  const name =
-    org?.organization_name ??
-    org?.profile?.display_name ??
-    org?.profile?.email ??
-    "主催者";
-  const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+  let publicOrg: PublicOrg | null = null;
+  let organizerProfileId: string | null = null;
+  let contact: string | undefined;
 
+  if (organizerId) {
+    const [{ data: pub }, { data: orgRow }] = await Promise.all([
+      supabase
+        .from("organizer_public_profiles")
+        .select("organization_name, avatar_url, short_bio, bio, activity_area")
+        .eq("organizer_id", organizerId)
+        .maybeSingle(),
+      // 本人/admin のみ成功。失敗しても公開表示には影響しない
+      supabase
+        .from("organizers")
+        .select("profile_id, contact_email, contact_phone")
+        .eq("id", organizerId)
+        .maybeSingle(),
+    ]);
+
+    publicOrg = (pub as PublicOrg | null) ?? null;
+    if (orgRow) {
+      const pid = (orgRow as { profile_id?: string | null }).profile_id;
+      organizerProfileId =
+        typeof pid === "string" && pid.length > 0 ? pid : null;
+      const phone = (orgRow as { contact_phone?: string | null }).contact_phone;
+      const email = (orgRow as { contact_email?: string | null }).contact_email;
+      contact = phone ?? email ?? undefined;
+    }
+  }
+
+  const name = publicOrg?.organization_name?.trim() || "主催者";
   const event = dbEventToEvent(data as unknown as DbEvent, name, contact);
 
   return {
     ...event,
-    organizerId: org?.id ?? null,
-    organizerProfileId:
-      typeof org?.profile_id === "string" && org.profile_id.length > 0 ? org.profile_id : null,
-    organizerAvatarUrl: org?.profile?.avatar_url ?? null,
-    organizerRegion: org?.profile?.region ?? null,
-    organizerBio: org?.profile?.bio ?? null,
+    organizerId,
+    organizerProfileId,
+    organizerAvatarUrl: publicOrg?.avatar_url ?? null,
+    organizerRegion: publicOrg?.activity_area ?? null,
+    organizerBio: publicOrg?.short_bio ?? publicOrg?.bio ?? null,
   };
 }
-
-const EVENT_WITH_ORGANIZER_SELECT = `
-  *,
-  organizers (
-    id,
-    profile_id,
-    organization_name,
-    contact_email,
-    contact_phone,
-    profile:profile_id (
-      display_name,
-      email,
-      avatar_url,
-      region,
-      bio
-    )
-  )
-`;
 
 /** 公開イベント1件 + 主催者情報（イベント詳細ページ用） */
 export async function fetchPublishedEventWithOrganizerInfo(
@@ -396,14 +405,17 @@ export async function fetchPublishedEventWithOrganizerInfo(
 ): Promise<EventWithOrganizerInfo | null> {
   const { data, error } = await supabase
     .from("events")
-    .select(EVENT_WITH_ORGANIZER_SELECT)
+    .select("*")
     .eq("id", id)
     .in("status", [...PUBLIC_EVENT_STATUSES])
     .single();
 
   if (error || !data) return null;
 
-  const eventWithOrg = mapJoinedRowToEventWithOrganizerInfo(data as Record<string, unknown>);
+  const eventWithOrg = await enrichEventWithPublicOrganizerInfo(
+    supabase,
+    data as Record<string, unknown>
+  );
   if (!eventWithOrg || !isPublicEventLike(eventWithOrg)) return null;
 
   return eventWithOrg;
@@ -416,13 +428,13 @@ export async function fetchEventWithOrganizerInfo(
 ): Promise<EventWithOrganizerInfo | null> {
   const { data, error } = await supabase
     .from("events")
-    .select(EVENT_WITH_ORGANIZER_SELECT)
+    .select("*")
     .eq("id", id)
     .single();
 
   if (error || !data) return null;
 
-  return mapJoinedRowToEventWithOrganizerInfo(data as Record<string, unknown>);
+  return enrichEventWithPublicOrganizerInfo(supabase, data as Record<string, unknown>);
 }
 
 /** 同じ主催者の他の公開イベント（指定件数・現在のイベント除外） */

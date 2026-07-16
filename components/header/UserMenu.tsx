@@ -142,6 +142,7 @@ export function UserMenu() {
     {
       participant_avatar_url: participantAvatarUrl,
       organizer_avatar_url: organizerAvatarUrl,
+      active_profile_role: activeProfileRole,
     },
     activeProfileRole
   );

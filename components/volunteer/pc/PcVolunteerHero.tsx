@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import {
   Search,
   ChevronDown,
@@ -17,6 +16,10 @@ import {
   PcVolunteerConditionTags,
   type ConditionKey,
 } from "./PcVolunteerConditionTags";
+import {
+  SectionHeroCopy,
+  SearchLeafIcon,
+} from "@/components/home/SectionHeroCopy";
 
 const HERO_IMAGE = "/home/pc-hero-bg.png";
 
@@ -80,7 +83,7 @@ function PillSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full cursor-pointer appearance-none truncate rounded-full border border-[#DDE8DF] bg-[#fafcf9] pl-8 pr-7 text-[12px] text-[#566358] outline-none transition hover:border-[#2D7A4F] focus:border-[#2D7A4F] focus:ring-1 focus:ring-[#2D7A4F]/20"
+        className="h-8 w-full cursor-pointer appearance-none truncate rounded-full border border-[#DDE8DF] bg-[#fafcf9] pl-8 pr-7 text-[12px] text-[#566358] outline-none transition hover:border-[#2D7A4F] focus:border-[#2D7A4F] focus:ring-1 focus:ring-[#2D7A4F]/20"
       >
         {children}
       </select>
@@ -89,6 +92,15 @@ function PillSelect({
         aria-hidden
       />
     </label>
+  );
+}
+
+function VolunteerTitle() {
+  return (
+    <>
+      <span className="shrink-0 text-[#5B9E5A]">ボランティア</span>
+      <span className="shrink-0">募集</span>
+    </>
   );
 }
 
@@ -123,27 +135,15 @@ export function PcVolunteerHero({
           aria-hidden
         />
 
-        <div className="relative z-10 px-6 pb-12 pt-3">
-          <nav
-            aria-label="パンくず"
-            className="mb-1.5 flex items-center gap-1 text-[11px] text-[#566358]"
-          >
-            <Link href="/" className="transition-colors hover:text-[#2D7A4F]">
-              ホーム
-            </Link>
-            <span aria-hidden>&gt;</span>
-            <span aria-current="page">ボランティア募集</span>
-          </nav>
-
-          <h1
-            className="text-[26px] font-bold leading-tight tracking-[-0.02em] text-[#1A2214]"
-            style={{ fontFamily: "var(--font-shippori-mincho), 'Shippori Mincho', serif" }}
-          >
-            ボランティア募集
-          </h1>
-          <p className="mt-1.5 max-w-[440px] text-[12px] leading-[1.75] text-[#566358]">
-            あなたの優しさが、まちの力になる。地域のイベントや活動で、お手伝いできる募集を見つけられます。
-          </p>
+        <div className="relative z-10 px-6 pb-10 pt-2.5">
+          <SectionHeroCopy
+            size="pc"
+            label="ボランティアを探す"
+            title={<VolunteerTitle />}
+            subcopy="あなたの優しさが、まちの力になる。お手伝いできる募集を見つけられます。"
+            underlineTail="見つけられます。"
+            className="max-w-[36rem]"
+          />
         </div>
       </div>
 
@@ -153,10 +153,10 @@ export function PcVolunteerHero({
             e.preventDefault();
             onSearch();
           }}
-          className="-mt-8 rounded-[12px] border border-[#DDE8DF] bg-white p-3.5 shadow-[0_2px_16px_rgba(45,122,79,0.07)]"
+          className="-mt-7 rounded-[12px] border border-[#DDE8DF] bg-white p-3 shadow-[0_2px_16px_rgba(45,122,79,0.07)]"
         >
-          <div className="mb-2.5 flex items-center gap-2 border-b border-[#EAF4ED] pb-2.5">
-            <Search className="h-4 w-4 shrink-0 text-[#8a9e98]" aria-hidden />
+          <div className="mb-2 flex items-center gap-2 border-b border-[#EAF4ED] pb-2">
+            <Search className="h-4 w-4 shrink-0 text-[#5B9E5A]" aria-hidden />
             <input
               type="search"
               value={keyword}
@@ -164,6 +164,7 @@ export function PcVolunteerHero({
               placeholder="キーワードで探す（例：清掃、子ども、イベント）"
               className="min-w-0 flex-1 border-none bg-transparent text-[13px] text-[#1A2214] outline-none placeholder:text-[#AABCAA]"
             />
+            <SearchLeafIcon className="h-3.5 w-3.5" />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -229,7 +230,7 @@ export function PcVolunteerHero({
             </button>
           </div>
 
-          <div className="mt-2.5 border-t border-[#EAF4ED] pt-2.5">
+          <div className="mt-2 border-t border-[#EAF4ED] pt-2">
             <PcVolunteerConditionTags
               active={conditionTags}
               onToggle={onToggleConditionTag}

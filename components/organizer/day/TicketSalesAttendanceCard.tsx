@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   RefreshCw,
@@ -16,7 +16,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { useDayOpsSummary } from "@/hooks/use-day-ops-summary";
 import { DonutChart } from "@/components/organizer/day/day-management-shared";
 import {
   formatCheckedInRatio,
@@ -32,6 +32,12 @@ type Props = {
   compact?: boolean;
   onOpenCheckinList?: () => void;
   className?: string;
+  /** 親で取得済みの場合は渡す（重複fetch防止） */
+  summary?: DayOpsTicketSalesSummary | null;
+  summaryLoading?: boolean;
+  summaryError?: string | null;
+  summaryRefreshing?: boolean;
+  onRefreshSummary?: (opts?: { silent?: boolean }) => void;
 };
 
 const EMPTY_SUMMARY: DayOpsTicketSalesSummary = {
@@ -52,44 +58,28 @@ export function TicketSalesAttendanceCard({
   compact = false,
   onOpenCheckinList,
   className,
+  summary: summaryProp,
+  summaryLoading,
+  summaryError,
+  summaryRefreshing,
+  onRefreshSummary,
 }: Props) {
-  const [data, setData] = useState<DayOpsTicketSalesSummary | null>(null);
-  const [loading, setLoading] = useState(!emptyMode && Boolean(eventId));
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const controlled = typeof onRefreshSummary === "function";
+  const internal = useDayOpsSummary({
+    eventId,
+    emptyMode: emptyMode || controlled,
+    pollMs: controlled ? 0 : 20_000,
+  });
 
-  const load = useCallback(
-    async (opts?: { silent?: boolean }) => {
-      if (!eventId || emptyMode) {
-        setData(null);
-        setLoading(false);
-        setError(null);
-        return;
+  const data = controlled ? (summaryProp ?? null) : internal.data;
+  const loading = controlled ? Boolean(summaryLoading) : internal.loading;
+  const error = controlled ? (summaryError ?? null) : internal.error;
+  const refreshing = controlled ? Boolean(summaryRefreshing) : internal.refreshing;
+  const load = controlled
+    ? (opts?: { silent?: boolean }) => {
+        onRefreshSummary?.(opts);
       }
-      if (!opts?.silent) setLoading(true);
-      else setRefreshing(true);
-      setError(null);
-      try {
-        const res = await fetchWithTimeout(`/api/organizer/events/${eventId}/day-ops`);
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(typeof body.error === "string" ? body.error : "取得に失敗しました");
-        }
-        const json = (await res.json()) as DayOpsTicketSalesSummary;
-        setData(json);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "取得に失敗しました");
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [eventId, emptyMode]
-  );
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+    : internal.reload;
 
   const summary = data ?? EMPTY_SUMMARY;
   const isFree = summary.salesMode === "free";

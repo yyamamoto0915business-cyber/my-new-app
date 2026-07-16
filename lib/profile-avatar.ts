@@ -21,7 +21,13 @@ export function resolveAvatarUrlByRole(
 ): string | null {
   const resolvedRole = normalizeProfileAvatarRole(role ?? profile.active_profile_role);
   if (resolvedRole === "organizer") {
-    return profile.organizer_avatar_url ?? profile.avatar_url ?? null;
+    // 主催者アイコン未設定時は参加者/旧カラムへフォールバック（ヘッダーとマイページで食い違わないように）
+    return (
+      profile.organizer_avatar_url ??
+      profile.participant_avatar_url ??
+      profile.avatar_url ??
+      null
+    );
   }
   return profile.participant_avatar_url ?? profile.avatar_url ?? null;
 }

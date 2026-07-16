@@ -324,6 +324,7 @@ export function EventPrimaryActions({
         {(participationMode === "optional" || participationMode === "none") && (
           <>
             <button
+              key="mobile-planned"
               type="button"
               onClick={() => handleReaction("planned")}
               disabled={reactionLoadingType !== null}
@@ -339,6 +340,7 @@ export function EventPrimaryActions({
                       : "参加予定にする"}
             </button>
             <button
+              key="mobile-interested"
               type="button"
               onClick={() => handleReaction("interested")}
               disabled={reactionLoadingType !== null}
@@ -357,7 +359,7 @@ export function EventPrimaryActions({
                     : "あとで見る"}
             </button>
             {reactionError ? (
-              <p className="text-xs text-red-600" role="alert">
+              <p key="mobile-reaction-error" className="text-xs text-red-600" role="alert">
                 {reactionError}
               </p>
             ) : null}

@@ -67,15 +67,12 @@ export async function GET() {
     displayName = profileData.display_name ?? displayName;
     bio = profileData.bio ?? null;
     region = profileData.region ?? null;
-    avatarUrl = resolveAvatarUrlByRole(
-      {
-        avatar_url: profileData.avatar_url,
-        participant_avatar_url: profileData.participant_avatar_url,
-        organizer_avatar_url: profileData.organizer_avatar_url,
-        active_profile_role: normalizeProfileAvatarRole(profileData.active_profile_role),
-      },
-      "participant"
-    );
+    avatarUrl = resolveAvatarUrlByRole({
+      avatar_url: profileData.avatar_url,
+      participant_avatar_url: profileData.participant_avatar_url,
+      organizer_avatar_url: profileData.organizer_avatar_url,
+      active_profile_role: normalizeProfileAvatarRole(profileData.active_profile_role),
+    });
   }
 
   return NextResponse.json({

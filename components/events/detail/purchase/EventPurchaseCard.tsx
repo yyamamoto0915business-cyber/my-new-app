@@ -1,15 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import type { EventRecurrence } from "@/lib/event-recurrence";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
-import { getLoginUrl } from "@/lib/auth-utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import {
   canPurchaseEvent,
-  getEventPassHref,
   getRemainingCount,
   resolvePurchaseCtaState,
   toEventPurchaseData,
@@ -17,7 +14,7 @@ import {
 } from "@/lib/event-purchase";
 import type { Event } from "@/lib/db/types";
 import { EventBasicInfo } from "@/components/events/detail/purchase/EventBasicInfo";
-import { PurchaseButton } from "@/components/events/detail/purchase/PurchaseButton";
+import { EventPurchasePrimaryCta } from "@/components/events/detail/purchase/EventPurchasePrimaryCta";
 import { PassAvailability } from "@/components/events/detail/purchase/PassAvailability";
 
 type DisplayProps = {
@@ -66,7 +63,6 @@ export function EventPurchaseCard({
   priceNote,
   receptionLabel,
 }: Props) {
-  const router = useRouter();
   const { user } = useSupabaseUser();
   const purchaseData = isFullEvent(event)
     ? toEventPurchaseData(event)
@@ -74,7 +70,6 @@ export function EventPurchaseCard({
   const participationMode = resolveParticipationMode(event);
 
   const [isPurchased, setIsPurchased] = useState(Boolean(isPurchasedProp));
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (typeof isPurchasedProp === "boolean") {
@@ -156,87 +151,6 @@ export function EventPurchaseCard({
       ? "受付中"
       : receptionLabel;
 
-  const defaultPurchase = useCallback(async () => {
-    if (ctaState === "purchased") {
-      if (purchaseData.isPaid || participationMode === "required") {
-        router.push(getEventPassHref(purchaseData.id));
-      } else {
-        router.push("/profile/events/planned");
-      }
-      return;
-    }
-
-    if (!user) {
-      window.location.href = getLoginUrl(`/events/${purchaseData.id}`);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      if (purchaseData.isPaid) {
-        const res = await fetchWithTimeout("/api/stripe/checkout/event", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId: purchaseData.id }),
-        });
-        const j = await res.json();
-        if (res.ok && j.url) {
-          window.location.href = j.url;
-          return;
-        }
-        alert(j.error ?? "購入手続きに失敗しました");
-        return;
-      }
-
-      if (participationMode === "required") {
-        const res = await fetchWithTimeout(
-          `/api/events/${purchaseData.id}/join`,
-          { method: "POST" }
-        );
-        if (res.ok) {
-          setIsPurchased(true);
-        } else {
-          const j = await res.json();
-          alert(j.error ?? "申し込みに失敗しました");
-        }
-        return;
-      }
-
-      const res = await fetchWithTimeout(
-        `/api/events/${purchaseData.id}/reactions`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "planned" }),
-        }
-      );
-      if (res.ok) {
-        setIsPurchased(true);
-      } else {
-        const j = await res.json();
-        alert(j.error ?? "申し込みに失敗しました");
-      }
-    } catch {
-      alert(
-        purchaseData.isPaid
-          ? "購入手続きに失敗しました"
-          : "申し込みに失敗しました"
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [ctaState, participationMode, purchaseData, router, user]);
-
-  const handleClick = useCallback(() => {
-    if (onPurchase) {
-      void onPurchase();
-      return;
-    }
-    void defaultPurchase();
-  }, [onPurchase, defaultPurchase]);
-
-  const showHint = ctaState === "purchase" || ctaState === "free_apply";
-
   return (
     <div className="rounded-2xl border border-[#e8edd8] bg-white p-4">
       <p className="mb-3 text-[13px] font-bold text-[#1a2818]">
@@ -252,27 +166,27 @@ export function EventPurchaseCard({
         receptionActive={receptionActive || displayReception === "受付中"}
       />
 
-      <div className="mt-4 flex flex-col gap-2">
-        <PurchaseButton
-          state={ctaState}
-          loading={loading}
-          onClick={handleClick}
-        />
-        {showHint ? (
-          <p className="text-center text-[12.5px] leading-snug text-[#9aa890]">
-            {ctaState === "free_apply"
-              ? "申込後、受付用QRコードが発行されます"
-              : "購入後、受付用QRコードが発行されます"}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="mt-3">
-        <PassAvailability
-          remainingCount={remainingCount}
-          salesEndAt={purchaseData.salesEndAt}
-        />
-      </div>
+      {participationMode === "required" ? (
+        <>
+          <div className="mt-4">
+            <EventPurchasePrimaryCta
+              event={event}
+              isPurchased={isPurchased}
+              onPurchase={onPurchase}
+            />
+          </div>
+          <div className="mt-3">
+            <PassAvailability
+              remainingCount={remainingCount}
+              salesEndAt={purchaseData.salesEndAt}
+            />
+          </div>
+        </>
+      ) : (
+        <p className="mt-4 text-center text-[12.5px] leading-snug text-[#9aa890]">
+          事前申込は不要です。当日そのままご参加いただけます。
+        </p>
+      )}
     </div>
   );
 }

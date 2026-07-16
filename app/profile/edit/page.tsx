@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 
@@ -484,11 +485,16 @@ function SnsRow({ bg, icon, value, onChange, placeholder }: {
   );
 }
 
-export default function ProfileEditPage() {
+function ProfileEditPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useSupabaseUser();
+  const fromSignup = searchParams.get("from") === "signup";
+  const tabParam = searchParams.get("tab");
 
-  const [tab, setTab] = useState<ProfileTab>("participant");
+  const [tab, setTab] = useState<ProfileTab>(
+    tabParam === "organizer" ? "organizer" : "participant"
+  );
   const [pStep, setPStep] = useState<PStep>(1);
   const [oStep, setOStep] = useState<OStep>(1);
   const [loading, setLoading] = useState(true);
@@ -537,6 +543,12 @@ export default function ProfileEditPage() {
   const orgAvatarRef = useRef<HTMLInputElement>(null);
   const orgCoverRef = useRef<HTMLInputElement>(null);
   const orgGalleryRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (tabParam === "organizer" || tabParam === "participant") {
+      setTab(tabParam);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -676,7 +688,15 @@ export default function ProfileEditPage() {
       }, { onConflict: "id" });
       if (error) throw error;
       await supabase.auth.updateUser({ data: { display_name: displayName || undefined } });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("mg:profile-avatar-updated"));
+      }
       setPSuccess(true);
+      if (fromSignup) {
+        router.push("/");
+        router.refresh();
+        return;
+      }
     } catch (err) { setPError(err instanceof Error ? err.message : "保存に失敗しました"); }
     finally { setPSaving(false); }
   };
@@ -702,15 +722,32 @@ export default function ProfileEditPage() {
       }, { onConflict: "organizer_id" });
       if (error) throw error;
       setOSuccess(true);
+      if (fromSignup) {
+        router.push("/");
+        router.refresh();
+        return;
+      }
     } catch (err) { setOError(err instanceof Error ? err.message : "保存に失敗しました"); }
     finally { setOSaving(false); }
+  };
+
+  const goBackOrSkip = () => {
+    if (fromSignup) {
+      router.push("/");
+      return;
+    }
+    router.push("/profile");
   };
 
   const initials = displayName.trim().slice(0, 2) || "?";
   const pStepLabels = ["基本情報", "アイコン", "表示モード", "確認・保存"];
   const oStepLabels = ["紹介文", "画像", "SNS/連絡先", "確認・保存"];
-  const pStepTitles = ["基本情報を編集", "アイコンを設定", "表示モードを設定", "確認・保存"];
-  const oStepTitles = ["紹介文を編集", "画像を設定", "SNS / 連絡先", "確認・保存"];
+  const pStepTitles = fromSignup
+    ? ["基本情報を登録", "アイコンを設定", "表示モードを設定", "確認・保存"]
+    : ["基本情報を編集", "アイコンを設定", "表示モードを設定", "確認・保存"];
+  const oStepTitles = fromSignup
+    ? ["紹介文を登録", "画像を設定", "SNS / 連絡先", "確認・保存"]
+    : ["紹介文を編集", "画像を設定", "SNS / 連絡先", "確認・保存"];
 
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center">
@@ -745,14 +782,24 @@ export default function ProfileEditPage() {
             onClick={() => {
               if (tab === "participant" && pStep > 1) setPStep(s => (s - 1) as PStep);
               else if (tab === "organizer" && oStep > 1) setOStep(s => (s - 1) as OStep);
-              else router.push("/profile");
+              else goBackOrSkip();
             }}
-            className="w-[30px] h-[30px] rounded-full bg-[#F5F4EF] border border-[#DEDAD2] flex items-center justify-center flex-shrink-0">
+            className="w-[30px] h-[30px] rounded-full bg-[#F5F4EF] border border-[#DEDAD2] flex items-center justify-center flex-shrink-0"
+            aria-label={fromSignup ? "あとで整える" : "戻る"}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round">
               <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
             </svg>
           </button>
           <div className="text-[14px] font-[600] flex-1 min-w-0 truncate">{mobileTitle}</div>
+          {fromSignup ? (
+            <button
+              type="button"
+              onClick={goBackOrSkip}
+              className="px-2 py-[7px] text-[11px] font-[500] text-[#8c8a84] flex-shrink-0"
+            >
+              あとで
+            </button>
+          ) : null}
           <button type="button"
             onClick={tab === "participant" ? saveParticipant : saveOrganizer}
             disabled={mobileSaveDisabled}
@@ -778,6 +825,11 @@ export default function ProfileEditPage() {
             </button>
           ))}
         </div>
+        {fromSignup ? (
+          <p className="shrink-0 bg-[#F5F4EF] px-3 py-2 text-center text-[11px] leading-snug text-[#52504c]">
+            はじめのプロフィール設定です。未入力の項目はあとからでも大丈夫です
+          </p>
+        ) : null}
 
         {/* Step indicator */}
         {tab === "participant"
@@ -883,6 +935,12 @@ export default function ProfileEditPage() {
               <MCard>
                 <MCardTitle>主催者登録が必要です</MCardTitle>
                 <MCardSub>主催者プロフィールを編集するには、先に主催者登録を完了してください。</MCardSub>
+                <Link
+                  href="/organizer/register"
+                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-[10px] bg-[#c8a84b] px-4 text-[13px] font-[600] text-white"
+                >
+                  活動者登録をはじめる
+                </Link>
               </MCard>
             </div>
           )}
@@ -1041,10 +1099,10 @@ export default function ProfileEditPage() {
         <div className="flex shrink-0 items-center gap-3 border-b bg-white px-5 py-2" style={{ borderColor: PC.border }}>
           <button
             type="button"
-            onClick={() => router.push("/profile")}
+            onClick={goBackOrSkip}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors hover:bg-[#F7FAFC]"
             style={{ borderColor: PC.border, color: PC.muted }}
-            aria-label="マイページへ戻る"
+            aria-label={fromSignup ? "あとで整える" : "マイページへ戻る"}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="19" y1="12" x2="5" y2="12" />
@@ -1052,17 +1110,21 @@ export default function ProfileEditPage() {
             </svg>
           </button>
           <div className="min-w-0 flex-1">
-            <h1 className="text-[16px] font-bold leading-tight" style={{ color: PC.ink }}>プロフィール編集</h1>
-            <p className="text-[11px] leading-tight" style={{ color: PC.muted }}>あなたの情報を登録・更新できます</p>
+            <h1 className="text-[16px] font-bold leading-tight" style={{ color: PC.ink }}>
+              {fromSignup ? "プロフィールを整える" : "プロフィール編集"}
+            </h1>
+            <p className="text-[11px] leading-tight" style={{ color: PC.muted }}>
+              {fromSignup ? "あとからいつでも変更できます" : "あなたの情報を登録・更新できます"}
+            </p>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <button
               type="button"
-              onClick={() => router.push("/profile")}
+              onClick={goBackOrSkip}
               className="rounded-[8px] border bg-white px-3 py-1.5 text-[12px] transition-colors hover:bg-[#F7FAFC]"
               style={{ borderColor: PC.border, color: PC.ink }}
             >
-              キャンセル
+              {fromSignup ? "あとで整える" : "キャンセル"}
             </button>
             <button
               type="button"
@@ -1306,6 +1368,13 @@ export default function ProfileEditPage() {
               <p className="mt-1 text-[12px] text-[#8c8a84]">
                 主催者プロフィールを編集するには、先に主催者登録を完了してください。
               </p>
+              <Link
+                href="/organizer/register"
+                className="mt-4 inline-flex min-h-10 items-center justify-center rounded-[8px] px-4 text-[13px] font-semibold text-white"
+                style={{ backgroundColor: PC.pro }}
+              >
+                活動者登録をはじめる
+              </Link>
             </PcCard>
           </div>
         ) : (
@@ -1585,5 +1654,19 @@ export default function ProfileEditPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+export default function ProfileEditPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <p className="text-[13px] text-[#8c8a84]">読み込み中...</p>
+        </div>
+      }
+    >
+      <ProfileEditPageInner />
+    </Suspense>
   );
 }
