@@ -7,184 +7,213 @@ import type { ReactNode } from "react";
 type AdminShellProps = {
   adminEmail: string | null;
   adminRole: string | null;
+  adminDisplayName?: string | null;
   children: ReactNode;
 };
+
+type NavIconId =
+  | "dashboard"
+  | "accounts"
+  | "reviews"
+  | "events"
+  | "passes"
+  | "support"
+  | "settings";
 
 type NavItem = {
   href: string;
   label: string;
-  icon: "dashboard" | "organizers" | "logs" | "others";
+  icon: NavIconId;
 };
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/admin", label: "ダッシュボード", icon: "dashboard" },
-  { href: "/admin/organizers", label: "主催者一覧", icon: "organizers" },
-  { href: "/admin/logs", label: "管理ログ", icon: "logs" },
-  { href: "/admin/others", label: "その他管理", icon: "others" },
+  { href: "/admin/accounts", label: "アカウント管理", icon: "accounts" },
+  { href: "/admin/reviews", label: "審査・本人確認", icon: "reviews" },
+  { href: "/admin/events", label: "イベント管理", icon: "events" },
+  { href: "/admin/passes", label: "参加パス・決済", icon: "passes" },
+  { href: "/admin/support", label: "問い合わせ・通報", icon: "support" },
+  { href: "/admin/settings", label: "管理ログ・設定", icon: "settings" },
 ];
 
-function NavIcon({ icon, active }: { icon: NavItem["icon"]; active: boolean }) {
-  const stroke = active ? "#e0f8f0" : "rgba(230,250,235,0.75)";
-  if (icon === "dashboard") {
-    return (
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 13h8V3H3v10zM13 21h8v-6h-8v6zM13 3v6h8V3h-8zM3 21h8v-4H3v4z" />
-      </svg>
-    );
+function NavIcon({ icon, active }: { icon: NavIconId; active: boolean }) {
+  const stroke = active ? "#e0f8f0" : "rgba(255,255,255,0.55)";
+  const props = {
+    className: "h-4 w-4",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke,
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  switch (icon) {
+    case "dashboard":
+      return (
+        <svg {...props}>
+          <path d="M3 13h8V3H3v10zM13 21h8v-6h-8v6zM13 3v6h8V3h-8zM3 21h8v-4H3v4z" />
+        </svg>
+      );
+    case "accounts":
+      return (
+        <svg {...props}>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="3" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+    case "reviews":
+      return (
+        <svg {...props}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      );
+    case "events":
+      return (
+        <svg {...props}>
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+      );
+    case "passes":
+      return (
+        <svg {...props}>
+          <rect x="2" y="5" width="20" height="14" rx="2" />
+          <path d="M2 10h20" />
+        </svg>
+      );
+    case "support":
+      return (
+        <svg {...props}>
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
+        </svg>
+      );
+    case "settings":
+      return (
+        <svg {...props}>
+          <path d="M3 4h18M3 9h18M3 14h18M3 19h18M8 4v16" />
+        </svg>
+      );
   }
-  if (icon === "organizers") {
-    return (
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="3" />
-        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    );
-  }
-  if (icon === "logs") {
-    return (
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 4h18M3 9h18M3 14h18M3 19h18M8 4v16" />
-      </svg>
-    );
-  }
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15A1.65 1.65 0 0 0 21 13.35 7.86 7.86 0 0 0 21 10.65 1.65 1.65 0 0 0 19.4 9l-1.43-.25a1.65 1.65 0 0 1-1.21-1L16 6.1A1.65 1.65 0 0 0 14.35 5h-2.7A1.65 1.65 0 0 0 10 6.1l-.76 1.62a1.65 1.65 0 0 1-1.21 1L6.6 9A1.65 1.65 0 0 0 5 10.65a7.86 7.86 0 0 0 0 2.7A1.65 1.65 0 0 0 6.6 15l1.43.25a1.65 1.65 0 0 1 1.21 1L10 17.9A1.65 1.65 0 0 0 11.65 19h2.7A1.65 1.65 0 0 0 16 17.9l.76-1.62a1.65 1.65 0 0 1 1.21-1z" />
-    </svg>
-  );
 }
 
-export function AdminShell({ adminEmail, adminRole, children }: AdminShellProps) {
+export function AdminSidebar() {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
-    return pathname.startsWith(href);
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "#eaf2ec" }}>
-      {/* Admin bar */}
-      <div style={{
-        background: "#1e3848",
-        color: "#e0f0f8",
-        fontSize: 10,
-        padding: "7px 20px",
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        letterSpacing: "0.08em",
-        position: "sticky",
-        top: 0,
-        zIndex: 200,
-      }}>
-        <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#70c8e0", flexShrink: 0 }} />
-        管理者モード — {adminEmail ?? "開発者ユーザー"}
+    <aside className="hidden w-52 shrink-0 flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-[#a8ccb8] lg:flex" style={{ background: "#1e3848" }}>
+      <div className="border-b border-white/10 px-3 py-3">
+        <div
+          className="text-[12px] font-semibold text-white"
+          style={{ fontFamily: "var(--font-serif, serif)" }}
+        >
+          管理者画面
+        </div>
+        <div className="mt-0.5 text-[10px] tracking-[0.06em] text-white/70">
+          MachiGlyph Admin
+        </div>
       </div>
 
-      <div className="mx-auto flex max-w-6xl gap-0 px-3 py-4 md:px-4 md:py-6">
-        {/* Sidebar */}
-        <aside className="hidden w-52 shrink-0 flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-[#a8ccb8] md:flex" style={{ background: "#f4faf6" }}>
-          {/* Sidebar header */}
-          <div style={{ background: "#4a6840", padding: "14px", position: "relative", overflow: "hidden" }}>
-            <svg style={{ position: "absolute", right: 8, top: 8, opacity: 0.22 }} width="28" height="28" viewBox="0 0 28 28" aria-hidden>
-              <circle cx="14" cy="14" r="12" fill="none" stroke="#f0d870" strokeWidth="0.8"/>
-              <circle cx="14" cy="14" r="7.5" fill="none" stroke="#f0d870" strokeWidth="0.5"/>
-              <path d="M14 2 L14 26 M2 14 L26 14 M5 5 L23 23 M23 5 L5 23" stroke="#f0d870" strokeWidth="0.4"/>
-            </svg>
-            <div style={{ fontFamily: "var(--font-serif, serif)", fontSize: 13, fontWeight: 600, color: "#fff" }}>
-              管理者画面
-            </div>
-            <div style={{ fontSize: 10, color: "rgba(230,250,235,0.95)", marginTop: 2, letterSpacing: "0.06em" }}>
-              MachiGlyph Admin
-            </div>
-          </div>
-
-          {/* Nav */}
-          <nav className="flex-1 space-y-0.5 p-2" aria-label="管理者メニュー">
-            {NAV_ITEMS.map((item) => {
-              const active = isActive(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-colors ${
-                    active
-                      ? "font-medium"
-                      : "hover:bg-[#dff0e8]"
-                  }`}
-                  style={active
-                    ? { background: "#1e3848", color: "#e0f8f0" }
-                    : { color: "#1e3828" }
-                  }
-                >
-                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${active ? "" : "bg-[#eaf2ec]"}`}
-                    style={active ? { background: "rgba(255,255,255,0.12)" } : {}}>
-                    <NavIcon icon={item.icon} active={active} />
-                  </span>
-                  <span className="truncate">{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Bottom links */}
-          <div className="shrink-0 border-t border-[#c8dcd0] p-2 space-y-0.5">
+      <nav className="flex-1 space-y-0.5 p-1.5" aria-label="管理者メニュー">
+        {NAV_ITEMS.map((item) => {
+          const active = isActive(item.href);
+          return (
             <Link
-              href="/organizer"
-              className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] text-[#3a5848] transition hover:bg-[#dff0e8]"
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-2 rounded-lg px-2 py-2 text-[12px] transition-colors ${
+                active
+                  ? "bg-[#152836] font-medium text-white"
+                  : "text-white/75 hover:bg-white/10 hover:text-white"
+              }`}
             >
-              ← 主催者ページへ戻る
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${
+                  active ? "bg-white/15" : "bg-white/5"
+                }`}
+              >
+                <NavIcon icon={item.icon} active={active} />
+              </span>
+              <span className="truncate">{item.label}</span>
+              {active ? (
+                <span className="ml-auto h-3.5 w-0.5 rounded-full bg-[#70c8e0]" />
+              ) : null}
             </Link>
-            <Link
-              href="/"
-              className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] text-[#3a5848] transition hover:bg-[#dff0e8]"
-            >
-              ← サイトへ戻る
-            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="shrink-0 border-t border-white/10 p-2">
+        <Link
+          href="/organizer"
+          className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] text-white/70 transition hover:bg-white/10 hover:text-white"
+        >
+          ← 主催者ページへ戻る
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
+export function AdminShell({
+  adminEmail,
+  adminRole,
+  adminDisplayName,
+  children,
+}: AdminShellProps) {
+  return (
+    <div className="min-h-screen" style={{ background: "#eaf2ec" }}>
+      <div
+        className="sticky top-0 z-[200] flex items-center justify-between gap-3 px-4 py-1.5 text-[10px] tracking-[0.06em]"
+        style={{ background: "#1e3848", color: "#e0f0f8" }}
+      >
+        <div className="flex items-center gap-2">
+          <div
+            className="h-1.5 w-1.5 shrink-0 rounded-full"
+            style={{ background: "#70c8e0" }}
+          />
+          <span>管理者モード</span>
+        </div>
+        <div className="flex min-w-0 items-center gap-2 truncate text-white/80">
+          <span className="truncate">
+            {adminDisplayName ?? adminEmail ?? "開発者ユーザー"}
+          </span>
+          <span className="hidden shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[9px] text-[#70c8e0] sm:inline">
+            {adminRole ?? "developer_admin"}
+          </span>
+        </div>
+      </div>
+
+      <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-2 py-2 md:px-3 md:py-3 lg:flex-row lg:gap-0">
+        <div className="w-full overflow-x-auto rounded-lg bg-[#1e3848] p-1.5 lg:hidden">
+          <div className="flex gap-1">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="shrink-0 rounded-md px-2.5 py-1 text-[11px] text-white/80 hover:bg-white/10"
+              >
+                {item.label}
+              </Link>
+            ))}
           </div>
-        </aside>
+        </div>
 
-        {/* Main area */}
-        <div className="flex min-h-[calc(100vh-4rem)] flex-1 flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-[#a8ccb8] md:ml-4" style={{ background: "#f4faf6" }}>
-          {/* Main header */}
-          <header className="flex items-center justify-between gap-3 border-b border-[#c8dcd0] px-4 py-3">
-            <div className="flex flex-col">
-              <span className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#7a9888]">
-                Developer Console
-              </span>
-              <span className="text-[14px] font-semibold text-[#0e1610]" style={{ fontFamily: "var(--font-serif, serif)" }}>
-                開発者管理画面
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span style={{
-                padding: "3px 10px",
-                borderRadius: 20,
-                fontSize: 10,
-                background: "#1e3848",
-                color: "#70c8e0",
-                fontWeight: 500,
-                whiteSpace: "nowrap",
-              }}>
-                🔐 管理者
-              </span>
-              <div className="flex flex-col items-end">
-                <span className="text-[12px] font-medium text-[#0e1610]">
-                  {adminEmail ?? "開発者ユーザー"}
-                </span>
-                <span className="text-[11px] text-[#7a9888]">
-                  {adminRole ?? "developer_admin"}
-                </span>
-              </div>
-            </div>
-          </header>
+        <AdminSidebar />
 
-          {/* Content */}
-          <main className="flex-1 overflow-x-hidden px-4 py-4 md:px-6 md:py-6">
+        <div
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-[#a8ccb8] lg:ml-3"
+          style={{ background: "#f4faf6" }}
+        >
+          <main className="flex-1 overflow-x-hidden px-3 py-3 md:px-5 md:py-4">
             {children}
           </main>
         </div>

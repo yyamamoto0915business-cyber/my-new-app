@@ -24,8 +24,6 @@ import {
   UsersRound,
 } from "lucide-react";
 import { ProfileBannerAvatar } from "@/components/profile/profile-banner-avatar";
-import { LEGAL_ENTITY } from "@/lib/legal";
-
 const MYPAGE_BG = "/profile/mypage-bg.png";
 
 const C = {
@@ -180,7 +178,7 @@ function PcFooter() {
     { href: "/terms", label: "利用規約" },
     { href: "/privacy", label: "プライバシーポリシー" },
     { href: "/commerce", label: "特定商取引法に基づく表記" },
-    { href: `mailto:${LEGAL_ENTITY.email}`, label: "お問い合わせ" },
+    { href: "/contact", label: "お問い合わせ" },
   ] as const;
 
   return (
@@ -193,25 +191,15 @@ function PcFooter() {
         className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px]"
         style={{ color: C.muted }}
       >
-        {links.map((link) =>
-          link.href.startsWith("mailto:") ? (
-            <a
-              key={link.href}
-              href={link.href}
-              className="rounded-sm transition-colors hover:text-[#2F8F57] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F8F57]/40"
-            >
-              {link.label}
-            </a>
-          ) : (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="rounded-sm transition-colors hover:text-[#2F8F57] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F8F57]/40"
-            >
-              {link.label}
-            </Link>
-          )
-        )}
+        {links.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="rounded-sm transition-colors hover:text-[#2F8F57] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F8F57]/40"
+          >
+            {link.label}
+          </Link>
+        ))}
         <span className="ml-0 sm:ml-auto" style={{ color: C.muted }}>
           © MachiGlyph
         </span>

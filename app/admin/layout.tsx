@@ -5,7 +5,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { getDeveloperAdminContext } from "@/lib/admin-auth";
 
 export const metadata: Metadata = {
-  title: "MachiGlyph 開発者管理画面",
+  title: "MachiGlyph 管理者画面",
   robots: "noindex, nofollow",
 };
 

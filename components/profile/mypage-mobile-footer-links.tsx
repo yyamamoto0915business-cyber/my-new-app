@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Fragment } from "react";
-import { LEGAL_ENTITY } from "@/lib/legal";
 
 const MG_GREEN = "#315c4b";
 
@@ -46,7 +45,7 @@ const links = [
     ),
   },
   {
-    href: `mailto:${LEGAL_ENTITY.email}`,
+    href: "/contact",
     label: "お問い合わせ",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden>
@@ -81,14 +80,6 @@ function FooterLinkItem({
       </span>
     </>
   );
-
-  if (href.startsWith("mailto:")) {
-    return (
-      <a href={href} className={className}>
-        {inner}
-      </a>
-    );
-  }
 
   return (
     <Link href={href} className={className}>

@@ -491,6 +491,21 @@ function ProfileEditPageInner() {
   const { user } = useSupabaseUser();
   const fromSignup = searchParams.get("from") === "signup";
   const tabParam = searchParams.get("tab");
+  const asParam = searchParams.get("as");
+  const registerAs =
+    asParam === "individual" || asParam === "organization" ? asParam : null;
+  const orgNameLabel =
+    registerAs === "individual"
+      ? "お名前・活動名"
+      : registerAs === "organization"
+        ? "団体名"
+        : "団体名・主催者名";
+  const orgNamePlaceholder =
+    registerAs === "individual"
+      ? "例：山田太郎 / まち歩きクラブ"
+      : registerAs === "organization"
+        ? "例：地域振興会 / ○○実行委員会"
+        : "例：地域振興会 / 山田太郎";
 
   const [tab, setTab] = useState<ProfileTab>(
     tabParam === "organizer" ? "organizer" : "participant"
@@ -708,7 +723,7 @@ function ProfileEditPageInner() {
     if (!supabase || !user?.id) { setOError("ログインが必要です"); setOSaving(false); return; }
     try {
       const orgName = organizationName.trim();
-      if (!orgName) throw new Error("団体名・主催者名は必須です");
+      if (!orgName) throw new Error(`${orgNameLabel}は必須です`);
       await supabase.from("organizers").update({ organization_name: orgName, updated_at: new Date().toISOString() }).eq("profile_id", user.id);
       const { error } = await supabase.from("organizer_profiles").upsert({
         organizer_id: organizerId, avatar_url: orgAvatarUrl || null,
@@ -949,7 +964,11 @@ function ProfileEditPageInner() {
               <MCard>
                 <MCardTitle color="#86620a"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>紹介文</MCardTitle>
                 <MCardSub>信頼感・雰囲気・活動内容が伝わるように記載できます</MCardSub>
-                <MField><Fl opt>団体名・主催者名</Fl><input type="text" value={organizationName} onChange={e => setOrganizationName(e.target.value)} placeholder="例：地域振興会 / 山田太郎" className={INP} /></MField>
+                <MField>
+                  <Fl>{orgNameLabel}</Fl>
+                  <input type="text" value={organizationName} onChange={e => setOrganizationName(e.target.value)} placeholder={orgNamePlaceholder} className={INP} />
+                  <Fh>個人名・活動名でも団体名でもOK。あとから変更できます</Fh>
+                </MField>
                 <MField><Fl opt>活動エリア</Fl><input type="text" value={activityArea} onChange={e => setActivityArea(e.target.value)} placeholder="例：神奈川県藤沢市 / オンライン" className={INP} /><Fh>公開プロフィールの活動地域に表示されます</Fh></MField>
                 <MField><Fl opt>一言紹介</Fl><input type="text" value={shortBio} onChange={e => setShortBio(e.target.value)} placeholder="例：地域の魅力を伝える体験づくりをしています" className={INP} /><Fh>80文字程度がおすすめです（注目の主催者に表示）</Fh></MField>
                 <MField><Fl opt>詳細紹介</Fl><textarea value={orgBio} onChange={e => setOrgBio(e.target.value)} placeholder="主催者について、活動への想い、参加者へのメッセージなど" className={INP + " resize-none min-h-[80px] leading-[1.7]"} /></MField>
@@ -1397,12 +1416,15 @@ function ProfileEditPageInner() {
                   <p className="text-[10px] leading-snug" style={{ color: PC.muted }}>
                     信頼感・雰囲気・活動内容が伝わるように記載できます
                   </p>
-                  <PcField label="団体名・主催者名">
+                  <PcField
+                    label={orgNameLabel}
+                    hint="個人名・活動名でも団体名でもOK。あとから変更できます"
+                  >
                     <input
                       type="text"
                       value={organizationName}
                       onChange={(e) => setOrganizationName(e.target.value)}
-                      placeholder="例：地域振興会 / 山田太郎"
+                      placeholder={orgNamePlaceholder}
                       className={INP_PC}
                     />
                   </PcField>

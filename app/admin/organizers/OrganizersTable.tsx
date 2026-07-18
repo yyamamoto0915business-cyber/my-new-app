@@ -40,7 +40,13 @@ function Badge({
   return <span className={`${base} ${toneClasses}`}>{children}</span>;
 }
 
-export function OrganizersTable({ organizers }: { organizers: OrganizerRow[] }) {
+export function OrganizersTable({
+  organizers,
+  compact = false,
+}: {
+  organizers: OrganizerRow[];
+  compact?: boolean;
+}) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterTab>("all");
   const isUuid = (value: string) =>
@@ -84,24 +90,31 @@ export function OrganizersTable({ organizers }: { organizers: OrganizerRow[] }) 
   }, [organizers, query, filter]);
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">主催者一覧</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            現在のプラン・課金状態・手動付与の状態を一覧で確認できます。
-          </p>
+    <div className={compact ? "space-y-2" : "space-y-3"}>
+      {!compact ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">主催者一覧</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              現在のプラン・課金状態・手動付与の状態を一覧で確認できます。
+            </p>
+          </div>
+          <div className="text-xs text-slate-500">
+            件数:{" "}
+            <span className="font-semibold text-slate-700">
+              {filtered.length.toLocaleString("ja-JP")} /{" "}
+              {organizers.length.toLocaleString("ja-JP")}
+            </span>
+          </div>
         </div>
-        <div className="text-xs text-slate-500">
-          件数:{" "}
-          <span className="font-semibold text-slate-700">
-            {filtered.length.toLocaleString("ja-JP")} /{" "}
-            {organizers.length.toLocaleString("ja-JP")}
-          </span>
+      ) : (
+        <div className="text-right text-[11px] text-[#7a9888]">
+          {filtered.length.toLocaleString("ja-JP")} /{" "}
+          {organizers.length.toLocaleString("ja-JP")} 件
         </div>
-      </div>
+      )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#eaf2ec] px-2 py-1.5">
         <div className="flex flex-wrap gap-1">
           {[
             { id: "all", label: "全件" },
@@ -116,10 +129,10 @@ export function OrganizersTable({ organizers }: { organizers: OrganizerRow[] }) 
                 key={tab.id}
                 type="button"
                 onClick={() => setFilter(tab.id as FilterTab)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
                   active
-                    ? "bg-slate-900 text-white"
-                    : "bg-white text-slate-700 hover:bg-slate-100"
+                    ? "bg-[#1e3848] text-white"
+                    : "bg-white text-[#3a5848] hover:bg-white/80"
                 }`}
               >
                 {tab.label}
@@ -133,12 +146,12 @@ export function OrganizersTable({ organizers }: { organizers: OrganizerRow[] }) 
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-8 w-56 rounded-full border border-slate-300 bg-white pl-8 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className="h-7 w-48 rounded-md border border-[#c8dcd0] bg-white pl-7 pr-2 text-[11px] text-[#0e1610] placeholder:text-[#9ab0a0] focus:outline-none focus:ring-1 focus:ring-[#1e3848]"
             placeholder="主催者名・メールで検索"
           />
-          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">
+          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[#9ab0a0]">
             <svg
-              className="h-3.5 w-3.5"
+              className="h-3 w-3"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -153,24 +166,24 @@ export function OrganizersTable({ organizers }: { organizers: OrganizerRow[] }) 
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white/90">
+      <div className="overflow-x-auto rounded-lg border border-[#d8e8dc] bg-white">
         {filtered.length === 0 ? (
-          <div className="px-4 py-8 text-center text-xs text-slate-500">
+          <div className="px-4 py-6 text-center text-xs text-[#7a9888]">
             条件に合致する主催者が見つかりませんでした。
           </div>
         ) : (
-          <table className="min-w-full border-separate border-spacing-y-0.5">
+          <table className="min-w-full text-xs">
             <thead>
-              <tr className="text-[11px] uppercase tracking-wide text-slate-400">
-                <th className="px-3 py-2 text-left">主催者名</th>
-                <th className="px-3 py-2 text-left">メール</th>
-                <th className="px-3 py-2 text-left">現在プラン</th>
-                <th className="px-3 py-2 text-left">課金状態</th>
-                <th className="px-3 py-2 text-left">手動付与</th>
-                <th className="px-3 py-2 text-left">期限</th>
-                <th className="px-3 py-2 text-right">イベント数</th>
-                <th className="px-3 py-2 text-left">最終更新日</th>
-                <th className="px-3 py-2 text-right">詳細</th>
+              <tr className="border-b border-[#e0ece4] bg-[#f4faf6] text-[10px] uppercase tracking-wide text-[#7a9888]">
+                <th className="px-2.5 py-1.5 text-left font-medium">主催者名</th>
+                <th className="px-2.5 py-1.5 text-left font-medium">メール</th>
+                <th className="px-2.5 py-1.5 text-left font-medium">プラン</th>
+                <th className="px-2.5 py-1.5 text-left font-medium">課金</th>
+                <th className="px-2.5 py-1.5 text-left font-medium">手動付与</th>
+                <th className="px-2.5 py-1.5 text-left font-medium">期限</th>
+                <th className="px-2.5 py-1.5 text-right font-medium">イベント</th>
+                <th className="px-2.5 py-1.5 text-left font-medium">更新日</th>
+                <th className="px-2.5 py-1.5 text-right font-medium">詳細</th>
               </tr>
             </thead>
             <tbody>
@@ -199,51 +212,46 @@ export function OrganizersTable({ organizers }: { organizers: OrganizerRow[] }) 
                 return (
                   <tr
                     key={o.id}
-                    className="border-b border-slate-100 text-sm last:border-0 hover:bg-slate-50/70"
+                    className="border-b border-[#eef4f0] text-xs last:border-0 hover:bg-[#f4faf6]"
                   >
-                    <td className="max-w-[200px] px-3 py-2 align-top">
-                      <div className="truncate text-sm font-medium text-slate-900">
+                    <td className="max-w-[180px] px-2.5 py-1.5 align-middle">
+                      <div className="truncate font-medium text-[#0e1610]">
                         {o.organizationName ?? "主催者"}
                       </div>
                     </td>
-                    <td className="max-w-[220px] px-3 py-2 align-top">
+                    <td className="max-w-[200px] px-2.5 py-1.5 align-middle">
                       <div
-                        className="truncate text-xs text-slate-600"
+                        className="truncate text-[11px] text-[#5a7868]"
                         title={o.contactEmail ?? undefined}
                       >
                         {o.contactEmail ?? "-"}
                       </div>
                     </td>
-                    <td className="px-3 py-2 align-top">
+                    <td className="px-2.5 py-1.5 align-middle">
                       <Badge tone={planTone}>
                         {o.currentPlan === "free"
-                          ? "無料プラン"
-                          : `有料: ${o.currentPlan}`}
+                          ? "無料"
+                          : o.currentPlan}
                       </Badge>
                     </td>
-                    <td className="px-3 py-2 align-top text-xs text-slate-700">
+                    <td className="px-2.5 py-1.5 align-middle text-[11px] text-[#5a7868]">
                       {o.billingSource === "manual"
-                        ? "手動付与"
+                        ? "手動"
                         : o.billingSource === "stripe"
-                        ? "Stripe 課金"
-                        : "無料扱い"}
+                        ? "Stripe"
+                        : "無料"}
                     </td>
-                    <td className="px-3 py-2 align-top space-y-1 text-xs">
+                    <td className="px-2.5 py-1.5 align-middle text-[11px]">
                       {o.manualGrantActive ? (
-                        <Badge tone="success">手動付与中</Badge>
+                        <Badge tone="success">付与中</Badge>
                       ) : (
-                        <span className="text-slate-400">なし</span>
-                      )}
-                      {o.manualGrantReason && (
-                        <div className="line-clamp-2 text-[11px] text-slate-500">
-                          {o.manualGrantReason}
-                        </div>
+                        <span className="text-[#9ab0a0]">なし</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 align-top text-xs">
+                    <td className="px-2.5 py-1.5 align-middle text-[11px]">
                       {o.manualGrantExpiresAt ? (
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-slate-700">
+                          <span className="text-[#5a7868]">
                             {new Date(
                               o.manualGrantExpiresAt
                             ).toLocaleDateString("ja-JP")}
@@ -252,33 +260,31 @@ export function OrganizersTable({ organizers }: { organizers: OrganizerRow[] }) 
                             <Badge tone="danger">期限切れ</Badge>
                           )}
                           {!isExpired && expiringSoon && (
-                            <Badge tone="warning">7日以内に期限切れ</Badge>
+                            <Badge tone="warning">間近</Badge>
                           )}
                         </div>
                       ) : (
-                        <span className="text-slate-400">-</span>
+                        <span className="text-[#9ab0a0]">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 align-top text-right text-xs text-slate-700">
+                    <td className="px-2.5 py-1.5 align-middle text-right text-[#5a7868]">
                       {o.eventCount}
                     </td>
-                    <td className="px-3 py-2 align-top text-xs text-slate-500">
+                    <td className="px-2.5 py-1.5 align-middle text-[11px] text-[#7a9888]">
                       {o.updatedAt
                         ? new Date(o.updatedAt).toLocaleDateString("ja-JP")
                         : "-"}
                     </td>
-                    <td className="px-3 py-2 align-top text-right">
+                    <td className="px-2.5 py-1.5 align-middle text-right">
                       {canOpenDetail ? (
                         <Link
                           href={`/admin/organizers/${o.id}`}
-                          className="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white hover:bg-slate-800"
+                          className="inline-flex items-center rounded-md bg-[#1e3848] px-2 py-0.5 text-[11px] font-medium text-white hover:bg-[#152836]"
                         >
                           詳細
                         </Link>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">
-                          -
-                        </span>
+                        <span className="text-[#9ab0a0]">-</span>
                       )}
                     </td>
                   </tr>

@@ -1,265 +1,279 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { Organizer } from "@/lib/db/types";
-import { resolveEffectivePlan } from "@/lib/admin-organizer-plan";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminStatCard } from "@/components/admin/AdminStatCard";
+import {
+  AdminActivityList,
+  AdminTodoCard,
+} from "@/components/admin/AdminActivityList";
+import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
+import { getPanelDashboard } from "@/lib/admin/panel-queries";
+import { contactCategoryLabel } from "@/lib/contact";
 
-type AdminLogRow = {
-  id: string;
-  created_at: string;
-  action_type: string;
-  reason: string | null;
-  admin_name: string | null;
-  organizer_name: string | null;
-};
-
-function SummaryCard(props: {
-  label: string;
-  value: number;
-  helper: string;
-  tone?: "default" | "info" | "success" | "warning";
-  icon: React.ReactNode;
-}) {
-  const tone = props.tone ?? "default";
-  const toneClasses =
-    tone === "info"
-      ? "border-sky-200 bg-sky-50"
-      : tone === "success"
-      ? "border-emerald-200 bg-emerald-50"
-      : tone === "warning"
-      ? "border-amber-200 bg-amber-50"
-      : "border-slate-200 bg-slate-50";
-  return (
-    <div
-      className={`flex flex-1 flex-col gap-2 rounded-xl border ${toneClasses} p-3`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="text-xs font-medium text-slate-500">{props.label}</div>
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/80 text-slate-500">
-          {props.icon}
-        </div>
-      </div>
-      <div className="text-2xl font-semibold tracking-tight text-slate-900">
-        {props.value.toLocaleString("ja-JP")}
-      </div>
-      <div className="text-xs text-slate-500">{props.helper}</div>
-    </div>
-  );
+function actionLabel(type: string): string {
+  const map: Record<string, string> = {
+    grant_plan: "プランを付与",
+    grant_plan_unlimited: "プランを無期限付与",
+    revoke_grant: "プラン付与を取消",
+    set_featured: "注目主催者を設定",
+    unset_featured: "注目主催者を解除",
+    update_event_status: "イベント公開状態を変更",
+    update_inquiry_status: "問い合わせを更新",
+  };
+  return map[type] ?? type;
 }
 
-function LogRow({ log }: { log: AdminLogRow }) {
-  return (
-    <tr className="border-b border-slate-100 text-sm last:border-0">
-      <td className="px-3 py-2 align-top text-xs text-slate-500">
-        {new Date(log.created_at).toLocaleString("ja-JP")}
-      </td>
-      <td className="px-3 py-2 align-top">
-        <div className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
-          {log.action_type}
-        </div>
-        {log.reason && (
-          <div className="mt-1 text-xs text-slate-500 line-clamp-2">
-            {log.reason}
-          </div>
-        )}
-      </td>
-      <td className="px-3 py-2 align-top text-xs text-slate-700">
-        <div>{log.organizer_name ?? "-"}</div>
-      </td>
-      <td className="px-3 py-2 align-top text-xs text-slate-700">
-        <div>{log.admin_name ?? "-"}</div>
-      </td>
-    </tr>
-  );
+function eventStatusTone(status: string | null) {
+  if (status === "published") return "success" as const;
+  if (status === "draft") return "warning" as const;
+  return "neutral" as const;
+}
+
+function eventStatusLabel(status: string | null) {
+  if (status === "published") return "公開中";
+  if (status === "draft") return "下書き";
+  if (status === "archived") return "終了";
+  return status ?? "—";
 }
 
 export default async function AdminDashboardPage() {
   const adminSupabase = createAdminClient();
   const supabase = adminSupabase ?? (await createClient());
+
   if (!supabase) {
     return (
-      <div className="space-y-6">
-        <section>
-          <h2 className="text-lg font-semibold text-slate-900">
-            開発者ダッシュボード
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Supabase が未設定のため、サマリー情報を表示できません。
-          </p>
-        </section>
+      <div>
+        <AdminPageHeader
+          title="管理ダッシュボード"
+          description="Supabase が未設定のため、サマリーを表示できません。"
+        />
       </div>
     );
   }
 
-  const [{ data: orgRows }, { data: logRows }] = await Promise.all([
-    supabase
-      .from("organizers")
-      .select(
-        `
-        id,
-        organization_name,
-        plan,
-        manual_grant_active,
-        manual_grant_expires_at,
-        subscription_status,
-        current_period_end
-      `
-      ),
-    supabase
-      .from("admin_logs")
-      .select(
-        `
-        id,
-        created_at,
-        action_type,
-        reason,
-        admin_user_id,
-        target_organizer_id,
-        admin:admin_user_id ( display_name, email ),
-        organizer:target_organizer_id ( organization_name )
-      `
-      )
-      .order("created_at", { ascending: false })
-      .limit(5),
-  ]);
-
-  const organizers = (orgRows ?? []) as unknown as Organizer[];
-
-  const now = new Date();
-  let total = organizers.length;
-  let freeCount = 0;
-  let paidCount = 0;
-  let manualActiveCount = 0;
-  let expiringSoonCount = 0;
-
-  for (const o of organizers) {
-    const info = resolveEffectivePlan(o);
-    if (info.currentPlan === "free") {
-      freeCount += 1;
-    } else {
-      paidCount += 1;
-    }
-    if (info.manualGrantActive) {
-      manualActiveCount += 1;
-      if (info.manualGrantExpiresAt) {
-        const expires = new Date(info.manualGrantExpiresAt);
-        const diffDays =
-          (expires.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-        if (diffDays >= 0 && diffDays <= 7) {
-          expiringSoonCount += 1;
-        }
-      }
-    }
-  }
-
-  const logs: AdminLogRow[] =
-    (logRows ?? []).map((row: any) => ({
-      id: row.id as string,
-      created_at: row.created_at as string,
-      action_type: row.action_type as string,
-      reason: (row.reason as string | null) ?? null,
-      admin_name:
-        (row.admin?.display_name as string | null) ??
-        (row.admin?.email as string | null) ??
-        null,
-      organizer_name:
-        (row.organizer?.organization_name as string | null) ?? null,
-    })) ?? [];
+  const data = await getPanelDashboard(supabase);
 
   return (
-    <div className="space-y-6">
-      <section>
-        <h2 className="text-lg font-semibold text-slate-900">
-          開発者ダッシュボード
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          MachiGlyph の主催者プランと管理操作の状況を、ひと目で把握できる開発者専用の画面です。
-        </p>
-      </section>
+    <div className="space-y-3">
+      <AdminPageHeader
+        title="管理ダッシュボード"
+        description="サービス全体の状況と、優先対応項目を確認できます。"
+      />
 
-      <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
-        <SummaryCard
-          label="全主催者数"
-          value={total}
-          helper="登録済みの主催者アカウント"
-          tone="default"
-          icon={
-            <span className="h-3 w-3 rounded-sm bg-slate-400" aria-hidden />
-          }
-        />
-        <SummaryCard
-          label="無料プラン"
-          value={freeCount}
-          helper="現在 free として扱われている主催者"
-          tone="default"
-          icon={<span className="h-3 w-3 rounded-sm bg-slate-300" />}
-        />
-        <SummaryCard
-          label="有料プラン"
-          value={paidCount}
-          helper="Stripe / 手動付与含む有料利用中"
-          tone="info"
-          icon={<span className="h-3 w-3 rounded-sm bg-sky-400" />}
-        />
-        <SummaryCard
-          label="手動付与中"
-          value={manualActiveCount}
-          helper="manual_grant_active が有効な主催者"
-          tone="success"
-          icon={<span className="h-3 w-3 rounded-sm bg-emerald-500" />}
-        />
-        <SummaryCard
-          label="期限切れ間近"
-          value={expiringSoonCount}
-          helper="7日以内に手動付与が切れる主催者"
+      <section className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+        <AdminStatCard label="登録ユーザー数" value={data.usersTotal} />
+        <AdminStatCard label="主催者数" value={data.organizersTotal} />
+        <AdminStatCard label="公開イベント数" value={data.publishedEvents} tone="success" />
+        <AdminStatCard
+          label="本人確認待ち"
+          value={data.identityPending}
+          helper="準備中"
           tone="warning"
-          icon={<span className="h-3 w-3 rounded-sm bg-amber-400" />}
+        />
+        <AdminStatCard
+          label="イベント審査待ち"
+          value={data.eventReviewPending}
+          helper="準備中"
+          tone="warning"
+        />
+        <AdminStatCard
+          label="未対応問い合わせ"
+          value={data.openInquiries}
+          tone={data.openInquiries > 0 ? "danger" : "default"}
         />
       </section>
 
-      <section className="space-y-3 rounded-xl border border-slate-200 bg-white/90 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">
-              最近の管理操作ログ
-            </h3>
-            <p className="mt-0.5 text-xs text-slate-500">
-              直近 5 件のプラン付与・取消などの操作履歴です。
-            </p>
+      <section>
+        <h2 className="mb-1.5 text-xs font-semibold text-[#0e1610]">要対応</h2>
+        <div className="flex flex-wrap gap-2">
+          <AdminTodoCard
+            href="/admin/reviews"
+            label="本人確認の審査"
+            count={data.todoIdentity}
+            tone="warning"
+          />
+          <AdminTodoCard
+            href="/admin/reviews?tab=events"
+            label="イベント承認待ち"
+            count={data.todoEventReview}
+            tone="info"
+          />
+          <AdminTodoCard
+            href="/admin/support?tab=reports"
+            label="通報・報告"
+            count={data.todoReports}
+            tone="danger"
+          />
+          <AdminTodoCard
+            href="/admin/passes?tab=refunds"
+            label="返金確認"
+            count={data.todoRefunds}
+            tone="warning"
+          />
+        </div>
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-3">
+        <div className="rounded-lg border border-[#d8e8dc] bg-white p-3 shadow-sm lg:col-span-1">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-xs font-semibold text-[#0e1610]">
+              最近のお問い合わせ
+            </h2>
+            <Link
+              href="/admin/support"
+              className="text-[11px] text-[#1e3848] hover:underline"
+            >
+              すべて
+            </Link>
           </div>
-          <Link
-            href="/admin/logs"
-            className="text-xs font-medium text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline"
-          >
-            すべて見る
-          </Link>
+          {data.recentInquiries.length === 0 ? (
+            <p className="py-4 text-center text-xs text-[#7a9888]">
+              お問い合わせはまだありません
+            </p>
+          ) : (
+            <ul className="divide-y divide-[#eef4f0]">
+              {data.recentInquiries.slice(0, 4).map((row) => (
+                <li key={row.id} className="py-1.5">
+                  <Link
+                    href={`/admin/inquiries/${row.id}`}
+                    className="line-clamp-1 text-xs font-medium text-[#0e1610] hover:underline"
+                  >
+                    {row.subject}
+                  </Link>
+                  <div className="mt-0.5 flex items-center gap-2 text-[10px] text-[#7a9888]">
+                    <span>{contactCategoryLabel(row.category)}</span>
+                    <AdminStatusBadge
+                      tone={
+                        row.status === "open"
+                          ? "warning"
+                          : row.status === "closed"
+                            ? "neutral"
+                            : "info"
+                      }
+                    >
+                      {row.status === "open"
+                        ? "未対応"
+                        : row.status === "in_progress"
+                          ? "対応中"
+                          : "完了"}
+                    </AdminStatusBadge>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        {logs.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-6 text-center text-xs text-slate-500">
-            まだ管理操作のログがありません。
+        <div className="rounded-lg border border-[#d8e8dc] bg-white p-3 shadow-sm">
+          <h2 className="mb-2 text-xs font-semibold text-[#0e1610]">
+            サービス状況（30日）
+          </h2>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-md bg-[#eaf2ec] px-2.5 py-2">
+              <div className="text-[10px] text-[#7a9888]">新規ユーザー</div>
+              <div className="text-base font-semibold">{data.newUsers30d}</div>
+            </div>
+            <div className="rounded-md bg-[#eaf2ec] px-2.5 py-2">
+              <div className="text-[10px] text-[#7a9888]">イベント作成</div>
+              <div className="text-base font-semibold">{data.newEvents30d}</div>
+            </div>
+            <div className="rounded-md bg-[#eaf2ec] px-2.5 py-2">
+              <div className="text-[10px] text-[#7a9888]">参加申込</div>
+              <div className="text-base font-semibold">{data.applications30d}</div>
+            </div>
+            <div className="rounded-md bg-[#eaf2ec] px-2.5 py-2">
+              <div className="text-[10px] text-[#7a9888]">決済総額</div>
+              <div className="text-base font-semibold">
+                ¥{data.sales30d.toLocaleString("ja-JP")}
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-y-0.5">
-              <thead>
-                <tr className="text-[11px] uppercase tracking-wide text-slate-400">
-                  <th className="px-3 py-1 text-left">日時</th>
-                  <th className="px-3 py-1 text-left">操作内容</th>
-                  <th className="px-3 py-1 text-left">対象主催者</th>
-                  <th className="px-3 py-1 text-left">実行者</th>
+        </div>
+
+        <div className="rounded-lg border border-[#d8e8dc] bg-white p-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-xs font-semibold text-[#0e1610]">
+              最近の管理アクティビティ
+            </h2>
+            <Link
+              href="/admin/settings?tab=logs"
+              className="text-[11px] text-[#1e3848] hover:underline"
+            >
+              ログ
+            </Link>
+          </div>
+          <AdminActivityList
+            items={data.recentLogs.slice(0, 5).map((l) => ({
+              id: l.id,
+              createdAt: l.createdAt,
+              actionLabel: actionLabel(l.actionType),
+              actorName: l.adminName,
+              targetName: l.organizerName,
+            }))}
+          />
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-[#d8e8dc] bg-white p-3 shadow-sm">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-xs font-semibold text-[#0e1610]">
+            最近の主催者・イベント
+          </h2>
+          <Link
+            href="/admin/events"
+            className="text-[11px] text-[#1e3848] hover:underline"
+          >
+            イベント管理
+          </Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-xs">
+            <thead className="border-b border-[#e0ece4] text-[10px] uppercase text-[#7a9888]">
+              <tr>
+                <th className="px-2 py-1.5 text-left font-medium">イベント名</th>
+                <th className="px-2 py-1.5 text-left font-medium">主催者</th>
+                <th className="px-2 py-1.5 text-left font-medium">開催日</th>
+                <th className="px-2 py-1.5 text-left font-medium">申込</th>
+                <th className="px-2 py-1.5 text-left font-medium">状態</th>
+                <th className="px-2 py-1.5 text-left font-medium" />
+              </tr>
+            </thead>
+            <tbody>
+              {data.recentEvents.slice(0, 5).map((ev) => (
+                <tr key={ev.id} className="border-b border-[#eef4f0] last:border-0">
+                  <td className="px-2 py-2 font-medium text-[#0e1610]">
+                    {ev.title}
+                  </td>
+                  <td className="px-2 py-2 text-[#5a7868]">
+                    {ev.organizerName ?? "—"}
+                  </td>
+                  <td className="px-2 py-2 text-[#5a7868]">{ev.date}</td>
+                  <td className="px-2 py-2">{ev.participantCount}</td>
+                  <td className="px-2 py-2">
+                    <AdminStatusBadge tone={eventStatusTone(ev.status)}>
+                      {eventStatusLabel(ev.status)}
+                    </AdminStatusBadge>
+                  </td>
+                  <td className="px-2 py-2 text-right">
+                    <Link
+                      href={`/admin/events?focus=${ev.id}`}
+                      className="text-[11px] text-[#1e3848] hover:underline"
+                    >
+                      詳細
+                    </Link>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => (
-                  <LogRow key={log.id} log={log} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+          {data.recentEvents.length === 0 ? (
+            <p className="py-4 text-center text-xs text-[#7a9888]">
+              イベントがありません
+            </p>
+          ) : null}
+        </div>
       </section>
     </div>
   );
 }
-

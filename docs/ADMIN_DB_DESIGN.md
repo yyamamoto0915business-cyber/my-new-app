@@ -161,3 +161,28 @@ SELECT set_developer_admin_by_email('your-admin@example.com');
 ## 9. データ移行
 
 既存の `organizers` にある `manual_grant_*`, `billing_source`, `stripe_*` を元に、マイグレーション時に `organizer_plan_state` へ移行しています。移行後は `organizer_plan_state` が主な状態管理テーブルとなり、organizers はトリガーで同期されます。
+
+---
+
+## 10. 管理画面再設計（2026-07）
+
+### ルート（7メニュー）
+
+| パス | 内容 |
+|------|------|
+| `/admin` | ダッシュボード |
+| `/admin/accounts` | ユーザー / 主催者 |
+| `/admin/reviews` | 審査・本人確認（一部準備中） |
+| `/admin/events` | イベント管理 |
+| `/admin/passes` | 参加パス・決済 |
+| `/admin/support` | 問い合わせ（`contact_inquiries`）/ 通報準備中 |
+| `/admin/settings` | 管理ログ / 権限・設定準備中 |
+
+旧パス `/admin/organizers` `/admin/others` `/admin/logs` `/admin/inquiries` は新パスへ redirect。
+
+### 追加マイグレーション
+
+- `00056_contact_inquiries.sql` — ユーザーお問い合わせ
+- `00057_admin_panel_extensions.sql` — `admin_logs` 拡張＋将来テーブル（本人確認・通報・返金申請等）と RLS
+
+お問い合わせは `support_tickets` を新設せず `contact_inquiries` を利用します。
