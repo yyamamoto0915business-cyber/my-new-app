@@ -45,5 +45,14 @@ export function eventToForm(event: Event): EventFormData {
     registrationNote: event.registrationNote,
     recurrence: event.recurrence ?? "none",
     recurrenceCount: event.recurrenceCount ?? null,
+    eventFormat: event.eventFormat ?? "onsite",
+    onlineService: event.onlineService ?? null,
+    onlineJoinUrl: event.onlineJoinUrl ?? "",
+    onlineMeetingId: event.onlineMeetingId ?? "",
+    onlinePasscode: event.onlinePasscode ?? "",
+    onlineGuideMessage: event.onlineGuideMessage ?? "",
+    onlineLinkVisibility: event.onlineLinkVisibility ?? "pass_holders_only",
+    onlineLinkDisplayTiming: event.onlineLinkDisplayTiming ?? "15_minutes_before",
+    publicPageLinkVisible: false,
   };
 }

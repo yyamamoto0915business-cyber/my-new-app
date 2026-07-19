@@ -12,6 +12,9 @@ import { MobileEventOverviewTab } from "@/components/events/detail/MobileEventOv
 import { EventDetailSupportBanner } from "@/components/events/detail/EventDetailSupportBanner";
 import { EventDetailSectionCard } from "@/components/events/detail/EventDetailSectionCard";
 import { EventPurchasePrimaryCta } from "@/components/events/detail/purchase/EventPurchasePrimaryCta";
+import { EventApplyConfirmPreviewOverlay } from "@/components/events/detail/EventApplyConfirmPreviewOverlay";
+import { formatEventScheduleLabel } from "@/lib/event-recurrence";
+import { Suspense } from "react";
 
 const SITE_BASE =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://my-new-app-self-iota.vercel.app";
@@ -225,6 +228,24 @@ export default async function EventDetailPage({ params }: Props) {
     </div>
   );
 
+  const applyConfirmPreviewEvent = {
+    title: event.title,
+    dateLabel: formatEventScheduleLabel(
+      event.date,
+      event.startTime,
+      event.endTime,
+      event.recurrence ?? "none",
+      event.recurrenceCount
+    ),
+    placeLabel: [event.location, event.address].filter(Boolean).join(" ") || null,
+    priceLabel:
+      (event.price ?? 0) === 0
+        ? "無料"
+        : `¥${Number(event.price).toLocaleString("ja-JP")}${
+            event.priceNote ? `（${event.priceNote}）` : ""
+          }`,
+  };
+
   return (
     <div className="min-h-screen bg-white min-[900px]:bg-[var(--mg-paper)]">
       {isOrganizerPreview ? (
@@ -285,6 +306,9 @@ export default async function EventDetailPage({ params }: Props) {
         </main>
       </div>
 
+      <Suspense fallback={null}>
+        <EventApplyConfirmPreviewOverlay event={applyConfirmPreviewEvent} />
+      </Suspense>
     </div>
   );
 }

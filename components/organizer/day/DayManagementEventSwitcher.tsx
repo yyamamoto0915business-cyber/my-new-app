@@ -14,6 +14,13 @@ import {
   organizerDayEventHref,
   type EventDayPhase,
 } from "./day-management-shared";
+import {
+  EVENT_FORMAT_LABEL,
+  ONLINE_SERVICE_LABEL,
+  isOnlineCapableFormat,
+  type EventFormat,
+  type OnlineService,
+} from "@/lib/event-online";
 
 function formatEventDateShort(date: string) {
   const d = new Date(`${date}T12:00:00+09:00`);
@@ -78,6 +85,9 @@ type Props = {
   currentVenue?: string;
   currentStatus?: string;
   currentDayPhase?: EventDayPhase;
+  currentEventFormat?: EventFormat;
+  currentOnlineService?: OnlineService | null;
+  currentOnlineJoinUrl?: string | null;
   events: DayManageableEvent[];
   loading?: boolean;
   variant?: "current" | "empty";
@@ -119,6 +129,11 @@ function EventDropdownList({
                         <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[#1A2214]">
                           {event.title}
                         </span>
+                        {event.eventFormat && event.eventFormat !== "onsite" ? (
+                          <span className="shrink-0 rounded-full bg-[#eef8e8] px-1.5 py-0.5 text-[9px] font-bold text-[#3a7a10]">
+                            {EVENT_FORMAT_LABEL[event.eventFormat]}
+                          </span>
+                        ) : null}
                         <span
                           className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${eventDayPhaseBadgeClass(phase)}`}
                         >
@@ -150,6 +165,9 @@ export function DayManagementEventSwitcher({
   currentVenue,
   currentStatus,
   currentDayPhase,
+  currentEventFormat = "onsite",
+  currentOnlineService = null,
+  currentOnlineJoinUrl = null,
   events,
   loading = false,
   variant = "current",
@@ -382,6 +400,11 @@ export function DayManagementEventSwitcher({
                   現在のイベント
                 </span>
               )}
+              {currentEventFormat && currentEventFormat !== "onsite" ? (
+                <span className="shrink-0 rounded-full bg-[#eef8e8] px-2 py-0.5 text-[10px] font-bold text-[#3a7a10]">
+                  {EVENT_FORMAT_LABEL[currentEventFormat]}
+                </span>
+              ) : null}
             </div>
             {compact && (currentDate || currentVenue) ? (
               <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[#566358] min-[900px]:text-[12px]">
@@ -394,8 +417,42 @@ export function DayManagementEventSwitcher({
                 {currentVenue ? (
                   <span className="inline-flex min-w-0 items-center gap-1">
                     <MapPin size={11} className="shrink-0 text-[#2D7A4F]" aria-hidden />
-                    <span className="truncate">{currentVenue}</span>
+                    <span className="truncate">
+                      {currentEventFormat === "online"
+                        ? currentOnlineService
+                          ? `オンライン開催（${ONLINE_SERVICE_LABEL[currentOnlineService]}）`
+                          : "オンライン開催"
+                        : currentEventFormat === "hybrid"
+                          ? `${currentVenue} ＋ オンライン`
+                          : currentVenue}
+                    </span>
                   </span>
+                ) : null}
+              </div>
+            ) : null}
+            {compact && isOnlineCapableFormat(currentEventFormat) ? (
+              <div className="mt-1.5 space-y-1 rounded-lg border border-[#DDE8DF] bg-[#F7FBF8] px-2.5 py-1.5 text-[11px] text-[#3a4840]">
+                <p className="font-medium text-[#1A2214]">オンライン設定</p>
+                {currentOnlineService ? (
+                  <p>配信: {ONLINE_SERVICE_LABEL[currentOnlineService]}</p>
+                ) : null}
+                {currentOnlineJoinUrl ? (
+                  <p className="truncate">
+                    URL:{" "}
+                    <a
+                      href={currentOnlineJoinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-[#2B3A6B] underline-offset-2 hover:underline"
+                    >
+                      {currentOnlineJoinUrl}
+                    </a>
+                  </p>
+                ) : null}
+                {currentEventFormat === "online" ? (
+                  <p className="text-[#566358]">
+                    参加者は参加パスの「参加する」から入室します
+                  </p>
                 ) : null}
               </div>
             ) : null}

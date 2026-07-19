@@ -4,6 +4,7 @@ import { getJstTodayYmd } from "@/lib/jst-date";
 import type { ParticipationPass } from "@/lib/participation-pass";
 import type { EventParticipantStatus } from "@/lib/db/types";
 import type { ApplicationStatus } from "@/lib/db/recruitments-mvp";
+import { normalizeEventFormat } from "@/lib/event-online";
 
 const PASS_ELIGIBLE_STATUSES: EventParticipantStatus[] = [
   "applied",
@@ -34,6 +35,7 @@ type EventJoinRow = {
   price: number | null;
   payment_method: "online" | "onsite" | "both" | null;
   check_in_method: "qr" | "manual" | null;
+  event_format?: string | null;
 };
 
 type ParticipantJoinRow = {
@@ -219,6 +221,7 @@ function toParticipationPass(options: {
     expiresAt: endAt,
     status: resolveUiStatus(event.date, cancelled, now),
     kind: "visitor",
+    eventFormat: normalizeEventFormat(event.event_format),
   };
 }
 
@@ -262,19 +265,31 @@ function toVolunteerPass(options: {
     kind: "volunteer",
     roleLabel,
     recruitmentId,
+    eventFormat: normalizeEventFormat(event.event_format),
   };
 }
 
-async function fetchVisitorPasses(
-  supabase: SupabaseClient,
-  userId: string,
-  attendeeName: string,
-  now: Date
-): Promise<ParticipationPass[]> {
-  const { data: rows, error } = await supabase
-    .from("event_participants")
-    .select(
-      `
+const EVENT_SELECT_WITH_FORMAT = `
+      id,
+      event_id,
+      status,
+      events (
+        id,
+        title,
+        image_url,
+        date,
+        start_time,
+        end_time,
+        location,
+        address,
+        price,
+        payment_method,
+        check_in_method,
+        event_format
+      )
+    `;
+
+const EVENT_SELECT_WITHOUT_FORMAT = `
       id,
       event_id,
       status,
@@ -291,11 +306,92 @@ async function fetchVisitorPasses(
         payment_method,
         check_in_method
       )
-    `
-    )
+    `;
+
+const VOLUNTEER_SELECT_WITH_FORMAT = `
+      id,
+      recruitment_id,
+      status,
+      role_assigned,
+      recruitments (
+        id,
+        event_id,
+        title,
+        role,
+        roles,
+        meeting_place,
+        events (
+          id,
+          title,
+          image_url,
+          date,
+          start_time,
+          end_time,
+          location,
+          address,
+          price,
+          payment_method,
+          check_in_method,
+          event_format
+        )
+      )
+    `;
+
+const VOLUNTEER_SELECT_WITHOUT_FORMAT = `
+      id,
+      recruitment_id,
+      status,
+      role_assigned,
+      recruitments (
+        id,
+        event_id,
+        title,
+        role,
+        roles,
+        meeting_place,
+        events (
+          id,
+          title,
+          image_url,
+          date,
+          start_time,
+          end_time,
+          location,
+          address,
+          price,
+          payment_method,
+          check_in_method
+        )
+      )
+    `;
+
+function isMissingEventFormatColumn(message: string): boolean {
+  return /event_format/i.test(message);
+}
+
+async function fetchVisitorPasses(
+  supabase: SupabaseClient,
+  userId: string,
+  attendeeName: string,
+  now: Date
+): Promise<ParticipationPass[]> {
+  let { data: rows, error } = await supabase
+    .from("event_participants")
+    .select(EVENT_SELECT_WITH_FORMAT)
     .eq("user_id", userId)
     .in("status", PASS_ELIGIBLE_STATUSES)
     .order("created_at", { ascending: false });
+
+  if (error && isMissingEventFormatColumn(error.message)) {
+    const fallback = await supabase
+      .from("event_participants")
+      .select(EVENT_SELECT_WITHOUT_FORMAT)
+      .eq("user_id", userId)
+      .in("status", PASS_ELIGIBLE_STATUSES)
+      .order("created_at", { ascending: false });
+    rows = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) {
     console.error("fetchMyParticipationPasses visitors:", error.message);
@@ -367,40 +463,23 @@ async function fetchVolunteerPasses(
   attendeeName: string,
   now: Date
 ): Promise<ParticipationPass[]> {
-  const { data: rows, error } = await supabase
+  let { data: rows, error } = await supabase
     .from("recruitment_applications")
-    .select(
-      `
-      id,
-      recruitment_id,
-      status,
-      role_assigned,
-      recruitments (
-        id,
-        event_id,
-        title,
-        role,
-        roles,
-        meeting_place,
-        events (
-          id,
-          title,
-          image_url,
-          date,
-          start_time,
-          end_time,
-          location,
-          address,
-          price,
-          payment_method,
-          check_in_method
-        )
-      )
-    `
-    )
+    .select(VOLUNTEER_SELECT_WITH_FORMAT)
     .eq("user_id", userId)
     .in("status", VOLUNTEER_PASS_STATUSES)
     .order("created_at", { ascending: false });
+
+  if (error && isMissingEventFormatColumn(error.message)) {
+    const fallback = await supabase
+      .from("recruitment_applications")
+      .select(VOLUNTEER_SELECT_WITHOUT_FORMAT)
+      .eq("user_id", userId)
+      .in("status", VOLUNTEER_PASS_STATUSES)
+      .order("created_at", { ascending: false });
+    rows = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) {
     console.error("fetchMyParticipationPasses volunteers:", error.message);

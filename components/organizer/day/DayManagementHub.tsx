@@ -84,6 +84,10 @@ export function DayManagementHub({
             : MOCK_EVENT.date,
           venue: data.location ?? MOCK_EVENT.venue,
           status: eventDayPhaseLabel(phase),
+          eventFormat: data.eventFormat ?? "onsite",
+          onlineService: data.onlineService ?? null,
+          onlineJoinUrl: data.onlineJoinUrl ?? null,
+          onlineLinkDisplayTiming: data.onlineLinkDisplayTiming ?? null,
         });
       } catch {
         // mock fallback

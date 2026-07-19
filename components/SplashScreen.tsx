@@ -63,6 +63,11 @@ function resolveSplashVisibility(
   search: string,
   user: User | null
 ): { ready: boolean; gone: boolean } {
+  // 申込確認シートの見た目確認中はスプラッシュを出さない
+  if (new URLSearchParams(search).get("previewApplyConfirm") === "1") {
+    return { ready: false, gone: true };
+  }
+
   if (isOrganizerPath(pathname, search)) {
     return { ready: false, gone: true };
   }

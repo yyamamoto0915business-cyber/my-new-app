@@ -748,6 +748,21 @@ body:has([data-auth-pc-layout])::before {
   }
 }
 
+@keyframes mg-apply-confirm-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.mg-apply-confirm-sheet {
+  animation: mg-apply-confirm-in 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .mg-consult-modal__panel {
   border: 1px solid rgba(232, 237, 216, 0.85);
   background: linear-gradient(180deg, #ffffff 0%, #fefdfb 100%);
@@ -3444,6 +3459,35 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   flex: 1;
   flex-direction: column;
   isolation: isolate;
+}
+
+/* イベント作成/編集フォーム: 外側スクロールを止め、画面内に収めて内側だけスクロール */
+@media (min-width: 900px) {
+  .org-workspace-shell
+    > .flex.min-h-0.flex-1
+    > .flex.min-h-0.min-w-0.flex-1.flex-col:has([data-event-form]) {
+    overflow: hidden;
+  }
+
+  .org-main-chrome:has([data-event-form]),
+  .org-main-chrome:has([data-event-form]) .org-main-chrome__content,
+  .org-main-chrome:has([data-event-form]) .org-main-chrome__content > main {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .org-main-chrome:has([data-event-form]) .org-main-chrome__content > main {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .org-main-chrome:has([data-event-form]) .org-main-chrome__bg {
+    height: min(120px, 18vh);
+    opacity: 0.55;
+  }
 }
 
 .org-top-tabs {

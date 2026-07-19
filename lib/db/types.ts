@@ -114,6 +114,16 @@ export type DbEvent = {
   recurrence?: string | null;
   /** 繰り返し回数（初回を含む。単発のときは NULL） */
   recurrence_count?: number | null;
+  /** 開催形式: onsite / online / hybrid（未設定は onsite） */
+  event_format?: "onsite" | "online" | "hybrid" | null;
+  online_service?: string | null;
+  online_join_url?: string | null;
+  online_meeting_id?: string | null;
+  online_passcode?: string | null;
+  online_guide_message?: string | null;
+  online_link_visibility?: string | null;
+  online_link_display_timing?: string | null;
+  public_page_link_visible?: boolean | null;
   created_at: string;
   updated_at: string;
 };
@@ -205,6 +215,32 @@ export type Event = {
   recurrence?: "none" | "weekly" | "monthly";
   /** 繰り返し回数（初回を含む。単発のときは未設定） */
   recurrenceCount?: number | null;
+  /** 開催形式（未設定は onsite）。公開レスポンスにも含めてよい非機密 */
+  eventFormat?: "onsite" | "online" | "hybrid";
+  /**
+   * 以下は主催者向け / 参加パス専用APIのみ。公開ページ用 Event には載せない。
+   * 型上は optional だが公開マッパーでは付与しない。
+   */
+  onlineService?:
+    | "zoom"
+    | "google_meet"
+    | "microsoft_teams"
+    | "youtube_live"
+    | "other"
+    | null;
+  onlineJoinUrl?: string | null;
+  onlineMeetingId?: string | null;
+  onlinePasscode?: string | null;
+  onlineGuideMessage?: string | null;
+  onlineLinkVisibility?: "pass_holders_only" | null;
+  onlineLinkDisplayTiming?:
+    | "immediately"
+    | "60_minutes_before"
+    | "30_minutes_before"
+    | "15_minutes_before"
+    | "5_minutes_before"
+    | null;
+  publicPageLinkVisible?: boolean | null;
   createdAt: string;
   participantCount?: number;
   avgRating?: number;

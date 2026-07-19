@@ -24,6 +24,10 @@ export type ParticipationPass = {
   roleLabel?: string;
   /** ボランティア応募の募集 ID */
   recruitmentId?: string;
+  /** 開催形式（未設定は onsite） */
+  eventFormat?: "onsite" | "online" | "hybrid";
+  /** 主催者連絡先（問い合わせ用・任意） */
+  organizerContact?: string | null;
 };
 
 export type PassTabId = "upcoming" | "today" | "history";
@@ -44,6 +48,16 @@ export const RECEPTION_TYPE_LABEL: Record<ParticipationPass["receptionType"], st
   qr: "QR受付",
   staff: "スタッフ確認",
 };
+
+/** オンラインのみ開催は現地受付（QR等）が不要 */
+export function isOnlineOnlyPass(pass: Pick<ParticipationPass, "eventFormat">): boolean {
+  return pass.eventFormat === "online";
+}
+
+/** ハイブリッド開催（現地＋オンライン） */
+export function isHybridPass(pass: Pick<ParticipationPass, "eventFormat">): boolean {
+  return pass.eventFormat === "hybrid";
+}
 
 /** サンプルデータの「あとN日」算出用（2025-05-24 の3日前） */
 export const SAMPLE_PASS_REFERENCE_NOW = new Date("2025-05-21T12:00:00+09:00");
@@ -107,6 +121,26 @@ export const SAMPLE_PARTICIPATION_PASSES: ParticipationPass[] = [
     expiresAt: "2025-05-16T16:00:00+09:00",
     status: "upcoming",
     kind: "visitor",
+  },
+  {
+    id: "pass-online-sample",
+    eventId: "online-sample-event",
+    eventTitle: "みどりと対話するオンライン茶会",
+    eventImage:
+      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80",
+    startAt: "2026-07-19T13:00:00+09:00",
+    endAt: "2026-07-19T15:00:00+09:00",
+    venueName: "オンライン開催",
+    attendeeName: "山本 雄太",
+    receptionNumber: "MG-260719-012",
+    paymentStatus: "free",
+    receptionType: "staff",
+    ticketLabel: "大人",
+    quantity: 1,
+    status: "upcoming",
+    kind: "visitor",
+    eventFormat: "online",
+    organizerContact: "hello@machiglyph.example",
   },
 ];
 

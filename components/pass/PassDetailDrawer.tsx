@@ -4,15 +4,17 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { PassMobileTicket } from "@/components/pass/PassMobileTicket";
 import type { ParticipationPass } from "@/lib/participation-pass";
+import type { EventOnlineAccessResponse } from "@/lib/event-online";
 
 type Props = {
   open: boolean;
   pass: ParticipationPass | null;
   onClose: () => void;
+  demoAccess?: EventOnlineAccessResponse | null;
 };
 
 /** モバイル：パスを開いたときのフル画面チケット表示（bottom nav の上に出す） */
-export function PassDetailDrawer({ open, pass, onClose }: Props) {
+export function PassDetailDrawer({ open, pass, onClose, demoAccess }: Props) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export function PassDetailDrawer({ open, pass, onClose }: Props) {
 
       <div className="relative z-10 flex h-full min-h-0 flex-col px-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.5rem,env(safe-area-inset-top))]">
         <div className="mx-auto flex h-full w-full max-w-[400px] min-h-0 flex-col justify-center py-1">
-          <PassMobileTicket pass={pass} onClose={onClose} />
+          <PassMobileTicket pass={pass} onClose={onClose} demoAccess={demoAccess} />
         </div>
       </div>
     </div>,

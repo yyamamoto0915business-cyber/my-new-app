@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { getLoginUrl } from "@/lib/auth-utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import {
   getEventPassHref,
   getPurchaseCtaHint,
@@ -17,6 +18,10 @@ import {
 } from "@/lib/event-purchase";
 import type { Event } from "@/lib/db/types";
 import { PurchaseButton } from "@/components/events/detail/purchase/PurchaseButton";
+import {
+  EventApplyConfirmSheet,
+  type EventApplyConfirmInfo,
+} from "@/components/events/detail/EventApplyConfirmSheet";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -43,6 +48,38 @@ function resolveParticipationMode(
   );
 }
 
+function buildConfirmInfo(
+  event: Event | EventPurchaseData,
+  purchaseData: EventPurchaseData
+): EventApplyConfirmInfo {
+  const priceLabel =
+    purchaseData.price === 0
+      ? "無料"
+      : `¥${Number(purchaseData.price).toLocaleString("ja-JP")}`;
+
+  if (!isFullEvent(event)) {
+    return { title: purchaseData.title, priceLabel };
+  }
+
+  const placeLabel =
+    [event.location, event.address].filter(Boolean).join(" ") || null;
+
+  return {
+    title: event.title,
+    dateLabel: formatEventScheduleLabel(
+      event.date,
+      event.startTime,
+      event.endTime,
+      event.recurrence ?? "none",
+      event.recurrenceCount
+    ),
+    placeLabel,
+    priceLabel: event.priceNote
+      ? `${priceLabel}（${event.priceNote}）`
+      : priceLabel,
+  };
+}
+
 export function EventPurchasePrimaryCta({
   event,
   isPurchased: isPurchasedProp,
@@ -58,9 +95,14 @@ export function EventPurchasePrimaryCta({
     : event;
   const participationMode = resolveParticipationMode(event);
   const onlineCheckout = requiresOnlineCheckout(purchaseData);
+  const confirmInfo = useMemo(
+    () => buildConfirmInfo(event, purchaseData),
+    [event, purchaseData]
+  );
 
   const [isPurchased, setIsPurchased] = useState(Boolean(isPurchasedProp));
   const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (typeof isPurchasedProp === "boolean") {
@@ -116,7 +158,7 @@ export function EventPurchasePrimaryCta({
   const label = loading ? "処理中..." : getPurchaseCtaLabel(ctaState);
   const disabled = isPurchaseCtaDisabled(ctaState) || loading;
 
-  const defaultPurchase = useCallback(async () => {
+  const executePurchase = useCallback(async () => {
     if (ctaState === "purchased") {
       if (purchaseData.isPaid || participationMode === "required") {
         router.push(getEventPassHref(purchaseData.id));
@@ -182,6 +224,7 @@ export function EventPurchasePrimaryCta({
       );
     } finally {
       setLoading(false);
+      setConfirmOpen(false);
     }
   }, [
     ctaState,
@@ -197,8 +240,27 @@ export function EventPurchasePrimaryCta({
       void onPurchase();
       return;
     }
-    void defaultPurchase();
-  }, [onPurchase, defaultPurchase]);
+
+    // 無料申込のみ確認カードを挟む（有料は Stripe 側で確認）
+    if (
+      ctaState === "free_apply" &&
+      user &&
+      !onlineCheckout &&
+      participationMode === "required"
+    ) {
+      setConfirmOpen(true);
+      return;
+    }
+
+    void executePurchase();
+  }, [
+    onPurchase,
+    ctaState,
+    user,
+    onlineCheckout,
+    participationMode,
+    executePurchase,
+  ]);
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -223,6 +285,18 @@ export function EventPurchasePrimaryCta({
           {hint}
         </p>
       ) : null}
+
+      <EventApplyConfirmSheet
+        open={confirmOpen}
+        event={confirmInfo}
+        confirming={loading}
+        onCancel={() => {
+          if (!loading) setConfirmOpen(false);
+        }}
+        onConfirm={() => {
+          void executePurchase();
+        }}
+      />
     </div>
   );
 }

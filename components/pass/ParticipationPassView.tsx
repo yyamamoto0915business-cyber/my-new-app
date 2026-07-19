@@ -8,6 +8,7 @@ import {
   type PassTabId,
   type ParticipationPass,
 } from "@/lib/participation-pass";
+import type { EventOnlineAccessResponse } from "@/lib/event-online";
 import { PassListCard } from "@/components/pass/PassListCard";
 import { PassDetailPanel } from "@/components/pass/PassDetailPanel";
 import { PassDetailDrawer } from "@/components/pass/PassDetailDrawer";
@@ -17,9 +18,17 @@ import { ParticipationPassEmptyDetail } from "@/components/pass/ParticipationPas
 
 type Props = {
   passes: ParticipationPass[];
+  /** パスID → デモ用オンライン参加情報（プレビュー時） */
+  demoAccessByPassId?: Record<string, EventOnlineAccessResponse | null>;
+  /** プレビューバナー文言 */
+  previewBanner?: string | null;
 };
 
-export function ParticipationPassView({ passes }: Props) {
+export function ParticipationPassView({
+  passes,
+  demoAccessByPassId,
+  previewBanner,
+}: Props) {
   const [activeTab, setActiveTab] = useState<PassTabId>("upcoming");
   const [selectedPassId, setSelectedPassId] = useState<string | null>(
     () => getNextPass(passes, new Date())?.id ?? passes[0]?.id ?? null
@@ -50,6 +59,11 @@ export function ParticipationPassView({ passes }: Props) {
   const selectedPass =
     passes.find((p) => p.id === selectedPassId) ?? nextPass ?? passes[0] ?? null;
 
+  const selectedDemoAccess =
+    selectedPass && demoAccessByPassId
+      ? demoAccessByPassId[selectedPass.id]
+      : undefined;
+
   const selectPass = (id: string) => {
     setSelectedPassId(id);
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 899px)").matches) {
@@ -68,6 +82,30 @@ export function ParticipationPassView({ passes }: Props) {
 
   return (
     <div className="mx-auto flex h-full w-full max-w-[1200px] flex-col px-4 pb-3 pt-0 min-[900px]:px-7 min-[900px]:pb-3 min-[900px]:pt-1">
+      {previewBanner ? (
+        <div className="mb-2 shrink-0 rounded-[10px] border border-[#c8dece] bg-[#eef8e8] px-3 py-2 text-[12px] font-medium text-[#2d5a38]">
+          {previewBanner}
+          <span className="ml-2 font-normal text-[#5a665c]">
+            切替:{" "}
+            <a className="underline underline-offset-2" href="/pass?preview=online-waiting">
+              オンライン・表示前
+            </a>
+            {" · "}
+            <a className="underline underline-offset-2" href="/pass?preview=online-visible">
+              オンライン・表示中
+            </a>
+            {" · "}
+            <a className="underline underline-offset-2" href="/pass?preview=hybrid-visible">
+              ハイブリッド
+            </a>
+            {" · "}
+            <a className="underline underline-offset-2" href="/pass">
+              解除
+            </a>
+          </span>
+        </div>
+      ) : null}
+
       {/* モバイル用：見出し＋タブ */}
       <header className="mb-1.5 shrink-0 min-[900px]:hidden">
         <h1 className="text-[18px] font-semibold tracking-tight text-[#1a2818]">
@@ -188,7 +226,11 @@ export function ParticipationPassView({ passes }: Props) {
             aria-label="選択中の参加パス"
             className="hidden min-h-0 min-w-0 min-[900px]:flex min-[900px]:flex-col"
           >
-            <PassDetailPanel pass={selectedPass} onClose={closeDetail} />
+            <PassDetailPanel
+              pass={selectedPass}
+              onClose={closeDetail}
+              demoAccess={selectedDemoAccess}
+            />
           </aside>
         </div>
       )}
@@ -197,6 +239,7 @@ export function ParticipationPassView({ passes }: Props) {
         open={isPassDetailOpen}
         pass={selectedPass}
         onClose={closeDetail}
+        demoAccess={selectedDemoAccess}
       />
     </div>
   );

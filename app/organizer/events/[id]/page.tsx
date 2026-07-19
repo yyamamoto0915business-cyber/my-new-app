@@ -16,6 +16,7 @@ import {
   EventFormStepIndicator,
   type EventFormStep,
 } from "@/components/organizer/events/event-form-ui";
+import { validateOnlineEventFormFields } from "@/lib/event-online-validation";
 
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
 
@@ -45,8 +46,6 @@ function validateForm(data: EventFormData): FormErrors {
     if (eh < sh || (eh === sh && em <= sm))
       errors.endTime = "終了時刻は開始時刻より後にしてください";
   }
-  if (!data.location.trim()) errors.location = "開催場所を入力してください";
-  if (!data.address.trim()) errors.address = "住所を入力してください";
   if (data.price < 0) errors.price = "料金は0以上で入力してください";
   if (!data.organizerName?.trim())
     errors.organizerName = "主催者名を入力してください";
@@ -57,6 +56,17 @@ function validateForm(data: EventFormData): FormErrors {
   ) {
     errors.recurrenceCount = "繰り返し回数を選択してください";
   }
+  const onlineErrors = validateOnlineEventFormFields({
+    eventFormat: data.eventFormat,
+    onlineService: data.onlineService,
+    onlineJoinUrl: data.onlineJoinUrl,
+    onlineGuideMessage: data.onlineGuideMessage,
+    onlineLinkDisplayTiming: data.onlineLinkDisplayTiming,
+    location: data.location,
+    address: data.address,
+    startTime: data.startTime,
+  });
+  Object.assign(errors, onlineErrors as FormErrors);
   return errors;
 }
 
@@ -358,19 +368,13 @@ export default function EditEventPage() {
           form.recurrenceCount
         )
       : "—";
-  const missingRequired =
-    !form.location.trim() ||
-    !form.address.trim() ||
-    !form.date ||
-    !form.startTime ||
-    !form.title.trim() ||
-    !form.description.trim() ||
-    !form.organizerName?.trim();
+  const missingRequired = Object.keys(validateForm(form)).length > 0;
 
   return (
     <div
       ref={formTopRef}
-      className="relative z-[1] flex flex-col min-[900px]:-mx-8 min-[900px]:flex min-[900px]:min-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px)-5rem)] min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
+      data-event-form
+      className="relative z-[1] flex flex-col min-[900px]:-mx-6 min-[900px]:flex min-[900px]:h-full min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
     >
       <EditPcStepBar
         current={currentStep}

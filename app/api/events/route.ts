@@ -8,6 +8,15 @@ import {
   normalizeCheckInMethod,
   normalizePaymentMethod,
 } from "@/lib/event-pass-settings";
+import {
+  ONLINE_LOCATION_PLACEHOLDER,
+  isOnlineCapableFormat,
+  normalizeEventFormat,
+} from "@/lib/event-online";
+import {
+  pickOnlineFormFields,
+  validateOnlineEventFormFields,
+} from "@/lib/event-online-validation";
 
 function getFallbackEvents() {
   return [...mockEvents, ...getCreatedEvents()];
@@ -132,11 +141,45 @@ export async function POST(request: NextRequest) {
       registrationNote,
       recurrence,
       recurrenceCount,
+      eventFormat,
+      onlineService,
+      onlineJoinUrl,
+      onlineMeetingId,
+      onlinePasscode,
+      onlineGuideMessage,
+      onlineLinkDisplayTiming,
     } = body;
 
-    if (!title?.trim() || !description?.trim() || !date || !startTime || !location?.trim() || !address?.trim()) {
+    const format = normalizeEventFormat(eventFormat);
+    const onlineCapable = isOnlineCapableFormat(format);
+    const locationValue = onlineCapable && format === "online"
+      ? String(location ?? "").trim() || ONLINE_LOCATION_PLACEHOLDER
+      : String(location ?? "").trim();
+    const addressValue =
+      format === "online"
+        ? String(address ?? "").trim()
+        : String(address ?? "").trim();
+
+    if (!title?.trim() || !description?.trim() || !date || !startTime) {
       return NextResponse.json(
-        { error: "タイトル・説明・日付・開始時刻・場所・住所は必須です" },
+        { error: "タイトル・説明・日付・開始時刻は必須です" },
+        { status: 400 }
+      );
+    }
+
+    const onlineErrors = validateOnlineEventFormFields({
+      eventFormat: format,
+      onlineService,
+      onlineJoinUrl,
+      onlineGuideMessage,
+      onlineLinkDisplayTiming,
+      location: locationValue,
+      address: addressValue,
+      startTime,
+    });
+    if (Object.keys(onlineErrors).length > 0) {
+      return NextResponse.json(
+        { error: Object.values(onlineErrors)[0], errors: onlineErrors },
         { status: 400 }
       );
     }
@@ -183,8 +226,8 @@ export async function POST(request: NextRequest) {
       date: String(date),
       startTime: String(startTime),
       endTime: endTime ? String(endTime) : undefined,
-      location: String(location).trim(),
-      address: String(address).trim(),
+      location: locationValue,
+      address: addressValue,
       price: Number(price) || 0,
       priceNote: priceNote?.trim() || undefined,
       organizerName: String(organizerName || "").trim(),
@@ -225,6 +268,15 @@ export async function POST(request: NextRequest) {
           : undefined,
       recurrence: normalizedRecurrence,
       recurrenceCount: normalizedRecurrenceCount,
+      ...pickOnlineFormFields({
+        eventFormat: format,
+        onlineService,
+        onlineJoinUrl,
+        onlineMeetingId,
+        onlinePasscode,
+        onlineGuideMessage,
+        onlineLinkDisplayTiming,
+      }),
     };
 
     const isProduction = process.env.NODE_ENV === "production";

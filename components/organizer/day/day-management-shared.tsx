@@ -6,6 +6,7 @@ import { Send, Save, AlertTriangle } from "lucide-react";
 import { getJstNowHm, getJstTodayYmd } from "@/lib/jst-date";
 import { cn } from "@/lib/utils";
 import type { DashboardStaffMember } from "@/lib/organizer/day-ops-types";
+import type { EventFormat, OnlineService } from "@/lib/event-online";
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -23,6 +24,10 @@ export interface EventInfo {
   date: string;
   venue: string;
   status: string;
+  eventFormat?: EventFormat;
+  onlineService?: OnlineService | null;
+  onlineJoinUrl?: string | null;
+  onlineLinkDisplayTiming?: string | null;
 }
 
 export const EMPTY_DAY_EVENT: EventInfo = {

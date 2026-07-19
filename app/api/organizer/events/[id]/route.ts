@@ -20,6 +20,15 @@ import {
   normalizeCheckInMethod,
   normalizePaymentMethod,
 } from "@/lib/event-pass-settings";
+import {
+  ONLINE_LOCATION_PLACEHOLDER,
+  normalizeEventFormat,
+  resolveReminderAtIso,
+} from "@/lib/event-online";
+import {
+  pickOnlineFormFields,
+  validateOnlineEventFormFields,
+} from "@/lib/event-online-validation";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -135,15 +144,44 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     registrationNote,
     recurrence,
     recurrenceCount,
+    eventFormat,
+    onlineService,
+    onlineJoinUrl,
+    onlineMeetingId,
+    onlinePasscode,
+    onlineGuideMessage,
+    onlineLinkDisplayTiming,
   } = body;
+
+  const format = normalizeEventFormat(eventFormat);
+  const locationValue =
+    format === "online"
+      ? String(location ?? "").trim() || ONLINE_LOCATION_PLACEHOLDER
+      : String(location ?? "").trim();
+  const addressValue = String(address ?? "").trim();
 
   const t = String(title ?? "").trim();
   const d = String(description ?? "").trim();
-  const loc = String(location ?? "").trim();
-  const addr = String(address ?? "").trim();
-  if (!t || !d || !date || !startTime || !loc || !addr) {
+  if (!t || !d || !date || !startTime) {
     return NextResponse.json(
-      { error: "タイトル・説明・日付・開始時刻・場所・住所は必須です" },
+      { error: "タイトル・説明・日付・開始時刻は必須です" },
+      { status: 400 }
+    );
+  }
+
+  const onlineErrors = validateOnlineEventFormFields({
+    eventFormat: format,
+    onlineService,
+    onlineJoinUrl,
+    onlineGuideMessage,
+    onlineLinkDisplayTiming,
+    location: locationValue,
+    address: addressValue,
+    startTime,
+  });
+  if (Object.keys(onlineErrors).length > 0) {
+    return NextResponse.json(
+      { error: Object.values(onlineErrors)[0], errors: onlineErrors },
       { status: 400 }
     );
   }
@@ -161,8 +199,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     date: String(date),
     startTime: normalizeHm(startTime),
     endTime: endTime ? normalizeHm(endTime) : "",
-    location: String(location ?? "").trim(),
-    address: String(address ?? "").trim(),
+    location: locationValue,
+    address: addressValue,
     price: Number(price) || 0,
     priceNote: (typeof priceNote === "string" ? priceNote.trim() : "") || "",
     organizerName: String(organizerName ?? "").trim(),
@@ -205,6 +243,15 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         : undefined,
     recurrence: normalizedRecurrence,
     recurrenceCount: normalizedRecurrenceCount,
+    ...pickOnlineFormFields({
+      eventFormat: format,
+      onlineService,
+      onlineJoinUrl,
+      onlineMeetingId,
+      onlinePasscode,
+      onlineGuideMessage,
+      onlineLinkDisplayTiming,
+    }),
   };
 
   const supabase = await createClient();
@@ -259,6 +306,23 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       }
 
       await updateEvent(supabase, id, formData);
+
+      // 開催日時変更時はリマインダーの remind_at を再計算
+      if (scheduleChanged) {
+        const remindAt = resolveReminderAtIso(formData.date, formData.startTime);
+        if (remindAt) {
+          await supabase
+            .from("event_reminder_prefs")
+            .update({
+              remind_at: remindAt,
+              notified_at: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("event_id", id)
+            .eq("enabled", true);
+        }
+      }
+
       const updated = await fetchEventById(supabase, id);
       return NextResponse.json(updated ?? { id, ...formData });
     } catch (e) {

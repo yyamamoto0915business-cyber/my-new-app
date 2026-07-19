@@ -20,6 +20,7 @@ import { buildPlanSummary, type PlanSummary } from "@/lib/organizer-plan-summary
 import { getJstNowHm, getJstTodayYmd, toJstTimestamp } from "@/lib/jst-date";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
+import { validateOnlineEventFormFields } from "@/lib/event-online-validation";
 
 type Step = EventFormStep;
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
@@ -33,6 +34,15 @@ const initialForm: EventFormData = {
   participationMode:"none",paymentMethod:null,checkInMethod:null,passConfigured:false,
   registrationDeadline:undefined,registrationNote:undefined,
   recurrence:"none",recurrenceCount:null,
+  eventFormat:"onsite",
+  onlineService:null,
+  onlineJoinUrl:"",
+  onlineMeetingId:"",
+  onlinePasscode:"",
+  onlineGuideMessage:"",
+  onlineLinkVisibility:"pass_holders_only",
+  onlineLinkDisplayTiming:"15_minutes_before",
+  publicPageLinkVisible:false,
 };
 
 function validateForm(data: EventFormData): FormErrors {
@@ -51,13 +61,22 @@ function validateForm(data: EventFormData): FormErrors {
     const [eh,em] = data.endTime.split(":").map(Number);
     if (eh < sh || (eh === sh && em <= sm)) errors.endTime = "終了時刻は開始時刻より後にしてください";
   }
-  if (!data.location.trim()) errors.location = "開催場所を入力してください";
-  if (!data.address.trim()) errors.address = "住所を入力してください";
   if (data.price < 0) errors.price = "料金は0以上で入力してください";
   if (!data.organizerName?.trim()) errors.organizerName = "主催者名を入力してください";
   if (data.recurrence && data.recurrence !== "none" && (!data.recurrenceCount || data.recurrenceCount < 2)) {
     errors.recurrenceCount = "繰り返し回数を選択してください";
   }
+  const onlineErrors = validateOnlineEventFormFields({
+    eventFormat: data.eventFormat,
+    onlineService: data.onlineService,
+    onlineJoinUrl: data.onlineJoinUrl,
+    onlineGuideMessage: data.onlineGuideMessage,
+    onlineLinkDisplayTiming: data.onlineLinkDisplayTiming,
+    location: data.location,
+    address: data.address,
+    startTime: data.startTime,
+  });
+  Object.assign(errors, onlineErrors as FormErrors);
   return errors;
 }
 
@@ -367,12 +386,13 @@ function NewEventPageContent() {
           form.recurrenceCount
         )
       : "—";
-  const missingRequired = !form.location.trim() || !form.address.trim() || !form.date || !form.startTime || !form.title.trim() || !form.description.trim();
+  const missingRequired = Object.keys(validateForm(form)).length > 0;
 
   return (
     <div
       ref={formTopRef}
-      className="relative z-[1] flex flex-col min-[900px]:-mx-8 min-[900px]:flex min-[900px]:min-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px)-5rem)] min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
+      data-event-form
+      className="relative z-[1] flex flex-col min-[900px]:-mx-6 min-[900px]:flex min-[900px]:h-full min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
     >
 
       {/* ── PC step bar ── */}

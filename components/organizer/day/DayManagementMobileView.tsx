@@ -210,6 +210,9 @@ export function DayManagementMobileView({
         currentVenue={emptyMode ? undefined : event.venue}
         currentStatus={emptyMode ? undefined : event.status}
         currentDayPhase={emptyMode ? undefined : dayPhase}
+        currentEventFormat={emptyMode ? undefined : event.eventFormat}
+        currentOnlineService={emptyMode ? undefined : event.onlineService}
+        currentOnlineJoinUrl={emptyMode ? undefined : event.onlineJoinUrl}
         events={allEvents}
         loading={eventsLoading}
         variant={emptyMode ? "empty" : "current"}

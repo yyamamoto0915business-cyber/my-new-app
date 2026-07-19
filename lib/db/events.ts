@@ -8,6 +8,15 @@ import {
   normalizeCheckInMethod,
   normalizePaymentMethod,
 } from "../event-pass-settings";
+import {
+  DEFAULT_ONLINE_LINK_DISPLAY_TIMING,
+  DEFAULT_ONLINE_LINK_VISIBILITY,
+  ONLINE_LOCATION_PLACEHOLDER,
+  isOnlineCapableFormat,
+  normalizeEventFormat,
+  normalizeOnlineLinkDisplayTiming,
+  normalizeOnlineService,
+} from "../event-online";
 
 function participationModeFromDb(
   db: DbEvent & { participation_mode?: string | null }
@@ -18,8 +27,36 @@ function participationModeFromDb(
   return db.requires_registration ? "required" : "none";
 }
 
+function onlineFieldsFromDb(
+  db: DbEvent,
+  includeSecrets: boolean
+): Partial<Event> {
+  const eventFormat = normalizeEventFormat(db.event_format);
+  const base: Partial<Event> = { eventFormat };
+  if (!includeSecrets) return base;
+  return {
+    ...base,
+    onlineService: normalizeOnlineService(db.online_service),
+    onlineJoinUrl: db.online_join_url?.trim() || null,
+    onlineMeetingId: db.online_meeting_id?.trim() || null,
+    onlinePasscode: db.online_passcode?.trim() || null,
+    onlineGuideMessage: db.online_guide_message?.trim() || null,
+    onlineLinkVisibility:
+      db.online_link_visibility === "pass_holders_only"
+        ? "pass_holders_only"
+        : DEFAULT_ONLINE_LINK_VISIBILITY,
+    onlineLinkDisplayTiming: normalizeOnlineLinkDisplayTiming(
+      db.online_link_display_timing
+    ),
+    publicPageLinkVisible: db.public_page_link_visible === true,
+  };
+}
+
 /** organizers 結合済みの行 → Event（fetchEventById / createEvent 共通） */
-function mapJoinedEventRowToEvent(row: Record<string, unknown>): Event {
+function mapJoinedEventRowToEvent(
+  row: Record<string, unknown>,
+  options?: { includeOnlineSecrets?: boolean }
+): Event {
   const org = row.organizers as {
     organization_name: string | null;
     contact_email: string | null;
@@ -32,16 +69,20 @@ function mapJoinedEventRowToEvent(row: Record<string, unknown>): Event {
     org?.profile?.email ??
     "主催者";
   const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
-  return dbEventToEvent(row as unknown as DbEvent, name, contact);
+  return dbEventToEvent(row as unknown as DbEvent, name, contact, {
+    includeOnlineSecrets: options?.includeOnlineSecrets ?? true,
+  });
 }
 
 function dbEventToEvent(
   db: DbEvent & { image_url?: string | null; participation_mode?: string | null },
   organizerName: string,
-  organizerContact?: string
+  organizerContact?: string,
+  options?: { includeOnlineSecrets?: boolean }
 ): Event {
   const participationMode = participationModeFromDb(db);
   const recurrence = normalizeEventRecurrence(db.recurrence);
+  const includeSecrets = options?.includeOnlineSecrets ?? false;
   return {
     id: db.id,
     status: normalizeEventStatus(db.status),
@@ -89,6 +130,7 @@ function dbEventToEvent(
     recurrence,
     recurrenceCount:
       recurrence === "none" ? null : normalizeRecurrenceCount(db.recurrence_count, recurrence),
+    ...onlineFieldsFromDb(db, includeSecrets),
     createdAt: db.created_at,
     isPublic: db.is_public ?? null,
     isSample: db.is_sample ?? null,
@@ -779,6 +821,7 @@ export async function createEvent(
       )
     `;
 
+  const onlinePayload = buildOnlineDbPayload(form);
   const fullPayload = {
     organizer_id: organizerId,
     status: "draft" as const,
@@ -787,17 +830,17 @@ export async function createEvent(
     date: form.date,
     start_time: form.startTime,
     end_time: form.endTime || null,
-    location: form.location,
-    address: form.address,
+    location: onlinePayload.location,
+    address: onlinePayload.address,
     price: form.price,
     price_note: form.priceNote || null,
-    rain_policy: form.rainPolicy || null,
+    rain_policy: onlinePayload.rain_policy,
     items_to_bring: form.itemsToBring?.length ? form.itemsToBring : null,
-    access: form.access || null,
+    access: onlinePayload.access,
     child_friendly: form.childFriendly ?? false,
     latitude: form.latitude ?? null,
     longitude: form.longitude ?? null,
-    prefecture: form.prefecture || null,
+    prefecture: onlinePayload.prefecture,
     city: form.city || null,
     area: form.area || null,
     tags: form.tags?.length ? form.tags : null,
@@ -815,21 +858,31 @@ export async function createEvent(
     registration_deadline: form.registrationDeadline || null,
     registration_note: form.registrationNote?.trim() || null,
     image_url: form.imageUrl?.trim() || null,
+    ...onlinePayload.onlineColumns,
   };
 
   let { data, error } = await supabase.from("events").insert(fullPayload).select(selectJoin).single();
 
   if (error && isMissingEventsColumnError(error)) {
-    const rest = { ...fullPayload };
-    delete (rest as { requires_registration?: unknown }).requires_registration;
-    delete (rest as { participation_mode?: unknown }).participation_mode;
-    delete (rest as { payment_method?: unknown }).payment_method;
-    delete (rest as { check_in_method?: unknown }).check_in_method;
-    delete (rest as { pass_configured?: unknown }).pass_configured;
-    delete (rest as { registration_deadline?: unknown }).registration_deadline;
-    delete (rest as { registration_note?: unknown }).registration_note;
+    const rest = { ...fullPayload } as Record<string, unknown>;
+    delete rest.requires_registration;
+    delete rest.participation_mode;
+    delete rest.payment_method;
+    delete rest.check_in_method;
+    delete rest.pass_configured;
+    delete rest.registration_deadline;
+    delete rest.registration_note;
+    delete rest.event_format;
+    delete rest.online_service;
+    delete rest.online_join_url;
+    delete rest.online_meeting_id;
+    delete rest.online_passcode;
+    delete rest.online_guide_message;
+    delete rest.online_link_visibility;
+    delete rest.online_link_display_timing;
+    delete rest.public_page_link_visible;
     console.warn(
-      "[createEvent] Retrying without registration/participation columns (DB migration may be pending)"
+      "[createEvent] Retrying without registration/participation/online columns (DB migration may be pending)"
     );
     ({ data, error } = await supabase.from("events").insert(rest).select(selectJoin).single());
   }
@@ -850,8 +903,66 @@ export async function createEvent(
   return event;
 }
 
+function buildOnlineDbPayload(form: EventFormData): {
+  location: string;
+  address: string;
+  rain_policy: string | null;
+  access: string | null;
+  prefecture: string | null;
+  onlineColumns: Record<string, unknown>;
+} {
+  const eventFormat = normalizeEventFormat(form.eventFormat);
+  const onlineCapable = isOnlineCapableFormat(eventFormat);
+
+  let location = form.location?.trim() || "";
+  let address = form.address?.trim() || "";
+  let rain_policy = form.rainPolicy || null;
+  let access = form.access || null;
+  let prefecture = form.prefecture || null;
+
+  if (eventFormat === "online") {
+    location = location || ONLINE_LOCATION_PLACEHOLDER;
+    address = address || "";
+    rain_policy = null;
+    access = null;
+    if (!prefecture) prefecture = null;
+  }
+
+  return {
+    location,
+    address,
+    rain_policy,
+    access,
+    prefecture,
+    onlineColumns: {
+      event_format: eventFormat,
+      online_service: onlineCapable
+        ? normalizeOnlineService(form.onlineService)
+        : null,
+      online_join_url: onlineCapable
+        ? form.onlineJoinUrl?.trim() || null
+        : null,
+      online_meeting_id: onlineCapable
+        ? form.onlineMeetingId?.trim() || null
+        : null,
+      online_passcode: onlineCapable
+        ? form.onlinePasscode?.trim() || null
+        : null,
+      online_guide_message: onlineCapable
+        ? form.onlineGuideMessage?.trim() || null
+        : null,
+      online_link_visibility: DEFAULT_ONLINE_LINK_VISIBILITY,
+      online_link_display_timing: onlineCapable
+        ? normalizeOnlineLinkDisplayTiming(form.onlineLinkDisplayTiming)
+        : DEFAULT_ONLINE_LINK_DISPLAY_TIMING,
+      public_page_link_visible: false,
+    },
+  };
+}
+
 function formToDb(form: EventFormData): Record<string, unknown> {
   const recurrence = normalizeEventRecurrence(form.recurrence);
+  const onlinePayload = buildOnlineDbPayload(form);
   return {
     title: form.title,
     description: form.description,
@@ -859,17 +970,17 @@ function formToDb(form: EventFormData): Record<string, unknown> {
     date: form.date,
     start_time: form.startTime,
     end_time: form.endTime || null,
-    location: form.location,
-    address: form.address,
+    location: onlinePayload.location,
+    address: onlinePayload.address,
     price: form.price,
     price_note: form.priceNote || null,
-    rain_policy: form.rainPolicy || null,
+    rain_policy: onlinePayload.rain_policy,
     items_to_bring: form.itemsToBring?.length ? form.itemsToBring : null,
-    access: form.access || null,
+    access: onlinePayload.access,
     child_friendly: form.childFriendly ?? false,
     latitude: form.latitude ?? null,
     longitude: form.longitude ?? null,
-    prefecture: form.prefecture || null,
+    prefecture: onlinePayload.prefecture,
     city: form.city || null,
     area: form.area || null,
     tags: form.tags?.length ? form.tags : null,
@@ -888,6 +999,7 @@ function formToDb(form: EventFormData): Record<string, unknown> {
     recurrence,
     recurrence_count:
       recurrence === "none" ? null : normalizeRecurrenceCount(form.recurrenceCount, recurrence),
+    ...onlinePayload.onlineColumns,
   };
 }
 
@@ -917,8 +1029,17 @@ export async function updateEvent(
     delete (rest as { pass_configured?: unknown }).pass_configured;
     delete (rest as { registration_deadline?: unknown }).registration_deadline;
     delete (rest as { registration_note?: unknown }).registration_note;
+    delete (rest as { event_format?: unknown }).event_format;
+    delete (rest as { online_service?: unknown }).online_service;
+    delete (rest as { online_join_url?: unknown }).online_join_url;
+    delete (rest as { online_meeting_id?: unknown }).online_meeting_id;
+    delete (rest as { online_passcode?: unknown }).online_passcode;
+    delete (rest as { online_guide_message?: unknown }).online_guide_message;
+    delete (rest as { online_link_visibility?: unknown }).online_link_visibility;
+    delete (rest as { online_link_display_timing?: unknown }).online_link_display_timing;
+    delete (rest as { public_page_link_visible?: unknown }).public_page_link_visible;
     console.warn(
-      "[updateEvent] Retrying without registration/participation columns (DB migration may be pending)"
+      "[updateEvent] Retrying without registration/participation/online columns (DB migration may be pending)"
     );
     ({ error } = await supabase.from("events").update(rest).eq("id", id));
   }

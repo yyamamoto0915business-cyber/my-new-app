@@ -186,3 +186,9 @@ SELECT set_developer_admin_by_email('your-admin@example.com');
 - `00057_admin_panel_extensions.sql` — `admin_logs` 拡張＋将来テーブル（本人確認・通報・返金申請等）と RLS
 
 お問い合わせは `support_tickets` を新設せず `contact_inquiries` を利用します。
+
+### profiles 横断読取
+
+- `00039` で `profiles_select_admin` を削除していたため、Service Role 無しだと管理者でも自分の1件しか見えない
+- `00058_restore_profiles_select_admin.sql` で SECURITY DEFINER の `is_developer_admin` 経由の SELECT を復元
+- 管理画面は引き続き `SUPABASE_SERVICE_ROLE_KEY` を推奨（Vercel Production 必須）

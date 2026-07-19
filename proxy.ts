@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requiresAuth } from "@/lib/auth-utils";
 import { isDeveloperAdminFromSupabaseUser } from "@/lib/admin-auth";
 import { createProxySupabase, mergeSupabaseCookies } from "@/lib/supabase/proxy";
+import { parsePassOnlinePreviewMode } from "@/lib/pass-online-preview";
 
 function isAuthDisabled(): boolean {
   return (
@@ -115,9 +116,14 @@ export async function proxy(request: NextRequest) {
   }
 
   // 未ログインで認証必須ページにアクセス → 認証入口へリダイレクト
-  if (!user && requiresAuth(path)) {
+  // 参加パスの見た目プレビュー（?preview=）はログイン不要
+  const isPassOnlinePreview =
+    path === "/pass" &&
+    parsePassOnlinePreviewMode(request.nextUrl.searchParams.get("preview")) !=
+      null;
+  if (!user && requiresAuth(path) && !isPassOnlinePreview) {
     const authUrl = new URL("/auth", request.url);
-    authUrl.searchParams.set("next", path);
+    authUrl.searchParams.set("next", path + request.nextUrl.search);
     const redirect = NextResponse.redirect(authUrl);
     mergeSupabaseCookies(response, redirect);
     return redirect;

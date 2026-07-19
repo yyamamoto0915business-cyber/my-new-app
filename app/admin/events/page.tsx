@@ -9,6 +9,8 @@ import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminEventVisibilityButton } from "@/components/admin/AdminEventVisibilityButton";
 import { getAdminEvents } from "@/lib/admin/panel-queries";
 
+const PAGE_SIZE = 20;
+
 function statusTone(status: string | null) {
   if (status === "published") return "success" as const;
   if (status === "draft") return "warning" as const;
@@ -46,7 +48,7 @@ export default async function AdminEventsPage({
 
   const [{ items, total, pageSize }, published, draft, archived] =
     await Promise.all([
-      getAdminEvents(supabase, { q, status, page, pageSize: 30 }),
+      getAdminEvents(supabase, { q, status, page, pageSize: PAGE_SIZE }),
       supabase
         .from("events")
         .select("id", { count: "exact", head: true })
@@ -68,7 +70,7 @@ export default async function AdminEventsPage({
         description="登録されているすべてのイベントを確認・管理できます。"
       />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         <AdminStatCard label="公開中" value={published.count ?? 0} tone="success" />
         <AdminStatCard label="下書き" value={draft.count ?? 0} tone="warning" />
         <AdminStatCard label="終了" value={archived.count ?? 0} />
@@ -81,7 +83,7 @@ export default async function AdminEventsPage({
         <select
           name="status"
           defaultValue={status}
-          className="h-10 rounded-lg border border-[#c8dcd0] bg-white px-3 text-sm"
+          className="h-8 rounded-md border border-[#c8dcd0] bg-white px-2 text-xs"
         >
           <option value="all">すべて</option>
           <option value="published">公開中</option>
@@ -90,49 +92,54 @@ export default async function AdminEventsPage({
         </select>
       </AdminFilterBar>
 
-      <div className="overflow-x-auto rounded-xl border border-[#d8e8dc] bg-white shadow-sm">
-        <table className="min-w-full text-sm">
-          <thead className="border-b border-[#e0ece4] bg-[#f4faf6] text-[11px] uppercase text-[#7a9888]">
+      <div className="overflow-x-auto rounded-lg border border-[#d8e8dc] bg-white shadow-sm">
+        <table className="min-w-full text-xs">
+          <thead className="border-b border-[#e0ece4] bg-[#f4faf6] text-[10px] uppercase text-[#7a9888]">
             <tr>
-              <th className="px-4 py-3 text-left font-medium">イベント名</th>
-              <th className="px-4 py-3 text-left font-medium">主催者</th>
-              <th className="px-4 py-3 text-left font-medium">開催日</th>
-              <th className="px-4 py-3 text-left font-medium">地域</th>
-              <th className="px-4 py-3 text-left font-medium">申込</th>
-              <th className="px-4 py-3 text-left font-medium">CI</th>
-              <th className="px-4 py-3 text-left font-medium">状態</th>
-              <th className="px-4 py-3 text-left font-medium">操作</th>
+              <th className="px-3 py-1.5 text-left font-medium">イベント名</th>
+              <th className="px-3 py-1.5 text-left font-medium">主催者</th>
+              <th className="px-3 py-1.5 text-left font-medium">開催日</th>
+              <th className="px-3 py-1.5 text-left font-medium">地域</th>
+              <th className="px-3 py-1.5 text-left font-medium">申込</th>
+              <th className="px-3 py-1.5 text-left font-medium">CI</th>
+              <th className="px-3 py-1.5 text-left font-medium">状態</th>
+              <th className="px-3 py-1.5 text-left font-medium">操作</th>
             </tr>
           </thead>
           <tbody>
             {items.map((ev) => (
               <tr key={ev.id} className="border-b border-[#eef4f0] last:border-0">
-                <td className="px-4 py-3.5 font-medium text-[#0e1610]">
-                  {ev.title}
+                <td className="max-w-[220px] px-3 py-1.5 font-medium text-[#0e1610]">
+                  <span className="line-clamp-1" title={ev.title}>
+                    {ev.title}
+                  </span>
                 </td>
-                <td className="px-4 py-3.5 text-[#5a7868]">
+                <td className="max-w-[120px] truncate px-3 py-1.5 text-[#5a7868]">
                   {ev.organizerName ?? "—"}
                 </td>
-                <td className="px-4 py-3.5 text-[#5a7868]">{ev.date}</td>
-                <td className="px-4 py-3.5 text-[#5a7868]">
+                <td className="whitespace-nowrap px-3 py-1.5 text-[#5a7868]">
+                  {ev.date}
+                </td>
+                <td className="max-w-[100px] truncate px-3 py-1.5 text-[#5a7868]">
                   {[ev.prefecture, ev.city].filter(Boolean).join(" ") || "—"}
                 </td>
-                <td className="px-4 py-3.5">{ev.participantCount}</td>
-                <td className="px-4 py-3.5">{ev.checkinCount}</td>
-                <td className="px-4 py-3.5">
+                <td className="px-3 py-1.5 tabular-nums">{ev.participantCount}</td>
+                <td className="px-3 py-1.5 tabular-nums">{ev.checkinCount}</td>
+                <td className="px-3 py-1.5">
                   <AdminStatusBadge tone={statusTone(ev.status)}>
                     {statusLabel(ev.status)}
                   </AdminStatusBadge>
                 </td>
-                <td className="px-4 py-3.5">
-                  <div className="flex flex-wrap items-center gap-2">
+                <td className="px-3 py-1.5">
+                  <div className="flex flex-nowrap items-center gap-1.5">
                     <AdminEventVisibilityButton
                       eventId={ev.id}
                       currentStatus={ev.status}
+                      compact
                     />
                     <Link
                       href={`/events/${ev.id}`}
-                      className="text-xs text-[#1e3848] hover:underline"
+                      className="whitespace-nowrap text-[11px] text-[#1e3848] hover:underline"
                       target="_blank"
                     >
                       詳細
@@ -144,7 +151,7 @@ export default async function AdminEventsPage({
           </tbody>
         </table>
         {items.length === 0 ? (
-          <p className="py-10 text-center text-sm text-[#7a9888]">
+          <p className="py-6 text-center text-xs text-[#7a9888]">
             イベントがありません
           </p>
         ) : null}
@@ -155,7 +162,10 @@ export default async function AdminEventsPage({
         pageSize={pageSize}
         total={total}
         basePath="/admin/events"
-        query={{ q: q || undefined, status: status !== "all" ? status : undefined }}
+        query={{
+          q: q || undefined,
+          status: status !== "all" ? status : undefined,
+        }}
       />
     </div>
   );

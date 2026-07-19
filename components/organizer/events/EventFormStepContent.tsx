@@ -4,7 +4,16 @@ import type { EventFormData } from "@/lib/events";
 import { EventImageInput } from "@/components/organizer/events/EventImageInput";
 import { RecurrenceSelector } from "@/components/organizer/events/RecurrenceSelector";
 import { PostPublishFeatures } from "@/components/organizer/events/PostPublishFeatures";
+import { EventFormatSelector } from "@/components/organizer/events/EventFormatSelector";
+import { OnlineParticipationSettingsCard } from "@/components/organizer/events/OnlineParticipationSettingsCard";
 import type { EventRecurrence } from "@/lib/event-recurrence";
+import {
+  DEFAULT_ONLINE_LINK_DISPLAY_TIMING,
+  isOnlineCapableFormat,
+  needsVenueFields,
+  normalizeEventFormat,
+  type EventFormat,
+} from "@/lib/event-online";
 import {
   EVENT_FORM_CITIES_BY_PREF,
   EVENT_FORM_PREFECTURES,
@@ -88,7 +97,7 @@ export function EventFormStepContent({
   if (currentStep === 1) {
     return (
       <div className="flex flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
-        <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] p-4 min-[900px]:p-6">
+        <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] p-4 min-[900px]:p-4">
           <div className={eventFormPcSectionHead}>
             <h3 className={`${eventFormPcSectionTitle} flex items-center gap-2`}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B3A6B" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -163,6 +172,14 @@ export function EventFormStepContent({
                 <EventFormTagSelector
                   selected={form.tags ?? []}
                   onChange={(tags) => setForm((prev) => ({ ...prev, tags }))}
+                  childFriendly={form.childFriendly}
+                  onChildFriendlyChange={(value) =>
+                    setForm((prev) => ({ ...prev, childFriendly: value }))
+                  }
+                  englishGuideAvailable={form.englishGuideAvailable}
+                  onEnglishGuideAvailableChange={(value) =>
+                    setForm((prev) => ({ ...prev, englishGuideAvailable: value }))
+                  }
                 />
               </div>
             </EventFormCard>
@@ -186,13 +203,13 @@ export function EventFormStepContent({
                 name="description"
                 value={form.description}
                 onChange={handleChange}
-                rows={4}
+                rows={3}
                 placeholder="イベントの内容や魅力を紹介してください"
-                className={`${eventFormInp} resize-none ${errors.description ? eventFormInpErr : ""}`}
+                className={`${eventFormInp} min-h-0 resize-y max-h-36 ${errors.description ? eventFormInpErr : ""}`}
               />
               <EventFormError msg={errors.description} />
             </div>
-            <div className="space-y-3.5 border-t border-[#e8e6e0] pt-4">
+            <div className="space-y-2.5 border-t border-[#e8e6e0] pt-3">
               <div>
                 <EventFormLabel label="主催者名" required />
                 <input
@@ -218,7 +235,7 @@ export function EventFormStepContent({
           </div>
         </div>
 
-        <div className="hidden min-[900px]:block min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:p-6">
+        <div className="hidden min-[900px]:block min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:p-4">
           <div className={eventFormPcSectionHead}>
             <h3 className={eventFormPcSectionTitle}>画像・タグ</h3>
             <p className={eventFormPcSectionSub}>アイキャッチとカテゴリーを設定します</p>
@@ -238,34 +255,15 @@ export function EventFormStepContent({
               <EventFormTagSelector
                 selected={form.tags ?? []}
                 onChange={(tags) => setForm((prev) => ({ ...prev, tags }))}
+                childFriendly={form.childFriendly}
+                onChildFriendlyChange={(value) =>
+                  setForm((prev) => ({ ...prev, childFriendly: value }))
+                }
+                englishGuideAvailable={form.englishGuideAvailable}
+                onEnglishGuideAvailableChange={(value) =>
+                  setForm((prev) => ({ ...prev, englishGuideAvailable: value }))
+                }
               />
-            </div>
-            <div className="flex flex-wrap gap-4 border-t border-[#e8e6e0] pt-4">
-              <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[#1a1a1a]">
-                <input
-                  type="checkbox"
-                  checked={form.childFriendly ?? false}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, childFriendly: e.target.checked }))
-                  }
-                  style={{ accentColor: "#2B3A6B" }}
-                />
-                子連れOK
-              </label>
-              <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[#1a1a1a]">
-                <input
-                  type="checkbox"
-                  checked={form.englishGuideAvailable ?? false}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      englishGuideAvailable: e.target.checked,
-                    }))
-                  }
-                  style={{ accentColor: "#2B3A6B" }}
-                />
-                英語対応あり
-              </label>
             </div>
           </div>
         </div>
@@ -274,58 +272,123 @@ export function EventFormStepContent({
   }
 
   if (currentStep === 2) {
+    const format: EventFormat = normalizeEventFormat(form.eventFormat);
+    const showVenue = needsVenueFields(format);
+    const showOnline = isOnlineCapableFormat(format);
+    const isHybrid = showOnline && showVenue;
+
+    const handleFormatChange = (next: EventFormat) => {
+      setForm((prev) => ({ ...prev, eventFormat: next }));
+    };
+
+    const patchOnline = (patch: {
+      onlineService?: EventFormData["onlineService"];
+      onlineJoinUrl?: string;
+      onlineMeetingId?: string;
+      onlinePasscode?: string;
+      onlineGuideMessage?: string;
+    }) => {
+      setForm((prev) => ({ ...prev, ...patch }));
+    };
+
+    const handleTimingChange = (
+      timing: NonNullable<EventFormData["onlineLinkDisplayTiming"]>
+    ) => {
+      setForm((prev) => ({ ...prev, onlineLinkDisplayTiming: timing }));
+    };
+
+    const sectionSub = showOnline && showVenue
+      ? "開催日時・会場・配信情報を入力してください"
+      : showOnline
+        ? "開催日時と配信情報を入力してください"
+        : "開催日時と会場名を入力してください";
+
+    const rightSectionTitle = showOnline && showVenue
+      ? "会場・配信・参加費"
+      : showOnline
+        ? "配信情報・参加費"
+        : "住所・参加費";
+    const rightSectionSub = showOnline && showVenue
+      ? "会場情報・配信情報・参加費を設定します"
+      : showOnline
+        ? "オンライン配信情報と参加費を設定します"
+        : "住所・アクセスと参加費を設定します";
+
+    const dateTimeFields = (inp: string, err: string) => (
+      <>
+        <div className={isHybrid ? "min-w-0 space-y-1.5" : eventFormDateTimeStack}>
+          <div>
+            <div className={isHybrid ? "mb-1 text-[11px] text-[#888]" : eventFormFieldSubLbl}>開催日</div>
+            <input
+              name="date"
+              type="date"
+              value={form.date}
+              onChange={handleChange}
+              min={todayJst}
+              className={`${inp} ${errors.date ? err : ""}`}
+            />
+          </div>
+          <div className={isHybrid ? "grid min-w-0 grid-cols-2 gap-1.5 [&>*]:min-w-0" : eventFormDateTimeRow}>
+            <div>
+              <div className={isHybrid ? "mb-1 text-[11px] text-[#888]" : eventFormFieldSubLbl}>開始時刻</div>
+              <input
+                name="startTime"
+                type="time"
+                value={form.startTime}
+                onChange={handleChange}
+                min={startTimeMin}
+                className={`${inp} ${errors.startTime ? err : ""}`}
+              />
+            </div>
+            <div>
+              <div className={isHybrid ? "mb-1 text-[11px] text-[#888]" : eventFormFieldSubLbl}>終了（任意）</div>
+              <input
+                name="endTime"
+                type="time"
+                value={form.endTime || ""}
+                onChange={handleChange}
+                className={`${inp} ${errors.endTime ? err : ""}`}
+              />
+            </div>
+          </div>
+        </div>
+        <EventFormError msg={errors.date || errors.startTime || errors.endTime} />
+      </>
+    );
+
+    const pcInp = isHybrid ? eventFormInpSm : eventFormInp;
+    const pcPad = isHybrid ? "min-[900px]:p-3" : "min-[900px]:p-4";
+    const pcStack = isHybrid
+      ? "hidden min-[900px]:block space-y-1.5"
+      : eventFormPcFieldStack;
+
     return (
       <div className="flex flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
-        <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] p-4 min-[900px]:p-6">
-          <div className={eventFormPcSectionHead}>
+        <div
+          className={`min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] p-4 ${pcPad}`}
+        >
+          <div
+            className={
+              isHybrid
+                ? "hidden min-[900px]:block mb-2 border-b border-[#e8e6e0] pb-1.5"
+                : eventFormPcSectionHead
+            }
+          >
             <div className="mb-0.5 flex items-center gap-2 text-[15px] font-[600]">
               {calendarIcon}
-              開催日時・場所
+              開催情報
             </div>
-            <p className="text-[12px] text-[#888]">開催日時と会場名を入力してください</p>
+            <p className="text-[12px] text-[#888]">{sectionSub}</p>
           </div>
 
           <div className="min-[900px]:hidden">
             <EventFormCard title="開催情報" icon={calendarIcon}>
               <div className={eventFormFieldM}>
+                <EventFormatSelector value={format} onChange={handleFormatChange} />
+              </div>
+              <div className={eventFormFieldM}>
                 <EventFormLabel label="開催日時" required />
-                <div className={eventFormDateTimeStack}>
-                  <div>
-                    <div className={eventFormFieldSubLbl}>開催日</div>
-                    <input
-                      name="date"
-                      type="date"
-                      value={form.date}
-                      onChange={handleChange}
-                      min={todayJst}
-                      className={`${eventFormInpSm} ${errors.date ? eventFormInpErr : ""}`}
-                    />
-                  </div>
-                  <div className={eventFormDateTimeRow}>
-                    <div>
-                      <div className={eventFormFieldSubLbl}>開始時刻</div>
-                      <input
-                        name="startTime"
-                        type="time"
-                        value={form.startTime}
-                        onChange={handleChange}
-                        min={startTimeMin}
-                        className={`${eventFormInpSm} ${errors.startTime ? eventFormInpErr : ""}`}
-                      />
-                    </div>
-                    <div>
-                      <div className={eventFormFieldSubLbl}>終了（任意）</div>
-                      <input
-                        name="endTime"
-                        type="time"
-                        value={form.endTime || ""}
-                        onChange={handleChange}
-                        className={`${eventFormInpSm} ${errors.endTime ? eventFormInpErr : ""}`}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <EventFormError msg={errors.date || errors.startTime || errors.endTime} />
+                {dateTimeFields(eventFormInpSm, eventFormInpErr)}
               </div>
               <div className={eventFormFieldM}>
                 <EventFormLabel label="開催パターン" />
@@ -345,123 +408,116 @@ export function EventFormStepContent({
                 />
                 <EventFormError msg={errors.recurrenceCount} />
               </div>
+
+              {showVenue && (
+                <>
+                  <div className={eventFormFieldM}>
+                    <EventFormLabel label="開催場所" required />
+                    <input
+                      name="location"
+                      value={form.location}
+                      onChange={handleChange}
+                      placeholder="例：市民ホール"
+                      className={`${eventFormInpSm} ${errors.location ? eventFormInpErr : ""}`}
+                    />
+                    <EventFormHint text="会場名や施設名を入力" />
+                    <EventFormError msg={errors.location} />
+                  </div>
+                  <div className={`${eventFormStackedFields} mb-[11px]`}>
+                    <div>
+                      <EventFormLabel label="都道府県" required />
+                      <select
+                        name="prefecture"
+                        value={form.prefecture ?? ""}
+                        onChange={handleChange}
+                        className={eventFormInpSm}
+                      >
+                        <option value="">選択してください</option>
+                        {EVENT_FORM_PREFECTURES.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <EventFormLabel label="住所" required />
+                      <input
+                        name="address"
+                        value={form.address}
+                        onChange={handleChange}
+                        placeholder="例：渋谷区〇〇町1-2-3"
+                        className={`${eventFormInpSm} ${errors.address ? eventFormInpErr : ""}`}
+                      />
+                      <EventFormError msg={errors.address} />
+                    </div>
+                    <div>
+                      <EventFormLabel label="アクセス" opt="任意" />
+                      <input
+                        name="access"
+                        value={form.access || ""}
+                        onChange={handleChange}
+                        placeholder="例：渋谷駅徒歩10分"
+                        className={eventFormInpSm}
+                      />
+                    </div>
+                    <div>
+                      <EventFormLabel label="雨天時対応" opt="任意" />
+                      <input
+                        name="rainPolicy"
+                        value={form.rainPolicy || ""}
+                        onChange={handleChange}
+                        placeholder="例：雨天決行"
+                        className={eventFormInpSm}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {showOnline && (
+                <div className="mb-[11px]">
+                  <OnlineParticipationSettingsCard
+                    onlineService={form.onlineService}
+                    onlineJoinUrl={form.onlineJoinUrl ?? ""}
+                    onlineMeetingId={form.onlineMeetingId ?? ""}
+                    onlinePasscode={form.onlinePasscode ?? ""}
+                    onlineGuideMessage={form.onlineGuideMessage ?? ""}
+                    timing={form.onlineLinkDisplayTiming ?? DEFAULT_ONLINE_LINK_DISPLAY_TIMING}
+                    errors={errors}
+                    compact
+                    dense={isHybrid}
+                    onChange={patchOnline}
+                    onTimingChange={handleTimingChange}
+                  />
+                </div>
+              )}
+
               <div className={eventFormFieldM}>
-                <EventFormLabel label="開催場所" required />
+                <EventFormLabel label="参加費（円）" />
                 <input
-                  name="location"
-                  value={form.location}
+                  name="price"
+                  type="number"
+                  min={0}
+                  value={form.price}
                   onChange={handleChange}
-                  placeholder="例：市民ホール / オンライン開催"
-                  className={`${eventFormInpSm} ${errors.location ? eventFormInpErr : ""}`}
+                  className={eventFormInpSm}
                 />
-                <EventFormHint text="会場名や施設名を入力" />
-                <EventFormError msg={errors.location} />
-              </div>
-              <div className={`${eventFormStackedFields} mb-[11px]`}>
-                <div>
-                  <EventFormLabel label="都道府県" required />
-                  <select
-                    name="prefecture"
-                    value={form.prefecture ?? ""}
-                    onChange={handleChange}
-                    className={eventFormInpSm}
-                  >
-                    <option value="">選択してください</option>
-                    {EVENT_FORM_PREFECTURES.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <EventFormLabel label="住所" required />
-                  <input
-                    name="address"
-                    value={form.address}
-                    onChange={handleChange}
-                    placeholder="例：渋谷区〇〇町1-2-3"
-                    className={`${eventFormInpSm} ${errors.address ? eventFormInpErr : ""}`}
-                  />
-                  <EventFormError msg={errors.address} />
-                </div>
-                <div>
-                  <EventFormLabel label="アクセス" opt="任意" />
-                  <input
-                    name="access"
-                    value={form.access || ""}
-                    onChange={handleChange}
-                    placeholder="例：渋谷駅徒歩10分"
-                    className={eventFormInpSm}
-                  />
-                </div>
-                <div>
-                  <EventFormLabel label="参加費（円）" />
-                  <input
-                    name="price"
-                    type="number"
-                    min={0}
-                    value={form.price}
-                    onChange={handleChange}
-                    className={eventFormInpSm}
-                  />
-                  <EventFormHint text="0で無料イベント" />
-                </div>
-                <div>
-                  <EventFormLabel label="雨天時対応" opt="任意" />
-                  <input
-                    name="rainPolicy"
-                    value={form.rainPolicy || ""}
-                    onChange={handleChange}
-                    placeholder="例：雨天決行"
-                    className={eventFormInpSm}
-                  />
-                </div>
+                <EventFormHint text="0で無料イベント" />
               </div>
             </EventFormCard>
           </div>
 
-          <div className={eventFormPcFieldStack}>
+          <div className={pcStack}>
+            <div className={`border-b border-[#e8e6e0] ${isHybrid ? "pb-1.5" : "pb-2"}`}>
+              <EventFormatSelector value={format} onChange={handleFormatChange} />
+            </div>
             <div>
               <EventFormLabel label="開催日時" required />
-              <div className={eventFormDateTimeStack}>
-                <div>
-                  <div className={eventFormFieldSubLbl}>開催日</div>
-                  <input
-                    name="date"
-                    type="date"
-                    value={form.date}
-                    onChange={handleChange}
-                    min={todayJst}
-                    className={`${eventFormInp} ${errors.date ? eventFormInpErr : ""}`}
-                  />
-                </div>
-                <div className={eventFormDateTimeRow}>
-                  <div>
-                    <div className={eventFormFieldSubLbl}>開始時刻</div>
-                    <input
-                      name="startTime"
-                      type="time"
-                      value={form.startTime}
-                      onChange={handleChange}
-                      min={startTimeMin}
-                      className={`${eventFormInp} ${errors.startTime ? eventFormInpErr : ""}`}
-                    />
-                  </div>
-                  <div>
-                    <div className={eventFormFieldSubLbl}>終了（任意）</div>
-                    <input
-                      name="endTime"
-                      type="time"
-                      value={form.endTime || ""}
-                      onChange={handleChange}
-                      className={`${eventFormInp} ${errors.endTime ? eventFormInpErr : ""}`}
-                    />
-                  </div>
-                </div>
-              </div>
-              <EventFormHint text="終了時刻は未入力でも保存できます" />
-              <EventFormError msg={errors.date || errors.startTime || errors.endTime} />
+              {dateTimeFields(pcInp, eventFormInpErr)}
+              {!isHybrid && (
+                <EventFormHint text="終了時刻は未入力でも保存できます" />
+              )}
             </div>
             <div>
               <EventFormLabel label="開催パターン" />
@@ -482,85 +538,24 @@ export function EventFormStepContent({
               />
               <EventFormError msg={errors.recurrenceCount} />
             </div>
-            <div>
-              <EventFormLabel label="開催場所" required />
-              <input
-                name="location"
-                value={form.location}
-                onChange={handleChange}
-                placeholder="例：市民ホール / オンライン開催"
-                className={`${eventFormInp} ${errors.location ? eventFormInpErr : ""}`}
-              />
-              <EventFormHint text="会場名や施設名を入力してください" />
-              <EventFormError msg={errors.location} />
-            </div>
-          </div>
-        </div>
-
-        <div className="hidden min-[900px]:block min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:p-6">
-          <div className={eventFormPcSectionHead}>
-            <h3 className={eventFormPcSectionTitle}>住所・参加費</h3>
-            <p className={eventFormPcSectionSub}>住所・アクセスと参加費を設定します</p>
-          </div>
-          <div className={eventFormPcFieldStack}>
-            <div>
-              <EventFormLabel label="都道府県" required />
-              <select
-                name="prefecture"
-                value={form.prefecture ?? ""}
-                onChange={handleChange}
-                className={eventFormInp}
-              >
-                <option value="">選択してください</option>
-                {EVENT_FORM_PREFECTURES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <EventFormLabel label="住所" required />
-              <input
-                name="address"
-                value={form.address}
-                onChange={handleChange}
-                placeholder="例：渋谷区〇〇町1-2-3"
-                className={`${eventFormInp} ${errors.address ? eventFormInpErr : ""}`}
-              />
-              <EventFormError msg={errors.address} />
-            </div>
-            {form.prefecture &&
-              (EVENT_FORM_CITIES_BY_PREF[form.prefecture] ?? []).length > 0 && (
-                <div>
-                  <EventFormLabel label="市区町村" opt="任意" />
-                  <select
-                    name="city"
-                    value={form.city ?? ""}
-                    onChange={handleChange}
-                    className={eventFormInp}
-                  >
-                    <option value="">選択してください</option>
-                    {EVENT_FORM_CITIES_BY_PREF[form.prefecture]?.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            <div>
-              <EventFormLabel label="アクセス" opt="任意" />
-              <input
-                name="access"
-                value={form.access || ""}
-                onChange={handleChange}
-                placeholder="例：渋谷駅徒歩10分"
-                className={eventFormInp}
-              />
-              <EventFormHint text="目印や最寄り駅・バス停など" />
-            </div>
-            <div className="space-y-3.5 border-t border-[#e8e6e0] pt-4">
+            {showVenue && (
+              <div>
+                <EventFormLabel label="開催場所" required />
+                <input
+                  name="location"
+                  value={form.location}
+                  onChange={handleChange}
+                  placeholder="例：市民ホール"
+                  className={`${pcInp} ${errors.location ? eventFormInpErr : ""}`}
+                />
+                {!isHybrid && (
+                  <EventFormHint text="会場名や施設名を入力してください" />
+                )}
+                <EventFormError msg={errors.location} />
+              </div>
+            )}
+            {/* オンラインのみ: 左に参加費を置き、右カラムの高さとバランス */}
+            {showOnline && !showVenue ? (
               <div>
                 <EventFormLabel label="参加費（円）" />
                 <input
@@ -574,18 +569,168 @@ export function EventFormStepContent({
                 <EventFormHint text="0で無料。有料の場合はStripe設定が必要です" />
                 <EventFormError msg={errors.price} />
               </div>
-              <div>
-                <EventFormLabel label="雨天時対応" opt="任意" />
-                <input
-                  name="rainPolicy"
-                  value={form.rainPolicy || ""}
-                  onChange={handleChange}
-                  placeholder="例：雨天決行 / 小雨決行・荒天中止"
-                  className={eventFormInp}
-                />
-                <EventFormHint text="開催方針を短く記載してください" />
+            ) : null}
+          </div>
+        </div>
+
+        <div
+          className={`hidden min-[900px]:block min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto ${pcPad}`}
+        >
+          <div
+            className={
+              isHybrid
+                ? "hidden min-[900px]:block mb-2 border-b border-[#e8e6e0] pb-1.5"
+                : eventFormPcSectionHead
+            }
+          >
+            <h3 className={eventFormPcSectionTitle}>{rightSectionTitle}</h3>
+            <p className={eventFormPcSectionSub}>{rightSectionSub}</p>
+          </div>
+          <div className={pcStack}>
+            {showVenue && (
+              <>
+                <div
+                  className={
+                    form.prefecture &&
+                    (EVENT_FORM_CITIES_BY_PREF[form.prefecture] ?? []).length > 0
+                      ? "grid grid-cols-2 gap-1.5"
+                      : undefined
+                  }
+                >
+                  <div>
+                    <EventFormLabel label="都道府県" required />
+                    <select
+                      name="prefecture"
+                      value={form.prefecture ?? ""}
+                      onChange={handleChange}
+                      className={pcInp}
+                    >
+                      <option value="">選択してください</option>
+                      {EVENT_FORM_PREFECTURES.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {form.prefecture &&
+                    (EVENT_FORM_CITIES_BY_PREF[form.prefecture] ?? []).length > 0 && (
+                      <div>
+                        <EventFormLabel label="市区町村" opt="任意" />
+                        <select
+                          name="city"
+                          value={form.city ?? ""}
+                          onChange={handleChange}
+                          className={pcInp}
+                        >
+                          <option value="">選択してください</option>
+                          {EVENT_FORM_CITIES_BY_PREF[form.prefecture]?.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                </div>
+                <div className={isHybrid ? "grid grid-cols-2 gap-1.5" : undefined}>
+                  <div>
+                    <EventFormLabel label="住所" required />
+                    <input
+                      name="address"
+                      value={form.address}
+                      onChange={handleChange}
+                      placeholder="例：渋谷区〇〇町1-2-3"
+                      className={`${pcInp} ${errors.address ? eventFormInpErr : ""}`}
+                    />
+                    <EventFormError msg={errors.address} />
+                  </div>
+                  {isHybrid ? (
+                    <div>
+                      <EventFormLabel label="アクセス" opt="任意" />
+                      <input
+                        name="access"
+                        value={form.access || ""}
+                        onChange={handleChange}
+                        placeholder="例：渋谷駅徒歩10分"
+                        className={pcInp}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                {!isHybrid && (
+                  <div>
+                    <EventFormLabel label="アクセス" opt="任意" />
+                    <input
+                      name="access"
+                      value={form.access || ""}
+                      onChange={handleChange}
+                      placeholder="例：渋谷駅徒歩10分"
+                      className={eventFormInp}
+                    />
+                    <EventFormHint text="目印や最寄り駅・バス停など" />
+                  </div>
+                )}
+              </>
+            )}
+
+            {showOnline && (
+              <OnlineParticipationSettingsCard
+                onlineService={form.onlineService}
+                onlineJoinUrl={form.onlineJoinUrl ?? ""}
+                onlineMeetingId={form.onlineMeetingId ?? ""}
+                onlinePasscode={form.onlinePasscode ?? ""}
+                onlineGuideMessage={form.onlineGuideMessage ?? ""}
+                timing={form.onlineLinkDisplayTiming ?? DEFAULT_ONLINE_LINK_DISPLAY_TIMING}
+                errors={errors}
+                compact
+                dense={isHybrid}
+                onChange={patchOnline}
+                onTimingChange={handleTimingChange}
+              />
+            )}
+
+            {/* 現地・ハイブリッド: 参加費は右。オンラインのみは左へ移動済み */}
+            {showVenue || !showOnline ? (
+              <div
+                className={
+                  isHybrid
+                    ? "grid grid-cols-2 gap-1.5 border-t border-[#e8e6e0] pt-1.5"
+                    : "space-y-2.5 border-t border-[#e8e6e0] pt-3"
+                }
+              >
+                <div>
+                  <EventFormLabel label="参加費（円）" />
+                  <input
+                    name="price"
+                    type="number"
+                    min={0}
+                    value={form.price}
+                    onChange={handleChange}
+                    className={`${pcInp} ${errors.price ? eventFormInpErr : ""}`}
+                  />
+                  {!isHybrid && (
+                    <EventFormHint text="0で無料。有料の場合はStripe設定が必要です" />
+                  )}
+                  <EventFormError msg={errors.price} />
+                </div>
+                {showVenue && (
+                  <div>
+                    <EventFormLabel label="雨天時対応" opt="任意" />
+                    <input
+                      name="rainPolicy"
+                      value={form.rainPolicy || ""}
+                      onChange={handleChange}
+                      placeholder="例：雨天決行 / 小雨決行・荒天中止"
+                      className={pcInp}
+                    />
+                    {!isHybrid && (
+                      <EventFormHint text="開催方針を短く記載してください" />
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -619,7 +764,7 @@ export function EventFormStepContent({
 
           <div
             id="event-form-pass-fields"
-            className="space-y-3.5 rounded-[10px] border border-[#e8e6e0] bg-white p-3 min-[900px]:rounded-none min-[900px]:border-0 min-[900px]:bg-transparent min-[900px]:p-0"
+            className="min-w-0 space-y-3.5 overflow-hidden rounded-[10px] border border-[#e8e6e0] bg-white p-3 min-[900px]:rounded-none min-[900px]:border-0 min-[900px]:bg-transparent min-[900px]:p-0 min-[900px]:overflow-visible"
           >
             {/* モバイル: カード内見出し */}
             <div className="min-[900px]:hidden border-b border-[#e8e6e0] pb-2.5">

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { AdminServiceRoleWarning } from "@/components/admin/AdminServiceRoleWarning";
 import { getDeveloperAdminContext } from "@/lib/admin-auth";
 
 export const metadata: Metadata = {
@@ -21,8 +22,8 @@ export default async function AdminLayout({
 
   return (
     <AdminShell adminEmail={admin.email} adminRole={admin.role}>
+      <AdminServiceRoleWarning />
       {children}
     </AdminShell>
   );
 }
-

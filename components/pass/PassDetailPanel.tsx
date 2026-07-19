@@ -2,12 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, MapPin, User, Hash } from "lucide-react";
+import { ArrowRight, CalendarDays, Hash, MapPin, User } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import {
   formatExpiresAt,
   formatPassDateRange,
   formatTicketQuantity,
+  isHybridPass,
+  isOnlineOnlyPass,
   PAYMENT_STATUS_LABEL,
   type ParticipationPass,
 } from "@/lib/participation-pass";
@@ -16,6 +18,8 @@ import {
   PassPaymentBadge,
   PassReceptionBadge,
 } from "@/components/pass/PassBadges";
+import { PassOnlineJoinSection } from "@/components/pass/PassOnlineJoinSection";
+import type { EventOnlineAccessResponse } from "@/lib/event-online";
 
 type Props = {
   pass: ParticipationPass | null;
@@ -25,6 +29,8 @@ type Props = {
     title: string;
     description: string;
   };
+  /** デモ用オンライン参加情報（指定時は API を使わない） */
+  demoAccess?: EventOnlineAccessResponse | null;
 };
 
 function DetailNotches() {
@@ -78,22 +84,62 @@ function StaffConfirmBlock({ pass }: { pass: ParticipationPass }) {
   );
 }
 
-function QrConfirmBlock({ pass }: { pass: ParticipationPass }) {
+function QrConfirmBlock({
+  pass,
+  compact = false,
+}: {
+  pass: ParticipationPass;
+  compact?: boolean;
+}) {
   const value = pass.qrValue ?? pass.receptionNumber;
+  const size = compact ? 72 : 120;
 
   return (
-    <div className="flex flex-col items-center px-4 py-3">
-      <div className="rounded-xl border border-[#e4ebe4] bg-white p-2 shadow-sm">
-        <QRCodeSVG value={value} size={120} fgColor="#1a2818" bgColor="#ffffff" level="M" />
+    <div
+      className={`flex flex-col items-center ${
+        compact ? "px-3 py-1.5" : "px-4 py-3"
+      }`}
+    >
+      <div
+        className={`rounded-xl border border-[#e4ebe4] bg-white shadow-sm ${
+          compact ? "p-1.5" : "p-2"
+        }`}
+      >
+        <QRCodeSVG value={value} size={size} fgColor="#1a2818" bgColor="#ffffff" level="M" />
       </div>
-      <p className="mt-2 text-center text-[11.5px] leading-snug text-[#4a584c]">
-        受付でこの画面を提示してください
+      <p
+        className={`text-center leading-snug text-[#4a584c] ${
+          compact ? "mt-1 text-[10.5px]" : "mt-2 text-[11.5px]"
+        }`}
+      >
+        {compact ? "現地受付で提示" : "受付でこの画面を提示してください"}
       </p>
       {pass.expiresAt && (
-        <div className="mt-1.5 w-full max-w-[220px] rounded-lg border border-[#c8dece] bg-[#eef6f0] px-2.5 py-1 text-center text-[11px] font-medium text-[#2d7a4f]">
+        <div
+          className={`border border-[#c8dece] bg-[#eef6f0] text-center font-medium text-[#2d7a4f] ${
+            compact
+              ? "mt-1 rounded-full px-2 py-0.5 text-[10px]"
+              : "mt-1.5 w-full max-w-[220px] rounded-lg px-2.5 py-1 text-[11px]"
+          }`}
+        >
           有効期限 {formatExpiresAt(pass.expiresAt)}
         </div>
       )}
+    </div>
+  );
+}
+
+function OnlineConfirmHint({ expiresAt }: { expiresAt?: string }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+      <p className="text-[11px] leading-snug text-[#4a584c]">
+        現地受付は不要です。参加リンクからご参加ください
+      </p>
+      {expiresAt ? (
+        <span className="shrink-0 rounded-full border border-[#c8dece] bg-[#eef6f0] px-2 py-0.5 text-[10.5px] font-medium text-[#2d7a4f]">
+          有効期限 {formatExpiresAt(expiresAt)}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -103,6 +149,7 @@ export function PassDetailPanel({
   onClose,
   compact = false,
   emptyMessage,
+  demoAccess,
 }: Props) {
   if (!pass) {
     return (
@@ -120,13 +167,21 @@ export function PassDetailPanel({
     );
   }
 
+  const onlineOnly = isOnlineOnlyPass(pass);
+  const hybrid = isHybridPass(pass);
+  const denseLayout = onlineOnly || hybrid;
+
   return (
     <div className="flex min-h-0 flex-col">
       {!compact && (
-        <div className="mb-1.5 shrink-0">
-          <h2 className="text-[13.5px] font-semibold text-[#1a2818]">選択中の参加パス</h2>
-          <p className="mt-0.5 text-[11px] leading-snug text-[#6a7468]">
-            一覧ではシンプルに、開くとQRコードを大きく表示
+        <div className="mb-1 shrink-0">
+          <h2 className="text-[13px] font-semibold text-[#1a2818]">選択中の参加パス</h2>
+          <p className="mt-0.5 text-[10.5px] leading-snug text-[#6a7468]">
+            {onlineOnly
+              ? "オンライン開催のため、参加リンクからご参加ください"
+              : hybrid
+                ? "現地はQR、オンラインは参加リンクからご参加ください"
+                : "一覧ではシンプルに、開くとQRコードを大きく表示"}
           </p>
         </div>
       )}
@@ -134,7 +189,11 @@ export function PassDetailPanel({
       <div className="relative flex flex-col overflow-hidden rounded-2xl border border-[#dce8de] bg-white shadow-[0_6px_20px_rgba(40,60,48,0.07)]">
         <DetailNotches />
 
-        <div className="relative h-[180px] w-full shrink-0 overflow-hidden bg-[#eef2ee]">
+        <div
+          className={`relative w-full shrink-0 overflow-hidden bg-[#eef2ee] ${
+            onlineOnly ? "h-[88px]" : hybrid ? "h-[100px]" : "h-[180px]"
+          }`}
+        >
           <Image
             src={pass.eventImage}
             alt=""
@@ -145,59 +204,138 @@ export function PassDetailPanel({
           />
         </div>
 
-        <div className="shrink-0 space-y-1.5 px-4 pt-3">
-          <h3 className="text-[14.5px] font-semibold leading-snug text-[#1a2818]">
+        <div className={`shrink-0 px-4 ${denseLayout ? "space-y-1 pt-2.5 pb-1" : "space-y-1.5 pt-3"}`}>
+          <h3
+            className={`font-semibold leading-snug text-[#1a2818] ${
+              denseLayout ? "text-[13.5px]" : "text-[14.5px]"
+            }`}
+          >
             {pass.eventTitle}
           </h3>
-          <p className="flex items-center gap-1.5 text-[11.5px] text-[#5a665c]">
-            <CalendarDays className="h-3 w-3 shrink-0 text-[#6a8a72]" aria-hidden />
-            <span className="truncate">{formatPassDateRange(pass.startAt, pass.endAt)}</span>
-          </p>
-          <p className="flex items-center gap-1.5 text-[11.5px] text-[#5a665c]">
-            <MapPin className="h-3 w-3 shrink-0 text-[#6a8a72]" aria-hidden />
-            <span className="truncate">{pass.venueName}</span>
-          </p>
+          <div
+            className={`flex flex-wrap gap-x-3 gap-y-0.5 text-[#5a665c] ${
+              denseLayout ? "text-[11px]" : "text-[11.5px]"
+            }`}
+          >
+            <p className="flex min-w-0 items-center gap-1">
+              <CalendarDays className="h-3 w-3 shrink-0 text-[#6a8a72]" aria-hidden />
+              <span className="truncate">{formatPassDateRange(pass.startAt, pass.endAt)}</span>
+            </p>
+            <p className="flex min-w-0 items-center gap-1">
+              <MapPin className="h-3 w-3 shrink-0 text-[#6a8a72]" aria-hidden />
+              <span className="truncate">{pass.venueName}</span>
+            </p>
+          </div>
 
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-[#eef2ee] pt-2 text-[11.5px]">
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-[#eef2ee] pt-1.5 text-[11px]">
             <p className="flex items-center gap-1 text-[#3a4840]">
               <User className="h-3 w-3 text-[#6a8a72]" aria-hidden />
-              <span className="text-[#6a7468]">
-                {pass.kind === "volunteer" ? "スタッフ" : "参加者"}
-              </span>
               <span className="font-semibold">{pass.attendeeName}</span>
             </p>
             <p className="flex items-center gap-1 text-[#3a4840]">
               <Hash className="h-3 w-3 text-[#6a8a72]" aria-hidden />
-              <span className="text-[#6a7468]">受付番号</span>
               <span className="font-semibold tracking-wide">{pass.receptionNumber}</span>
             </p>
-            {pass.kind === "volunteer" && pass.roleLabel ? (
+            {!denseLayout && pass.kind === "volunteer" && pass.roleLabel ? (
               <p className="flex items-center gap-1 text-[#3a4840]">
                 <span className="text-[#6a7468]">担当</span>
                 <span className="font-semibold">{pass.roleLabel}</span>
+              </p>
+            ) : null}
+            {denseLayout ? (
+              <p className="text-[#6a7468]">
+                {formatTicketQuantity(pass)} · {PAYMENT_STATUS_LABEL[pass.paymentStatus]}
               </p>
             ) : null}
           </div>
 
           <div className="flex flex-wrap gap-1 pb-0.5">
             <PassKindBadge kind={pass.kind} />
-            {pass.kind === "volunteer" ? null : (
+            {pass.kind === "volunteer" || denseLayout ? null : (
               <PassPaymentBadge status={pass.paymentStatus} />
             )}
-            <PassReceptionBadge type={pass.receptionType} />
+            {onlineOnly ? (
+              <span className="inline-flex items-center rounded-full border border-[#c8d0e0] bg-[#f0f2f8] px-1.5 py-0.5 text-[10.5px] font-medium text-[#3a4a68]">
+                オンライン参加
+              </span>
+            ) : (
+              <PassReceptionBadge type={pass.receptionType} />
+            )}
+            {pass.eventFormat === "online" || pass.eventFormat === "hybrid" ? (
+              <span className="inline-flex items-center rounded-full bg-[#eef8e8] px-2 py-0.5 text-[10px] font-semibold text-[#3a7a10]">
+                {pass.eventFormat === "online" ? "オンライン開催" : "ハイブリッド開催"}
+              </span>
+            ) : null}
           </div>
         </div>
 
         <div className="relative mx-3 my-0.5 shrink-0 border-t border-dashed border-[#c8d8cc]" aria-hidden />
 
-        {pass.receptionType === "qr" ? (
+        {onlineOnly ? (
+          <>
+            <OnlineConfirmHint expiresAt={pass.expiresAt} />
+            <div className="border-t border-[#eef2ee] px-3 pb-3 pt-1">
+              <PassOnlineJoinSection
+                pass={pass}
+                organizerContact={pass.organizerContact}
+                demoAccess={demoAccess}
+                dense
+                embedded
+              />
+            </div>
+          </>
+        ) : hybrid ? (
+          <>
+            <div className="flex items-center gap-3 px-4 py-2">
+              <div className="shrink-0 rounded-lg border border-[#e4ebe4] bg-white p-1 shadow-sm">
+                <QRCodeSVG
+                  value={pass.qrValue ?? pass.receptionNumber}
+                  size={64}
+                  fgColor="#1a2818"
+                  bgColor="#ffffff"
+                  level="M"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11.5px] font-medium text-[#3a4840]">現地受付用QR</p>
+                <p className="mt-0.5 text-[10.5px] leading-snug text-[#6a7468]">
+                  会場ではこのQRを提示してください
+                </p>
+                {pass.expiresAt ? (
+                  <p className="mt-1 text-[10px] font-medium text-[#2d7a4f]">
+                    有効期限 {formatExpiresAt(pass.expiresAt)}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            <div className="border-t border-dashed border-[#e0e8e0] px-3 pb-2.5 pt-2">
+              <PassOnlineJoinSection
+                pass={pass}
+                organizerContact={pass.organizerContact}
+                demoAccess={demoAccess}
+                dense
+                embedded
+              />
+            </div>
+          </>
+        ) : pass.receptionType === "qr" ? (
           <QrConfirmBlock pass={pass} />
         ) : (
           <StaffConfirmBlock pass={pass} />
         )}
       </div>
 
-      <div className="mt-2 flex shrink-0 gap-2">
+      {!onlineOnly && !hybrid ? (
+        <div className="mt-2.5 shrink-0">
+          <PassOnlineJoinSection
+            pass={pass}
+            organizerContact={pass.organizerContact}
+            demoAccess={demoAccess}
+          />
+        </div>
+      ) : null}
+
+      <div className={`flex shrink-0 gap-2 ${denseLayout ? "mt-1.5" : "mt-2"}`}>
         <Link
           href={`/events/${pass.eventId}`}
           className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-xl bg-[#1e3848] text-[12.5px] font-semibold text-white transition hover:bg-[#162c38]"

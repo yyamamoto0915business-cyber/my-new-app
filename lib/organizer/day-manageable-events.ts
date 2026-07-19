@@ -1,5 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { PUBLIC_EVENT_STATUSES, isPublicEventStatus } from "@/lib/public-events";
+import {
+  normalizeEventFormat,
+  normalizeOnlineService,
+  type EventFormat,
+  type OnlineService,
+} from "@/lib/event-online";
 
 /** 当日運営ダッシュボードのイベント切替に必要な最小フィールド */
 export type DayManageableEvent = {
@@ -11,6 +17,8 @@ export type DayManageableEvent = {
   location?: string;
   status: "public" | "ended";
   visibilityStatus: "published";
+  eventFormat?: EventFormat;
+  onlineService?: OnlineService | null;
 };
 
 function getEventEndAtJst(date: string, endTime?: string | null): Date {
@@ -38,34 +46,69 @@ export async function fetchDayManageableEvents(
   organizerId: string,
   limit = 80
 ): Promise<DayManageableEvent[]> {
-  const { data, error } = await supabase
-    .from("events")
-    .select("id, title, date, start_time, end_time, location, status")
-    .eq("organizer_id", organizerId)
-    .in("status", [...PUBLIC_EVENT_STATUSES])
-    .order("date", { ascending: false })
-    .limit(limit);
+  type DayEventRow = {
+    id: string;
+    title: string;
+    date: string;
+    start_time?: string | null;
+    end_time?: string | null;
+    location?: string | null;
+    status?: string | null;
+    event_format?: string | null;
+    online_service?: string | null;
+  };
+
+  let data: DayEventRow[] | null = null;
+  let error: { message: string } | null = null;
+
+  {
+    const first = await supabase
+      .from("events")
+      .select(
+        "id, title, date, start_time, end_time, location, status, event_format, online_service"
+      )
+      .eq("organizer_id", organizerId)
+      .in("status", [...PUBLIC_EVENT_STATUSES])
+      .order("date", { ascending: false })
+      .limit(limit);
+    data = (first.data as DayEventRow[] | null) ?? null;
+    error = first.error;
+  }
+
+  if (error && /event_format|online_service/i.test(error.message)) {
+    const fallback = await supabase
+      .from("events")
+      .select("id, title, date, start_time, end_time, location, status")
+      .eq("organizer_id", organizerId)
+      .in("status", [...PUBLIC_EVENT_STATUSES])
+      .order("date", { ascending: false })
+      .limit(limit);
+    data = (fallback.data as DayEventRow[] | null) ?? null;
+    error = fallback.error;
+  }
 
   if (error) throw error;
 
   const events: DayManageableEvent[] = [];
   for (const row of data ?? []) {
-    const endTime = (row.end_time as string | null) ?? null;
+    const endTime = row.end_time ?? null;
     const status = toDayStatus({
-      date: row.date as string,
-      status: row.status as string | null,
+      date: row.date,
+      status: row.status ?? null,
       endTime,
     });
     if (!status) continue;
     events.push({
-      id: row.id as string,
-      title: row.title as string,
-      date: row.date as string,
-      startTime: (row.start_time as string | undefined) ?? undefined,
+      id: row.id,
+      title: row.title,
+      date: row.date,
+      startTime: row.start_time ?? undefined,
       endTime,
-      location: (row.location as string | undefined) ?? undefined,
+      location: row.location ?? undefined,
       status,
       visibilityStatus: "published",
+      eventFormat: normalizeEventFormat(row.event_format),
+      onlineService: normalizeOnlineService(row.online_service),
     });
   }
 
