@@ -374,7 +374,7 @@ export default function EditEventPage() {
     <div
       ref={formTopRef}
       data-event-form
-      className="relative z-[1] flex flex-col min-[900px]:-mx-6 min-[900px]:flex min-[900px]:h-full min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
+      className="relative z-[1] flex min-w-0 flex-col min-[900px]:-mx-6 min-[900px]:flex min-[900px]:h-full min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
     >
       <EditPcStepBar
         current={currentStep}
@@ -387,7 +387,7 @@ export default function EditEventPage() {
       />
 
       <div className="sticky top-0 z-10 -mx-4 border-b border-[#e8e6e0] bg-white sm:-mx-6 min-[900px]:hidden">
-        <div className="flex items-center gap-2 px-3 py-2">
+        <div className="flex items-center gap-2 px-4 py-2 sm:px-6">
           <button
             type="button"
             onClick={goPrev}
@@ -422,7 +422,7 @@ export default function EditEventPage() {
             {submitting ? "保存中…" : "保存"}
           </button>
         </div>
-        <div className="flex items-center px-3 pb-2">
+        <div className="flex items-center px-4 pb-2 sm:px-6">
           {!showPassSettings ? (
             <EventFormStepIndicator current={currentStep} onGo={goToStep} />
           ) : null}

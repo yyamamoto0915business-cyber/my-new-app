@@ -6,8 +6,13 @@ import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerByProfileId } from "@/lib/db/organizers";
 import { getAppUrl, getStripeSecretKey } from "@/lib/stripe";
 
-const stripeKey = getStripeSecretKey();
-const priceId = process.env.STRIPE_PRICE_ORGANIZER_980 ?? process.env.STRIPE_PRICE_STARTER_980;
+function getOrganizerPriceId(): string | undefined {
+  const raw =
+    process.env.STRIPE_PRICE_ORGANIZER_980 ?? process.env.STRIPE_PRICE_STARTER_980;
+  if (typeof raw !== "string") return undefined;
+  const id = raw.trim();
+  return id.length > 0 ? id : undefined;
+}
 
 function stripeErrorToUserMessage(err: Stripe.errors.StripeError): string {
   const code = err.code;
@@ -28,6 +33,8 @@ function stripeErrorToUserMessage(err: Stripe.errors.StripeError): string {
  * POST: 月980円サブスクのCheckout Sessionを作成
  */
 export async function POST() {
+  const stripeKey = getStripeSecretKey();
+  const priceId = getOrganizerPriceId();
   if (!stripeKey || !priceId) {
     return NextResponse.json(
       { error: "Stripeが設定されていません（STRIPE_SECRET_KEY または料金用 Price ID）" },

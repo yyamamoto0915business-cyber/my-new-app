@@ -83,6 +83,8 @@ function dbEventToEvent(
   const participationMode = participationModeFromDb(db);
   const recurrence = normalizeEventRecurrence(db.recurrence);
   const includeSecrets = options?.includeOnlineSecrets ?? false;
+  const displayName = db.organizer_display_name?.trim();
+  const contactFromEvent = db.organizer_contact?.trim();
   return {
     id: db.id,
     status: normalizeEventStatus(db.status),
@@ -97,8 +99,8 @@ function dbEventToEvent(
     address: db.address,
     price: db.price,
     priceNote: db.price_note ?? undefined,
-    organizerName,
-    organizerContact,
+    organizerName: displayName || organizerName,
+    organizerContact: contactFromEvent || organizerContact,
     rainPolicy: db.rain_policy ?? undefined,
     itemsToBring: db.items_to_bring ?? undefined,
     access: db.access ?? undefined,
@@ -858,6 +860,8 @@ export async function createEvent(
     registration_deadline: form.registrationDeadline || null,
     registration_note: form.registrationNote?.trim() || null,
     image_url: form.imageUrl?.trim() || null,
+    organizer_display_name: form.organizerName?.trim() || null,
+    organizer_contact: form.organizerContact?.trim() || null,
     ...onlinePayload.onlineColumns,
   };
 
@@ -881,6 +885,8 @@ export async function createEvent(
     delete rest.online_link_visibility;
     delete rest.online_link_display_timing;
     delete rest.public_page_link_visible;
+    delete rest.organizer_display_name;
+    delete rest.organizer_contact;
     console.warn(
       "[createEvent] Retrying without registration/participation/online columns (DB migration may be pending)"
     );
@@ -996,6 +1002,8 @@ function formToDb(form: EventFormData): Record<string, unknown> {
     pass_configured: form.passConfigured ?? false,
     registration_deadline: form.registrationDeadline || null,
     registration_note: form.registrationNote?.trim() || null,
+    organizer_display_name: form.organizerName?.trim() || null,
+    organizer_contact: form.organizerContact?.trim() || null,
     recurrence,
     recurrence_count:
       recurrence === "none" ? null : normalizeRecurrenceCount(form.recurrenceCount, recurrence),
@@ -1038,6 +1046,8 @@ export async function updateEvent(
     delete (rest as { online_link_visibility?: unknown }).online_link_visibility;
     delete (rest as { online_link_display_timing?: unknown }).online_link_display_timing;
     delete (rest as { public_page_link_visible?: unknown }).public_page_link_visible;
+    delete (rest as { organizer_display_name?: unknown }).organizer_display_name;
+    delete (rest as { organizer_contact?: unknown }).organizer_contact;
     console.warn(
       "[updateEvent] Retrying without registration/participation/online columns (DB migration may be pending)"
     );

@@ -88,6 +88,10 @@ export type DbEvent = {
   address: string;
   price: number;
   price_note: string | null;
+  /** イベント単位の主催者表示名（NULL 時は organizers をフォールバック） */
+  organizer_display_name?: string | null;
+  /** イベント単位の連絡先（NULL 時は organizers をフォールバック） */
+  organizer_contact?: string | null;
   rain_policy: string | null;
   items_to_bring: string[] | null;
   access: string | null;

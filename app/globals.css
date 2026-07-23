@@ -3490,6 +3490,30 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   }
 }
 
+/* イベント作成フォーム: モバイルで date/time 入力がはみ出さないよう制約 */
+@media (max-width: 899px) {
+  [data-event-form] {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  [data-event-form] input[type="date"],
+  [data-event-form] input[type="time"],
+  [data-event-form] input[type="datetime-local"],
+  [data-event-form] input[type="number"],
+  [data-event-form] input[type="text"],
+  [data-event-form] input:not([type]),
+  [data-event-form] select,
+  [data-event-form] textarea {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    -webkit-min-logical-width: 0;
+  }
+}
+
 .org-top-tabs {
   border-radius: 999px;
   border: 1px solid #dde8df;

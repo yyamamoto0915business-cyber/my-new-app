@@ -129,6 +129,7 @@ export function EventDetailPcSidebar({
         address={address}
         priceNote={priceNote}
         receptionLabel={receptionLabel}
+        isAvailable={isAvailable}
       />
 
       {/* シェアする（購入より控えめ） */}

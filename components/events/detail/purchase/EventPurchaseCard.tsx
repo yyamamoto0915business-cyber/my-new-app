@@ -16,6 +16,7 @@ import type { Event } from "@/lib/db/types";
 import { EventBasicInfo } from "@/components/events/detail/purchase/EventBasicInfo";
 import { EventPurchasePrimaryCta } from "@/components/events/detail/purchase/EventPurchasePrimaryCta";
 import { PassAvailability } from "@/components/events/detail/purchase/PassAvailability";
+import { EventPrimaryActions } from "@/components/events/detail/EventPrimaryActions";
 
 type DisplayProps = {
   date: string;
@@ -27,6 +28,8 @@ type DisplayProps = {
   address?: string;
   priceNote?: string | null;
   receptionLabel: string;
+  /** 申込不要時の参加予定CTA表示可否（終了・満員など） */
+  isAvailable?: boolean;
 };
 
 type Props = {
@@ -62,12 +65,14 @@ export function EventPurchaseCard({
   address,
   priceNote,
   receptionLabel,
+  isAvailable = true,
 }: Props) {
   const { user } = useSupabaseUser();
   const purchaseData = isFullEvent(event)
     ? toEventPurchaseData(event)
     : event;
   const participationMode = resolveParticipationMode(event);
+  const fullEvent = isFullEvent(event) ? event : null;
 
   const [isPurchased, setIsPurchased] = useState(Boolean(isPurchasedProp));
 
@@ -183,9 +188,28 @@ export function EventPurchaseCard({
           </div>
         </>
       ) : (
-        <p className="mt-4 text-center text-[12.5px] leading-snug text-[#9aa890]">
-          事前申込は不要です。当日そのままご参加いただけます。
-        </p>
+        <div className="mt-4 space-y-3">
+          <p className="text-center text-[12.5px] leading-snug text-[#9aa890]">
+            事前申込は不要です。当日そのままご参加いただけます。
+          </p>
+          <EventPrimaryActions
+            eventId={purchaseData.id}
+            participationMode={participationMode}
+            price={purchaseData.price}
+            isAvailable={isAvailable}
+            title={fullEvent?.title ?? ""}
+            date={date}
+            startTime={startTime}
+            endTime={endTime}
+            address={address ?? fullEvent?.address ?? ""}
+            location={location}
+            latitude={fullEvent?.latitude}
+            longitude={fullEvent?.longitude}
+            layout="sidebar"
+            hideSave
+            showOrganizerConsult
+          />
+        </div>
       )}
     </div>
   );

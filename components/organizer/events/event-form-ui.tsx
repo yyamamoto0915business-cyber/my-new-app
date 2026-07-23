@@ -1,37 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { EVENT_TAGS } from "@/lib/db/types";
 import { isOnlineCapableFormat, needsVenueFields, normalizeEventFormat } from "@/lib/event-online";
+import { getCitiesForPrefecture } from "@/lib/cities-by-prefecture";
+import {
+  REGIONS,
+  getPrefecturesForRegion,
+  getRegionIdForPrefecture,
+  type RegionId,
+} from "@/lib/prefectures";
 
 export type EventFormStep = 1 | 2 | 3 | 4;
 
-export const EVENT_FORM_PREFECTURES = [
-  "東京都",
-  "大阪府",
-  "北海道",
-  "福岡県",
-  "愛知県",
-  "神奈川県",
-  "埼玉県",
-  "千葉県",
-  "京都府",
-];
-
-export const EVENT_FORM_CITIES_BY_PREF: Record<string, string[]> = {
-  東京都: ["渋谷区", "新宿区", "港区", "中央区", "その他"],
-  大阪府: ["大阪市", "その他"],
-};
-
 export const eventFormInp =
-  "w-full max-w-full min-w-0 rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[14px] py-[10px] min-[900px]:py-2 text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
+  "box-border block w-full max-w-full min-w-0 rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[14px] py-[10px] min-[900px]:py-2 text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
 export const eventFormInpErr = "!border-[#E8708A]";
 export const eventFormInpSm =
-  "w-full max-w-full min-w-0 rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-3 py-2 text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
+  "box-border block w-full max-w-full min-w-0 rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-3 py-2 text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
 export const eventFormFieldSubLbl = "mb-1.5 text-[11px] text-[#888]";
 export const eventFormDateTimeStack = "min-w-0 space-y-3";
-export const eventFormDateTimeRow = "grid min-w-0 grid-cols-2 gap-3 [&>*]:min-w-0";
-export const eventFormStackedFields = "space-y-3.5";
-export const eventFormFieldM = "mb-2 min-[900px]:mb-2.5";
+export const eventFormDateTimeRow =
+  "grid min-w-0 grid-cols-1 gap-3 min-[420px]:grid-cols-2 min-[420px]:gap-3 [&>*]:min-w-0";
+export const eventFormStackedFields = "min-w-0 space-y-3.5";
+export const eventFormFieldM = "mb-2 min-w-0 min-[900px]:mb-2.5";
 export const eventFormPcSectionHead =
   "hidden min-[900px]:block mb-2.5 pb-2 border-b border-[#e8e6e0]";
 export const eventFormPcSectionTitle = "text-[14px] font-semibold text-[#2B3A6B] mb-0.5";
@@ -65,6 +57,109 @@ export function EventFormHint({ text }: { text: string }) {
 export function EventFormError({ msg }: { msg?: string }) {
   if (!msg) return null;
   return <p className="mt-[4px] text-[11px] text-[#E8708A]">{msg}</p>;
+}
+
+/** 地方 → 都道府県 → 市区町村（任意） */
+export function EventFormVenueRegionFields({
+  prefecture,
+  city,
+  selectClassName,
+  showCity = true,
+  dense = false,
+  onPrefectureChange,
+  onCityChange,
+  onClearPrefectureAndCity,
+}: {
+  prefecture: string;
+  city: string;
+  selectClassName: string;
+  showCity?: boolean;
+  /** PC: 地方と都道府県を横並び */
+  dense?: boolean;
+  onPrefectureChange: (value: string) => void;
+  onCityChange: (value: string) => void;
+  onClearPrefectureAndCity: () => void;
+}) {
+  const derivedRegion = getRegionIdForPrefecture(prefecture);
+  const [regionId, setRegionId] = useState<RegionId | "">(derivedRegion);
+
+  useEffect(() => {
+    if (derivedRegion) setRegionId(derivedRegion);
+  }, [derivedRegion]);
+
+  const prefectures = getPrefecturesForRegion(regionId);
+  const cities = getCitiesForPrefecture(prefecture);
+  const showCitySelect = showCity && prefecture && cities.length > 0;
+
+  return (
+    <div className={dense ? "space-y-1.5" : "space-y-3.5"}>
+      <div
+        className={
+          dense ? "grid grid-cols-2 gap-1.5" : "space-y-3.5"
+        }
+      >
+        <div>
+          <EventFormLabel label="地域" required />
+          <select
+            value={regionId}
+            onChange={(e) => {
+              const next = e.target.value as RegionId | "";
+              setRegionId(next);
+              onClearPrefectureAndCity();
+            }}
+            className={selectClassName}
+            aria-label="地域"
+          >
+            <option value="">地域を選ぶ</option>
+            {REGIONS.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <EventFormLabel label="都道府県" required />
+          <select
+            name="prefecture"
+            value={prefecture}
+            disabled={!regionId}
+            onChange={(e) => onPrefectureChange(e.target.value)}
+            className={selectClassName}
+            aria-label="都道府県"
+          >
+            <option value="">
+              {regionId ? "都道府県を選ぶ" : "地域を選んでから"}
+            </option>
+            {prefectures.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {showCitySelect && (
+        <div>
+          <EventFormLabel label="市区町村" opt="任意" />
+          <select
+            name="city"
+            value={city}
+            onChange={(e) => onCityChange(e.target.value)}
+            className={selectClassName}
+            aria-label="市区町村"
+          >
+            <option value="">市区町村を選ぶ</option>
+            {cities.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function EventFormCard({

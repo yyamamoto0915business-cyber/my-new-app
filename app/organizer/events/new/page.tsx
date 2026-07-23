@@ -295,7 +295,7 @@ function NewEventPageContent() {
         setSubmitError(typeof data.error === "string" && data.error.trim() ? data.error : "作成に失敗しました");
         return;
       }
-      showToast("success", "下書きを保存しました");
+      showToast("success", "下書きを保存しました。イベント管理から編集できます");
       router.refresh();
       setTimeout(() => router.push("/organizer/events"), 350);
     } catch {
@@ -392,7 +392,7 @@ function NewEventPageContent() {
     <div
       ref={formTopRef}
       data-event-form
-      className="relative z-[1] flex flex-col min-[900px]:-mx-6 min-[900px]:flex min-[900px]:h-full min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
+      className="relative z-[1] flex min-w-0 flex-col min-[900px]:-mx-6 min-[900px]:flex min-[900px]:h-full min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
     >
 
       {/* ── PC step bar ── */}
@@ -405,7 +405,7 @@ function NewEventPageContent() {
 
       {/* ── Mobile header ── */}
       <div className="min-[900px]:hidden sticky top-0 z-10 -mx-4 border-b border-[#e8e6e0] bg-white sm:-mx-6">
-        <div className="flex items-center gap-2 px-3 py-2">
+        <div className="flex items-center gap-2 px-4 py-2 sm:px-6">
           <button type="button" onClick={goPrev} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F3F2EF]">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
@@ -420,7 +420,7 @@ function NewEventPageContent() {
             {submitting === "draft" ? "保存中…" : "下書き保存"}
           </button>
         </div>
-        <div className="flex items-center px-3 pb-2">
+        <div className="flex items-center px-4 pb-2 sm:px-6">
           {!showPassSettings ? (
             <EventFormStepIndicator current={currentStep} onGo={goToStep} />
           ) : null}
@@ -564,7 +564,11 @@ function NewEventPageContent() {
                   </div>
                 )}
                 <div className="mb-[16px] rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] p-[14px]">
-                  <p className="mb-[8px] text-[13px] leading-[1.7] text-[#555]">保存は下書きとして行われます。あとで編集・公開できます。</p>
+                  <p className="mb-[8px] text-[13px] leading-[1.7] text-[#555]">
+                    保存は下書きとして行われます。
+                    <br />
+                    下書きは「イベント管理」から編集できます。
+                  </p>
                   <label className="flex cursor-pointer items-start gap-[6px]">
                     <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="mt-[2px]" style={{ accentColor: "#2B3A6B" }} />
                     <span className="text-[13px] leading-[1.5] text-[#555]">掲載内容の責任を理解し、<Link href="/terms" target="_blank" className="text-[#c8a84b]">利用規約</Link>に同意する</span>
@@ -584,7 +588,7 @@ function NewEventPageContent() {
                     {submitting === "publish" ? "公開中…" : "公開する"}
                   </button>
                 </div>
-                <p className="mt-[10px] text-center text-[12px] text-[#888]">下書きとして保存され、あとで編集・公開できます</p>
+                <p className="mt-[10px] text-center text-[12px] text-[#888]">下書きは「イベント管理」から編集できます</p>
               </div>
             </div>
           )}

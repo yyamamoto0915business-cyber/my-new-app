@@ -389,7 +389,8 @@ async function fetchVisitorPasses(
       .eq("user_id", userId)
       .in("status", PASS_ELIGIBLE_STATUSES)
       .order("created_at", { ascending: false });
-    rows = fallback.data;
+    // event_format なしの select 結果を互換型として扱う
+    rows = fallback.data as typeof rows;
     error = fallback.error;
   }
 
@@ -477,7 +478,8 @@ async function fetchVolunteerPasses(
       .eq("user_id", userId)
       .in("status", VOLUNTEER_PASS_STATUSES)
       .order("created_at", { ascending: false });
-    rows = fallback.data;
+    // event_format なしの select 結果を互換型として扱う
+    rows = fallback.data as typeof rows;
     error = fallback.error;
   }
 

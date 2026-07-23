@@ -15,10 +15,9 @@ import {
   type EventFormat,
 } from "@/lib/event-online";
 import {
-  EVENT_FORM_CITIES_BY_PREF,
-  EVENT_FORM_PREFECTURES,
   EventFormCard,
   EventFormError,
+  EventFormVenueRegionFields,
   eventFormFieldM,
   eventFormFieldSubLbl,
   eventFormPcFieldStack,
@@ -36,6 +35,7 @@ import {
   eventFormInpSm,
   type EventFormStep,
 } from "@/components/organizer/events/event-form-ui";
+import { EventPriceInput } from "@/components/organizer/events/EventPriceInput";
 
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
 
@@ -96,8 +96,8 @@ export function EventFormStepContent({
 }: EventFormStepContentProps) {
   if (currentStep === 1) {
     return (
-      <div className="flex flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
-        <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] p-4 min-[900px]:p-4">
+      <div className="flex min-w-0 flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
+        <div className="min-w-0 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-4">
           <div className={eventFormPcSectionHead}>
             <h3 className={`${eventFormPcSectionTitle} flex items-center gap-2`}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B3A6B" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -277,6 +277,13 @@ export function EventFormStepContent({
     const showOnline = isOnlineCapableFormat(format);
     const isHybrid = showOnline && showVenue;
 
+    const clearPrefectureAndCity = () =>
+      setForm((prev) => ({ ...prev, prefecture: "", city: "" }));
+    const setPrefecture = (value: string) =>
+      setForm((prev) => ({ ...prev, prefecture: value, city: "" }));
+    const setCity = (value: string) =>
+      setForm((prev) => ({ ...prev, city: value }));
+
     const handleFormatChange = (next: EventFormat) => {
       setForm((prev) => ({ ...prev, eventFormat: next }));
     };
@@ -317,7 +324,7 @@ export function EventFormStepContent({
     const dateTimeFields = (inp: string, err: string) => (
       <>
         <div className={isHybrid ? "min-w-0 space-y-1.5" : eventFormDateTimeStack}>
-          <div>
+          <div className="min-w-0 overflow-hidden">
             <div className={isHybrid ? "mb-1 text-[11px] text-[#888]" : eventFormFieldSubLbl}>開催日</div>
             <input
               name="date"
@@ -328,8 +335,14 @@ export function EventFormStepContent({
               className={`${inp} ${errors.date ? err : ""}`}
             />
           </div>
-          <div className={isHybrid ? "grid min-w-0 grid-cols-2 gap-1.5 [&>*]:min-w-0" : eventFormDateTimeRow}>
-            <div>
+          <div
+            className={
+              isHybrid
+                ? "grid min-w-0 grid-cols-1 gap-1.5 min-[420px]:grid-cols-2 [&>*]:min-w-0"
+                : eventFormDateTimeRow
+            }
+          >
+            <div className="min-w-0 overflow-hidden">
               <div className={isHybrid ? "mb-1 text-[11px] text-[#888]" : eventFormFieldSubLbl}>開始時刻</div>
               <input
                 name="startTime"
@@ -340,7 +353,7 @@ export function EventFormStepContent({
                 className={`${inp} ${errors.startTime ? err : ""}`}
               />
             </div>
-            <div>
+            <div className="min-w-0 overflow-hidden">
               <div className={isHybrid ? "mb-1 text-[11px] text-[#888]" : eventFormFieldSubLbl}>終了（任意）</div>
               <input
                 name="endTime"
@@ -363,9 +376,9 @@ export function EventFormStepContent({
       : eventFormPcFieldStack;
 
     return (
-      <div className="flex flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
+      <div className="flex min-w-0 flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
         <div
-          className={`min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] p-4 ${pcPad}`}
+          className={`min-w-0 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] ${pcPad}`}
         >
           <div
             className={
@@ -424,22 +437,14 @@ export function EventFormStepContent({
                     <EventFormError msg={errors.location} />
                   </div>
                   <div className={`${eventFormStackedFields} mb-[11px]`}>
-                    <div>
-                      <EventFormLabel label="都道府県" required />
-                      <select
-                        name="prefecture"
-                        value={form.prefecture ?? ""}
-                        onChange={handleChange}
-                        className={eventFormInpSm}
-                      >
-                        <option value="">選択してください</option>
-                        {EVENT_FORM_PREFECTURES.map((p) => (
-                          <option key={p} value={p}>
-                            {p}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <EventFormVenueRegionFields
+                      prefecture={form.prefecture ?? ""}
+                      city={form.city ?? ""}
+                      selectClassName={eventFormInpSm}
+                      onPrefectureChange={setPrefecture}
+                      onCityChange={setCity}
+                      onClearPrefectureAndCity={clearPrefectureAndCity}
+                    />
                     <div>
                       <EventFormLabel label="住所" required />
                       <input
@@ -494,16 +499,12 @@ export function EventFormStepContent({
               )}
 
               <div className={eventFormFieldM}>
-                <EventFormLabel label="参加費（円）" />
-                <input
-                  name="price"
-                  type="number"
-                  min={0}
+                <EventPriceInput
                   value={form.price}
-                  onChange={handleChange}
-                  className={eventFormInpSm}
+                  onChange={(price) => setForm((prev) => ({ ...prev, price }))}
+                  inputClassName={eventFormInpSm}
+                  hint="空欄か 0 で無料イベント"
                 />
-                <EventFormHint text="0で無料イベント" />
               </div>
             </EventFormCard>
           </div>
@@ -554,21 +555,13 @@ export function EventFormStepContent({
                 <EventFormError msg={errors.location} />
               </div>
             )}
-            {/* オンラインのみ: 左に参加費を置き、右カラムの高さとバランス */}
             {showOnline && !showVenue ? (
-              <div>
-                <EventFormLabel label="参加費（円）" />
-                <input
-                  name="price"
-                  type="number"
-                  min={0}
-                  value={form.price}
-                  onChange={handleChange}
-                  className={`${eventFormInp} ${errors.price ? eventFormInpErr : ""}`}
-                />
-                <EventFormHint text="0で無料。有料の場合はStripe設定が必要です" />
-                <EventFormError msg={errors.price} />
-              </div>
+              <EventPriceInput
+                value={form.price}
+                onChange={(price) => setForm((prev) => ({ ...prev, price }))}
+                inputClassName={eventFormInp}
+                error={errors.price}
+              />
             ) : null}
           </div>
         </div>
@@ -589,50 +582,15 @@ export function EventFormStepContent({
           <div className={pcStack}>
             {showVenue && (
               <>
-                <div
-                  className={
-                    form.prefecture &&
-                    (EVENT_FORM_CITIES_BY_PREF[form.prefecture] ?? []).length > 0
-                      ? "grid grid-cols-2 gap-1.5"
-                      : undefined
-                  }
-                >
-                  <div>
-                    <EventFormLabel label="都道府県" required />
-                    <select
-                      name="prefecture"
-                      value={form.prefecture ?? ""}
-                      onChange={handleChange}
-                      className={pcInp}
-                    >
-                      <option value="">選択してください</option>
-                      {EVENT_FORM_PREFECTURES.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {form.prefecture &&
-                    (EVENT_FORM_CITIES_BY_PREF[form.prefecture] ?? []).length > 0 && (
-                      <div>
-                        <EventFormLabel label="市区町村" opt="任意" />
-                        <select
-                          name="city"
-                          value={form.city ?? ""}
-                          onChange={handleChange}
-                          className={pcInp}
-                        >
-                          <option value="">選択してください</option>
-                          {EVENT_FORM_CITIES_BY_PREF[form.prefecture]?.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                </div>
+                <EventFormVenueRegionFields
+                  prefecture={form.prefecture ?? ""}
+                  city={form.city ?? ""}
+                  selectClassName={pcInp}
+                  dense
+                  onPrefectureChange={setPrefecture}
+                  onCityChange={setCity}
+                  onClearPrefectureAndCity={clearPrefectureAndCity}
+                />
                 <div className={isHybrid ? "grid grid-cols-2 gap-1.5" : undefined}>
                   <div>
                     <EventFormLabel label="住所" required />
@@ -699,21 +657,17 @@ export function EventFormStepContent({
                     : "space-y-2.5 border-t border-[#e8e6e0] pt-3"
                 }
               >
-                <div>
-                  <EventFormLabel label="参加費（円）" />
-                  <input
-                    name="price"
-                    type="number"
-                    min={0}
-                    value={form.price}
-                    onChange={handleChange}
-                    className={`${pcInp} ${errors.price ? eventFormInpErr : ""}`}
-                  />
-                  {!isHybrid && (
-                    <EventFormHint text="0で無料。有料の場合はStripe設定が必要です" />
-                  )}
-                  <EventFormError msg={errors.price} />
-                </div>
+                <EventPriceInput
+                  value={form.price}
+                  onChange={(price) => setForm((prev) => ({ ...prev, price }))}
+                  inputClassName={pcInp}
+                  error={errors.price}
+                  hint={
+                    isHybrid
+                      ? undefined
+                      : "空欄か 0 で無料。有料の場合はStripe設定が必要です"
+                  }
+                />
                 {showVenue && (
                   <div>
                     <EventFormLabel label="雨天時対応" opt="任意" />
@@ -750,8 +704,8 @@ export function EventFormStepContent({
     };
 
     return (
-      <div className="flex flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
-        <div className="min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] p-4 min-[900px]:px-5 min-[900px]:py-4">
+      <div className="flex min-w-0 flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
+        <div className="min-w-0 min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:px-5 min-[900px]:py-4">
           <div className={eventFormPcSectionHead}>
             <div className="mb-0.5 flex items-center gap-2 text-[15px] font-[600]">
               {infoIcon}
@@ -777,7 +731,7 @@ export function EventFormStepContent({
               </p>
             </div>
 
-            <div>
+            <div className="min-w-0 overflow-hidden">
               <EventFormLabel label="定員" opt="任意" />
               <input
                 name="capacity"
@@ -795,7 +749,7 @@ export function EventFormStepContent({
               />
               <EventFormHint text="未入力で無制限。設定すると定員に達した時点で申し込みが締め切られます" />
             </div>
-            <div>
+            <div className="min-w-0 overflow-hidden">
               <EventFormLabel label="申し込み締め切り" opt="任意" />
               <input
                 type="date"
@@ -816,7 +770,7 @@ export function EventFormStepContent({
               />
               <EventFormHint text="未入力の場合は開催日まで受け付けます" />
             </div>
-            <div>
+            <div className="min-w-0 overflow-hidden">
               <EventFormLabel label="持ち物・服装" opt="任意" />
               <input
                 value={itemsInput}
