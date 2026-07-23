@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 import type { Event } from "@/lib/db/types";
 import type { CategoryKey } from "@/lib/categories";
+import { getEventStatus } from "@/lib/events";
 import { getHeroWithSubCards } from "@/lib/filterEvents";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { PcEventCard } from "./PcEventCard";
@@ -52,19 +53,24 @@ export function PcRecommendedRow({
     const list = [featured, ...subCards].filter((e): e is Event => e != null);
     if (list.length >= CARD_COUNT) return list.slice(0, CARD_COUNT);
     const ids = new Set(list.map((e) => e.id));
-    const rest = events.filter((e) => !ids.has(e.id));
+    const rest = events.filter(
+      (e) => !ids.has(e.id) && getEventStatus(e) !== "ended"
+    );
     return [...list, ...rest].slice(0, CARD_COUNT);
   }, [events, areaPreference, categoryPrefs]);
 
   const displayEvents = hasActiveFilter
-    ? (filteredEvents ?? [])
+    ? (filteredEvents ?? []).filter((e) => getEventStatus(e) !== "ended")
     : tab === "recommended"
       ? recommendedEvents
       : popularEvents;
   const isLoading = loading && (hasActiveFilter || tab === "recommended" ? loading : popularLoading);
 
   return (
-    <section aria-label="おすすめイベント" className="space-y-2">
+    <section
+      aria-label="おすすめイベント"
+      className="space-y-2 rounded-[16px] bg-white px-3 py-3 ring-1 ring-[#e3e8e4]/80"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5">
@@ -102,7 +108,7 @@ export function PcRecommendedRow({
           ))}
         </div>
       ) : displayEvents.length === 0 ? (
-        <div className="rounded-[14px] bg-white p-10 text-center ring-1 ring-[#e3e8e4]">
+        <div className="rounded-[14px] p-10 text-center">
           <p className="text-[13px] text-[#6a6258]">
             {hasActiveFilter ? "条件に合うイベントが見つかりませんでした" : "おすすめのイベントがありません"}
           </p>

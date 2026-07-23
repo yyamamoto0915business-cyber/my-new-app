@@ -19,11 +19,13 @@ import { getPrimaryCategory, inferCategoryKeys } from "@/lib/inferCategory";
 import { PcDiscoverHero } from "@/components/home/pc/PcDiscoverHero";
 import { PcSearchFiltersPanel } from "@/components/home/pc/PcSearchFiltersPanel";
 import { PcRecommendedRow } from "@/components/home/pc/PcRecommendedRow";
+import { PcPastEventsRow } from "@/components/home/pc/PcPastEventsRow";
 import { PcCtaBanners } from "@/components/home/pc/PcCtaBanners";
 import { MobileDiscoverHero } from "@/components/home/mobile/MobileDiscoverHero";
 import { MobileRegionSection } from "@/components/home/mobile/MobileRegionSection";
 import { MobileCategoryGrid } from "@/components/home/mobile/MobileCategoryGrid";
 import { MobileRecommendedCarousel } from "@/components/home/mobile/MobileRecommendedCarousel";
+import { MobilePastEventsSection } from "@/components/home/mobile/MobilePastEventsSection";
 import { MobileCtaBanners } from "@/components/home/mobile/MobileCtaBanners";
 
 export function HomeOtonami() {
@@ -139,6 +141,9 @@ export function HomeOtonami() {
           areaPreference={effectiveArea}
           categoryPrefs={categoryPrefs}
         />
+        {!hasActiveFilter && (
+          <PcPastEventsRow events={allEvents} loading={loading} />
+        )}
         <PcCtaBanners />
       </main>
 
@@ -158,6 +163,9 @@ export function HomeOtonami() {
           areaPreference={effectiveArea}
           categoryPrefs={categoryPrefs}
         />
+        {!hasActiveFilter && (
+          <MobilePastEventsSection events={allEvents} loading={loading} />
+        )}
         <section aria-label="カテゴリと地域で探す" className="mg-mobile-section space-y-2.5">
           <MobileCategoryGrid
             embedded

@@ -150,24 +150,19 @@ export function EventsListPcEventCard({ event }: Props) {
             }}
           />
         </button>
-
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-[#1A2214]/80 via-[#1A2214]/35 to-transparent px-2 pb-1.5 pt-7"
-          aria-hidden
-        />
-        <h3 className="absolute inset-x-0 bottom-0 z-[2] line-clamp-2 px-2 pb-1.5 text-[12px] font-bold leading-snug text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
-          {event.title}
-        </h3>
       </div>
 
-      <div className="space-y-0.5 px-2 py-1.5">
+      <div className="flex flex-1 flex-col gap-0.5 px-2 py-1.5">
         <p className="text-[9px] font-medium leading-tight text-[#566358]">{scheduleLabel}</p>
+        <h3 className="line-clamp-2 text-[12px] font-bold leading-snug text-[#1A2214]">
+          {event.title}
+        </h3>
         <p className="flex items-center gap-0.5 text-[9px] text-[#6A7068]">
           <MapPin className="h-2 w-2 shrink-0 text-[#2D7A4F]" aria-hidden />
           <span className="line-clamp-1">{event.location}</span>
         </p>
         {displayTags.length > 0 ? (
-          <div className="flex flex-wrap gap-0.5">
+          <div className="mt-auto flex flex-wrap gap-0.5 pt-0.5">
             {displayTags.map((tag) => (
               <span
                 key={tag}

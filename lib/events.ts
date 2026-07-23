@@ -109,6 +109,26 @@ function getPastCutoffYmd(days: number): string {
   return getJstTodayYmd(d);
 }
 
+/**
+ * ホーム「過去のイベント」用。直近に終了したイベントを日付降順で返す。
+ */
+export function getPastEvents(
+  events: Event[],
+  limit = 5,
+  pastDays = 180
+): Event[] {
+  const pastCutoff = getPastCutoffYmd(pastDays);
+  return events
+    .filter((e) => getEventStatus(e) === "ended")
+    .filter((e) => e.date >= pastCutoff)
+    .sort(
+      (a, b) =>
+        b.date.localeCompare(a.date) ||
+        (b.startTime || "").localeCompare(a.startTime || "")
+    )
+    .slice(0, limit);
+}
+
 export type BackfillEndedOptions = {
   /** この件数未満の開催予定なら終了イベントを補完する */
   minUpcoming?: number;

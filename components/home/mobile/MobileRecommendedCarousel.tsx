@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 import type { Event } from "@/lib/db/types";
 import type { CategoryKey } from "@/lib/categories";
+import { getEventStatus } from "@/lib/events";
 import { getHeroWithSubCards } from "@/lib/filterEvents";
 import { MobileEventCard, MOBILE_EVENT_CARD_WIDTH } from "./MobileEventCard";
 
@@ -33,11 +34,15 @@ export function MobileRecommendedCarousel({
     const list = [featured, ...subCards].filter((e): e is Event => e != null);
     if (list.length >= CARD_COUNT) return list.slice(0, CARD_COUNT);
     const ids = new Set(list.map((e) => e.id));
-    const rest = events.filter((e) => !ids.has(e.id));
+    const rest = events.filter(
+      (e) => !ids.has(e.id) && getEventStatus(e) !== "ended"
+    );
     return [...list, ...rest].slice(0, CARD_COUNT);
   }, [events, areaPreference, categoryPrefs]);
 
-  const displayEvents = hasActiveFilter ? (filteredEvents ?? []) : recommendedEvents;
+  const displayEvents = hasActiveFilter
+    ? (filteredEvents ?? []).filter((e) => getEventStatus(e) !== "ended")
+    : recommendedEvents;
 
   return (
     <section aria-label="おすすめイベント" className="mg-mobile-section">
