@@ -1,13 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
+import { DraftSaveButton, DraftSaveHint } from "@/components/organizer/events/DraftSaveButtonWithHint";
+import { ApplicationFormSettingsPc } from "@/components/organizer/recruitments/ApplicationFormSettingsPc";
+import { RecruitmentFormPcStepIndicator } from "@/components/organizer/recruitments/RecruitmentFormPcStepIndicator";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { createClient } from "@/lib/supabase/client";
+import {
+  type ApplicationFormConfig,
+  createDefaultApplicationFormConfig,
+  enabledApplicationFormItems,
+  parseApplicationFormConfig,
+} from "@/lib/recruitment-application-form";
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
+type PcStep = 1 | 2 | 3;
 
 type FormData = {
   title: string;
@@ -38,6 +48,18 @@ const initial: FormData = {
   provisions: "",
   notes: "",
 };
+
+function toDatetimeLocal(iso: string | null | undefined): string {
+  if (!iso) return "";
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(iso) && !iso.includes("Z") && !/[+-]\d{2}:\d{2}$/.test(iso)) {
+    return iso.slice(0, 16);
+  }
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 
 const inp =
   "w-full min-w-0 rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[13px] py-[10px] text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
@@ -75,11 +97,18 @@ function Fe({ msg }: { msg?: string }) {
 }
 
 // ── Mobile step indicator (3 steps) ──
-function StepIndicator({ current }: { current: Step }) {
+function StepIndicator({
+  current,
+  onGo,
+}: {
+  current: Step;
+  onGo: (s: Step) => void;
+}) {
   const steps: Array<{ n: Step; label: string; isCheck?: boolean }> = [
     { n: 1, label: "基本情報" },
     { n: 2, label: "日時・条件" },
-    { n: 3, label: "確認・作成", isCheck: true },
+    { n: 3, label: "応募フォーム" },
+    { n: 4, label: "確認・公開", isCheck: true },
   ];
   return (
     <div className="flex items-center gap-0">
@@ -88,7 +117,11 @@ function StepIndicator({ current }: { current: Step }) {
         const isActive = current === n;
         return (
           <div key={n} className="flex flex-1 items-center">
-            <div className="flex shrink-0 flex-col items-center gap-[3px]">
+            <button
+              type="button"
+              onClick={() => onGo(n)}
+              className="flex shrink-0 cursor-pointer flex-col items-center gap-[3px] rounded-lg transition-colors hover:bg-[#f5f4f0]"
+            >
               <div
                 className="flex h-[26px] w-[26px] items-center justify-center rounded-full text-[11px] font-[700] transition-all"
                 style={{
@@ -120,7 +153,7 @@ function StepIndicator({ current }: { current: Step }) {
               >
                 {label}
               </div>
-            </div>
+            </button>
             {i < steps.length - 1 && (
               <div
                 className="mx-[4px] mb-[14px] h-[1.5px] flex-1"
@@ -196,97 +229,130 @@ function RoleList({
   );
 }
 
-// ── PC right-side panel ──
+// ── PC right-side panel（進捗のみ。操作はヘッダー）──
 function PcSidePanel({
+  pcStep,
   form,
-  onDraft,
-  onCreate,
-  saving,
+  formConfig,
 }: {
+  pcStep: PcStep;
   form: FormData;
-  onDraft: () => void;
-  onCreate: () => void;
-  saving: null | "draft" | "create";
+  formConfig: ApplicationFormConfig;
 }) {
-  const prog = [
-    { key: "タイトル", done: !!form.title.trim() },
-    { key: "説明", done: !!form.description.trim() },
-    { key: "役割・人数", done: form.roles.some((r) => r.name.trim()) },
-  ];
+  const formItems = enabledApplicationFormItems(formConfig);
+
+  const prog =
+    pcStep === 2
+      ? [
+          {
+            key: "基本プロフィール",
+            done: formConfig.fields.some((f) => f.section === "profile" && f.enabled),
+          },
+          {
+            key: "今回の応募項目",
+            done: formConfig.fields.some((f) => f.section === "application" && f.enabled),
+          },
+          {
+            key: "規約同意など",
+            done: formConfig.fields.some((f) => f.id === "terms" && f.enabled),
+          },
+          {
+            key: "カスタム質問",
+            done:
+              formConfig.customQuestions.length === 0 ||
+              formConfig.customQuestions.every((q) => q.label.trim().length > 0),
+          },
+        ]
+      : [
+          { key: "タイトル", done: !!form.title.trim() },
+          { key: "説明", done: !!form.description.trim() },
+          { key: "役割・人数", done: form.roles.some((r) => r.name.trim()) },
+          { key: "開始日時", done: !!form.start_at },
+          { key: "集合場所", done: !!form.meeting_place.trim() },
+        ];
+
   const filled = prog.filter((p) => p.done).length;
-  const pct = Math.round((filled / prog.length) * 100);
-  const canCreate = !!form.title.trim() && !!form.description.trim();
+  const pct = Math.round((filled / Math.max(prog.length, 1)) * 100);
 
   return (
-    <div className="flex w-[272px] shrink-0 flex-col gap-[14px] min-h-0 overflow-y-auto border-l border-[#e8e6e0] bg-[#fafaf8] p-4">
-      {/* Progress */}
-      <div className="rounded-[10px] border border-[#e8e6e0] p-[14px]">
-        <div className="mb-[10px] flex items-center text-[11px] font-[600] tracking-[.05em] text-[#888]">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="mr-[5px]">
-            <polyline points="9 11 12 14 22 4" />
-            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-          </svg>
-          入力の進捗
-          <span className="ml-auto text-[12px] font-[600] text-[#2B3A6B]">{filled}/{prog.length}</span>
-        </div>
-        <div className="mb-[10px] h-[5px] overflow-hidden rounded-[10px] bg-[#f0eeea]">
-          <div
-            className="h-full rounded-[10px] bg-[#6BBF3E] transition-all duration-500"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        {prog.map(({ key, done }) => (
-          <div key={key} className="flex items-center gap-[8px] py-[4px]">
-            <div className="h-[6px] w-[6px] shrink-0 rounded-full" style={{ background: done ? "#6BBF3E" : "#E8708A" }} />
-            <div className="flex-1 text-[12px]">{key}</div>
-            <div className="text-[11px]" style={{ color: done ? "#6BBF3E" : "#E8708A" }}>{done ? "✓" : "未入力"}</div>
+    <aside className="flex w-[240px] shrink-0 flex-col border-l border-[#e8e6e0] bg-[#fafaf8] min-[900px]:min-h-0">
+      <div className="min-h-0 flex-1 overflow-y-auto p-2.5">
+        <div className="rounded-[10px] border border-[#e8e6e0] bg-white p-2.5 shadow-sm">
+          <div className="mb-2 flex items-center text-[12px] font-semibold text-[#1a1a1a]">
+            入力の進捗
+            <span className="ml-auto tabular-nums text-[#2B3A6B]">
+              {filled}/{prog.length}
+            </span>
           </div>
-        ))}
-      </div>
+          <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-[#f0eeea]">
+            <div
+              className="h-full rounded-full bg-[#6BBF3E] transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <ul className="space-y-0.5">
+            {prog.map(({ key, done }) => (
+              <li key={key} className="flex items-center gap-2 rounded-[6px] px-1 py-0.5">
+                <div
+                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
+                  style={{ background: done ? "#6BBF3E" : "#E8708A" }}
+                  aria-hidden
+                >
+                  {done ? "✓" : "!"}
+                </div>
+                <span className="flex-1 text-[12px] text-[#1a1a1a]">{key}</span>
+                <span
+                  className="text-[11px] font-medium"
+                  style={{ color: done ? "#3a7a10" : "#c45a6a" }}
+                >
+                  {done ? "完了" : "未入力"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-      {/* Save / Create */}
-      <div className="rounded-[10px] border border-[#e8e6e0] p-[14px]">
-        <div className="mb-[10px] text-[11px] font-[600] tracking-[.05em] text-[#888]">保存・作成</div>
-        <p className="mb-[12px] text-[12px] leading-[1.6] text-[#555]">
-          タイトルと説明を入力すると作成できます。下書き保存はいつでも可能です。
-        </p>
-        <div className="flex flex-col gap-[7px]">
-          <button
-            type="button"
-            onClick={onDraft}
-            disabled={!!saving}
-            className="w-full rounded-[9px] border border-[#e8e6e0] bg-white py-[10px] text-[13px] font-[500] hover:bg-[#f5f4f0] disabled:opacity-50"
-          >
-            {saving === "draft" ? "保存中…" : "下書き保存"}
-          </button>
-          <button
-            type="button"
-            onClick={onCreate}
-            disabled={!!saving || !canCreate}
-            className="flex w-full items-center justify-center gap-[6px] rounded-[9px] py-[10px] text-[13px] font-[600] text-white transition disabled:opacity-50"
-            style={{ background: canCreate && !saving ? "#6BBF3E" : "#bbb" }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            {saving === "create" ? "作成中…" : "作成して公開する"}
-          </button>
+        {pcStep === 2 ? (
+          <div className="mt-2 rounded-[10px] border border-[#e8e6e0] bg-white p-2.5 shadow-sm">
+            <p className="mb-1.5 text-[11px] font-semibold text-[#888]">現在の応募フォーム</p>
+            {formItems.length === 0 ? (
+              <p className="text-[12px] text-[#8a9e80]">項目がありません</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {formItems.map((item) => (
+                  <li key={item.label} className="flex items-start justify-between gap-2 text-[12px]">
+                    <span className="text-[#1a2818]">{item.label}</span>
+                    <span
+                      className={
+                        item.badge === "required"
+                          ? "shrink-0 rounded bg-[#FEF2F2] px-1.5 py-0.5 text-[9px] font-semibold text-[#E8708A]"
+                          : item.badge === "auto"
+                            ? "shrink-0 rounded bg-[#eef3ea] px-1.5 py-0.5 text-[9px] font-semibold text-[#3a7a10]"
+                            : "shrink-0 text-[10px] text-[#888]"
+                      }
+                    >
+                      {item.badge === "required"
+                        ? "必須"
+                        : item.badge === "auto"
+                          ? "自動取得"
+                          : "任意"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
+
+        <div className="mt-2 space-y-2">
+          <DraftSaveHint multiline destinationLabel="スタッフ募集" />
         </div>
       </div>
 
-      {/* Hint */}
-      <div className="rounded-[10px] border border-[#C5DBE8] bg-[#EEF4F8] p-[12px]">
-        <div className="mb-[5px] flex items-center gap-[5px] text-[12px] font-[500] text-[#2A5A74]">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2A5A74" strokeWidth="2" strokeLinecap="round">
-            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          役割について
-        </div>
-        <p className="text-[12px] leading-[1.6] text-[#2A5A74]">
-          受付・誘導・設営など役割ごとに追加できます。応募者が自分に合った役割を選んで応募できるようになります。
-        </p>
+      <div className="shrink-0 border-t border-[#e8e6e0] bg-[#fafaf8] px-2.5 py-2">
+        <p className="text-center text-[10.5px] text-[#888]">STEP {pcStep} / 3</p>
       </div>
-    </div>
+    </aside>
   );
 }
 
@@ -335,12 +401,22 @@ function SRow({ label, value, empty }: { label: string; value: string; empty?: b
 
 function NewRecruitmentPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams?.get("editId")?.trim() || null;
+  const isEdit = Boolean(editId);
+
   const [step, setStep] = useState<Step>(1);
+  const [pcStep, setPcStep] = useState<PcStep>(1);
   const [form, setForm] = useState<FormData>(initial);
+  const [formConfig, setFormConfig] = useState<ApplicationFormConfig>(
+    createDefaultApplicationFormConfig
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<null | "draft" | "create">(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [events, setEvents] = useState<OrgEvent[]>([]);
+  const [loadingEdit, setLoadingEdit] = useState(Boolean(editId));
+  const [originalStatus, setOriginalStatus] = useState<"draft" | "public" | "closed">("draft");
 
   useEffect(() => {
     const supabase = createClient();
@@ -365,6 +441,75 @@ function NewRecruitmentPageContent() {
       if (evts) setEvents(evts as OrgEvent[]);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!editId) {
+      setLoadingEdit(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setLoadingEdit(true);
+      setGlobalError(null);
+      try {
+        const res = await fetchWithTimeout(`/api/recruitments/${editId}`);
+        const data = (await res.json().catch(() => null)) as
+          | {
+              id?: string;
+              title?: string;
+              description?: string;
+              status?: string;
+              start_at?: string | null;
+              end_at?: string | null;
+              meeting_place?: string | null;
+              capacity?: number | null;
+              items_to_bring?: string | null;
+              provisions?: string | null;
+              notes?: string | null;
+              roles?: { name: string; count: number }[];
+              event_id?: string | null;
+              application_form_config?: unknown;
+            }
+          | null;
+        if (!res.ok || !data?.id) {
+          throw new Error((data as { error?: string } | null)?.error ?? "募集の読み込みに失敗しました");
+        }
+        if (cancelled) return;
+        const status =
+          data.status === "public" || data.status === "closed" || data.status === "draft"
+            ? data.status
+            : "draft";
+        setOriginalStatus(status);
+        setForm({
+          title: data.title ?? "",
+          description: data.description ?? "",
+          eventId: data.event_id ?? "",
+          roles:
+            Array.isArray(data.roles) && data.roles.length > 0
+              ? data.roles.map((r) => ({ name: r.name ?? "", count: Number(r.count ?? 1) || 1 }))
+              : [{ name: "受付", count: 1 }],
+          start_at: toDatetimeLocal(data.start_at),
+          end_at: toDatetimeLocal(data.end_at),
+          meeting_place: data.meeting_place ?? "",
+          capacity: data.capacity ?? null,
+          items_to_bring: data.items_to_bring ?? "",
+          provisions: data.provisions ?? "",
+          notes: data.notes ?? "",
+        });
+        setFormConfig(parseApplicationFormConfig(data.application_form_config));
+        setPcStep(1);
+      } catch (err) {
+        if (!cancelled) {
+          setGlobalError(err instanceof Error ? err.message : "読み込みに失敗しました");
+        }
+      } finally {
+        if (!cancelled) setLoadingEdit(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editId]);
 
   const update = <K extends keyof FormData>(key: K, val: FormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -398,7 +543,7 @@ function NewRecruitmentPageContent() {
     return Object.keys(errs).length === 0;
   };
 
-  const buildPayload = (status: "draft" | "public") => ({
+  const buildPayload = (status: "draft" | "public" | "closed") => ({
     title: form.title.trim(),
     description: form.description.trim(),
     status,
@@ -411,12 +556,24 @@ function NewRecruitmentPageContent() {
     notes: form.notes.trim() || null,
     roles: form.roles.filter((r) => r.name.trim()),
     event_id: form.eventId || null,
+    application_form_config: formConfig,
   });
 
   const saveDraft = async () => {
     setSaving("draft");
     setGlobalError(null);
     try {
+      if (isEdit && editId) {
+        const res = await fetchWithTimeout(`/api/recruitments/${editId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildPayload("draft")),
+        });
+        const data = (await res.json().catch(() => ({}))) as { id?: string; error?: string };
+        if (!res.ok) throw new Error(data.error ?? "保存に失敗しました");
+        router.push(`/organizer/recruitments/${editId}`);
+        return;
+      }
       const res = await fetchWithTimeout("/api/recruitments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -435,11 +592,24 @@ function NewRecruitmentPageContent() {
   const createRecruitment = async () => {
     if (!validate()) {
       if (step !== 1) setStep(1);
+      setPcStep(1);
       return;
     }
     setSaving("create");
     setGlobalError(null);
     try {
+      if (isEdit && editId) {
+        const nextStatus = originalStatus === "closed" ? "closed" : "public";
+        const res = await fetchWithTimeout(`/api/recruitments/${editId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildPayload(nextStatus)),
+        });
+        const data = (await res.json().catch(() => ({}))) as { id?: string; error?: string };
+        if (!res.ok) throw new Error(data.error ?? "更新に失敗しました");
+        router.push(`/organizer/recruitments/${editId}`);
+        return;
+      }
       const res = await fetchWithTimeout("/api/recruitments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -455,8 +625,26 @@ function NewRecruitmentPageContent() {
     }
   };
 
+  const handlePcPrimary = () => {
+    if (pcStep === 1) {
+      const errs: Record<string, string> = {};
+      if (!form.title.trim()) errs.title = "タイトルを入力してください";
+      if (!form.description.trim()) errs.description = "説明を入力してください";
+      setErrors(errs);
+      if (Object.keys(errs).length > 0) return;
+      setPcStep(2);
+      return;
+    }
+    if (pcStep === 2) {
+      setPcStep(3);
+      return;
+    }
+    void createRecruitment();
+  };
+
   const handleBack = () => {
     if (step > 1) setStep((s) => (s - 1) as Step);
+    else if (isEdit && editId) router.push(`/organizer/recruitments/${editId}`);
     else router.push("/organizer/recruitments");
   };
 
@@ -468,11 +656,50 @@ function NewRecruitmentPageContent() {
       setErrors(errs);
       if (Object.keys(errs).length > 0) return;
     }
-    if (step < 3) setStep((s) => (s + 1) as Step);
+    if (step < 4) setStep((s) => (s + 1) as Step);
   };
 
-  const nextLabel = step === 1 ? "日時・条件へ" : "確認・作成へ";
+  const nextLabel =
+    step === 1 ? "日時・条件へ" : step === 2 ? "応募フォームへ" : "確認へ進む";
   const hasErrors = !form.title.trim() || !form.description.trim();
+  const pcPrimaryLabel =
+    pcStep === 1
+      ? "応募フォームの設定へ"
+      : pcStep === 2
+        ? "確認へ進む"
+        : isEdit
+          ? "変更を保存"
+          : "作成して公開する";
+  const pcPageTitle =
+    pcStep === 1
+      ? isEdit
+        ? "スタッフ募集を編集"
+        : "スタッフ募集を作成"
+      : pcStep === 2
+        ? "応募フォームの設定"
+        : isEdit
+          ? "確認・保存"
+          : "確認・公開";
+  const pcPageSubtitle =
+    pcStep === 1
+      ? "募集の基本情報と日時・条件を入力してください"
+      : pcStep === 2
+        ? "応募者に入力してもらう内容と必須項目を設定しましょう"
+        : "内容を確認して公開しましょう";
+  const pageTitle = isEdit ? "スタッフ募集を編集" : "スタッフ募集を新規作成";
+  const pageSubtitle = isEdit
+    ? "募集内容を更新して保存できます"
+    : "役割と日時を設定してスタッフを募集しましょう";
+  const primaryLabel =
+    saving === "create" ? (isEdit ? "保存中…" : "作成中…") : isEdit ? "変更を保存" : "作成する";
+
+  if (loadingEdit) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center text-sm text-[#888]">
+        読み込み中…
+      </div>
+    );
+  }
 
   // Summary display values
   const rolesText =
@@ -631,45 +858,76 @@ function NewRecruitmentPageContent() {
   return (
     <div className="relative z-[1] flex flex-col min-[900px]:-mx-8 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white">
 
-      {/* ── PC: Page header ── */}
-      <div className="hidden min-[900px]:flex shrink-0 items-center justify-between gap-4 border-b border-[#e8e6e0] bg-white px-6 py-2.5">
-        <div>
-          <div className="text-[18px] font-[700]">スタッフ募集を新規作成</div>
-          <div className="mt-[2px] text-[12px] text-[#888]">役割と日時を設定してスタッフを募集しましょう</div>
-        </div>
-        <div className="flex shrink-0 gap-[8px]">
-          <Link
-            href="/organizer/recruitments"
-            className="rounded-[9px] border border-[#e8e6e0] bg-white px-[16px] py-[8px] text-[13px] hover:bg-[#f5f4f0]"
-          >
-            キャンセル
-          </Link>
+      {/* ── PC: Header（イベント作成と同型）── */}
+      <header className="z-10 hidden shrink-0 border-b border-[#d8d4cc] bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)] min-[900px]:block">
+        <div className="flex items-center gap-4 px-6 py-1.5">
           <button
             type="button"
-            onClick={saveDraft}
-            disabled={!!saving}
-            className="flex items-center gap-[5px] rounded-[9px] border border-[#e8e6e0] bg-white px-[16px] py-[8px] text-[13px] font-[500] hover:bg-[#f5f4f0] disabled:opacity-50"
+            onClick={() => {
+              if (pcStep > 1) setPcStep((s) => (s - 1) as PcStep);
+              else if (isEdit && editId) router.push(`/organizer/recruitments/${editId}`);
+              else router.push("/organizer/recruitments");
+            }}
+            className="flex w-[9rem] shrink-0 items-center gap-1 text-left text-[11px] font-medium text-[#4a4844] hover:text-[#2B3A6B]"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-              <polyline points="17 21 17 13 7 13 7 21" />
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0" aria-hidden>
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
             </svg>
-            {saving === "draft" ? "保存中…" : "下書き保存"}
+            <span className="truncate">
+              {pcStep === 1
+                ? "募集一覧へ"
+                : pcStep === 2
+                  ? "基本情報に戻る"
+                  : "フォーム設定に戻る"}
+            </span>
           </button>
-          <button
-            type="button"
-            onClick={createRecruitment}
-            disabled={!!saving}
-            className="flex items-center gap-[6px] rounded-[9px] px-[20px] py-[8px] text-[13px] font-[600] text-white transition disabled:opacity-50"
-            style={{ background: "#6BBF3E" }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            {saving === "create" ? "作成中…" : "作成する"}
-          </button>
+          <RecruitmentFormPcStepIndicator
+            current={pcStep}
+            onGo={setPcStep}
+            canGoTo={(s) => s === 1 || (!!form.title.trim() && !!form.description.trim())}
+          />
         </div>
-      </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#edeae4] bg-[#fafaf8] px-6 py-1.5">
+          <div className="min-w-0">
+            <p className="truncate text-[13px] font-semibold text-[#1a1a1a]">{pcPageTitle}</p>
+            <p className="truncate text-[11px] text-[#888]">{pcPageSubtitle}</p>
+          </div>
+          <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+            <Link
+              href={isEdit && editId ? `/organizer/recruitments/${editId}` : "/organizer/recruitments"}
+              className="rounded-[8px] border border-[#d0ccc4] bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#1a1a1a] hover:bg-[#f5f4f0]"
+            >
+              キャンセル
+            </Link>
+            <button
+              type="button"
+              onClick={saveDraft}
+              disabled={!!saving}
+              className="flex items-center gap-1.5 rounded-[8px] border border-[#d0ccc4] bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#1a1a1a] hover:bg-[#f5f4f0] disabled:opacity-50"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+              </svg>
+              {saving === "draft" ? "保存中…" : "下書き保存"}
+            </button>
+            <button
+              type="button"
+              onClick={handlePcPrimary}
+              disabled={!!saving || (pcStep === 1 && hasErrors)}
+              className={[
+                "min-w-[6rem] rounded-[8px] px-4 py-1.5 text-[11px] font-semibold transition",
+                !(pcStep === 1 && hasErrors) && !saving
+                  ? "bg-[#2B3A6B] text-white hover:bg-[#243159]"
+                  : "cursor-not-allowed bg-[#ebe8e2] text-[#8a8680]",
+              ].join(" ")}
+            >
+              {saving === "create" ? (isEdit ? "保存中…" : "作成中…") : pcPrimaryLabel}
+            </button>
+          </div>
+        </div>
+      </header>
 
       {/* ── Mobile: Header + step indicator ── */}
       <div className="min-[900px]:hidden sticky top-0 z-10 border-b border-[#e8e6e0] bg-white">
@@ -683,29 +941,23 @@ function NewRecruitmentPageContent() {
               <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
             </svg>
           </button>
-          <div className="flex-1 text-[13px] font-[600]">スタッフ募集を新規作成</div>
-          <div className="flex gap-[5px]">
-            <button
-              type="button"
-              onClick={saveDraft}
-              disabled={!!saving}
-              className="rounded-[8px] bg-[#F3F2EF] px-[12px] py-[6px] text-[11px] font-[600] disabled:opacity-50"
-            >
-              {saving === "draft" ? "保存中" : "下書き"}
-            </button>
-            <button
-              type="button"
-              onClick={step === 3 ? createRecruitment : handleNext}
-              disabled={!!saving}
-              className="rounded-[8px] px-[12px] py-[6px] text-[11px] font-[600] text-white disabled:opacity-50"
-              style={{ background: "#6BBF3E" }}
-            >
-              {saving === "create" ? "作成中" : step === 3 ? "作成" : "次へ"}
-            </button>
-          </div>
+          <div className="min-w-0 flex-1 truncate text-[13px] font-[600]">{pageTitle}</div>
         </div>
         <div className="px-[14px] pb-[10px]">
-          <StepIndicator current={step} />
+          <StepIndicator
+            current={step}
+            onGo={(s) => {
+              if (s > 1 && (!form.title.trim() || !form.description.trim())) {
+                const errs: Record<string, string> = {};
+                if (!form.title.trim()) errs.title = "タイトルを入力してください";
+                if (!form.description.trim()) errs.description = "説明を入力してください";
+                setErrors(errs);
+                setStep(1);
+                return;
+              }
+              setStep(s);
+            }}
+          />
         </div>
       </div>
 
@@ -716,45 +968,118 @@ function NewRecruitmentPageContent() {
         </div>
       )}
 
-      {/* ── PC: 3-column layout ── */}
+      {/* ── PC: stepped layout ── */}
       <div className="hidden min-h-0 min-[900px]:flex min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:border-t min-[900px]:border-[#e8e6e0]">
-
-        {/* Left: Basic info */}
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto border-r border-[#e8e6e0] px-6 py-5">
-          <div className="mb-4 border-b border-[#e8e6e0] pb-3">
-            <div className="mb-[3px] flex items-center gap-[7px] text-[15px] font-[600]">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B3A6B" strokeWidth="2" strokeLinecap="round">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
-              </svg>
-              基本情報
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-5 py-3">
+          {pcStep === 1 ? (
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <div className="mb-3 border-b border-[#e8e6e0] pb-2">
+                  <div className="mb-[2px] flex items-center gap-[7px] text-[14px] font-[600]">
+                    基本情報
+                  </div>
+                  <p className="text-[11px] text-[#888]">募集のタイトルと内容を入力してください</p>
+                </div>
+                {basicFields}
+              </div>
+              <div>
+                <div className="mb-3 border-b border-[#e8e6e0] pb-2">
+                  <div className="mb-[2px] flex items-center gap-[7px] text-[14px] font-[600]">
+                    日時・条件
+                  </div>
+                  <p className="text-[11px] text-[#888]">活動日時と参加条件を設定します</p>
+                </div>
+                {conditionFields}
+              </div>
             </div>
-            <p className="text-[12px] text-[#888]">募集のタイトルと内容を入力してください</p>
-          </div>
-          {basicFields}
+          ) : null}
+
+          {pcStep === 2 ? (
+            <ApplicationFormSettingsPc config={formConfig} onChange={setFormConfig} />
+          ) : null}
+
+          {pcStep === 3 ? (
+            <div className="mx-auto max-w-2xl space-y-4">
+              <div className="rounded-xl border border-[#e8e6e0] bg-white p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-[14px] font-semibold text-[#1a2818]">基本情報・条件</h3>
+                  <button
+                    type="button"
+                    onClick={() => setPcStep(1)}
+                    className="text-[12px] font-medium text-[#2B3A6B] hover:underline"
+                  >
+                    編集
+                  </button>
+                </div>
+                <dl className="space-y-2 text-[13px]">
+                  <div className="flex gap-3">
+                    <dt className="w-24 shrink-0 text-[#8a9e80]">タイトル</dt>
+                    <dd className="font-medium text-[#1a2818]">{form.title.trim() || "—"}</dd>
+                  </div>
+                  <div className="flex gap-3">
+                    <dt className="w-24 shrink-0 text-[#8a9e80]">日時</dt>
+                    <dd className="text-[#1a2818]">
+                      {startText ?? "—"}
+                      {endText ? ` 〜 ${endText}` : ""}
+                    </dd>
+                  </div>
+                  <div className="flex gap-3">
+                    <dt className="w-24 shrink-0 text-[#8a9e80]">集合場所</dt>
+                    <dd className="text-[#1a2818]">{form.meeting_place.trim() || "—"}</dd>
+                  </div>
+                  <div className="flex gap-3">
+                    <dt className="w-24 shrink-0 text-[#8a9e80]">役割</dt>
+                    <dd className="text-[#1a2818]">{rolesText}</dd>
+                  </div>
+                </dl>
+              </div>
+              <div className="rounded-xl border border-[#e8e6e0] bg-white p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-[14px] font-semibold text-[#1a2818]">応募フォーム</h3>
+                  <button
+                    type="button"
+                    onClick={() => setPcStep(2)}
+                    className="text-[12px] font-medium text-[#2B3A6B] hover:underline"
+                  >
+                    編集
+                  </button>
+                </div>
+                <ul className="space-y-2">
+                  {enabledApplicationFormItems(formConfig).map((item) => (
+                    <li
+                      key={item.label}
+                      className="flex items-center justify-between gap-2 border-b border-[#f0f2ec] py-2 text-[13px] last:border-0"
+                    >
+                      <span>{item.label}</span>
+                      <span
+                        className={
+                          item.badge === "required"
+                            ? "rounded bg-[#FEF2F2] px-1.5 py-0.5 text-[9px] font-semibold text-[#E8708A]"
+                            : item.badge === "auto"
+                              ? "rounded bg-[#eef3ea] px-1.5 py-0.5 text-[9px] font-semibold text-[#3a7a10]"
+                              : "text-[10px] text-[#888]"
+                        }
+                      >
+                        {item.badge === "required"
+                          ? "必須"
+                          : item.badge === "auto"
+                            ? "自動取得"
+                            : "任意"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        {/* Middle: Conditions */}
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto border-r border-[#e8e6e0] px-6 py-5">
-          <div className="mb-4 border-b border-[#e8e6e0] pb-3">
-            <div className="mb-[3px] flex items-center gap-[7px] text-[15px] font-[600] text-[#888]">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              日時・条件
-            </div>
-            <p className="text-[12px] text-[#888]">活動日時と参加条件を設定します</p>
-          </div>
-          {conditionFields}
-        </div>
-
-        {/* Right: Side panel */}
-        <PcSidePanel form={form} onDraft={saveDraft} onCreate={createRecruitment} saving={saving} />
+        <PcSidePanel pcStep={pcStep} form={form} formConfig={formConfig} />
       </div>
 
-      {/* ── Mobile: Step-based content ── */}
+      {/* ── Mobile: 4ステップ（基本 → 日時・条件 → 応募フォーム → 確認）── */}
       <div className="min-[900px]:hidden">
 
-        {/* Step 1: Basic info */}
         {step === 1 && (
           <div className="px-[14px] py-[12px]">
             <Card
@@ -771,7 +1096,6 @@ function NewRecruitmentPageContent() {
           </div>
         )}
 
-        {/* Step 2: Conditions */}
         {step === 2 && (
           <div className="px-[14px] py-[12px]">
             <Card
@@ -788,10 +1112,14 @@ function NewRecruitmentPageContent() {
           </div>
         )}
 
-        {/* Step 3: Confirmation */}
         {step === 3 && (
+          <div className="px-[14px] py-[12px] pb-4">
+            <ApplicationFormSettingsPc config={formConfig} onChange={setFormConfig} />
+          </div>
+        )}
+
+        {step === 4 && (
           <div className="px-[14px] py-[12px]">
-            {/* Basic info summary */}
             <div className="mb-[10px] rounded-[12px] border border-[#e8e6e0] bg-white p-[16px]">
               <div className="mb-[8px] flex justify-between text-[11px] font-[600] text-[#888]">
                 基本情報
@@ -804,12 +1132,20 @@ function NewRecruitmentPageContent() {
                 </button>
               </div>
               <SRow label="タイトル" value={form.title.trim() || "未入力"} empty={!form.title.trim()} />
-              <SRow label="説明" value={form.description.trim() ? form.description.trim().slice(0, 50) + (form.description.trim().length > 50 ? "…" : "") : "未入力"} empty={!form.description.trim()} />
+              <SRow
+                label="説明"
+                value={
+                  form.description.trim()
+                    ? form.description.trim().slice(0, 50) +
+                      (form.description.trim().length > 50 ? "…" : "")
+                    : "未入力"
+                }
+                empty={!form.description.trim()}
+              />
               <SRow label="イベント" value={eventText ?? "未選択"} empty={!eventText} />
               <SRow label="役割" value={rolesText} />
             </div>
 
-            {/* Conditions summary */}
             <div className="mb-[10px] rounded-[12px] border border-[#e8e6e0] bg-white p-[16px]">
               <div className="mb-[8px] flex justify-between text-[11px] font-[600] text-[#888]">
                 日時・条件
@@ -823,21 +1159,69 @@ function NewRecruitmentPageContent() {
               </div>
               <SRow label="開始日時" value={startText ?? "—"} empty={!startText} />
               <SRow label="終了日時" value={endText ?? "—"} empty={!endText} />
-              <SRow label="集合場所" value={form.meeting_place.trim() || "—"} empty={!form.meeting_place.trim()} />
+              <SRow
+                label="集合場所"
+                value={form.meeting_place.trim() || "—"}
+                empty={!form.meeting_place.trim()}
+              />
               <SRow
                 label="募集人数"
                 value={form.capacity ? `${form.capacity}名まで` : "無制限"}
                 empty={!form.capacity}
               />
-              <SRow label="持ち物" value={form.items_to_bring.trim() || "—"} empty={!form.items_to_bring.trim()} />
-              <SRow label="支給" value={form.provisions.trim() || "—"} empty={!form.provisions.trim()} />
+              <SRow
+                label="持ち物"
+                value={form.items_to_bring.trim() || "—"}
+                empty={!form.items_to_bring.trim()}
+              />
+              <SRow
+                label="支給"
+                value={form.provisions.trim() || "—"}
+                empty={!form.provisions.trim()}
+              />
             </div>
 
-            {/* Validation error */}
+            <div className="mb-[10px] rounded-[12px] border border-[#e8e6e0] bg-white p-[16px]">
+              <div className="mb-[8px] flex justify-between text-[11px] font-[600] text-[#888]">
+                応募フォーム
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="font-[500] text-[#2B3A6B]"
+                >
+                  編集
+                </button>
+              </div>
+              {enabledApplicationFormItems(formConfig).map((item) => (
+                <SRow
+                  key={item.label}
+                  label={item.label}
+                  value={
+                    item.badge === "required"
+                      ? "必須"
+                      : item.badge === "auto"
+                        ? "自動取得"
+                        : "任意"
+                  }
+                />
+              ))}
+            </div>
+
             {hasErrors && (
               <div className="mb-[10px] flex gap-[8px] rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-[13px] py-[11px]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8708A" strokeWidth="2" strokeLinecap="round" className="mt-[1px] shrink-0">
-                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#E8708A"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  className="mt-[1px] shrink-0"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
                 <div className="text-[11px] leading-[1.6] text-[#c04060]">
                   タイトルと説明が未入力です。作成するには必須項目を入力してください。
@@ -849,9 +1233,45 @@ function NewRecruitmentPageContent() {
       </div>
 
       {/* ── Mobile: Footer nav ── */}
-      <div className="min-[900px]:hidden sticky bottom-0 z-10 border-t border-[#e8e6e0] bg-white px-[14px] pb-[14px] pt-[10px]">
-        <div className="flex gap-[8px]">
-          {step > 1 && (
+      {step < 4 ? (
+        <div className="min-[900px]:hidden sticky bottom-0 z-10 border-t border-[#e8e6e0] bg-white px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
+          <DraftSaveHint
+            className="mb-2 whitespace-nowrap px-2 py-1 text-[10px] leading-normal tracking-tight"
+            destinationLabel="スタッフ募集"
+          />
+          <div className="flex items-center gap-1.5">
+            {step > 1 ? (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="inline-flex h-9 shrink-0 items-center gap-0.5 rounded-[9px] border border-[#e8e6e0] bg-white px-2.5 text-[12px] font-[500]"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                戻る
+              </button>
+            ) : null}
+            <DraftSaveButton
+              onClick={saveDraft}
+              submitting={saving === "draft"}
+              className="h-9 px-2.5 text-[12px]"
+            />
+            <button
+              type="button"
+              onClick={handleNext}
+              className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-1 rounded-[9px] border-none bg-[#2B3A6B] px-2.5 text-[12px] font-[600] text-white"
+            >
+              <span className="truncate">{nextLabel}</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="shrink-0">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="min-[900px]:hidden sticky bottom-0 z-10 border-t border-[#e8e6e0] bg-white px-[14px] pb-[14px] pt-[10px]">
+          <div className="flex gap-[8px]">
             <button
               type="button"
               onClick={handleBack}
@@ -862,20 +1282,6 @@ function NewRecruitmentPageContent() {
               </svg>
               戻る
             </button>
-          )}
-          {step < 3 ? (
-            <button
-              type="button"
-              onClick={handleNext}
-              className="flex flex-1 items-center justify-center gap-[5px] rounded-[10px] border-none py-[11px] text-[13px] font-[600] text-white"
-              style={{ background: "#2B3A6B" }}
-            >
-              {nextLabel}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-          ) : (
             <button
               type="button"
               onClick={createRecruitment}
@@ -886,11 +1292,11 @@ function NewRecruitmentPageContent() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              {saving === "create" ? "作成中…" : "作成する"}
+              {primaryLabel}
             </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -898,7 +1304,15 @@ function NewRecruitmentPageContent() {
 export default function NewRecruitmentPage() {
   return (
     <OrganizerRegistrationGate>
-      <NewRecruitmentPageContent />
+      <Suspense
+        fallback={
+          <div className="flex min-h-[40vh] items-center justify-center text-sm text-[#888]">
+            読み込み中…
+          </div>
+        }
+      >
+        <NewRecruitmentPageContent />
+      </Suspense>
     </OrganizerRegistrationGate>
   );
 }

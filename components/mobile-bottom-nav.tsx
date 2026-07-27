@@ -89,7 +89,9 @@ export function MobileBottomNav() {
   if (
     authRoute ||
     isMessagesConversationRoute(pathname) ||
-    isProfileEditRoute(pathname)
+    isProfileEditRoute(pathname) ||
+    pathname === "/application-form-preview" ||
+    pathname.includes("/application-form")
   ) {
     return null;
   }

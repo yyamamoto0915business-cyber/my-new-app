@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Award,
+  AlertTriangle,
   Calendar,
+  ChevronLeft,
   ChevronRight,
-  Copy,
-  FilePlus2,
-  Globe,
-  LayoutTemplate,
-  MessageCircle,
   MoreVertical,
   Plus,
   Search,
@@ -26,7 +22,7 @@ import type {
 const STATUS_LABELS: Record<string, string> = {
   draft: "下書き",
   public: "募集中",
-  closed: "終了",
+  closed: "募集終了",
 };
 
 export type RecruitmentsStatusFilter = "all" | "public" | "draft" | "closed";
@@ -47,6 +43,8 @@ type Props = {
   onSearchChange: (v: string) => void;
   statusFilter: RecruitmentsStatusFilter;
   onStatusFilterChange: (v: RecruitmentsStatusFilter) => void;
+  eventFilter: string;
+  onEventFilterChange: (v: string) => void;
   sortBy: RecruitmentsSortOption;
   onSortChange: (v: RecruitmentsSortOption) => void;
   kpiFilter: RecruitmentsKpiFilter;
@@ -59,14 +57,14 @@ type Props = {
 
 function formatRoles(roles: { name: string; count: number }[]): string {
   if (!roles?.length) return "—";
-  return roles.map((r) => r.name).filter(Boolean).join("・") || "—";
+  return roles.map((r) => r.name).filter(Boolean).join("、") || "—";
 }
 
-function formatDateTimeRange(
+function formatDateParts(
   startAt: string | null | undefined,
   endAt: string | null | undefined
-): string {
-  if (!startAt) return "—";
+): { date: string; time: string } {
+  if (!startAt) return { date: "—", time: "" };
   const start = new Date(startAt);
   const date = start.toLocaleDateString("ja-JP", {
     year: "numeric",
@@ -78,34 +76,15 @@ function formatDateTimeRange(
     typeof startAt === "string" && startAt.length > 10 ? startAt.slice(11, 16) : "";
   const endTime =
     endAt && typeof endAt === "string" && endAt.length > 10 ? endAt.slice(11, 16) : "";
-  if (startTime && endTime) return `${date} ${startTime}〜${endTime}`;
-  if (startTime) return `${date} ${startTime}`;
-  return date;
-}
-
-function formatCreatedAt(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  if (startTime && endTime) return { date, time: `${startTime} - ${endTime}` };
+  if (startTime) return { date, time: startTime };
+  return { date, time: "" };
 }
 
 function getStatusBadge(r: RecruitmentDashboardItem): {
   label: string;
   className: string;
 } {
-  if ((r.pendingCount ?? 0) > 0) {
-    return {
-      label: "応募確認",
-      className: "bg-white text-[#2B5A8B] border-[#8BB8D8]",
-    };
-  }
   if (r.status === "public") {
     return {
       label: "募集中",
@@ -113,7 +92,7 @@ function getStatusBadge(r: RecruitmentDashboardItem): {
     };
   }
   if (r.status === "closed") {
-    return { label: "終了", className: "bg-[#f0eeea] text-[#7a6a58] border-[#e8e6e0]" };
+    return { label: "募集終了", className: "bg-[#f0eeea] text-[#7a6a58] border-[#e8e6e0]" };
   }
   return {
     label: STATUS_LABELS[r.status] ?? r.status,
@@ -132,13 +111,9 @@ function RecruitmentTableRow({
   const [closing, setClosing] = useState(false);
 
   const primaryHref = `/organizer/recruitments/${recruitment.id}`;
-  const capacity = recruitment.capacity;
-  const applicantText =
-    capacity != null && capacity > 0
-      ? `${recruitment.applicationCount}/${capacity}人`
-      : `${recruitment.applicationCount}人`;
-
+  const applicantText = `${recruitment.applicationCount}名`;
   const badge = getStatusBadge(recruitment);
+  const datetime = formatDateParts(recruitment.start_at, recruitment.end_at);
 
   const handleClose = async () => {
     if (recruitment.status !== "public" || closing) return;
@@ -165,13 +140,15 @@ function RecruitmentTableRow({
   return (
     <tr className="mg-recruitments-pc__tr">
       <td className="mg-recruitments-pc__td">
-        <div className="flex items-center gap-2">
-          <span className="mg-recruitments-pc__row-icon" aria-hidden>
-            <Users className="h-3.5 w-3.5 text-[#7a9488]" strokeWidth={1.75} />
+        <div className="flex items-center gap-2.5">
+          <span className="mg-recruitments-pc__row-icon mg-recruitments-pc__row-icon--green" aria-hidden>
+            <Users className="h-3.5 w-3.5 text-[#3a7a10]" strokeWidth={1.75} />
           </span>
           <div className="min-w-0">
             <p className="mg-recruitments-pc__row-title truncate">{recruitment.title}</p>
-            <p className="mg-recruitments-pc__row-sub truncate">{formatRoles(recruitment.roles)}</p>
+            <p className="mg-recruitments-pc__row-sub truncate">
+              {recruitment.eventTitle?.trim() || "—"}
+            </p>
           </div>
         </div>
       </td>
@@ -181,16 +158,46 @@ function RecruitmentTableRow({
       <td className="mg-recruitments-pc__td mg-recruitments-pc__cell tabular-nums whitespace-nowrap">
         {applicantText}
       </td>
-      <td className="mg-recruitments-pc__td mg-recruitments-pc__cell whitespace-nowrap">
-        {formatDateTimeRange(recruitment.start_at, recruitment.end_at)}
+      <td className="mg-recruitments-pc__td mg-recruitments-pc__cell tabular-nums whitespace-nowrap">
+        <span
+          className={cn(
+            (recruitment.pendingCount ?? 0) > 0 ? "font-semibold text-[#c45a1a]" : "text-[#8a9e80]"
+          )}
+        >
+          {recruitment.pendingCount ?? 0}件
+        </span>
       </td>
-      <td className="mg-recruitments-pc__td mg-recruitments-pc__cell-meta whitespace-nowrap">
-        {formatCreatedAt(recruitment.created_at)}
+      <td className="mg-recruitments-pc__td mg-recruitments-pc__cell whitespace-nowrap">
+        <div className="flex items-start gap-1.5">
+          <Calendar className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#8a9e80]" aria-hidden />
+          <div>
+            <p>{datetime.date}</p>
+            {datetime.time ? <p className="text-[11px] text-[#8a9e80]">{datetime.time}</p> : null}
+          </div>
+        </div>
+      </td>
+      <td className="mg-recruitments-pc__td mg-recruitments-pc__cell">
+        <span className="line-clamp-2">{formatRoles(recruitment.roles)}</span>
       </td>
       <td className="mg-recruitments-pc__td">
         <div className="flex items-center justify-end gap-1.5">
-          <Link href={primaryHref} className="mg-recruitments-pc__btn-action">
-            応募確認
+          <Link
+            href={primaryHref}
+            className="mg-recruitments-pc__btn-action mg-recruitments-pc__btn-action--primary"
+          >
+            応募者確認
+          </Link>
+          <Link
+            href={`/organizer/recruitments/${recruitment.id}/day-of`}
+            className="mg-recruitments-pc__btn-action"
+          >
+            当日管理
+          </Link>
+          <Link
+            href={`/organizer/recruitments/new?editId=${recruitment.id}`}
+            className="mg-recruitments-pc__btn-action"
+          >
+            編集
           </Link>
           <div className="relative">
             <button
@@ -205,20 +212,6 @@ function RecruitmentTableRow({
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
                 <div className="absolute right-0 top-full z-20 mt-1 min-w-[148px] overflow-hidden rounded-lg border border-[#e8e6e0] bg-white py-1 shadow-lg">
-                  <Link
-                    href={`/organizer/recruitments/${recruitment.id}/day-of`}
-                    className="block px-3 py-2 text-[12px] text-[#3a3428] hover:bg-[#f5f4f0]"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    当日管理
-                  </Link>
-                  <Link
-                    href="/messages"
-                    className="block px-3 py-2 text-[12px] text-[#3a3428] hover:bg-[#f5f4f0]"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    チャット
-                  </Link>
                   <Link
                     href={`/organizer/recruitments/new?copyFrom=${recruitment.id}`}
                     className="block px-3 py-2 text-[12px] text-[#3a3428] hover:bg-[#f5f4f0]"
@@ -272,10 +265,6 @@ function KpiCardPc({
       <div className="min-w-0 flex-1 text-left">
         <p className="mg-recruitments-pc__kpi-value">{value}</p>
         <p className="mg-recruitments-pc__kpi-label">{label}</p>
-        <span className="mg-recruitments-pc__kpi-link">
-          詳細を見る
-          <ChevronRight className="h-3 w-3" aria-hidden />
-        </span>
       </div>
     </button>
   );
@@ -289,6 +278,8 @@ export function OrganizerRecruitmentsPcView({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  eventFilter,
+  onEventFilterChange,
   sortBy,
   onSortChange,
   kpiFilter,
@@ -298,6 +289,17 @@ export function OrganizerRecruitmentsPcView({
   nextAction,
   onRecruitmentUpdated,
 }: Props) {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const eventOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of allRecruitments) {
+      if (r.event_id && r.eventTitle) map.set(r.event_id, r.eventTitle);
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], "ja"));
+  }, [allRecruitments]);
+
   const sortedList = useMemo(() => {
     const list = [...filteredRecruitments];
     if (sortBy === "created_asc") {
@@ -310,46 +312,32 @@ export function OrganizerRecruitmentsPcView({
     return list;
   }, [filteredRecruitments, sortBy]);
 
-  const monthStats = useMemo(() => {
-    const approved = allRecruitments.reduce((s, r) => s + (r.approvedCount ?? 0), 0);
-    const scheduled = allRecruitments.filter((r) => {
-      const d = r.start_at ? String(r.start_at).slice(0, 10) : "";
-      return d && d >= new Date().toISOString().slice(0, 10);
-    }).length;
-    return {
-      applications: kpis.totalApplications,
-      approved,
-      scheduled,
-    };
-  }, [allRecruitments, kpis.totalApplications]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, eventFilter, sortBy, kpiFilter, pageSize]);
 
-  const firstCopyId = allRecruitments[0]?.id;
+  const totalPages = Math.max(1, Math.ceil(sortedList.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = sortedList.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const pageEnd = Math.min(safePage * pageSize, sortedList.length);
+  const pageItems = sortedList.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <div className="mg-recruitments-pc w-full">
-      {/* ヒーロー + KPI */}
-      <header className="mg-recruitments-pc__hero">
-        <div className="relative z-[1] flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="mg-recruitments-pc__title">スタッフ募集管理</h1>
-            <p className="mg-recruitments-pc__desc mt-1.5 max-w-xl">
-              イベントごとのスタッフ募集を管理。応募確認から当日管理まで行えます。
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 pt-1">
-            <Link href="/messages" className="mg-recruitments-pc__btn-outline">
-              <MessageCircle className="h-4 w-4" aria-hidden />
-              メッセージ
-            </Link>
-            <Link href="/organizer/recruitments/new" className="mg-recruitments-pc__btn-primary">
-              <Plus className="h-4 w-4" aria-hidden />
-              スタッフ募集を作成
-            </Link>
-          </div>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="mg-recruitments-pc__title">スタッフ募集管理</h1>
+          <p className="mg-recruitments-pc__desc mt-1.5 max-w-xl">
+            イベントごとのスタッフ募集を管理し、応募状況や当日運営まで行えます。
+          </p>
         </div>
+        <Link href="/organizer/recruitments/new" className="mg-recruitments-pc__btn-primary shrink-0">
+          <Plus className="h-4 w-4" aria-hidden />
+          スタッフ募集を作成
+        </Link>
       </header>
 
-      <div className="mg-recruitments-pc__kpi-grid grid grid-cols-4 gap-4">
+      <div className="mg-recruitments-pc__kpi-grid mt-5 grid grid-cols-3 gap-4">
         <KpiCardPc
           icon={<UserCheck className="h-5 w-5 text-[#D45A72]" />}
           value={kpis.pendingApproval}
@@ -368,175 +356,171 @@ export function OrganizerRecruitmentsPcView({
         />
         <KpiCardPc
           icon={<Calendar className="h-5 w-5 text-[#4A9A2E]" />}
-          value={kpis.todayCount}
-          label="今日の募集"
-          tone="success"
-          active={kpiFilter === "today"}
-          onClick={() => onKpiClick("today")}
-        />
-        <KpiCardPc
-          icon={<Globe className="h-5 w-5 text-[#8a9e80]" />}
           value={kpis.active}
           label="公開中"
-          tone="neutral"
+          tone="success"
           active={kpiFilter === "public"}
           onClick={() => onKpiClick("public")}
         />
       </div>
 
       <div className="mg-recruitments-pc__sections">
-      {/* クイックアクション + ネクストアクション */}
-      <div className="grid grid-cols-[1fr_1.35fr] gap-3">
-        <section className="mg-recruitments-pc__panel p-4">
-          <p className="text-[11px] font-semibold tracking-wide text-[#888]">クイックアクション</p>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <Link href="/organizer/recruitments/new" className="mg-recruitments-pc__quick">
-              <span className="mg-recruitments-pc__quick-icon">
-                <FilePlus2 className="h-5 w-5 text-[#6BBF3E]" aria-hidden />
-              </span>
-              <span>新規作成</span>
-            </Link>
-            <Link href="/organizer/recruitments/new" className="mg-recruitments-pc__quick">
-              <span className="mg-recruitments-pc__quick-icon">
-                <LayoutTemplate className="h-5 w-5 text-[#2B3A6B]" aria-hidden />
-              </span>
-              <span>テンプレートから作成</span>
-            </Link>
-            <Link
-              href={
-                firstCopyId
-                  ? `/organizer/recruitments/new?copyFrom=${firstCopyId}`
-                  : "/organizer/recruitments/new"
-              }
-              className="mg-recruitments-pc__quick"
-            >
-              <span className="mg-recruitments-pc__quick-icon">
-                <Copy className="h-5 w-5 text-[#8a9e80]" aria-hidden />
-              </span>
-              <span>募集を複製</span>
+        {kpis.pendingApproval > 0 && (
+          <div className="mg-recruitments-pc__alert">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-[#c45a1a]" aria-hidden />
+              <p className="text-[13px] font-medium text-[#5a3a18]">
+                承認待ちの応募が{kpis.pendingApproval}件あります
+              </p>
+            </div>
+            <Link href={nextAction.href} className="mg-recruitments-pc__alert-btn">
+              確認する
             </Link>
           </div>
-        </section>
-
-        <section className="mg-recruitments-pc__panel mg-recruitments-pc__panel--next relative overflow-hidden p-4">
-          <div className="relative z-[1] max-w-[72%]">
-            <p className="text-[11px] font-semibold tracking-wide text-[#5a8ab0]">ネクストアクション</p>
-            <p className="mt-2 text-[13px] leading-relaxed text-[#2A5A74]">{nextAction.description}</p>
-            <Link href={nextAction.href} className="mg-recruitments-pc__btn-primary mt-3 inline-flex">
-              {nextAction.label}
-            </Link>
-          </div>
-          <div
-            className="pointer-events-none absolute bottom-1 right-2 flex items-center justify-center opacity-80"
-            aria-hidden
-          >
-            <Award className="h-[72px] w-[72px] text-[#7BADC4]/40" strokeWidth={1} />
-          </div>
-        </section>
-      </div>
-
-      {/* 一覧（検索・テーブル・フッター一体） */}
-      <section className="mg-recruitments-pc__table-wrap">
-        <div className="mg-recruitments-pc__filter-bar flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search
-              className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#bbb]"
-              aria-hidden
-            />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="募集名で検索"
-              className="mg-recruitments-pc__input w-full border-0 bg-transparent pl-8 shadow-none focus:shadow-none"
-            />
-          </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => onStatusFilterChange(e.target.value as RecruitmentsStatusFilter)}
-            className="mg-recruitments-pc__select w-[140px] shrink-0 border-0 bg-transparent"
-            aria-label="ステータス"
-          >
-            <option value="all">すべてのステータス</option>
-            <option value="public">募集中</option>
-            <option value="draft">下書き</option>
-            <option value="closed">終了</option>
-          </select>
-          <select
-            value={sortBy}
-            onChange={(e) => onSortChange(e.target.value as RecruitmentsSortOption)}
-            className="mg-recruitments-pc__select w-[132px] shrink-0 border-0 bg-transparent"
-            aria-label="並び替え"
-          >
-            <option value="created_desc">新しい順</option>
-            <option value="created_asc">古い順</option>
-            <option value="start_asc">開催日が近い順</option>
-          </select>
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={onResetFilters}
-              className="shrink-0 text-[11px] text-[#8a9e80] hover:underline"
-            >
-              リセット
-            </button>
-          )}
-        </div>
-        {sortedList.length === 0 ? (
-          <div className="px-6 py-16 text-center">
-            <p className="text-[13px] font-medium text-[#526448]">
-              {allRecruitments.length === 0 ? "募集がまだありません" : "該当する募集がありません"}
-            </p>
-            {allRecruitments.length === 0 && (
-              <Link
-                href="/organizer/recruitments/new"
-                className="mg-recruitments-pc__btn-primary mt-4 inline-flex"
-              >
-                <Plus className="h-4 w-4" aria-hidden />
-                スタッフ募集を作成
-              </Link>
-            )}
-          </div>
-        ) : (
-          <table className="mg-recruitments-pc__table w-full">
-            <thead>
-              <tr>
-                <th>募集名</th>
-                <th>ステータス</th>
-                <th>応募者数</th>
-                <th>日時</th>
-                <th>作成日</th>
-                <th className="text-right">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedList.map((r) => (
-                <RecruitmentTableRow
-                  key={r.id}
-                  recruitment={r}
-                  onUpdated={onRecruitmentUpdated}
-                />
-              ))}
-            </tbody>
-          </table>
         )}
 
-        <footer className="mg-recruitments-pc__footer flex items-center justify-between">
-          <p>
-            <span className="font-medium text-[#2e3d2c]">今月の応募状況</span>
-            <span className="mx-1.5 text-[#c5d4c0]">|</span>
-            応募: <span className="font-semibold tabular-nums">{monthStats.applications}</span>
-            <span className="mx-1.5 text-[#d4e8c8]">·</span>
-            承認: <span className="font-semibold tabular-nums">{monthStats.approved}</span>
-            <span className="mx-1.5 text-[#d4e8c8]">·</span>
-            予定: <span className="font-semibold tabular-nums">{monthStats.scheduled}</span>
-          </p>
-          <Link href="/organizer" className="mg-recruitments-pc__footer-link text-[#2B3A6B] hover:underline">
-            レポートを見る
-            <ChevronRight className="ml-0.5 inline h-3.5 w-3.5" aria-hidden />
-          </Link>
-        </footer>
-      </section>
+        <section className="mg-recruitments-pc__table-wrap" id="recruitments-list">
+          <div className="mg-recruitments-pc__filter-bar flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[200px] flex-1">
+              <Search
+                className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#bbb]"
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="募集名・イベント名・役割で検索"
+                className="mg-recruitments-pc__input w-full border-0 bg-transparent pl-8 shadow-none focus:shadow-none"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => onStatusFilterChange(e.target.value as RecruitmentsStatusFilter)}
+              className="mg-recruitments-pc__select w-[148px] shrink-0 border-0 bg-transparent"
+              aria-label="ステータス"
+            >
+              <option value="all">すべてのステータス</option>
+              <option value="public">募集中</option>
+              <option value="draft">下書き</option>
+              <option value="closed">募集終了</option>
+            </select>
+            <select
+              value={eventFilter}
+              onChange={(e) => onEventFilterChange(e.target.value)}
+              className="mg-recruitments-pc__select w-[160px] shrink-0 border-0 bg-transparent"
+              aria-label="イベント"
+            >
+              <option value="">すべてのイベント</option>
+              {eventOptions.map(([id, title]) => (
+                <option key={id} value={id}>
+                  {title}
+                </option>
+              ))}
+            </select>
+            <select
+              value={sortBy}
+              onChange={(e) => onSortChange(e.target.value as RecruitmentsSortOption)}
+              className="mg-recruitments-pc__select w-[120px] shrink-0 border-0 bg-transparent"
+              aria-label="並び替え"
+            >
+              <option value="created_desc">新しい順</option>
+              <option value="created_asc">古い順</option>
+              <option value="start_asc">開催日が近い順</option>
+            </select>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={onResetFilters}
+                className="shrink-0 text-[11px] text-[#8a9e80] hover:underline"
+              >
+                リセット
+              </button>
+            )}
+          </div>
+
+          {sortedList.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <p className="text-[13px] font-medium text-[#526448]">
+                {allRecruitments.length === 0 ? "募集がまだありません" : "該当する募集がありません"}
+              </p>
+              {allRecruitments.length === 0 && (
+                <Link
+                  href="/organizer/recruitments/new"
+                  className="mg-recruitments-pc__btn-primary mt-4 inline-flex"
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                  スタッフ募集を作成
+                </Link>
+              )}
+            </div>
+          ) : (
+            <table className="mg-recruitments-pc__table w-full">
+              <thead>
+                <tr>
+                  <th>募集名 / イベント</th>
+                  <th>ステータス</th>
+                  <th>応募者数</th>
+                  <th>承認待ち</th>
+                  <th>イベント日時</th>
+                  <th>主な役割</th>
+                  <th className="text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageItems.map((r) => (
+                  <RecruitmentTableRow
+                    key={r.id}
+                    recruitment={r}
+                    onUpdated={onRecruitmentUpdated}
+                  />
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          <footer className="mg-recruitments-pc__pager">
+            <p className="text-[12px] text-[#8a9e80]">
+              {sortedList.length === 0
+                ? "0件"
+                : `${pageStart}-${pageEnd} / ${sortedList.length}件`}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={safePage <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="mg-recruitments-pc__pager-btn"
+                aria-label="前のページ"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="mg-recruitments-pc__pager-current">{safePage}</span>
+              <button
+                type="button"
+                disabled={safePage >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="mg-recruitments-pc__pager-btn"
+                aria-label="次のページ"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+            <label className="flex items-center gap-2 text-[12px] text-[#8a9e80]">
+              表示件数
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="mg-recruitments-pc__select border border-[#e8e6e0] bg-white"
+                aria-label="表示件数"
+              >
+                <option value={10}>10件</option>
+                <option value={20}>20件</option>
+                <option value={50}>50件</option>
+              </select>
+            </label>
+          </footer>
+        </section>
       </div>
     </div>
   );

@@ -3,21 +3,21 @@ import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import {
   fetchRecruitmentById,
-  fetchApplicationsByRecruitment,
   getOrganizerIdByProfileId,
 } from "@/lib/db/recruitments-mvp";
-import { createOrGetConversation, insertParticipantMessage } from "@/lib/db/messages";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyRecruitmentStaff } from "@/lib/db/notifications";
 
 type Params = { params: Promise<{ id: string }> };
 
 const TEMPLATES: Record<string, string> = {
-  reminder: "【前日リマインド】明日の集合をお忘れなく。集合時刻・場所を再度確認の上、余裕を持ってお越しください。",
-  venue_change: "【集合場所変更】大変お手数ですが、集合場所が変更になりました。このチャットの最新メッセージでご確認ください。",
+  reminder:
+    "【前日リマインド】明日の集合をお忘れなく。集合時刻・場所を再度確認の上、余裕を持ってお越しください。",
+  venue_change:
+    "【集合場所変更】大変お手数ですが、集合場所が変更になりました。最新のお知らせをご確認ください。",
   thanks: "【お礼】本日はお疲れさまでした。ご協力ありがとうございました。",
 };
 
-/** POST: 採用者のみに一斉連絡 */
+/** POST: 採用者へ一斉連絡（通知配信・ダッシュボードお知らせと同じ経路） */
 export async function POST(request: NextRequest, { params }: Params) {
   const user = await getApiUser();
   if (!user) {
@@ -45,7 +45,10 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   if (!content) {
     return NextResponse.json(
-      { error: "メッセージ内容または template（reminder/venue_change/thanks）を指定してください" },
+      {
+        error:
+          "メッセージ内容または template（reminder/venue_change/thanks）を指定してください",
+      },
       { status: 400 }
     );
   }
@@ -69,73 +72,28 @@ export async function POST(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "権限がありません" }, { status: 403 });
     }
 
-    const apps = await fetchApplicationsByRecruitment(supabase, recruitmentId);
-    const acceptedUserIds = new Set(
-      apps
-        .filter((a) => a.status === "accepted" || a.status === "confirmed")
-        .map((a) => a.user_id)
-    );
-    const recipientIds =
-      targetUserIds.length > 0
-        ? new Set(targetUserIds.filter((id) => acceptedUserIds.has(id)))
-        : acceptedUserIds;
-
-    if (recipientIds.size === 0) {
-      return NextResponse.json({
-        success: true,
-        sent: 0,
-        message: "採用者がいません",
-      });
-    }
-
-    const admin = createAdminClient();
-    let sent = 0;
-    const failedParticipantIds: string[] = [];
-    for (const participantId of recipientIds) {
-      let conversationId: string | null = null;
-      try {
-        conversationId = await createOrGetConversation(supabase, {
-          callerUserId: user.id,
-          eventId: null,
-          kind: "general",
-          organizerId,
-          otherUserId: participantId,
-        });
-      } catch {
-        failedParticipantIds.push(participantId);
-        continue;
-      }
-      if (!conversationId) {
-        failedParticipantIds.push(participantId);
-        continue;
-      }
-      const ins = await insertParticipantMessage({
-        userId: user.id,
-        conversationId,
-        content,
-        supabase,
-        admin,
-      });
-      if (ins.ok) {
-        sent++;
-      } else {
-        failedParticipantIds.push(participantId);
-      }
-    }
+    const { sent, total, failedParticipantIds } = await notifyRecruitmentStaff(supabase, {
+      recruitmentId,
+      recruitmentTitle: recruitment.title,
+      eventId: recruitment.event_id,
+      content,
+      excludeUserId: user.id,
+      targetUserIds: targetUserIds.length > 0 ? targetUserIds : undefined,
+    });
 
     return NextResponse.json({
       success: true,
       sent,
-      total: recipientIds.size,
+      total,
       failed: failedParticipantIds.length,
       failedParticipantIds,
-      message: `${sent}件送信しました`,
+      message:
+        total === 0
+          ? "採用者がいません"
+          : `${sent}件のスタッフに通知を送信しました`,
     });
   } catch (e) {
     console.error("bulk-message POST:", e);
-    return NextResponse.json(
-      { error: "一斉連絡に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "一斉連絡に失敗しました" }, { status: 500 });
   }
 }

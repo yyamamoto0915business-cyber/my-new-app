@@ -13,12 +13,21 @@ import {
   addStoreApplication,
   getStoreApplicationStatus,
   getDevOrganizerId,
+  getStoreRecruitmentById,
 } from "@/lib/created-recruitments-store";
 import {
   getOrCreateStoreRecruitmentForVolunteerRole,
   type VolunteerRoleRecruitmentSource,
 } from "@/lib/volunteer-role-recruitment-bridge";
 import { isVolunteerRoleFromRecruitment } from "@/lib/map-recruitment-to-volunteer-role";
+import {
+  afterApplicationCreated,
+  buildApplyFormResult,
+} from "@/lib/application-form-apply";
+import {
+  applicationFormNeedsInput,
+  resolveApplicationFormConfig,
+} from "@/lib/recruitment-application-form";
 
 export async function POST(request: Request) {
   const user = await getApiUser();
@@ -57,13 +66,19 @@ export async function POST(request: Request) {
         );
       }
 
-      await createApplication(supabase, mockRole.id, user.id, message || undefined);
+      const formRequired = applicationFormNeedsInput(
+        resolveApplicationFormConfig(recruitment.application_form_config)
+      );
+      await createApplication(supabase, mockRole.id, user.id, message || undefined, {
+        formRequired,
+      });
+      const form = await afterApplicationCreated(supabase, user.id, recruitment);
 
       return NextResponse.json({
         success: true,
         status: "pending",
         recruitmentId: mockRole.id,
-        message: "応募を受け付けました。主催者の確認をお待ちください。",
+        ...form,
       });
     } catch (e) {
       console.error("volunteer/apply POST (recruitment):", e);
@@ -87,13 +102,19 @@ export async function POST(request: Request) {
           );
         }
 
-        await createApplication(supabase, volunteerRoleId, user.id, message || undefined);
+        const formRequired = applicationFormNeedsInput(
+          resolveApplicationFormConfig(recruitment.application_form_config)
+        );
+        await createApplication(supabase, volunteerRoleId, user.id, message || undefined, {
+          formRequired,
+        });
+        const form = await afterApplicationCreated(supabase, user.id, recruitment);
 
         return NextResponse.json({
           success: true,
           status: "pending",
           recruitmentId: volunteerRoleId,
-          message: "応募を受け付けました。主催者の確認をお待ちください。",
+          ...form,
         });
       }
     } catch (e) {
@@ -130,12 +151,26 @@ export async function POST(request: Request) {
     );
   }
 
-  addStoreApplication(recruitment.id, user.id, message || undefined);
+  const storeRec = getStoreRecruitmentById(recruitment.id);
+  const formPreview = buildApplyFormResult(
+    recruitment.id,
+    storeRec?.application_form_config
+  );
+  addStoreApplication(recruitment.id, user.id, message || undefined, {
+    formRequired: formPreview.formRequired,
+  });
+  if (formPreview.formRequired && supabase) {
+    await afterApplicationCreated(supabase, user.id, {
+      id: recruitment.id,
+      title: storeRec?.title ?? mockRole.title,
+      application_form_config: storeRec?.application_form_config,
+    });
+  }
 
   return NextResponse.json({
     success: true,
     status: "pending",
     recruitmentId: recruitment.id,
-    message: "応募を受け付けました。主催者の確認をお待ちください。",
+    ...formPreview,
   });
 }

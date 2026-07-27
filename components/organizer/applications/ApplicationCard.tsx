@@ -7,12 +7,16 @@ export type Application = {
   message: string | null;
   role_assigned: string | null;
   checked_in_at: string | null;
+  organizer_memo?: string | null;
+  form_answers?: Record<string, string | boolean | null> | null;
+  form_completed_at?: string | null;
   created_at?: string;
   user?: { display_name: string | null; email: string | null };
 };
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "未確認",
+  on_hold: "保留",
   accepted: "承認済み",
   confirmed: "承認済み",
   rejected: "却下",
@@ -27,6 +31,7 @@ const STATUS_STYLES: Record<string, string> = {
   confirmed: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
   checked_in: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
   pending: "bg-amber-50 text-amber-700 border-amber-200/80",
+  on_hold: "bg-yellow-50 text-yellow-800 border-yellow-200/80",
   applied: "bg-amber-50 text-amber-700 border-amber-200/80",
   rejected: "bg-slate-100 text-slate-600 border-slate-200/80",
   canceled: "bg-slate-100 text-slate-500 border-slate-200/80",
@@ -80,7 +85,10 @@ export function ApplicationCard({
   const statusLabel = STATUS_LABELS[application.status] ?? application.status;
   const isPending = application.status === "pending";
   const messagePreview =
-    application.message?.trim() || "自己紹介・応募メッセージはまだ入力されていません。";
+    application.message?.trim() ||
+    (application.form_completed_at == null
+      ? "応募フォーム未提出です。"
+      : "自己紹介・応募メッセージはまだ入力されていません。");
   const cardClassName = isPending
     ? "rounded-2xl border border-amber-300/80 bg-amber-50/40 shadow-sm transition hover:shadow-md"
     : "rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:shadow-md";
@@ -108,6 +116,11 @@ export function ApplicationCard({
                   要対応
                 </button>
               )}
+              {application.form_completed_at == null ? (
+                <span className="inline-flex shrink-0 rounded-lg border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                  フォーム未提出
+                </span>
+              ) : null}
             </div>
           </div>
         </div>

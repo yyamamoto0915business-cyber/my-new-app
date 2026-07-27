@@ -393,11 +393,16 @@ export function ApplicationsManagementMobileView({
         {/* 一斉連絡 */}
         {acceptedCount > 0 && (
           <section className="mg-apps-mgmt-m__panel mg-apps-mgmt-m__panel--bulk mt-3 p-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-2">
               <div className="mg-apps-mgmt-m__icon-ring">
                 <Send className="h-3.5 w-3.5 text-[#9a6b2f]" aria-hidden />
               </div>
-              <p className="mg-apps-mgmt-m__panel-title">承認済み参加者へ一斉連絡</p>
+              <div>
+                <p className="mg-apps-mgmt-m__panel-title">承認済みスタッフへ通知</p>
+                <p className="mt-0.5 text-[10px] text-[#8a9e80]">
+                  ダッシュボードのお知らせと同じ経路です
+                </p>
+              </div>
             </div>
             <select
               value={bulkTemplate}

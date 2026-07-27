@@ -202,86 +202,84 @@ function RecruitmentListCard({
   };
 
   return (
-    <li className="mg-recruitments-m__card rounded-[10px] border border-[#e8e6e0] bg-white p-2.5 shadow-[0_1px_5px_rgba(43,58,107,0.05)]">
-      <div className="flex items-start gap-2">
+    <li className="mg-recruitments-m__card rounded-[10px] border border-[#e8e6e0] bg-white p-2 shadow-[0_1px_5px_rgba(43,58,107,0.05)]">
+      <div className="flex items-start gap-1.5">
         <span
-          className="mg-recruitments-m__card-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#e8ede4] bg-[#f0f4ee]"
+          className="mg-recruitments-m__card-icon flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[#e8ede4] bg-[#f0f4ee]"
           aria-hidden
         >
-          <Users className="h-3.5 w-3.5 text-[#7a9488]" strokeWidth={1.75} />
+          <Users className="h-3 w-3 text-[#7a9488]" strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="mg-recruitments-m__card-title truncate">{recruitment.title}</p>
-          <p className="mg-recruitments-m__card-meta truncate">役割：{rolesLabel}</p>
-          <div className="mg-recruitments-m__card-meta mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <span className="inline-flex items-center gap-1">
-              <Calendar className="h-3 w-3 shrink-0" aria-hidden />
+          <p className="mg-recruitments-m__card-title truncate leading-tight">{recruitment.title}</p>
+          <div className="mg-recruitments-m__card-meta mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0">
+            <span className="truncate">役割：{rolesLabel}</span>
+            <span className="inline-flex items-center gap-0.5 whitespace-nowrap">
+              <Calendar className="h-2.5 w-2.5 shrink-0" aria-hidden />
               {formatScheduleShort(recruitment.start_at, recruitment.end_at)}
             </span>
-            <span className="inline-flex items-center gap-1">
-              <Users className="h-3 w-3 shrink-0" aria-hidden />
+            <span className="inline-flex items-center gap-0.5 whitespace-nowrap">
+              <Users className="h-2.5 w-2.5 shrink-0" aria-hidden />
               {applicantText}
             </span>
-            <span className={cn("mg-recruitments-m__badge inline-flex border", badge.className)}>
+            <span className={cn("mg-recruitments-m__badge inline-flex border px-1 py-px", badge.className)}>
               {badge.label}
             </span>
           </div>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <Link
-            href={primaryHref}
-            className="mg-recruitments-m__btn-action inline-flex rounded-md border border-[#e8e6e0] bg-white px-2.5 py-1 no-underline"
+      </div>
+      <div className="mg-recruitments-m__card-actions mt-1 flex flex-wrap items-center justify-end gap-0.5">
+        <Link
+          href={primaryHref}
+          className="mg-recruitments-pc__btn-action mg-recruitments-pc__btn-action--primary no-underline"
+        >
+          応募者確認
+        </Link>
+        <Link
+          href={`/organizer/recruitments/${recruitment.id}/day-of`}
+          className="mg-recruitments-pc__btn-action no-underline"
+        >
+          当日管理
+        </Link>
+        <Link
+          href={`/organizer/recruitments/new?editId=${recruitment.id}`}
+          className="mg-recruitments-pc__btn-action no-underline"
+        >
+          編集
+        </Link>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((o) => !o)}
+            className="mg-recruitments-pc__btn-menu"
+            aria-label="メニュー"
           >
-            応募確認
-          </Link>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setMenuOpen((o) => !o)}
-              className="mg-recruitments-m__btn-menu flex h-7 w-7 items-center justify-center rounded-md border border-[#e8e6e0] bg-white text-[#888]"
-              aria-label="メニュー"
-            >
-              <MoreVertical className="h-3.5 w-3.5" aria-hidden />
-            </button>
-            {menuOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
-                <div className="absolute right-0 top-full z-20 mt-1 min-w-[148px] overflow-hidden rounded-lg border border-[#e8e6e0] bg-white py-1 shadow-lg">
-                  <Link
-                    href={`/organizer/recruitments/${recruitment.id}/day-of`}
-                    className="block px-3 py-2 text-[12px] text-[#3a3428] no-underline hover:bg-[#f5f4f0]"
-                    onClick={() => setMenuOpen(false)}
+            <MoreVertical className="h-3.5 w-3.5" aria-hidden />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
+              <div className="absolute right-0 top-full z-20 mt-1 min-w-[148px] overflow-hidden rounded-lg border border-[#e8e6e0] bg-white py-1 shadow-lg">
+                <Link
+                  href={`/organizer/recruitments/new?copyFrom=${recruitment.id}`}
+                  className="block px-3 py-2 text-[12px] text-[#3a3428] no-underline hover:bg-[#f5f4f0]"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  複製
+                </Link>
+                {recruitment.status === "public" && (
+                  <button
+                    type="button"
+                    disabled={closing}
+                    className="block w-full px-3 py-2 text-left text-[12px] text-[#8a2c20] hover:bg-[#fef0ee] disabled:opacity-50"
+                    onClick={() => void handleClose()}
                   >
-                    当日管理
-                  </Link>
-                  <Link
-                    href="/messages"
-                    className="block px-3 py-2 text-[12px] text-[#3a3428] no-underline hover:bg-[#f5f4f0]"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    チャット
-                  </Link>
-                  <Link
-                    href={`/organizer/recruitments/new?copyFrom=${recruitment.id}`}
-                    className="block px-3 py-2 text-[12px] text-[#3a3428] no-underline hover:bg-[#f5f4f0]"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    複製
-                  </Link>
-                  {recruitment.status === "public" && (
-                    <button
-                      type="button"
-                      disabled={closing}
-                      className="block w-full px-3 py-2 text-left text-[12px] text-[#8a2c20] hover:bg-[#fef0ee] disabled:opacity-50"
-                      onClick={() => void handleClose()}
-                    >
-                      {closing ? "処理中…" : "募集を終了"}
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+                    {closing ? "処理中…" : "募集を終了"}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </li>
@@ -341,6 +339,10 @@ export function OrganizerRecruitmentsMobileView({
       ? "スタッフ募集を作成する"
       : nextAction.label;
 
+  const showNextActionBanner =
+    nextAction.href !== "/organizer/recruitments/new" &&
+    nextAction.href !== "#recruitments-list";
+
   return (
     <div className="mg-recruitments-m flex flex-col gap-2 pb-20">
       <header className="mg-recruitments-m__hero relative overflow-hidden rounded-[10px] px-2.5 pb-2.5 pt-2">
@@ -365,7 +367,7 @@ export function OrganizerRecruitmentsMobileView({
           </Link>
           <Link
             href="/organizer/recruitments/new"
-            className="mg-recruitments-m__btn-primary inline-flex items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-semibold text-white no-underline shadow-sm"
+            className="mg-recruitments-m__btn-primary touch-manipulation inline-flex items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-semibold text-white no-underline shadow-sm"
           >
             <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
             募集を作成
@@ -408,18 +410,20 @@ export function OrganizerRecruitmentsMobileView({
         />
       </div>
 
-      <section className="mg-recruitments-m__next flex items-center gap-2 rounded-[10px] border border-[#c5dbe8] px-2.5 py-2">
-        <div className="min-w-0 flex-1">
-          <p className="mg-recruitments-m__next-label">次のアクション</p>
-          <p className="mg-recruitments-m__next-desc mt-0.5 line-clamp-2">{nextAction.description}</p>
-        </div>
-        <Link
-          href={nextAction.href}
-          className="mg-recruitments-m__btn-primary inline-flex max-w-[7.5rem] shrink-0 items-center justify-center rounded-lg px-2.5 py-1.5 text-center text-[10px] font-semibold leading-tight text-white no-underline"
-        >
-          {nextButtonLabel}
-        </Link>
-      </section>
+      {showNextActionBanner && (
+        <section className="mg-recruitments-m__next flex items-center gap-2 rounded-[10px] border border-[#c5dbe8] px-2.5 py-2">
+          <div className="min-w-0 flex-1">
+            <p className="mg-recruitments-m__next-label">次のアクション</p>
+            <p className="mg-recruitments-m__next-desc mt-0.5 line-clamp-2">{nextAction.description}</p>
+          </div>
+          <Link
+            href={nextAction.href}
+            className="mg-recruitments-m__btn-primary touch-manipulation inline-flex max-w-[7.5rem] shrink-0 items-center justify-center rounded-lg px-2.5 py-1.5 text-center text-[10px] font-semibold leading-tight text-white no-underline"
+          >
+            {nextButtonLabel}
+          </Link>
+        </section>
+      )}
 
       <section className="flex flex-col gap-1.5">
         <div className="relative">
@@ -491,7 +495,7 @@ export function OrganizerRecruitmentsMobileView({
             {allRecruitments.length === 0 && (
               <Link
                 href="/organizer/recruitments/new"
-                className="mg-recruitments-m__btn-primary mt-2 inline-flex items-center gap-1 rounded-lg px-3 py-2 text-[11px] font-semibold text-white no-underline"
+                className="mg-recruitments-m__btn-primary touch-manipulation mt-2 inline-flex items-center gap-1 rounded-lg px-3 py-2 text-[11px] font-semibold text-white no-underline"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden />
                 スタッフ募集を作成
@@ -499,7 +503,7 @@ export function OrganizerRecruitmentsMobileView({
             )}
           </div>
         ) : (
-          <ul className="flex flex-col gap-1.5">
+          <ul className="flex flex-col gap-1">
             {sortedList.map((r) => (
               <RecruitmentListCard key={r.id} recruitment={r} onUpdated={onRecruitmentUpdated} />
             ))}

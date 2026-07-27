@@ -10,7 +10,11 @@ function isAuthRequiredPath(path: string): boolean {
   if (path.startsWith("/dm")) return true;
   if (path === "/points" || path.startsWith("/points/")) return true;
   if (path === "/report/new") return true;
-  if (path === "/notifications" || path.startsWith("/notifications/")) return true;
+  if (path === "/notifications" || path.startsWith("/notifications/")) {
+    // 見た目確認用プレビューはログイン不要
+    if (path.startsWith("/notifications/preview")) return false;
+    return true;
+  }
   if (path === "/pass" || path.startsWith("/pass/")) {
     // 見た目確認用デモ・プレビューはログイン不要
     if (path.startsWith("/pass/demo")) return false;

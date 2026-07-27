@@ -7,6 +7,7 @@ import {
   createRecruitmentMvp,
   getOrganizerIdByProfileId,
 } from "@/lib/db/recruitments-mvp";
+import { parseApplicationFormConfig } from "@/lib/recruitment-application-form";
 import {
   addStoreRecruitment,
   getStoreRecruitmentsPublic,
@@ -122,6 +123,10 @@ export async function POST(request: NextRequest) {
         notes: typeof body.notes === "string" ? body.notes : null,
         event_id: typeof body.event_id === "string" ? body.event_id : null,
         type: typeof body.type === "string" ? body.type : "volunteer",
+        application_form_config:
+          body.application_form_config !== undefined
+            ? parseApplicationFormConfig(body.application_form_config)
+            : undefined,
       });
 
       return NextResponse.json({ id }, { status: 201 });
@@ -158,6 +163,10 @@ export async function POST(request: NextRequest) {
     items_to_bring: typeof body.items_to_bring === "string" ? body.items_to_bring : null,
     provisions: typeof body.provisions === "string" ? body.provisions : null,
     notes: typeof body.notes === "string" ? body.notes : null,
+    application_form_config:
+      body.application_form_config !== undefined
+        ? parseApplicationFormConfig(body.application_form_config)
+        : null,
   });
 
   return NextResponse.json({ id: r.id }, { status: 201 });

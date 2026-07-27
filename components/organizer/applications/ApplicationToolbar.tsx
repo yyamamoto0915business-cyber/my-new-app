@@ -1,6 +1,6 @@
 "use client";
 
-export type StatusFilter = "all" | "pending" | "accepted" | "rejected";
+export type StatusFilter = "all" | "pending" | "accepted" | "rejected" | "on_hold";
 export type SortOption = "created_asc" | "created_desc" | "name_asc";
 
 type ApplicationToolbarProps = {
@@ -60,6 +60,7 @@ export function ApplicationToolbar({
           >
             <option value="all">すべて</option>
             <option value="pending">未確認</option>
+            <option value="on_hold">保留</option>
             <option value="accepted">承認済み</option>
             <option value="rejected">却下</option>
           </select>

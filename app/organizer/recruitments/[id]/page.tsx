@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
-import { RecruitmentForm } from "@/components/recruitment-form";
 import {
   type StatusFilter,
   type SortOption,
@@ -38,7 +37,7 @@ const BULK_TEMPLATE_TEXTS: Record<string, string> = {
   reminder:
     "【前日リマインド】明日の集合をお忘れなく。集合時刻・場所を再度確認の上、余裕を持ってお越しください。",
   venue_change:
-    "【集合場所変更】大変お手数ですが、集合場所が変更になりました。このチャットの最新メッセージでご確認ください。",
+    "【集合場所変更】大変お手数ですが、集合場所が変更になりました。最新のお知らせをご確認ください。",
   thanks: "【お礼】本日はお疲れさまでした。ご協力ありがとうございました。",
 };
 
@@ -47,11 +46,29 @@ export default function OrganizerRecruitmentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[var(--mg-paper)]">
+          <p className="text-zinc-500">読み込み中...</p>
+        </div>
+      }
+    >
+      <OrganizerRecruitmentDetailContent params={params} />
+    </Suspense>
+  );
+}
+
+function OrganizerRecruitmentDetailContent({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const [recruitment, setRecruitment] = useState<Recruitment | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const [editing, setEditing] = useState(false);
+  const searchParams = useSearchParams();
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkTemplate, setBulkTemplate] = useState("");
   const [bulkMessage, setBulkMessage] = useState("");
@@ -60,11 +77,18 @@ export default function OrganizerRecruitmentDetailPage({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("created_desc");
   const [detailApp, setDetailApp] = useState<Application | null>(null);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [resolvedId, setResolvedId] = useState<string | null>(null);
 
   useEffect(() => {
     params.then((p) => setResolvedId(p.id));
   }, [params]);
+
+  useEffect(() => {
+    if (searchParams?.get("edit") === "1" && resolvedId) {
+      router.replace(`/organizer/recruitments/new?editId=${resolvedId}`);
+    }
+  }, [searchParams, resolvedId, router]);
 
   const load = useCallback(async () => {
     if (!resolvedId) return;
@@ -123,6 +147,10 @@ export default function OrganizerRecruitmentDetailPage({
   );
 
   const handleAccept = async (appId: string) => {
+    const nextPending = applications.find(
+      (a) =>
+        a.id !== appId && (a.status === "pending" || a.status === "on_hold")
+    );
     const res = await fetchWithTimeout(
       `/api/recruitments/${resolvedId}/applications/${appId}`,
       {
@@ -131,7 +159,10 @@ export default function OrganizerRecruitmentDetailPage({
         body: JSON.stringify({ status: "accepted" }),
       }
     );
-    if (res.ok) load();
+    if (res.ok) {
+      if (nextPending) setSelectedAppId(nextPending.id);
+      load();
+    }
   };
 
   const handleReject = async (appId: string) => {
@@ -146,6 +177,34 @@ export default function OrganizerRecruitmentDetailPage({
     if (res.ok) load();
   };
 
+  const handleHold = async (appId: string) => {
+    const res = await fetchWithTimeout(
+      `/api/recruitments/${resolvedId}/applications/${appId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "on_hold" }),
+      }
+    );
+    if (res.ok) load();
+  };
+
+  const handleSaveMemo = async (appId: string, memo: string) => {
+    const res = await fetchWithTimeout(
+      `/api/recruitments/${resolvedId}/applications/${appId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizer_memo: memo }),
+      }
+    );
+    if (res.ok) {
+      setApplications((prev) =>
+        prev.map((a) => (a.id === appId ? { ...a, organizer_memo: memo } : a))
+      );
+    }
+  };
+
   const resolveDisplayName = useCallback((app: Application) => {
     const profileName = app.user?.display_name?.trim();
     if (profileName) return profileName;
@@ -157,18 +216,28 @@ export default function OrganizerRecruitmentDetailPage({
     return "応募者";
   }, []);
 
-  const handleBulkMessage = async (targetUserIds?: string[]) => {
-    if (!resolvedId) return;
-    const content = bulkMessage.trim() || BULK_TEMPLATE_TEXTS[bulkTemplate] || "";
+  const handleBulkMessage = async (
+    contentOrTargetIds?: string | string[],
+    targetUserIds?: string[]
+  ): Promise<boolean> => {
+    if (!resolvedId) return false;
+    const contentOverride = typeof contentOrTargetIds === "string" ? contentOrTargetIds : undefined;
+    const targets =
+      typeof contentOrTargetIds === "object" && Array.isArray(contentOrTargetIds)
+        ? contentOrTargetIds
+        : targetUserIds;
+    const content =
+      (contentOverride ?? bulkMessage).trim() || BULK_TEMPLATE_TEXTS[bulkTemplate] || "";
     if (!content) {
       alert("送信するメッセージを入力してください");
-      return;
+      return false;
     }
-    const targetCount = Array.isArray(targetUserIds) && targetUserIds.length > 0 ? targetUserIds.length : acceptedCount;
+    const targetCount =
+      Array.isArray(targets) && targets.length > 0 ? targets.length : acceptedCount;
     const confirmed = window.confirm(
-      `承認済み参加者 ${targetCount} 名へ一斉連絡を送信します。\nこの操作を実行しますか？`
+      `承認済みスタッフ ${targetCount} 名へ通知を送信します。\n（ダッシュボードのお知らせと同じ経路です）\nこの操作を実行しますか？`
     );
-    if (!confirmed) return;
+    if (!confirmed) return false;
     setBulkSending(true);
     try {
       const res = await fetchWithTimeout(
@@ -177,9 +246,9 @@ export default function OrganizerRecruitmentDetailPage({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            template: bulkTemplate || undefined,
+            template: contentOverride ? undefined : bulkTemplate || undefined,
             content,
-            targetUserIds: targetUserIds && targetUserIds.length > 0 ? targetUserIds : undefined,
+            targetUserIds: targets && targets.length > 0 ? targets : undefined,
           }),
         }
       );
@@ -189,9 +258,9 @@ export default function OrganizerRecruitmentDetailPage({
         const sent = Number(data.sent ?? 0);
         const failed = Number(data.failed ?? Math.max(0, total - sent));
         if (failed > 0) {
-          alert(`一斉送信が完了しました\n成功: ${sent}件 / 失敗: ${failed}件`);
+          alert(`通知送信が完了しました\n成功: ${sent}件 / 失敗: ${failed}件`);
         } else {
-          alert(`${sent}件送信しました`);
+          alert(data.message ?? `${sent}件のスタッフに通知を送信しました`);
         }
         setBulkResult({
           sent,
@@ -202,8 +271,10 @@ export default function OrganizerRecruitmentDetailPage({
             : [],
         });
         setBulkMessage("");
+        return true;
       } else {
         alert(data.error ?? "送信に失敗しました");
+        return false;
       }
     } finally {
       setBulkSending(false);
@@ -211,6 +282,7 @@ export default function OrganizerRecruitmentDetailPage({
   };
 
   const pendingCount = applications.filter((a) => a.status === "pending").length;
+  const onHoldCount = applications.filter((a) => a.status === "on_hold").length;
   const acceptedCount = applications.filter(
     (a) => a.status === "accepted" || a.status === "confirmed"
   ).length;
@@ -223,7 +295,9 @@ export default function OrganizerRecruitmentDetailPage({
 
   const filteredApplications = useMemo(() => {
     let list = applications;
-    if (statusFilter === "pending") list = list.filter((a) => a.status === "pending");
+    if (statusFilter === "pending")
+      list = list.filter((a) => a.status === "pending" || a.status === "on_hold");
+    else if (statusFilter === "on_hold") list = list.filter((a) => a.status === "on_hold");
     else if (statusFilter === "accepted")
       list = list.filter((a) => a.status === "accepted" || a.status === "confirmed");
     else if (statusFilter === "rejected") list = list.filter((a) => a.status === "rejected");
@@ -245,14 +319,23 @@ export default function OrganizerRecruitmentDetailPage({
       sorted.sort((a, b) =>
         (a.user?.display_name ?? "").localeCompare(b.user?.display_name ?? "", "ja")
       );
-    // 常に未確認を上位に表示して、対応漏れを減らす
+    // 常に未確認・保留を上位に表示して、対応漏れを減らす
     sorted.sort((a, b) => {
-      const aPending = a.status === "pending" ? 0 : 1;
-      const bPending = b.status === "pending" ? 0 : 1;
-      return aPending - bPending;
+      const rank = (s: string) => (s === "pending" || s === "on_hold" ? 0 : 1);
+      return rank(a.status) - rank(b.status);
     });
     return sorted;
   }, [applications, statusFilter, searchQuery, sortBy]);
+
+  useEffect(() => {
+    if (filteredApplications.length === 0) {
+      setSelectedAppId(null);
+      return;
+    }
+    if (!selectedAppId || !filteredApplications.some((a) => a.id === selectedAppId)) {
+      setSelectedAppId(filteredApplications[0].id);
+    }
+  }, [filteredApplications, selectedAppId]);
 
   const hasActiveFilters = searchQuery.trim().length > 0 || statusFilter !== "all" || sortBy !== "created_desc";
 
@@ -263,7 +346,7 @@ export default function OrganizerRecruitmentDetailPage({
   }, []);
 
   const handleStatusSelect = useCallback((nextStatus: StatusFilter) => {
-    setStatusFilter((prev) => (prev === nextStatus ? "all" : nextStatus));
+    setStatusFilter(nextStatus);
   }, []);
 
   const handleBulkTemplateChange = useCallback((nextTemplate: string) => {
@@ -295,89 +378,42 @@ export default function OrganizerRecruitmentDetailPage({
     );
   }
 
-  if (editing) {
-    return (
-      <div className="min-h-screen bg-[var(--mg-paper)]">
-        <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-white/95 backdrop-blur-sm shadow-sm dark:bg-[var(--background)]">
-          <div className="mx-auto max-w-4xl px-4 py-4">
-            <Link
-              href={`/organizer/recruitments/${resolvedId}`}
-              className="text-sm text-[var(--foreground-muted)] hover:underline"
-            >
-              ← スタッフ募集管理へ
-            </Link>
-            <h1 className="mt-2 text-xl font-bold text-zinc-900 dark:text-zinc-100">
-              募集を編集
-            </h1>
-          </div>
-        </header>
-        <main className="mx-auto max-w-4xl px-4 py-6">
-          <div className="rounded-xl border border-[var(--border)] bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/90">
-            <RecruitmentForm
-              recruitmentId={resolvedId}
-              initialValues={{
-                title: recruitment.title,
-                description: recruitment.description ?? "",
-                status: recruitment.status as "draft" | "public" | "closed",
-                start_at: recruitment.start_at ?? "",
-                end_at: recruitment.end_at ?? "",
-                meeting_place: recruitment.meeting_place ?? "",
-                meeting_lat: (recruitment as { meeting_lat?: number }).meeting_lat ?? null,
-                meeting_lng: (recruitment as { meeting_lng?: number }).meeting_lng ?? null,
-                roles: recruitment.roles ?? [],
-                capacity: recruitment.capacity ?? null,
-                items_to_bring: (recruitment as { items_to_bring?: string }).items_to_bring ?? "",
-                provisions: (recruitment as { provisions?: string }).provisions ?? "",
-                notes: (recruitment as { notes?: string }).notes ?? "",
-              }}
-              onSuccess={() => {
-                setEditing(false);
-                load();
-              }}
-              onCancel={() => setEditing(false)}
-            />
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <>
       <OrganizerPageShell
-        className="hidden min-[900px]:block"
-        contentClassName="space-y-0 pb-8 min-[900px]:pb-4"
+        className="hidden min-h-0 min-[900px]:flex min-[900px]:flex-1 min-[900px]:flex-col"
+        contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden pb-0"
       >
         <ApplicationsManagementPcView
           recruitmentId={resolvedId}
           recruitmentTitle={recruitment.title}
           recruitmentDescription={recruitment.description}
+          eventTitle={(recruitment as { events?: { title?: string } | null }).events?.title ?? null}
+          startAt={recruitment.start_at}
+          endAt={recruitment.end_at}
+          capacity={recruitment.capacity}
+          roles={recruitment.roles}
           filteredApplications={filteredApplications}
           total={applications.length}
           pendingCount={pendingCount}
           acceptedCount={acceptedCount}
           rejectedCount={rejectedCount}
+          onHoldCount={onHoldCount}
           statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
           onStatusSelect={handleStatusSelect}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          onResetFilters={handleResetFilters}
-          hasActiveFilters={hasActiveFilters}
-          bulkTemplate={bulkTemplate}
-          onBulkTemplateChange={handleBulkTemplateChange}
-          bulkMessage={bulkMessage}
-          onBulkMessageChange={setBulkMessage}
-          bulkSending={bulkSending}
-          onBulkSend={() => handleBulkMessage()}
-          bulkResult={bulkResult}
-          onEdit={() => setEditing(true)}
+          selectedId={selectedAppId}
+          onSelect={(app) => setSelectedAppId(app.id)}
+          onEdit={() => router.push(`/organizer/recruitments/new?editId=${resolvedId}`)}
           onAccept={handleAccept}
           onReject={handleReject}
+          onHold={handleHold}
           onChat={handleOpenChat}
-          onDetail={setDetailApp}
+          onSaveMemo={handleSaveMemo}
+          bulkSending={bulkSending}
+          onBulkSend={(content, targetUserIds) => handleBulkMessage(content, targetUserIds)}
+          bulkResult={bulkResult}
         />
       </OrganizerPageShell>
 
@@ -413,7 +449,7 @@ export default function OrganizerRecruitmentDetailPage({
             ? () => handleBulkMessage(failedApplications.map((app) => app.user_id))
             : undefined
         }
-        onEdit={() => setEditing(true)}
+        onEdit={() => router.push(`/organizer/recruitments/new?editId=${resolvedId}`)}
         onAccept={handleAccept}
         onReject={handleReject}
         onChat={handleOpenChat}

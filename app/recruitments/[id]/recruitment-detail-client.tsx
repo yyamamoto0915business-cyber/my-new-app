@@ -94,6 +94,10 @@ export function RecruitmentDetailClient({
         setApplicationStatus("pending");
         setApplyMessage("");
         if (data.roomId) setRoomId(data.roomId);
+        if (data.formRequired && data.formUrl) {
+          window.location.href = data.formUrl as string;
+          return;
+        }
         loadRecruitment();
       } else {
         setError(data.error ?? "応募に失敗しました");

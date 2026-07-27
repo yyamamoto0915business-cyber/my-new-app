@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DraftSaveHint } from "@/components/organizer/events/DraftSaveButtonWithHint";
 import { EVENT_TAGS } from "@/lib/db/types";
 import { isOnlineCapableFormat, needsVenueFields, normalizeEventFormat } from "@/lib/event-online";
 import { getCitiesForPrefecture } from "@/lib/cities-by-prefecture";
@@ -582,13 +583,16 @@ export function EventFormSidePanel({
           </ul>
         </div>
 
-        {footerNote !== undefined ? (
-          <div className="mt-2">{footerNote}</div>
-        ) : form.price > 0 ? (
-          <p className="mt-2 text-[11px] leading-[1.55] text-[#2A5A74]">
-            参加費ありのイベントは、クレジット決済・オンライン支払い設定をご確認ください。
-          </p>
-        ) : null}
+        <div className="mt-2 space-y-2">
+          <DraftSaveHint multiline />
+          {footerNote !== undefined ? (
+            footerNote
+          ) : form.price > 0 ? (
+            <p className="text-[11px] leading-[1.55] text-[#2A5A74]">
+              参加費ありのイベントは、クレジット決済・オンライン支払い設定をご確認ください。
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <div className="shrink-0 space-y-1 border-t border-[#e8e6e0] bg-[#fafaf8] px-2.5 py-2">

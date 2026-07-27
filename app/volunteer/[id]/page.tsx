@@ -99,6 +99,10 @@ export default function VolunteerDetailPage() {
       }
       setApplicationStatus(data.status ?? "pending");
       if (data.recruitmentId) setRecruitmentId(data.recruitmentId);
+      if (data.formRequired && data.formUrl) {
+        router.push(data.formUrl as string);
+        return;
+      }
       setApplySuccessMessage(
         data.message ?? "応募を受け付けました。主催者の確認をお待ちください。"
       );

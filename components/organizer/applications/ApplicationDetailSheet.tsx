@@ -13,6 +13,19 @@ const STATUS_LABELS: Record<string, string> = {
   completed: "完了",
 };
 
+const FORM_ANSWER_LABELS: Record<string, string> = {
+  desired_role: "希望役割",
+  available_time: "参加可能時間",
+  message: "応募メッセージ",
+  experience: "経験・スキル",
+  self_intro: "自己紹介",
+  terms: "規約への同意",
+  emergency_contact: "緊急連絡先",
+  portrait: "顔写真",
+  phone: "電話番号",
+  age: "年齢",
+};
+
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -85,6 +98,33 @@ export function ApplicationDetailSheet({ application, onClose }: ApplicationDeta
               </p>
             </section>
           )}
+          {application.form_completed_at == null ? (
+            <section>
+              <h3 className="text-xs font-medium text-slate-500">応募フォーム</h3>
+              <p className="mt-1 text-sm text-amber-700">詳細未提出</p>
+            </section>
+          ) : application.form_answers && Object.keys(application.form_answers).length > 0 ? (
+            <section>
+              <h3 className="text-xs font-medium text-slate-500">応募フォーム回答</h3>
+              <dl className="mt-2 space-y-2">
+                {Object.entries(application.form_answers).map(([key, value]) => {
+                  if (value == null || value === "") return null;
+                  const label =
+                    FORM_ANSWER_LABELS[key] ?? (key.startsWith("cq-") ? "追加質問" : key);
+                  const display =
+                    typeof value === "boolean" ? (value ? "同意済み" : "未同意") : String(value);
+                  return (
+                    <div key={key}>
+                      <dt className="text-xs text-slate-500">{label}</dt>
+                      <dd className="mt-0.5 whitespace-pre-wrap text-sm text-slate-900">
+                        {display}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            </section>
+          ) : null}
           {application.role_assigned && (
             <section>
               <h3 className="text-xs font-medium text-slate-500">割当役割</h3>

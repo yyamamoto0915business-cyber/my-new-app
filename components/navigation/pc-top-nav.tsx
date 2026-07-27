@@ -266,7 +266,7 @@ function PcTopNavInner() {
           参加パス
         </Link>
         <Suspense fallback={null}>
-          <NotificationBell />
+          <NotificationBell showLabel />
         </Suspense>
         {user ? (
           <>

@@ -131,7 +131,8 @@ function OrganizerRecruitmentsContent() {
       list = list.filter(
         (r) =>
           r.title.toLowerCase().includes(q) ||
-          (r.eventTitle ?? "").toLowerCase().includes(q)
+          (r.eventTitle ?? "").toLowerCase().includes(q) ||
+          (r.roles ?? []).some((role) => role.name.toLowerCase().includes(q))
       );
     }
     if (kpiFilter) {
@@ -162,7 +163,8 @@ function OrganizerRecruitmentsContent() {
     searchQuery.trim().length > 0 ||
     statusFilter !== "all" ||
     sortBy !== "created_desc" ||
-    Boolean(kpiFilter);
+    Boolean(kpiFilter) ||
+    Boolean(eventFilter);
 
   const nextAction = useMemo(() => {
     if (todos.length > 0) {
@@ -219,6 +221,8 @@ function OrganizerRecruitmentsContent() {
             onSearchChange={setSearchQuery}
             statusFilter={statusFilter}
             onStatusFilterChange={handleStatusFilterChange}
+            eventFilter={eventFilter}
+            onEventFilterChange={setEventFilter}
             sortBy={sortBy}
             onSortChange={setSortBy}
             kpiFilter={kpiFilter}

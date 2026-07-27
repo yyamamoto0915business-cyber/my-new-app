@@ -53,12 +53,23 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "応募が見つかりません" }, { status: 404 });
     }
 
-    const updates: { status?: string; checked_in_at?: string | null; role_assigned?: string | null } = {};
+    const updates: {
+      status?: string;
+      checked_in_at?: string | null;
+      role_assigned?: string | null;
+      organizer_memo?: string | null;
+    } = {};
     if (
       body.status != null &&
-      ["accepted", "rejected", "canceled", "confirmed", "pending", "checked_in"].includes(
-        String(body.status)
-      )
+      [
+        "accepted",
+        "rejected",
+        "canceled",
+        "confirmed",
+        "pending",
+        "checked_in",
+        "on_hold",
+      ].includes(String(body.status))
     ) {
       updates.status = body.status as string;
     }
@@ -69,6 +80,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     }
     if (body.role_assigned !== undefined) {
       updates.role_assigned = typeof body.role_assigned === "string" ? body.role_assigned : null;
+    }
+    if (body.organizer_memo !== undefined) {
+      updates.organizer_memo =
+        typeof body.organizer_memo === "string" ? body.organizer_memo.slice(0, 500) : null;
     }
 
     const updated = updateStoreApplication(appId, updates);
@@ -95,12 +110,21 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         status?: ApplicationStatus;
         checked_in_at?: string | null;
         role_assigned?: string | null;
+        organizer_memo?: string | null;
       } = {};
 
       if (body.status != null) {
         const s = body.status as string;
         if (
-          ["accepted", "rejected", "canceled", "confirmed", "pending", "checked_in"].includes(s)
+          [
+            "accepted",
+            "rejected",
+            "canceled",
+            "confirmed",
+            "pending",
+            "checked_in",
+            "on_hold",
+          ].includes(s)
         ) {
           updates.status = s as ApplicationStatus;
         }
@@ -116,6 +140,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       }
       if (body.role_assigned !== undefined) {
         updates.role_assigned = typeof body.role_assigned === "string" ? body.role_assigned : null;
+      }
+      if (body.organizer_memo !== undefined) {
+        updates.organizer_memo =
+          typeof body.organizer_memo === "string" ? body.organizer_memo.slice(0, 500) : null;
       }
 
       if (Object.keys(updates).length === 0) {

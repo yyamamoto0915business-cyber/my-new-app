@@ -70,7 +70,7 @@ async function buildSupabaseDashboard(
       const r = a.recruitment_id;
       if (!appCountByRec[r]) appCountByRec[r] = { total: 0, pending: 0, approved: 0 };
       appCountByRec[r].total += 1;
-      if (a.status === "pending") appCountByRec[r].pending += 1;
+      if (a.status === "pending" || a.status === "on_hold") appCountByRec[r].pending += 1;
       if (a.status === "accepted" || a.status === "confirmed") appCountByRec[r].approved += 1;
     }
   }
@@ -140,7 +140,7 @@ async function buildSupabaseDashboard(
   for (const sr of storeRecruitments) {
     if (sorted.some((r) => r.id === sr.id)) continue;
     const apps = getStoreApplicationsByRecruitment(sr.id);
-    const pending = apps.filter((a) => a.status === "pending").length;
+    const pending = apps.filter((a) => a.status === "pending" || a.status === "on_hold").length;
     const approved = apps.filter(
       (a) => a.status === "accepted" || a.status === "confirmed"
     ).length;

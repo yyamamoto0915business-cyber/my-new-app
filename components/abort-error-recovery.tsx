@@ -6,12 +6,25 @@ function swallowIfBenign(reason: unknown): boolean {
   return isAbortLikeError(reason) || isNetworkFetchError(reason);
 }
 
+function installTouchActiveSupport() {
+  if (typeof window === "undefined") return;
+
+  const w = window as Window & { __mgTouchActiveInstalled?: boolean };
+  if (w.__mgTouchActiveInstalled) return;
+  w.__mgTouchActiveInstalled = true;
+
+  // iOS Safari でリンク等の :active を有効にする
+  document.addEventListener("touchstart", () => {}, { passive: true });
+}
+
 function installAbortErrorRecovery() {
   if (typeof window === "undefined") return;
 
   const w = window as Window & { __mgAbortRecoveryInstalled?: boolean };
   if (w.__mgAbortRecoveryInstalled) return;
   w.__mgAbortRecoveryInstalled = true;
+
+  installTouchActiveSupport();
 
   const onUnhandledRejection = (event: PromiseRejectionEvent) => {
     if (swallowIfBenign(event.reason)) {

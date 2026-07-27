@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { Breadcrumb } from "@/components/breadcrumb";
+import { OrganizerPageShell } from "@/components/organizer/OrganizerPageShell";
+import { DayOfRecruitmentPcView } from "@/components/organizer/recruitments/DayOfRecruitmentPcView";
 
 type Application = {
   id: string;
@@ -19,7 +22,9 @@ type Recruitment = {
   title: string;
   meeting_place: string | null;
   start_at: string | null;
+  end_at?: string | null;
   roles: { name: string; count: number }[];
+  organizer_id?: string;
 };
 
 export default function DayOfModePage({
@@ -27,6 +32,7 @@ export default function DayOfModePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const router = useRouter();
   const [recruitment, setRecruitment] = useState<Recruitment | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +70,7 @@ export default function DayOfModePage({
   }, [load]);
 
   const accepted = applications.filter(
-    (a) => a.status === "accepted" || a.status === "confirmed"
+    (a) => a.status === "accepted" || a.status === "confirmed" || a.status === "checked_in"
   );
 
   const filtered =
@@ -111,10 +117,38 @@ export default function DayOfModePage({
         }
       );
       const data = await res.json();
-      if (res.ok) alert(`${data.sent ?? 0}件送信しました`);
+      if (res.ok) alert(data.message ?? `${data.sent ?? 0}件のスタッフに通知を送信しました`);
       else alert(data.error ?? "送信に失敗しました");
     } finally {
       setBulkSending(false);
+    }
+  };
+
+  const handleOpenChat = async (participantId: string) => {
+    if (!resolvedId || !participantId) return;
+    const organizerId = recruitment?.organizer_id ?? null;
+    if (!organizerId) {
+      alert("主催者情報の取得に失敗しました");
+      return;
+    }
+    try {
+      const res = await fetchWithTimeout(`/api/conversations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizerId,
+          otherUserId: participantId,
+          kind: "general",
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.conversationId) {
+        alert(data?.error ?? "チャットの準備に失敗しました");
+        return;
+      }
+      router.push(`/messages/${data.conversationId}`);
+    } catch {
+      alert("チャットの準備に失敗しました");
     }
   };
 
@@ -140,167 +174,181 @@ export default function DayOfModePage({
   const roleOptions = recruitment.roles?.map((r) => r.name) ?? ["受付", "誘導", "物販"];
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--accent)]/10 dark:bg-[var(--accent)]/20">
-        <div className="mx-auto max-w-4xl px-4 py-4">
-          <Breadcrumb
-            items={[
-              { label: "トップ", href: "/" },
-              { label: "スタッフ募集管理", href: "/organizer/recruitments" },
-              { label: recruitment.title, href: `/organizer/recruitments/${resolvedId}` },
-              { label: "当日モード" },
-            ]}
-          />
-          <h1 className="mt-2 text-xl font-bold">当日モード</h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            集合: {recruitment.meeting_place ?? "未定"} · 採用 {accepted.length} 名
-          </p>
-        </div>
-      </header>
+    <>
+      <OrganizerPageShell className="hidden min-[900px]:block" contentClassName="pb-8">
+        <DayOfRecruitmentPcView
+          recruitmentId={resolvedId}
+          title={recruitment.title}
+          meetingPlace={recruitment.meeting_place}
+          startAt={recruitment.start_at}
+          endAt={recruitment.end_at ?? null}
+          roleOptions={roleOptions}
+          accepted={accepted}
+          filter={filter}
+          onFilterChange={setFilter}
+          filtered={filtered}
+          bulkSending={bulkSending}
+          onBulkMessage={handleBulkMessage}
+          onCheckIn={handleCheckIn}
+          onRoleAssign={handleRoleAssign}
+          onChat={handleOpenChat}
+        />
+      </OrganizerPageShell>
 
-      <main className="mx-auto max-w-4xl px-4 py-6 space-y-6">
-        <section className="rounded-xl border border-[var(--border)] bg-white p-4 dark:bg-[var(--background)]">
-          <h2 className="font-semibold">一斉連絡</h2>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => handleBulkMessage("今から集合してください。")}
-              disabled={bulkSending || accepted.length === 0}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 disabled:opacity-50"
-            >
-              今から集合
-            </button>
-            <button
-              type="button"
-              onClick={() => handleBulkMessage("休憩です。戻りましたらお知らせください。")}
-              disabled={bulkSending || accepted.length === 0}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 disabled:opacity-50"
-            >
-              休憩お知らせ
-            </button>
-            <button
-              type="button"
-              onClick={() => handleBulkMessage("片付けを開始します。集まってください。")}
-              disabled={bulkSending || accepted.length === 0}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 disabled:opacity-50"
-            >
-              片付け開始
-            </button>
+      <div className="min-h-screen min-[900px]:hidden">
+        <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--accent)]/10 dark:bg-[var(--accent)]/20">
+          <div className="mx-auto max-w-4xl px-4 py-4">
+            <Breadcrumb
+              items={[
+                { label: "トップ", href: "/" },
+                { label: "スタッフ募集管理", href: "/organizer/recruitments" },
+                { label: recruitment.title, href: `/organizer/recruitments/${resolvedId}` },
+                { label: "当日管理" },
+              ]}
+            />
+            <h1 className="mt-2 text-xl font-bold">当日管理</h1>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+              集合: {recruitment.meeting_place ?? "未定"} · 採用 {accepted.length} 名
+            </p>
           </div>
-        </section>
+        </header>
 
-        <section className="rounded-xl border border-[var(--border)] bg-white p-4 dark:bg-[var(--background)]">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">名簿</h2>
-            <div className="flex gap-2">
+        <main className="mx-auto max-w-4xl space-y-6 px-4 py-6">
+          <section className="rounded-xl border border-[var(--border)] bg-white p-4 dark:bg-[var(--background)]">
+            <h2 className="font-semibold">一斉連絡</h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              承認済みスタッフの通知に届きます（ダッシュボードのお知らせと同じ）
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setFilter("all")}
-                className={`rounded px-2 py-1 text-sm ${
-                  filter === "all"
-                    ? "bg-[var(--accent)] text-white"
-                    : "bg-zinc-100 dark:bg-zinc-700"
-                }`}
+                onClick={() => handleBulkMessage("集合場所・時刻を再度ご確認のうえ、余裕を持ってお集まりください。")}
+                disabled={bulkSending || accepted.length === 0}
+                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 disabled:opacity-50"
               >
-                全員
+                集合を案内
               </button>
               <button
                 type="button"
-                onClick={() => setFilter("arrived")}
-                className={`rounded px-2 py-1 text-sm ${
-                  filter === "arrived"
-                    ? "bg-emerald-600 text-white"
-                    : "bg-zinc-100 dark:bg-zinc-700"
-                }`}
+                onClick={() => handleBulkMessage("これから休憩に入ります。戻りましたらお知らせください。")}
+                disabled={bulkSending || accepted.length === 0}
+                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 disabled:opacity-50"
               >
-                到着
+                休憩のお知らせ
               </button>
               <button
                 type="button"
-                onClick={() => setFilter("not_arrived")}
-                className={`rounded px-2 py-1 text-sm ${
-                  filter === "not_arrived"
-                    ? "bg-amber-500 text-white"
-                    : "bg-zinc-100 dark:bg-zinc-700"
-                }`}
+                onClick={() => handleBulkMessage("片付けを開始します。集まってください。")}
+                disabled={bulkSending || accepted.length === 0}
+                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-600 disabled:opacity-50"
               >
-                未到着
+                片付け開始
               </button>
             </div>
-          </div>
+          </section>
 
-          {filtered.length === 0 ? (
-            <p className="mt-4 text-sm text-zinc-500">
-              {accepted.length === 0
-                ? "採用者がいません"
-                : "該当するスタッフがいません"}
-            </p>
-          ) : (
-            <ul className="mt-4 space-y-3">
-              {filtered.map((app) => (
-                <li
-                  key={app.id}
-                  className={`flex items-center justify-between rounded-lg border p-3 ${
-                    app.checked_in_at
-                      ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10"
-                      : "border-zinc-200 dark:border-zinc-700"
+          <section className="rounded-xl border border-[var(--border)] bg-white p-4 dark:bg-[var(--background)]">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">名簿</h2>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFilter("all")}
+                  className={`rounded px-2 py-1 text-sm ${
+                    filter === "all" ? "bg-[var(--accent)] text-white" : "bg-zinc-100 dark:bg-zinc-700"
                   }`}
                 >
-                  <div>
-                    <p className="font-medium">
-                      {(app.user as { display_name?: string })?.display_name ??
-                        app.user_id.slice(0, 8)}
-                    </p>
-                    <p className="text-xs text-zinc-500">
-                      {app.checked_in_at
-                        ? `到着 ${new Date(app.checked_in_at).toLocaleTimeString("ja-JP", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}`
-                        : "未到着"}
-                      {app.role_assigned && ` · ${app.role_assigned}`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!app.checked_in_at && (
-                      <button
-                        type="button"
-                        onClick={() => handleCheckIn(app.id)}
-                        className="rounded bg-emerald-600 px-3 py-1.5 text-sm text-white hover:bg-emerald-700"
-                      >
-                        到着
-                      </button>
-                    )}
-                    <select
-                      value={app.role_assigned ?? ""}
-                      onChange={(e) =>
-                        handleRoleAssign(app.id, e.target.value || "")
-                      }
-                      className="rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800"
-                    >
-                      <option value="">役割</option>
-                      {roleOptions.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                  全員
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilter("arrived")}
+                  className={`rounded px-2 py-1 text-sm ${
+                    filter === "arrived" ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-700"
+                  }`}
+                >
+                  到着
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilter("not_arrived")}
+                  className={`rounded px-2 py-1 text-sm ${
+                    filter === "not_arrived" ? "bg-amber-500 text-white" : "bg-zinc-100 dark:bg-zinc-700"
+                  }`}
+                >
+                  未到着
+                </button>
+              </div>
+            </div>
 
-        <div className="text-center">
-          <Link
-            href={`/organizer/recruitments/${resolvedId}`}
-            className="text-sm text-[var(--accent)] hover:underline"
-          >
-            ← スタッフ募集管理に戻る
-          </Link>
-        </div>
-      </main>
-    </div>
+            {filtered.length === 0 ? (
+              <p className="mt-4 text-sm text-zinc-500">
+                {accepted.length === 0 ? "採用者がいません" : "該当するスタッフがいません"}
+              </p>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {filtered.map((app) => (
+                  <li
+                    key={app.id}
+                    className={`flex items-center justify-between rounded-lg border p-3 ${
+                      app.checked_in_at
+                        ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10"
+                        : "border-zinc-200 dark:border-zinc-700"
+                    }`}
+                  >
+                    <div>
+                      <p className="font-medium">
+                        {app.user?.display_name ?? app.user_id.slice(0, 8)}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        {app.checked_in_at
+                          ? `到着 ${new Date(app.checked_in_at).toLocaleTimeString("ja-JP", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}`
+                          : "未到着"}
+                        {app.role_assigned && ` · ${app.role_assigned}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!app.checked_in_at && (
+                        <button
+                          type="button"
+                          onClick={() => handleCheckIn(app.id)}
+                          className="rounded bg-emerald-600 px-3 py-1.5 text-sm text-white hover:bg-emerald-700"
+                        >
+                          到着
+                        </button>
+                      )}
+                      <select
+                        value={app.role_assigned ?? ""}
+                        onChange={(e) => handleRoleAssign(app.id, e.target.value || "")}
+                        className="rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800"
+                      >
+                        <option value="">役割</option>
+                        {roleOptions.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <div className="text-center">
+            <Link
+              href={`/organizer/recruitments/${resolvedId}`}
+              className="text-sm text-[var(--accent)] hover:underline"
+            >
+              ← 応募確認へ戻る
+            </Link>
+          </div>
+        </main>
+      </div>
+    </>
   );
 }

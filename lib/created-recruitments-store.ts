@@ -2,6 +2,7 @@
  * Supabase 未設定時の募集ストア（開発用・インメモリ）
  */
 import type { RecruitmentRole } from "./db/recruitments-mvp";
+import type { ApplicationFormConfig } from "@/lib/recruitment-application-form";
 
 export type StoreRecruitment = {
   id: string;
@@ -21,6 +22,7 @@ export type StoreRecruitment = {
   items_to_bring: string | null;
   provisions: string | null;
   notes: string | null;
+  application_form_config?: ApplicationFormConfig | null;
   created_at: string;
   updated_at: string;
   organizers?: { organization_name: string | null };
@@ -34,6 +36,9 @@ export type StoreApplication = {
   message: string | null;
   checked_in_at: string | null;
   role_assigned: string | null;
+  organizer_memo: string | null;
+  form_answers: Record<string, string | boolean | null> | null;
+  form_completed_at: string | null;
   created_at: string;
 };
 
@@ -172,9 +177,11 @@ export function findStoreRecruitmentByNotesMarker(marker: string): StoreRecruitm
 export function addStoreApplication(
   recruitmentId: string,
   userId: string,
-  message?: string
+  message?: string,
+  options?: { formRequired?: boolean }
 ): StoreApplication {
   const id = `store-a-${nextAppId++}`;
+  const formRequired = options?.formRequired ?? true;
   const app: StoreApplication = {
     id,
     recruitment_id: recruitmentId,
@@ -183,10 +190,30 @@ export function addStoreApplication(
     message: message ?? null,
     checked_in_at: null,
     role_assigned: null,
+    organizer_memo: null,
+    form_answers: null,
+    form_completed_at: formRequired ? null : new Date().toISOString(),
     created_at: new Date().toISOString(),
   };
   applications.push(app);
   return app;
+}
+
+export function getStoreApplication(
+  recruitmentId: string,
+  userId: string
+): StoreApplication | null {
+  return (
+    applications.find(
+      (a) => a.recruitment_id === recruitmentId && a.user_id === userId
+    ) ?? null
+  );
+}
+
+export function getStorePendingApplicationForms(userId: string): StoreApplication[] {
+  return applications
+    .filter((a) => a.user_id === userId && a.form_completed_at == null)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
 export function getStoreApplicationStatus(
@@ -207,7 +234,18 @@ export function getStoreApplicationsByRecruitment(recruitmentId: string): StoreA
 
 export function updateStoreApplication(
   applicationId: string,
-  updates: Partial<Pick<StoreApplication, "status" | "checked_in_at" | "role_assigned">>
+  updates: Partial<
+    Pick<
+      StoreApplication,
+      | "status"
+      | "checked_in_at"
+      | "role_assigned"
+      | "organizer_memo"
+      | "form_answers"
+      | "form_completed_at"
+      | "message"
+    >
+  >
 ): StoreApplication | null {
   const idx = applications.findIndex((a) => a.id === applicationId);
   if (idx < 0) return null;

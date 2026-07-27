@@ -11,10 +11,18 @@ import {
   addStoreApplication,
   getStoreApplicationStatus,
 } from "@/lib/created-recruitments-store";
+import {
+  afterApplicationCreated,
+  buildApplyFormResult,
+} from "@/lib/application-form-apply";
+import {
+  applicationFormNeedsInput,
+  resolveApplicationFormConfig,
+} from "@/lib/recruitment-application-form";
 
 type Params = { params: Promise<{ id: string }> };
 
-/** POST: 応募（1タップ応募 + 自動返信投入） */
+/** POST: 応募（1タップ応募 + フォーム入力通知） */
 export async function POST(request: NextRequest, { params }: Params) {
   const user = await getApiUser();
   if (!user) {
@@ -56,13 +64,19 @@ export async function POST(request: NextRequest, { params }: Params) {
         );
       }
 
-      await createApplication(supabase, recruitmentId, user.id, message || undefined);
+      const formRequired = applicationFormNeedsInput(
+        resolveApplicationFormConfig(recruitment.application_form_config)
+      );
+      await createApplication(supabase, recruitmentId, user.id, message || undefined, {
+        formRequired,
+      });
+      const form = await afterApplicationCreated(supabase, user.id, recruitment);
 
       return NextResponse.json({
         success: true,
         status: "pending",
         recruitmentId,
-        message: "応募を受け付けました。主催者の確認をお待ちください。",
+        ...form,
       });
     } catch (e) {
       console.error("recruitments/[id]/apply POST:", e);
@@ -90,12 +104,15 @@ export async function POST(request: NextRequest, { params }: Params) {
     );
   }
 
-  addStoreApplication(recruitmentId, user.id, message || undefined);
+  const form = buildApplyFormResult(recruitmentId, recruitment.application_form_config);
+  addStoreApplication(recruitmentId, user.id, message || undefined, {
+    formRequired: form.formRequired,
+  });
 
   return NextResponse.json({
     success: true,
     status: "pending",
     recruitmentId,
-    message: "応募を受け付けました。主催者の確認をお待ちください。",
+    ...form,
   });
 }

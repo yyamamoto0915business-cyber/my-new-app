@@ -50,6 +50,7 @@ export function isDiscoverPath(pathname: string): boolean {
 export function isGuestSplashReturnPath(pathname: string): boolean {
   // 見た目確認用プレビューはスプラッシュを出さない
   if (pathname.startsWith("/events/apply-confirm-preview")) return false;
+  if (pathname.startsWith("/notifications/preview")) return false;
   if (pathname === "/" || pathname.startsWith("/events")) return true;
   if (pathname.startsWith("/stories")) return true;
   if (pathname.startsWith("/volunteer")) return true;

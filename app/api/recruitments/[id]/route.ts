@@ -7,6 +7,7 @@ import {
   getOrganizerIdByProfileId,
   updateRecruitmentMvp,
 } from "@/lib/db/recruitments-mvp";
+import { parseApplicationFormConfig } from "@/lib/recruitment-application-form";
 import {
   getStoreRecruitmentById,
   getStoreRecruitmentsByOrganizer,
@@ -99,6 +100,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       if (body.items_to_bring !== undefined) updates.items_to_bring = body.items_to_bring as string | null;
       if (body.provisions !== undefined) updates.provisions = body.provisions as string | null;
       if (body.notes !== undefined) updates.notes = body.notes as string | null;
+      if (body.application_form_config !== undefined) {
+        updates.application_form_config = parseApplicationFormConfig(
+          body.application_form_config
+        );
+      }
       await updateRecruitmentMvp(supabase, id, organizerId, updates);
 
       const updated = await fetchRecruitmentById(supabase, id);
@@ -138,6 +144,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     items_to_bring: body.items_to_bring !== undefined ? (body.items_to_bring as string | null) : undefined,
     provisions: body.provisions !== undefined ? (body.provisions as string | null) : undefined,
     notes: body.notes !== undefined ? (body.notes as string | null) : undefined,
+    application_form_config:
+      body.application_form_config !== undefined
+        ? parseApplicationFormConfig(body.application_form_config)
+        : undefined,
   });
 
   return NextResponse.json(updated);

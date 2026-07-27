@@ -20,6 +20,9 @@ export function getSiteFooterVisibility(pathname: string): SiteFooterVisibility 
   if (pathname === "/pass" || pathname.startsWith("/pass/")) return "hidden";
   // マイページは画面内専用フッターがあるため重複を避ける
   if (pathname === "/profile") return "hidden";
+  // 応募フォームは画面内完結のためフッター非表示
+  if (pathname === "/application-form-preview") return "hidden";
+  if (pathname.includes("/application-form")) return "hidden";
 
   if (pathname.startsWith("/messages")) return "desktop-only";
   if (pathname.startsWith("/checkin")) return "desktop-only";

@@ -46,7 +46,6 @@ function ProPlanCard() {
           </p>
           <p className="org-pro-plan-card__title">
             <span className="org-pro-plan-card__pro">Pro</span>
-            <span className="org-pro-plan-card__plan">プラン</span>
             <span className="org-pro-plan-spark org-pro-plan-spark--title" aria-hidden />
           </p>
           <Link href={PLAN_HREF} className="org-pro-plan-card__link">
@@ -123,7 +122,7 @@ function UnlimitedSlotsCard() {
             <span className="org-events-status-card__label-short">公開枠</span>
           </p>
           <p className="org-unlimited-card__value">
-            上限なし
+            無制限
             <span className="org-unlimited-spark org-unlimited-spark--text-1" aria-hidden />
             <span className="org-unlimited-spark org-unlimited-spark--text-2" aria-hidden />
           </p>

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { applicationFormPath } from "@/lib/recruitment-application-form";
 
 export type NotificationType =
   | "new_message"
@@ -219,4 +220,78 @@ export async function notifyEventStaff(
   }
 
   return { sent, total: targets.length };
+}
+
+/** 募集の承認済みスタッフへお知らせ通知を送信（ダッシュボードお知らせと同じ通知経路） */
+export async function notifyRecruitmentStaff(
+  supabase: SupabaseClient,
+  input: {
+    recruitmentId: string;
+    recruitmentTitle: string;
+    eventId?: string | null;
+    content: string;
+    excludeUserId?: string;
+    targetUserIds?: string[];
+  }
+): Promise<{ sent: number; total: number; failedParticipantIds: string[] }> {
+  const { data: applications, error } = await supabase
+    .from("recruitment_applications")
+    .select("user_id, status")
+    .eq("recruitment_id", input.recruitmentId)
+    .in("status", [...STAFF_ACTIVE_STATUSES]);
+
+  if (error) {
+    throw error;
+  }
+
+  const acceptedIds = new Set<string>();
+  for (const row of applications ?? []) {
+    if (row.user_id) acceptedIds.add(row.user_id as string);
+  }
+
+  let recipientIds =
+    input.targetUserIds && input.targetUserIds.length > 0
+      ? input.targetUserIds.filter((id) => acceptedIds.has(id))
+      : Array.from(acceptedIds);
+
+  if (input.excludeUserId) {
+    recipientIds = recipientIds.filter((id) => id !== input.excludeUserId);
+  }
+
+  const title = `【スタッフ連絡】${input.recruitmentTitle}`;
+  const link = input.eventId
+    ? `/events/${input.eventId}`
+    : `/volunteer/${input.recruitmentId}`;
+
+  let sent = 0;
+  const failedParticipantIds: string[] = [];
+  for (const userId of recipientIds) {
+    const notif = await createNotification(supabase, userId, "system_message", title, {
+      body: input.content,
+      link,
+    });
+    if (notif) sent++;
+    else failedParticipantIds.push(userId);
+  }
+
+  return { sent, total: recipientIds.length, failedParticipantIds };
+}
+
+/** 応募後: フォーム入力を促すお知らせ */
+export async function notifyApplicationFormRequired(
+  supabase: SupabaseClient,
+  userId: string,
+  recruitment: { id: string; title: string }
+): Promise<boolean> {
+  const notif = await createNotification(
+    supabase,
+    userId,
+    "system_message",
+    "応募フォームの入力が必要です",
+    {
+      body: "必須項目を入力して提出しないと、応募は完了しません。",
+      link: applicationFormPath(recruitment.id),
+    }
+  );
+  return Boolean(notif);
 }
