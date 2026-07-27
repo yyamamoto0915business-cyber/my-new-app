@@ -270,7 +270,7 @@ export function ApplicationFormMobileView({
 
   const stepIndex = steps.findIndex((s) => s.key === step);
   const isFirst = stepIndex <= 0;
-  const isLast = step.key === "confirm";
+  const isLast = step === "confirm";
 
   const goNext = () => {
     if (stepIndex < steps.length - 1) setStep(steps[stepIndex + 1].key);
