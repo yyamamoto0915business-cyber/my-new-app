@@ -37,15 +37,15 @@ export function OrganizerProfilePcSidebar({
   }
 
   return (
-    <aside className={cn("hidden flex-col gap-4 lg:flex", className)}>
+    <aside className={cn("hidden flex-col gap-3 lg:flex", className)}>
       {(hasProfileDetails || hasSocial) && (
-      <div className="rounded-[20px] p-5" style={{ background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-        <div className="mb-4 text-[14px] font-bold" style={{ color: "#1a2818" }}>
+      <div className="rounded-[16px] p-4" style={{ background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+        <div className="mb-2.5 text-[12.5px] font-bold tracking-wide" style={{ color: "#4a5a48" }}>
           プロフィール
         </div>
 
         {hasProfileDetails ? (
-          <div className="flex flex-col gap-3.5">
+          <div className="flex flex-col gap-2">
             {activityArea ? (
               <InfoRow icon={<LocationIcon />} label="活動地域" value={activityArea} />
             ) : null}
@@ -63,15 +63,15 @@ export function OrganizerProfilePcSidebar({
         ) : null}
 
         {hasSocial ? (
-          <div className={hasProfileDetails ? "mt-5 border-t pt-4" : ""} style={{ borderColor: "#e8ede4" }}>
-            <div className="mb-3 text-[11.5px]" style={{ color: "#98a898" }}>
+          <div className={hasProfileDetails ? "mt-3 border-t pt-3" : ""} style={{ borderColor: "#e8ede4" }}>
+            <div className="mb-2 text-[12px] font-medium" style={{ color: "#4a5a48" }}>
               公式リンク
             </div>
             <div className="flex flex-wrap gap-2">
-              {instagramUrl ? <SocialButton href={instagramUrl} type="instagram" /> : null}
-              {xUrl ? <SocialButton href={xUrl} type="x" /> : null}
-              {facebookUrl ? <SocialButton href={facebookUrl} type="facebook" /> : null}
-              {websiteUrl ? <SocialButton href={websiteUrl} type="link" /> : null}
+              {instagramUrl ? <SocialButton href={instagramUrl} type="instagram" label="Instagram" /> : null}
+              {xUrl ? <SocialButton href={xUrl} type="x" label="X" /> : null}
+              {facebookUrl ? <SocialButton href={facebookUrl} type="facebook" label="Facebook" /> : null}
+              {websiteUrl ? <SocialButton href={websiteUrl} type="link" label="Web" /> : null}
             </div>
           </div>
         ) : null}
@@ -79,8 +79,8 @@ export function OrganizerProfilePcSidebar({
       )}
 
       {hasContact ? (
-        <div className="rounded-[20px] p-5" style={{ background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-          <div className="mb-3 text-[14px] font-bold" style={{ color: "#1a2818" }}>
+        <div className="rounded-[16px] p-4" style={{ background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="mb-2 text-[13px] font-bold" style={{ color: "#1a2818" }}>
             公開連絡先
           </div>
           <div className="flex flex-col gap-2 text-[13px]" style={{ color: "#3a4a38" }}>
@@ -106,10 +106,10 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
     <div className="flex items-start gap-2.5">
       <div className="mt-0.5 shrink-0">{icon}</div>
       <div className="min-w-0">
-        <div className="mb-0.5 text-[11.5px]" style={{ color: "#98a898" }}>
+        <div className="mb-0.5 text-[12px]" style={{ color: "#607060" }}>
           {label}
         </div>
-        <div className="text-[13px] leading-snug" style={{ color: "#3a4a38" }}>
+        <div className="text-[13.5px] font-medium leading-snug" style={{ color: "#1a2818" }}>
           {value}
         </div>
       </div>
@@ -117,7 +117,15 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
-function SocialButton({ href, type }: { href: string; type: "instagram" | "x" | "facebook" | "link" }) {
+function SocialButton({
+  href,
+  type,
+  label,
+}: {
+  href: string;
+  type: "instagram" | "x" | "facebook" | "link";
+  label: string;
+}) {
   const base =
     "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-opacity hover:opacity-80";
   if (type === "instagram") {
@@ -127,6 +135,8 @@ function SocialButton({ href, type }: { href: string; type: "instagram" | "x" | 
         target="_blank"
         rel="noreferrer"
         className={base}
+        aria-label={label}
+        title={label}
         style={{
           background: "linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)",
         }}
@@ -141,14 +151,30 @@ function SocialButton({ href, type }: { href: string; type: "instagram" | "x" | 
   }
   if (type === "x") {
     return (
-      <a href={href} target="_blank" rel="noreferrer" className={base} style={{ background: "#000", color: "#fff", fontSize: 13, fontWeight: 800 }}>
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className={base}
+        aria-label={label}
+        title={label}
+        style={{ background: "#000", color: "#fff", fontSize: 13, fontWeight: 800 }}
+      >
         X
       </a>
     );
   }
   if (type === "facebook") {
     return (
-      <a href={href} target="_blank" rel="noreferrer" className={base} style={{ background: "#1877f2" }}>
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className={base}
+        aria-label={label}
+        title={label}
+        style={{ background: "#1877f2" }}
+      >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff">
           <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
         </svg>
@@ -156,7 +182,15 @@ function SocialButton({ href, type }: { href: string; type: "instagram" | "x" | 
     );
   }
   return (
-    <a href={href} target="_blank" rel="noreferrer" className={base} style={{ background: "#f0f4ec", border: "1px solid #e4ede4" }}>
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={base}
+      aria-label={label}
+      title={label}
+      style={{ background: "#f0f4ec", border: "1px solid #e4ede4" }}
+    >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#607060" strokeWidth="1.8" strokeLinecap="round">
         <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
         <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />

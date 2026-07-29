@@ -17,6 +17,8 @@ type Props = {
   items: PcVolunteerCardItem[];
   loading: boolean;
   totalCount: number;
+  emptyMessage?: string;
+  emptyHint?: string;
 };
 
 function CardSkeleton() {
@@ -32,7 +34,13 @@ function CardSkeleton() {
   );
 }
 
-export function PcVolunteerRecommendedRow({ items, loading, totalCount }: Props) {
+export function PcVolunteerRecommendedRow({
+  items,
+  loading,
+  totalCount,
+  emptyMessage = "条件に合う募集がありません",
+  emptyHint = "条件を変えて再度お試しください",
+}: Props) {
   const displayItems = items.slice(0, 4);
 
   return (
@@ -64,8 +72,10 @@ export function PcVolunteerRecommendedRow({ items, loading, totalCount }: Props)
         </div>
       ) : displayItems.length === 0 ? (
         <div className="rounded-[12px] border border-[#DDE8DF] bg-white p-10 text-center">
-          <p className="text-[13px] text-[#566358]">条件に合う募集がありません</p>
-          <p className="mt-1 text-[11px] text-[#566358]/60">条件を変えて再度お試しください</p>
+          <p className="text-[13px] text-[#566358]">{emptyMessage}</p>
+          {emptyHint ? (
+            <p className="mt-1 text-[11px] text-[#566358]/60">{emptyHint}</p>
+          ) : null}
         </div>
       ) : (
         <div className="grid grid-cols-4 items-stretch gap-3">

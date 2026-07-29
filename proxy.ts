@@ -121,7 +121,17 @@ export async function proxy(request: NextRequest) {
     path === "/pass" &&
     parsePassOnlinePreviewMode(request.nextUrl.searchParams.get("preview")) !=
       null;
-  if (!user && requiresAuth(path) && !isPassOnlinePreview) {
+  // 募集公開完了UIの見た目確認（開発時のみ）
+  const isRecruitmentPublishPreview =
+    process.env.NODE_ENV !== "production" &&
+    path === "/organizer/recruitments/new" &&
+    request.nextUrl.searchParams.get("previewSuccess") === "1";
+  if (
+    !user &&
+    requiresAuth(path) &&
+    !isPassOnlinePreview &&
+    !isRecruitmentPublishPreview
+  ) {
     const authUrl = new URL("/auth", request.url);
     authUrl.searchParams.set("next", path + request.nextUrl.search);
     const redirect = NextResponse.redirect(authUrl);

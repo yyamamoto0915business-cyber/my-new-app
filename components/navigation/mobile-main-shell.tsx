@@ -26,7 +26,8 @@ export function MobileMainShell({ children }: Props) {
   const profileEdit = isProfileEditRoute(pathname ?? "");
   const immersiveMobile = eventDetail || chatConversation || profileEdit;
   const topHeaderH = getMobileTopHeaderHeightPx(pathname ?? "");
-  const organizerArea = pathname?.startsWith("/organizer") ?? false;
+  const organizerArea =
+    pathname === "/organizer" || (pathname?.startsWith("/organizer/") ?? false);
   const authRoute = isAuthRoute(pathname ?? "");
 
   const pcTopPad = organizerArea || authRoute

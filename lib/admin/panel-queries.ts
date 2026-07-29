@@ -550,3 +550,134 @@ export async function getAdminOrders(
 
   return { items, total: count ?? 0, page, pageSize };
 }
+
+export type AdminRecruitmentListItem = {
+  id: string;
+  title: string;
+  type: string;
+  status: string | null;
+  startAt: string | null;
+  capacity: number | null;
+  organizerName: string | null;
+  organizerId: string | null;
+  eventTitle: string | null;
+  applicationCount: number;
+  approvedCount: number;
+};
+
+export async function getAdminRecruitments(
+  supabase: SupabaseClient,
+  params: {
+    q?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }
+): Promise<{
+  items: AdminRecruitmentListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}> {
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = params.pageSize ?? 30;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from("recruitments")
+    .select(
+      `
+      id,
+      title,
+      type,
+      status,
+      start_at,
+      capacity,
+      updated_at,
+      organizer_id,
+      organizer:organizer_id ( organization_name ),
+      events ( title, date )
+    `,
+      { count: "exact" }
+    )
+    .order("updated_at", { ascending: false })
+    .range(from, to);
+
+  if (params.status && params.status !== "all") {
+    query = query.eq("status", params.status);
+  }
+  if (params.q?.trim()) {
+    query = query.ilike("title", `%${params.q.trim()}%`);
+  }
+
+  const { data, count, error } = await query;
+  if (error) {
+    console.error("getAdminRecruitments:", error.message);
+    return { items: [], total: 0, page, pageSize };
+  }
+
+  const rows = (data ?? []) as Array<{
+    id: string;
+    title: string;
+    type: string;
+    status: string | null;
+    start_at: string | null;
+    capacity: number | null;
+    organizer_id: string | null;
+    organizer?: { organization_name?: string | null } | null;
+    events?: { title?: string; date?: string } | { title?: string; date?: string }[] | null;
+  }>;
+
+  const ids = rows.map((r) => r.id);
+  const applicationCounts = new Map<string, number>();
+  const approvedCounts = new Map<string, number>();
+
+  if (ids.length > 0) {
+    const { data: apps } = await supabase
+      .from("recruitment_applications")
+      .select("recruitment_id, status")
+      .in("recruitment_id", ids);
+
+    for (const app of apps ?? []) {
+      const row = app as { recruitment_id: string; status: string };
+      applicationCounts.set(
+        row.recruitment_id,
+        (applicationCounts.get(row.recruitment_id) ?? 0) + 1
+      );
+      if (
+        row.status === "accepted" ||
+        row.status === "confirmed" ||
+        row.status === "checked_in" ||
+        row.status === "completed"
+      ) {
+        approvedCounts.set(
+          row.recruitment_id,
+          (approvedCounts.get(row.recruitment_id) ?? 0) + 1
+        );
+      }
+    }
+  }
+
+  return {
+    items: rows.map((r) => {
+      const event = Array.isArray(r.events) ? r.events[0] : r.events;
+      return {
+        id: r.id,
+        title: r.title,
+        type: r.type,
+        status: r.status,
+        startAt: r.start_at ?? event?.date ?? null,
+        capacity: r.capacity,
+        organizerName: r.organizer?.organization_name ?? null,
+        organizerId: r.organizer_id,
+        eventTitle: event?.title ?? null,
+        applicationCount: applicationCounts.get(r.id) ?? 0,
+        approvedCount: approvedCounts.get(r.id) ?? 0,
+      };
+    }),
+    total: count ?? 0,
+    page,
+    pageSize,
+  };
+}

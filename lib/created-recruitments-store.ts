@@ -22,6 +22,7 @@ export type StoreRecruitment = {
   items_to_bring: string | null;
   provisions: string | null;
   notes: string | null;
+  image_url: string | null;
   application_form_config?: ApplicationFormConfig | null;
   created_at: string;
   updated_at: string;
@@ -67,6 +68,7 @@ const recruitments: StoreRecruitment[] = [
     items_to_bring: "動きやすい服、飲み物、タオル",
     provisions: "昼食支給",
     notes: "雨天時は屋内で開催",
+    image_url: null,
     created_at: now.toISOString(),
     updated_at: now.toISOString(),
     organizers: { organization_name: "開発用主催者" },
@@ -89,6 +91,7 @@ const recruitments: StoreRecruitment[] = [
     items_to_bring: "エプロン（あれば）",
     provisions: "交通費実費支給",
     notes: "混雑時は立つことが多いです",
+    image_url: null,
     created_at: now.toISOString(),
     updated_at: now.toISOString(),
     organizers: { organization_name: "開発用主催者" },
@@ -111,6 +114,7 @@ const recruitments: StoreRecruitment[] = [
     items_to_bring: "作業しやすい服",
     provisions: "軽食支給",
     notes: "重い物を運ぶ作業があります",
+    image_url: null,
     created_at: now.toISOString(),
     updated_at: now.toISOString(),
     organizers: { organization_name: "開発用主催者" },

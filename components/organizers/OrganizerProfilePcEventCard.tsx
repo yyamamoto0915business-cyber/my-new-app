@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bookmark } from "lucide-react";
+import { Bookmark, CalendarDays, MapPin, Users } from "lucide-react";
 import type { Event } from "@/lib/db/types";
 import { EventThumbnail } from "@/components/event-thumbnail";
 import { formatEventDate } from "@/lib/format-date";
@@ -24,7 +24,11 @@ function formatSchedule(event: Event): string {
 }
 
 export function OrganizerProfilePcEventCard({ event, participantCount, isPast }: Props) {
-  const [saved, setSaved] = useState(() => isBookmarked(event.id));
+  // SSR と一致させるため初期は false。localStorage はマウント後に読む
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    setSaved(isBookmarked(event.id));
+  }, [event.id]);
   const category = getPrimaryCategory(event);
   const categoryLabel = category ? CATEGORY_LABELS[category] : null;
   const tags = [categoryLabel, isPast ? "終了" : null].filter(Boolean) as string[];
@@ -32,11 +36,11 @@ export function OrganizerProfilePcEventCard({ event, participantCount, isPast }:
   return (
     <Link
       href={`/events/${event.id}`}
-      className="group flex gap-4 rounded-xl p-3 transition-colors hover:bg-[#fafcf8]"
+      className="group flex gap-3 rounded-xl p-2.5 transition-colors hover:bg-[#fafcf8]"
       style={{ border: "1px solid #e8ede4" }}
     >
       <div
-        className="relative h-[120px] w-[160px] shrink-0 overflow-hidden rounded-[10px]"
+        className="relative h-[84px] w-[112px] shrink-0 overflow-hidden rounded-[8px]"
         style={{ background: "#e8f5e4" }}
       >
         <EventThumbnail imageUrl={event.imageUrl} alt={event.title} rounded="none" fill />
@@ -44,11 +48,11 @@ export function OrganizerProfilePcEventCard({ event, participantCount, isPast }:
 
       <div className="min-w-0 flex-1 py-0.5">
         {tags.length > 0 ? (
-          <div className="mb-2 flex flex-wrap gap-1.5">
+          <div className="mb-1 flex flex-wrap gap-1.5">
             {tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+                className="rounded-full px-2 py-0.5 text-[10.5px] font-medium"
                 style={
                   tag === "終了"
                     ? { background: "#f0f0f0", color: "#888" }
@@ -61,21 +65,31 @@ export function OrganizerProfilePcEventCard({ event, participantCount, isPast }:
           </div>
         ) : null}
 
-        <h3 className="text-[16px] font-bold leading-snug" style={{ color: "#1a2818" }}>
+        <h3
+          className="line-clamp-1 text-[15px] font-bold leading-snug"
+          style={{ color: "#1a2818" }}
+          title={event.title}
+        >
           {event.title}
         </h3>
 
-        {event.description ? (
-          <p className="mt-1.5 line-clamp-2 text-[13px] leading-[1.65]" style={{ color: "#607060" }}>
-            {event.description}
-          </p>
-        ) : null}
-
-        <div className="mt-2.5 flex flex-col gap-1 text-[12.5px]" style={{ color: "#607060" }}>
-          <span>{formatSchedule(event)}</span>
-          <span>{event.location}</span>
+        <div
+          className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12.5px]"
+          style={{ color: "#3a4a38" }}
+        >
+          <span className="flex items-center gap-1">
+            <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#3a8040]" aria-hidden />
+            {formatSchedule(event)}
+          </span>
+          <span className="flex min-w-0 items-center gap-1">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-[#3a8040]" aria-hidden />
+            <span className="truncate">{event.location}</span>
+          </span>
           {participantCount != null && participantCount > 0 ? (
-            <span>参加者 {participantCount}人</span>
+            <span className="flex items-center gap-1">
+              <Users className="h-3.5 w-3.5 shrink-0 text-[#3a8040]" aria-hidden />
+              参加者 {participantCount}人
+            </span>
           ) : null}
         </div>
       </div>
@@ -86,11 +100,11 @@ export function OrganizerProfilePcEventCard({ event, participantCount, isPast }:
           e.preventDefault();
           setSaved(toggleBookmark(event.id));
         }}
-        className="mt-1 shrink-0 self-start rounded-lg p-2 transition-colors hover:bg-[#eef5ef]"
+        className="mt-0.5 shrink-0 self-start rounded-lg p-1.5 transition-colors hover:bg-[#eef5ef]"
         aria-label={saved ? "保存済み" : "あとで見る"}
       >
         <Bookmark
-          className="h-5 w-5"
+          className="h-4 w-4"
           style={{ color: saved ? "#3a8040" : "#98a898" }}
           fill={saved ? "#3a8040" : "none"}
         />

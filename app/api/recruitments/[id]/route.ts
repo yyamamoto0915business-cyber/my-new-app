@@ -100,6 +100,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       if (body.items_to_bring !== undefined) updates.items_to_bring = body.items_to_bring as string | null;
       if (body.provisions !== undefined) updates.provisions = body.provisions as string | null;
       if (body.notes !== undefined) updates.notes = body.notes as string | null;
+      if (body.image_url !== undefined) updates.image_url = body.image_url as string | null;
       if (body.application_form_config !== undefined) {
         updates.application_form_config = parseApplicationFormConfig(
           body.application_form_config
@@ -144,6 +145,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     items_to_bring: body.items_to_bring !== undefined ? (body.items_to_bring as string | null) : undefined,
     provisions: body.provisions !== undefined ? (body.provisions as string | null) : undefined,
     notes: body.notes !== undefined ? (body.notes as string | null) : undefined,
+    image_url: body.image_url !== undefined ? (body.image_url as string | null) : undefined,
     application_form_config:
       body.application_form_config !== undefined
         ? parseApplicationFormConfig(body.application_form_config)

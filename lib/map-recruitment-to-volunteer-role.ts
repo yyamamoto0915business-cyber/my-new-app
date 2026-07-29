@@ -155,9 +155,12 @@ export function recruitmentRowToVolunteerRole(row: RowWithJoins): VolunteerRoleF
     organizerVerified: true,
     contactAvailable: true,
     benefits: benefits.length ? benefits : undefined,
+    thumbnailUrl: row.image_url?.trim() || undefined,
     event,
     createdAt: row.created_at,
     organizerId: row.organizer_id,
+    meetingLat: row.meeting_lat,
+    meetingLng: row.meeting_lng,
     source: "recruitment",
   };
 }

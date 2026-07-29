@@ -11,6 +11,7 @@ import { OrganizerAboutTeaser } from "@/components/organizers/OrganizerAboutTeas
 import { OrganizerProfilePcHero } from "@/components/organizers/OrganizerProfilePcHero";
 import { OrganizerProfilePcSidebar } from "@/components/organizers/OrganizerProfilePcSidebar";
 import { OrganizerProfilePcEventCard } from "@/components/organizers/OrganizerProfilePcEventCard";
+import { OrganizerRemoteImage } from "@/components/organizers/OrganizerRemoteImage";
 import { formatEventDate } from "@/lib/format-date";
 import { getJstTodayYmd } from "@/lib/jst-date";
 import { CATEGORY_LABELS } from "@/lib/categories";
@@ -81,7 +82,7 @@ export default async function OrganizerPublicPage({ params }: Props) {
   return (
     <div className="min-h-screen pb-2 lg:pb-12" style={{ background: "#f5f6f1" }}>
       {/* Breadcrumb — PC only */}
-      <div className="hidden lg:block max-w-[1100px] mx-auto px-6 pt-4 pb-2">
+      <div className="hidden lg:block max-w-[1100px] mx-auto px-6 pt-5 pb-3">
         <nav className="flex items-center gap-2 text-[13px]" style={{ color: "#98a898" }}>
           <Link href="/" className="hover:text-[#3a8040] transition-colors">ホーム</Link>
           <span className="text-[11px]">›</span>
@@ -96,19 +97,19 @@ export default async function OrganizerPublicPage({ params }: Props) {
       </div>
 
       {/* Page layout */}
-      <div className="lg:max-w-[1100px] lg:mx-auto lg:px-6 pb-2 lg:pb-12">
+      <div className="lg:max-w-[1100px] lg:mx-auto lg:px-6 pb-2 lg:pb-12 lg:pt-1">
 
         {/* ─── MOBILE ─── */}
         <div className="flex flex-col gap-2 lg:hidden">
               <div className="relative h-[120px] w-full overflow-hidden" style={{ background: "#c8ddb8" }}>
-                {organizer.coverImageUrl ? (
-                  <Image
+                {organizer.coverImageUrl?.trim() ? (
+                  <OrganizerRemoteImage
                     src={organizer.coverImageUrl}
-                    alt=""
                     fill
                     className="object-cover"
                     sizes="100vw"
                     priority
+                    fallback={<div className="absolute inset-0 bg-gradient-to-br from-[#c8ddb8] to-[#9abf9a]" />}
                   />
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-[#c8ddb8] to-[#9abf9a]" />
@@ -121,16 +122,16 @@ export default async function OrganizerPublicPage({ params }: Props) {
               >
                 <div className="flex items-center gap-2.5">
                   <div
-                    className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full font-bold"
+                    className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full font-bold"
                     style={{ background: "#c8ddb8", fontSize: 20, color: "#3a6030" }}
                   >
-                    {organizer.avatarUrl ? (
-                      <Image
+                    {organizer.avatarUrl?.trim() ? (
+                      <OrganizerRemoteImage
                         src={organizer.avatarUrl}
-                        alt=""
-                        width={48}
-                        height={48}
-                        className="h-full w-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                        fallback={<span>{initial}</span>}
                       />
                     ) : (
                       <span>{initial}</span>
@@ -235,14 +236,12 @@ export default async function OrganizerPublicPage({ params }: Props) {
         </div>
 
         {/* ─── PC ─── */}
-        <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-5 lg:gap-y-5">
+        <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-4 lg:gap-y-3">
           <OrganizerProfilePcHero
             organizationName={organizer.organizationName}
             avatarUrl={organizer.avatarUrl}
-            coverImageUrl={organizer.coverImageUrl}
             initial={initial}
             bio={profileDisplay.heroBio}
-            activityArea={profileDisplay.activityArea}
             totalEventCount={totalEventCount}
             totalParticipants={totalParticipants}
           />
@@ -260,22 +259,7 @@ export default async function OrganizerPublicPage({ params }: Props) {
             publicPhone={organizer.publicPhone}
           />
 
-          <div className="flex flex-col gap-5">
-            {profileDisplay.aboutBio && (
-              <div
-                className="rounded-[20px] p-6"
-                style={{ background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
-              >
-                <div className="mb-3 flex items-center gap-2">
-                  <PersonIcon color="#3a8040" size={16} />
-                  <span className="text-[15px] font-bold" style={{ color: "#1a2818" }}>主催者について</span>
-                </div>
-                <p className="text-[13.5px] leading-[1.8] whitespace-pre-wrap" style={{ color: "#3a4a38" }}>
-                  {profileDisplay.aboutBio}
-                </p>
-              </div>
-            )}
-
+          <div className="flex flex-col gap-3">
             <SectionCard
               title="主催イベント"
               icon={<CalendarIcon color="#3a8040" size={16} />}
@@ -291,7 +275,7 @@ export default async function OrganizerPublicPage({ params }: Props) {
                   </Link>
                 </EmptyState>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2">
                   {allDisplayEvents.map(({ event, isPast }) => (
                     <OrganizerProfilePcEventCard
                       key={event.id}
@@ -303,6 +287,19 @@ export default async function OrganizerPublicPage({ params }: Props) {
                 </div>
               )}
             </SectionCard>
+
+            {profileDisplay.aboutBio && (
+              <div
+                className="rounded-[16px] p-4"
+                style={{ background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
+              >
+                <div className="mb-2 flex items-center gap-2">
+                  <PersonIcon color="#3a8040" size={16} />
+                  <span className="text-[14px] font-bold" style={{ color: "#1a2818" }}>主催者について</span>
+                </div>
+                <OrganizerAboutTeaser bio={profileDisplay.aboutBio} variant="section" />
+              </div>
+            )}
 
             {organizer.galleryImages.length > 0 && (
               <SectionCard
@@ -378,14 +375,14 @@ function SectionCard({
 }) {
   return (
     <div
-      className={`rounded-[16px] p-3 ${pcOnly ? "mx-0 lg:p-6 lg:rounded-[20px]" : "mx-3 lg:mx-0 lg:p-6 lg:rounded-[20px]"}`}
+      className={`rounded-[16px] p-3 ${pcOnly ? "mx-0 lg:p-4 lg:rounded-[16px]" : "mx-3 lg:mx-0 lg:p-4 lg:rounded-[16px]"}`}
       style={{ background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
     >
-      <div className="mb-2.5 flex items-center justify-between lg:mb-4">
+      <div className="mb-2.5 flex items-center justify-between lg:mb-2.5">
         <div className="flex items-center gap-1.5 lg:gap-2">
           {icon}
           <span
-            className={`font-bold ${pcOnly ? "text-[15px]" : "text-[14px]"}`}
+            className={`font-bold ${pcOnly ? "text-[14px]" : "text-[14px]"}`}
             style={{ color: "#1a2818" }}
           >
             {title}

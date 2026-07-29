@@ -53,17 +53,39 @@ export async function GET(request: Request) {
   }
 
   const withEvent = roles.map((r) => {
-    const oid = (r as { organizerId?: string | null }).organizerId;
-    if (typeof oid === "string" && oid.length > 0) {
-      return { ...r, organizerId: oid };
-    }
-    const event = getEventById(r.eventId);
-    const organizerId = getOrganizerIdByEventId(r.eventId);
+    const roleOrganizerId = (r as { organizerId?: string | null }).organizerId;
+    const existingEvent = (
+      r as {
+        event?: {
+          id: string;
+          title: string;
+          date: string;
+          prefecture?: string;
+        } | null;
+      }
+    ).event;
+    const event =
+      existingEvent !== undefined
+        ? existingEvent
+        : (() => {
+            const e = getEventById(r.eventId);
+            return e
+              ? {
+                  id: e.id,
+                  title: e.title,
+                  date: e.date,
+                  prefecture: e.prefecture,
+                }
+              : null;
+          })();
+    const organizerId =
+      typeof roleOrganizerId === "string" && roleOrganizerId.length > 0
+        ? roleOrganizerId
+        : getOrganizerIdByEventId(r.eventId);
+
     return {
       ...r,
-      event: event
-        ? { id: event.id, title: event.title, date: event.date, prefecture: event.prefecture }
-        : null,
+      event,
       organizerId: organizerId ?? null,
     };
   });

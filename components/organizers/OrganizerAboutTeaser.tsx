@@ -5,10 +5,39 @@ import { ChevronRight } from "lucide-react";
 
 type Props = {
   bio: string;
+  /** teaser: モバイル用1行カード / section: PC用セクション本文 */
+  variant?: "teaser" | "section";
 };
 
-export function OrganizerAboutTeaser({ bio }: Props) {
+export function OrganizerAboutTeaser({ bio, variant = "teaser" }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const needsClamp = bio.length > 160 || bio.split("\n").length > 4;
+
+  if (variant === "section") {
+    return (
+      <div className="max-w-[42rem]">
+        <p
+          className={`text-[13.5px] leading-[1.75] whitespace-pre-wrap ${
+            expanded || !needsClamp ? "" : "line-clamp-3"
+          }`}
+          style={{ color: "#2a3a28" }}
+        >
+          {bio}
+        </p>
+        {needsClamp ? (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-2 text-[12.5px] font-semibold transition-opacity hover:opacity-80"
+            style={{ color: "#3a8040" }}
+            aria-expanded={expanded}
+          >
+            {expanded ? "閉じる" : "続きを読む"}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <button

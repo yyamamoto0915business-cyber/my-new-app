@@ -4,7 +4,7 @@ import { getCreatedVolunteerRoleById } from "@/lib/created-volunteer-roles-store
 import { getEventById } from "@/lib/events";
 import { getOrganizerIdByEventId } from "@/lib/event-organizers";
 import { createClient } from "@/lib/supabase/server";
-import { fetchRecruitmentById } from "@/lib/db/recruitments-mvp";
+import { fetchPublicVolunteerRecruitmentById } from "@/lib/db/recruitments-mvp";
 import {
   isRecruitmentRowId,
   isVolunteerDiscoveryType,
@@ -33,21 +33,16 @@ export async function GET(
   let role: VolunteerRole | CreatedVolunteerRole | VolunteerRoleFromRecruitment | null =
     mockRole ?? createdRole;
 
-  if (!role && isRecruitmentRowId(id)) {
-    const supabase = await createClient();
-    if (supabase) {
-      try {
-        const row = await fetchRecruitmentById(supabase, id);
-        if (
-          row &&
-          row.status === "public" &&
-          isVolunteerDiscoveryType(row.type)
-        ) {
-          role = recruitmentRowToVolunteerRole(row);
-        }
-      } catch (e) {
-        console.error("volunteer/roles/[id]: fetchRecruitmentById", e);
+  const supabase = await createClient();
+
+  if (!role && isRecruitmentRowId(id) && supabase) {
+    try {
+      const row = await fetchPublicVolunteerRecruitmentById(supabase, id);
+      if (row && isVolunteerDiscoveryType(row.type)) {
+        role = recruitmentRowToVolunteerRole(row);
       }
+    } catch (e) {
+      console.error("volunteer/roles/[id]: fetchPublicVolunteerRecruitmentById", e);
     }
   }
 
@@ -55,42 +50,51 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  let recruitmentId: string | null = isRecruitmentRowId(id) ? id : findRecruitmentIdForVolunteerRole(id);
-  if (!recruitmentId && !isRecruitmentRowId(id)) {
-    const supabase = await createClient();
-    if (supabase) {
-      const oid = getOrganizerIdByEventId(role.eventId);
-      if (oid) {
-        recruitmentId = await findRecruitmentIdForVolunteerRoleAsync(supabase, id, oid);
-      }
+  let recruitmentId: string | null = isRecruitmentRowId(id)
+    ? id
+    : findRecruitmentIdForVolunteerRole(id);
+  if (!recruitmentId && !isRecruitmentRowId(id) && supabase) {
+    const oid = getOrganizerIdByEventId(role.eventId);
+    if (oid) {
+      recruitmentId = await findRecruitmentIdForVolunteerRoleAsync(
+        supabase,
+        id,
+        oid
+      );
     }
   }
 
-  const oid = (role as { organizerId?: string | null }).organizerId;
-  if (typeof oid === "string" && oid.length > 0) {
-    return NextResponse.json({
-      ...role,
-      organizerId: oid,
-      recruitmentId,
-    });
-  }
+  const roleOrganizerId = (role as { organizerId?: string | null }).organizerId;
+  const organizerId =
+    (typeof roleOrganizerId === "string" && roleOrganizerId.length > 0
+      ? roleOrganizerId
+      : null) ?? getOrganizerIdByEventId(role.eventId);
 
-  const event = getEventById(role.eventId);
-  const organizerId = getOrganizerIdByEventId(role.eventId);
+  const existingEvent = (role as { event?: unknown }).event;
+  const event =
+    existingEvent !== undefined
+      ? existingEvent
+      : (() => {
+          const e = getEventById(role.eventId);
+          return e
+            ? {
+                id: e.id,
+                title: e.title,
+                date: e.date,
+                prefecture: e.prefecture,
+              }
+            : null;
+        })();
 
-  const withEvent = {
+  // 主催者プロフィールはクライアント側で追加取得（ここだとタイムアウトしやすい）
+  return NextResponse.json({
     ...role,
-    event: event
-      ? {
-          id: event.id,
-          title: event.title,
-          date: event.date,
-          prefecture: event.prefecture,
-        }
-      : null,
-    organizerId: organizerId ?? null,
+    event,
     recruitmentId,
-  };
-
-  return NextResponse.json(withEvent);
+    organizerId: organizerId ?? null,
+    organizerName: null,
+    organizerAvatarUrl: null,
+    organizerBio: null,
+    organizerRegion: null,
+  });
 }

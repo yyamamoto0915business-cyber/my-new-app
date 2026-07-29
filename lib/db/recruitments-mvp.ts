@@ -31,6 +31,7 @@ export type RecruitmentMvp = {
   items_to_bring: string | null;
   provisions: string | null;
   notes: string | null;
+  image_url: string | null;
   role: string | null;
   time_slot: string | null;
   compensation_type: string | null;
@@ -106,7 +107,8 @@ export async function fetchPublicRecruitments(
   const limit = options?.limit ?? 50;
   let query = supabase
     .from("recruitments")
-    .select("*, organizers(organization_name), events(title, date, prefecture)")
+    // organizers join は RLS で遅くなりやすいため一覧では外す
+    .select("*, events(title, date, prefecture)")
     .eq("status", "public")
     .order("start_at", { ascending: true, nullsFirst: false })
     .limit(limit);
@@ -131,7 +133,7 @@ export async function fetchRecommendedRecruitments(
 ): Promise<(RecruitmentMvp & { organizers?: { organization_name: string | null } })[]> {
   const { data, error } = await supabase
     .from("recruitments")
-    .select("*, organizers(organization_name), events(title, date, prefecture)")
+    .select("*, events(title, date, prefecture)")
     .eq("status", "public")
     .not("meeting_place", "is", null)
     .order("start_at", { ascending: true, nullsFirst: false })
@@ -159,6 +161,28 @@ export async function fetchRecruitmentById(
 
   return mapRecruitmentRow(data as Record<string, unknown>) as RecruitmentMvp & {
     organizers?: { organization_name: string | null; contact_email: string | null };
+  };
+}
+
+/**
+ * 公開ボランティア詳細用。
+ * `organizers` join は RLS で遅くなりやすいため含めない。
+ */
+export async function fetchPublicVolunteerRecruitmentById(
+  supabase: SupabaseClient,
+  id: string
+): Promise<(RecruitmentMvp & { events?: { title: string; date: string; prefecture?: string | null } | null }) | null> {
+  const { data, error } = await supabase
+    .from("recruitments")
+    .select("*, events(title, date, prefecture)")
+    .eq("id", id)
+    .eq("status", "public")
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return mapRecruitmentRow(data as Record<string, unknown>) as RecruitmentMvp & {
+    events?: { title: string; date: string; prefecture?: string | null } | null;
   };
 }
 
@@ -207,6 +231,7 @@ export type RecruitmentCreateInput = {
   items_to_bring?: string | null;
   provisions?: string | null;
   notes?: string | null;
+  image_url?: string | null;
   event_id?: string | null;
   type?: string;
   application_form_config?: ApplicationFormConfig | null;
@@ -237,6 +262,7 @@ export async function createRecruitmentMvp(
       items_to_bring: input.items_to_bring?.trim() || null,
       provisions: input.provisions?.trim() || null,
       notes: input.notes?.trim() || null,
+      image_url: input.image_url?.trim() || null,
       ...(input.application_form_config !== undefined && {
         application_form_config: input.application_form_config,
       }),
@@ -271,6 +297,7 @@ export async function updateRecruitmentMvp(
       ...(input.items_to_bring !== undefined && { items_to_bring: input.items_to_bring?.trim() || null }),
       ...(input.provisions !== undefined && { provisions: input.provisions?.trim() || null }),
       ...(input.notes !== undefined && { notes: input.notes?.trim() || null }),
+      ...(input.image_url !== undefined && { image_url: input.image_url?.trim() || null }),
       ...(input.application_form_config !== undefined && {
         application_form_config: input.application_form_config,
       }),

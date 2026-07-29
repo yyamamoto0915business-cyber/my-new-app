@@ -121,6 +121,7 @@ export async function POST(request: NextRequest) {
         items_to_bring: typeof body.items_to_bring === "string" ? body.items_to_bring : null,
         provisions: typeof body.provisions === "string" ? body.provisions : null,
         notes: typeof body.notes === "string" ? body.notes : null,
+        image_url: typeof body.image_url === "string" ? body.image_url : null,
         event_id: typeof body.event_id === "string" ? body.event_id : null,
         type: typeof body.type === "string" ? body.type : "volunteer",
         application_form_config:
@@ -163,6 +164,7 @@ export async function POST(request: NextRequest) {
     items_to_bring: typeof body.items_to_bring === "string" ? body.items_to_bring : null,
     provisions: typeof body.provisions === "string" ? body.provisions : null,
     notes: typeof body.notes === "string" ? body.notes : null,
+    image_url: typeof body.image_url === "string" ? body.image_url : null,
     application_form_config:
       body.application_form_config !== undefined
         ? parseApplicationFormConfig(body.application_form_config)

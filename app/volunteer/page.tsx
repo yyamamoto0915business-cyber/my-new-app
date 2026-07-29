@@ -114,7 +114,16 @@ function matchesConditionTags(role: VolunteerRoleWithEvent, active: Set<Conditio
 function matchesPrefecture(role: VolunteerRoleWithEvent, prefecture: string): boolean {
   if (!prefecture) return true;
   if (role.event?.prefecture === prefecture) return true;
-  return role.location.includes(prefecture);
+  if (role.location.includes(prefecture)) return true;
+  // イベント未紐づけ・場所未設定は全国募集として地域フィルタでも残す
+  const loc = role.location?.trim() ?? "";
+  if (
+    !role.event?.prefecture &&
+    (!loc || loc === "場所は募集内容をご確認ください")
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function matchesRoleType(role: VolunteerRoleWithEvent, roleType: string): boolean {
@@ -240,11 +249,21 @@ function VolunteerPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchWithTimeout("/api/volunteer/roles", {
-        signal: controller.signal,
-        cache: "no-store",
-      });
-      if (controller.signal.aborted || res.status === 499) return;
+      const res = await fetchWithTimeout(
+        "/api/volunteer/roles",
+        {
+          signal: controller.signal,
+          cache: "no-store",
+        },
+        15_000
+      );
+      if (controller.signal.aborted) return;
+      // 499 = クライアント側タイムアウト（fetchWithTimeout）
+      if (res.status === 499) {
+        setRoles([]);
+        setError("読み込みがタイムアウトしました。再読み込みしてください。");
+        return;
+      }
       if (!res.ok) {
         console.error(`[volunteer] API error: ${res.status} ${res.statusText}`);
         setRoles([]);
@@ -405,6 +424,16 @@ function VolunteerPageContent() {
               items={pcCardItems}
               loading={loading}
               totalCount={pcItems.length}
+              emptyMessage={
+                roles.length === 0
+                  ? "公開中の募集を取得できませんでした"
+                  : "条件に合う募集がありません"
+              }
+              emptyHint={
+                roles.length === 0
+                  ? "再読み込みするか、しばらくしてからお試しください"
+                  : "条件を変えて再度お試しください"
+              }
             />
 
             {!loading && pcItems.length > 4 && (
@@ -418,7 +447,7 @@ function VolunteerPageContent() {
               </section>
             )}
 
-            {!loading && isPcEmpty && !error && (
+            {!loading && isPcEmpty && !error && roles.length > 0 && (
               <div className="mt-4 rounded-[12px] border border-[#DDE8DF] bg-white p-8 text-center">
                 <p className="text-[13px] text-[#566358]">条件に合う募集がありません</p>
                 <button
@@ -437,6 +466,19 @@ function VolunteerPageContent() {
                   className="mt-3 text-[12px] font-medium text-[#2D7A4F] hover:underline"
                 >
                   条件をリセット
+                </button>
+              </div>
+            )}
+
+            {!loading && isPcEmpty && !error && roles.length === 0 && (
+              <div className="mt-4 rounded-[12px] border border-[#DDE8DF] bg-white p-8 text-center">
+                <p className="text-[13px] text-[#566358]">募集を読み込めませんでした</p>
+                <button
+                  type="button"
+                  onClick={load}
+                  className="mt-3 text-[12px] font-medium text-[#2D7A4F] hover:underline"
+                >
+                  再読み込み
                 </button>
               </div>
             )}
