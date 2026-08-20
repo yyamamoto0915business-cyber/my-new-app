@@ -109,6 +109,66 @@ function getPastCutoffYmd(days: number): string {
   return getJstTodayYmd(d);
 }
 
+/** JST の曜日（0=日 … 6=土） */
+function getJstDayOfWeek(ymd: string): number {
+  const wd = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo",
+    weekday: "short",
+  }).format(new Date(`${ymd}T12:00:00+09:00`));
+  const map: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  return map[wd] ?? 0;
+}
+
+/** JST カレンダー日を days 加算した YYYY-MM-DD */
+function addJstDays(ymd: string, days: number): string {
+  const ms = Date.parse(`${ymd}T12:00:00+09:00`) + days * 24 * 60 * 60 * 1000;
+  return getJstTodayYmd(new Date(ms));
+}
+
+/**
+ * 今週末（土・日）の日付範囲。
+ * 月〜金 → 次の土日 / 土 → 今日と明日 / 日 → 昨日土〜今日（表示は今日以降で絞る）
+ */
+export function getThisWeekendYmdBounds(baseDate: Date = new Date()): {
+  saturday: string;
+  sunday: string;
+} {
+  const today = getJstTodayYmd(baseDate);
+  const day = getJstDayOfWeek(today);
+  let daysToSat: number;
+  if (day === 6) daysToSat = 0;
+  else if (day === 0) daysToSat = -1;
+  else daysToSat = 6 - day;
+  const saturday = addJstDays(today, daysToSat);
+  const sunday = addJstDays(saturday, 1);
+  return { saturday, sunday };
+}
+
+/**
+ * ホーム「今週末のイベント」用。今週末（土日）かつ今日以降の開催を日付昇順で返す。
+ */
+export function getThisWeekendEvents(events: Event[], limit = 8): Event[] {
+  const todayStr = getJstTodayYmd();
+  const { saturday, sunday } = getThisWeekendYmdBounds();
+  return events
+    .filter((e) => getEventStatus(e) !== "ended")
+    .filter((e) => e.date >= todayStr && e.date >= saturday && e.date <= sunday)
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) ||
+        (a.startTime || "").localeCompare(b.startTime || "")
+    )
+    .slice(0, limit);
+}
+
 /**
  * ホーム「過去のイベント」用。直近に終了したイベントを日付降順で返す。
  */

@@ -8,6 +8,7 @@ import {
   parseApplicationFormAnswers,
   parseApplicationFormConfig,
 } from "@/lib/recruitment-application-form";
+import { normalizeGalleryImages } from "@/lib/gallery-images";
 
 export type RecruitmentStatus = "draft" | "public" | "closed";
 
@@ -32,6 +33,7 @@ export type RecruitmentMvp = {
   provisions: string | null;
   notes: string | null;
   image_url: string | null;
+  gallery_images: string[];
   role: string | null;
   time_slot: string | null;
   compensation_type: string | null;
@@ -93,6 +95,7 @@ function mapRecruitmentRow(r: Record<string, unknown>): RecruitmentMvp & Record<
   return {
     ...r,
     roles: parseRoles(r.roles),
+    gallery_images: normalizeGalleryImages(r.gallery_images),
     application_form_config: r.application_form_config
       ? parseApplicationFormConfig(r.application_form_config)
       : null,
@@ -232,6 +235,7 @@ export type RecruitmentCreateInput = {
   provisions?: string | null;
   notes?: string | null;
   image_url?: string | null;
+  gallery_images?: string[];
   event_id?: string | null;
   type?: string;
   application_form_config?: ApplicationFormConfig | null;
@@ -263,6 +267,7 @@ export async function createRecruitmentMvp(
       provisions: input.provisions?.trim() || null,
       notes: input.notes?.trim() || null,
       image_url: input.image_url?.trim() || null,
+      gallery_images: normalizeGalleryImages(input.gallery_images),
       ...(input.application_form_config !== undefined && {
         application_form_config: input.application_form_config,
       }),
@@ -298,6 +303,9 @@ export async function updateRecruitmentMvp(
       ...(input.provisions !== undefined && { provisions: input.provisions?.trim() || null }),
       ...(input.notes !== undefined && { notes: input.notes?.trim() || null }),
       ...(input.image_url !== undefined && { image_url: input.image_url?.trim() || null }),
+      ...(input.gallery_images !== undefined && {
+        gallery_images: normalizeGalleryImages(input.gallery_images),
+      }),
       ...(input.application_form_config !== undefined && {
         application_form_config: input.application_form_config,
       }),
@@ -333,6 +341,80 @@ export async function createApplication(
 
   if (error) throw error;
   return data.id;
+}
+
+export type MyVolunteerApplication = {
+  id: string;
+  recruitmentId: string;
+  status: ApplicationStatus;
+  createdAt: string;
+  title: string;
+  roleLabel: string | null;
+  eventId: string | null;
+  startAt: string | null;
+  meetingPlace: string | null;
+  imageUrl: string | null;
+};
+
+/** 自分のボランティア応募一覧（マイページ用） */
+export async function fetchMyVolunteerApplications(
+  supabase: SupabaseClient,
+  userId: string,
+  limit = 30
+): Promise<MyVolunteerApplication[]> {
+  const { data, error } = await supabase
+    .from("recruitment_applications")
+    .select(
+      "id, recruitment_id, status, created_at, recruitments(id, title, roles, event_id, start_at, meeting_place, image_url)"
+    )
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+
+  return data.map((row) => {
+    const r = row as {
+      id: string;
+      recruitment_id: string;
+      status: ApplicationStatus;
+      created_at: string;
+      recruitments?:
+        | {
+            id?: string;
+            title?: string;
+            roles?: unknown;
+            event_id?: string | null;
+            start_at?: string | null;
+            meeting_place?: string | null;
+            image_url?: string | null;
+          }
+        | {
+            id?: string;
+            title?: string;
+            roles?: unknown;
+            event_id?: string | null;
+            start_at?: string | null;
+            meeting_place?: string | null;
+            image_url?: string | null;
+          }[]
+        | null;
+    };
+    const rec = Array.isArray(r.recruitments) ? r.recruitments[0] : r.recruitments;
+    const roles = parseRoles(rec?.roles);
+    return {
+      id: r.id,
+      recruitmentId: r.recruitment_id,
+      status: r.status,
+      createdAt: r.created_at,
+      title: rec?.title?.trim() || "募集",
+      roleLabel: roles[0]?.name?.trim() || null,
+      eventId: rec?.event_id ?? null,
+      startAt: rec?.start_at ?? null,
+      meetingPlace: rec?.meeting_place ?? null,
+      imageUrl: rec?.image_url ?? null,
+    };
+  });
 }
 
 /** 自分の応募1件（フォーム用） */

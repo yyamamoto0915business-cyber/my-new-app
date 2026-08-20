@@ -5,79 +5,160 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 import type { Event } from "@/lib/db/types";
 import type { CategoryKey } from "@/lib/categories";
-import { getEventStatus } from "@/lib/events";
-import { getHeroWithSubCards } from "@/lib/filterEvents";
+import type { StoreRecord } from "@/lib/stores/types";
+import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
+import {
+  buildRecommendedFeed,
+  eventsToMachiItems,
+  filterRecommendedFeed,
+} from "@/lib/machi/feed";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
-import { PcEventCard } from "./PcEventCard";
-import { EventCardSkeleton } from "@/app/events/event-card-skeleton";
+import { MachiFeedCard } from "@/components/machi/MachiFeedCard";
 
 type Tab = "recommended" | "popular";
 
 type Props = {
   events: Event[];
+  stores: StoreRecord[];
+  volunteers: VolunteerRoleWithEvent[];
   filteredEvents?: Event[];
   hasActiveFilter?: boolean;
+  eventOnlyFilter?: boolean;
   loading: boolean;
   areaPreference: string;
   categoryPrefs: CategoryKey[];
+  searchQuery?: string;
+  selectedArea?: string;
+  /** 見出し（既定: おすすめ） */
+  title?: string;
+  /** カラム数（既定: 5） */
+  columns?: 4 | 5;
+  /** 内蔵の「あなたにおすすめ／人気順」タブを隠す */
+  hideTabs?: boolean;
+  /** 並びを外部から制御（指定時は内蔵タブより優先） */
+  sortMode?: Tab;
+  /** 終了イベントも含める */
+  includeEnded?: boolean;
 };
 
 const CARD_COUNT = 5;
 
+function FeedCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-[14px] border border-[#e8ebe6] bg-white">
+      <div className="aspect-[16/10] animate-pulse bg-[#e8ede4]" />
+      <div className="space-y-2 p-3">
+        <div className="h-3 w-1/2 animate-pulse rounded bg-[#e8ede4]" />
+        <div className="h-8 w-full animate-pulse rounded bg-[#e8ede4]" />
+      </div>
+    </div>
+  );
+}
+
 export function PcRecommendedRow({
   events,
+  stores,
+  volunteers,
   filteredEvents,
   hasActiveFilter = false,
+  eventOnlyFilter = false,
   loading,
   areaPreference,
   categoryPrefs,
+  searchQuery = "",
+  selectedArea = "",
+  title = "おすすめ",
+  columns = 5,
+  hideTabs = false,
+  sortMode,
+  includeEnded = false,
 }: Props) {
-  const [tab, setTab] = useState<Tab>("recommended");
+  const [internalTab, setInternalTab] = useState<Tab>("recommended");
+  const tab = sortMode ?? internalTab;
+  const setTab = setInternalTab;
   const [popularEvents, setPopularEvents] = useState<Event[]>([]);
   const [popularLoading, setPopularLoading] = useState(false);
 
+  const count = columns;
+  const gridClass = columns === 4 ? "grid-cols-4" : "grid-cols-5";
+
   useEffect(() => {
-    if (tab !== "popular") return;
+    if (tab !== "popular" || hasActiveFilter) return;
     setPopularLoading(true);
-    fetchWithTimeout(`/api/events/rankings?type=popular&limit=${CARD_COUNT}`, {
+    fetchWithTimeout(`/api/events/rankings?type=popular&limit=${count}`, {
       cache: "no-store",
     })
       .then((r) => r.json())
       .then((data: Event[]) => setPopularEvents(Array.isArray(data) ? data : []))
       .catch(() => setPopularEvents([]))
       .finally(() => setPopularLoading(false));
-  }, [tab]);
+  }, [tab, hasActiveFilter, count]);
 
-  const recommendedEvents = useMemo(() => {
-    const { featured, subCards } = getHeroWithSubCards(events, areaPreference, categoryPrefs, 4);
-    const list = [featured, ...subCards].filter((e): e is Event => e != null);
-    if (list.length >= CARD_COUNT) return list.slice(0, CARD_COUNT);
-    const ids = new Set(list.map((e) => e.id));
-    const rest = events.filter(
-      (e) => !ids.has(e.id) && getEventStatus(e) !== "ended"
-    );
-    return [...list, ...rest].slice(0, CARD_COUNT);
-  }, [events, areaPreference, categoryPrefs]);
+  const displayItems = useMemo(() => {
+    if (hasActiveFilter) {
+      const eventItems = eventsToMachiItems(filteredEvents ?? [], includeEnded);
+      if (eventOnlyFilter) {
+        return filterRecommendedFeed(eventItems, {
+          query: searchQuery,
+          area: selectedArea,
+          eventOnly: true,
+        }).slice(0, count);
+      }
+      const allFiltered = filterRecommendedFeed(
+        [
+          ...eventItems,
+          ...buildRecommendedFeed([], stores, volunteers, {
+            areaPreference,
+            categoryPrefs,
+            limit: 50,
+            includeEnded,
+          }),
+        ],
+        { query: searchQuery, area: selectedArea },
+      );
+      return allFiltered.slice(0, count);
+    }
 
-  const displayEvents = hasActiveFilter
-    ? (filteredEvents ?? []).filter((e) => getEventStatus(e) !== "ended")
-    : tab === "recommended"
-      ? recommendedEvents
-      : popularEvents;
-  const isLoading = loading && (hasActiveFilter || tab === "recommended" ? loading : popularLoading);
+    return buildRecommendedFeed(events, stores, volunteers, {
+      areaPreference,
+      categoryPrefs,
+      limit: count,
+      mode: tab,
+      popularEvents: tab === "popular" ? popularEvents : undefined,
+      includeEnded,
+    });
+  }, [
+    hasActiveFilter,
+    count,
+    includeEnded,
+    eventOnlyFilter,
+    filteredEvents,
+    searchQuery,
+    selectedArea,
+    events,
+    stores,
+    volunteers,
+    areaPreference,
+    categoryPrefs,
+    tab,
+    popularEvents,
+  ]);
+
+  const isLoading =
+    loading || (!hasActiveFilter && tab === "popular" && popularLoading);
 
   return (
     <section
-      aria-label="おすすめイベント"
+      aria-label={title}
       className="space-y-2 rounded-[16px] bg-white px-3 py-3 ring-1 ring-[#e3e8e4]/80"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5">
             <Star className="h-4 w-4 fill-[#e8c838] text-[#e8c838]" aria-hidden />
-            <h2 className="text-[14px] font-semibold text-[#0e1610]">おすすめイベント</h2>
+            <h2 className="text-[14px] font-semibold text-[#0e1610]">{title}</h2>
           </div>
-          {!hasActiveFilter && (
+          {!hideTabs && !hasActiveFilter && (
             <div className="flex gap-1.5">
               <TabButton active={tab === "recommended"} onClick={() => setTab("recommended")}>
                 あなたにおすすめ
@@ -89,40 +170,39 @@ export function PcRecommendedRow({
           )}
           {hasActiveFilter && (
             <span className="text-[12px] text-[#5a6a60]">
-              {loading ? "読み込み中..." : `${displayEvents.length}件見つかりました`}
+              {loading ? "読み込み中..." : `${displayItems.length}件見つかりました`}
             </span>
           )}
         </div>
-        <Link
-          href="/events"
-          className="text-[12px] font-medium text-[#2c7a88] hover:underline"
-        >
+        <Link href="/" className="text-[12px] font-medium text-[#2c7a88] hover:underline">
           すべて見る →
         </Link>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-5 gap-2.5">
-          {Array.from({ length: CARD_COUNT }).map((_, i) => (
-            <EventCardSkeleton key={i} />
+        <div className={`grid ${gridClass} gap-2.5`}>
+          {Array.from({ length: count }).map((_, i) => (
+            <FeedCardSkeleton key={i} />
           ))}
         </div>
-      ) : displayEvents.length === 0 ? (
+      ) : displayItems.length === 0 ? (
         <div className="rounded-[14px] p-10 text-center">
           <p className="text-[13px] text-[#6a6258]">
-            {hasActiveFilter ? "条件に合うイベントが見つかりませんでした" : "おすすめのイベントがありません"}
+            {hasActiveFilter
+              ? "条件に合う情報が見つかりませんでした"
+              : "おすすめの情報がありません"}
           </p>
           <Link
-            href="/events"
+            href="/"
             className="mt-4 inline-flex h-9 items-center rounded-full bg-[#1a2b3c] px-5 text-[12px] font-medium text-white"
           >
-            イベント一覧を見る
+            まちの情報を探す
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-5 gap-2.5">
-          {displayEvents.map((event) => (
-            <PcEventCard key={event.id} event={event} />
+        <div className={`grid ${gridClass} gap-2.5`}>
+          {displayItems.map((item) => (
+            <MachiFeedCard key={item.id} item={item} />
           ))}
         </div>
       )}

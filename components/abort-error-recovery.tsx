@@ -40,6 +40,16 @@ function installAbortErrorRecovery() {
     }
   };
 
+  // Next.js 開発オーバーレイは console.error(AbortError) でも表示する
+  const originalConsoleError = console.error.bind(console);
+  console.error = (...args: unknown[]) => {
+    if (args.some((arg) => swallowIfBenign(arg))) {
+      console.warn(...args);
+      return;
+    }
+    originalConsoleError(...args);
+  };
+
   window.addEventListener("unhandledrejection", onUnhandledRejection, true);
   window.addEventListener("error", onError, true);
 }

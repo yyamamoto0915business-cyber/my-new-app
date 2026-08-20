@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DbEvent, Event, EventFormData } from "./types";
+import { normalizeGalleryImages } from "@/lib/gallery-images";
 import { filterOutSampleEvents, isPublicEventLike } from "../sample-events";
 import { getJstTodayYmd } from "../jst-date";
 import { normalizeEventStatus, PUBLIC_EVENT_STATUSES } from "../public-events";
@@ -75,7 +76,11 @@ function mapJoinedEventRowToEvent(
 }
 
 function dbEventToEvent(
-  db: DbEvent & { image_url?: string | null; participation_mode?: string | null },
+  db: DbEvent & {
+    image_url?: string | null;
+    gallery_images?: string[] | null;
+    participation_mode?: string | null;
+  },
   organizerName: string,
   organizerContact?: string,
   options?: { includeOnlineSecrets?: boolean }
@@ -91,12 +96,14 @@ function dbEventToEvent(
     publishedAt: db.published_at ?? undefined,
     title: db.title,
     imageUrl: db.image_url?.trim() || null,
+    galleryImages: normalizeGalleryImages(db.gallery_images),
     description: db.description,
     date: db.date,
     startTime: db.start_time,
     endTime: db.end_time ?? undefined,
     location: db.location,
     address: db.address,
+    storeId: db.store_id ?? null,
     price: db.price,
     priceNote: db.price_note ?? undefined,
     organizerName: displayName || organizerName,
@@ -797,6 +804,60 @@ export async function fetchEventsByOrganizer(
   });
 }
 
+/** 店舗に紐づくイベント一覧（主催管理・公開ページ共用） */
+export async function fetchEventsByStoreId(
+  supabase: SupabaseClient,
+  storeId: string,
+  options?: { publishedOnly?: boolean }
+): Promise<Event[]> {
+  let query = supabase
+    .from("events")
+    .select(
+      `
+      *,
+      organizers (
+        organization_name,
+        contact_email,
+        contact_phone,
+        profile:profile_id (
+          display_name,
+          email
+        )
+      )
+    `
+    )
+    .eq("store_id", storeId)
+    .order("date", { ascending: true });
+
+  if (options?.publishedOnly) {
+    query = query.in("status", [...PUBLIC_EVENT_STATUSES]);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const events = (data ?? []).map((row: Record<string, unknown>) => {
+    const org = row.organizers as {
+      organization_name: string | null;
+      contact_email: string | null;
+      contact_phone: string | null;
+      profile: { display_name: string | null; email: string | null };
+    } | null;
+    const name =
+      org?.organization_name ??
+      org?.profile?.display_name ??
+      org?.profile?.email ??
+      "主催者";
+    const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+    return dbEventToEvent(row as unknown as DbEvent, name, contact);
+  });
+
+  if (options?.publishedOnly) {
+    return filterOutSampleEvents(events).filter((e) => isPublicEventLike(e));
+  }
+  return events;
+}
+
 function isMissingEventsColumnError(err: unknown): boolean {
   const m = err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : String(err);
   return (
@@ -834,6 +895,7 @@ export async function createEvent(
     end_time: form.endTime || null,
     location: onlinePayload.location,
     address: onlinePayload.address,
+    store_id: normalizeStoreIdForDb(form.storeId),
     price: form.price,
     price_note: form.priceNote || null,
     rain_policy: onlinePayload.rain_policy,
@@ -860,6 +922,7 @@ export async function createEvent(
     registration_deadline: form.registrationDeadline || null,
     registration_note: form.registrationNote?.trim() || null,
     image_url: form.imageUrl?.trim() || null,
+    gallery_images: normalizeGalleryImages(form.galleryImages),
     organizer_display_name: form.organizerName?.trim() || null,
     organizer_contact: form.organizerContact?.trim() || null,
     ...onlinePayload.onlineColumns,
@@ -887,6 +950,8 @@ export async function createEvent(
     delete rest.public_page_link_visible;
     delete rest.organizer_display_name;
     delete rest.organizer_contact;
+    delete rest.gallery_images;
+    delete rest.store_id;
     console.warn(
       "[createEvent] Retrying without registration/participation/online columns (DB migration may be pending)"
     );
@@ -966,6 +1031,20 @@ function buildOnlineDbPayload(form: EventFormData): {
   };
 }
 
+/** stores.id は UUID。メモリデモ ID は DB に書かない */
+function normalizeStoreIdForDb(storeId: string | null | undefined): string | null {
+  const id = typeof storeId === "string" ? storeId.trim() : "";
+  if (!id) return null;
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      id,
+    )
+  ) {
+    return null;
+  }
+  return id;
+}
+
 function formToDb(form: EventFormData): Record<string, unknown> {
   const recurrence = normalizeEventRecurrence(form.recurrence);
   const onlinePayload = buildOnlineDbPayload(form);
@@ -973,11 +1052,13 @@ function formToDb(form: EventFormData): Record<string, unknown> {
     title: form.title,
     description: form.description,
     image_url: form.imageUrl?.trim() || null,
+    gallery_images: normalizeGalleryImages(form.galleryImages),
     date: form.date,
     start_time: form.startTime,
     end_time: form.endTime || null,
     location: onlinePayload.location,
     address: onlinePayload.address,
+    store_id: normalizeStoreIdForDb(form.storeId),
     price: form.price,
     price_note: form.priceNote || null,
     rain_policy: onlinePayload.rain_policy,
@@ -1048,6 +1129,8 @@ export async function updateEvent(
     delete (rest as { public_page_link_visible?: unknown }).public_page_link_visible;
     delete (rest as { organizer_display_name?: unknown }).organizer_display_name;
     delete (rest as { organizer_contact?: unknown }).organizer_contact;
+    delete (rest as { gallery_images?: unknown }).gallery_images;
+    delete (rest as { store_id?: unknown }).store_id;
     console.warn(
       "[updateEvent] Retrying without registration/participation/online columns (DB migration may be pending)"
     );

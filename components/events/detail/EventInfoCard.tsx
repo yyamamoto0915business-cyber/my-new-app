@@ -1,5 +1,6 @@
 import type { Event } from "@/lib/db/types";
 import { EventDetailFlyerImage } from "@/components/events/EventDetailFlyerImage";
+import { DetailImageSwitcher } from "@/components/media/DetailImageSwitcher";
 import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import { CalendarDays, MapPin } from "lucide-react";
 import { getEventStatus, type EventStatus } from "@/lib/events";
@@ -43,11 +44,18 @@ export function EventInfoCard({ event, className }: Props) {
         className
       )}
     >
-      <EventDetailFlyerImage
-        imageUrl={event.imageUrl}
+      <DetailImageSwitcher
+        coverUrl={event.imageUrl}
+        galleryImages={event.galleryImages}
         alt={event.title}
-        priority
-        variant="cardTop"
+        renderMain={(activeUrl) => (
+          <EventDetailFlyerImage
+            imageUrl={activeUrl}
+            alt={event.title}
+            priority
+            variant="cardTop"
+          />
+        )}
       />
 
       <div className="p-5">

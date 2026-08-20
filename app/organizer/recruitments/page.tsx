@@ -178,9 +178,9 @@ function OrganizerRecruitmentsContent() {
     if (todayRecruitments.length > 0) {
       const firstToday = todayRecruitments[0];
       return {
-        label: "当日管理を開く",
-        description: "本日の募集を先に確認しましょう",
-        href: `/organizer/recruitments/${firstToday.id}/day-of`,
+        label: "本日の応募を確認する",
+        description: "本日の募集の応募状況を先に確認しましょう",
+        href: `/organizer/recruitments/${firstToday.id}`,
       };
     }
     if (kpis.active > 0) {

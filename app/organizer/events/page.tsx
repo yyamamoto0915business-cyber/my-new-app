@@ -4,7 +4,6 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
-import { EventAccountStatusCards } from "@/components/organizer/events/EventAccountStatusCards";
 import { EventSummaryCards } from "@/components/organizer/events/EventSummaryCards";
 import {
   EventListFilterTabs,
@@ -23,7 +22,6 @@ import type {
   DashboardEvent,
   BillingSummary,
 } from "@/app/api/organizer/dashboard/route";
-import type { PlanSummary } from "@/lib/organizer-plan-summary";
 import { OrganizerPageShell } from "@/components/organizer/OrganizerPageShell";
 import { EventsManagementHero } from "@/components/organizer/events/EventsManagementHero";
 
@@ -59,7 +57,6 @@ export default function OrganizerEventsPage() {
   const [todos, setTodos] = useState<DashboardTodo[]>([]);
   const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
-  const [planSummary, setPlanSummary] = useState<PlanSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -80,13 +77,11 @@ export default function OrganizerEventsPage() {
       setTodos(data.todos ?? []);
       setEvents(data.events ?? []);
       setBillingSummary(data.billingSummary ?? null);
-      setPlanSummary(data.planSummary ?? null);
     } catch {
       setKpis({ hosting: 0, needsAction: 0, pendingApplications: 0, unreadMessages: 0, recruitingPublic: 0 });
       setTodos([]);
       setEvents([]);
       setBillingSummary(null);
-      setPlanSummary(null);
     } finally {
       setLoading(false);
     }
@@ -286,11 +281,6 @@ export default function OrganizerEventsPage() {
 
         {loading ? (
           <div className="space-y-4 animate-pulse">
-            <div className="grid gap-3 min-[900px]:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 rounded-2xl bg-[#e4ede0]" />
-              ))}
-            </div>
             <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-20 rounded-2xl bg-[#e4ede0]" />
@@ -300,11 +290,6 @@ export default function OrganizerEventsPage() {
           </div>
         ) : (
           <>
-            <EventAccountStatusCards
-              planSummary={planSummary}
-              billingSummary={billingSummary}
-            />
-
             <div className="org-events-next-action space-y-1.5 min-[900px]:hidden">
               {!stripeNotOk && nextAction.href !== PAYOUTS_HREF && (
                 <Link
@@ -352,22 +337,32 @@ export default function OrganizerEventsPage() {
             )}
 
             <section id="events-list" className="org-events-list-shell scroll-mt-2 min-[900px]:min-h-0 min-[900px]:flex-1">
-              <EventListFilterTabs
-                activeTab={listTab}
-                onTabChange={handleListTabChange}
-                counts={listTabCounts}
-                showEndedInAll={showEndedInAll}
-                onShowEndedInAllChange={setShowEndedInAll}
-              />
+              <div className="max-[899px]:hidden">
+                <EventListFilterTabs
+                  activeTab={listTab}
+                  onTabChange={handleListTabChange}
+                  counts={listTabCounts}
+                  showEndedInAll={showEndedInAll}
+                  onShowEndedInAllChange={setShowEndedInAll}
+                />
+              </div>
 
               <EventListToolbar
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
+                onStatusFilterChange={(v) => {
+                  if (listTab === "archived") handleListTabChange("all");
+                  setStatusFilter(v);
+                }}
                 sortBy={sortBy}
                 onSortChange={setSortBy}
                 statusFilterDisabled={listTab !== "all"}
+                archivedCount={archivedCount}
+                archiveActive={listTab === "archived"}
+                onArchiveClick={() =>
+                  handleListTabChange(listTab === "archived" ? "all" : "archived")
+                }
               />
 
               {listTab === "archived" ? (

@@ -112,12 +112,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const {
     title,
     imageUrl,
+    galleryImages,
     description,
     date,
     startTime,
     endTime,
     location,
     address,
+    storeId,
     price,
     priceNote,
     organizerName,
@@ -195,12 +197,17 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const formData: EventFormData = {
     title: String(title ?? "").trim(),
     imageUrl: (typeof imageUrl === "string" ? imageUrl.trim() : "") || "",
+    galleryImages: Array.isArray(galleryImages) ? galleryImages.filter((x): x is string => typeof x === "string") : [],
     description: String(description ?? "").trim(),
     date: String(date),
     startTime: normalizeHm(startTime),
     endTime: endTime ? normalizeHm(endTime) : "",
     location: locationValue,
     address: addressValue,
+    storeId:
+      typeof storeId === "string" && storeId.trim()
+        ? storeId.trim()
+        : null,
     price: Number(price) || 0,
     priceNote: (typeof priceNote === "string" ? priceNote.trim() : "") || "",
     organizerName: String(organizerName ?? "").trim(),

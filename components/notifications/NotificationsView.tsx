@@ -428,10 +428,10 @@ export function NotificationsView({
                     新しい案内が届くと、ここに表示されます
                   </p>
                   <Link
-                    href="/volunteer"
+                    href="/"
                     className="mt-4 inline-flex items-center justify-center rounded-xl border border-[#d5ddd2] bg-white px-4 py-2 text-[12px] font-medium text-[#2d4a28] transition-colors hover:bg-[#f5f7f4]"
                   >
-                    ボランティアを探す
+                    まちの情報を探す
                   </Link>
                 </div>
               )}

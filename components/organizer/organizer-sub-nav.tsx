@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const SUB_NAV_ITEMS = [
   { href: "/organizer/events", label: "イベント", exact: true },
-  { href: "/organizer/recruitments", label: "スタッフ募集管理" },
+  { href: "/organizer/recruitments", label: "ボランティア募集管理" },
   { href: "/organizer/stories", label: "ストーリー" },
   { href: "/organizer/settings/plan", label: "主催者プラン（公開枠）" },
   { href: "/organizer/settings/payouts", label: "クレジット決済・オンライン支払い設定" },

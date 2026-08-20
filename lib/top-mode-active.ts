@@ -1,6 +1,7 @@
 import type { ModePreference } from "@/lib/mode-preference";
 
-export type TopModeTabId = "discover" | "volunteer" | "organizer";
+/** 上部モードタブ: まちの情報｜みんなの投稿｜主催 */
+export type TopModeTabId = "event" | "machi" | "organizer";
 
 /** 主催者ダッシュボード（/organizer/*）。公開プロフィール /organizers/* は含まない */
 export function isOrganizerDashboardPath(pathname: string): boolean {
@@ -22,13 +23,19 @@ export function resolveAuthReturnPath(
 }
 
 /**
- * パス名と戻り先から、上部モードタブの選択状態を決める。
- * /auth?next=/organizer のように認証画面へ飛んだ場合も「主催」を選ぶ。
+ * 「みんなの投稿」モード配下のパス
  */
-/** 「探す」モード配下のパス（主催・ボランティア・参加パス一覧を除く） */
-export function isDiscoverPath(pathname: string): boolean {
+export function isMachiModePath(pathname: string): boolean {
+  return pathname === "/posts" || pathname.startsWith("/posts/");
+}
+
+/**
+ * 「まちの情報」モード配下のパス（主催・投稿モード・参加パス一覧を除く）
+ */
+export function isEventModePath(pathname: string): boolean {
   if (isOrganizerDashboardPath(pathname)) return false;
-  if (pathname.startsWith("/volunteer") || pathname.startsWith("/pass") || pathname.startsWith("/stories")) {
+  if (isMachiModePath(pathname)) return false;
+  if (pathname.startsWith("/pass") || pathname.startsWith("/stories")) {
     return false;
   }
   if (
@@ -42,11 +49,21 @@ export function isDiscoverPath(pathname: string): boolean {
   return (
     pathname === "/" ||
     pathname.startsWith("/events") ||
-    pathname.startsWith("/organizers")
+    pathname.startsWith("/organizers") ||
+    pathname.startsWith("/volunteer") ||
+    pathname.startsWith("/stores") ||
+    pathname.startsWith("/kitchen-cars") ||
+    pathname === "/machi" ||
+    pathname.startsWith("/machi/")
   );
 }
 
-/** 未ログイン時、リロードでタイトル画面へ戻すモード（探す・ストーリー・ボランティア） */
+/** @deprecated isEventModePath を使用 */
+export function isDiscoverPath(pathname: string): boolean {
+  return isEventModePath(pathname);
+}
+
+/** 未ログイン時、リロードでタイトル画面へ戻すモード */
 export function isGuestSplashReturnPath(pathname: string): boolean {
   // 見た目確認用プレビューはスプラッシュを出さない
   if (pathname.startsWith("/events/apply-confirm-preview")) return false;
@@ -54,16 +71,24 @@ export function isGuestSplashReturnPath(pathname: string): boolean {
   if (pathname === "/" || pathname.startsWith("/events")) return true;
   if (pathname.startsWith("/stories")) return true;
   if (pathname.startsWith("/volunteer")) return true;
+  if (pathname.startsWith("/stores")) return true;
+  if (pathname.startsWith("/kitchen-cars")) return true;
+  if (pathname === "/machi" || pathname.startsWith("/machi/")) return true;
+  if (pathname === "/posts" || pathname.startsWith("/posts/")) return true;
   return false;
 }
 
+/**
+ * パス名と戻り先から、上部モードタブの選択状態を決める。
+ * /auth?next=/organizer のように認証画面へ飛んだ場合も「主催」を選ぶ。
+ */
 export function getTopModeTabIdFromContext(
   pathname: string,
   returnPath?: string | null,
   modeFromCookie: ModePreference | null = null
 ): TopModeTabId {
   if (isOrganizerDashboardPath(pathname)) return "organizer";
-  if (pathname.startsWith("/volunteer")) return "volunteer";
+  if (isMachiModePath(pathname)) return "machi";
 
   const authLike =
     pathname === "/auth" ||
@@ -72,9 +97,10 @@ export function getTopModeTabIdFromContext(
 
   if (authLike) {
     if (returnPath && isOrganizerDashboardPath(returnPath)) return "organizer";
-    if (returnPath?.startsWith("/volunteer")) return "volunteer";
-    return "discover";
+    if (returnPath && isMachiModePath(returnPath)) return "machi";
+    return "event";
   }
 
-  return "discover";
+  void modeFromCookie;
+  return "event";
 }

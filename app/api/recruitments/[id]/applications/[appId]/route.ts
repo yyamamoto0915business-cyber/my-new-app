@@ -16,8 +16,28 @@ import {
   getStoreRecruitmentIfExists,
 } from "@/lib/store-recruitment-api";
 import type { ApplicationStatus } from "@/lib/db/recruitments-mvp";
+import { createNotification } from "@/lib/db/notifications";
 
 type Params = { params: Promise<{ id: string; appId: string }> };
+
+const PASS_ISSUED_STATUSES = new Set(["accepted", "confirmed"]);
+
+function wasAlreadyPassEligible(status: string | null | undefined): boolean {
+  return PASS_ISSUED_STATUSES.has(String(status ?? ""));
+}
+
+async function notifyPassIssued(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  input: {
+    userId: string;
+    recruitmentTitle: string;
+  }
+) {
+  await createNotification(supabase, input.userId, "participation_confirmed", "参加パスが届きました", {
+    body: `「${input.recruitmentTitle}」のスタッフとして承認されました。参加パスから当日の受付にご利用ください。`,
+    link: "/pass",
+  });
+}
 
 /** PATCH: 応募ステータス更新（採用/不採用/チェックイン/役割） */
 export async function PATCH(request: NextRequest, { params }: Params) {
@@ -150,7 +170,23 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         return NextResponse.json({ error: "更新項目がありません" }, { status: 400 });
       }
 
+      const becomingPassEligible =
+        updates.status != null &&
+        PASS_ISSUED_STATUSES.has(updates.status) &&
+        !wasAlreadyPassEligible(app.status);
+
       await updateApplicationStatus(supabase, appId, updates);
+
+      if (becomingPassEligible && app.user_id) {
+        try {
+          await notifyPassIssued(supabase, {
+            userId: app.user_id,
+            recruitmentTitle: recruitment.title,
+          });
+        } catch (err) {
+          console.error("applications PATCH pass notification:", err);
+        }
+      }
 
       const updated = (await fetchApplicationsByRecruitment(supabase, recruitmentId)).find(
         (a) => a.id === appId

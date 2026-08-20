@@ -106,20 +106,20 @@ function DiscoverPageContent() {
         </div>
 
         {contentType === "volunteer" ? (
-          <section className="space-y-4" aria-label="ボランティア募集">
+          <section className="space-y-4" aria-label="まちの情報">
             <SectionHeader
-              title="ボランティア募集"
-              subtitle="地域のイベントでお手伝いを"
-              href="/volunteer"
+              title="まちの情報"
+              subtitle="店舗やボランティアなど、暮らしの近くの情報"
+              href="/"
             />
             <p className="text-sm text-[var(--foreground-muted)]">
-              ボランティア募集一覧で、交通費・宿泊・謝礼などの条件で検索できます。
+              まちの情報ハブで、店舗・お知らせ・ボランティア募集をまとめて探せます。
             </p>
             <Link
-              href="/volunteer"
+              href="/"
               className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
             >
-              ボランティア募集を見る
+              まちの情報を見る
               <span aria-hidden>→</span>
             </Link>
           </section>
@@ -227,10 +227,10 @@ function DiscoverPageContent() {
               <span aria-hidden>→</span>
             </Link>
             <Link
-              href="/volunteer"
+              href="/"
               className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm font-medium shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)]"
             >
-              ボランティア募集
+              まちの情報
               <span aria-hidden>→</span>
             </Link>
             <Link

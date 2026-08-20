@@ -22,6 +22,8 @@ export function getSiteFooterVisibility(pathname: string): SiteFooterVisibility 
   if (pathname === "/profile") return "hidden";
   // 応募フォームは画面内完結のためフッター非表示
   if (pathname === "/application-form-preview") return "hidden";
+  if (pathname === "/applications-confirm-preview") return "hidden";
+  if (pathname === "/gallery-images-preview") return "hidden";
   if (pathname.includes("/application-form")) return "hidden";
 
   if (pathname.startsWith("/messages")) return "desktop-only";

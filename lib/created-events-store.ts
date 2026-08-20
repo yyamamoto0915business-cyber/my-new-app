@@ -11,6 +11,7 @@ export function addCreatedEvent(data: Omit<Event, "id" | "createdAt">): Event {
     id,
     createdAt: new Date().toISOString(),
     imageUrl: data.imageUrl?.trim() || null,
+    galleryImages: data.galleryImages ?? [],
   };
   createdEvents.push(event);
   return event;
@@ -22,6 +23,12 @@ export function getCreatedEvents(): Event[] {
 
 export function getCreatedEventById(id: string): Event | null {
   return createdEvents.find((e) => e.id === id) ?? null;
+}
+
+export function listCreatedEventsByStoreId(storeId: string): Event[] {
+  const id = storeId.trim();
+  if (!id) return [];
+  return createdEvents.filter((e) => e.storeId === id);
 }
 
 export function updateCreatedEvent(
@@ -37,6 +44,8 @@ export function updateCreatedEvent(
     id: prev.id,
     createdAt: prev.createdAt,
     imageUrl: data.imageUrl !== undefined ? (data.imageUrl?.trim() || null) : prev.imageUrl,
+    galleryImages:
+      data.galleryImages !== undefined ? data.galleryImages : prev.galleryImages,
   };
   return createdEvents[idx];
 }

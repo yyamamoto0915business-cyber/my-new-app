@@ -33,10 +33,10 @@ export function PcCtaBanners() {
             ボランティア募集から、お手伝いできる活動を見つけられます。
           </p>
           <Link
-            href="/volunteer"
+            href="/?kind=volunteer"
             className="mt-2.5 inline-flex w-fit items-center rounded-full bg-[#3d7858] px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-[#356a4e]"
           >
-            ボランティアを探す →
+            ボランティアを見る →
           </Link>
         </div>
       </div>
@@ -65,7 +65,7 @@ export function PcCtaBanners() {
             地域の催しを掲載して、参加者やボランティアとつながれます。
           </p>
           <Link
-            href="/organizer"
+            href="/organizer/listings"
             className="mt-2.5 inline-flex w-fit items-center rounded-full bg-[#c8a030] px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-[#b89028]"
           >
             主催者になる →

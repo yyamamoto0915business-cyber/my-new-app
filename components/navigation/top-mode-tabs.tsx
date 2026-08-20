@@ -3,12 +3,13 @@
 import Link from "next/link";
 import type { ComponentType } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Search, HandHeart, BriefcaseBusiness } from "lucide-react";
+import { CalendarDays, MapPinned, BriefcaseBusiness } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOrganizerPro } from "@/lib/organizer-pro-store";
 import {
   getTopModeTabIdFromContext,
-  isDiscoverPath,
+  isEventModePath,
+  isMachiModePath,
   isOrganizerDashboardPath,
   resolveAuthReturnPath,
   type TopModeTabId,
@@ -19,21 +20,21 @@ export type { TopModeTabId };
 
 const TABS = [
   {
-    id: "discover" as const,
-    label: "探す",
+    id: "event" as const,
+    label: "まちの情報",
     href: "/",
-    icon: Search,
+    icon: CalendarDays,
   },
   {
-    id: "volunteer" as const,
-    label: "ボランティア",
-    href: "/volunteer",
-    icon: HandHeart,
+    id: "machi" as const,
+    label: "みんなの投稿",
+    href: "/posts",
+    icon: MapPinned,
   },
   {
     id: "organizer" as const,
     label: "主催",
-    href: "/organizer",
+    href: "/organizer/listings",
     icon: BriefcaseBusiness,
   },
 ] as const satisfies ReadonlyArray<{
@@ -63,8 +64,8 @@ function tabSizeClass(compact?: boolean) {
     : "min-h-[32px] px-3 py-1 text-[11px]";
 }
 
-function tabWidthClass(isVolunteer: boolean) {
-  return isVolunteer ? "shrink-0" : "min-w-0 flex-1";
+function tabWidthClass(isMachi: boolean) {
+  return isMachi ? "shrink-0" : "min-w-0 flex-1";
 }
 
 export function TopModeTabs({ onTabClick, className, compact }: Props) {
@@ -79,13 +80,13 @@ export function TopModeTabs({ onTabClick, className, compact }: Props) {
   );
   const activeId = (() => {
     if (isOrganizerDashboardPath(pathname)) return "organizer" as const;
-    if (pathname.startsWith("/volunteer")) return "volunteer" as const;
-    if (isDiscoverPath(pathname)) return "discover" as const;
-    // 認証画面は戻り先が主催・ボランティアでない限り「探す」を選択（モックアップ準拠）
+    if (isMachiModePath(pathname)) return "machi" as const;
+    if (isEventModePath(pathname)) return "event" as const;
+    // 認証画面は戻り先が主催・みんなの投稿でない限り「まちの情報」を選択
     if (pathname === "/auth" || pathname.startsWith("/auth/")) {
       if (returnPath && isOrganizerDashboardPath(returnPath)) return "organizer";
-      if (returnPath?.startsWith("/volunteer")) return "volunteer";
-      return "discover";
+      if (returnPath && isMachiModePath(returnPath)) return "machi";
+      return "event";
     }
     return getTopModeTabIdFromContext(pathname, returnPath, modeFromCookie);
   })();
@@ -102,9 +103,9 @@ export function TopModeTabs({ onTabClick, className, compact }: Props) {
       {TABS.map((tab) => {
         const isActive = activeId === tab.id;
         const Icon = tab.icon;
-        const isVolunteer = tab.id === "volunteer";
+        const isMachi = tab.id === "machi";
         const isPaidOrganizerTab = tab.id === "organizer" && isProOrganizer;
-        const widthClass = tabWidthClass(isVolunteer);
+        const widthClass = tabWidthClass(isMachi);
         const linkClass = cn(
           TAB_BASE,
           tabSizeClass(compact),
@@ -140,7 +141,7 @@ export function TopModeTabs({ onTabClick, className, compact }: Props) {
             aria-current={isActive ? "page" : undefined}
           >
             <Icon className="h-3.5 w-3.5 shrink-0" />
-            <span className={isVolunteer ? "whitespace-nowrap" : "truncate"}>
+            <span className={isMachi ? "whitespace-nowrap" : "truncate"}>
               {tab.label}
             </span>
           </Link>

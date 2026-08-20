@@ -14,11 +14,13 @@ import {
   GlobeLock,
   Loader2,
   MessageCircle,
+  Calendar,
   MoreHorizontal,
   Upload,
   Users,
   Trash2,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +38,28 @@ const STATUS_LABELS: Record<string, string> = {
   ended: "終了",
   archived: "アーカイブ",
 };
+
+/** 一覧向けの短い日時（例: 3/4(水) 11:11〜12:00） */
+function formatEventScheduleShort(
+  date: string,
+  startTime?: string | null,
+  endTime?: string | null
+): string {
+  if (!date) return "—";
+  const parsed = new Date(`${date.slice(0, 10)}T12:00:00`);
+  const dateLabel = Number.isNaN(parsed.getTime())
+    ? date.slice(0, 10)
+    : parsed.toLocaleDateString("ja-JP", {
+        month: "numeric",
+        day: "numeric",
+        weekday: "short",
+      });
+  const start = startTime?.slice(0, 5) ?? "";
+  const end = endTime?.slice(0, 5) ?? "";
+  if (start && end) return `${dateLabel} ${start}〜${end}`;
+  if (start) return `${dateLabel} ${start}`;
+  return dateLabel;
+}
 
 const STATUS_STYLES: Record<string, string> = {
   public: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
@@ -249,18 +273,20 @@ export function OrganizerEventCard({
     }
   };
 
-  const dateTimeStr = `${event.date} ${event.startTime}${
-    event.endTime ? `〜${event.endTime}` : ""
-  }`;
+  const dateTimeStr = formatEventScheduleShort(
+    event.date,
+    event.startTime,
+    event.endTime
+  );
 
   const statusPillClass =
     displayStatus === "public"
-      ? "bg-[#EAF6DE] text-[#4A7A38]"
+      ? "bg-[#EAF6DE] text-[#3a7a10] border-[#B8DEB0]"
       : displayStatus === "archived"
-        ? "bg-violet-50 text-violet-700"
+        ? "bg-violet-50 text-violet-700 border-violet-200/80"
         : displayStatus === "ended"
-          ? "bg-[#EDE8E0] text-[#7a6a58]"
-          : "bg-[#FFF8E8] text-[#9a7b20]";
+          ? "bg-[#f0eeea] text-[#7a6a58] border-[#e8e6e0]"
+          : "bg-[#FFF8E8] text-[#9a7b20] border-[#E8D9A8]";
 
   const payoutsHref =
     hasPaidContent && chargesEnabled
@@ -549,284 +575,214 @@ export function OrganizerEventCard({
         ) : null}
       </div>
 
-      {/* ── モバイル ── */}
+      {/* ── モバイル（募集一覧と同系統のコンパクト行） ── */}
       <div className="org-event-row-card__mobile p-2 min-[900px]:hidden">
-        {/* 上段: タイトル + ステータス */}
-        <div className="flex items-start gap-1.5 min-[900px]:gap-2">
+        <div className="flex items-start gap-1.5">
+          <span
+            className="org-event-row-card__mobile-icon flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[#e8ede4] bg-[#f0f4ee]"
+            aria-hidden
+          >
+            <Calendar className="h-3 w-3 text-[#7a9488]" strokeWidth={1.75} />
+          </span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-start gap-1.5 min-[900px]:block">
+            <div className="flex items-start gap-1.5">
               <Link
-                href={`/events/${event.id}`}
-                className="org-event-row-card__mobile-title min-w-0 flex-1 hover:underline min-[900px]:text-[15px] min-[900px]:font-semibold min-[900px]:text-slate-900"
+                href={`/organizer/events/${event.id}`}
+                className="org-event-row-card__mobile-title min-w-0 flex-1 truncate leading-tight hover:underline"
               >
                 {event.title}
               </Link>
               <span
-                className={`org-event-row-card__mobile-badge shrink-0 min-[900px]:hidden ${statusPillClass}`}
+                className={cn(
+                  "org-event-row-card__mobile-badge inline-flex shrink-0 border px-1 py-px",
+                  statusPillClass
+                )}
               >
                 {STATUS_LABELS[displayStatus] ?? displayStatus}
               </span>
             </div>
-            <div className="mt-1 hidden flex-wrap gap-1 min-[900px]:mt-1.5 min-[900px]:flex min-[900px]:gap-1.5">
-              <span
-                className={`inline-flex shrink-0 rounded-md border px-2 py-0.5 text-[11px] font-medium sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs ${
-                  STATUS_STYLES[displayStatus] ?? "bg-slate-100 text-slate-600"
-                }`}
-              >
-                {STATUS_LABELS[displayStatus] ?? displayStatus}
+            <div className="org-event-row-card__mobile-meta mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0">
+              <span className="inline-flex items-center gap-0.5 whitespace-nowrap">
+                <Calendar className="h-2.5 w-2.5 shrink-0" aria-hidden />
+                {dateTimeStr}
               </span>
-              <span
-                className={`inline-flex shrink-0 rounded-md border px-2 py-0.5 text-[11px] sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs ${billingTag.className}`}
-              >
-                {billingTag.label}
-              </span>
-              {event.price > 0 && (
-                <span className="rounded-md border border-slate-200/80 bg-slate-50/80 px-2 py-0.5 text-[11px] text-slate-600 min-[900px]:rounded-lg min-[900px]:px-2.5 min-[900px]:py-1 min-[900px]:text-xs">
-                  ¥{event.price}
-                </span>
-              )}
-            </div>
-            <p className="org-event-row-card__mobile-meta mt-0.5 min-[900px]:hidden">
-              <span>{dateTimeStr}</span>
+              <span className="whitespace-nowrap">{billingTag.label}</span>
               {event.location ? (
-                <>
-                  <span className="text-[#ddd]"> · </span>
-                  <span className="text-[#666]">{event.location}</span>
-                </>
+                <span className="max-w-[10rem] truncate">{event.location}</span>
               ) : null}
-              <span className="text-[#ddd]"> · </span>
-              <span className="font-medium text-[#666]">{billingTag.label}</span>
-            </p>
-          </div>
-          {/* モバイル: メニュー */}
-          <div className="shrink-0 min-[900px]:hidden">
-            <DropdownMenu open={menuOpenMobile} onOpenChange={setMenuOpenMobile}>
-              <DropdownMenuTrigger
-                render={
-                  <button
-                    type="button"
-                    className="flex h-7 w-7 items-center justify-center rounded-md border border-[#e8e6e0] bg-[#faf8f5] text-slate-600"
-                    aria-label="その他メニュー"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
-                }
-              />
-              <DropdownMenuContent align="end" className="z-[70] w-56" sideOffset={8}>
-                <DropdownMenuItem
-                  onClick={() => {
-                    closeAllMenus();
-                    nav(`/events/${event.id}`);
-                  }}
-                  className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
-                >
-                  <Eye className="h-4 w-4" />
-                  詳細を見る
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    closeAllMenus();
-                    nav(`/organizer/events/${event.id}`);
-                  }}
-                  className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
-                >
-                  <Edit3 className="h-4 w-4" />
-                  編集
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    closeAllMenus();
-                    nav(`/organizer/stories/new?eventId=${event.id}`);
-                  }}
-                  className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
-                >
-                  <FileText className="h-4 w-4" />
-                  ストーリーを書く
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    closeAllMenus();
-                    nav(`/organizer/events/${event.id}/sponsors`);
-                  }}
-                  className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
-                >
-                  <Users className="h-4 w-4" />
-                  スポンサー管理
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleTogglePublish}
-                  disabled={actionLoading === "toggle" || publishLoading}
-                  className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
-                >
-                  {actionLoading === "toggle" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : isVisible ? (
-                    <GlobeLock className="h-4 w-4" />
-                  ) : (
-                    <Globe className="h-4 w-4" />
-                  )}
-                  {isVisible ? "非公開にする" : "公開する"}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    closeAllMenus();
-                    nav(`/organizer/events/new?copyFrom=${event.id}`);
-                  }}
-                  className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
-                >
-                  <Copy className="h-4 w-4" />
-                  複製
-                </DropdownMenuItem>
-                {!isArchived && !archiveBoxMode ? (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      closeAllMenus();
-                      setShowArchiveConfirm(true);
-                    }}
-                    disabled={actionLoading === "archive"}
-                    variant="destructive"
-                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
-                  >
-                    <Archive className="h-4 w-4" />
-                    アーカイブ
-                  </DropdownMenuItem>
-                ) : null}
-                {archiveBoxMode ? (
-                  <>
-                    <DropdownMenuItem
-                      onClick={handleRestore}
-                      disabled={actionLoading === "restore"}
-                      className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
-                    >
-                      <Archive className="h-4 w-4" />
-                      下書きに復元
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        closeAllMenus();
-                        setShowDeleteConfirm(true);
-                      }}
-                      disabled={actionLoading === "delete"}
-                      variant="destructive"
-                      className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      完全に削除
-                    </DropdownMenuItem>
-                  </>
-                ) : null}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            </div>
           </div>
         </div>
 
-        {/* モバイル: アクション（2×2） */}
-        <div className="mt-2 min-[900px]:hidden">
+        <div className="org-event-row-card__mobile-actions mt-1 flex flex-wrap items-center justify-end gap-0.5">
           {archiveBoxMode ? (
-            <div className="grid grid-cols-2 gap-1.5">
+            <>
               <button
                 type="button"
                 onClick={handleRestore}
                 disabled={actionLoading === "restore"}
-                className="flex items-center justify-center gap-0.5 rounded-md bg-[#6BBF3E] py-2 text-[11px] font-medium text-white transition-opacity active:opacity-90 disabled:opacity-50"
+                className="org-event-row-card__m-btn org-event-row-card__m-btn--primary disabled:opacity-50"
               >
-                {actionLoading === "restore" ? "復元中..." : "復元する"}
+                {actionLoading === "restore" ? "復元中…" : "復元する"}
               </button>
               <Link
                 href={`/organizer/events/${event.id}`}
-                className="flex items-center justify-center gap-0.5 rounded-md border border-[#e8e6e0] bg-white py-2 text-[11px] font-medium text-[#666] active:bg-[#f5f4f0]"
+                className="org-event-row-card__m-btn no-underline"
               >
-                <Edit3 className="h-3 w-3 shrink-0" aria-hidden />
                 詳細
               </Link>
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={actionLoading === "delete"}
-                className="col-span-2 flex items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50 py-2 text-[11px] font-medium text-red-700 active:bg-red-100 disabled:opacity-50"
+                className="org-event-row-card__m-btn org-event-row-card__m-btn--danger disabled:opacity-50"
               >
-                <Trash2 className="h-3 w-3 shrink-0" aria-hidden />
-                {actionLoading === "delete" ? "削除中..." : "完全に削除する"}
+                {actionLoading === "delete" ? "削除中…" : "削除"}
               </button>
-            </div>
+            </>
           ) : (
-          <div className="grid grid-cols-2 gap-1.5">
-            {event.visibilityStatus === "draft" ? (
-              <button
-                type="button"
-                onClick={() => setShowPublishConfirm(true)}
-                disabled={publishLoading}
-                className="flex items-center justify-center gap-0.5 rounded-md bg-[#6BBF3E] py-2 text-[11px] font-medium text-white transition-opacity active:opacity-90 disabled:opacity-50"
-              >
-                <Upload className="h-3 w-3 shrink-0" aria-hidden />
-                {publishLoading ? "公開中..." : "公開する"}
-              </button>
-            ) : isVisible ? (
-              <button
-                type="button"
-                onClick={() => setShowUnpublishConfirm(true)}
-                disabled={actionLoading === "toggle" || publishLoading}
-                className="flex items-center justify-center gap-0.5 rounded-md border border-[#e8e6e0] bg-white py-2 text-[11px] font-medium text-[#666] transition-colors active:bg-[#f5f4f0] disabled:opacity-50"
-              >
-                <GlobeLock className="h-3 w-3 shrink-0" aria-hidden />
-                非公開にする
-              </button>
-            ) : (
-              <Link
-                href={`/organizer/events/${event.id}`}
-                className="flex items-center justify-center gap-0.5 rounded-md border border-[#e8e6e0] bg-white py-2 text-[11px] font-medium text-[#666] active:bg-[#f5f4f0]"
-              >
-                <Edit3 className="h-3 w-3 shrink-0" aria-hidden />
-                編集
-              </Link>
-            )}
-            <Link
-              href={recruitmentHref}
-              className="inline-flex items-center justify-center gap-0.5 rounded-md bg-[#2B3A6B] py-2 text-[11px] font-medium text-white active:opacity-90"
-            >
-              <Users className="h-3 w-3 shrink-0" aria-hidden />
-              スタッフ募集
-            </Link>
-            <Link
-              href={payoutsHref}
-              className="flex items-center justify-center gap-0.5 rounded-md border border-[#e8e6e0] bg-white py-2 text-[11px] font-medium text-[#666] active:bg-[#f5f4f0]"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden>
-                <rect x="2" y="7" width="20" height="14" rx="2"/>
-                <path d="M16 7V5a2 2 0 00-4 0v2M8 7V5a2 2 0 00-4 0v2"/>
-              </svg>
-              {payoutsLabel}
-            </Link>
-            <Link
-              href={`/events/${event.id}/chat`}
-              className="relative flex items-center justify-center gap-0.5 rounded-md border border-[#e8e6e0] bg-white py-2 text-[11px] font-medium text-[#666] active:bg-[#f5f4f0]"
-            >
-              <MessageCircle className="h-3 w-3 shrink-0" aria-hidden />
-              チャット
-              {(event.unreadCount ?? 0) > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#E8708A] px-1 text-[10px] font-medium text-white">
-                  {event.unreadCount > 99 ? "99+" : event.unreadCount}
-                </span>
+            <>
+              {event.visibilityStatus === "draft" ? (
+                <button
+                  type="button"
+                  onClick={() => setShowPublishConfirm(true)}
+                  disabled={publishLoading}
+                  className="org-event-row-card__m-btn org-event-row-card__m-btn--primary disabled:opacity-50"
+                >
+                  {publishLoading ? "公開中…" : "公開する"}
+                </button>
+              ) : (
+                <Link
+                  href={`/organizer/events/${event.id}`}
+                  className="org-event-row-card__m-btn org-event-row-card__m-btn--primary no-underline"
+                >
+                  詳細
+                </Link>
               )}
-            </Link>
-          </div>
+              <Link
+                href={recruitmentHref}
+                className="org-event-row-card__m-btn no-underline"
+              >
+                {hasRecruitment ? "募集管理" : "スタッフ募集"}
+              </Link>
+              {event.visibilityStatus === "draft" ? (
+                <Link
+                  href={`/organizer/events/${event.id}`}
+                  className="org-event-row-card__m-btn no-underline"
+                >
+                  編集
+                </Link>
+              ) : null}
+            </>
           )}
-          {toast && (
-            <p
-              className={`mt-2 rounded-lg border px-3 py-1.5 text-center text-xs font-medium ${
-                toast.type === "success"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : "border-red-200 bg-red-50 text-red-700"
-              }`}
-              role="status"
-            >
-              {toast.message}
-            </p>
-          )}
-          {publishError && (
-            <p className="mt-2 text-center text-xs text-red-600">{publishError}</p>
-          )}
+
+          <DropdownMenu open={menuOpenMobile} onOpenChange={setMenuOpenMobile}>
+            <DropdownMenuTrigger
+              render={
+                <button
+                  type="button"
+                  className="org-event-row-card__m-menu"
+                  aria-label="その他メニュー"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </button>
+              }
+            />
+            <DropdownMenuContent align="end" className="z-[70] w-56" sideOffset={8}>
+              {!archiveBoxMode ? (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      closeAllMenus();
+                      nav(payoutsHref);
+                    }}
+                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
+                  >
+                    <FileText className="h-4 w-4" />
+                    {payoutsLabel}
+                  </DropdownMenuItem>
+                  {isVisible ? (
+                    <DropdownMenuItem
+                      onClick={handleTogglePublish}
+                      disabled={actionLoading === "toggle" || publishLoading}
+                      className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
+                    >
+                      {actionLoading === "toggle" ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <GlobeLock className="h-4 w-4" />
+                      )}
+                      非公開にする
+                    </DropdownMenuItem>
+                  ) : null}
+                  <DropdownMenuItem
+                    onClick={() => {
+                      closeAllMenus();
+                      nav(`/organizer/events/new?copyFrom=${event.id}`);
+                    }}
+                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
+                  >
+                    <Copy className="h-4 w-4" />
+                    複製
+                  </DropdownMenuItem>
+                  {!isArchived ? (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        closeAllMenus();
+                        setShowArchiveConfirm(true);
+                      }}
+                      disabled={actionLoading === "archive"}
+                      variant="destructive"
+                      className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
+                    >
+                      <Archive className="h-4 w-4" />
+                      アーカイブ
+                    </DropdownMenuItem>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem
+                    onClick={handleRestore}
+                    disabled={actionLoading === "restore"}
+                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
+                  >
+                    <Archive className="h-4 w-4" />
+                    下書きに復元
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      closeAllMenus();
+                      setShowDeleteConfirm(true);
+                    }}
+                    disabled={actionLoading === "delete"}
+                    variant="destructive"
+                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    完全に削除
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
+        {toast ? (
+          <p
+            className={`mt-2 rounded-lg border px-3 py-1.5 text-center text-xs font-medium ${
+              toast.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+            role="status"
+          >
+            {toast.message}
+          </p>
+        ) : null}
+        {publishError ? (
+          <p className="mt-2 text-center text-xs text-red-600">{publishError}</p>
+        ) : null}
       </div>
 
       {showPublishConfirm && (

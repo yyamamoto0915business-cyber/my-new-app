@@ -16,6 +16,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { VolunteerThumbnail } from "@/components/volunteer-thumbnail";
+import { DetailImageSwitcher } from "@/components/media/DetailImageSwitcher";
 import { LoginBenefitsBanner } from "@/components/login-benefits-banner";
 import {
   getCategoryLabel,
@@ -158,8 +159,8 @@ export function VolunteerDetailPcView({
             トップ
           </Link>
           <ChevronRight className="h-3 w-3" />
-          <Link href="/volunteer" className="transition-colors hover:text-[#2D7A4F]">
-            ボランティア募集
+          <Link href="/?kind=volunteer" className="transition-colors hover:text-[#2D7A4F]">
+            まちの情報
           </Link>
           <ChevronRight className="h-3 w-3" />
           <span className="font-medium text-[#1A2214]">
@@ -174,12 +175,21 @@ export function VolunteerDetailPcView({
           <div className="overflow-hidden rounded-2xl border border-[#e8edd8] bg-white shadow-[0_1px_4px_rgba(44,42,40,0.05)]">
             <div className="grid grid-cols-[minmax(200px,36%)_minmax(0,1fr)] items-stretch">
               <div className="relative min-h-[168px] border-r border-[#e8edd8] bg-[#f0f4f0]">
-                <VolunteerThumbnail
-                  imageUrl={role.thumbnailUrl}
+                <DetailImageSwitcher
+                  className="absolute inset-0"
+                  coverUrl={role.thumbnailUrl}
+                  galleryImages={role.galleryImages}
                   alt={role.title}
-                  roleType={categoryLabel}
-                  rounded="none"
-                  className="!absolute !inset-0 !aspect-auto h-full"
+                  thumbsPlacement="overlay"
+                  renderMain={(activeUrl) => (
+                    <VolunteerThumbnail
+                      imageUrl={activeUrl}
+                      alt={role.title}
+                      roleType={categoryLabel}
+                      rounded="none"
+                      className="!absolute !inset-0 !aspect-auto h-full"
+                    />
+                  )}
                 />
                 {isEmergency ? (
                   <div className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-[#E53935]/92 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm backdrop-blur-sm">

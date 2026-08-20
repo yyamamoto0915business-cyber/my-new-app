@@ -27,6 +27,8 @@ export type VolunteerRoleWithEvent = {
   contactAvailable?: boolean;
   benefits?: Benefit[];
   thumbnailUrl?: string;
+  /** 詳細ギャラリー用の追加画像（代表 thumbnailUrl とは別） */
+  galleryImages?: string[];
   emergency?: { isEmergency?: boolean; urgencyLevel?: number; activeTo?: string };
   event?: { id: string; title: string; date: string; prefecture?: string } | null;
   recruitmentId?: string | null;

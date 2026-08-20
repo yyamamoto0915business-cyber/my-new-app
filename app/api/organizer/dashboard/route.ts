@@ -266,10 +266,10 @@ async function buildSupabaseDashboard(
       todos.push({
         id: `day-${r.id}`,
         type: "day_of",
-        title: `「${r.title}」当日管理`,
+        title: `「${r.title}」本日の応募確認`,
         recruitmentId: r.id,
         eventId: r.event_id ?? undefined,
-        href: `/organizer/recruitments/${r.id}/day-of`,
+        href: `/organizer/recruitments/${r.id}`,
       });
     }
   }

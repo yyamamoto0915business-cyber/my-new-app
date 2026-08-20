@@ -86,6 +86,8 @@ export type DbEvent = {
   end_time: string | null;
   location: string;
   address: string;
+  /** 開催店舗（任意。stores.id） */
+  store_id?: string | null;
   price: number;
   price_note: string | null;
   /** イベント単位の主催者表示名（NULL 時は organizers をフォールバック） */
@@ -177,12 +179,16 @@ export type Event = {
   publishedAt?: string | null;
   title: string;
   imageUrl: string | null;
+  /** 詳細ギャラリー用の追加画像（代表 imageUrl とは別・最大5枚） */
+  galleryImages?: string[];
   description: string;
   date: string;
   startTime: string;
   endTime?: string;
   location: string;
   address: string;
+  /** 開催店舗 ID（任意） */
+  storeId?: string | null;
   price: number;
   priceNote?: string;
   organizerName: string;

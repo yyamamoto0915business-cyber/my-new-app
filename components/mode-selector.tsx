@@ -17,10 +17,10 @@ export function ModeSelector() {
 
   const handleChange = (mode: ModePreference) => {
     setModeCookie(mode);
-    if (mode === "EVENT") router.push("/events");
-    else if (mode === "VOLUNTEER") router.push("/volunteer");
-    else if (mode === "ORGANIZER") router.push("/organizer");
-    else router.push("/events");
+    if (mode === "EVENT") router.push("/");
+    else if (mode === "VOLUNTEER") router.push("/posts");
+    else if (mode === "ORGANIZER") router.push("/organizer/listings");
+    else router.push("/");
     router.refresh();
   };
 

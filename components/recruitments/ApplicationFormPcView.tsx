@@ -129,7 +129,6 @@ function isAnswered(
 ): boolean {
   if (field.autoFromProfile) {
     if (field.id === "name") return Boolean(profile.displayName?.trim());
-    if (field.id === "phone") return Boolean(profile.phone?.trim() || answers.phone);
     return true;
   }
   if (field.id === "terms") {
@@ -521,8 +520,11 @@ export function ApplicationFormPcView({
     extraFields.length > 0 || customQuestions.length > 0 ? nextIndex() : null;
 
   const phoneEnabled = profileFields.some((f) => f.id === "phone");
+  const phoneField = profileFields.find((f) => f.id === "phone");
+  const ageField = profileFields.find((f) => f.id === "age");
   const phoneValue =
     typeof answers.phone === "string" ? answers.phone : profile.phone || "";
+  const ageValue = typeof answers.age === "string" ? answers.age : "";
 
   return (
     <div
@@ -543,7 +545,7 @@ export function ApplicationFormPcView({
               className="mb-1 text-[11px]"
               items={[
                 { label: "トップ", href: "/" },
-                { label: "ボランティア募集", href: "/volunteer" },
+                { label: "まちの情報", href: "/?kind=volunteer" },
                 { label: primaryRole, href: `/recruitments/${recruitmentId}` },
                 { label: "応募" },
               ]}
@@ -628,7 +630,7 @@ export function ApplicationFormPcView({
                     id="af-section-profile"
                     index={profileSectionIndex}
                     title="基本プロフィール"
-                    hint="登録情報から取得"
+                    hint="名前は登録情報から。電話・年齢は入力できます"
                   >
                     {profileFields.some((f) => f.id === "name") ? (
                       <div className="grid grid-cols-2 gap-2">
@@ -654,9 +656,9 @@ export function ApplicationFormPcView({
                     ) : null}
 
                     {(() => {
-                      const ageEnabled = profileFields.some((f) => f.id === "age");
+                      const ageEnabled = Boolean(ageField);
                       if (!phoneEnabled && !ageEnabled) return null;
-                      const phoneBlock = phoneEnabled ? (
+                      const phoneBlock = phoneField ? (
                         <div className="space-y-0.5">
                           <div className="flex items-center justify-between gap-1">
                             <label
@@ -665,39 +667,38 @@ export function ApplicationFormPcView({
                             >
                               電話番号
                             </label>
-                            <FieldBadge
-                              auto={profileFields.find((f) => f.id === "phone")?.autoFromProfile}
-                              required={profileFields.find((f) => f.id === "phone")?.required}
-                            />
+                            <FieldBadge required={phoneField.required} />
                           </div>
-                          {profileFields.find((f) => f.id === "phone")?.autoFromProfile ? (
-                            <p className="rounded-md border border-[#e8e6e0] bg-[#fafaf8] px-2.5 py-1.5 text-[12px] text-[#566358]">
-                              {profile.phone?.trim() || "プロフィール未登録"}
-                            </p>
-                          ) : (
-                            <input
-                              id="af-phone"
-                              type="tel"
-                              value={phoneValue}
-                              onChange={(e) => onChange("phone", e.target.value)}
-                              placeholder="090-0000-0000"
-                              className={inputClass}
-                            />
-                          )}
+                          <input
+                            id="af-phone"
+                            type="tel"
+                            value={phoneValue}
+                            onChange={(e) => onChange("phone", e.target.value)}
+                            placeholder="090-0000-0000"
+                            className={inputClass}
+                          />
                         </div>
                       ) : null;
-                      const ageBlock = ageEnabled ? (
+                      const ageBlock = ageField ? (
                         <div className="space-y-0.5">
                           <div className="flex items-center justify-between gap-1">
-                            <span className="text-[11px] font-medium text-[#1a2818]">年齢</span>
-                            <FieldBadge
-                              auto
-                              required={profileFields.find((f) => f.id === "age")?.required}
-                            />
+                            <label
+                              className="text-[11px] font-medium text-[#1a2818]"
+                              htmlFor="af-age"
+                            >
+                              年齢
+                            </label>
+                            <FieldBadge required={ageField.required} />
                           </div>
-                          <p className="rounded-md border border-[#e8e6e0] bg-[#fafaf8] px-2.5 py-1.5 text-[12px] text-[#566358]">
-                            プロフィールから参照されます
-                          </p>
+                          <input
+                            id="af-age"
+                            type="text"
+                            inputMode="numeric"
+                            value={ageValue}
+                            onChange={(e) => onChange("age", e.target.value)}
+                            placeholder="例: 28"
+                            className={inputClass}
+                          />
                         </div>
                       ) : null;
                       return (

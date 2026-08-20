@@ -13,10 +13,19 @@ import { ImmersiveAwareFooter } from "@/components/navigation/immersive-aware-fo
 import { OrganizerProGlobalSyncer } from "@/components/organizer/OrganizerProGlobalSyncer";
 import { AbortErrorRecovery } from "@/components/abort-error-recovery";
 import "./globals.css";
-import { Geist, Noto_Serif_JP, Shippori_Mincho } from "next/font/google";
+import { Geist, Klee_One, Noto_Serif_JP, Shippori_Mincho } from "next/font/google";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
+
+// アルバムのキャプション用（手書き楷書系）
+const kleeOne = Klee_One({
+  weight: ['400', '600'],
+  subsets: ['latin'],
+  display: 'swap',
+  preload: false,
+  variable: '--font-klee',
+});
 
 const notoSerifJP = Noto_Serif_JP({
   weight: ['400', '500', '600', '700'],
@@ -91,7 +100,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={cn("font-sans", geist.variable, notoSerifJP.variable, shipporiMincho.variable)}>
+    <html lang="ja" className={cn("font-sans", geist.variable, notoSerifJP.variable, shipporiMincho.variable, kleeOne.variable)}>
       <body className="font-sans antialiased min-h-screen bg-[#f3f4f1]">
         <LanguageProvider>
           <AbortErrorRecovery />

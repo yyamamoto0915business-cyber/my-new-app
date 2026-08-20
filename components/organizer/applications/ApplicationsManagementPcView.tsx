@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import {
   Calendar,
-  CalendarDays,
   Check,
   ChevronDown,
   ChevronRight,
@@ -20,6 +18,11 @@ import { cn } from "@/lib/utils";
 import { Breadcrumb } from "@/components/breadcrumb";
 import type { Application } from "./ApplicationCard";
 import type { StatusFilter } from "./ApplicationToolbar";
+import type { ApplicationFormConfig } from "@/lib/recruitment-application-form";
+import {
+  ApplicationFormAnswerSections,
+  getApplicationFormViewModel,
+} from "./ApplicationFormAnswerSections";
 
 const QUICK_NOTIFY_MESSAGES = [
   {
@@ -54,6 +57,7 @@ type Props = {
   endAt?: string | null;
   capacity?: number | null;
   roles?: { name: string; count: number }[];
+  formConfig?: ApplicationFormConfig | null;
   filteredApplications: Application[];
   total: number;
   pendingCount: number;
@@ -71,6 +75,7 @@ type Props = {
   onReject: (appId: string) => void;
   onHold: (appId: string) => void;
   onChat: (userId: string) => void;
+  onCheckIn?: (appId: string) => void;
   onSaveMemo: (appId: string, memo: string) => Promise<void>;
   bulkSending: boolean;
   onBulkSend: (content: string, targetUserIds?: string[]) => void | Promise<boolean | void>;
@@ -146,6 +151,9 @@ function statusMeta(status: string): { label: string; className: string } {
   if (status === "on_hold") {
     return { label: "保留", className: "border-yellow-200 bg-yellow-50 text-yellow-800" };
   }
+  if (status === "checked_in") {
+    return { label: "到着済み", className: "border-emerald-200/80 bg-emerald-50/90 text-emerald-800" };
+  }
   if (status === "accepted" || status === "confirmed") {
     return { label: "承認済み", className: "border-emerald-200/80 bg-emerald-50/90 text-emerald-800" };
   }
@@ -176,6 +184,11 @@ function ApplicantListItem({
   const avatarColor = AVATAR_COLORS[index % AVATAR_COLORS.length];
   const message = application.message?.trim() || "メッセージ未入力";
   const roleLabel = application.role_assigned?.trim() || "未指定";
+  const isAcceptedStaff =
+    application.status === "accepted" ||
+    application.status === "confirmed" ||
+    application.status === "checked_in";
+  const arrived = Boolean(application.checked_in_at);
 
   return (
     <article
@@ -228,6 +241,14 @@ function ApplicantListItem({
             希望役割: {roleLabel}
             <span className="mx-1.5 text-[#d0d6cc]">·</span>
             応募日時: {formatApplicationDate(application.created_at)}
+            {isAcceptedStaff ? (
+              <>
+                <span className="mx-1.5 text-[#d0d6cc]">·</span>
+                <span className={arrived ? "font-medium text-[#3a7a28]" : "text-[#c4891a]"}>
+                  {arrived ? "到着済" : "未到着"}
+                </span>
+              </>
+            ) : null}
           </p>
           <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-[#6b7569]">{message}</p>
           <button
@@ -250,18 +271,22 @@ function ApplicantListItem({
 function DetailPanel({
   application,
   recruitmentTimeLabel,
+  formConfig,
   onAccept,
   onReject,
   onHold,
   onChat,
+  onCheckIn,
   onSaveMemo,
 }: {
   application: Application | null;
   recruitmentTimeLabel: string;
+  formConfig?: ApplicationFormConfig | null;
   onAccept: (appId: string) => void;
   onReject: (appId: string) => void;
   onHold: (appId: string) => void;
   onChat: (userId: string) => void;
+  onCheckIn?: (appId: string) => void;
   onSaveMemo: (appId: string, memo: string) => Promise<void>;
 }) {
   const [memo, setMemo] = useState("");
@@ -286,11 +311,14 @@ function DetailPanel({
   const email = application.user?.email ?? "";
   const meta = statusMeta(application.status);
   const isPending = application.status === "pending" || application.status === "on_hold";
-  const isAccepted = application.status === "accepted" || application.status === "confirmed";
+  const isAccepted =
+    application.status === "accepted" ||
+    application.status === "confirmed" ||
+    application.status === "checked_in";
   const isRejected = application.status === "rejected";
-  const roleLabel = application.role_assigned?.trim() || "未指定";
-  const message =
-    application.message?.trim() || "自己紹介・応募メッセージはまだ入力されていません。";
+  const arrived = Boolean(application.checked_in_at);
+  const canMarkArrived = isAccepted && !arrived && Boolean(onCheckIn);
+  const { roleLabel, message } = getApplicationFormViewModel(application, formConfig);
 
   const handleSaveMemo = async () => {
     setSaving(true);
@@ -314,31 +342,54 @@ function DetailPanel({
               <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-medium", meta.className)}>
                 {meta.label}
               </span>
+              {isAccepted ? (
+                <span
+                  className={cn(
+                    "rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                    arrived
+                      ? "border-emerald-200/80 bg-emerald-50 text-emerald-800"
+                      : "border-amber-200/80 bg-amber-50 text-amber-800"
+                  )}
+                >
+                  {arrived ? "到着済" : "未到着"}
+                </span>
+              ) : null}
             </div>
             {email ? <p className="mt-0.5 truncate text-[11px] text-[#8a9e80]">{email}</p> : null}
             <p className="mt-0.5 text-[10px] text-[#b0bab0]">
               応募日時: {formatApplicationDate(application.created_at)}
+              {arrived ? (
+                <>
+                  <span className="mx-1 text-[#d0d6cc]">·</span>
+                  到着 {formatApplicationDate(application.checked_in_at)}
+                </>
+              ) : null}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
+      <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto px-4 py-3">
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-lg border border-[#f0f2ec] bg-[#fafcf8] px-2.5 py-2">
-            <p className="text-[10px] font-medium text-[#8a9e80]">希望役割</p>
+            <p className="text-[10px] font-medium text-[#6b7569]">希望役割</p>
             <p className="mt-0.5 text-[12px] font-medium text-[#1a2818]">{roleLabel}</p>
           </div>
           <div className="rounded-lg border border-[#f0f2ec] bg-[#fafcf8] px-2.5 py-2">
-            <p className="text-[10px] font-medium text-[#8a9e80]">募集時間帯</p>
+            <p className="text-[10px] font-medium text-[#6b7569]">募集時間帯</p>
             <p className="mt-0.5 text-[12px] font-medium text-[#1a2818]">{recruitmentTimeLabel}</p>
           </div>
         </div>
 
+        <ApplicationFormAnswerSections
+          application={application}
+          formConfig={formConfig}
+        />
+
         <section>
-          <h3 className="text-[11px] font-semibold text-[#526448]">自己紹介 / 応募メッセージ</h3>
+          <h3 className="text-[11px] font-semibold text-[#526448]">応募メッセージ</h3>
           <p className="mt-1.5 whitespace-pre-wrap rounded-lg border border-[#f0f2ec] bg-white px-2.5 py-2 text-[12px] leading-relaxed text-[#3a3428]">
-            {message}
+            {message || "メッセージはまだ入力されていません。"}
           </p>
         </section>
 
@@ -393,6 +444,16 @@ function DetailPanel({
               </button>
             </>
           ) : null}
+          {canMarkArrived ? (
+            <button
+              type="button"
+              onClick={() => onCheckIn?.(application.id)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#b5dba0] bg-[#f4faef] px-3 py-1.5 text-[12px] font-semibold text-[#2a7530] hover:bg-[#eaf6e2]"
+            >
+              <Check className="h-3.5 w-3.5" aria-hidden />
+              到着を記録
+            </button>
+          ) : null}
           {isAccepted ? (
             <button
               type="button"
@@ -426,8 +487,10 @@ function DetailPanel({
         {isPending || isAccepted ? (
           <p className="mt-1.5 text-[10px] text-[#8a9e80]">
             {isPending
-              ? "※ 承認すると参加者に通知が送信されます。"
-              : "※ 個別連絡はチャット、一斉連絡は左の通知欄をご利用ください。"}
+              ? "※ 承認すると参加者にお知らせが届き、参加パスが利用できます。"
+              : canMarkArrived
+                ? "※ 当日は参加パス提示が基本です。必要なら主催側で到着を記録できます。"
+                : "※ 個別連絡はチャット、一斉連絡は左の通知欄をご利用ください。"}
           </p>
         ) : null}
       </div>
@@ -443,6 +506,7 @@ export function ApplicationsManagementPcView({
   endAt,
   capacity,
   roles,
+  formConfig,
   filteredApplications,
   total,
   pendingCount,
@@ -460,6 +524,7 @@ export function ApplicationsManagementPcView({
   onReject,
   onHold,
   onChat,
+  onCheckIn,
   onSaveMemo,
   bulkSending,
   onBulkSend,
@@ -483,7 +548,8 @@ export function ApplicationsManagementPcView({
   const acceptedCheckedUserIds = filteredApplications
     .filter(
       (a) =>
-        checkedIds.has(a.id) && (a.status === "accepted" || a.status === "confirmed")
+        checkedIds.has(a.id) &&
+        (a.status === "accepted" || a.status === "confirmed" || a.status === "checked_in")
     )
     .map((a) => a.user_id);
 
@@ -514,61 +580,52 @@ export function ApplicationsManagementPcView({
       className="mg-apps-mgmt-pc flex min-h-0 w-full flex-1 flex-col gap-2 overflow-hidden"
       data-apps-mgmt
     >
-      <div className="shrink-0 space-y-2">
+      <div className="shrink-0 space-y-1.5">
         <Breadcrumb
           className="text-[12px]"
           items={[
-            { label: "スタッフ募集管理", href: "/organizer/recruitments" },
+            { label: "ボランティア募集管理", href: "/organizer/recruitments" },
             { label: recruitmentTitle, href: `/organizer/recruitments/${recruitmentId}` },
             { label: "応募確認" },
           ]}
         />
 
-        <header className="flex flex-wrap items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h1 className="text-[18px] font-semibold tracking-wide text-[#1a2818]">応募確認</h1>
-            <p className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-[#6b7569]">
-              <span className="font-medium text-[#1a2818]">{recruitmentTitle}</span>
-              {eventTitle?.trim() || roleSummary !== "—" ? (
-                <span className="text-[#8a9e80]">{eventTitle?.trim() || roleSummary}</span>
-              ) : null}
-              <span className="inline-flex items-center gap-1">
-                <Calendar className="h-3 w-3 text-[#8a9e80]" aria-hidden />
-                {formatEventDate(startAt)}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Clock className="h-3 w-3 text-[#8a9e80]" aria-hidden />
-                {timeLabel}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Users className="h-3 w-3 text-[#8a9e80]" aria-hidden />
-                応募 {total}
-                {capacity != null && capacity > 0 ? (
-                  <>
-                    <span className="text-[#c5d4c0]">·</span>
-                    定員 {capacity}
-                  </>
-                ) : null}
-                <span className="text-[#c5d4c0]">·</span>
-                <span className={unconfirmedCount > 0 ? "font-semibold text-[#c45a1a]" : undefined}>
-                  未確認 {unconfirmedCount}
-                </span>
-              </span>
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button type="button" onClick={onEdit} className="mg-apps-mgmt-pc__btn-outline">
-              <Pencil className="h-3 w-3 opacity-70" aria-hidden />
-              編集
+        <header className="mg-apps-mgmt-pc__header">
+          <p className="mg-apps-mgmt-pc__eyebrow">応募管理</p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+            <h1 className="mg-apps-mgmt-pc__title !mt-0">{recruitmentTitle}</h1>
+            <button type="button" onClick={onEdit} className="mg-apps-mgmt-pc__btn-edit shrink-0">
+              <Pencil className="h-3 w-3 shrink-0" aria-hidden />
+              募集を編集
             </button>
-            <Link
-              href={`/organizer/recruitments/${recruitmentId}/day-of`}
-              className="mg-apps-mgmt-pc__btn-gold"
-            >
-              <CalendarDays className="h-3 w-3" aria-hidden />
-              当日管理へ
-            </Link>
           </div>
+          <p className="mg-apps-mgmt-pc__meta-line flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+            {eventTitle?.trim() || roleSummary !== "—" ? (
+              <span className="text-[#8a9e80]">{eventTitle?.trim() || roleSummary}</span>
+            ) : null}
+            <span className="inline-flex items-center gap-1">
+              <Calendar className="h-3 w-3 text-[#8a9e80]" aria-hidden />
+              {formatEventDate(startAt)}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3 w-3 text-[#8a9e80]" aria-hidden />
+              {timeLabel}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Users className="h-3 w-3 text-[#8a9e80]" aria-hidden />
+              応募 {total}
+              {capacity != null && capacity > 0 ? (
+                <>
+                  <span className="text-[#c5d4c0]">·</span>
+                  定員 {capacity}
+                </>
+              ) : null}
+              <span className="text-[#c5d4c0]">·</span>
+              <span className={unconfirmedCount > 0 ? "font-semibold text-[#c45a1a]" : undefined}>
+                未確認 {unconfirmedCount}
+              </span>
+            </span>
+          </p>
         </header>
 
         <div
@@ -586,7 +643,7 @@ export function ApplicationsManagementPcView({
                 aria-selected={active}
                 onClick={() => onStatusSelect(tab.key)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12px] font-medium transition-colors",
+                  "inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-1 text-[12px] font-medium transition-colors",
                   active
                     ? "bg-white text-[#1a2818] shadow-sm ring-1 ring-[#e0ddd6]"
                     : "text-[#6b7569] hover:bg-white/60 hover:text-[#3a3428]"
@@ -755,10 +812,12 @@ export function ApplicationsManagementPcView({
         <DetailPanel
           application={selected}
           recruitmentTimeLabel={timeLabel}
+          formConfig={formConfig}
           onAccept={onAccept}
           onReject={onReject}
           onHold={onHold}
           onChat={onChat}
+          onCheckIn={onCheckIn}
           onSaveMemo={onSaveMemo}
         />
       </div>

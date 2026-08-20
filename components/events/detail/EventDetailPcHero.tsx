@@ -1,5 +1,6 @@
 import type { Event } from "@/lib/db/types";
 import { EventDetailFlyerImage } from "@/components/events/EventDetailFlyerImage";
+import { DetailImageSwitcher } from "@/components/media/DetailImageSwitcher";
 import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import { getPrimaryCategory } from "@/lib/inferCategory";
 import { CATEGORY_LABELS } from "@/lib/categories";
@@ -68,11 +69,20 @@ export function EventDetailPcHero({ event }: Props) {
       className="hidden min-[900px]:block overflow-hidden rounded-2xl border border-[var(--mg-line)] bg-white shadow-[0_1px_4px_rgba(44,42,40,0.05)]"
     >
       <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        <EventDetailFlyerImage
-          imageUrl={event.imageUrl}
+        <DetailImageSwitcher
+          coverUrl={event.imageUrl}
+          galleryImages={event.galleryImages}
           alt={event.title}
-          priority
-          variant="pcHero"
+          thumbsPlacement="overlay"
+          className="relative min-h-[220px]"
+          renderMain={(activeUrl) => (
+            <EventDetailFlyerImage
+              imageUrl={activeUrl}
+              alt={event.title}
+              priority
+              variant="pcHero"
+            />
+          )}
         />
 
         <div className="flex flex-col justify-center px-5 py-4">

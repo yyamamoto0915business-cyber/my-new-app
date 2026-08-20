@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
       { source: "/read/:path*", destination: "/stories/:path*", permanent: true },
       { source: "/organizer/articles", destination: "/organizer/stories", permanent: true },
       { source: "/organizer/articles/:path*", destination: "/organizer/stories/:path*", permanent: true },
+      // ボランティア一覧はまちの情報ハブへ（詳細 /volunteer/:id は残す）
+      { source: "/volunteer", destination: "/?kind=volunteer", permanent: false },
     ];
   },
   images: {
@@ -23,6 +25,11 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "placehold.co",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "picsum.photos",
         pathname: "/**",
       },
       {

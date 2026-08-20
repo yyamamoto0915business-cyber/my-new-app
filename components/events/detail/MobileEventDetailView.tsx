@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import type { Event } from "@/lib/db/types";
 import { EventDetailFlyerImage } from "@/components/events/EventDetailFlyerImage";
+import { DetailImageSwitcher } from "@/components/media/DetailImageSwitcher";
 import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import { getPrimaryCategory } from "@/lib/inferCategory";
 import { CATEGORY_LABELS } from "@/lib/categories";
@@ -209,12 +210,19 @@ export function MobileEventDetailView({
       </header>
 
       <div className="px-4 pt-3">
-        <EventDetailFlyerImage
-          imageUrl={event.imageUrl}
+        <DetailImageSwitcher
+          coverUrl={event.imageUrl}
+          galleryImages={event.galleryImages}
           alt={event.title}
-          priority
-          variant="mobileHero"
-          className="h-[210px]"
+          renderMain={(activeUrl) => (
+            <EventDetailFlyerImage
+              imageUrl={activeUrl}
+              alt={event.title}
+              priority
+              variant="mobileHero"
+              className="h-[210px]"
+            />
+          )}
         />
       </div>
 

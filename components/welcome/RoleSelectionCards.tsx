@@ -1,42 +1,42 @@
 "use client";
 
-import { CalendarDays, HandHeart, Megaphone } from "lucide-react";
+import { CalendarDays, MessagesSquare, Megaphone } from "lucide-react";
 import { RoleCard } from "./RoleCard";
 
 const CARDS = [
   {
-    title: "イベントを探したい",
+    title: "まちの情報を探したい",
     description: (
       <>
-        <span className="whitespace-nowrap">地域で開催されるイベントを</span>
+        <span className="whitespace-nowrap">イベント・店舗・募集を</span>
         <br />
-        <span className="whitespace-nowrap">見つけて参加できます。</span>
+        <span className="whitespace-nowrap">まとめて探せます。</span>
       </>
     ),
-    buttonLabel: "イベントを見る",
-    href: "/events",
+    buttonLabel: "まちの情報を見る",
+    href: "/",
     icon: <CalendarDays className="h-5 w-5" strokeWidth={1.5} />,
     primary: true,
   },
   {
-    title: "募集を見たい",
+    title: "みんなの投稿を見たい",
     description: (
       <>
-        <span className="whitespace-nowrap">ボランティアやまちおこしの</span>
+        <span className="whitespace-nowrap">地域のみんなの投稿から、</span>
         <br />
-        <span className="whitespace-nowrap">募集を見つけられます。</span>
+        <span className="whitespace-nowrap">街の魅力を見つけられます。</span>
       </>
     ),
-    buttonLabel: "募集を見る",
-    href: "/volunteer",
-    icon: <HandHeart className="h-5 w-5" strokeWidth={1.5} />,
+    buttonLabel: "みんなの投稿を見る",
+    href: "/posts",
+    icon: <MessagesSquare className="h-5 w-5" strokeWidth={1.5} />,
     primary: false,
   },
   {
     title: "イベントを掲載したい",
     description: "イベントを開いたり募集を掲載できます。",
     buttonLabel: "使い方を見る",
-    href: "/auth?next=/organizer",
+    href: "/auth?next=/organizer/listings",
     icon: <Megaphone className="h-5 w-5" strokeWidth={1.5} />,
     primary: false,
   },

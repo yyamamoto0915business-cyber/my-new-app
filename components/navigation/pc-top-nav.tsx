@@ -14,8 +14,8 @@ import {
 } from "@/lib/profile-avatar";
 import { isAdmin } from "@/lib/admin";
 import { useOrganizerPro } from "@/lib/organizer-pro-store";
-import { isDiscoverPath } from "@/lib/top-mode-active";
-import { Search } from "lucide-react";
+import { isEventModePath, isMachiModePath } from "@/lib/top-mode-active";
+import { CalendarDays, MapPinned } from "lucide-react";
 import { setModeCookie } from "@/lib/mode-preference";
 import { shouldHidePcGlobalNav } from "@/lib/is-auth-route";
 import { ParticipationPassIcon } from "@/components/pass/ParticipationPassIcon";
@@ -27,22 +27,26 @@ function isMissingAvatarColumnsError(message: string): boolean {
 }
 
 const NAV_LINKS = [
-  { label: "探す", href: "/", icon: "search" as const },
-  { label: "ボランティア", href: "/volunteer", icon: null },
-  { label: "主催", href: "/organizer", icon: null },
+  { label: "まちの情報", href: "/", icon: "event" as const },
+  { label: "みんなの投稿", href: "/posts", icon: "machi" as const },
+  { label: "主催", href: "/organizer/listings", icon: null },
 ] as const;
 
+function isOrganizerEntryHref(href: string) {
+  return href === "/organizer" || href === "/organizer/listings";
+}
+
 function isNavActive(pathname: string, href: string) {
-  if (href === "/organizer") return pathname.startsWith("/organizer");
-  if (href === "/volunteer") return pathname.startsWith("/volunteer");
+  if (isOrganizerEntryHref(href)) return pathname.startsWith("/organizer");
+  if (href === "/posts") return isMachiModePath(pathname);
   if (href === "/pass") return pathname.startsWith("/pass");
-  if (href === "/") return isDiscoverPath(pathname);
+  if (href === "/") return isEventModePath(pathname);
   return pathname.startsWith(href);
 }
 
 function syncModeCookieForNav(href: string) {
-  if (href === "/organizer") setModeCookie("ORGANIZER");
-  else if (href === "/volunteer") setModeCookie("VOLUNTEER");
+  if (isOrganizerEntryHref(href)) setModeCookie("ORGANIZER");
+  else if (href === "/posts") setModeCookie("VOLUNTEER");
   else if (href === "/") setModeCookie("EVENT");
 }
 
@@ -199,7 +203,7 @@ function PcTopNavInner() {
         {NAV_LINKS.map((link) => {
           const active = isNavActive(pathname, link.href);
           const isPaidOrganizerLink =
-            link.href === "/organizer" && isProOrganizer;
+            isOrganizerEntryHref(link.href) && isProOrganizer;
 
           if (isPaidOrganizerLink) {
             return (
@@ -244,8 +248,11 @@ function PcTopNavInner() {
                   : "text-[#3d5c48] hover:bg-[#f4f6f4]"
               }`}
             >
-              {link.icon === "search" && (
-                <Search className="h-3.5 w-3.5" aria-hidden />
+              {link.icon === "event" && (
+                <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+              )}
+              {link.icon === "machi" && (
+                <MapPinned className="h-3.5 w-3.5" aria-hidden />
               )}
               {link.label}
             </Link>

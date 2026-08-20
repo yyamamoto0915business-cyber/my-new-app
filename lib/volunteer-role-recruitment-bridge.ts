@@ -59,6 +59,7 @@ export function getOrCreateStoreRecruitmentForVolunteerRole(
     provisions: role.perksText ?? null,
     notes: volunteerRoleNoteMarker(role.id),
     image_url: null,
+    gallery_images: [],
   });
 }
 

@@ -95,7 +95,7 @@ export function MypageMobileFooterLinks() {
       className="relative z-[1] overflow-hidden rounded-[14px] border border-[#e8e6e0] bg-[#ffffff]"
       style={{ backgroundColor: "#ffffff", boxShadow: "0 2px 12px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04)" }}
     >
-      <div className="flex items-stretch px-1 py-3.5">
+      <div className="flex items-stretch px-1 py-2.5">
         {links.map((link, index) => (
           <Fragment key={link.href}>
             {index > 0 && (

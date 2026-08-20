@@ -32,10 +32,10 @@ export function MobileCtaBanners() {
             募集中のボランティア活動を探せます
           </p>
           <Link
-            href="/volunteer"
+            href="/?kind=volunteer"
             className="mt-1.5 inline-flex w-fit items-center whitespace-nowrap rounded-full bg-[#2f6b4f] px-2 py-1 text-[8px] font-semibold text-white"
           >
-            ボランティアを探す →
+            ボランティアを見る →
           </Link>
         </div>
       </div>
@@ -63,7 +63,7 @@ export function MobileCtaBanners() {
             掲載・募集・参加者管理ができます
           </p>
           <Link
-            href="/organizer"
+            href="/organizer/listings"
             className="mt-1.5 inline-flex w-fit items-center whitespace-nowrap rounded-full bg-[#c8a030] px-2 py-1 text-[8px] font-semibold text-white"
           >
             主催者になる →

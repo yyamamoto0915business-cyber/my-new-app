@@ -210,9 +210,12 @@ function answerDisplay(
       (typeof answers.phone === "string" && answers.phone.trim()) ||
       profile.phone?.trim() ||
       "";
-    return v || "未登録";
+    return v || "未入力";
   }
-  if (field.id === "age") return "プロフィール参照";
+  if (field.id === "age") {
+    const v = typeof answers.age === "string" ? answers.age.trim() : "";
+    return v || "未入力";
+  }
   if (field.id === "portrait") {
     return profile.avatarUrl ? "設定済み" : "未設定";
   }
@@ -518,7 +521,7 @@ export function ApplicationFormMobileView({
           {step === "profile" ? (
             <Card
               title="基本プロフィール"
-              sub="登録情報から取得します"
+              sub="名前は登録情報から。電話・年齢は入力できます"
               icon={<User className="h-3.5 w-3.5 text-[#2B3A6B]" strokeWidth={2} />}
             >
               {profileFields.some((f) => f.id === "name") ? (
@@ -546,21 +549,37 @@ export function ApplicationFormMobileView({
                     <div>
                       <Fl
                         label="電話番号"
-                        auto={phoneField.autoFromProfile}
-                        required={phoneField.required && !phoneField.autoFromProfile}
-                        opt={!phoneField.required && !phoneField.autoFromProfile}
+                        required={phoneField.required}
+                        opt={!phoneField.required}
                       />
-                      <div className="rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[13px] py-[10px] text-[13px] text-[#566358]">
-                        {profile.phone?.trim() || "未登録"}
-                      </div>
+                      <input
+                        type="tel"
+                        value={
+                          typeof answers.phone === "string"
+                            ? answers.phone
+                            : profile.phone || ""
+                        }
+                        onChange={(e) => onChange("phone", e.target.value)}
+                        placeholder="090-0000-0000"
+                        className={inp}
+                      />
                     </div>
                   ) : null}
                   {ageField ? (
                     <div>
-                      <Fl label="年齢" auto />
-                      <div className="rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[13px] py-[10px] text-[13px] text-[#566358]">
-                        プロフィールから参照
-                      </div>
+                      <Fl
+                        label="年齢"
+                        required={ageField.required}
+                        opt={!ageField.required}
+                      />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={typeof answers.age === "string" ? answers.age : ""}
+                        onChange={(e) => onChange("age", e.target.value)}
+                        placeholder="例: 28"
+                        className={inp}
+                      />
                     </div>
                   ) : null}
                 </div>

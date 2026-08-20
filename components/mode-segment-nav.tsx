@@ -5,7 +5,7 @@ import { setModeCookie } from "@/lib/mode-preference";
 import { TopModeTabs, type TopModeTabId } from "@/components/navigation/top-mode-tabs";
 import { getTopModeTabIdFromContext } from "@/lib/top-mode-active";
 
-export type ModeId = "discover" | "volunteer" | "organizer";
+export type ModeId = "event" | "machi" | "organizer";
 
 /** パス名から現在のモードを判定（上部セグメント・下部ホームのactive/href決定用） */
 export function getActiveMode(pathname: string, returnPath?: string | null): ModeId {
@@ -14,13 +14,13 @@ export function getActiveMode(pathname: string, returnPath?: string | null): Mod
 
 /** モード別ホームURL（下部タブのホーム押下先） */
 export function getHomeHrefForMode(mode: ModeId): string {
-  if (mode === "organizer") return "/organizer";
-  if (mode === "volunteer") return "/volunteer";
+  if (mode === "organizer") return "/organizer/listings";
+  if (mode === "machi") return "/posts";
   return "/";
 }
 
 /**
- * 画面上部固定の3択セグメント（探す/ボランティア/主催）
+ * 画面上部固定の3択セグメント（まちの情報/みんなの投稿/主催）
  * スマホで常時表示、ワンタップでモード切替
  */
 export function ModeSegmentNav() {
@@ -28,7 +28,7 @@ export function ModeSegmentNav() {
 
   const handleTabClick = (id: TopModeTabId) => {
     const cookieMode =
-      id === "organizer" ? "ORGANIZER" : id === "volunteer" ? "VOLUNTEER" : "EVENT";
+      id === "organizer" ? "ORGANIZER" : id === "machi" ? "VOLUNTEER" : "EVENT";
     setModeCookie(cookieMode);
   };
 

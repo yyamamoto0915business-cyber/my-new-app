@@ -2,6 +2,7 @@
 
 import type { EventFormData } from "@/lib/events";
 import { EventImageInput } from "@/components/organizer/events/EventImageInput";
+import { EventGalleryImagesInput } from "@/components/organizer/events/EventGalleryImagesInput";
 import { RecurrenceSelector } from "@/components/organizer/events/RecurrenceSelector";
 import { PostPublishFeatures } from "@/components/organizer/events/PostPublishFeatures";
 import { EventFormatSelector } from "@/components/organizer/events/EventFormatSelector";
@@ -36,6 +37,7 @@ import {
   type EventFormStep,
 } from "@/components/organizer/events/event-form-ui";
 import { EventPriceInput } from "@/components/organizer/events/EventPriceInput";
+import { EventFormStoreSelect } from "@/components/organizer/events/EventFormStoreSelect";
 
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
 
@@ -161,11 +163,23 @@ export function EventFormStepContent({
               </div>
               <div className={eventFormFieldM}>
                 <EventFormLabel label="アイキャッチ画像" opt="任意" />
-                <EventImageInput
-                  url={form.imageUrl ?? ""}
-                  onChangeUrl={(url) => setForm((prev) => ({ ...prev, imageUrl: url }))}
-                  alt={form.title || "プレビュー"}
-                />
+                <div className="space-y-2 rounded-[10px] border border-[#ebe8e2] bg-[#fafaf8] p-2">
+                  <EventImageInput
+                    compact
+                    bare
+                    url={form.imageUrl ?? ""}
+                    onChangeUrl={(url) => setForm((prev) => ({ ...prev, imageUrl: url }))}
+                    alt={form.title || "プレビュー"}
+                    hint="一覧は代表画像のみ"
+                  />
+                  <div className="border-t border-[#ebe8e2] pt-2">
+                    <EventGalleryImagesInput
+                      compact
+                      urls={form.galleryImages ?? []}
+                      onChange={(galleryImages) => setForm((prev) => ({ ...prev, galleryImages }))}
+                    />
+                  </div>
+                </div>
               </div>
               <div>
                 <EventFormLabel label="カテゴリー・タグ" opt="任意" />
@@ -243,12 +257,23 @@ export function EventFormStepContent({
           <div className={eventFormPcFieldStack}>
             <div>
               <EventFormLabel label="アイキャッチ画像" opt="任意" />
-              <EventImageInput
-                compact
-                url={form.imageUrl ?? ""}
-                onChangeUrl={(url) => setForm((prev) => ({ ...prev, imageUrl: url }))}
-                alt={form.title || "プレビュー"}
-              />
+              <div className="space-y-2 rounded-[10px] border border-[#ebe8e2] bg-[#fafaf8] p-2">
+                <EventImageInput
+                  compact
+                  bare
+                  url={form.imageUrl ?? ""}
+                  onChangeUrl={(url) => setForm((prev) => ({ ...prev, imageUrl: url }))}
+                  alt={form.title || "プレビュー"}
+                  hint="一覧は代表画像のみ"
+                />
+                <div className="border-t border-[#ebe8e2] pt-2">
+                  <EventGalleryImagesInput
+                    compact
+                    urls={form.galleryImages ?? []}
+                    onChange={(galleryImages) => setForm((prev) => ({ ...prev, galleryImages }))}
+                  />
+                </div>
+              </div>
             </div>
             <div>
               <EventFormLabel label="カテゴリー・特徴タグ" opt="複数選択可" />
@@ -425,6 +450,13 @@ export function EventFormStepContent({
               {showVenue && (
                 <>
                   <div className={eventFormFieldM}>
+                    <EventFormStoreSelect
+                      form={form}
+                      setForm={setForm}
+                      compact
+                    />
+                  </div>
+                  <div className={eventFormFieldM}>
                     <EventFormLabel label="開催場所" required />
                     <input
                       name="location"
@@ -539,6 +571,11 @@ export function EventFormStepContent({
               />
               <EventFormError msg={errors.recurrenceCount} />
             </div>
+            {showVenue && (
+              <div>
+                <EventFormStoreSelect form={form} setForm={setForm} />
+              </div>
+            )}
             {showVenue && (
               <div>
                 <EventFormLabel label="開催場所" required />

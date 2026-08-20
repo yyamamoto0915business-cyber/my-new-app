@@ -10,13 +10,15 @@ import { RegionSettingModal } from "@/components/region/RegionSettingModal";
 import { MapPin, HelpCircle } from "lucide-react";
 import { shouldHidePcGlobalNav } from "@/lib/is-auth-route";
 import { ParticipationPassIcon } from "@/components/pass/ParticipationPassIcon";
+import { MyAlbumIcon } from "@/components/profile/MyAlbumIcon";
+import { prefetchMyPosts } from "@/lib/prefetch-my-posts";
 
 const DESKTOP_NAV_ITEMS = [
   { href: "/", label: "ホーム", icon: "home" },
   { href: "/pass", label: "参加パス", icon: "pass" },
-  { href: "/volunteer", label: "ボランティア", icon: "volunteer" },
+  { href: "/profile/posts", label: "マイアルバム", icon: "album" },
   { href: "/messages", label: "メッセージ", icon: "messages" },
-  { href: "/organizer", label: "主催", icon: "organizer" },
+  { href: "/organizer/listings", label: "主催", icon: "organizer" },
   { href: "/profile", label: "マイページ", icon: "profile" },
 ] as const;
 
@@ -33,12 +35,8 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
     // 画像アイコンはSVGより余白感が出やすいので一回り大きく
     return <ParticipationPassIcon className="h-8 w-8" stroke={stroke} />;
   }
-  if (icon === "volunteer") {
-    return (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-      </svg>
-    );
+  if (icon === "album") {
+    return <MyAlbumIcon className="h-6 w-6" stroke={stroke} />;
   }
   if (icon === "messages") {
     return (
@@ -85,9 +83,12 @@ function NavLink({
   showActiveIndicator?: boolean;
 }) {
   const href = item.href === "/profile" ? "/profile" : item.href;
+  const prefetchAlbum = item.href === "/profile/posts";
   return (
     <Link
       href={href}
+      onTouchStart={prefetchAlbum ? () => void prefetchMyPosts() : undefined}
+      onMouseEnter={prefetchAlbum ? () => void prefetchMyPosts() : undefined}
       className={`relative flex flex-1 flex-col items-center gap-1 text-[13px] transition-colors sm:flex-none sm:w-full sm:px-2 ${
         minTapHeight ? "min-h-[44px] justify-center py-3 sm:py-2" : "py-3 sm:py-2.5"
       } ${isActive ? "text-[#4a9a68] sm:text-[#4a9a68]" : "text-[var(--foreground-muted)] sm:text-[#8a9088]"}`}
@@ -131,6 +132,11 @@ export function BottomNav() {
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
+    if (href === "/organizer/listings") return pathname.startsWith("/organizer");
+    if (href === "/profile/posts") return pathname.startsWith("/profile/posts");
+    if (href === "/profile") {
+      return pathname.startsWith("/profile") && !pathname.startsWith("/profile/posts");
+    }
     return pathname.startsWith(href);
   };
 

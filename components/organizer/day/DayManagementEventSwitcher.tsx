@@ -21,6 +21,7 @@ import {
   type EventFormat,
   type OnlineService,
 } from "@/lib/event-online";
+import { OrganizerCreateSplitButton } from "@/components/organizer/OrganizerCreateSplitButton";
 
 function formatEventDateShort(date: string) {
   const d = new Date(`${date}T12:00:00+09:00`);
@@ -331,16 +332,12 @@ export function DayManagementEventSwitcher({
             </div>
           ) : null}
 
-          <Link
-            href="/organizer/events/new"
+          <OrganizerCreateSplitButton
             className={cn(
-              "inline-flex shrink-0 items-center justify-center gap-1 rounded-lg bg-[#2D7A4F] px-3 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-[#245f3e]",
-              compact ? "min-[900px]:ml-auto" : "w-full min-[900px]:w-auto"
+              "shrink-0",
+              compact ? "min-[900px]:ml-auto min-[900px]:w-[220px]" : "w-full min-[900px]:w-auto",
             )}
-          >
-            <span aria-hidden>＋</span>
-            イベントを作成する
-          </Link>
+          />
         </div>
       </div>
     );

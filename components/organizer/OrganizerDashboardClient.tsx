@@ -9,6 +9,7 @@ import type {
 } from "@/app/api/organizer/dashboard/route";
 import type { PlanSummary } from "@/lib/organizer-plan-summary";
 import { OrganizerManagementHeroBanner } from "@/components/organizer/OrganizerManagementHeroBanner";
+import { OrganizerCreateSplitButton } from "@/components/organizer/OrganizerCreateSplitButton";
 import {
   OrganizerHeroBleed,
   OrganizerPageShell,
@@ -515,25 +516,7 @@ export default function OrganizerDashboardClient() {
           </Link>
         </div>
 
-        <Link
-          href="/organizer/events/new"
-          className="flex w-full items-center justify-center gap-2 rounded-[10px] px-3 py-2.5 text-[13px] font-medium text-white shadow-[0_2px_8px_rgba(74,140,45,0.28)] transition-opacity active:opacity-85 min-[900px]:justify-start min-[900px]:gap-3 min-[900px]:rounded-[12px] min-[900px]:px-4 min-[900px]:py-3 min-[900px]:text-[14px]"
-          style={{ background: "#6BBF3E" }}
-          aria-label="新しいイベントを作成"
-        >
-          <svg className="shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <rect x="3" y="4" width="18" height="18" rx="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-            <line x1="12" y1="14" x2="12" y2="18"/>
-            <line x1="10" y1="16" x2="14" y2="16"/>
-          </svg>
-          <span>新しいイベントを作成</span>
-          <svg className="hidden shrink-0 min-[900px]:block" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={2.5} strokeLinecap="round" aria-hidden>
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </Link>
+        <OrganizerCreateSplitButton />
 
         <div className="grid gap-2 min-[900px]:grid-cols-2 min-[900px]:gap-4 min-[900px]:items-stretch">
         {/* 最近のイベント */}

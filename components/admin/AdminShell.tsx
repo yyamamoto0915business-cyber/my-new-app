@@ -164,7 +164,7 @@ export function AdminSidebar() {
 
       <div className="shrink-0 border-t border-white/10 p-2">
         <Link
-          href="/organizer"
+          href="/organizer/listings"
           className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] text-white/70 transition hover:bg-white/10 hover:text-white"
         >
           ← 主催者ページへ戻る

@@ -32,44 +32,39 @@ export function OrganizerSidebarDashboardIcon({ active }: NavIconProps) {
   );
 }
 
-export function OrganizerSidebarInboxIcon({ active }: NavIconProps) {
+export function OrganizerSidebarListingsIcon({ active }: NavIconProps) {
   const stroke = active ? GREEN : GREEN_MUTED;
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
-      <path
-        d="M3 7.5A2.5 2.5 0 015.5 5h11A2.5 2.5 0 0119 7.5v7A2.5 2.5 0 0116.5 17h-11A2.5 2.5 0 013 14.5v-7z"
-        stroke={stroke}
-        strokeWidth="1.4"
-        strokeLinejoin="round"
-      />
-      <path d="M3 8.5l6.2 4.3a2 2 0 002.2 0L17.5 8.5" stroke={stroke} strokeWidth="1.4" strokeLinecap="round" />
-      <path
-        d="M11 3.5c0-1 .6-1.8 1.2-2.2.4-.3.8-.3 1.2 0 .6.4 1.2 1.2 1.2 2.2"
-        stroke={GREEN}
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-      <path d="M11 3.5v1.2" stroke={GREEN} strokeWidth="1.2" strokeLinecap="round" />
+      <rect x="3" y="3.5" width="16" height="5" rx="1.5" stroke={stroke} strokeWidth="1.4" />
+      <rect x="3" y="10.5" width="16" height="5" rx="1.5" stroke={stroke} strokeWidth="1.4" />
+      <path d="M6 6h4M6 13h6" stroke={stroke} strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="15.5" cy="6" r="1" fill={stroke} />
+      <circle cx="15.5" cy="13" r="1" fill={stroke} />
     </svg>
   );
 }
 
-export function OrganizerSidebarSettingsIcon({ active }: NavIconProps) {
+export function OrganizerSidebarPayoutsIcon({ active }: NavIconProps) {
   const stroke = active ? GREEN : GREEN_MUTED;
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
-      <circle cx="11" cy="11" r="2.6" stroke={stroke} strokeWidth="1.4" />
+      <rect x="2.5" y="5" width="17" height="12" rx="2.2" stroke={stroke} strokeWidth="1.4" />
+      <path d="M2.5 9h17" stroke={stroke} strokeWidth="1.4" />
+      <rect x="5" y="12.5" width="5" height="1.8" rx="0.6" fill={stroke} />
+    </svg>
+  );
+}
+
+export function OrganizerSidebarPlanIcon({ active }: NavIconProps) {
+  const stroke = active ? GREEN : GREEN_MUTED;
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
       <path
-        d="M11 2.5v2.2M11 17.3v2.2M2.5 11h2.2M17.3 11h2.2M4.8 4.8l1.6 1.6M15.6 15.6l1.6 1.6M4.8 17.2l1.6-1.6M15.6 6.4l1.6-1.6"
+        d="M11 3.2l1.7 3.8 4.1.4-3.1 2.8.9 4-3.6-2.1-3.6 2.1.9-4-3.1-2.8 4.1-.4L11 3.2z"
         stroke={stroke}
         strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-      <path
-        d="M11 9.2c-.5.8-.2 1.8.6 2.1.5.2 1 .1 1.4-.2"
-        stroke={GREEN}
-        strokeWidth="1"
-        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

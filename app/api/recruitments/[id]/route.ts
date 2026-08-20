@@ -101,6 +101,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       if (body.provisions !== undefined) updates.provisions = body.provisions as string | null;
       if (body.notes !== undefined) updates.notes = body.notes as string | null;
       if (body.image_url !== undefined) updates.image_url = body.image_url as string | null;
+      if (body.gallery_images !== undefined) {
+        updates.gallery_images = Array.isArray(body.gallery_images)
+          ? (body.gallery_images as unknown[]).filter((x): x is string => typeof x === "string")
+          : [];
+      }
       if (body.application_form_config !== undefined) {
         updates.application_form_config = parseApplicationFormConfig(
           body.application_form_config
@@ -146,6 +151,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     provisions: body.provisions !== undefined ? (body.provisions as string | null) : undefined,
     notes: body.notes !== undefined ? (body.notes as string | null) : undefined,
     image_url: body.image_url !== undefined ? (body.image_url as string | null) : undefined,
+    gallery_images: body.gallery_images !== undefined
+      ? (Array.isArray(body.gallery_images)
+          ? (body.gallery_images as unknown[]).filter((x): x is string => typeof x === "string")
+          : [])
+      : undefined,
     application_form_config:
       body.application_form_config !== undefined
         ? parseApplicationFormConfig(body.application_form_config)

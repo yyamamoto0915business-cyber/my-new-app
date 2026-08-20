@@ -13,6 +13,10 @@ import { ApplicationDetailSheet } from "@/components/organizer/applications/Appl
 import { ApplicationsManagementPcView } from "@/components/organizer/applications/ApplicationsManagementPcView";
 import { ApplicationsManagementMobileView } from "@/components/organizer/applications/ApplicationsManagementMobileView";
 import { OrganizerPageShell } from "@/components/organizer/OrganizerPageShell";
+import {
+  parseApplicationFormConfig,
+  type ApplicationFormConfig,
+} from "@/lib/recruitment-application-form";
 
 type Recruitment = {
   id: string;
@@ -24,6 +28,8 @@ type Recruitment = {
   end_at?: string | null;
   capacity?: number | null;
   roles: { name: string; count: number }[];
+  organizer_id?: string;
+  application_form_config?: ApplicationFormConfig | null;
 };
 
 type BulkMessageResult = {
@@ -98,7 +104,15 @@ function OrganizerRecruitmentDetailContent({
         fetchWithTimeout(`/api/recruitments/${resolvedId}`),
         fetchWithTimeout(`/api/recruitments/${resolvedId}/applications`),
       ]);
-      if (rRes.ok) setRecruitment(await rRes.json());
+      if (rRes.ok) {
+        const raw = await rRes.json();
+        setRecruitment({
+          ...raw,
+          application_form_config: raw.application_form_config
+            ? parseApplicationFormConfig(raw.application_form_config)
+            : null,
+        });
+      }
       if (aRes.ok) {
         const appData = await aRes.json();
         setApplications(Array.isArray(appData) ? appData : []);
@@ -184,6 +198,18 @@ function OrganizerRecruitmentDetailContent({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "on_hold" }),
+      }
+    );
+    if (res.ok) load();
+  };
+
+  const handleCheckIn = async (appId: string) => {
+    const res = await fetchWithTimeout(
+      `/api/recruitments/${resolvedId}/applications/${appId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checked_in_at: true }),
       }
     );
     if (res.ok) load();
@@ -284,7 +310,8 @@ function OrganizerRecruitmentDetailContent({
   const pendingCount = applications.filter((a) => a.status === "pending").length;
   const onHoldCount = applications.filter((a) => a.status === "on_hold").length;
   const acceptedCount = applications.filter(
-    (a) => a.status === "accepted" || a.status === "confirmed"
+    (a) =>
+      a.status === "accepted" || a.status === "confirmed" || a.status === "checked_in"
   ).length;
   const rejectedCount = applications.filter((a) => a.status === "rejected").length;
   const failedApplications = useMemo(() => {
@@ -299,7 +326,10 @@ function OrganizerRecruitmentDetailContent({
       list = list.filter((a) => a.status === "pending" || a.status === "on_hold");
     else if (statusFilter === "on_hold") list = list.filter((a) => a.status === "on_hold");
     else if (statusFilter === "accepted")
-      list = list.filter((a) => a.status === "accepted" || a.status === "confirmed");
+      list = list.filter(
+        (a) =>
+          a.status === "accepted" || a.status === "confirmed" || a.status === "checked_in"
+      );
     else if (statusFilter === "rejected") list = list.filter((a) => a.status === "rejected");
 
     const q = searchQuery.trim().toLowerCase();
@@ -393,6 +423,7 @@ function OrganizerRecruitmentDetailContent({
           endAt={recruitment.end_at}
           capacity={recruitment.capacity}
           roles={recruitment.roles}
+          formConfig={recruitment.application_form_config}
           filteredApplications={filteredApplications}
           total={applications.length}
           pendingCount={pendingCount}
@@ -410,6 +441,7 @@ function OrganizerRecruitmentDetailContent({
           onReject={handleReject}
           onHold={handleHold}
           onChat={handleOpenChat}
+          onCheckIn={handleCheckIn}
           onSaveMemo={handleSaveMemo}
           bulkSending={bulkSending}
           onBulkSend={(content, targetUserIds) => handleBulkMessage(content, targetUserIds)}
@@ -458,7 +490,34 @@ function OrganizerRecruitmentDetailContent({
     </div>
 
       {/* 応募者詳細スライドオーバー */}
-      <ApplicationDetailSheet application={detailApp} onClose={() => setDetailApp(null)} />
+      <ApplicationDetailSheet
+        application={
+          detailApp
+            ? (applications.find((a) => a.id === detailApp.id) ?? detailApp)
+            : null
+        }
+        formConfig={recruitment.application_form_config}
+        recruitmentTimeLabel={(() => {
+          const start =
+            recruitment.start_at && recruitment.start_at.length > 10
+              ? recruitment.start_at.slice(11, 16)
+              : "";
+          const end =
+            recruitment.end_at && recruitment.end_at.length > 10
+              ? recruitment.end_at.slice(11, 16)
+              : "";
+          if (start && end) return `${start} - ${end}`;
+          if (start) return start;
+          return "—";
+        })()}
+        onClose={() => setDetailApp(null)}
+        onAccept={handleAccept}
+        onReject={handleReject}
+        onHold={handleHold}
+        onChat={handleOpenChat}
+        onCheckIn={handleCheckIn}
+        onSaveMemo={handleSaveMemo}
+      />
     </>
   );
 }

@@ -27,8 +27,8 @@ type Step = EventFormStep;
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
 
 const initialForm: EventFormData = {
-  title:"",imageUrl:"",description:"",date:"",startTime:"",endTime:"",
-  location:"",address:"",price:0,priceNote:"",organizerName:"",organizerContact:"",
+  title:"",imageUrl:"",galleryImages:[],description:"",date:"",startTime:"",endTime:"",
+  location:"",address:"",storeId:null,price:0,priceNote:"",organizerName:"",organizerContact:"",
   rainPolicy:"",itemsToBring:[],access:"",childFriendly:false,prefecture:"",city:"",
   area:"",tags:[],sponsorTicketPrices:[],sponsorPerks:{},prioritySlots:0,
   englishGuideAvailable:false,capacity:undefined,requiresRegistration:false,
@@ -171,6 +171,7 @@ function NewEventPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const copyFromId = searchParams.get("copyFrom");
+  const storeIdParam = searchParams.get("storeId");
   const formTopRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState<EventFormData>(initialForm);
@@ -216,6 +217,14 @@ function NewEventPageContent() {
     })();
     return () => { cancelled = true; };
   }, [copyFromId]);
+
+  useEffect(() => {
+    if (!storeIdParam?.trim() || copyFromId) return;
+    setForm((prev) => ({
+      ...prev,
+      storeId: prev.storeId || storeIdParam.trim(),
+    }));
+  }, [storeIdParam, copyFromId]);
 
   useEffect(() => {
     if (!user?.id) return;

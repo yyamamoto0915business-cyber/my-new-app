@@ -5,45 +5,70 @@ import { useSearchParams } from "next/navigation";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { Event } from "@/lib/db/types";
 import type { CategoryKey } from "@/lib/categories";
+import type { StoreRecord } from "@/lib/stores/types";
+import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
 import { getRegionPreference, setRegionPreference } from "@/lib/area-preference-storage";
 import { useRegionPreference } from "@/hooks/use-region-preference";
 import { getCategoryPrefs } from "@/lib/category-preference-storage";
 import {
   searchEvents,
-  filterEventsByPrice,
-  filterEventsByChildFriendly,
   filterEventsByRegion,
   getEventsByDateRange,
 } from "@/lib/events";
 import { getPrimaryCategory, inferCategoryKeys } from "@/lib/inferCategory";
-import { PcDiscoverHero } from "@/components/home/pc/PcDiscoverHero";
-import { PcSearchFiltersPanel } from "@/components/home/pc/PcSearchFiltersPanel";
+import { PcTownBoardHero } from "@/components/home/pc/PcTownBoardHero";
+import {
+  PcTownKindCards,
+  MobileTownKindCards,
+} from "@/components/home/pc/PcTownKindCards";
+import { PcTownSidebar } from "@/components/home/pc/PcTownSidebar";
+import {
+  PcTownFilterBar,
+  type TownTimeRange,
+  type TownSortMode,
+} from "@/components/home/pc/PcTownFilterBar";
+import { PcTownKindColumns } from "@/components/home/pc/PcTownKindColumns";
 import { PcRecommendedRow } from "@/components/home/pc/PcRecommendedRow";
 import { PcPastEventsRow } from "@/components/home/pc/PcPastEventsRow";
-import { PcCtaBanners } from "@/components/home/pc/PcCtaBanners";
-import { MobileDiscoverHero } from "@/components/home/mobile/MobileDiscoverHero";
-import { MobileRegionSection } from "@/components/home/mobile/MobileRegionSection";
-import { MobileCategoryGrid } from "@/components/home/mobile/MobileCategoryGrid";
+import { MobileTownBoardHero } from "@/components/home/mobile/MobileTownBoardHero";
+import { MobileTownFilterBar } from "@/components/home/mobile/MobileTownFilterBar";
 import { MobileRecommendedCarousel } from "@/components/home/mobile/MobileRecommendedCarousel";
+import { MobileWeekendEventsSection } from "@/components/home/mobile/MobileWeekendEventsSection";
 import { MobilePastEventsSection } from "@/components/home/mobile/MobilePastEventsSection";
-import { MobileCtaBanners } from "@/components/home/mobile/MobileCtaBanners";
+import { TownInfoKindFeed } from "@/components/home/TownInfoKindFeed";
+import { TownGallery } from "@/components/home/TownGallery";
+
+const KIND_KEYS = new Set(["all", "event", "store", "volunteer", "kitchen"]);
 
 export function HomeOtonami() {
   const searchParams = useSearchParams();
   const prefecture = searchParams.get("prefecture") ?? "";
   const city = searchParams.get("city") ?? "";
+  const kindParam = searchParams.get("kind") ?? "";
   const { label: savedRegionLabel, preference: savedRegion } = useRegionPreference();
   const effectiveArea = prefecture || city || savedRegionLabel || savedRegion.prefecture;
 
   const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [stores, setStores] = useState<StoreRecord[]>([]);
+  const [volunteers, setVolunteers] = useState<VolunteerRoleWithEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryPrefs, setCategoryPrefsState] = useState<CategoryKey[]>([]);
 
-  // フィルター state
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeChip, setActiveChip] = useState("all");
+  const [activeChip, setActiveChip] = useState(() =>
+    KIND_KEYS.has(kindParam) ? kindParam : "all",
+  );
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedArea, setSelectedArea] = useState("");
+  const [timeRange, setTimeRange] = useState<TownTimeRange>("all");
+  const [sortMode, setSortMode] = useState<TownSortMode>("recommended");
+  const [showEnded, setShowEnded] = useState(false);
+
+  useEffect(() => {
+    if (KIND_KEYS.has(kindParam)) {
+      setActiveChip(kindParam);
+    }
+  }, [kindParam]);
 
   useEffect(() => {
     setCategoryPrefsState(getCategoryPrefs());
@@ -60,10 +85,22 @@ export function HomeOtonami() {
 
   const loadData = useCallback(() => {
     setLoading(true);
-    fetchWithTimeout(`/api/events?limit=100`)
-      .then((r) => r.json())
-      .then((events) => setAllEvents(Array.isArray(events) ? events : []))
-      .catch(() => setAllEvents([]))
+    Promise.all([
+      fetchWithTimeout("/api/events?limit=100")
+        .then((r) => r.json())
+        .catch(() => []),
+      fetchWithTimeout("/api/stores?limit=50")
+        .then((r) => r.json())
+        .catch(() => []),
+      fetchWithTimeout("/api/volunteer/roles")
+        .then((r) => r.json())
+        .catch(() => []),
+    ])
+      .then(([events, storeList, roles]) => {
+        setAllEvents(Array.isArray(events) ? events : []);
+        setStores(Array.isArray(storeList) ? storeList : []);
+        setVolunteers(Array.isArray(roles) ? roles : []);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -71,19 +108,31 @@ export function HomeOtonami() {
     loadData();
   }, [loadData]);
 
+  const isTownKindView =
+    activeChip === "store" || activeChip === "volunteer" || activeChip === "kitchen";
+  const isEventFocused = activeChip === "event";
+
   const hasActiveFilter =
-    searchQuery !== "" || activeChip !== "all" || selectedCategory !== "" || selectedArea !== "";
+    searchQuery !== "" ||
+    (activeChip !== "all" && !isTownKindView) ||
+    selectedCategory !== "" ||
+    selectedArea !== "" ||
+    timeRange !== "all";
+
+  const isDefaultFilters =
+    activeChip === "all" &&
+    searchQuery === "" &&
+    selectedCategory === "" &&
+    selectedArea === "" &&
+    timeRange === "all" &&
+    sortMode === "recommended";
 
   const filteredEvents = useMemo((): Event[] => {
-    if (!hasActiveFilter) return allEvents;
+    if (isTownKindView) return [];
     let result = [...allEvents];
     if (searchQuery) result = searchEvents(result, searchQuery);
-    if (activeChip === "today") result = getEventsByDateRange(result, "today");
-    if (activeChip === "weekend") result = getEventsByDateRange(result, "weekend");
-    if (activeChip === "free") result = filterEventsByPrice(result, "free");
-    if (activeChip === "family") result = filterEventsByChildFriendly(result, true);
-    if (activeChip === "workshop") result = result.filter((e) => getPrimaryCategory(e) === "workshop");
-    if (activeChip === "community") result = result.filter((e) => getPrimaryCategory(e) === "community");
+    if (timeRange === "today") result = getEventsByDateRange(result, "today");
+    if (timeRange === "weekend") result = getEventsByDateRange(result, "weekend");
     if (selectedCategory) {
       result = result.filter((e) => {
         if (selectedCategory === "volunteer") {
@@ -95,17 +144,25 @@ export function HomeOtonami() {
     }
     if (selectedArea) result = filterEventsByRegion(result, selectedArea, undefined);
     return result;
-  }, [allEvents, searchQuery, activeChip, selectedCategory, selectedArea, hasActiveFilter]);
+  }, [
+    allEvents,
+    searchQuery,
+    timeRange,
+    selectedCategory,
+    selectedArea,
+    isTownKindView,
+  ]);
 
   const handleChipClick = useCallback((key: string) => {
-    if (key === "all") {
-      setActiveChip("all");
-      setSelectedCategory("");
-      setSelectedArea("");
-      setSearchQuery("");
-    } else {
-      setActiveChip(key);
-    }
+    setActiveChip((prev) => {
+      const next = prev === key ? "all" : key;
+      if (next === "all") {
+        setSelectedCategory("");
+        setSelectedArea("");
+        setSearchQuery("");
+      }
+      return next;
+    });
   }, []);
 
   const handleSelectCategory = useCallback((key: string) => {
@@ -117,70 +174,137 @@ export function HomeOtonami() {
     setSelectedArea(area);
   }, []);
 
+  const handleResetFilters = useCallback(() => {
+    setActiveChip("all");
+    setSelectedCategory("");
+    setSelectedArea("");
+    setSearchQuery("");
+    setTimeRange("all");
+    setSortMode("recommended");
+  }, []);
+
+
   return (
     <div className="min-h-screen min-[900px]:bg-[#f3f4f1]">
       {/* PC（900px以上） */}
       <main className="mx-auto hidden max-w-[1280px] space-y-4 bg-[#f3f4f1] px-8 py-4 pb-4 min-[900px]:block">
-        <PcDiscoverHero
+        <PcTownBoardHero
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
-          activeChip={activeChip}
-          onChipClick={handleChipClick}
         />
-        <PcSearchFiltersPanel
-          selectedArea={selectedArea}
-          onAreaChange={handleSelectArea}
-          selectedCategory={selectedCategory}
-          onCategoryChange={handleSelectCategory}
-        />
-        <PcRecommendedRow
-          events={allEvents}
-          filteredEvents={filteredEvents}
-          hasActiveFilter={hasActiveFilter}
-          loading={loading}
-          areaPreference={effectiveArea}
-          categoryPrefs={categoryPrefs}
-        />
-        {!hasActiveFilter && (
-          <PcPastEventsRow events={allEvents} loading={loading} />
-        )}
-        <PcCtaBanners />
+        <PcTownKindCards activeChip={activeChip} onChipClick={handleChipClick} />
+
+        <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-4">
+          <div className="min-w-0 space-y-4">
+            <PcTownFilterBar
+              selectedArea={selectedArea}
+              onAreaChange={handleSelectArea}
+              timeRange={timeRange}
+              onTimeRangeChange={setTimeRange}
+              sortMode={sortMode}
+              onSortChange={setSortMode}
+              showEnded={showEnded}
+              onShowEndedChange={setShowEnded}
+              onReset={handleResetFilters}
+              isDefault={isDefaultFilters}
+            />
+            {isTownKindView ? (
+              <TownInfoKindFeed
+                kind={activeChip as "store" | "volunteer" | "kitchen"}
+                searchQuery={searchQuery}
+              />
+            ) : (
+              <>
+                <PcRecommendedRow
+                  events={allEvents}
+                  stores={stores}
+                  volunteers={volunteers}
+                  filteredEvents={filteredEvents}
+                  hasActiveFilter={hasActiveFilter}
+                  eventOnlyFilter={isEventFocused}
+                  loading={loading}
+                  areaPreference={effectiveArea}
+                  categoryPrefs={categoryPrefs}
+                  searchQuery={searchQuery}
+                  selectedArea={selectedArea}
+                  title="今、まちで見つかる"
+                  columns={4}
+                  hideTabs
+                  sortMode={sortMode}
+                  includeEnded={showEnded}
+                />
+                {activeChip === "all" && !hasActiveFilter && (
+                  <PcTownKindColumns
+                    events={allEvents}
+                    stores={stores}
+                    volunteers={volunteers}
+                    loading={loading}
+                    includeEnded={showEnded}
+                    onChipClick={handleChipClick}
+                  />
+                )}
+              </>
+            )}
+          </div>
+
+          <PcTownSidebar
+            events={allEvents}
+            stores={stores}
+            volunteers={volunteers}
+            loading={loading}
+          />
+        </div>
+
+        <PcPastEventsRow events={allEvents} loading={loading} />
+        <TownGallery />
       </main>
 
-      {/* モバイル（モックアップ準拠） */}
+      {/* モバイル */}
       <main className="w-full space-y-2 bg-[#f7fbf8] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1 min-[900px]:hidden sm:max-w-none">
-        <MobileDiscoverHero
+        <MobileTownBoardHero
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
-          activeChip={activeChip}
-          onChipClick={handleChipClick}
         />
-        <MobileRecommendedCarousel
-          events={allEvents}
-          filteredEvents={filteredEvents}
-          hasActiveFilter={hasActiveFilter}
-          loading={loading}
-          areaPreference={effectiveArea}
-          categoryPrefs={categoryPrefs}
+        <MobileTownKindCards activeChip={activeChip} onChipClick={handleChipClick} />
+        <MobileTownFilterBar
+          selectedCategory={selectedCategory}
+          onCategoryChange={handleSelectCategory}
+          selectedArea={selectedArea}
+          onAreaChange={handleSelectArea}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          sortMode={sortMode}
+          onSortChange={setSortMode}
+          onReset={handleResetFilters}
+          isDefault={isDefaultFilters}
         />
-        {!hasActiveFilter && (
-          <MobilePastEventsSection events={allEvents} loading={loading} />
-        )}
-        <section aria-label="カテゴリと地域で探す" className="mg-mobile-section space-y-2.5">
-          <MobileCategoryGrid
-            embedded
-            selectedCategory={selectedCategory}
-            onSelectCategory={handleSelectCategory}
+        {isTownKindView ? (
+          <TownInfoKindFeed
+            kind={activeChip as "store" | "volunteer" | "kitchen"}
+            searchQuery={searchQuery}
           />
-          <div className="border-t border-[#eef2ef] pt-2">
-            <MobileRegionSection
-              embedded
+        ) : (
+          <>
+            <MobileRecommendedCarousel
+              events={allEvents}
+              stores={stores}
+              volunteers={volunteers}
+              filteredEvents={filteredEvents}
+              hasActiveFilter={hasActiveFilter}
+              eventOnlyFilter={isEventFocused}
+              loading={loading}
+              areaPreference={effectiveArea}
+              categoryPrefs={categoryPrefs}
+              searchQuery={searchQuery}
               selectedArea={selectedArea}
-              onSelectArea={handleSelectArea}
             />
-          </div>
-        </section>
-        <MobileCtaBanners />
+            {activeChip === "all" && !hasActiveFilter && (
+              <MobileWeekendEventsSection events={allEvents} loading={loading} />
+            )}
+            <MobilePastEventsSection events={allEvents} loading={loading} />
+            <TownGallery />
+          </>
+        )}
       </main>
     </div>
   );

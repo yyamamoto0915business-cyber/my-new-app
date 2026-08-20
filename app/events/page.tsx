@@ -108,12 +108,17 @@ function EventsPageContent() {
   const { label: regionLabel } = useRegionPreference();
 
   // PC のみ一覧をデフォルトに（モバイルはモック準拠のリスト UI）
+  // ?view=map のときは地図を開く
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
+    if (searchParams.get("view") === "map") {
+      setView("map");
+      return;
+    }
     if (window.matchMedia("(min-width: 900px)").matches) {
       setView("list");
     }
-  }, []);
+  }, [searchParams]);
 
   const handleTagsChange = useCallback(
     (tags: string[]) => {

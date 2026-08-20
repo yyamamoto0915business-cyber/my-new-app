@@ -1,18 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUnreadCount } from "@/hooks/use-unread-count";
-import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 import { isAuthRoute } from "@/lib/is-auth-route";
 import { cn } from "@/lib/utils";
 import { prefetchMypageSummary } from "@/lib/prefetch-mypage-summary";
+import { prefetchMyPosts } from "@/lib/prefetch-my-posts";
+import { MyAlbumIcon } from "@/components/profile/MyAlbumIcon";
 
 const MOBILE_ITEMS = [
   { id: "home" as const, href: "/", label: "ホーム", icon: "home" },
-  { id: "discover" as const, href: "/events", label: "探す", icon: "discover" },
+  { id: "album" as const, href: "/profile/posts", label: "マイアルバム", icon: "album" },
   { id: "checkin" as const, href: "/checkin", label: "チェックイン", icon: "checkin" },
   { id: "messages" as const, href: "/messages", label: "チャット", icon: "messages" },
   { id: "profile" as const, href: "/profile", label: "マイページ", icon: "profile" },
@@ -41,12 +43,8 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
       </svg>
     );
   }
-  if (icon === "discover") {
-    return (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    );
+  if (icon === "album") {
+    return <MyAlbumIcon className="h-5 w-5" stroke={stroke} />;
   }
   if (icon === "profile") {
     return (
@@ -58,39 +56,50 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
   return null;
 }
 
-/** モバイル用5項目ナビ（ホーム/探す/チェックイン/チャット/マイページ）。役割切替は上部セグメントで行う。 */
+/** モバイル用5項目ナビ（ホーム/マイアルバム/チェックイン/チャット/マイページ）。役割切替は上部セグメントで行う。 */
 export function MobileBottomNav() {
   /** 初回から DOM に Link を出す（SSR 含む）→ ビューポート内プリフェッチが効き、モバイルのタップが速くなりやすい */
   const pathname = usePathname() ?? "";
   const authRoute = isAuthRoute(pathname);
   const unreadCount = useUnreadCount(!authRoute);
+  /** pathname 依存の active 表示はマウント後に揃える（SSR/CSR の不一致を防ぐ） */
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   const items = MOBILE_ITEMS;
 
   const getHref = (item: (typeof MOBILE_ITEMS)[number]) => item.href;
 
   const isActive = (item: (typeof MOBILE_ITEMS)[number]) => {
+    if (!hydrated) return false;
     if (item.id === "home") {
       return pathname === "/";
     }
-    if (item.id === "discover") {
-      if (pathname && isOrganizerDashboardPath(pathname)) return false;
-      if (pathname?.startsWith("/volunteer")) return false;
-      return pathname?.startsWith("/events") ?? false;
+    if (item.id === "album") return pathname?.startsWith("/profile/posts") ?? false;
+    if (item.id === "profile") {
+      return (
+        (pathname?.startsWith("/profile") ?? false) &&
+        !pathname?.startsWith("/profile/posts")
+      );
     }
-    if (item.id === "messages") return pathname?.startsWith("/messages");
-    if (item.id === "checkin") return pathname?.startsWith("/checkin");
-    return pathname?.startsWith(item.href) ?? false;
+    /** messages / checkin は href がそのままプレフィックスになる */
+    return pathname.startsWith(item.href);
   };
 
   const showBadge = (icon: string) =>
-    (icon === "profile" || icon === "messages") && unreadCount > 0;
+    hydrated &&
+    (icon === "profile" || icon === "messages") &&
+    unreadCount > 0;
 
   if (
     authRoute ||
     isMessagesConversationRoute(pathname) ||
     isProfileEditRoute(pathname) ||
     pathname === "/application-form-preview" ||
+    pathname === "/applications-confirm-preview" ||
     pathname.includes("/application-form")
   ) {
     return null;
@@ -101,6 +110,7 @@ export function MobileBottomNav() {
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#dde9e1] bg-[#f7fbf8]/98 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_16px_rgba(22,56,40,0.05)] backdrop-blur-sm min-[900px]:hidden"
       aria-label="モバイルナビゲーション"
       role="navigation"
+      suppressHydrationWarning
     >
       <div className="flex w-full items-stretch justify-around gap-0 px-1">
         {items.map((item) => {
@@ -111,19 +121,33 @@ export function MobileBottomNav() {
             key={item.id}
             href={href}
             prefetch
-            onTouchStart={item.id === "profile" ? () => void prefetchMypageSummary() : undefined}
-            onMouseEnter={item.id === "profile" ? () => void prefetchMypageSummary() : undefined}
+            onTouchStart={
+              item.id === "profile"
+                ? () => void prefetchMypageSummary()
+                : item.id === "album"
+                  ? () => void prefetchMyPosts()
+                  : undefined
+            }
+            onMouseEnter={
+              item.id === "profile"
+                ? () => void prefetchMypageSummary()
+                : item.id === "album"
+                  ? () => void prefetchMyPosts()
+                  : undefined
+            }
             aria-current={active ? "page" : undefined}
             className={cn(
               "relative mx-0.5 flex min-h-[48px] flex-1 touch-manipulation flex-col items-center justify-center gap-px px-0.5 py-1 text-[10px] transition-colors",
               active ? "text-[#2f7d4e]" : "text-[#7a8a80]"
             )}
+            suppressHydrationWarning
           >
             <span
               className={cn(
                 "relative inline-flex items-center justify-center rounded-full px-3 py-1",
                 active && "bg-[#eef6f2]"
               )}
+              suppressHydrationWarning
             >
               <NavIcon icon={item.icon} active={active} />
               {showBadge(item.icon) && (

@@ -1,0 +1,462 @@
+import type { MyPostItem } from "@/app/api/me/posts/route";
+import type { CommunityPost } from "@/lib/posts/mock-feed";
+
+function demoImage(seed: string) {
+  return `https://picsum.photos/seed/mg-album-${seed}/800/600`;
+}
+
+/**
+ * マイアルバムのデモ表示用サンプル投稿（12件・4〜8月）。
+ * 実投稿が 0〜1 件のときだけフォールバックとして表示する。
+ */
+export const MY_POSTS_DEMO: MyPostItem[] = [
+  // 8月（5件）
+  {
+    id: "demo-08-1",
+    title: "地域の夏まつり 2026",
+    imageUrl: demoImage("natsu"),
+    mediaType: "image",
+    category: "event",
+    categoryLabel: "イベント",
+    status: "public",
+    dateLabel: "2026/8/10",
+    createdAt: "2026-08-10T19:20:00+09:00",
+    likeCount: 23,
+    commentCount: 6,
+    viewCount: 156,
+  },
+  {
+    id: "demo-08-2",
+    title: "カフェ アオノハコの新メニュー",
+    imageUrl: demoImage("cafe"),
+    mediaType: "image",
+    category: "shop",
+    categoryLabel: "お店",
+    status: "public",
+    dateLabel: "2026/8/6",
+    createdAt: "2026-08-06T11:05:00+09:00",
+    likeCount: 18,
+    commentCount: 3,
+    viewCount: 98,
+  },
+  {
+    id: "demo-08-3",
+    title: "週末限定！クレープ屋さん",
+    imageUrl: demoImage("crepe"),
+    mediaType: "image",
+    category: "kitchen",
+    categoryLabel: "キッチンカー",
+    status: "public",
+    dateLabel: "2026/8/3",
+    createdAt: "2026-08-03T13:40:00+09:00",
+    likeCount: 31,
+    commentCount: 9,
+    viewCount: 203,
+  },
+  {
+    id: "demo-08-4",
+    title: "公園清掃ボランティアを行いました！",
+    imageUrl: demoImage("clean"),
+    mediaType: "image",
+    category: "spot",
+    categoryLabel: "ボランティア",
+    status: "public",
+    dateLabel: "2026/8/1",
+    createdAt: "2026-08-01T09:15:00+09:00",
+    likeCount: 14,
+    commentCount: 2,
+    viewCount: 76,
+  },
+  {
+    id: "demo-08-5",
+    title: "花火大会が最高でした",
+    imageUrl: demoImage("hanabi"),
+    mediaType: "image",
+    category: "scenery",
+    categoryLabel: "日常",
+    status: "public",
+    dateLabel: "2026/8/1",
+    createdAt: "2026-08-01T21:30:00+09:00",
+    likeCount: 28,
+    commentCount: 5,
+    viewCount: 189,
+  },
+  // 7月（4件）
+  {
+    id: "demo-07-1",
+    title: "近所の桜がきれいでした",
+    imageUrl: demoImage("sakura"),
+    mediaType: "image",
+    category: "scenery",
+    categoryLabel: "日常",
+    status: "public",
+    dateLabel: "2026/7/15",
+    createdAt: "2026-07-15T08:10:00+09:00",
+    likeCount: 20,
+    commentCount: 4,
+    viewCount: 112,
+  },
+  {
+    id: "demo-07-2",
+    title: "まちのパン屋さん「こむぎ」",
+    imageUrl: demoImage("bread"),
+    mediaType: "image",
+    category: "shop",
+    categoryLabel: "お店",
+    status: "public",
+    dateLabel: "2026/7/12",
+    createdAt: "2026-07-12T10:00:00+09:00",
+    likeCount: 15,
+    commentCount: 2,
+    viewCount: 91,
+  },
+  {
+    id: "demo-07-3",
+    title: "ナイトマーケットに出店！",
+    imageUrl: demoImage("night"),
+    mediaType: "image",
+    category: "event",
+    categoryLabel: "イベント",
+    status: "public",
+    dateLabel: "2026/7/8",
+    createdAt: "2026-07-08T18:45:00+09:00",
+    likeCount: 22,
+    commentCount: 7,
+    viewCount: 134,
+  },
+  {
+    id: "demo-07-4",
+    title: "夕焼けがきれいな日",
+    imageUrl: demoImage("sunset"),
+    mediaType: "image",
+    category: "scenery",
+    categoryLabel: "日常",
+    status: "public",
+    dateLabel: "2026/7/2",
+    createdAt: "2026-07-02T17:55:00+09:00",
+    likeCount: 10,
+    commentCount: 1,
+    viewCount: 64,
+  },
+  // 6月（3件）
+  {
+    id: "demo-06-1",
+    title: "あじさいが見頃です",
+    imageUrl: demoImage("ajisai"),
+    mediaType: "image",
+    category: "scenery",
+    categoryLabel: "日常",
+    status: "public",
+    dateLabel: "2026/6/18",
+    createdAt: "2026-06-18T09:30:00+09:00",
+    likeCount: 17,
+    commentCount: 3,
+    viewCount: 88,
+  },
+  {
+    id: "demo-06-2",
+    title: "朝市で野菜を買いました",
+    imageUrl: demoImage("market"),
+    mediaType: "image",
+    category: "shop",
+    categoryLabel: "お店",
+    status: "public",
+    dateLabel: "2026/6/9",
+    createdAt: "2026-06-09T08:20:00+09:00",
+    likeCount: 12,
+    commentCount: 2,
+    viewCount: 70,
+  },
+  {
+    id: "demo-06-3",
+    title: "初夏のマルシェに行ってきた",
+    imageUrl: demoImage("marche"),
+    mediaType: "image",
+    category: "event",
+    categoryLabel: "イベント",
+    status: "public",
+    dateLabel: "2026/6/1",
+    createdAt: "2026-06-01T12:00:00+09:00",
+    likeCount: 19,
+    commentCount: 4,
+    viewCount: 103,
+  },
+  // 5月（2件）
+  {
+    id: "demo-05-1",
+    title: "新緑の散歩道",
+    imageUrl: demoImage("green"),
+    mediaType: "image",
+    category: "scenery",
+    categoryLabel: "日常",
+    status: "public",
+    dateLabel: "2026/5/20",
+    createdAt: "2026-05-20T15:10:00+09:00",
+    likeCount: 13,
+    commentCount: 1,
+    viewCount: 61,
+  },
+  {
+    id: "demo-05-2",
+    title: "地域の朝ヨガ体験",
+    imageUrl: demoImage("yoga"),
+    mediaType: "image",
+    category: "event",
+    categoryLabel: "イベント",
+    status: "public",
+    dateLabel: "2026/5/6",
+    createdAt: "2026-05-06T07:30:00+09:00",
+    likeCount: 16,
+    commentCount: 3,
+    viewCount: 82,
+  },
+  // 4月（1件）
+  {
+    id: "demo-04-1",
+    title: "満開の桜並木を歩いて",
+    imageUrl: demoImage("sakura2"),
+    mediaType: "image",
+    category: "scenery",
+    categoryLabel: "日常",
+    status: "public",
+    dateLabel: "2026/4/4",
+    createdAt: "2026-04-04T10:40:00+09:00",
+    likeCount: 25,
+    commentCount: 5,
+    viewCount: 141,
+  },
+  // 秋（9〜11月・3件）
+  {
+    id: "demo-09-1",
+    title: "秋祭りと灯籠流し",
+    imageUrl: demoImage("aki-matsuri"),
+    mediaType: "image",
+    category: "event",
+    categoryLabel: "イベント",
+    status: "public",
+    dateLabel: "2026/9/13",
+    createdAt: "2026-09-13T18:30:00+09:00",
+    likeCount: 27,
+    commentCount: 6,
+    viewCount: 165,
+  },
+  {
+    id: "demo-10-1",
+    title: "まちの焼き菓子店めぐり",
+    imageUrl: demoImage("yakigashi"),
+    mediaType: "image",
+    category: "shop",
+    categoryLabel: "お店",
+    status: "public",
+    dateLabel: "2026/10/4",
+    createdAt: "2026-10-04T14:20:00+09:00",
+    likeCount: 21,
+    commentCount: 4,
+    viewCount: 118,
+  },
+  {
+    id: "demo-11-1",
+    title: "紅葉ウォーク 2026",
+    imageUrl: demoImage("koyo"),
+    mediaType: "image",
+    category: "scenery",
+    categoryLabel: "日常",
+    status: "public",
+    dateLabel: "2026/11/15",
+    createdAt: "2026-11-15T11:05:00+09:00",
+    likeCount: 33,
+    commentCount: 7,
+    viewCount: 228,
+  },
+  // 冬（前年12月＋1・2月・3件）
+  {
+    id: "demo-12-1",
+    title: "冬のイルミネーション",
+    imageUrl: demoImage("illumi"),
+    mediaType: "image",
+    category: "event",
+    categoryLabel: "イベント",
+    status: "public",
+    dateLabel: "2025/12/20",
+    createdAt: "2025-12-20T18:45:00+09:00",
+    likeCount: 36,
+    commentCount: 8,
+    viewCount: 240,
+  },
+  {
+    id: "demo-01-1",
+    title: "あたたかい時間",
+    imageUrl: demoImage("atatakai"),
+    mediaType: "image",
+    category: "scenery",
+    categoryLabel: "日常",
+    status: "public",
+    dateLabel: "2026/1/11",
+    createdAt: "2026-01-11T10:15:00+09:00",
+    likeCount: 17,
+    commentCount: 2,
+    viewCount: 112,
+  },
+  {
+    id: "demo-02-1",
+    title: "冬のおすすめメニュー",
+    imageUrl: demoImage("fuyu-menu"),
+    mediaType: "image",
+    category: "shop",
+    categoryLabel: "お店",
+    status: "public",
+    dateLabel: "2026/2/8",
+    createdAt: "2026-02-08T12:30:00+09:00",
+    likeCount: 14,
+    commentCount: 3,
+    viewCount: 88,
+  },
+];
+
+type DemoPostDetail = {
+  body: string;
+  areaLabel: string;
+  tags: string[];
+};
+
+const DEMO_POST_DETAILS: Record<string, DemoPostDetail> = {
+  "demo-08-1": {
+    body: "提灯の灯りと太鼓の音。毎年たのしみにしている夏まつり、今年も家族で出かけました。",
+    areaLabel: "中町商店街",
+    tags: ["夏まつり", "夜店"],
+  },
+  "demo-08-2": {
+    body: "夏限定のレモンタルトをいただきました。窓辺の席から見える緑がきれいで、つい長居してしまいます。",
+    areaLabel: "駅前",
+    tags: ["カフェ巡り", "スイーツ"],
+  },
+  "demo-08-3": {
+    body: "河川敷に出ていたクレープのキッチンカー。焼きたての生地の香りに誘われて並びました。",
+    areaLabel: "川沿い公園",
+    tags: ["キッチンカー", "週末"],
+  },
+  "demo-08-4": {
+    body: "朝の涼しいうちに、みんなで公園のごみ拾い。終わったあとの芝生がとても気持ちよかったです。",
+    areaLabel: "みどり公園",
+    tags: ["ボランティア", "地域清掃"],
+  },
+  "demo-08-5": {
+    body: "土手に座って見上げた花火。音が体にひびいて、夏がきたなと思いました。",
+    areaLabel: "河川敷",
+    tags: ["花火", "夏の記録"],
+  },
+  "demo-07-1": {
+    body: "散歩コースの並木道。季節ごとに表情が変わるので、いつも同じ場所で一枚撮っています。",
+    areaLabel: "並木通り",
+    tags: ["散歩", "日常"],
+  },
+  "demo-07-2": {
+    body: "しずかな路地にあるパン屋さん。焼き上がりの時間に合わせて行くのがおすすめです。",
+    areaLabel: "西小路",
+    tags: ["パン", "お気に入り"],
+  },
+  "demo-07-3": {
+    body: "はじめてのナイトマーケット出店。声をかけてくださった方が多くて、うれしい夜になりました。",
+    areaLabel: "駅前広場",
+    tags: ["マーケット", "出店"],
+  },
+  "demo-07-4": {
+    body: "帰り道でふと見上げた空。なんでもない夕方が、きゅうに特別に見える日があります。",
+    areaLabel: "坂の上",
+    tags: ["夕焼け", "日常"],
+  },
+  "demo-06-1": {
+    body: "雨のあとのあじさいは色が深くなる気がします。傘をさして、ゆっくりひとまわり。",
+    areaLabel: "山手の坂道",
+    tags: ["あじさい", "梅雨"],
+  },
+  "demo-06-2": {
+    body: "朝市でとれたての野菜を。育てた方のお話を聞けるのが、ここのたのしみです。",
+    areaLabel: "広場の朝市",
+    tags: ["朝市", "地元野菜"],
+  },
+  "demo-06-3": {
+    body: "初夏のマルシェへ。焼き菓子と小さな花の苗を買って帰りました。",
+    areaLabel: "けやき広場",
+    tags: ["マルシェ", "おでかけ"],
+  },
+  "demo-05-1": {
+    body: "木の間から光がこぼれる道。歩くだけで気持ちがほどけていきます。",
+    areaLabel: "遊歩道",
+    tags: ["新緑", "散歩"],
+  },
+  "demo-05-2": {
+    body: "芝生の上での朝ヨガ。鳥の声を聞きながら深呼吸すると、一日がやさしく始まります。",
+    areaLabel: "みどり公園",
+    tags: ["朝ヨガ", "地域イベント"],
+  },
+  "demo-04-1": {
+    body: "満開の桜並木をゆっくり歩きました。花びらが風に舞う時間が、いちばん好きです。",
+    areaLabel: "川沿いの桜並木",
+    tags: ["桜", "春の記録"],
+  },
+  "demo-09-1": {
+    body: "夜の川辺に浮かぶ灯籠がきれいでした。夏の終わりと秋のはじまりを感じる夜。",
+    areaLabel: "河川敷",
+    tags: ["秋祭り", "灯籠"],
+  },
+  "demo-10-1": {
+    body: "点在する焼き菓子店を食べ歩き。スコーンとフィナンシェをおみやげに。",
+    areaLabel: "旧市街",
+    tags: ["お菓子", "食べ歩き"],
+  },
+  "demo-11-1": {
+    body: "色づいた並木道をゆっくり歩きました。足元の落ち葉の音も心地よくて。",
+    areaLabel: "けやき並木",
+    tags: ["紅葉", "散歩"],
+  },
+  "demo-12-1": {
+    body: "まちがやさしい光に包まれる季節。家族で見に行ってきました。",
+    areaLabel: "駅前広場",
+    tags: ["イルミネーション", "冬"],
+  },
+  "demo-01-1": {
+    body: "寒い日はあたたかい飲み物を片手に。窓の外の景色をながめる静かな時間。",
+    areaLabel: "喫茶ひだまり",
+    tags: ["冬", "日常"],
+  },
+  "demo-02-1": {
+    body: "体があたたまる冬限定メニューをいただきました。根菜のスープが絶品。",
+    areaLabel: "食堂あおば",
+    tags: ["冬メニュー", "お店"],
+  },
+};
+
+/** アルバムカード用の本文。実投稿は body、デモは詳細テーブルから補う */
+export function excerptForMyPost(post: MyPostItem): string {
+  const own = post.body?.trim();
+  if (own) return own;
+  return DEMO_POST_DETAILS[post.id]?.body ?? "";
+}
+
+/**
+ * デモ投稿を公開詳細ページで表示できる形に変換する。
+ * 実データが見つからないときのフォールバックとして使う。
+ */
+export function findDemoCommunityPost(id: string): CommunityPost | null {
+  const item = MY_POSTS_DEMO.find((post) => post.id === id);
+  if (!item) return null;
+
+  const detail = DEMO_POST_DETAILS[item.id];
+  return {
+    id: item.id,
+    category: item.category,
+    categoryLabel: item.categoryLabel,
+    title: item.title,
+    body: detail?.body ?? "",
+    mediaType: item.mediaType,
+    imageUrl: item.imageUrl,
+    authorName: "あなた",
+    authorAvatarUrl: null,
+    areaLabel: detail?.areaLabel ?? "",
+    postedAtLabel: item.dateLabel,
+    likeCount: item.likeCount,
+    commentCount: item.commentCount,
+    tags: detail?.tags ?? [],
+  };
+}

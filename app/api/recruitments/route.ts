@@ -122,6 +122,9 @@ export async function POST(request: NextRequest) {
         provisions: typeof body.provisions === "string" ? body.provisions : null,
         notes: typeof body.notes === "string" ? body.notes : null,
         image_url: typeof body.image_url === "string" ? body.image_url : null,
+        gallery_images: Array.isArray(body.gallery_images)
+          ? (body.gallery_images as unknown[]).filter((x): x is string => typeof x === "string")
+          : [],
         event_id: typeof body.event_id === "string" ? body.event_id : null,
         type: typeof body.type === "string" ? body.type : "volunteer",
         application_form_config:
@@ -165,6 +168,9 @@ export async function POST(request: NextRequest) {
     provisions: typeof body.provisions === "string" ? body.provisions : null,
     notes: typeof body.notes === "string" ? body.notes : null,
     image_url: typeof body.image_url === "string" ? body.image_url : null,
+    gallery_images: Array.isArray(body.gallery_images)
+      ? (body.gallery_images as unknown[]).filter((x): x is string => typeof x === "string")
+      : [],
     application_form_config:
       body.application_form_config !== undefined
         ? parseApplicationFormConfig(body.application_form_config)

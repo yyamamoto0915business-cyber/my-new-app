@@ -12,7 +12,7 @@ type Props = {
 export function RecruitmentPublishSuccess({ recruitmentId, isPreview = false }: Props) {
   const hasPublicPage =
     recruitmentId.length > 0 && recruitmentId !== "preview";
-  const publicHref = hasPublicPage ? `/volunteer/${recruitmentId}` : "/volunteer";
+  const publicHref = hasPublicPage ? `/volunteer/${recruitmentId}` : "/?kind=volunteer";
 
   return (
     <div className="mx-auto w-full max-w-md px-1 py-2 min-[900px]:py-6">

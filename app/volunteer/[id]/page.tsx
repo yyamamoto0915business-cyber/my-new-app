@@ -141,7 +141,7 @@ export default function VolunteerDetailPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#F5F8F5]">
         <p className="text-[13px] text-red-600">{error ?? "募集が見つかりません"}</p>
-        <Link href="/volunteer" className="text-[13px] text-[#2D7A4F] underline">
+        <Link href="/?kind=volunteer" className="text-[13px] text-[#2D7A4F] underline">
           一覧に戻る
         </Link>
       </div>

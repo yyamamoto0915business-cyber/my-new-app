@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
-  CalendarDays,
-  Handshake,
   Heart,
+  Megaphone,
+  MessagesSquare,
+  Search,
   ShieldCheck,
-  Sprout,
   Users,
 } from "lucide-react";
 
@@ -17,51 +17,69 @@ export const WELCOME_ROLE_CARDS: {
   title: string;
   mobileTitle: string;
   desc: ReactNode;
-  mobileDesc: string;
+  mobileDesc: ReactNode;
   buttonLabel: string;
   href: string;
 }[] = [
   {
-    Icon: CalendarDays,
+    Icon: Search,
     iconAccent: "sky",
-    title: "イベントを探したい",
-    mobileTitle: "イベントを探す",
+    title: "まちの情報を探したい",
+    mobileTitle: "まちの情報",
     desc: (
       <>
-        <span style={{ whiteSpace: "nowrap" }}>地域で開催されるイベントを</span>
+        <span style={{ whiteSpace: "nowrap" }}>イベント・店舗・募集を</span>
         <br />
-        <span style={{ whiteSpace: "nowrap" }}>見つけて参加できます。</span>
+        <span style={{ whiteSpace: "nowrap" }}>まとめて探せます。</span>
       </>
     ),
-    mobileDesc: "地域のイベントに参加できます",
-    buttonLabel: "イベントを見る",
+    mobileDesc: (
+      <>
+        <span style={{ whiteSpace: "nowrap" }}>イベントや店舗、</span>
+        <br />
+        <span style={{ whiteSpace: "nowrap" }}>募集を探せます</span>
+      </>
+    ),
+    buttonLabel: "まちの情報を見る",
     href: "/",
   },
   {
-    Icon: Handshake,
+    Icon: MessagesSquare,
     iconAccent: "warm",
-    title: "募集を見たい",
-    mobileTitle: "募集を見る",
+    title: "みんなの投稿を見たい",
+    mobileTitle: "みんなの投稿",
     desc: (
       <>
-        <span style={{ whiteSpace: "nowrap" }}>ボランティアやまちおこしの</span>
+        <span style={{ whiteSpace: "nowrap" }}>地域のみんなの投稿から、</span>
         <br />
-        <span style={{ whiteSpace: "nowrap" }}>募集を見つけられます。</span>
+        <span style={{ whiteSpace: "nowrap" }}>街の魅力を見つけられます。</span>
       </>
     ),
-    mobileDesc: "ボランティア活動を探せます",
-    buttonLabel: "募集を見る",
-    href: "/volunteer",
+    mobileDesc: (
+      <>
+        <span style={{ whiteSpace: "nowrap" }}>みんなの投稿で</span>
+        <br />
+        <span style={{ whiteSpace: "nowrap" }}>街の魅力を見る</span>
+      </>
+    ),
+    buttonLabel: "みんなの投稿を見る",
+    href: "/posts",
   },
   {
-    Icon: Sprout,
+    Icon: Megaphone,
     iconAccent: "leaf",
     title: "イベントを掲載したい",
     mobileTitle: "掲載する",
     desc: "イベントを開いたり募集を掲載できます。",
-    mobileDesc: "イベントや募集を掲載できます",
+    mobileDesc: (
+      <>
+        <span style={{ whiteSpace: "nowrap" }}>イベントや募集を</span>
+        <br />
+        <span style={{ whiteSpace: "nowrap" }}>掲載できます</span>
+      </>
+    ),
     buttonLabel: "使い方を見る",
-    href: "/auth?next=/organizer",
+    href: "/auth?next=/organizer/listings",
   },
 ];
 

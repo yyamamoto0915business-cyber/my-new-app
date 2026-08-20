@@ -126,9 +126,9 @@ export function DiscoverHeroLabel({ size = "mobile" }: { size?: "mobile" | "pc" 
           strokeWidth={2.5}
           aria-hidden
         />
-        イベントを探す
+        まちの情報を探す
       </p>
-      <LabelUnderline className={cn(isPc ? "mt-0.5 h-1.5 w-[7rem]" : "mt-px h-1.5 w-[5.75rem]")} />
+      <LabelUnderline className={cn(isPc ? "mt-0.5 h-1.5 w-[7.5rem]" : "mt-px h-1.5 w-[6.25rem]")} />
     </div>
   );
 }
@@ -171,7 +171,7 @@ export function DiscoverHeroCatchphrase({ size = "mobile", className, hideLabel 
         >
           <span className="shrink-0">まちの</span>
           <span className="relative shrink-0 text-[#D97706]">
-            出来事
+            魅力
             <SparkRays
               color="#E8B84A"
               className={cn(
@@ -208,7 +208,7 @@ export function DiscoverHeroCatchphrase({ size = "mobile", className, hideLabel 
             aria-hidden
           />
           <span>
-            地域でひらかれる催しや活動を、
+            イベント・店舗・募集を、
             <span className="relative inline pb-1">
               見つけられます。
               <DottedLeafUnderline

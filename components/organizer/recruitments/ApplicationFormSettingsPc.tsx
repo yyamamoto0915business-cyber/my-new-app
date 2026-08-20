@@ -184,7 +184,10 @@ export function ApplicationFormSettingsPc({ config, onChange }: Props) {
       </div>
 
       <div className="grid grid-cols-1 gap-2.5 min-[1100px]:grid-cols-2">
-        <SectionCard title="基本プロフィール" hint="登録情報から取得">
+        <SectionCard
+          title="基本プロフィール"
+          hint="名前は登録情報から。電話・年齢は応募時に入力"
+        >
           {profile.map(bindField)}
         </SectionCard>
 

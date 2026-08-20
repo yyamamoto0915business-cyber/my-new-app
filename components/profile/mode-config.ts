@@ -41,7 +41,7 @@ export const MODE_CONFIG: Record<
     title: "手伝う",
     description: "応募・シフト・当日連絡・活動履歴",
     ctaLabel: "募集を探す",
-    ctaHref: "/volunteer",
+    ctaHref: "/?kind=volunteer",
     stat1: { label: "確定予定", key: "confirmed" },
     stat2: { label: "応募中", key: "pending" },
     stat3: { label: "未読", key: "unread" },
@@ -50,12 +50,12 @@ export const MODE_CONFIG: Record<
     empty1: {
       title: "まだ応募はありません。まずは1件、できそうな募集を見てみましょう",
       ctaLabel: "募集を探す",
-      ctaHref: "/volunteer",
+      ctaHref: "/?kind=volunteer",
     },
     empty2: {
       title: "まだ応募はありません。まずは1件、できそうな募集を見てみましょう",
       ctaLabel: "募集を探す",
-      ctaHref: "/volunteer",
+      ctaHref: "/?kind=volunteer",
     },
   },
   organizer: {

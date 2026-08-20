@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Inbox, Settings } from "lucide-react";
+import { LayoutDashboard, ClipboardList, CreditCard, Star } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
@@ -13,9 +13,10 @@ import {
 } from "@/lib/organizer/organizer-nav";
 
 const SIDEBAR_ICONS = {
+  "/organizer/listings": ClipboardList,
   "/organizer": LayoutDashboard,
-  "/organizer/inbox": Inbox,
-  "/organizer/settings": Settings,
+  "/organizer/settings/payouts": CreditCard,
+  "/organizer/settings/plan": Star,
 } as const;
 
 function HamburgerIcon() {
@@ -60,7 +61,7 @@ function NavDrawerHeader({
 export default function OrganizerMobileNav({
   variant = "full",
   organizerName: _organizerName,
-  unreadCount = 0,
+  unreadCount: _unreadCount = 0,
   isPro: _isPro,
   stripeNotSetup: _stripeNotSetup,
 }: {
@@ -117,8 +118,6 @@ export default function OrganizerMobileNav({
             <ul className="flex flex-col gap-0.5">
               {navItems.map((item) => {
                 const active = organizerSidebarNavIsActive(pathname ?? "", item.href);
-                const badge =
-                  item.href === "/organizer/inbox" && unreadCount > 0 ? unreadCount : null;
                 const Icon =
                   variant === "full" && item.href in SIDEBAR_ICONS
                     ? SIDEBAR_ICONS[item.href as keyof typeof SIDEBAR_ICONS]
@@ -147,11 +146,6 @@ export default function OrganizerMobileNav({
                             />
                           ) : null}
                           <span className="min-w-0 flex-1 tracking-[0.01em]">{item.label}</span>
-                          {badge != null && (
-                            <span className="shrink-0 rounded-full bg-[#fde8ed] px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[#c04060]">
-                              {badge > 99 ? "99+" : badge}
-                            </span>
-                          )}
                         </Link>
                       }
                     />

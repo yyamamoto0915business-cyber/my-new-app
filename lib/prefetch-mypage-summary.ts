@@ -1,16 +1,6 @@
-export type MypageSummaryResponse = {
-  profile?: {
-    displayName: string;
-    avatarUrl: string | null;
-    bio: string | null;
-    region: string | null;
-    isOrganizerRegistered: boolean;
-  };
-  counts?: {
-    planned: number;
-    interested: number;
-  };
-};
+import type { MypageSummaryResponse } from "@/lib/mypage-summary-types";
+
+export type { MypageSummaryResponse } from "@/lib/mypage-summary-types";
 
 let inflight: Promise<MypageSummaryResponse | null> | null = null;
 
@@ -19,7 +9,7 @@ export function prefetchMypageSummary(): Promise<MypageSummaryResponse | null> {
   if (typeof window === "undefined") return Promise.resolve(null);
   if (!inflight) {
     inflight = fetch("/api/me/mypage-summary", { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => (r.ok ? (r.json() as Promise<MypageSummaryResponse>) : null))
       .catch(() => null);
   }
   return inflight;

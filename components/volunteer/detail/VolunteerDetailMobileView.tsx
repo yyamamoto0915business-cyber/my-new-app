@@ -16,6 +16,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { VolunteerThumbnail } from "@/components/volunteer-thumbnail";
+import { DetailImageSwitcher } from "@/components/media/DetailImageSwitcher";
 import { LoginBenefitsBanner } from "@/components/login-benefits-banner";
 import {
   getCategoryLabel,
@@ -149,23 +150,32 @@ export function VolunteerDetailMobileView({
     <div className="min-[900px]:hidden pb-24">
       <div className="border-b border-[#DDE8DF] bg-white px-3 py-2">
         <Link
-          href="/volunteer"
+          href="/?kind=volunteer"
           className="flex w-fit items-center gap-1 text-[13px] font-medium text-[#2D7A4F]"
         >
           <ChevronLeft className="h-4 w-4" />
-          ボランティア募集
+          まちの情報
         </Link>
       </div>
 
       {/* Compact hero header */}
       <div className="mx-3 mt-2 overflow-hidden rounded-2xl border border-[#e8edd8] bg-white">
         <div className="relative h-[120px] bg-[#f0f4f0]">
-          <VolunteerThumbnail
-            imageUrl={role.thumbnailUrl}
+          <DetailImageSwitcher
+            className="absolute inset-0"
+            coverUrl={role.thumbnailUrl}
+            galleryImages={role.galleryImages}
             alt={role.title}
-            roleType={categoryLabel}
-            rounded="none"
-            className="!absolute !inset-0 !aspect-auto h-full"
+            thumbsPlacement="overlay"
+            renderMain={(activeUrl) => (
+              <VolunteerThumbnail
+                imageUrl={activeUrl}
+                alt={role.title}
+                roleType={categoryLabel}
+                rounded="none"
+                className="!absolute !inset-0 !aspect-auto h-full"
+              />
+            )}
           />
           {isEmergency ? (
             <div className="absolute left-2.5 top-2.5 z-10 flex items-center gap-1 rounded-[6px] bg-[#E53935] px-2.5 py-1 text-[10px] font-bold text-white">

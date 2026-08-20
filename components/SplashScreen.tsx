@@ -1,21 +1,18 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState, useCallback, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight,
-  CalendarDays,
   CircleHelp,
-  Handshake,
   Heart,
   ShieldCheck,
   Sparkles,
-  Sprout,
   Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { WELCOME_ROLE_CARDS } from "@/components/welcome/welcome-splash-shared";
 import { isGuestSplashReturnPath } from "@/lib/top-mode-active";
 
 const FADE_MS = 600;
@@ -215,63 +212,6 @@ function createPetals(w: number, h: number): Petal[] {
     alpha: 0.6 + Math.random() * 0.35,
   }));
 }
-
-/** ロールカードのアイコン円: カードごとに色味を分ける */
-type RoleIconAccent = "sky" | "warm" | "leaf";
-
-const ROLE_CARDS: {
-  Icon: LucideIcon;
-  iconAccent: RoleIconAccent;
-  title: string;
-  mobileTitle: string;
-  desc: ReactNode;
-  mobileDesc: string;
-  buttonLabel: string;
-  href: string;
-}[] = [
-  {
-    Icon: CalendarDays,
-    iconAccent: "sky",
-    title: "イベントを探したい",
-    mobileTitle: "イベントを探す",
-    desc: (
-      <>
-        <span style={{ whiteSpace: "nowrap" }}>地域で開催されるイベントを</span>
-        <br />
-        <span style={{ whiteSpace: "nowrap" }}>見つけて参加できます。</span>
-      </>
-    ),
-    mobileDesc: "地域のイベントに参加できます",
-    buttonLabel: "イベントを見る",
-    href: "/",
-  },
-  {
-    Icon: Handshake,
-    iconAccent: "warm",
-    title: "募集を見たい",
-    mobileTitle: "募集を見る",
-    desc: (
-      <>
-        <span style={{ whiteSpace: "nowrap" }}>ボランティアやまちおこしの</span>
-        <br />
-        <span style={{ whiteSpace: "nowrap" }}>募集を見つけられます。</span>
-      </>
-    ),
-    mobileDesc: "ボランティア活動を探せます",
-    buttonLabel: "募集を見る",
-    href: "/volunteer",
-  },
-  {
-    Icon: Sprout,
-    iconAccent: "leaf",
-    title: "イベントを掲載したい",
-    mobileTitle: "掲載する",
-    desc: "イベントを開いたり募集を掲載できます。",
-    mobileDesc: "イベントや募集を掲載できます",
-    buttonLabel: "使い方を見る",
-    href: "/auth?next=/organizer",
-  },
-];
 
 export function SplashScreen() {
   const router = useRouter();
@@ -662,7 +602,7 @@ export function SplashScreen() {
         }
         .sp-mobile-only  { display: none; }
         .sp-desktop-only { display: inline; }
-        @media (max-width: 430px) {
+        @media (max-width: 560px) {
           .sp-mobile-only  { display: inline; }
           .sp-desktop-only { display: none; }
           .sp-content { padding: 0 12px !important; }
@@ -816,7 +756,7 @@ export function SplashScreen() {
               gap: 10, width: "100%", alignItems: "stretch",
             }}
           >
-            {ROLE_CARDS.map((card) => {
+            {WELCOME_ROLE_CARDS.map((card) => {
               const { Icon, iconAccent } = card;
               const ctaClass =
                 iconAccent === "warm"

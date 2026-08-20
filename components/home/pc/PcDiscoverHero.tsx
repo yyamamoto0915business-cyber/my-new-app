@@ -2,13 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Search, Check, Calendar, CircleDollarSign, Baby, Sparkles, Users } from "lucide-react";
+import {
+  Search,
+  Check,
+  CalendarDays,
+  Store,
+  HandHeart,
+  Truck,
+  LayoutGrid,
+} from "lucide-react";
 import {
   DiscoverHeroCatchphrase,
   SearchLeafIcon,
 } from "@/components/home/DiscoverHeroCatchphrase";
 
-const HERO_IMAGE = "/home/pc/hero-townscape.png";
+const HERO_IMAGE = "/machi/hero-town-info.png";
 
 type ChipDef = {
   key: string;
@@ -16,17 +24,17 @@ type ChipDef = {
   Icon: React.ElementType | null;
 };
 
-const FILTER_CHIPS: ChipDef[] = [
-  { key: "today", label: "今日・明日", Icon: Calendar },
-  { key: "free", label: "無料", Icon: CircleDollarSign },
-  { key: "family", label: "親子向け", Icon: Baby },
-  { key: "workshop", label: "体験", Icon: Sparkles },
-  { key: "community", label: "交流会", Icon: Users },
-  { key: "all", label: "すべて", Icon: null },
+/** まちの情報：横断種別 */
+export const TOWN_INFO_KIND_CHIPS: ChipDef[] = [
+  { key: "all", label: "すべて", Icon: LayoutGrid },
+  { key: "event", label: "イベント", Icon: CalendarDays },
+  { key: "store", label: "お店", Icon: Store },
+  { key: "volunteer", label: "ボランティア", Icon: HandHeart },
+  { key: "kitchen", label: "キッチンカー", Icon: Truck },
 ];
 
 const ABOUT_POINTS = [
-  "地域のイベント・ボランティアを探せます",
+  "イベント・店舗・募集をまとめて探せます",
   "主催者と直接つながれます",
   "参加・お手伝いの記録が残ります",
 ];
@@ -38,18 +46,23 @@ type Props = {
   onChipClick: (key: string) => void;
 };
 
-export function PcDiscoverHero({ searchQuery, onSearchQueryChange, activeChip, onChipClick }: Props) {
+export function PcDiscoverHero({
+  searchQuery,
+  onSearchQueryChange,
+  activeChip,
+  onChipClick,
+}: Props) {
   return (
     <section
       className="relative overflow-hidden rounded-[16px] shadow-[0_2px_12px_rgba(15,23,42,0.06)]"
-      aria-label="まちの出来事を探す"
+      aria-label="まちの情報を探す"
     >
       <Image
         src={HERO_IMAGE}
         alt=""
         fill
         priority
-        className="object-cover object-[82%_center]"
+        className="object-cover object-[72%_center]"
         sizes="(min-width: 900px) 1280px, 100vw"
       />
       <div
@@ -62,7 +75,6 @@ export function PcDiscoverHero({ searchQuery, onSearchQueryChange, activeChip, o
       />
 
       <div className="relative grid grid-cols-[minmax(0,1fr)_minmax(220px,260px)] items-center gap-4 px-5 py-3 lg:gap-6 lg:px-6 lg:py-3.5">
-        {/* 左：コピー＋検索 */}
         <div className="flex min-w-0 flex-col gap-2.5">
           <DiscoverHeroCatchphrase size="pc" className="max-w-full" />
 
@@ -73,14 +85,14 @@ export function PcDiscoverHero({ searchQuery, onSearchQueryChange, activeChip, o
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchQueryChange(e.target.value)}
-                placeholder="地域やイベント名で探す"
+                placeholder="キーワードで探す（イベント・お店・募集など）"
                 className="min-w-0 flex-1 bg-transparent text-[13px] text-[#1a2e22] placeholder:text-[#8a938c] outline-none"
               />
               <SearchLeafIcon className="h-3.5 w-3.5" />
             </div>
 
-            <div className="mt-1.5 flex flex-nowrap gap-1.5">
-              {FILTER_CHIPS.map(({ key, label, Icon }) => (
+            <div className="mt-1.5 flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide">
+              {TOWN_INFO_KIND_CHIPS.map(({ key, label, Icon }) => (
                 <button
                   key={key}
                   type="button"
@@ -99,7 +111,6 @@ export function PcDiscoverHero({ searchQuery, onSearchQueryChange, activeChip, o
           </div>
         </div>
 
-        {/* 右：紹介パネル */}
         <aside className="self-center">
           <div className="w-full rounded-[12px] border border-white/80 bg-white/95 px-4 py-3.5 shadow-[0_8px_28px_rgba(15,23,42,0.09)] backdrop-blur-[2px]">
             <h2
@@ -112,7 +123,7 @@ export function PcDiscoverHero({ searchQuery, onSearchQueryChange, activeChip, o
               MachiGlyphとは
             </h2>
             <p className="mt-1 text-[10px] leading-relaxed text-[#5a6a60]">
-              地域のイベントやボランティアを、ひとつの場所で見つけられます。
+              まちの情報を、ひとつの場所で見つけられます。
             </p>
             <ul className="mt-2 space-y-1.5">
               {ABOUT_POINTS.map((point) => (

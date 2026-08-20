@@ -108,7 +108,7 @@ export function DayOfRecruitmentPcView({
       <Breadcrumb
         className="text-[12px]"
         items={[
-          { label: "スタッフ募集管理", href: "/organizer/recruitments" },
+          { label: "ボランティア募集管理", href: "/organizer/recruitments" },
           { label: title, href: `/organizer/recruitments/${recruitmentId}` },
           { label: "当日管理" },
         ]}

@@ -15,7 +15,7 @@ import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 
-/** 通常時（探す・ボランティア中心）のモバイル上部の目安高さ（safe-area 除く） */
+/** 通常時（イベント・まち情報中心）のモバイル上部の目安高さ（safe-area 除く） */
 export const MOBILE_TOP_HEADER_HEIGHT_PX = 88;
 
 /** 主催者ルート（モードタブのみ）のフォールバック高さ（safe-area 除く・実測で上書き） */
@@ -41,7 +41,7 @@ export function MobileTopHeader({ className }: Props) {
 
   const handleTabClick = (id: TopModeTabId) => {
     const mode =
-      id === "organizer" ? "ORGANIZER" : id === "volunteer" ? "VOLUNTEER" : "EVENT";
+      id === "organizer" ? "ORGANIZER" : id === "machi" ? "VOLUNTEER" : "EVENT";
     setModeCookie(mode);
   };
 

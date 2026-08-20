@@ -109,12 +109,14 @@ export async function POST(request: NextRequest) {
     const {
       title,
       imageUrl,
+      galleryImages,
       description,
       date,
       startTime,
       endTime,
       location,
       address,
+      storeId,
       price,
       priceNote,
       organizerName,
@@ -222,12 +224,17 @@ export async function POST(request: NextRequest) {
     const formData = {
       title: String(title).trim(),
       imageUrl: imageUrl?.trim() || null,
+      galleryImages: Array.isArray(galleryImages) ? galleryImages : [],
       description: String(description).trim(),
       date: String(date),
       startTime: String(startTime),
       endTime: endTime ? String(endTime) : undefined,
       location: locationValue,
       address: addressValue,
+      storeId:
+        typeof storeId === "string" && storeId.trim()
+          ? storeId.trim()
+          : null,
       price: Number(price) || 0,
       priceNote: priceNote?.trim() || undefined,
       organizerName: String(organizerName || "").trim(),

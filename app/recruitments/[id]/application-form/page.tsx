@@ -80,6 +80,14 @@ export default function ApplicationFormPage() {
         ) {
           initial.message = json.application.message;
         }
+        // プロフィールにあれば電話番号を初期値に（未入力時のみ）
+        if (
+          (!initial.phone || (typeof initial.phone === "string" && !initial.phone.trim())) &&
+          typeof json.profile?.phone === "string" &&
+          json.profile.phone.trim()
+        ) {
+          initial.phone = json.profile.phone.trim();
+        }
         setAnswers(initial);
         if (json.application?.form_completed_at) {
           setSubmitted(true);
@@ -206,10 +214,10 @@ export default function ApplicationFormPage() {
               募集詳細へ
             </Link>
             <Link
-              href="/volunteer"
+              href="/?kind=volunteer"
               className="rounded-xl border border-[#d8e5d4] bg-white px-4 py-3 text-sm font-medium text-[#2d4a28]"
             >
-              ボランティア一覧へ
+              まちの情報へ
             </Link>
           </div>
         </div>

@@ -53,8 +53,8 @@ const FIELD_META: Record<
     locked: true,
     autoFromProfile: true,
   },
-  phone: { id: "phone", label: "電話番号", section: "profile", autoFromProfile: true },
-  age: { id: "age", label: "年齢", section: "profile", autoFromProfile: true },
+  phone: { id: "phone", label: "電話番号", section: "profile" },
+  age: { id: "age", label: "年齢", section: "profile" },
   portrait: { id: "portrait", label: "顔写真", section: "profile" },
   desired_role: { id: "desired_role", label: "希望役割", section: "application" },
   available_time: { id: "available_time", label: "参加可能時間", section: "application" },
@@ -188,6 +188,59 @@ export function parseApplicationFormAnswers(raw: unknown): ApplicationFormAnswer
     }
   }
   return out;
+}
+
+const FORM_ANSWER_FIELD_LABELS: Record<string, string> = {
+  desired_role: "希望役割",
+  available_time: "参加可能時間",
+  available_time_note: "参加可能時間（補足）",
+  message: "応募メッセージ",
+  experience: "経験・スキル",
+  self_intro: "自己紹介",
+  terms: "規約への同意",
+  emergency_contact: "緊急連絡先",
+  portrait: "顔写真",
+  phone: "電話番号",
+  age: "年齢",
+  name: "名前",
+};
+
+/** フォーム回答キー → 表示ラベル（カスタム質問は config から解決） */
+export function resolveFormAnswerLabel(
+  key: string,
+  config?: ApplicationFormConfig | null
+): string {
+  if (config) {
+    const field = config.fields.find((f) => f.id === key);
+    if (field) return field.label;
+    const custom = config.customQuestions.find((q) => q.id === key);
+    if (custom?.label.trim()) return custom.label.trim();
+  }
+  if (FORM_ANSWER_FIELD_LABELS[key]) return FORM_ANSWER_FIELD_LABELS[key];
+  if (key.startsWith("cq-")) return "追加質問";
+  return key;
+}
+
+export function formatFormAnswerDisplay(value: string | boolean | null): string {
+  if (typeof value === "boolean") return value ? "同意済み" : "未同意";
+  if (value == null) return "";
+  return String(value);
+}
+
+/** 主催者向け：空でない回答をラベル付きで列挙 */
+export function listFormAnswerEntries(
+  answers: ApplicationFormAnswers | null | undefined,
+  config?: ApplicationFormConfig | null
+): { key: string; label: string; display: string }[] {
+  if (!answers) return [];
+  const entries: { key: string; label: string; display: string }[] = [];
+  for (const [key, value] of Object.entries(answers)) {
+    if (value == null || value === "") continue;
+    const display = formatFormAnswerDisplay(value);
+    if (!display) continue;
+    entries.push({ key, label: resolveFormAnswerLabel(key, config), display });
+  }
+  return entries;
 }
 
 export function validateApplicationFormAnswers(

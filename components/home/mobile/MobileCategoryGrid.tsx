@@ -68,7 +68,7 @@ const CATEGORIES: CategoryItem[] = [
   {
     label: "ボランティア募集",
     categoryKey: "volunteer",
-    href: "/volunteer",
+    href: "/?kind=volunteer",
     icon: Heart,
     iconColor: "#2f6b4f",
   },

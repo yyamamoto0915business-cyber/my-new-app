@@ -54,6 +54,10 @@ export function isSampleLikeEventRow(row: Record<string, unknown> | Event | null
   if (obj.seedData === true) return true;
   if (obj.seed_source === "seed") return true;
 
+  // DB / API で「サンプルではない」と明示されている場合はキーワード推測をしない
+  if ((row as Event).isSample === false) return false;
+  if (obj.is_sample === false) return false;
+
   const title = typeof obj.title === "string" ? obj.title : null;
   const description = typeof obj.description === "string" ? obj.description : null;
 

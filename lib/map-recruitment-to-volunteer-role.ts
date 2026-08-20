@@ -1,6 +1,7 @@
 import type { Benefit, VolunteerRoleType } from "@/lib/volunteer-roles-mock";
 import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
 import type { RecruitmentMvp } from "@/lib/db/recruitments-mvp";
+import { normalizeGalleryImages } from "@/lib/gallery-images";
 
 /** recruitments テーブル由来（一覧APIでモック行と混在させる用） */
 export type VolunteerRoleFromRecruitment = VolunteerRoleWithEvent & {
@@ -156,6 +157,7 @@ export function recruitmentRowToVolunteerRole(row: RowWithJoins): VolunteerRoleF
     contactAvailable: true,
     benefits: benefits.length ? benefits : undefined,
     thumbnailUrl: row.image_url?.trim() || undefined,
+    galleryImages: normalizeGalleryImages(row.gallery_images),
     event,
     createdAt: row.created_at,
     organizerId: row.organizer_id,

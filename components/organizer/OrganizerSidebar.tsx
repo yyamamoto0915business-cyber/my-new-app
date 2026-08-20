@@ -15,14 +15,16 @@ import {
   OrganizerSidebarBackIcon,
   OrganizerSidebarBrandLogo,
   OrganizerSidebarDashboardIcon,
-  OrganizerSidebarInboxIcon,
-  OrganizerSidebarSettingsIcon,
+  OrganizerSidebarListingsIcon,
+  OrganizerSidebarPayoutsIcon,
+  OrganizerSidebarPlanIcon,
 } from "@/components/organizer/OrganizerSidebarIcons";
 
 const SIDEBAR_ICONS = {
+  "/organizer/listings": OrganizerSidebarListingsIcon,
   "/organizer": OrganizerSidebarDashboardIcon,
-  "/organizer/inbox": OrganizerSidebarInboxIcon,
-  "/organizer/settings": OrganizerSidebarSettingsIcon,
+  "/organizer/settings/payouts": OrganizerSidebarPayoutsIcon,
+  "/organizer/settings/plan": OrganizerSidebarPlanIcon,
 } as const;
 
 /** 主催者 PC サイドバー — モック準拠カード型 */
@@ -75,7 +77,7 @@ export default function OrganizerSidebar({
                     ) : (
                       <span className="w-[22px] shrink-0" aria-hidden />
                     )}
-                    <span className="min-w-0">{item.label}</span>
+                    <span className="min-w-0 leading-snug">{item.label}</span>
                   </Link>
                 </li>
               );

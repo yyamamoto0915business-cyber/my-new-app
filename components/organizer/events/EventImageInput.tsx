@@ -10,6 +10,8 @@ type Props = {
   alt: string;
   /** PCフォーム向け：プレビューと操作を横並びにしたコンパクトレイアウト */
   compact?: boolean;
+  /** compact 時に外枠を付けない（親カード内に埋め込むとき） */
+  bare?: boolean;
   /** ヒント文の上書き（未指定時はデフォルト文言） */
   hint?: string;
 };
@@ -23,6 +25,7 @@ export function EventImageInput({
   onChangeUrl,
   alt,
   compact = false,
+  bare = false,
   hint: hintProp,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -135,11 +138,17 @@ export function EventImageInput({
 
   if (compact) {
     return (
-      <div className="rounded-[10px] border border-[#ebe8e2] bg-[#fafaf8] p-2">
+      <div
+        className={
+          bare
+            ? undefined
+            : "rounded-[10px] border border-[#ebe8e2] bg-[#fafaf8] p-2"
+        }
+      >
         <div className="flex items-center gap-3">
           <div
             className={[
-              "relative w-[9.5rem] shrink-0 overflow-hidden rounded-[8px] bg-white",
+              "relative w-[7.5rem] shrink-0 overflow-hidden rounded-[8px] bg-white min-[900px]:w-[9.5rem]",
               hasImage
                 ? "border border-[#e0ddd6] shadow-[0_1px_2px_rgba(26,26,26,0.04)]"
                 : "border border-dashed border-[#d8d4cc]",
@@ -168,20 +177,34 @@ export function EventImageInput({
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="mb-2 text-[11px] leading-snug text-[#8a8680]">{hint}</p>
-            <button
-              type="button"
-              onClick={openGallery}
-              disabled={uploading}
-              className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#2B3A6B] px-3 text-[12px] font-medium text-white transition hover:bg-[#243159] disabled:opacity-50"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <path d="M21 15l-5-5L5 21" />
-              </svg>
-              {hasImage ? "画像を変更" : "画像を選択"}
-            </button>
+            <p className="mb-1.5 text-[11px] leading-snug text-[#8a8680]">{hint}</p>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={openGallery}
+                disabled={uploading}
+                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#2B3A6B] px-3 text-[12px] font-medium text-white transition hover:bg-[#243159] disabled:opacity-50"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" />
+                </svg>
+                {hasImage ? "変更" : "選択"}
+              </button>
+              <button
+                type="button"
+                onClick={openCamera}
+                disabled={uploading}
+                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#d0ccc4] bg-white px-2.5 text-[12px] font-medium text-[#1a1a1a] transition hover:border-[#2B3A6B] hover:bg-[#f5f4f0] disabled:opacity-50"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+                撮影
+              </button>
+            </div>
           </div>
         </div>
 

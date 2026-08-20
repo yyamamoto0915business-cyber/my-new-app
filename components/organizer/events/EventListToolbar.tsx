@@ -12,6 +12,10 @@ type EventListToolbarProps = {
   onSortChange: (v: SortOption) => void;
   /** タブでステータス固定時はドロップダウンを無効化 */
   statusFilterDisabled?: boolean;
+  /** モバイルでアーカイブへ切替（タブ非表示時の導線） */
+  archivedCount?: number;
+  archiveActive?: boolean;
+  onArchiveClick?: () => void;
 };
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -28,9 +32,10 @@ export function EventListToolbar({
   sortBy,
   onSortChange,
   statusFilterDisabled = false,
+  archivedCount = 0,
+  archiveActive = false,
+  onArchiveClick,
 }: EventListToolbarProps) {
-  const hasFilter = statusFilter !== "all";
-
   return (
     <div className="org-events-toolbar org-events-toolbar--embedded">
       <div className="flex flex-col gap-2 min-[900px]:flex-row min-[900px]:items-center min-[900px]:gap-3">
@@ -84,17 +89,19 @@ export function EventListToolbar({
             ))}
           </select>
 
-          <button
-            type="button"
-            onClick={() => onStatusFilterChange("all")}
-            className={`org-events-toolbar__filter-btn ${hasFilter ? "is-active" : ""}`}
-            aria-pressed={hasFilter}
-          >
-            絞り込み
-            {hasFilter ? (
-              <span className="org-events-toolbar__filter-dot" aria-hidden />
-            ) : null}
-          </button>
+          {onArchiveClick ? (
+            <button
+              type="button"
+              onClick={onArchiveClick}
+              aria-pressed={archiveActive}
+              className={`org-events-toolbar__archive-btn min-[900px]:hidden ${
+                archiveActive ? "is-active" : ""
+              }`}
+            >
+              アーカイブ
+              <span className="tabular-nums">({archivedCount})</span>
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

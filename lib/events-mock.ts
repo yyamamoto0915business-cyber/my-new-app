@@ -22,6 +22,7 @@ export const mockEvents: Event[] = [
       5000: "優先枠・特典パック",
     },
     imageUrl: EVENT_IMAGES[0],
+    galleryImages: [EVENT_IMAGES[1], EVENT_IMAGES[2], EVENT_IMAGES[3]],
     description: "地域住民によるフリーマーケット。掘り出し物が見つかるかも！",
     date: "2026-03-15",
     startTime: "10:00",

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import { DraftSaveButton, DraftSaveHint } from "@/components/organizer/events/DraftSaveButtonWithHint";
 import { EventImageInput } from "@/components/organizer/events/EventImageInput";
+import { EventGalleryImagesInput } from "@/components/organizer/events/EventGalleryImagesInput";
 import { ApplicationFormSettingsPc } from "@/components/organizer/recruitments/ApplicationFormSettingsPc";
 import { RecruitmentFormPcStepIndicator } from "@/components/organizer/recruitments/RecruitmentFormPcStepIndicator";
 import { RecruitmentPublishSuccess } from "@/components/organizer/recruitments/RecruitmentPublishSuccess";
@@ -25,6 +26,7 @@ type FormData = {
   title: string;
   description: string;
   imageUrl: string;
+  galleryImages: string[];
   eventId: string;
   roles: { name: string; count: number }[];
   start_at: string;
@@ -42,6 +44,7 @@ const initial: FormData = {
   title: "",
   description: "",
   imageUrl: "",
+  galleryImages: [],
   eventId: "",
   roles: [{ name: "受付", count: 1 }],
   start_at: "",
@@ -502,6 +505,7 @@ function NewRecruitmentPageContent() {
               provisions?: string | null;
               notes?: string | null;
               image_url?: string | null;
+              gallery_images?: string[] | null;
               roles?: { name: string; count: number }[];
               event_id?: string | null;
               application_form_config?: unknown;
@@ -520,6 +524,9 @@ function NewRecruitmentPageContent() {
           title: data.title ?? "",
           description: data.description ?? "",
           imageUrl: data.image_url ?? "",
+          galleryImages: Array.isArray(data.gallery_images)
+            ? data.gallery_images.filter((x): x is string => typeof x === "string")
+            : [],
           eventId: data.event_id ?? "",
           roles:
             Array.isArray(data.roles) && data.roles.length > 0
@@ -584,6 +591,7 @@ function NewRecruitmentPageContent() {
     title: form.title.trim(),
     description: form.description.trim(),
     image_url: form.imageUrl.trim() || null,
+    gallery_images: form.galleryImages,
     status,
     start_at: form.start_at || null,
     end_at: form.end_at || null,
@@ -795,13 +803,23 @@ function NewRecruitmentPageContent() {
       </FieldWrap>
       <FieldWrap>
         <Fl label="アイキャッチ画像" opt />
-        <EventImageInput
-          url={form.imageUrl}
-          onChangeUrl={(url) => update("imageUrl", url)}
-          alt={form.title || "プレビュー"}
-          compact
-          hint="一覧・詳細に表示されます"
-        />
+        <div className="space-y-2 rounded-[10px] border border-[#ebe8e2] bg-[#fafaf8] p-2">
+          <EventImageInput
+            url={form.imageUrl}
+            onChangeUrl={(url) => update("imageUrl", url)}
+            alt={form.title || "プレビュー"}
+            compact
+            bare
+            hint="一覧は代表画像のみ"
+          />
+          <div className="border-t border-[#ebe8e2] pt-2">
+            <EventGalleryImagesInput
+              compact
+              urls={form.galleryImages}
+              onChange={(galleryImages) => update("galleryImages", galleryImages)}
+            />
+          </div>
+        </div>
       </FieldWrap>
       <FieldWrap>
         <Fl label="開催イベント" opt />

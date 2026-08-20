@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
-  CalendarDays,
   CheckCircle2,
   ChevronDown,
   Clock,
+  FileText,
   MessageCircle,
   Pencil,
   Search,
@@ -139,19 +138,21 @@ function KpiCard({
   active?: boolean;
   onClick?: () => void;
 }) {
-  const className = cn("mg-apps-mgmt-m__kpi", active && "is-active");
+  const className = cn(
+    "mg-apps-mgmt-m__kpi",
+    `mg-apps-mgmt-m__kpi--${tone}`,
+    active && "is-active"
+  );
   const inner = (
     <>
       <div className={cn("mg-apps-mgmt-m__kpi-icon", `mg-apps-mgmt-m__kpi-icon--${tone}`)}>
         {icon}
       </div>
-      <div className="min-w-0">
-        <p className="mg-apps-mgmt-m__kpi-label">{label}</p>
-        <p className="mg-apps-mgmt-m__kpi-value">
-          {value}
-          <span className="mg-apps-mgmt-m__kpi-unit">名</span>
-        </p>
-      </div>
+      <p className="mg-apps-mgmt-m__kpi-value">
+        {value}
+        <span className="mg-apps-mgmt-m__kpi-unit">名</span>
+      </p>
+      <p className="mg-apps-mgmt-m__kpi-label">{label}</p>
     </>
   );
   if (onClick) {
@@ -183,24 +184,29 @@ function ApplicationRowMobile({
   const email = application.user?.email ?? "";
   const isPending = application.status === "pending";
   const isAccepted =
-    application.status === "accepted" || application.status === "confirmed";
+    application.status === "accepted" ||
+    application.status === "confirmed" ||
+    application.status === "checked_in";
   const isRejected = application.status === "rejected";
+  const arrived = Boolean(application.checked_in_at);
 
   const statusLabel = isPending
     ? "未確認"
-    : isAccepted
-      ? "承認済み"
-      : isRejected
-        ? "却下"
-        : application.status;
+    : application.status === "checked_in" || arrived
+      ? "到着済み"
+      : isAccepted
+        ? "承認済み"
+        : isRejected
+          ? "却下"
+          : application.status;
 
-  const statusClass = isPending
-    ? "border-amber-200/90 bg-amber-50 text-amber-800"
+  const statusBadgeClass = isPending
+    ? "mg-apps-mgmt-m__badge--pending"
     : isAccepted
-      ? "border-emerald-200/80 bg-emerald-50 text-emerald-800"
+      ? "mg-apps-mgmt-m__badge--accepted"
       : isRejected
-        ? "border-red-200/80 bg-red-50 text-red-700"
-        : "border-[#e8e6e0] bg-[#f5f4f0] text-[#6b6762]";
+        ? "mg-apps-mgmt-m__badge--rejected"
+        : "";
 
   const avatarColor = AVATAR_COLORS[index % AVATAR_COLORS.length];
   const messageRaw = application.message?.trim() ?? "";
@@ -208,6 +214,13 @@ function ApplicationRowMobile({
   const emailLocal = email.includes("@") ? email.split("@")[0]?.trim() : "";
   const showEmailLine =
     Boolean(email) && name !== email && name !== emailLocal;
+  const roleLabel =
+    application.role_assigned?.trim() ||
+    (typeof application.form_answers?.desired_role === "string"
+      ? application.form_answers.desired_role.trim()
+      : "") ||
+    null;
+  const formPending = application.form_completed_at == null;
 
   return (
     <article className={cn("mg-apps-mgmt-m__row-card", isPending && "is-pending")}>
@@ -225,12 +238,7 @@ function ApplicationRowMobile({
             <h3 className="min-w-0 truncate text-[13px] font-semibold text-[#1a2818]">
               {name}
             </h3>
-            <span
-              className={cn(
-                "shrink-0 rounded-full border px-1.5 py-px text-[9px] font-medium leading-tight",
-                statusClass
-              )}
-            >
+            <span className={cn("mg-apps-mgmt-m__badge shrink-0", statusBadgeClass)}>
               {statusLabel}
             </span>
           </div>
@@ -239,8 +247,31 @@ function ApplicationRowMobile({
               {email}
             </p>
           ) : null}
-          <p className="text-[9px] text-[#b0bab0]">
-            {formatApplicationDate(application.created_at)}
+          <p className="mt-0.5 text-[10px] text-[#5f6f5c]">
+            {roleLabel ? (
+              <>
+                <span className="font-medium text-[#1a2818]">{roleLabel}</span>
+                <span className="text-[#b0bab0]"> · </span>
+              </>
+            ) : null}
+            <span className="text-[#8a9e80]">
+              {formatApplicationDate(application.created_at)}
+            </span>
+            {isAccepted ? (
+              <span
+                className={cn(
+                  "ml-1.5 text-[9px] font-medium",
+                  arrived ? "text-[#3a7a28]" : "text-[#c4891a]"
+                )}
+              >
+                {arrived ? "到着済" : "未到着"}
+              </span>
+            ) : null}
+            {formPending ? (
+              <span className="mg-apps-mgmt-m__badge mg-apps-mgmt-m__badge--form ml-1.5">
+                フォーム未提出
+              </span>
+            ) : null}
           </p>
           {message ? (
             <p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-[#6b7569]">
@@ -254,7 +285,7 @@ function ApplicationRowMobile({
         <button
           type="button"
           onClick={() => onDetail(application)}
-          className="mg-apps-mgmt-m__btn-row"
+          className="mg-apps-mgmt-m__btn-detail"
         >
           詳細を見る
         </button>
@@ -324,51 +355,43 @@ export function ApplicationsManagementMobileView({
 }: Props) {
   const [visibleCount, setVisibleCount] = useState(6);
   const [contentOpen, setContentOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const visibleApps = filteredApplications.slice(0, visibleCount);
   const hasMore = filteredApplications.length > visibleCount;
 
   return (
-    <div className="mg-apps-mgmt-m min-h-screen pb-24">
-      <div className="px-4 pt-3">
-        {/* ヘッダー */}
+    <div className="mg-apps-mgmt-m flex min-h-screen flex-col gap-2 px-4 pb-24 pt-3">
+        {/* ヒーロー：左テキスト＋右イラスト、編集は左寄せ */}
         <header className="mg-apps-mgmt-m__header">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h1 className="mg-apps-mgmt-m__title">応募管理</h1>
-              <p className="mg-apps-mgmt-m__subtitle">{recruitmentTitle}</p>
-              <p className="mg-apps-mgmt-m__desc">
-                参加者情報や応募状況を確認・対応できます
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-col items-stretch gap-1.5">
-              <button type="button" onClick={onEdit} className="mg-apps-mgmt-m__btn-outline">
-                <Pencil className="h-3.5 w-3.5 opacity-70" aria-hidden />
-                編集
-              </button>
-              <Link href={`/organizer/recruitments/${recruitmentId}/day-of`} className="mg-apps-mgmt-m__btn-gold">
-                <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-                当日管理へ
-              </Link>
-            </div>
+          <p className="mg-apps-mgmt-m__eyebrow">応募管理</p>
+          <h1 className="mg-apps-mgmt-m__title">{recruitmentTitle}</h1>
+          <p className="mg-apps-mgmt-m__desc">
+            参加者情報や応募状況を確認・対応できます
+          </p>
+          <div className="mt-2">
+            <button type="button" onClick={onEdit} className="mg-apps-mgmt-m__btn-edit">
+              <Pencil className="h-3 w-3 shrink-0" aria-hidden />
+              募集を編集
+            </button>
           </div>
         </header>
 
-        {/* KPI 2x2 */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        {/* KPI 1×4 */}
+        <div className="mt-0.5 grid grid-cols-4 gap-1.5">
           <KpiCard
             value={total}
-            label="総応募数"
+            label="総応募"
             tone="neutral"
-            icon={<Users className="h-4 w-4 text-[#2B3A6B]" />}
+            icon={<Users className="h-3 w-3 text-[#2B3A6B]" />}
             active={statusFilter === "all"}
             onClick={() => onStatusSelect("all")}
           />
           <KpiCard
             value={acceptedCount}
-            label="承認済み"
+            label="承認済"
             tone="success"
-            icon={<CheckCircle2 className="h-4 w-4 text-emerald-600" />}
+            icon={<CheckCircle2 className="h-3 w-3 text-[#4A9A2E]" />}
             active={statusFilter === "accepted"}
             onClick={() => onStatusSelect("accepted")}
           />
@@ -376,7 +399,7 @@ export function ApplicationsManagementMobileView({
             value={pendingCount}
             label="未確認"
             tone="warning"
-            icon={<Clock className="h-4 w-4 text-amber-600" />}
+            icon={<Clock className="h-3 w-3 text-[#c4891a]" />}
             active={statusFilter === "pending"}
             onClick={() => onStatusSelect("pending")}
           />
@@ -384,74 +407,134 @@ export function ApplicationsManagementMobileView({
             value={rejectedCount}
             label="却下"
             tone="danger"
-            icon={<XCircle className="h-4 w-4 text-red-500" />}
+            icon={<XCircle className="h-3 w-3 text-[#D45A72]" />}
             active={statusFilter === "rejected"}
             onClick={() => onStatusSelect("rejected")}
           />
         </div>
 
-        {/* 一斉連絡 */}
-        {acceptedCount > 0 && (
-          <section className="mg-apps-mgmt-m__panel mg-apps-mgmt-m__panel--bulk mt-3 p-3">
-            <div className="flex items-start gap-2">
-              <div className="mg-apps-mgmt-m__icon-ring">
-                <Send className="h-3.5 w-3.5 text-[#9a6b2f]" aria-hidden />
-              </div>
-              <div>
-                <p className="mg-apps-mgmt-m__panel-title">承認済みスタッフへ通知</p>
-                <p className="mt-0.5 text-[10px] text-[#8a9e80]">
-                  ダッシュボードのお知らせと同じ経路です
-                </p>
-              </div>
-            </div>
-            <select
-              value={bulkTemplate}
-              onChange={(e) => onBulkTemplateChange(e.target.value)}
-              className="mg-apps-mgmt-m__input mt-2.5 w-full"
-              aria-label="メッセージテンプレート"
-            >
-              {BULK_TEMPLATE_OPTIONS.map((o) => (
-                <option key={o.value || "custom"} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <textarea
-              value={bulkMessage}
-              onChange={(e) => onBulkMessageChange(e.target.value)}
-              placeholder="送信内容を入力（任意）"
-              rows={3}
-              className="mg-apps-mgmt-m__input mg-apps-mgmt-m__textarea mt-2 w-full"
-            />
+        <div className="flex flex-col gap-2">
+        {/* 募集内容（折りたたみ） */}
+        {recruitmentDescription ? (
+          <section className="mg-apps-mgmt-m__panel overflow-hidden">
             <button
               type="button"
-              onClick={onBulkSend}
-              disabled={bulkSending || (!bulkMessage.trim() && !bulkTemplate)}
-              className="mg-apps-mgmt-m__btn-gold mt-2.5 w-full justify-center"
+              onClick={() => setContentOpen((o) => !o)}
+              className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
+              aria-expanded={contentOpen}
             >
-              <Send className="h-3.5 w-3.5" aria-hidden />
-              {bulkSending ? "送信中..." : `一斉送信（${acceptedCount}名）`}
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="mg-apps-mgmt-m__icon-ring mg-apps-mgmt-m__icon-ring--doc">
+                  <FileText className="h-3.5 w-3.5 text-[#2B3A6B]" aria-hidden />
+                </span>
+                <span className="mg-apps-mgmt-m__panel-title">募集内容</span>
+              </span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 shrink-0 text-[#8a9e80] transition-transform",
+                  contentOpen && "rotate-180"
+                )}
+                aria-hidden
+              />
             </button>
-            {bulkResult && bulkResult.failed > 0 && (
-              <p className="mt-2 text-[10px] text-amber-800">
-                直近: 成功 {bulkResult.sent}件 / 失敗 {bulkResult.failed}件
-                {failedApplicationNames.length > 0 && onBulkRetryFailed ? (
-                  <button
-                    type="button"
-                    onClick={onBulkRetryFailed}
-                    disabled={bulkSending}
-                    className="ml-2 font-medium underline"
-                  >
-                    再送
-                  </button>
-                ) : null}
-              </p>
-            )}
+            {contentOpen ? (
+              <div className="border-t border-[#f0f2ec] px-3 py-3 text-[12px] leading-relaxed text-[#526448]">
+                {recruitmentDescription.split(/\n\n+/).map((p, i) => (
+                  <p key={i} className="mb-2 last:mb-0">
+                    {p}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
+        {/* 一斉連絡（折りたたみ） */}
+        {acceptedCount > 0 && (
+          <section className="mg-apps-mgmt-m__panel mg-apps-mgmt-m__panel--bulk">
+            <button
+              type="button"
+              onClick={() => setBulkOpen((v) => !v)}
+              className="flex w-full items-center justify-between gap-2 p-3 text-left"
+              aria-expanded={bulkOpen}
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="mg-apps-mgmt-m__icon-ring mg-apps-mgmt-m__icon-ring--send">
+                  <Send className="h-3.5 w-3.5 text-[#9a6b2f]" aria-hidden />
+                </div>
+                <div className="min-w-0">
+                  <p className="mg-apps-mgmt-m__panel-title">承認済みスタッフへ通知</p>
+                  {!bulkOpen ? (
+                    <p className="mt-0.5 text-[10px] text-[#8a9e80]">
+                      承認済み {acceptedCount}名へ一斉送信
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 shrink-0 text-[#8a9e80] transition-transform",
+                  bulkOpen && "rotate-180"
+                )}
+                aria-hidden
+              />
+            </button>
+            {bulkOpen ? (
+              <div className="border-t border-[#f0ebe0] px-3 pb-3 pt-2">
+                <p className="mb-2 text-[10px] text-[#8a9e80]">
+                  ダッシュボードのお知らせと同じ経路です
+                </p>
+                <select
+                  value={bulkTemplate}
+                  onChange={(e) => onBulkTemplateChange(e.target.value)}
+                  className="mg-apps-mgmt-m__input w-full"
+                  aria-label="メッセージテンプレート"
+                >
+                  {BULK_TEMPLATE_OPTIONS.map((o) => (
+                    <option key={o.value || "custom"} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <textarea
+                  value={bulkMessage}
+                  onChange={(e) => onBulkMessageChange(e.target.value)}
+                  placeholder="送信内容を入力（任意）"
+                  rows={3}
+                  className="mg-apps-mgmt-m__input mg-apps-mgmt-m__textarea mt-2 w-full"
+                />
+                <button
+                  type="button"
+                  onClick={onBulkSend}
+                  disabled={bulkSending || (!bulkMessage.trim() && !bulkTemplate)}
+                  className="mg-apps-mgmt-m__btn-gold mt-2.5 w-full justify-center"
+                >
+                  <Send className="h-3.5 w-3.5" aria-hidden />
+                  {bulkSending ? "送信中..." : `一斉送信（${acceptedCount}名）`}
+                </button>
+                {bulkResult && bulkResult.failed > 0 && (
+                  <p className="mt-2 text-[10px] text-amber-800">
+                    直近: 成功 {bulkResult.sent}件 / 失敗 {bulkResult.failed}件
+                    {failedApplicationNames.length > 0 && onBulkRetryFailed ? (
+                      <button
+                        type="button"
+                        onClick={onBulkRetryFailed}
+                        disabled={bulkSending}
+                        className="ml-2 font-medium underline"
+                      >
+                        再送
+                      </button>
+                    ) : null}
+                  </p>
+                )}
+              </div>
+            ) : null}
           </section>
         )}
+        </div>
 
         {/* 検索・フィルター */}
-        <section className="mt-3 space-y-2">
+        <section className="mt-1 space-y-2">
           <div className="relative">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#b0bab0]"
@@ -503,7 +586,7 @@ export function ApplicationsManagementMobileView({
         </section>
 
         {/* 応募者一覧 */}
-        <section className="mt-3">
+        <section>
           <h2 className="mg-apps-mgmt-m__section-title mg-apps-mgmt-m__section-title--list mb-1.5">
             応募者一覧
             <span className="mg-apps-mgmt-m__caption ml-1">{filteredApplications.length}件</span>
@@ -543,36 +626,6 @@ export function ApplicationsManagementMobileView({
             </div>
           )}
         </section>
-
-        {/* 募集内容 */}
-        {recruitmentDescription ? (
-          <section className="mg-apps-mgmt-m__panel mt-4 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setContentOpen((o) => !o)}
-              className="flex w-full items-center justify-between px-3 py-3 text-left"
-            >
-              <span className="mg-apps-mgmt-m__section-title !text-[14px]">募集内容</span>
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 text-[#8a9e80] transition-transform",
-                  contentOpen && "rotate-180"
-                )}
-                aria-hidden
-              />
-            </button>
-            {contentOpen && (
-              <div className="border-t border-[#f0f2ec] px-3 py-3 text-[12px] leading-relaxed text-[#526448]">
-                {recruitmentDescription.split(/\n\n+/).map((p, i) => (
-                  <p key={i} className="mb-2 last:mb-0">
-                    {p}
-                  </p>
-                ))}
-              </div>
-            )}
-          </section>
-        ) : null}
-      </div>
     </div>
   );
 }

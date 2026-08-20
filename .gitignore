@@ -40,6 +40,9 @@ yarn-error.log*
 # supabase
 supabase/.temp/
 
+# ローカル検証用のスクリーンショット出力・撮影スクリプト
+.tmp-hero/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

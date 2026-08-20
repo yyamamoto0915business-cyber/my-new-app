@@ -181,24 +181,18 @@ function RecruitmentTableRow({
       </td>
       <td className="mg-recruitments-pc__td">
         <div className="flex items-center justify-end gap-1.5">
-          <Link
-            href={primaryHref}
-            className="mg-recruitments-pc__btn-action mg-recruitments-pc__btn-action--primary"
-          >
-            応募者確認
-          </Link>
-          <Link
-            href={`/organizer/recruitments/${recruitment.id}/day-of`}
-            className="mg-recruitments-pc__btn-action"
-          >
-            当日管理
-          </Link>
-          <Link
-            href={`/organizer/recruitments/new?editId=${recruitment.id}`}
-            className="mg-recruitments-pc__btn-action"
-          >
-            編集
-          </Link>
+        <Link
+          href={primaryHref}
+          className="mg-recruitments-pc__btn-action mg-recruitments-pc__btn-action--primary"
+        >
+          応募者確認
+        </Link>
+        <Link
+          href={`/organizer/recruitments/new?editId=${recruitment.id}`}
+          className="mg-recruitments-pc__btn-action"
+        >
+          編集
+        </Link>
           <div className="relative">
             <button
               type="button"
@@ -326,9 +320,9 @@ export function OrganizerRecruitmentsPcView({
     <div className="mg-recruitments-pc w-full">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="mg-recruitments-pc__title">スタッフ募集管理</h1>
+          <h1 className="mg-recruitments-pc__title">ボランティア募集管理</h1>
           <p className="mg-recruitments-pc__desc mt-1.5 max-w-xl">
-            イベントごとのスタッフ募集を管理し、応募状況や当日運営まで行えます。
+            イベントごとのボランティア募集を管理し、応募状況や当日運営まで行えます。
           </p>
         </div>
         <Link href="/organizer/recruitments/new" className="mg-recruitments-pc__btn-primary shrink-0">

@@ -13,7 +13,7 @@ const MG_LINE = "#d4d2cc";
 
 type StatItem = {
   label: string;
-  value: string;
+  href: string;
   icon: React.ReactNode;
 };
 
@@ -22,27 +22,29 @@ type Props = {
   avatarUrl: string | null;
   bio?: string | null;
   region?: string | null;
-  stats: {
-    participated: number;
-    volunteer: number;
-    favorites: number;
-    points: number;
-  };
+  isOrganizerRegistered: boolean;
   onLogout: () => void;
+  /** false のときヘッダー内ログアウトを隠す（設定カード側に出す） */
+  showLogout?: boolean;
 };
 
-function StatCell({ label, value, icon }: StatItem) {
+function StatCell({ label, href, icon }: StatItem) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 bg-[#ffffff] px-0.5 py-2.5 text-center">
+    <Link
+      href={href}
+      className="flex min-h-[64px] min-w-0 flex-1 flex-col items-center justify-center gap-1 bg-[#ffffff] px-1 py-2 text-center transition-colors hover:bg-[#f7faf8] active:bg-[#eaf4ee]"
+      aria-label={label}
+    >
       <div
-        className="flex h-7 w-7 items-center justify-center rounded-full"
+        className="flex h-9 w-9 items-center justify-center rounded-full"
         style={{ backgroundColor: MG_GREEN_SOFT, color: MG_GREEN_DARK }}
       >
         {icon}
       </div>
-      <p className="text-[10px] leading-tight text-[#6a6a64]">{label}</p>
-      <p className="text-[13px] font-semibold tabular-nums text-[#18181a]">{value}</p>
-    </div>
+      <p className="max-w-[4.75rem] text-[11px] font-medium leading-snug tracking-[0.02em] text-[#5c5a56]">
+        {label}
+      </p>
+    </Link>
   );
 }
 
@@ -79,52 +81,52 @@ export function MypageMobileProfileCard({
   avatarUrl,
   bio,
   region,
-  stats,
+  isOrganizerRegistered,
   onLogout,
+  showLogout = true,
 }: Props) {
-  const statusText = bio?.trim() || "地域のイベントに参加してみよう！";
+  const statusText = bio?.trim() || "地域の魅力を見つけよう！";
+  const organizerHref = isOrganizerRegistered ? "/organizer" : "/organizer/register";
+  const planHref = isOrganizerRegistered ? "/organizer/settings/plan" : "/organizer/register";
 
   const statItems: StatItem[] = [
     {
-      label: "参加したイベント",
-      value: `${stats.participated}件`,
+      label: "投稿",
+      href: "/profile/posts",
       icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
         </svg>
       ),
     },
     {
-      label: "ボランティア参加",
-      value: `${stats.volunteer}件`,
+      label: "主催ダッシュボード",
+      href: organizerHref,
       icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 00-3-3.87" />
-          <path d="M16 3.13a4 4 0 010 7.75" />
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
         </svg>
       ),
     },
     {
       label: "お気に入り",
-      value: `${stats.favorites}件`,
+      href: "/saved",
       icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
           <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
         </svg>
       ),
     },
     {
-      label: "マイポイント",
-      value: `${stats.points} pt`,
+      label: "プラン",
+      href: planHref,
       icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 6v6l3 2" />
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+          <path d="M12 2l2.4 6.8H22l-6.2 4.4 2.4 6.8L12 16l-6.2 4 2.4-6.8L2 8.8h7.6L12 2z" />
         </svg>
       ),
     },
@@ -208,15 +210,17 @@ export function MypageMobileProfileCard({
               <PencilIcon />
               プロフィールを編集
             </Link>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="inline-flex min-h-[30px] items-center gap-1.5 rounded-full border bg-white px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-[#fafaf8]"
-              style={{ borderColor: MG_LINE, color: MG_MUTED }}
-            >
-              <LogoutIcon />
-              ログアウト
-            </button>
+            {showLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="inline-flex min-h-[30px] items-center gap-1.5 rounded-full border bg-white px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap shadow-sm transition-colors hover:bg-[#fafaf8]"
+                style={{ borderColor: MG_LINE, color: MG_MUTED }}
+              >
+                <LogoutIcon />
+                ログアウト
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -44,7 +44,7 @@ export function VolunteerTab({ userId }: Props) {
             title="稼働予定がありません"
             description="ボランティア募集を探して応募してみましょう"
             ctaLabel="募集を探す"
-            ctaHref="/volunteer"
+            ctaHref="/?kind=volunteer"
           />
         ) : (
           <Link
@@ -81,7 +81,7 @@ export function VolunteerTab({ userId }: Props) {
             title="応募中の募集がありません"
             description="ボランティア募集に応募するとここに表示されます"
             ctaLabel="募集を探す"
-            ctaHref="/volunteer"
+            ctaHref="/?kind=volunteer"
           />
         ) : (
           <div className="space-y-2">

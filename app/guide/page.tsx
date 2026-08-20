@@ -180,10 +180,10 @@ export default function GuidePage() {
                   イベントを探す →
                 </Link>
                 <Link
-                  href="/volunteer"
+                  href="/"
                   className="block w-full rounded-[10px] border border-white/35 py-[9px] text-center text-[13px] font-[500] text-white"
                 >
-                  ボランティア募集を見る →
+                  まちの情報を見る →
                 </Link>
               </div>
               <p className="mt-4 text-[11px] leading-[1.6] text-white/60">
@@ -212,8 +212,8 @@ export default function GuidePage() {
                   <Link href="/events" className="flex-1 rounded-[9px] bg-white py-[9px] text-center text-[12px] font-[600] text-[#2a7a76]">
                     イベントを探す →
                   </Link>
-                  <Link href="/volunteer" className="flex-1 rounded-[9px] border border-white/35 py-[8px] text-center text-[12px] font-[500] text-white">
-                    ボランティアを見る →
+                  <Link href="/" className="flex-1 rounded-[9px] border border-white/35 py-[8px] text-center text-[12px] font-[500] text-white">
+                    まちの情報を見る →
                   </Link>
                 </div>
               </div>

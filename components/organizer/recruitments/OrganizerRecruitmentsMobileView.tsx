@@ -236,12 +236,6 @@ function RecruitmentListCard({
           応募者確認
         </Link>
         <Link
-          href={`/organizer/recruitments/${recruitment.id}/day-of`}
-          className="mg-recruitments-pc__btn-action no-underline"
-        >
-          当日管理
-        </Link>
-        <Link
           href={`/organizer/recruitments/new?editId=${recruitment.id}`}
           className="mg-recruitments-pc__btn-action no-underline"
         >
@@ -347,15 +341,15 @@ export function OrganizerRecruitmentsMobileView({
     <div className="mg-recruitments-m flex flex-col gap-2 pb-20">
       <header className="mg-recruitments-m__hero relative overflow-hidden rounded-[10px] px-2.5 pb-2.5 pt-2">
         <nav className="mg-recruitments-m__crumb text-[10px] text-[#8a9e80]" aria-label="パンくず">
-          <Link href="/organizer" className="hover:text-[#2B3A6B] hover:underline">
+          <Link href="/organizer/listings" className="hover:text-[#2B3A6B] hover:underline">
             主催者管理
           </Link>
           <span className="mx-1 text-[#d4e0d0]">›</span>
-          <span className="text-[#526448]">スタッフ募集管理</span>
+          <span className="text-[#526448]">ボランティア募集管理</span>
         </nav>
-        <h1 className="mg-recruitments-m__title mt-1">スタッフ募集管理</h1>
+        <h1 className="mg-recruitments-m__title mt-1">ボランティア募集管理</h1>
         <p className="mg-recruitments-m__desc mt-0.5 line-clamp-2">
-          イベントごとのスタッフ募集を管理し、応募確認から当日管理まで行えます。
+          イベントごとのボランティア募集を管理し、応募確認まで行えます。
         </p>
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           <Link

@@ -1,4 +1,6 @@
-/** モード選択の保存（cookie。未ログインでも有効） */
+/** モード選択の保存（cookie。未ログインでも有効）
+ * EVENT=まちの情報 / VOLUNTEER=みんなの投稿（後方互換のキー名） / ORGANIZER=主催
+ */
 
 export type ModePreference = "EVENT" | "VOLUNTEER" | "ORGANIZER" | null;
 
@@ -30,12 +32,12 @@ export function setModeCookie(mode: ModePreference): void {
 export function getRedirectPathForMode(mode: ModePreference): string {
   switch (mode) {
     case "EVENT":
-      return "/events";
+      return "/";
     case "VOLUNTEER":
-      return "/volunteer";
+      return "/posts";
     case "ORGANIZER":
-      return "/organizer";
+      return "/organizer/listings";
     default:
-      return "/events";
+      return "/";
   }
 }

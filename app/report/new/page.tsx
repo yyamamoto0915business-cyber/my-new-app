@@ -117,8 +117,8 @@ function ReportNewForm() {
     return (
       <div className="min-h-screen bg-[var(--background)] px-4 py-8">
         <p className="text-[var(--foreground-muted)]">イベントが指定されていません。</p>
-        <Link href="/volunteer" className="mt-4 inline-block text-sm font-medium text-[var(--accent)] hover:underline">
-          ボランティア募集から選ぶ →
+        <Link href="/?kind=volunteer" className="mt-4 inline-block text-sm font-medium text-[var(--accent)] hover:underline">
+          まちの情報から選ぶ →
         </Link>
       </div>
     );

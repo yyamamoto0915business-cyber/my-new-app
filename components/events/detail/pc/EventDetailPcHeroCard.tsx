@@ -3,6 +3,7 @@
 import { CircleCheck, CalendarDays } from "lucide-react";
 import type { Event } from "@/lib/db/types";
 import { EventDetailFlyerImage } from "@/components/events/EventDetailFlyerImage";
+import { DetailImageSwitcher } from "@/components/media/DetailImageSwitcher";
 import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import { getPrimaryCategory } from "@/lib/inferCategory";
 import { CATEGORY_LABELS } from "@/lib/categories";
@@ -45,15 +46,28 @@ export function EventDetailPcHeroCard({
     >
       <div className="grid grid-cols-[minmax(200px,36%)_minmax(0,1fr)] items-stretch">
         <div className="relative min-h-[168px] border-r border-[#e8edd8] bg-[#f0f4f0]">
-          <EventDetailFlyerImage
-            imageUrl={event.imageUrl}
+          <DetailImageSwitcher
+            className="absolute inset-0"
+            coverUrl={event.imageUrl}
+            galleryImages={event.galleryImages}
             alt={event.title}
-            priority
-            variant="pcHero"
-            className="absolute inset-0 h-full w-full"
+            thumbsPlacement="overlay"
+            renderMain={(activeUrl) => (
+              <EventDetailFlyerImage
+                imageUrl={activeUrl}
+                alt={event.title}
+                priority
+                variant="pcHero"
+                className="absolute inset-0 h-full w-full"
+              />
+            )}
           />
           {isAvailable ? (
-            <div className="absolute bottom-2 left-2 z-10 inline-flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-full bg-[#348b38]/92 px-2 py-0.5 text-[10px] font-medium text-white shadow-sm backdrop-blur-sm">
+            <div
+              className={`absolute left-2 z-10 inline-flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-full bg-[#348b38]/92 px-2 py-0.5 text-[10px] font-medium text-white shadow-sm backdrop-blur-sm ${
+                (event.galleryImages?.length ?? 0) > 0 ? "bottom-14" : "bottom-2"
+              }`}
+            >
               <CircleCheck className="h-3 w-3 shrink-0" aria-hidden />
               <span className="truncate">{participationReception}</span>
             </div>

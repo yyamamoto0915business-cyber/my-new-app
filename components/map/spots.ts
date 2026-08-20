@@ -33,7 +33,10 @@ export const SPOTS: Record<SpotKey, Spot> = {
 export function routeToSpotKey(pathname: string): SpotKey {
   const normalized = pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
   if (normalized === "/") return "HOME";
-  if (normalized.startsWith("/volunteer")) return "VOLUNTEER";
+  if (normalized === "/posts" || normalized.startsWith("/posts/")) return "VOLUNTEER";
+  if (normalized === "/machi" || normalized.startsWith("/machi/")) return "HOME";
+  if (normalized.startsWith("/volunteer")) return "EVENTS";
+  if (normalized.startsWith("/stores") || normalized.startsWith("/kitchen-cars")) return "EVENTS";
   if (normalized.startsWith("/events")) return "EVENTS";
   if (normalized.startsWith("/profile")) return "PROFILE";
   if (normalized.startsWith("/messages") || normalized.startsWith("/dm")) return "MESSAGES";
