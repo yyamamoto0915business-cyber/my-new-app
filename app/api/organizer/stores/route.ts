@@ -7,11 +7,17 @@ import {
   createMemoryStore,
   listMemoryStores,
 } from "@/lib/stores/memory-store";
+import { isOwnManageableStore } from "@/lib/stores/draft-shell";
 import { isStoreKind, type StoreKind } from "@/lib/stores/types";
 
 function parseKind(value: unknown): StoreKind | undefined {
   if (isStoreKind(value)) return value;
   return undefined;
+}
+
+/** 開発用メモリ一覧からデモサンプルを除外 */
+function listOwnMemoryStores(userId: string, kind?: StoreKind) {
+  return listMemoryStores(userId, kind).filter(isOwnManageableStore);
 }
 
 /** GET: 主催者の店舗一覧（?kind=store|kitchen_car） */
@@ -30,18 +36,16 @@ export async function GET(request: NextRequest) {
       if (!organizerId) {
         return NextResponse.json({ error: "主催者登録が必要です" }, { status: 403 });
       }
+      // DB 成功時は実データのみ（開発用デモをマージしない）
       const stores = await listStoresByOrganizerId(supabase, organizerId, kind);
-      const mem = listMemoryStores(user.id, kind);
-      const ids = new Set(stores.map((s) => s.id));
-      const merged = [...stores, ...mem.filter((s) => !ids.has(s.id))];
-      return NextResponse.json({ stores: merged });
+      return NextResponse.json({ stores });
     } catch (e) {
       console.error("organizer stores GET:", e);
-      return NextResponse.json({ stores: listMemoryStores(user.id, kind) });
+      return NextResponse.json({ stores: listOwnMemoryStores(user.id, kind) });
     }
   }
 
-  return NextResponse.json({ stores: listMemoryStores(user.id, kind) });
+  return NextResponse.json({ stores: listOwnMemoryStores(user.id, kind) });
 }
 
 /** POST: 店舗 / キッチンカーを新規作成 */

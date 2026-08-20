@@ -98,9 +98,8 @@ export function listMemoryStores(
 ): StoreRecord[] {
   let list = stores;
   if (organizerId) {
-    list = list.filter(
-      (s) => s.organizerId === organizerId || s.organizerId === DEV_ORGANIZER_ID,
-    );
+    // デモ（dev-organizer）は本人の一覧に混ぜない。デモ直リンクは getMemoryStoreById で取得する。
+    list = list.filter((s) => s.organizerId === organizerId);
   }
   if (kind) {
     list = list.filter((s) => s.kind === kind);

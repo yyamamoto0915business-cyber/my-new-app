@@ -6,7 +6,10 @@ import Link from "next/link";
 import { ChevronRight, Plus, Store, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
-import { organizerPathForKind } from "@/lib/stores/draft-shell";
+import {
+  isOwnManageableStore,
+  organizerPathForKind,
+} from "@/lib/stores/draft-shell";
 import {
   formatStoreDateJa,
   type StoreKind,
@@ -75,7 +78,10 @@ export function OrganizerStoresList({ kind = "store" }: Props) {
           return;
         }
         if (!cancelled) {
-          setStores((json.stores as StoreRecord[]) ?? []);
+          const list = ((json.stores as StoreRecord[]) ?? []).filter(
+            isOwnManageableStore,
+          );
+          setStores(list);
           setError(null);
         }
       } catch {

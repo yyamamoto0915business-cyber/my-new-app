@@ -1,8 +1,6 @@
 import type { OrganizerStore, StoreFeature } from "@/lib/organizer/store-management-mock";
-import {
-  DEMO_ORGANIZER_STORE,
-  DEMO_STORE_ID,
-} from "@/lib/organizer/store-management-mock";
+import { DEMO_ORGANIZER_STORE } from "@/lib/organizer/store-management-mock";
+import { isStoreSampleId } from "@/lib/stores/draft-shell";
 import { storeNewsRecordToItem } from "@/lib/stores/news-view";
 import {
   featureDefsForKind,
@@ -30,10 +28,7 @@ export function storeRecordToOrganizerView(
   newsRecords: StoreNewsRecord[] = [],
   linkedEvents: Array<{ id: string; title: string; dateLabel: string }> = [],
 ): OrganizerStore {
-  const isDemo =
-    record.id === DEMO_STORE_ID ||
-    record.id === "demo" ||
-    record.name === DEMO_ORGANIZER_STORE.name;
+  const isDemo = isStoreSampleId(record.id);
 
   const gallery = record.galleryImages.map((src, i) => ({
     id: `g-${i}`,

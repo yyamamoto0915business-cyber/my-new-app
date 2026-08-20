@@ -128,7 +128,7 @@ export function MyAlbumMemoryCard({
           className="my-album-memory__hit"
           aria-label={post.title}
           tabIndex={active ? 0 : -1}
-          data-no-swipe
+          draggable={false}
         >
           {content}
         </Link>

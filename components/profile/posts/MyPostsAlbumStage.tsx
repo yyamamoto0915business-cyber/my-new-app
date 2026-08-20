@@ -277,9 +277,10 @@ export function MyPostsAlbumStage({
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     const target = e.target as HTMLElement | null;
+    // メニュー等だけ除外。カード本体はスワイプ対象（タップ時のみリンクへ）
     if (
       target?.closest(
-        ".my-album-pop, .my-album-stage__menu, .post-card-menu, .my-album-memory__hit, a, [data-no-swipe]",
+        ".my-album-pop, .my-album-stage__menu, .post-card-menu, .my-album-memory__menu, [data-no-swipe]",
       )
     ) {
       return;
@@ -303,11 +304,13 @@ export function MyPostsAlbumStage({
     if (Math.abs(delta) >= SWIPE_PX) {
       if (delta < 0) goNext();
       else goPrev();
+      // スワイプ確定時は直後の click でリンク遷移しない
+      drag.current.moved = true;
     }
-    if (moved) {
+    if (moved || Math.abs(delta) >= SWIPE_PX) {
       window.setTimeout(() => {
         drag.current.moved = false;
-      }, 0);
+      }, 50);
     }
   };
 
@@ -315,6 +318,7 @@ export function MyPostsAlbumStage({
     if (drag.current.moved) {
       e.preventDefault();
       e.stopPropagation();
+      drag.current.moved = false;
     }
   };
 

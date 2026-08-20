@@ -11,12 +11,17 @@ import {
   getMemoryStoreById,
   updateMemoryStore,
 } from "@/lib/stores/memory-store";
+import { isStoreSampleId } from "@/lib/stores/draft-shell";
 import {
   isStoreFeatureKey,
   normalizeStoreFeatures,
   type StoreIntroUpdateInput,
   type StoreStatus,
 } from "@/lib/stores/types";
+
+function isMemoryStoreId(id: string): boolean {
+  return isStoreSampleId(id) || id.startsWith("store-mem-");
+}
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -89,17 +94,16 @@ export async function GET(_request: NextRequest, { params }: Params) {
   const supabase = await createClient();
   if (supabase) {
     try {
-      // デモ ID はメモリ側（UUID でない）
-      if (id === "demo" || id.startsWith("demo-") || id.startsWith("store-mem-")) {
+      // 開発用メモリ ID のみメモリ側を返す（所有権チェック不要のデモ／ローカル作成分）
+      if (isMemoryStoreId(id)) {
         const mem = getMemoryStoreById(id);
         if (mem) return NextResponse.json(mem);
+        return NextResponse.json({ error: "店舗が見つかりません" }, { status: 404 });
       }
 
       const organizerId = await getOrganizerIdByProfileId(supabase, user.id);
       const storeOrganizerId = await getOrganizerIdByStoreId(supabase, id);
       if (!organizerId || storeOrganizerId !== organizerId) {
-        const mem = getMemoryStoreById(id);
-        if (mem) return NextResponse.json(mem);
         return NextResponse.json({ error: "店舗が見つかりません" }, { status: 404 });
       }
       const store = await fetchStoreById(supabase, id);
@@ -109,8 +113,10 @@ export async function GET(_request: NextRequest, { params }: Params) {
       return NextResponse.json(store);
     } catch (e) {
       console.error("organizer stores/[id] GET:", e);
-      const mem = getMemoryStoreById(id);
-      if (mem) return NextResponse.json(mem);
+      if (isMemoryStoreId(id)) {
+        const mem = getMemoryStoreById(id);
+        if (mem) return NextResponse.json(mem);
+      }
       return NextResponse.json(
         { error: "店舗の取得に失敗しました" },
         { status: 500 },

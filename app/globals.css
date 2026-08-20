@@ -20376,7 +20376,7 @@ button.posts-tab--active:not([disabled]):active {
 .my-album-stage__slot[data-pos="0"] {
   transform: translate(-50%, -50%) translateY(-10px) scale(1.12);
   z-index: 5;
-  filter: drop-shadow(0 0 28px rgba(232, 120, 150, 0.52));
+  filter: drop-shadow(0 0 28px rgba(255, 255, 255, 0.85));
 }
 
 .my-album-stage__slot[data-pos="1"] {
@@ -20697,8 +20697,8 @@ button.posts-tab--active:not([disabled]):active {
 
 .my-album-memory[data-active="true"] {
   box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.92),
-    0 0 28px rgba(232, 120, 150, 0.42),
+    0 0 0 3px rgba(255, 255, 255, 0.95),
+    0 0 28px rgba(255, 255, 255, 0.72),
     0 1px 0 rgba(255, 255, 255, 0.9) inset,
     0 22px 36px rgba(40, 24, 8, 0.22);
 }
@@ -21159,10 +21159,11 @@ button.posts-tab--active:not([disabled]):active {
 
   .my-album-stage__cards {
     inset: 10% 0 8%;
+    touch-action: pan-y;
   }
 
   .my-album-stage__slot {
-    width: min(196px, 58vw);
+    width: min(188px, 52vw);
   }
 
   .my-album-stage__slot[data-pos="-3"],
@@ -21171,23 +21172,62 @@ button.posts-tab--active:not([disabled]):active {
   }
 
   .my-album-stage__slot[data-pos="-2"] {
-    transform: translate(-50%, -50%) translateX(-68%) translateY(28px) rotateY(22deg) scale(0.68);
+    transform: translate(-50%, -50%) translateX(-92%) translateY(32px) rotateY(26deg) scale(0.62);
+    z-index: 1;
+    opacity: 0.64;
+    filter: brightness(0.95);
+    pointer-events: none;
   }
 
   .my-album-stage__slot[data-pos="-1"] {
-    transform: translate(-50%, -50%) translateX(-38%) translateY(10px) rotateY(12deg) scale(0.84);
+    transform: translate(-50%, -50%) translateX(-58%) translateY(14px) rotateY(16deg) scale(0.8);
+    z-index: 2;
+    opacity: 0.82;
+    filter: brightness(0.98);
+    pointer-events: none;
   }
 
   .my-album-stage__slot[data-pos="0"] {
-    transform: translate(-50%, -50%) translateY(6px) scale(1.04);
+    transform: translate(-50%, -50%) translateY(6px) scale(1.06);
+    z-index: 5;
+    opacity: 1;
+    filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.85));
   }
 
   .my-album-stage__slot[data-pos="1"] {
-    transform: translate(-50%, -50%) translateX(38%) translateY(10px) rotateY(-12deg) scale(0.84);
+    transform: translate(-50%, -50%) translateX(58%) translateY(14px) rotateY(-16deg) scale(0.8);
+    z-index: 2;
+    opacity: 0.82;
+    filter: brightness(0.98);
+    pointer-events: none;
   }
 
   .my-album-stage__slot[data-pos="2"] {
-    transform: translate(-50%, -50%) translateX(68%) translateY(28px) rotateY(-22deg) scale(0.68);
+    transform: translate(-50%, -50%) translateX(92%) translateY(32px) rotateY(-26deg) scale(0.62);
+    z-index: 1;
+    opacity: 0.64;
+    filter: brightness(0.95);
+    pointer-events: none;
+  }
+
+  /* 背後カードは写真のチラ見せ優先（タイトルの食い込みを抑える） */
+  .my-album-stage__slot[data-pos="-2"] .my-album-memory__body,
+  .my-album-stage__slot[data-pos="-2"] .my-album-memory__foot,
+  .my-album-stage__slot[data-pos="-2"] .my-album-memory__head,
+  .my-album-stage__slot[data-pos="2"] .my-album-memory__body,
+  .my-album-stage__slot[data-pos="2"] .my-album-memory__foot,
+  .my-album-stage__slot[data-pos="2"] .my-album-memory__head,
+  .my-album-stage__slot[data-pos="-1"] .my-album-memory__excerpt,
+  .my-album-stage__slot[data-pos="-1"] .my-album-memory__foot,
+  .my-album-stage__slot[data-pos="1"] .my-album-memory__excerpt,
+  .my-album-stage__slot[data-pos="1"] .my-album-memory__foot {
+    visibility: hidden;
+  }
+
+  .my-album-stage__slot[data-pos="-1"] .my-album-memory__title,
+  .my-album-stage__slot[data-pos="1"] .my-album-memory__title {
+    font-size: 11px;
+    opacity: 0.7;
   }
 
   .my-album-memory {
