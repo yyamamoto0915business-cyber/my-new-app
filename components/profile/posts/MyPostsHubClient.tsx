@@ -15,9 +15,9 @@ import {
   getPrefetchedMyPosts,
   prefetchMyPosts,
 } from "@/lib/prefetch-my-posts";
-import { MY_POSTS_DEMO } from "@/lib/posts/my-posts-demo";
 import { cn } from "@/lib/utils";
 import { computeMyPostsStats } from "@/lib/posts/my-posts-stats";
+import { MY_POSTS_DEMO } from "@/lib/posts/my-posts-demo";
 import {
   buildSeasonAlbums,
   calendarMonthKey,
@@ -67,14 +67,13 @@ export function MyPostsHubClient() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      // 未ログインでもアルバムの雰囲気が伝わるようにデモを表示
-      setItems(MY_POSTS_DEMO);
+      setItems([]);
       setLoading(false);
       return;
     }
 
     const applyItems = (arr: MyPostItem[]) => {
-      setItems(arr.length <= 1 ? MY_POSTS_DEMO : arr);
+      setItems(arr);
       setLoading(false);
     };
 
@@ -86,12 +85,7 @@ export function MyPostsHubClient() {
 
     setLoading(true);
     void prefetchMyPosts().then((arr) => {
-      if (arr) {
-        applyItems(arr);
-        return;
-      }
-      setItems(MY_POSTS_DEMO);
-      setLoading(false);
+      applyItems(arr ?? []);
     });
   }, [user, authLoading]);
 
@@ -106,7 +100,8 @@ export function MyPostsHubClient() {
     });
   }, []);
 
-  const sourceItems = items;
+  const sourceItems =
+    searchParams.get("demo") === "1" ? MY_POSTS_DEMO : items;
 
   const years = useMemo(() => listAlbumYears(sourceItems), [sourceItems]);
   const albums = useMemo(() => buildSeasonAlbums(sourceItems), [sourceItems]);

@@ -8,7 +8,6 @@ import {
   applyPostFilters,
   collectPostAreas,
   filterCommunityPosts,
-  MOCK_COMMUNITY_POSTS,
   POST_CATEGORY_TABS,
   POST_DATE_OPTIONS,
   POST_SORT_OPTIONS,
@@ -190,12 +189,6 @@ function PostsFeaturedSection({
   );
 }
 
-function mergePostsWithMocks(apiPosts: CommunityPost[]): CommunityPost[] {
-  const apiIds = new Set(apiPosts.map((p) => p.id));
-  const mocks = MOCK_COMMUNITY_POSTS.filter((p) => !apiIds.has(p.id));
-  return [...apiPosts, ...mocks];
-}
-
 export function PostsHubClient() {
   const [category, setCategory] = useState<PostCategoryTab>("all");
   const [area, setArea] = useState<string>("");
@@ -239,14 +232,12 @@ export function PostsHubClient() {
     return () => document.removeEventListener("pointerdown", handlePointer);
   }, [openFilter]);
 
-  const merged = useMemo(() => mergePostsWithMocks(apiPosts), [apiPosts]);
-
   const areaOptions = useMemo<FilterOption[]>(
     () => [
       { key: "", label: "すべてのエリア" },
-      ...collectPostAreas(merged).map((a) => ({ key: a, label: a })),
+      ...collectPostAreas(apiPosts).map((a) => ({ key: a, label: a })),
     ],
-    [merged],
+    [apiPosts],
   );
 
   const categoryOptions = useMemo<FilterOption[]>(
@@ -255,8 +246,8 @@ export function PostsHubClient() {
   );
 
   const posts = useMemo(
-    () => applyPostFilters(merged, { category, area, sort, date: dateKey }),
-    [merged, category, area, sort, dateKey],
+    () => applyPostFilters(apiPosts, { category, area, sort, date: dateKey }),
+    [apiPosts, category, area, sort, dateKey],
   );
 
   useEffect(() => {
@@ -353,7 +344,7 @@ export function PostsHubClient() {
 
         <div className="posts-board-layout">
           <PostsFeaturedSection posts={posts} loading={loading} />
-          <PostsSidebar />
+          <PostsSidebar posts={apiPosts} />
         </div>
       </main>
 

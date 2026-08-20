@@ -2,41 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, Heart, MapPin, Sprout } from "lucide-react";
+import { ArrowRight, MapPin, Sprout } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  POST_CARD_FALLBACK_IMAGE,
-  POST_CATEGORY_COLORS,
-  type CommunityPost,
-} from "@/lib/posts/mock-feed";
-import {
-  getAuthorFollowerCount,
-  getNearbyPosts,
-  getPostPlaceInfo,
-} from "@/lib/posts/mock-detail";
-
-function NearbyThumb({ src, color }: { src: string; color: string }) {
-  const [imgSrc, setImgSrc] = useState(src);
-  return (
-    <div className="posts-nearby__thumb">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={imgSrc}
-        alt=""
-        loading="lazy"
-        onError={() => {
-          if (imgSrc !== POST_CARD_FALLBACK_IMAGE) {
-            setImgSrc(POST_CARD_FALLBACK_IMAGE);
-          }
-        }}
-      />
-      <span
-        className="posts-nearby__badge"
-        style={{ backgroundColor: color }}
-      />
-    </div>
-  );
-}
+import { type CommunityPost } from "@/lib/posts/mock-feed";
 
 type Props = {
   post: CommunityPost;
@@ -46,9 +14,7 @@ type Props = {
 const POST_PLACE_MAP_HREF = "/events?view=map";
 
 export function PostDetailSidebar({ post, variant = "desktop" }: Props) {
-  const place = getPostPlaceInfo(post);
-  const nearby = getNearbyPosts(post);
-  const followers = getAuthorFollowerCount(post);
+  const areaLabel = post.areaLabel?.trim() || "このまち";
   const [following, setFollowing] = useState(false);
   const isMobile = variant === "mobile";
 
@@ -60,38 +26,6 @@ export function PostDetailSidebar({ post, variant = "desktop" }: Props) {
           <span>マップで見る</span>
           <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
         </Link>
-
-        {nearby.length > 0 ? (
-          <section className="posts-nearby-block" aria-label="この近くのしるし">
-            <div className="posts-nearby-block__head">
-              <h2 className="posts-nearby-block__title">この近くのしるし</h2>
-              <Link href="/posts" className="posts-nearby-block__more">
-                もっと見る →
-              </Link>
-            </div>
-            <ul className="posts-nearby__scroll">
-              {nearby.map((p) => (
-                <li key={p.id}>
-                  <Link
-                    href={`/posts/${p.id}`}
-                    className="posts-nearby__scroll-card"
-                  >
-                    <NearbyThumb
-                      src={p.imageUrl}
-                      color={POST_CATEGORY_COLORS[p.category]}
-                    />
-                    <p className="posts-nearby__scroll-title">{p.title}</p>
-                    <p className="posts-nearby__scroll-meta">{p.authorName}</p>
-                    <p className="posts-nearby__scroll-likes">
-                      <Heart className="h-3 w-3" aria-hidden />
-                      {p.likeCount}
-                    </p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
       </aside>
     );
   }
@@ -107,43 +41,13 @@ export function PostDetailSidebar({ post, variant = "desktop" }: Props) {
         </div>
         <p className="posts-place__name">
           <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          {place.areaLabel}
+          {areaLabel}
         </p>
-        <p className="posts-place__desc">{place.description}</p>
         <Link href={POST_PLACE_MAP_HREF} className="posts-place__link">
           マップで見る
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
       </section>
-
-      {nearby.length > 0 ? (
-        <section className="posts-side-panel">
-          <div className="posts-side-panel__head">
-            <h2 className="posts-side-panel__title">この近くのしるし</h2>
-            <Link href="/posts" className="posts-side-panel__more">
-              もっと見る →
-            </Link>
-          </div>
-          <ul className="posts-nearby__list">
-            {nearby.map((p) => (
-              <li key={p.id}>
-                <Link href={`/posts/${p.id}`} className="posts-nearby__item">
-                  <NearbyThumb
-                    src={p.imageUrl}
-                    color={POST_CATEGORY_COLORS[p.category]}
-                  />
-                  <div className="min-w-0">
-                    <p className="posts-nearby__title">{p.title}</p>
-                    <p className="posts-nearby__meta">
-                      {p.authorName} · {p.likeCount} いいね
-                    </p>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       <section className="posts-side-panel">
         <h2 className="posts-side-panel__title">投稿者</h2>
@@ -153,9 +57,6 @@ export function PostDetailSidebar({ post, variant = "desktop" }: Props) {
           </span>
           <div className="min-w-0 flex-1">
             <p className="posts-author-card__name">{post.authorName}</p>
-            <p className="posts-author-card__followers">
-              フォロワー {followers}人
-            </p>
           </div>
           <button
             type="button"

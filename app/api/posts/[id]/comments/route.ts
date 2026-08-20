@@ -5,7 +5,6 @@ import {
   listCommentsByPostId,
 } from "@/lib/db/community-post-comments";
 import { mapDbCommentToView } from "@/lib/posts/map-community-post";
-import { getSeedComments } from "@/lib/posts/mock-detail";
 
 const COMMENT_MAX_LENGTH = 500;
 
@@ -19,11 +18,10 @@ export async function GET(_request: NextRequest, { params }: Params) {
   }
 
   const rows = await listCommentsByPostId(postId);
-  const live = rows.map(mapDbCommentToView);
-  const seeds = getSeedComments(postId);
+  const comments = rows.map(mapDbCommentToView);
 
   return NextResponse.json(
-    { comments: [...live, ...seeds] },
+    { comments },
     { headers: { "Cache-Control": "private, no-store" } },
   );
 }
