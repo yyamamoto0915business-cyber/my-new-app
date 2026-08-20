@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   compress: true,
@@ -72,4 +73,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  /** SENTRY_AUTH_TOKEN が無いローカルビルドでは自動でスキップされる */
+  silent: !process.env.CI,
+  /** _next/static 配下のチャンクもソースマップ対象に含める（スタックの行番号が TS 側で解決される） */
+  widenClientFileUpload: true,
+});

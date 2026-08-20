@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import * as Sentry from "@sentry/nextjs";
 import { isAbortLikeError } from "@/lib/is-abort-like-error";
 
 export default function Error({
@@ -16,6 +17,8 @@ export default function Error({
       reset();
       return;
     }
+    /** 中断由来は通常運用のノイズなので送らない */
+    Sentry.captureException(error);
     console.error(error);
   }, [error, reset]);
 
