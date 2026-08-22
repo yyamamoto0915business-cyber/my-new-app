@@ -6,7 +6,6 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
-  Heart,
   MapPin,
   MessageCircle,
   Play,
@@ -18,6 +17,9 @@ import {
   type CommunityPost,
 } from "@/lib/posts/mock-feed";
 import { formatVideoDuration } from "@/lib/posts/post-video";
+import { AuthorAvatar } from "@/components/posts/AuthorAvatar";
+import { PostLikeButton } from "@/components/posts/PostLikeButton";
+import { isExternalRelatedHref } from "@/lib/posts/related-link";
 
 const PIN_COLORS = ["#e85d5d", "#4a90d9", "#e8b84a", "#5B9E5A", "#c47ab0"];
 
@@ -28,7 +30,6 @@ type Props = {
 
 export function PostsFeedCard({ post, index = 0 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -148,7 +149,11 @@ export function PostsFeedCard({ post, index = 0 }: Props) {
         </span>
         <button
           type="button"
-          onClick={() => setSaved((v) => !v)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setSaved((v) => !v);
+          }}
           className="posts-card__bookmark"
           aria-label={saved ? "保存を解除" : "保存"}
         >
@@ -165,7 +170,7 @@ export function PostsFeedCard({ post, index = 0 }: Props) {
       <div className="posts-card__body">
         <div className="posts-card__author">
           <span className="posts-card__avatar">
-            {post.authorName.slice(0, 1).toUpperCase()}
+            <AuthorAvatar name={post.authorName} src={post.authorAvatarUrl} />
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[11px] font-medium text-[#2a2218]">
@@ -184,28 +189,32 @@ export function PostsFeedCard({ post, index = 0 }: Props) {
           <MapPin className="h-3 w-3 shrink-0 text-[#8a6a48]" aria-hidden />
           <span className="truncate">{post.areaLabel || "—"}</span>
           {post.relatedHref && post.relatedLabel ? (
-            <Link href={post.relatedHref} className="posts-card__related">
-              {post.relatedLabel}
-            </Link>
+            isExternalRelatedHref(post.relatedHref) ? (
+              <a
+                href={post.relatedHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="posts-card__related"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {post.relatedLabel}
+              </a>
+            ) : (
+              <Link href={post.relatedHref} className="posts-card__related">
+                {post.relatedLabel}
+              </Link>
+            )
           ) : null}
         </div>
 
         <div className="posts-card__footer">
-          <button
-            type="button"
-            onClick={() => setLiked((v) => !v)}
-            className="posts-card__like inline-flex items-center gap-1"
-            aria-label="いいね"
-          >
-            <Heart
-              className={cn(
-                "h-3.5 w-3.5",
-                liked ? "fill-[#E04444] text-[#E04444]" : "",
-              )}
-              aria-hidden
-            />
-            {post.likeCount + (liked ? 1 : 0)}
-          </button>
+          <PostLikeButton
+            postId={post.id}
+            initialLiked={Boolean(post.likedByMe)}
+            initialCount={post.likeCount}
+            className="posts-card__like"
+            stopCardNav
+          />
           <span className="inline-flex items-center gap-1">
             <MessageCircle className="h-3.5 w-3.5" aria-hidden />
             {post.commentCount}

@@ -33,6 +33,10 @@ export function addMemoryCommunityPost(
     comment_count: 0,
     created_at: now,
     updated_at: now,
+    related_url: input.relatedUrl ?? "",
+    related_title: input.relatedTitle ?? "",
+    related_image_url: input.relatedImageUrl ?? "",
+    related_site_name: input.relatedSiteName ?? "",
   };
   memoryPosts.unshift(row);
   return row;
@@ -67,10 +71,27 @@ export type MemoryCommunityPostPatch = Partial<
     | "poster_url"
     | "duration_sec"
     | "gallery_images"
+    | "related_url"
+    | "related_title"
+    | "related_image_url"
+    | "related_site_name"
   >
 >;
 
-/** 本人の投稿のみ更新する。存在しない/本人でない場合は null */
+export function adjustMemoryCommunityPostLikeCount(
+  id: string,
+  likeCount: number,
+): DbCommunityPost | null {
+  const idx = memoryPosts.findIndex((p) => p.id === id);
+  if (idx === -1) return null;
+  const next: DbCommunityPost = {
+    ...memoryPosts[idx],
+    like_count: Math.max(0, likeCount),
+    updated_at: new Date().toISOString(),
+  };
+  memoryPosts[idx] = next;
+  return next;
+}
 export function updateMemoryCommunityPost(
   id: string,
   authorId: string | null,

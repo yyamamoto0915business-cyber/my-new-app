@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Heart, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PostCommentView } from "@/lib/db/community-post-comments-types";
+import { AuthorAvatar } from "@/components/posts/AuthorAvatar";
 
 type Viewer = { name: string } | null;
 
@@ -33,6 +34,7 @@ export function PostDetailComments({
   const [error, setError] = useState<string | null>(null);
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [expanded, setExpanded] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isMobile = variant === "mobile";
@@ -56,6 +58,15 @@ export function PostDetailComments({
       active = false;
     };
   }, [postId]);
+
+  useEffect(() => {
+    if (isMobile || !sectionId) return;
+    const node = document.getElementById(sectionId);
+    if (!node) return;
+    const open = () => setPanelOpen(true);
+    node.addEventListener("mg:open-comments", open);
+    return () => node.removeEventListener("mg:open-comments", open);
+  }, [isMobile, sectionId]);
 
   const sorted = useMemo(() => {
     const list = [...comments];
@@ -139,7 +150,7 @@ export function PostDetailComments({
           {visible.map((c) => (
             <li key={c.id} className="posts-comment">
               <span className="posts-comment__avatar" aria-hidden>
-                {c.authorName.slice(0, 1).toUpperCase()}
+                <AuthorAvatar name={c.authorName} src={c.authorAvatarUrl} />
               </span>
               <div className="posts-comment__main">
                 <div className="posts-comment__meta">
@@ -267,14 +278,24 @@ export function PostDetailComments({
       </div>
       <div className="posts-comments-block__toolbar">
         <p className="posts-comments-block__count">コメント {count}件</p>
-        {sortControls}
+        {panelOpen ? sortControls : null}
+        <button
+          type="button"
+          className="posts-comments__toggle"
+          aria-expanded={panelOpen}
+          onClick={() => setPanelOpen((v) => !v)}
+        >
+          {panelOpen ? "コメントを閉じる" : "コメントを見る"}
+        </button>
       </div>
-      <section
-        className="posts-comments posts-comments--pop"
-        aria-label="コメント"
-      >
-        {commentContent}
-      </section>
+      {panelOpen ? (
+        <section
+          className="posts-comments posts-comments--pop"
+          aria-label="コメント"
+        >
+          {commentContent}
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import type {
   NotificationItem,
   PendingFormItem,
+  PendingFollowItem,
 } from "@/components/notifications/NotificationsView";
 
 const PREVIEW_RECRUITMENT_ID = "preview-spring-fleamarket";
@@ -9,6 +10,7 @@ const PREVIEW_RECRUITMENT_ID = "preview-spring-fleamarket";
 export function buildNotificationsPreview(): {
   notifications: NotificationItem[];
   pendingForms: PendingFormItem[];
+  pendingFollows: PendingFollowItem[];
   unreadCount: number;
   bannerLabel: string;
 } {
@@ -33,7 +35,36 @@ export function buildNotificationsPreview(): {
     },
   ];
 
+  const pendingFollows: PendingFollowItem[] = [
+    {
+      followId: "preview-follow-req-1",
+      fromUserId: "preview-sora",
+      fromName: "sora_87",
+      createdAt: minutesAgo(2),
+    },
+  ];
+
   const notifications: NotificationItem[] = [
+    {
+      id: "preview-n-follow",
+      user_id: "preview",
+      type: "follow_accepted",
+      title: "cafe_loveさんにフォローされました",
+      body: "フォロワー一覧から確認できます。",
+      link: "/profile/follows?tab=followers",
+      read_at: null,
+      created_at: minutesAgo(1),
+    },
+    {
+      id: "preview-n-follow-req",
+      user_id: "preview",
+      type: "follow_request",
+      title: "sora_87さんからフォロー申請が届きました",
+      body: "承認すると、非公開のアルバムも見られるようになります。",
+      link: "/notifications?follow=preview-follow-req-1",
+      read_at: null,
+      created_at: minutesAgo(2),
+    },
     {
       id: "preview-n-1",
       user_id: "preview",
@@ -99,7 +130,8 @@ export function buildNotificationsPreview(): {
   return {
     notifications,
     pendingForms,
-    unreadCount: 1,
+    pendingFollows,
+    unreadCount: 3,
     bannerLabel: "プレビュー表示です（ダミーデータ・ログイン不要）",
   };
 }

@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Bookmark,
-  Heart,
   MapPin,
   MessageCircle,
   Share2,
@@ -17,9 +16,12 @@ import {
 import { PostDetailMedia } from "@/components/posts/detail/PostDetailMedia";
 import { PostDetailComments } from "@/components/posts/detail/PostDetailComments";
 import { PostDetailSidebar } from "@/components/posts/detail/PostDetailSidebar";
+import { AuthorFollowButton } from "@/components/posts/AuthorFollowButton";
+import { AuthorAvatar } from "@/components/posts/AuthorAvatar";
+import { PostLikeButton } from "@/components/posts/PostLikeButton";
 import { MobilePostDetailView } from "@/components/posts/detail/MobilePostDetailView";
 
-type Viewer = { name: string } | null;
+type Viewer = { name: string; id?: string } | null;
 
 type Props = {
   post: CommunityPost;
@@ -59,10 +61,9 @@ function PostDetailBreadcrumb({
 }
 
 function DesktopPostDetailView({ post, viewer }: Props) {
-  const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [following, setFollowing] = useState(false);
   const badgeColor = POST_CATEGORY_COLORS[post.category];
+  const albumHref = post.authorId ? `/users/${post.authorId}/album` : null;
 
   async function handleShare() {
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -78,6 +79,12 @@ function DesktopPostDetailView({ post, viewer }: Props) {
     } catch {
       /* noop */
     }
+  }
+
+  function scrollToComments() {
+    const el = document.getElementById("post-comments");
+    el?.dispatchEvent(new Event("mg:open-comments"));
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
@@ -120,92 +127,101 @@ function DesktopPostDetailView({ post, viewer }: Props) {
 
               <div className="posts-detail-body posts-detail-body--letter posts-detail-body--desktop">
                 <div className="posts-detail-author posts-detail-author--inline">
-                  <span className="posts-detail-author__avatar" aria-hidden>
-                    {post.authorName.slice(0, 1).toUpperCase()}
-                  </span>
+                  {albumHref ? (
+                    <Link
+                      href={albumHref}
+                      className="posts-detail-author__avatar"
+                      aria-label={`${post.authorName}のアルバム`}
+                    >
+                      <AuthorAvatar
+                        name={post.authorName}
+                        src={post.authorAvatarUrl}
+                      />
+                    </Link>
+                  ) : (
+                    <span className="posts-detail-author__avatar" aria-hidden>
+                      <AuthorAvatar
+                        name={post.authorName}
+                        src={post.authorAvatarUrl}
+                      />
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
-                    <p className="posts-detail-author__name">
-                      {post.authorName}
-                    </p>
+                    {albumHref ? (
+                      <Link href={albumHref} className="posts-detail-author__name">
+                        {post.authorName}
+                      </Link>
+                    ) : (
+                      <p className="posts-detail-author__name">{post.authorName}</p>
+                    )}
                     <p className="posts-detail-author__time">
                       {post.postedAtLabel}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setFollowing((v) => !v)}
-                    className={cn(
-                      "posts-follow-btn",
-                      following && "posts-follow-btn--following",
-                    )}
-                  >
-                    {following ? "フォロー中" : "フォローする"}
-                  </button>
+                  <AuthorFollowButton authorId={post.authorId} />
                 </div>
 
-                <h1 className="posts-detail-title">{post.title}</h1>
+                <header className="posts-detail-body__head">
+                  <h1 className="posts-detail-title">{post.title}</h1>
+                  {(post.areaLabel || post.postedAtLabel) && (
+                    <div className="posts-detail-meta-row">
+                      {post.postedAtLabel ? (
+                        <span className="posts-detail-body__time">
+                          {post.postedAtLabel}
+                        </span>
+                      ) : null}
+                      {post.areaLabel ? (
+                        <Link href="/discover" className="posts-detail-area-chip">
+                          <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          <span>{post.areaLabel}</span>
+                        </Link>
+                      ) : null}
+                    </div>
+                  )}
+                </header>
 
-                {post.body ? (
-                  <p className="posts-detail-text">{post.body}</p>
-                ) : null}
+                <div className="posts-detail-body__scroll">
+                  {post.body ? (
+                    <p className="posts-detail-text">{post.body}</p>
+                  ) : null}
 
-                {(post.areaLabel || post.tags.length > 0) && (
-                  <div className="posts-detail-meta-row">
-                    {post.areaLabel ? (
-                      <Link href="/discover" className="posts-detail-area-chip">
-                        <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                        <span>{post.areaLabel}</span>
-                      </Link>
-                    ) : null}
-                    {post.tags.length > 0 ? (
-                      <ul className="posts-detail-tags posts-detail-tags--inline">
-                        {post.tags.map((tag) => {
-                          const label = tag.replace(/^#/, "");
-                          return (
-                            <li key={tag}>
-                              <Link
-                                href={`/posts?tag=${encodeURIComponent(label)}`}
-                                className="posts-chip posts-chip--tag"
-                              >
-                                #{label}
-                              </Link>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : null}
-                  </div>
-                )}
-
-                {post.relatedHref && post.relatedLabel ? (
-                  <Link href={post.relatedHref} className="posts-detail-related">
-                    {post.relatedLabel}
-                  </Link>
-                ) : null}
+                  {post.tags.length > 0 ? (
+                    <ul className="posts-detail-tags posts-detail-tags--inline">
+                      {post.tags.map((tag) => {
+                        const label = tag.replace(/^#/, "");
+                        return (
+                          <li key={tag}>
+                            <Link
+                              href={`/posts?tag=${encodeURIComponent(label)}`}
+                              className="posts-chip posts-chip--tag"
+                            >
+                              #{label}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </div>
 
                 <div className="posts-detail-actions posts-detail-actions--pill">
+                  <PostLikeButton
+                    postId={post.id}
+                    initialLiked={Boolean(post.likedByMe)}
+                    initialCount={post.likeCount}
+                    className="posts-detail-action"
+                    pressedClassName="posts-detail-action--liked"
+                    iconClassName="h-4 w-4"
+                  />
                   <button
                     type="button"
-                    onClick={() => setLiked((v) => !v)}
-                    className={cn(
-                      "posts-detail-action",
-                      liked && "posts-detail-action--liked",
-                    )}
-                    aria-label="いいね"
+                    onClick={scrollToComments}
+                    className="posts-detail-action"
+                    aria-label="コメントへ移動"
                   >
-                    <Heart
-                      className={cn(
-                        "h-4 w-4",
-                        liked ? "fill-[#E04444] text-[#E04444]" : "",
-                      )}
-                      aria-hidden
-                    />
-                    {post.likeCount + (liked ? 1 : 0)}
-                  </button>
-                  <span className="posts-detail-action">
                     <MessageCircle className="h-4 w-4" aria-hidden />
                     {post.commentCount}
-                  </span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => void handleShare()}
@@ -222,6 +238,7 @@ function DesktopPostDetailView({ post, viewer }: Props) {
               postId={post.id}
               initialCount={post.commentCount}
               viewer={viewer}
+              sectionId="post-comments"
             />
           </main>
 

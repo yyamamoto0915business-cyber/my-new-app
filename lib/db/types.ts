@@ -14,6 +14,7 @@ export type Profile = {
   address: string | null;
   region: string | null;
   bio: string | null;
+  is_private?: boolean;
   role?: ProfileRole | null;
   created_at: string;
   updated_at: string;

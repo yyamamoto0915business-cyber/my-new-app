@@ -9,11 +9,13 @@ import {
   NotificationsView,
   type NotificationItem,
   type PendingFormItem,
+  type PendingFollowItem,
 } from "@/components/notifications/NotificationsView";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [pendingForms, setPendingForms] = useState<PendingFormItem[]>([]);
+  const [pendingFollows, setPendingFollows] = useState<PendingFollowItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
@@ -39,6 +41,7 @@ export default function NotificationsPage() {
         setNotifications(data.notifications ?? []);
         setUnreadCount(data.unreadCount ?? 0);
         setPendingForms(data.pendingApplicationForms ?? []);
+        setPendingFollows(data.pendingFollowRequests ?? []);
       }
     } catch {
       // ignore
@@ -80,6 +83,20 @@ export default function NotificationsPage() {
     }
   };
 
+  const handleRespondFollow = async (
+    followId: string,
+    action: "accept" | "reject",
+  ) => {
+    const res = await fetch(`/api/follows/${followId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    if (res.ok) {
+      setPendingFollows((prev) => prev.filter((f) => f.followId !== followId));
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f7f8f5]">
@@ -107,9 +124,11 @@ export default function NotificationsPage() {
     <NotificationsView
       notifications={notifications}
       pendingForms={pendingForms}
+      pendingFollows={pendingFollows}
       unreadCount={unreadCount}
       onMarkAsRead={handleMarkAsRead}
       onMarkAllAsRead={handleMarkAllAsRead}
+      onRespondFollow={handleRespondFollow}
       markingAll={markingAll}
     />
   );

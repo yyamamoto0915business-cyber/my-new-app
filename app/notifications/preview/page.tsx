@@ -4,7 +4,7 @@ import { buildNotificationsPreview } from "@/lib/notifications-preview";
 
 export const metadata: Metadata = {
   title: "お知らせ（プレビュー） | MachiGlyph",
-  description: "応募フォーム入力案内のお知らせ画面プレビュー（ログイン不要）",
+  description: "フォロー・応募フォームなどお知らせ画面のプレビュー（ログイン不要）",
 };
 
 /**
@@ -18,6 +18,7 @@ export default function NotificationsPreviewPage() {
     <NotificationsView
       notifications={preview.notifications}
       pendingForms={preview.pendingForms}
+      pendingFollows={preview.pendingFollows}
       unreadCount={preview.unreadCount}
       previewBanner={preview.bannerLabel}
     />

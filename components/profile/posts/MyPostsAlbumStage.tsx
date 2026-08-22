@@ -63,6 +63,9 @@ type Props = {
   onYearSelect: (year: number) => void;
   onOpenMonths: () => void;
   onMutated?: (id: string, change: PostMutation) => void;
+  /** 他人のアルバム。投稿作成・メニューを出さない */
+  readOnly?: boolean;
+  heading?: string;
 };
 
 function formatThumbDate(iso: string): string {
@@ -86,14 +89,20 @@ function windowStart(length: number, index: number, size: number): number {
   return Math.max(0, Math.min(index - Math.floor((size - 1) / 2), length - size));
 }
 
-function BlankMemoryCard() {
+function BlankMemoryCard({ readOnly }: { readOnly?: boolean }) {
   return (
     <div className="my-album-memory my-album-memory--blank">
       <p className="my-album-memory__blank-kicker">まだ白いページ</p>
       <span className="my-album-memory__photo my-album-memory__photo--blank">
-        <Plus className="h-6 w-6" aria-hidden />
+        {readOnly ? (
+          <Images className="h-6 w-6" aria-hidden />
+        ) : (
+          <Plus className="h-6 w-6" aria-hidden />
+        )}
       </span>
-      <p className="my-album-memory__blank-cta">次の記録を残す</p>
+      <p className="my-album-memory__blank-cta">
+        {readOnly ? "公開中の記録はまだありません" : "次の記録を残す"}
+      </p>
     </div>
   );
 }
@@ -181,6 +190,8 @@ export function MyPostsAlbumStage({
   onYearSelect,
   onOpenMonths,
   onMutated,
+  readOnly = false,
+  heading = "マイアルバム",
 }: Props) {
   const [season, setSeason] = useState<SeasonFilter>("all");
   const [category, setCategory] = useState<CategoryFilter>("all");
@@ -365,7 +376,7 @@ export function MyPostsAlbumStage({
       <div className="my-album-stage__toolbar">
         <div className="my-album-stage__brand">
           <h1 className="my-album-stage__title">
-            マイアルバム
+            {heading}
             <Image
               src={TITLE_SPRIG}
               alt=""
@@ -476,7 +487,12 @@ export function MyPostsAlbumStage({
                         active={active}
                         interactive={active}
                         onMutated={onMutated}
+                        showMenu={!readOnly}
                       />
+                    ) : readOnly ? (
+                      <div className="my-album-stage__slot-hit">
+                        <BlankMemoryCard readOnly />
+                      </div>
                     ) : (
                       <Link
                         href="/posts/new"
@@ -583,7 +599,7 @@ export function MyPostsAlbumStage({
                   <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                 </span>
               </button>
-            ) : (
+            ) : readOnly ? null : (
               <Link
                 href="/posts/new"
                 className="my-album-stage__thumb my-album-stage__thumb--add"

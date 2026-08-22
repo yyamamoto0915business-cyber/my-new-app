@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ClipboardList,
   FilePenLine,
+  Heart,
   Info,
   Mail,
   Search,
@@ -38,12 +39,20 @@ export type PendingFormItem = {
   createdAt: string;
 };
 
+export type PendingFollowItem = {
+  followId: string;
+  fromUserId: string;
+  fromName: string;
+  createdAt: string;
+};
+
 type TabId = "all" | "unread" | "action";
 type SortId = "newest" | "oldest";
 
 type ListItem =
-  | { kind: "notification"; notification: NotificationItem; pending: PendingFormItem | null }
-  | { kind: "pending"; pending: PendingFormItem };
+  | { kind: "notification"; notification: NotificationItem; pending: PendingFormItem | null; follow: PendingFollowItem | null }
+  | { kind: "pending"; pending: PendingFormItem }
+  | { kind: "follow"; follow: PendingFollowItem };
 
 const GREEN = "#2E7D32";
 
@@ -75,6 +84,9 @@ function resolveIcon(title: string, isAction: boolean) {
   if (isAction || title.includes("応募フォーム")) {
     return { Icon: FilePenLine, bg: "bg-[#e8f5e9]", color: "text-[#2E7D32]" };
   }
+  if (title.includes("いいね")) {
+    return { Icon: Heart, bg: "bg-[#fdecea]", color: "text-[#E04444]" };
+  }
   if (title.includes("受け付け") || title.includes("確認しました")) {
     return { Icon: CheckCircle2, bg: "bg-[#e8f5e9]", color: "text-[#2E7D32]" };
   }
@@ -96,20 +108,24 @@ function resolveIcon(title: string, isAction: boolean) {
 export type NotificationsViewProps = {
   notifications: NotificationItem[];
   pendingForms: PendingFormItem[];
+  pendingFollows?: PendingFollowItem[];
   unreadCount: number;
   previewBanner?: string | null;
   onMarkAsRead?: (id: string) => void;
   onMarkAllAsRead?: () => void;
+  onRespondFollow?: (followId: string, action: "accept" | "reject") => void;
   markingAll?: boolean;
 };
 
 export function NotificationsView({
   notifications,
   pendingForms,
+  pendingFollows = [],
   unreadCount,
   previewBanner,
   onMarkAsRead,
   onMarkAllAsRead,
+  onRespondFollow,
   markingAll = false,
 }: NotificationsViewProps) {
   const [tab, setTab] = useState<TabId>("all");
@@ -117,11 +133,12 @@ export function NotificationsView({
   const [deferredIds, setDeferredIds] = useState<Set<string>>(() => new Set());
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
-  const actionCount = pendingForms.length;
+  const actionCount = pendingForms.length + pendingFollows.length;
   const primaryPending = pendingForms[0] ?? null;
 
   const listItems = useMemo(() => {
     const coveredRecruitmentIds = new Set<string>();
+    const coveredFollowIds = new Set<string>();
     const items: ListItem[] = [];
 
     for (const n of notifications) {
@@ -130,7 +147,13 @@ export function NotificationsView({
       if (pending && isFormActionNotification(n)) {
         coveredRecruitmentIds.add(pending.recruitmentId);
       }
-      items.push({ kind: "notification", notification: n, pending });
+      const follow =
+        pendingFollows.find((f) => n.link?.includes(f.followId)) ??
+        (n.type === "follow_request"
+          ? pendingFollows.find((f) => n.title.includes(f.fromName)) ?? null
+          : null);
+      if (follow) coveredFollowIds.add(follow.followId);
+      items.push({ kind: "notification", notification: n, pending, follow });
     }
 
     for (const pending of pendingForms) {
@@ -138,14 +161,20 @@ export function NotificationsView({
       items.push({ kind: "pending", pending });
     }
 
+    for (const follow of pendingFollows) {
+      if (coveredFollowIds.has(follow.followId)) continue;
+      items.push({ kind: "follow", follow });
+    }
+
     const filtered = items.filter((item) => {
       if (tab === "unread") {
-        return item.kind === "pending" || !item.notification.read_at;
+        return item.kind !== "notification" || !item.notification.read_at;
       }
       if (tab === "action") {
-        if (item.kind === "pending") return true;
+        if (item.kind === "pending" || item.kind === "follow") return true;
         return (
-          isFormActionNotification(item.notification) && Boolean(item.pending)
+          (isFormActionNotification(item.notification) && Boolean(item.pending)) ||
+          Boolean(item.follow)
         );
       }
       return true;
@@ -153,23 +182,34 @@ export function NotificationsView({
 
     filtered.sort((a, b) => {
       const aDate =
-        a.kind === "pending" ? a.pending.createdAt : a.notification.created_at;
+        a.kind === "pending"
+          ? a.pending.createdAt
+          : a.kind === "follow"
+            ? a.follow.createdAt
+            : a.notification.created_at;
       const bDate =
-        b.kind === "pending" ? b.pending.createdAt : b.notification.created_at;
+        b.kind === "pending"
+          ? b.pending.createdAt
+          : b.kind === "follow"
+            ? b.follow.createdAt
+            : b.notification.created_at;
       const cmp = aDate.localeCompare(bDate);
       return sort === "newest" ? -cmp : cmp;
     });
 
     return filtered;
-  }, [notifications, pendingForms, tab, sort]);
+  }, [notifications, pendingForms, pendingFollows, tab, sort]);
 
   const effectiveSelectedKey = useMemo(() => {
     if (selectedKey && listItems.some((item) => itemKey(item) === selectedKey)) {
       return selectedKey;
     }
     const firstAction = listItems.find((item) => {
-      if (item.kind === "pending") return true;
-      return isFormActionNotification(item.notification) && Boolean(item.pending);
+      if (item.kind === "pending" || item.kind === "follow") return true;
+      return (
+        (isFormActionNotification(item.notification) && Boolean(item.pending)) ||
+        Boolean(item.follow)
+      );
     });
     return firstAction ? itemKey(firstAction) : listItems[0] ? itemKey(listItems[0]) : null;
   }, [selectedKey, listItems]);
@@ -178,6 +218,7 @@ export function NotificationsView({
     const item = listItems.find((i) => itemKey(i) === effectiveSelectedKey);
     if (!item) return primaryPending;
     if (item.kind === "pending") return item.pending;
+    if (item.kind === "follow") return primaryPending;
     return item.pending ?? primaryPending;
   }, [listItems, effectiveSelectedKey, primaryPending]);
 
@@ -275,6 +316,30 @@ export function NotificationsView({
                   const key = itemKey(item);
                   const selected = key === effectiveSelectedKey;
 
+                  if (item.kind === "follow") {
+                    return (
+                      <li key={key}>
+                        <NotificationListRow
+                          selected={selected}
+                          unread
+                          isAction
+                          title={`${item.follow.fromName}さんからフォロー申請が届きました`}
+                          subtitle={null}
+                          preview="承認すると、非公開のアルバムも見られるようになります。"
+                          createdAt={item.follow.createdAt}
+                          showFollowButtons
+                          onSelect={() => setSelectedKey(key)}
+                          onAcceptFollow={() =>
+                            onRespondFollow?.(item.follow.followId, "accept")
+                          }
+                          onRejectFollow={() =>
+                            onRespondFollow?.(item.follow.followId, "reject")
+                          }
+                        />
+                      </li>
+                    );
+                  }
+
                   if (item.kind === "pending") {
                     const deferred = deferredIds.has(item.pending.applicationId);
                     return (
@@ -299,8 +364,10 @@ export function NotificationsView({
                     );
                   }
 
-                  const { notification: n, pending } = item;
-                  const isAction = isFormActionNotification(n) && Boolean(pending);
+                  const { notification: n, pending, follow } = item;
+                  const isAction =
+                    (isFormActionNotification(n) && Boolean(pending)) ||
+                    Boolean(follow);
                   const deferred =
                     pending != null && deferredIds.has(pending.applicationId);
 
@@ -317,14 +384,17 @@ export function NotificationsView({
                             : null
                         }
                         preview={
-                          isAction
+                          follow
+                            ? "承認すると、非公開のアルバムも見られるようになります。"
+                            : isAction
                             ? "必須項目を入力して提出しないと、応募は完了しません。"
                             : n.body
                         }
                         createdAt={n.created_at}
                         href={!isAction ? n.link : null}
                         formUrl={pending?.formUrl ?? null}
-                        showActionButtons={isAction && !deferred}
+                        showActionButtons={Boolean(pending) && isAction && !deferred}
+                        showFollowButtons={Boolean(follow)}
                         onSelect={() => {
                           setSelectedKey(key);
                           if (!n.read_at) onMarkAsRead?.(n.id);
@@ -342,6 +412,16 @@ export function NotificationsView({
                         onOpen={() => {
                           if (!n.read_at) onMarkAsRead?.(n.id);
                         }}
+                        onAcceptFollow={
+                          follow
+                            ? () => onRespondFollow?.(follow.followId, "accept")
+                            : undefined
+                        }
+                        onRejectFollow={
+                          follow
+                            ? () => onRespondFollow?.(follow.followId, "reject")
+                            : undefined
+                        }
                       />
                     </li>
                   );
@@ -445,6 +525,7 @@ export function NotificationsView({
 
 function itemKey(item: ListItem): string {
   if (item.kind === "pending") return `pending-${item.pending.applicationId}`;
+  if (item.kind === "follow") return `follow-${item.follow.followId}`;
   return `n-${item.notification.id}`;
 }
 
@@ -459,9 +540,12 @@ function NotificationListRow({
   href,
   formUrl,
   showActionButtons,
+  showFollowButtons,
   onSelect,
   onDefer,
   onOpen,
+  onAcceptFollow,
+  onRejectFollow,
 }: {
   selected: boolean;
   unread: boolean;
@@ -473,9 +557,12 @@ function NotificationListRow({
   href?: string | null;
   formUrl?: string | null;
   showActionButtons?: boolean;
+  showFollowButtons?: boolean;
   onSelect: () => void;
   onDefer?: () => void;
   onOpen?: () => void;
+  onAcceptFollow?: () => void;
+  onRejectFollow?: () => void;
 }) {
   const { Icon, bg, color } = resolveIcon(title, isAction);
 
@@ -531,6 +618,34 @@ function NotificationListRow({
             </div>
           </div>
 
+          {showFollowButtons ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRejectFollow?.();
+                }}
+                className="rounded-lg border border-[#d5ddd2] bg-white px-3 py-1.5 text-[11px] font-medium text-[#3a4638] transition-colors hover:bg-[#f5f7f4]"
+              >
+                拒否する
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onAcceptFollow?.();
+                }}
+                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: GREEN }}
+              >
+                承認する
+              </button>
+            </div>
+          ) : null}
+
           {showActionButtons && formUrl ? (
             <div className="mt-2 flex flex-wrap gap-1.5">
               <button
@@ -569,7 +684,7 @@ function NotificationListRow({
       : "border-[#b8c4b6] bg-white hover:bg-[#fafcf9]"
   );
 
-  if (href && !showActionButtons) {
+  if (href && !showActionButtons && !showFollowButtons) {
     return (
       <Link
         href={href}

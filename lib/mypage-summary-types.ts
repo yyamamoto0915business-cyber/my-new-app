@@ -54,6 +54,8 @@ export type MypageSummaryResponse = {
     posts: number;
     volunteer: number;
     favorites: number;
+    followers: number;
+    following: number;
   };
   counts: {
     planned: number;

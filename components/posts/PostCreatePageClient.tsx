@@ -74,9 +74,6 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
 
   // postId で開かれた＝公開/非公開の投稿を編集するモード
   const isEditMode = postId != null;
-  // 公開中・非公開の投稿を編集中は元のステータスを維持する（下書きに戻さない）
-  const keepStatusOnSave =
-    isEditMode && sourceStatus != null && sourceStatus !== "draft";
 
   // 既存の投稿・下書きを読み込んで、続きから編集できるようにする
   useEffect(() => {
@@ -231,7 +228,7 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
 
   /** 投稿を作成（新規）または既存下書きを更新（再開）し、投稿IDを返す */
   async function persistPost(
-    status: "draft" | "public",
+    status: "draft" | "public" | "hidden",
   ): Promise<string | null> {
     const mediaKind = getPostCreateMediaKind(draft);
     const areaLabel = getPostCreateAreaLabel(draft);
@@ -258,8 +255,8 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
 
     if (!mediaUrl) return null;
 
-    // 公開/非公開の投稿を編集中は元のステータスを維持する
-    const nextStatus = keepStatusOnSave ? sourceStatus : status;
+    // 編集時も公開／非公開はフォームの選択を使う。下書き保存だけ draft にする
+    const nextStatus = status === "draft" ? "draft" : draft.visibility;
 
     const payload: Record<string, unknown> = {
       status: nextStatus,
@@ -269,6 +266,7 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
       body: bodyWithExtras,
       area: areaLabel,
       mediaUrl,
+      relatedUrl: draft.relatedUrl.trim(),
     };
     if (mediaType === "image") payload.galleryImages = galleryImages;
     if (mediaType === "video") payload.durationSec = durationSec;
@@ -303,14 +301,14 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
     setSubmitError(null);
 
     try {
-      const createdPostId = await persistPost("public");
+      const createdPostId = await persistPost(draft.visibility);
       setDone(true);
-      // 編集モードはマイアルバムへ、新規投稿は投稿詳細へ戻る
+      const publishedPublic = draft.visibility === "public";
       const nextHref = isEditMode
         ? "/profile/posts"
-        : createdPostId
+        : createdPostId && publishedPublic
           ? `/posts/${createdPostId}`
-          : "/posts";
+          : "/profile/posts";
       setTimeout(() => router.push(nextHref), 900);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "投稿に失敗しました");
@@ -434,7 +432,11 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
           submittingLabel={isEditMode ? "保存中…" : "アップロード中…"}
           doneTitle={isEditMode ? "変更を保存しました" : "投稿を受け付けました"}
           doneDescription={
-            isEditMode ? "マイアルバムへ戻ります…" : "みんなの投稿へ戻ります…"
+            isEditMode
+              ? "マイアルバムへ戻ります…"
+              : draft.visibility === "hidden"
+                ? "マイアルバムへ戻ります…"
+                : "みんなの投稿へ戻ります…"
           }
         />
         <div className="posts-create-sidebar-wrap hidden min-[900px]:block">
@@ -451,7 +453,7 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
   );
 }
 
-/** タグ・関連リンクは DB 未対応のため本文末尾に付与 */
+/** タグは DB 未対応のため本文末尾に付与。関連リンクは relatedUrl カラムへ */
 function appendDraftExtras(body: string, draft: PostCreateDraft): string {
   const parts: string[] = [];
   const trimmed = body.trim();
@@ -459,9 +461,6 @@ function appendDraftExtras(body: string, draft: PostCreateDraft): string {
 
   if (draft.tags.length > 0) {
     parts.push(draft.tags.map((t) => `#${t}`).join(" "));
-  }
-  if (draft.relatedUrl.trim()) {
-    parts.push(draft.relatedUrl.trim());
   }
 
   return parts.join("\n\n").slice(0, 1000);

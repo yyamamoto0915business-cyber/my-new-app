@@ -171,11 +171,12 @@ export function MobileEventDetailView({
           aria-label="MachiGlyph ホーム"
         >
           <Image
-            src="/brand/machiglyph_icon_192.png"
+            src="/brand/machiglyph_mark.png"
             alt=""
-            width={22}
-            height={22}
-            className="h-[22px] w-[22px] rounded-full"
+            width={36}
+            height={36}
+            unoptimized
+            className="h-9 w-9 object-contain bg-transparent"
           />
           <span
             className="text-[16px] font-bold tracking-tight text-[var(--ed-forest,var(--ed-accent))]"

@@ -18,6 +18,12 @@ export type DbCommunityPost = {
   comment_count: number;
   created_at: string;
   updated_at: string;
+  related_url: string;
+  related_title: string;
+  related_image_url: string;
+  related_site_name: string;
+  /** profiles から付与。DB カラムではない */
+  author_avatar_url?: string | null;
 };
 
 export type CreateCommunityPostInput = {
@@ -32,6 +38,10 @@ export type CreateCommunityPostInput = {
   posterUrl?: string | null;
   durationSec?: number | null;
   mediaType?: "image" | "video";
-  /** 公開状態（既定は公開） */
-  status?: "draft" | "public";
+  /** 公開状態（既定は公開。hidden は非公開＝承認フォロワーのみ） */
+  status?: "draft" | "public" | "hidden";
+  relatedUrl?: string;
+  relatedTitle?: string;
+  relatedImageUrl?: string;
+  relatedSiteName?: string;
 };

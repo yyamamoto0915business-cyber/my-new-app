@@ -34,6 +34,7 @@ type Props = {
   draftCount: number;
   onMonthClick: (monthKey: string) => void;
   onDraftClick: () => void;
+  hideDrafts?: boolean;
 };
 
 export function MyPostsSidebar({
@@ -43,6 +44,7 @@ export function MyPostsSidebar({
   draftCount,
   onMonthClick,
   onDraftClick,
+  hideDrafts = false,
 }: Props) {
   return (
     <aside className="my-album-sidebar">
@@ -75,7 +77,7 @@ export function MyPostsSidebar({
               );
             })}
           </ul>
-          {draftCount > 0 && (
+          {draftCount > 0 && !hideDrafts && (
             <button
               type="button"
               className="my-album-record__draft"

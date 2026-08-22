@@ -6,9 +6,17 @@ const HERO_BG_DESKTOP = "/profile/album/hero-desktop-v5.png";
 const HERO_BG_MOBILE = "/profile/album/hero-mobile-v5.png";
 const TITLE_SPRIG = "/profile/album/title-sprig.png";
 
-export function MyPostsHero() {
+export function MyPostsHero({
+  eyebrow = "MY ALBUM",
+  title = "マイアルバム",
+  lead = "残したしるしを、アルバムのように。",
+}: {
+  eyebrow?: string;
+  title?: string;
+  lead?: string;
+}) {
   return (
-    <section className="my-album-hero" aria-label="マイアルバム">
+    <section className="my-album-hero" aria-label={title}>
       <div className="my-album-hero__bg" aria-hidden>
         <Image
           src={HERO_BG_MOBILE}
@@ -32,10 +40,10 @@ export function MyPostsHero() {
       <div className="my-album-hero__body my-album-mobile-only">
         <div className="my-album-hero__paper">
           <p className="my-album-hero__eyebrow">
-            <span>MY ALBUM</span>
+            <span>{eyebrow}</span>
           </p>
           <h1 className="my-album-hero__title">
-            マイアルバム
+            {title}
             <Image
               src={TITLE_SPRIG}
               alt=""
@@ -46,7 +54,7 @@ export function MyPostsHero() {
             />
           </h1>
           <p className="my-album-hero__lead">
-            残したしるしを、アルバムのように。
+            {lead}
           </p>
         </div>
       </div>

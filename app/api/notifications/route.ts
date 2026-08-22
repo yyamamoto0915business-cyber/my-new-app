@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchNotifications, getUnreadCount } from "@/lib/db/notifications";
+import { listPendingFollowers } from "@/lib/db/user-follows";
 import { fetchPendingApplicationForms } from "@/lib/db/recruitments-mvp";
 import {
   getStorePendingApplicationForms,
@@ -43,11 +44,19 @@ export async function GET(request: Request) {
     createdAt: string;
   }[] = [];
 
+  let pendingFollowRequests: {
+    followId: string;
+    fromUserId: string;
+    fromName: string;
+    createdAt: string;
+  }[] = [];
+
   if (supabase) {
-    const [notifs, unread, pending] = await Promise.all([
+    const [notifs, unread, pending, followRows] = await Promise.all([
       fetchNotifications(supabase, user.id),
       getUnreadCount(supabase, user.id),
       fetchPendingApplicationForms(supabase, user.id),
+      listPendingFollowers(user.id),
     ]);
     notifications = notifs;
     unreadCount = unread;
@@ -61,6 +70,27 @@ export async function GET(request: Request) {
         resolveApplicationFormConfig(p.applicationFormConfig)
       ),
       createdAt: p.createdAt,
+    }));
+
+    const followerIds = followRows.map((f) => f.follower_id);
+    let nameById = new Map<string, string>();
+    if (followerIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", followerIds);
+      nameById = new Map(
+        (profiles ?? []).map((p) => [
+          p.id as string,
+          ((p.display_name as string | null)?.trim() || "ユーザー") as string,
+        ]),
+      );
+    }
+    pendingFollowRequests = followRows.map((f) => ({
+      followId: f.id,
+      fromUserId: f.follower_id,
+      fromName: nameById.get(f.follower_id) ?? "ユーザー",
+      createdAt: f.created_at,
     }));
   } else {
     const storePending = getStorePendingApplicationForms(user.id);
@@ -83,5 +113,6 @@ export async function GET(request: Request) {
     notifications,
     unreadCount,
     pendingApplicationForms,
+    pendingFollowRequests,
   });
 }

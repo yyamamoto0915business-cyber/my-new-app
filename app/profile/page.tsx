@@ -52,7 +52,7 @@ function emptySummary(displayName: string): MypageSummaryResponse {
       region: null,
       isOrganizerRegistered: false,
     },
-    stats: { participated: 0, posts: 0, volunteer: 0, favorites: 0 },
+    stats: { participated: 0, posts: 0, volunteer: 0, favorites: 0, followers: 0, following: 0 },
     counts: {
       planned: 0,
       interested: 0,
@@ -187,6 +187,11 @@ function ProfileContent() {
               isOrganizerRegistered={data.profile.isOrganizerRegistered}
               onLogout={handleLogout}
               showLogout={false}
+              social={{
+                album: data.stats.posts,
+                followers: data.stats.followers,
+                following: data.stats.following,
+              }}
             />
 
             <MypageMobileOrganize
@@ -219,6 +224,11 @@ function ProfileContent() {
                     href="/profile/edit"
                     icon={<UserRound className="h-4 w-4" />}
                     title="プロフィール設定"
+                  />
+                  <MobileRow
+                    href="/profile/privacy"
+                    icon={<UserRound className="h-4 w-4" />}
+                    title="公開 / 非公開"
                   />
                   <MobileRow
                     href="/profile/settings"
@@ -257,6 +267,11 @@ function ProfileContent() {
             activity={data.activity}
             unreadCount={unreadCount}
             isOrganizerRegistered={data.profile.isOrganizerRegistered}
+            social={{
+              album: data.stats.posts,
+              followers: data.stats.followers,
+              following: data.stats.following,
+            }}
             onLogout={handleLogout}
           />
         </>

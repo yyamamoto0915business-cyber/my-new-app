@@ -23,14 +23,19 @@ export type CommunityPost = {
   durationSec?: number | null;
   /** 写真投稿の複数枚（1枚目は imageUrl と同じ） */
   galleryImages?: string[];
+  authorId?: string | null;
   authorName: string;
   authorAvatarUrl: string | null;
   areaLabel: string;
   postedAtLabel: string;
   likeCount: number;
+  likedByMe?: boolean;
   commentCount: number;
   relatedHref?: string;
   relatedLabel?: string;
+  relatedTitle?: string;
+  relatedImageUrl?: string;
+  relatedSiteName?: string;
   tags: string[];
 };
 
@@ -75,8 +80,8 @@ export const MOCK_COMMUNITY_POSTS: CommunityPost[] = [
     postedAtLabel: "2時間前",
     likeCount: 128,
     commentCount: 14,
-    relatedHref: "/events",
-    relatedLabel: "イベントを見る",
+    relatedHref: "https://www.google.com/maps/search/?api=1&query=%E4%B8%8B%E5%8C%97%E6%B2%A2",
+    relatedLabel: "マップで見る",
     tags: ["夏祭り", "夜店"],
   },
   {
@@ -92,8 +97,10 @@ export const MOCK_COMMUNITY_POSTS: CommunityPost[] = [
     postedAtLabel: "5時間前",
     likeCount: 96,
     commentCount: 8,
-    relatedHref: "/?kind=store",
-    relatedLabel: "店舗を見る",
+    relatedHref: "https://example.com/cafe",
+    relatedLabel: "サイトを開く",
+    relatedTitle: "木漏れ日のカフェ",
+    relatedSiteName: "example.com",
     tags: ["カフェ巡り"],
   },
   {
@@ -154,8 +161,8 @@ export const MOCK_COMMUNITY_POSTS: CommunityPost[] = [
     postedAtLabel: "3日前",
     likeCount: 52,
     commentCount: 3,
-    relatedHref: "/events",
-    relatedLabel: "イベントを見る",
+    relatedHref: "https://www.google.com/maps/search/?api=1&query=%E6%B8%85%E6%BE%84%E7%99%BD%E6%B2%B3",
+    relatedLabel: "マップで見る",
     tags: ["手作り市"],
   },
   {
@@ -171,8 +178,8 @@ export const MOCK_COMMUNITY_POSTS: CommunityPost[] = [
     postedAtLabel: "3日前",
     likeCount: 39,
     commentCount: 2,
-    relatedHref: "/?kind=store",
-    relatedLabel: "店舗を見る",
+    relatedHref: "https://example.com/yaoya",
+    relatedLabel: "サイトを開く",
     tags: ["グルメ"],
   },
   {

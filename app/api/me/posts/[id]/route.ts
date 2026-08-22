@@ -36,6 +36,8 @@ type MyPostDetail = MyPostItem & {
   galleryImages: string[];
   posterUrl: string | null;
   durationSec: number | null;
+  /** 関連リンク（未設定なら undefined） */
+  relatedUrl?: string;
 };
 
 function toDetail(row: DbCommunityPost): MyPostDetail {
@@ -59,6 +61,7 @@ function toDetail(row: DbCommunityPost): MyPostDetail {
     galleryImages: row.gallery_images ?? [],
     posterUrl: row.poster_url,
     durationSec: row.duration_sec,
+    relatedUrl: row.related_url || undefined,
   };
 }
 
@@ -117,7 +120,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (data.title !== undefined) {
     const title = String(data.title).trim().slice(0, 100);
     // 公開する場合のみタイトルを必須にする（下書きは空を許容）
-    if (!title && nextStatus === "public") {
+    if (!title && nextStatus !== "draft") {
       return NextResponse.json({ error: "タイトルは必須です" }, { status: 400 });
     }
     patch.title = title || "無題の下書き";
@@ -156,6 +159,10 @@ export async function PATCH(request: Request, { params }: Params) {
   if (data.posterUrl !== undefined) {
     const posterUrl = String(data.posterUrl).trim();
     patch.poster_url = posterUrl || null;
+  }
+
+  if (data.relatedUrl !== undefined) {
+    patch.related_url = String(data.relatedUrl).trim().slice(0, 2000);
   }
 
   if (Object.keys(patch).length === 0) {

@@ -8,6 +8,8 @@ export type DbCommunityPostComment = {
   status: "public" | "hidden";
   created_at: string;
   updated_at: string;
+  /** profiles から付与。DB カラムではない */
+  author_avatar_url?: string | null;
 };
 
 export type CreateCommunityPostCommentInput = {

@@ -8,6 +8,10 @@ import {
 import { fetchPublishedEventsByIds } from "@/lib/db/events";
 import { fetchMyParticipationPasses } from "@/lib/db/participation-passes";
 import { listMyCommunityPosts } from "@/lib/db/community-posts";
+import {
+  countAcceptedFollowers,
+  countAcceptedFollowing,
+} from "@/lib/db/user-follows";
 import { fetchMyVolunteerApplications } from "@/lib/db/recruitments-mvp";
 import { mapDbCommunityPostToView } from "@/lib/posts/map-community-post";
 import {
@@ -46,7 +50,7 @@ function emptySummary(
       region: null,
       isOrganizerRegistered,
     },
-    stats: { participated: 0, posts: 0, volunteer: 0, favorites: 0 },
+    stats: { participated: 0, posts: 0, volunteer: 0, favorites: 0, followers: 0, following: 0 },
     counts: {
       planned: 0,
       interested: 0,
@@ -72,7 +76,15 @@ export async function GET() {
     return NextResponse.json(emptySummary(user.name ?? "ゲスト"));
   }
 
-  const [{ data: organizerRow }, profileResult, counts, reactionIds, myPosts] =
+  const [
+    { data: organizerRow },
+    profileResult,
+    counts,
+    reactionIds,
+    myPosts,
+    followers,
+    following,
+  ] =
     await Promise.all([
       supabase.from("organizers").select("id").eq("profile_id", user.id).maybeSingle(),
       supabase
@@ -85,6 +97,8 @@ export async function GET() {
       getMyReactionCounts(supabase, user.id),
       getMyReactionEventIds(supabase, user.id),
       listMyCommunityPosts(user.id, { limit: 12 }),
+      countAcceptedFollowers(user.id),
+      countAcceptedFollowing(user.id),
     ]);
 
   let displayName = user.name ?? "ゲスト";
@@ -243,9 +257,11 @@ export async function GET() {
     },
     stats: {
       participated: Math.max(completedPasses.length, 0),
-      posts: myPosts.length,
+      posts: myPosts.filter((p) => p.status !== "draft").length,
       volunteer: volunteerParticipated,
       favorites: counts.interested,
+      followers,
+      following,
     },
     counts: {
       planned: counts.planned,

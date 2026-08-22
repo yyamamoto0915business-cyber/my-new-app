@@ -42,7 +42,7 @@ export async function fetchInboxByQueries(
   );
 
   // 2. conversations + organizers を取得
-  const { data: convs, error: convErr } = await supabase
+  const { data: convsFirst, error: convErr } = await supabase
     .from("conversations")
     .select(
       `
@@ -51,12 +51,35 @@ export async function fetchInboxByQueries(
       event_id,
       organizer_id,
       other_user_id,
+      peer_user_id,
       organizers (profile_id)
     `
     )
     .in("id", convIds);
 
-  if (convErr) throw convErr;
+  let convs = convsFirst;
+  let convError = convErr;
+  if (convError && /peer_user_id|42703/i.test(convError.message)) {
+    const retry = await supabase
+      .from("conversations")
+      .select(
+        `
+        id,
+        kind,
+        event_id,
+        organizer_id,
+        other_user_id,
+        organizers (profile_id)
+      `
+      )
+      .in("id", convIds);
+    // フォールバックは peer_user_id 列を含まない。下流は ConvRow で
+    // 省略可能として読み、欠損時は other_user_id にフォールバックする。
+    convs = retry.data as typeof convsFirst;
+    convError = retry.error;
+  }
+
+  if (convError) throw convError;
   if (!convs?.length) return [];
 
   // 3. 各会話の「相手」user_id を決定
@@ -64,11 +87,15 @@ export async function fetchInboxByQueries(
     id: string;
     kind: string | null;
     event_id: string | null;
-    organizer_id: string;
+    organizer_id: string | null;
     other_user_id: string;
+    peer_user_id?: string | null;
     organizers: { profile_id: string } | { profile_id: string }[] | null;
   };
   const otherUserIds = (convs as ConvRow[]).map((c) => {
+    if (c.kind === "follow_dm") {
+      return c.peer_user_id === currentUserId ? c.other_user_id : (c.peer_user_id ?? c.other_user_id);
+    }
     const org = c.organizers;
     const orgProfileId = Array.isArray(org)
       ? org[0]?.profile_id
@@ -152,7 +179,13 @@ export async function fetchInboxByQueries(
       ? org[0]?.profile_id
       : (org as { profile_id: string } | null)?.profile_id;
     const otherId =
-      orgProfileId === currentUserId ? c.other_user_id : orgProfileId ?? c.other_user_id;
+      c.kind === "follow_dm"
+        ? c.peer_user_id === currentUserId
+          ? c.other_user_id
+          : (c.peer_user_id ?? c.other_user_id)
+        : orgProfileId === currentUserId
+          ? c.other_user_id
+          : orgProfileId ?? c.other_user_id;
     const prof = profileMap.get(otherId);
     const lastMsg = lastMsgMap.get(c.id);
     const myRole = orgProfileId === currentUserId ? "organizer" : "volunteer";

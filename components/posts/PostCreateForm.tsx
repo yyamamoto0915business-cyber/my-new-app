@@ -39,6 +39,7 @@ import {
   POST_CATEGORY_TABS,
   type PostCategory,
 } from "@/lib/posts/mock-feed";
+import { classifyRelatedHref } from "@/lib/posts/related-link";
 
 const CREATE_CATEGORIES = POST_CATEGORY_TABS.filter((t) => t.key !== "all");
 
@@ -338,11 +339,12 @@ export function PostCreateForm({
             type="url"
             value={draft.relatedUrl}
             onChange={(e) => onChange({ relatedUrl: e.target.value })}
-            placeholder="例）公式サイトやSNSのURL"
+            placeholder="例）Googleマップやお店のURL"
             className="posts-create-row__input"
           />
           <ChevronRight className="posts-create-row__chevron h-4 w-4" aria-hidden />
         </label>
+        <RelatedLinkComposerPreview url={draft.relatedUrl} />
 
         <fieldset className="posts-create-block">
           <legend className="posts-create-block__label">
@@ -406,6 +408,41 @@ export function PostCreateForm({
           ) : null}
         </div>
 
+        <div className="posts-create-visibility" role="radiogroup" aria-label="公開範囲">
+          <p className="posts-create-visibility__label">公開範囲</p>
+          <div className="posts-create-visibility__row">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={draft.visibility === "public"}
+              className={cn(
+                "posts-create-visibility__chip",
+                draft.visibility === "public" && "is-active",
+              )}
+              onClick={() => onChange({ visibility: "public" })}
+            >
+              公開
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={draft.visibility === "hidden"}
+              className={cn(
+                "posts-create-visibility__chip",
+                draft.visibility === "hidden" && "is-active",
+              )}
+              onClick={() => onChange({ visibility: "hidden" })}
+            >
+              非公開
+            </button>
+          </div>
+          <p className="posts-create-visibility__hint">
+            {draft.visibility === "public"
+              ? "みんなの投稿とマイアルバムに載ります。"
+              : "マイアルバムに載ります。フォローを承認した人にも見えます。"}
+          </p>
+        </div>
+
         <div className="posts-create-actions">
           <button
             type="button"
@@ -439,5 +476,90 @@ export function PostCreateForm({
         ) : null}
       </div>
     </form>
+  );
+}
+
+type PreviewJson = {
+  title?: string;
+  imageUrl?: string;
+  siteName?: string;
+  kind?: string;
+};
+
+function RelatedLinkComposerPreview({ url }: { url: string }) {
+  const [preview, setPreview] = useState<PreviewJson | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const trimmed = url.trim();
+    if (!/^https?:\/\//i.test(trimmed)) {
+      setPreview(null);
+      setLoading(false);
+      return;
+    }
+    if (classifyRelatedHref(trimmed) === "map") {
+      setPreview({ kind: "map", siteName: "Google マップ" });
+      setLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      void fetch("/api/link-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: trimmed }),
+      })
+        .then(async (res) => {
+          if (!res.ok) throw new Error("preview");
+          return (await res.json()) as PreviewJson;
+        })
+        .then((json) => setPreview(json))
+        .catch(() => setPreview({ siteName: "" }))
+        .finally(() => setLoading(false));
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [url]);
+
+  if (!/^https?:\/\//i.test(url.trim())) return null;
+
+  if (preview?.kind === "map") {
+    return (
+      <p className="posts-create-related-preview__hint">
+        地図リンクとして保存します
+      </p>
+    );
+  }
+
+  const title = preview?.title?.trim();
+  const imageUrl = preview?.imageUrl?.trim();
+  const siteName = preview?.siteName?.trim();
+
+  return (
+    <div className="posts-create-related-preview">
+      {loading ? (
+        <p className="posts-create-related-preview__hint">プレビューを取得中…</p>
+      ) : (
+        <>
+          {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl}
+              alt=""
+              className="posts-create-related-preview__img"
+            />
+          ) : null}
+          <div className="posts-create-related-preview__meta">
+            <p className="posts-create-related-preview__title">
+              {title || siteName || "サイトを開く"}
+            </p>
+            {siteName && title ? (
+              <p className="posts-create-related-preview__host">{siteName}</p>
+            ) : null}
+          </div>
+        </>
+      )}
+    </div>
   );
 }

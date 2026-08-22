@@ -32,10 +32,12 @@ export function MyPostsAlbumGrid({
   posts,
   monthRefs,
   onMutated,
+  showMenu = true,
 }: {
   posts: MyPostItem[];
   monthRefs?: React.MutableRefObject<Record<string, HTMLElement | null>>;
   onMutated?: (id: string, change: PostMutation) => void;
+  showMenu?: boolean;
 }) {
   const groups = groupMyPostsByMonth(posts);
 
@@ -83,6 +85,7 @@ export function MyPostsAlbumGrid({
                   post={post}
                   index={i}
                   onMutated={onMutated}
+                  showMenu={showMenu}
                 />
               ))}
             </div>

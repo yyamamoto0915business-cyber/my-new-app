@@ -34,6 +34,7 @@ type Props = {
   onBack: () => void;
   header?: React.ReactNode;
   onMutated?: (id: string, change: PostMutation) => void;
+  showMenu?: boolean;
 };
 
 export function MyPostsMonthBook({
@@ -42,6 +43,7 @@ export function MyPostsMonthBook({
   onBack,
   header,
   onMutated,
+  showMenu = true,
 }: Props) {
   const [yearStr, monthStr] = monthKey.split("-");
   const monthNum = Number(monthStr);
@@ -114,6 +116,7 @@ export function MyPostsMonthBook({
                       post={post}
                       index={i}
                       onMutated={onMutated}
+                      showMenu={showMenu}
                     />
                   ))}
                 </div>

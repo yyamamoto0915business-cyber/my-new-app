@@ -167,7 +167,7 @@ export function PostCardMenu({ post, onMutated, popDirection = "up" }: Props) {
               }}
             >
               <EyeOff className="h-3.5 w-3.5" aria-hidden />
-              非表示
+              非公開にする
             </button>
           ) : null}
 

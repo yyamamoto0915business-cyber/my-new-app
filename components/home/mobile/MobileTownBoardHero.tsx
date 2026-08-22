@@ -57,7 +57,7 @@ export function MobileTownBoardHero({ searchQuery, onSearchQueryChange }: Props)
                 value={searchQuery}
                 onChange={(e) => onSearchQueryChange(e.target.value)}
                 placeholder="イベントやお店を検索"
-                className="min-w-0 flex-1 bg-transparent text-[10px] text-[#3a2a18] placeholder:text-[#a89c8c] outline-none"
+                className="mg-hero-search-input min-w-0 flex-1 bg-transparent text-[10px] text-[#3a2a18] placeholder:text-[#a89c8c] outline-none"
               />
               <button
                 type="submit"

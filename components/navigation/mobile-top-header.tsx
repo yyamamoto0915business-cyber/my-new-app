@@ -106,14 +106,12 @@ export function MobileTopHeader({ className }: Props) {
               aria-label="MachiGlyph ホームへ"
             >
               <Image
-                src={authArea ? "/brand/machiglyph_icon.svg" : "/brand/machiglyph_icon_192.png"}
+                src="/brand/machiglyph_mark.png"
                 alt=""
-                width={authArea ? 28 : 22}
-                height={authArea ? 28 : 22}
-                className={cn(
-                  "shrink-0",
-                  authArea ? "h-7 w-7" : "h-[22px] w-[22px] rounded-full"
-                )}
+                width={36}
+                height={36}
+                unoptimized
+                className="h-9 w-9 shrink-0 object-contain bg-transparent"
               />
               <span
                 className="truncate text-[15px] font-semibold tracking-[-0.02em] text-[#163828]"

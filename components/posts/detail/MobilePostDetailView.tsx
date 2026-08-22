@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Bookmark,
-  Heart,
   MapPin,
   MessageCircle,
   Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AuthorFollowButton } from "@/components/posts/AuthorFollowButton";
+import { AuthorAvatar } from "@/components/posts/AuthorAvatar";
+import { PostLikeButton } from "@/components/posts/PostLikeButton";
 import {
   POST_CATEGORY_COLORS,
   type CommunityPost,
@@ -33,11 +35,9 @@ const MOBILE_BOTTOM_NAV_PX = 72;
 
 export function MobilePostDetailView({ post, viewer }: Props) {
   const router = useRouter();
-  const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [following, setFollowing] = useState(false);
   const badgeColor = POST_CATEGORY_COLORS[post.category];
-  const likeCount = post.likeCount + (liked ? 1 : 0);
+  const albumHref = post.authorId ? `/users/${post.authorId}/album` : null;
 
   const handleBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -132,23 +132,36 @@ export function MobilePostDetailView({ post, viewer }: Props) {
 
           <div className="posts-detail-body posts-detail-body--mobile posts-detail-body--letter">
             <div className="posts-detail-author posts-detail-author--inline">
-              <span className="posts-detail-author__avatar" aria-hidden>
-                {post.authorName.slice(0, 1).toUpperCase()}
-              </span>
+              {albumHref ? (
+                <Link
+                  href={albumHref}
+                  className="posts-detail-author__avatar"
+                  aria-label={`${post.authorName}のアルバム`}
+                >
+                  <AuthorAvatar
+                    name={post.authorName}
+                    src={post.authorAvatarUrl}
+                  />
+                </Link>
+              ) : (
+                <span className="posts-detail-author__avatar" aria-hidden>
+                  <AuthorAvatar
+                    name={post.authorName}
+                    src={post.authorAvatarUrl}
+                  />
+                </span>
+              )}
               <div className="min-w-0 flex-1">
-                <p className="posts-detail-author__name">{post.authorName}</p>
+                {albumHref ? (
+                  <Link href={albumHref} className="posts-detail-author__name">
+                    {post.authorName}
+                  </Link>
+                ) : (
+                  <p className="posts-detail-author__name">{post.authorName}</p>
+                )}
                 <p className="posts-detail-author__time">{post.postedAtLabel}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setFollowing((v) => !v)}
-                className={cn(
-                  "posts-follow-btn posts-follow-btn--ghost",
-                  following && "posts-follow-btn--following",
-                )}
-              >
-                {following ? "フォロー中" : "フォローする"}
-              </button>
+              <AuthorFollowButton authorId={post.authorId} ghost />
             </div>
 
             <h1 className="posts-detail-title">{post.title}</h1>
@@ -184,12 +197,6 @@ export function MobilePostDetailView({ post, viewer }: Props) {
                 ) : null}
               </div>
             )}
-
-            {post.relatedHref && post.relatedLabel ? (
-              <Link href={post.relatedHref} className="posts-detail-related">
-                {post.relatedLabel}
-              </Link>
-            ) : null}
           </div>
         </article>
 
@@ -206,24 +213,14 @@ export function MobilePostDetailView({ post, viewer }: Props) {
 
       <footer className="posts-detail-mobile__bar" aria-label="投稿アクション">
         <div className="posts-detail-mobile__bar-pill">
-          <button
-            type="button"
-            onClick={() => setLiked((v) => !v)}
-            className={cn(
-              "posts-detail-mobile__bar-btn",
-              liked && "posts-detail-mobile__bar-btn--liked",
-            )}
-            aria-label="いいね"
-          >
-            <Heart
-              className={cn(
-                "h-5 w-5",
-                liked ? "fill-[#E04444] text-[#E04444]" : "",
-              )}
-              aria-hidden
-            />
-            <span>{likeCount}</span>
-          </button>
+          <PostLikeButton
+            postId={post.id}
+            initialLiked={Boolean(post.likedByMe)}
+            initialCount={post.likeCount}
+            className="posts-detail-mobile__bar-btn"
+            pressedClassName="posts-detail-mobile__bar-btn--liked"
+            iconClassName="h-5 w-5"
+          />
           <button
             type="button"
             onClick={scrollToComments}

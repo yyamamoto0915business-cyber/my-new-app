@@ -23,14 +23,16 @@ function formatAlbumDate(iso: string): string {
 export function MyAlbumCard({
   post,
   onMutated,
+  showMenu = true,
 }: {
   post: MyPostItem;
   index?: number;
   onMutated?: (id: string, change: PostMutation) => void;
+  showMenu?: boolean;
 }) {
   const isDraft = post.status === "draft";
   const isHidden = post.status === "hidden";
-  const linkable = !isDraft && !isHidden;
+  const linkable = !isDraft;
   const href = `/posts/${post.id}`;
   const badgeColor = POST_CATEGORY_COLORS[post.category] ?? "#2f8f57";
 
@@ -104,12 +106,12 @@ export function MyAlbumCard({
               <span className="my-album-card__date">
                 {formatAlbumDate(post.createdAt)}
               </span>
-              <PostCardMenu post={post} onMutated={onMutated} />
+              {showMenu ? <PostCardMenu post={post} onMutated={onMutated} /> : null}
             </div>
           </div>
         </>
       )}
-      {linkable ? (
+      {linkable && showMenu ? (
         <div className="my-album-card__menu" data-no-swipe>
           <PostCardMenu post={post} onMutated={onMutated} />
         </div>

@@ -54,10 +54,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/brand/machiglyph_favicon_v2.ico", type: "image/x-icon" },
-      { url: "/brand/machiglyph_favicon.svg", type: "image/svg+xml" },
-      { url: "/brand/machiglyph_icon_192.png", sizes: "192x192", type: "image/png" },
+      { url: "/brand/favicon-32-v3.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/machiglyph_mark.png", sizes: "192x192", type: "image/png" },
     ],
-    apple: "/brand/machiglyph_icon_192.png",
+    apple: "/brand/apple-touch-icon.png",
     shortcut: "/brand/machiglyph_favicon_v2.ico",
   },
   openGraph: {

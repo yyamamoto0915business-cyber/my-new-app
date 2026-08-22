@@ -8,6 +8,7 @@ import type {
   CreateCommunityPostCommentInput,
   DbCommunityPostComment,
 } from "@/lib/db/community-post-comments-types";
+import { withAuthorAvatar, withAuthorAvatars } from "@/lib/posts/author-avatars";
 
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -28,12 +29,12 @@ export async function listCommentsByPostId(
 
   // モック / デモ投稿（uuid 以外）は DB に存在しない
   if (!isUuid(postId)) {
-    return sortByCreatedDesc(memory);
+    return withAuthorAvatars(sortByCreatedDesc(memory));
   }
 
   const supabase = await createClient();
   if (!supabase) {
-    return sortByCreatedDesc(memory);
+    return withAuthorAvatars(sortByCreatedDesc(memory));
   }
 
   const { data, error } = await supabase
@@ -45,11 +46,11 @@ export async function listCommentsByPostId(
 
   if (error) {
     console.error("listCommentsByPostId:", error.message);
-    return sortByCreatedDesc(memory);
+    return withAuthorAvatars(sortByCreatedDesc(memory));
   }
 
   const dbRows = (data ?? []) as DbCommunityPostComment[];
-  return sortByCreatedDesc(mergeComments(dbRows, memory));
+  return withAuthorAvatars(sortByCreatedDesc(mergeComments(dbRows, memory)));
 }
 
 export async function createPostComment(
@@ -57,7 +58,7 @@ export async function createPostComment(
 ): Promise<DbCommunityPostComment> {
   // モック / デモ投稿にはメモリへ保存（DB に外部キーが無いため）
   if (!isUuid(input.postId)) {
-    return addMemoryPostComment(input);
+    return withAuthorAvatar(addMemoryPostComment(input));
   }
 
   const payload = {
@@ -80,14 +81,14 @@ export async function createPostComment(
       .single();
 
     if (!error && data) {
-      return data as DbCommunityPostComment;
+      return withAuthorAvatar(data as DbCommunityPostComment);
     }
     if (error) {
       console.error("createPostComment:", error.message);
     }
   }
 
-  return addMemoryPostComment(input);
+  return withAuthorAvatar(addMemoryPostComment(input));
 }
 
 function mergeComments(

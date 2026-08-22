@@ -16,6 +16,8 @@ export type PostCreateDraft = {
   tags: string[];
   relatedUrl: string;
   locationEnabled: boolean;
+  /** 公開＝みんなの投稿、非公開＝アルバム＋承認フォロワー */
+  visibility: "public" | "hidden";
   /** 写真プレビュー（object URL） */
   imagePreviewUrls: string[];
   /** object URL（プレビュー用） */
@@ -46,6 +48,7 @@ export const DEFAULT_POST_CREATE_DRAFT: PostCreateDraft = {
   tags: [],
   relatedUrl: "",
   locationEnabled: true,
+  visibility: "public",
   imagePreviewUrls: [],
   videoPreviewUrl: null,
   videoDurationSec: null,
@@ -118,6 +121,8 @@ export type PostCreateResumeSource = {
   mediaUrl: string;
   galleryImages: string[];
   durationSec: number | null;
+  status?: "draft" | "public" | "hidden";
+  relatedUrl?: string;
 };
 
 const TAG_LINE_RE = /^#\S+(?:\s+#\S+)*$/;
@@ -137,7 +142,7 @@ export function parsePostBodyExtras(rawBody: string): {
   let tags: string[] = [];
 
   // 末尾がURL行なら関連リンクとして取り出す
-  if (segments.length > 1) {
+  if (segments.length >= 1) {
     const last = segments[segments.length - 1].trim();
     if (URL_LINE_RE.test(last)) {
       relatedUrl = last;
@@ -146,7 +151,7 @@ export function parsePostBodyExtras(rawBody: string): {
   }
 
   // その手前がタグ行ならタグとして取り出す
-  if (segments.length > 1) {
+  if (segments.length >= 1) {
     const last = segments[segments.length - 1].trim();
     if (TAG_LINE_RE.test(last)) {
       tags = last
@@ -180,11 +185,12 @@ export function buildPostCreateDraftFromSource(
     title: source.title === "無題の下書き" ? "" : source.title,
     body,
     tags,
-    relatedUrl,
+    relatedUrl: source.relatedUrl?.trim() || relatedUrl,
     category: source.category,
     // area_label は「スポット · エリア」を結合済みのため、そのまま area に載せる
     area: source.areaLabel,
     locationEnabled: source.areaLabel.trim().length > 0,
+    visibility: source.status === "hidden" ? "hidden" : "public",
     imagePreviewUrls: imageUrls,
     videoPreviewUrl: isVideo ? source.mediaUrl : null,
     videoDurationSec: isVideo ? source.durationSec : null,

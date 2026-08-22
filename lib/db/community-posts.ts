@@ -14,6 +14,16 @@ import type {
   DbCommunityPost,
 } from "@/lib/db/community-posts-types";
 import type { PostCategory } from "@/lib/posts/mock-feed";
+import { isAcceptedFollower } from "@/lib/db/user-follows";
+import {
+  canViewerSeePost,
+  type PostAccess,
+} from "@/lib/posts/post-visibility";
+import { withAuthorAvatar, withAuthorAvatars } from "@/lib/posts/author-avatars";
+import {
+  fetchRelatedLinkPreview,
+  normalizeRelatedUrl,
+} from "@/lib/posts/link-preview";
 
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -35,7 +45,9 @@ export async function listPublicCommunityPosts(options?: {
   const supabase = await createClient();
 
   if (!supabase) {
-    return filterByCategory(memory, options?.category).slice(0, limit);
+    return withAuthorAvatars(
+      filterByCategory(memory, options?.category).slice(0, limit),
+    );
   }
 
   let query = supabase
@@ -52,12 +64,16 @@ export async function listPublicCommunityPosts(options?: {
   const { data, error } = await query;
   if (error) {
     console.error("listPublicCommunityPosts:", error.message);
-    return filterByCategory(memory, options?.category).slice(0, limit);
+    return withAuthorAvatars(
+      filterByCategory(memory, options?.category).slice(0, limit),
+    );
   }
 
   const dbRows = (data ?? []) as DbCommunityPost[];
   const merged = mergePosts(dbRows, memory);
-  return filterByCategory(merged, options?.category).slice(0, limit);
+  return withAuthorAvatars(
+    filterByCategory(merged, options?.category).slice(0, limit),
+  );
 }
 
 /** 自分の投稿一覧（マイページ・実績用） */
@@ -91,11 +107,107 @@ export async function listMyCommunityPosts(
   return merged.slice(0, limit);
 }
 
+/** 作者のアルバム用。下書きは本人のみ、非公開は本人と承認フォロワー */
+export async function listAuthorAlbumPosts(
+  authorId: string,
+  viewerId: string | null,
+  options?: { limit?: number },
+): Promise<DbCommunityPost[]> {
+  const limit = options?.limit ?? 60;
+  const isOwner = Boolean(viewerId && viewerId === authorId);
+  const follower = isOwner
+    ? true
+    : await isAcceptedFollower(viewerId, authorId);
+  const rows = await listMyCommunityPosts(authorId, { limit });
+  return rows.filter((post) => {
+    if (post.status === "draft") return isOwner;
+    return canViewerSeePost(post, viewerId, follower);
+  });
+}
+
+export async function getCommunityPostAccess(
+  id: string,
+  viewerId: string | null,
+): Promise<PostAccess> {
+  const memory = getMemoryCommunityPostById(id);
+  let row: DbCommunityPost | null = memory;
+
+  if (!row && isUuid(id)) {
+    const supabase = await createClient();
+    const admin = createAdminClient();
+    const reader = admin ?? supabase;
+    if (reader) {
+      const { data, error } = await reader
+        .from("community_posts")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) {
+        console.error("getCommunityPostAccess:", error.message);
+      } else {
+        row = (data as DbCommunityPost | null) ?? null;
+      }
+    }
+  }
+
+  if (!row) return { kind: "missing" };
+
+  const isOwner = Boolean(viewerId && row.author_id === viewerId);
+  if (row.status === "draft" && !isOwner) return { kind: "missing" };
+
+  const follower = isOwner
+    ? true
+    : await isAcceptedFollower(viewerId, row.author_id);
+  if (canViewerSeePost(row, viewerId, follower)) {
+    return { kind: "ok", post: await withAuthorAvatar(row) };
+  }
+  if (row.status === "hidden") {
+    return { kind: "private", authorId: row.author_id };
+  }
+  return { kind: "missing" };
+}
+
+export async function getCommunityPostsByIds(
+  ids: string[],
+): Promise<DbCommunityPost[]> {
+  if (ids.length === 0) return [];
+
+  const memoryHits = ids
+    .map((id) => getMemoryCommunityPostById(id))
+    .filter((row): row is DbCommunityPost => row != null);
+
+  const uuids = ids.filter(isUuid);
+  const supabase = await createClient();
+  let dbRows: DbCommunityPost[] = [];
+  if (supabase && uuids.length > 0) {
+    const { data, error } = await supabase
+      .from("community_posts")
+      .select("*")
+      .in("id", uuids);
+    if (error) {
+      console.error("getCommunityPostsByIds:", error.message);
+    } else {
+      dbRows = (data ?? []) as DbCommunityPost[];
+    }
+  }
+
+  const byId = new Map<string, DbCommunityPost>();
+  for (const row of dbRows) byId.set(row.id, row);
+  for (const row of memoryHits) byId.set(row.id, row);
+
+  const ordered = ids
+    .map((id) => byId.get(id))
+    .filter((row): row is DbCommunityPost => row != null);
+  return await withAuthorAvatars(ordered);
+}
+
 export async function getPublicCommunityPostById(
   id: string,
 ): Promise<DbCommunityPost | null> {
   const memory = getMemoryCommunityPostById(id);
-  if (memory && memory.status === "public") return memory;
+  if (memory && memory.status === "public") {
+    return withAuthorAvatar(memory);
+  }
 
   // community_posts.id は uuid 型。デモ/モックの ID をそのまま渡すと DB エラーになる。
   if (!isUuid(id)) return null;
@@ -114,13 +226,15 @@ export async function getPublicCommunityPostById(
     console.error("getPublicCommunityPostById:", error.message);
     return null;
   }
-  return (data as DbCommunityPost | null) ?? null;
+  const row = (data as DbCommunityPost | null) ?? null;
+  return row ? withAuthorAvatar(row) : null;
 }
 
 export async function createCommunityPost(
   input: CreateCommunityPostInput,
 ): Promise<DbCommunityPost> {
   const authorId = normalizeAuthorId(input.authorId);
+  const related = await resolveRelatedLinkFields(input.relatedUrl);
   const payload = {
     author_id: authorId,
     author_display_name: input.authorDisplayName,
@@ -134,6 +248,10 @@ export async function createCommunityPost(
     duration_sec: input.durationSec ?? null,
     gallery_images: input.galleryImages ?? [],
     status: input.status ?? ("public" as const),
+    related_url: related.related_url,
+    related_title: related.related_title,
+    related_image_url: related.related_image_url,
+    related_site_name: related.related_site_name,
   };
 
   const supabase = await createClient();
@@ -148,14 +266,22 @@ export async function createCommunityPost(
       .single();
 
     if (!error && data) {
-      return data as DbCommunityPost;
+      return withAuthorAvatar(data as DbCommunityPost);
     }
     if (error) {
       console.error("createCommunityPost:", error.message);
     }
   }
 
-  return addMemoryCommunityPost(input);
+  return withAuthorAvatar(
+    addMemoryCommunityPost({
+      ...input,
+      relatedUrl: related.related_url,
+      relatedTitle: related.related_title,
+      relatedImageUrl: related.related_image_url,
+      relatedSiteName: related.related_site_name,
+    }),
+  );
 }
 
 /** 本人の投稿を状態問わず1件取得（編集画面用） */
@@ -202,7 +328,12 @@ export async function updateCommunityPost(
 
   const memory = getMemoryCommunityPostById(id);
   if (memory) {
-    return updateMemoryCommunityPost(id, authorId, patch);
+    let nextPatch: UpdateCommunityPostPatch = patch;
+    if (patch.related_url !== undefined) {
+      const related = await resolveRelatedLinkFields(patch.related_url);
+      nextPatch = { ...patch, ...related };
+    }
+    return updateMemoryCommunityPost(id, authorId, nextPatch);
   }
 
   if (!isUuid(id)) return null;
@@ -212,9 +343,15 @@ export async function updateCommunityPost(
   const writer = admin ?? supabase;
   if (!writer) return null;
 
+  let nextPatch: UpdateCommunityPostPatch = { ...patch };
+  if (patch.related_url !== undefined) {
+    const related = await resolveRelatedLinkFields(patch.related_url);
+    nextPatch = { ...patch, ...related };
+  }
+
   const { data, error } = await writer
     .from("community_posts")
-    .update({ ...patch, updated_at: new Date().toISOString() })
+    .update({ ...nextPatch, updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("author_id", authorId)
     .select("*")
@@ -283,4 +420,28 @@ function filterByCategory(
 ): DbCommunityPost[] {
   if (!category || category === "all") return rows;
   return rows.filter((r) => r.category === category);
+}
+
+async function resolveRelatedLinkFields(rawUrl: string | undefined): Promise<{
+  related_url: string;
+  related_title: string;
+  related_image_url: string;
+  related_site_name: string;
+}> {
+  const url = normalizeRelatedUrl(rawUrl ?? "");
+  if (!url) {
+    return {
+      related_url: "",
+      related_title: "",
+      related_image_url: "",
+      related_site_name: "",
+    };
+  }
+  const preview = await fetchRelatedLinkPreview(url);
+  return {
+    related_url: preview?.url ?? url,
+    related_title: preview?.title ?? "",
+    related_image_url: preview?.imageUrl ?? "",
+    related_site_name: preview?.siteName ?? "",
+  };
 }

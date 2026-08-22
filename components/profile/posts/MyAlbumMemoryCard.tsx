@@ -37,19 +37,20 @@ export function MyAlbumMemoryCard({
   active,
   interactive,
   onMutated,
+  showMenu: showMenuProp,
 }: {
   post: MyPostItem;
   active?: boolean;
   interactive?: boolean;
   onMutated?: (id: string, change: PostMutation) => void;
+  showMenu?: boolean;
 }) {
   const isDraft = post.status === "draft";
-  const isHidden = post.status === "hidden";
-  const linkable = !isDraft && !isHidden;
+  const linkable = !isDraft;
   const href = `/posts/${post.id}`;
   const excerpt = clampExcerpt(excerptForMyPost(post));
   const season = seasonOfPost(post.createdAt);
-  const showMenu = Boolean(active && interactive);
+  const showMenu = showMenuProp ?? Boolean(active && interactive);
 
   const photo = (
     <div className="my-album-memory__photo">

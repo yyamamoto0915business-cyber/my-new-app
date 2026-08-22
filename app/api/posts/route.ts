@@ -4,7 +4,9 @@ import {
   createCommunityPost,
   listPublicCommunityPosts,
 } from "@/lib/db/community-posts";
+import { listLikedPostIds } from "@/lib/db/community-post-likes";
 import {
+  applyLikedByMe,
   buildPostTitleFromDraft,
   mapDbCommunityPostToView,
 } from "@/lib/posts/map-community-post";
@@ -52,7 +54,18 @@ export async function GET(request: NextRequest) {
     limit: Number.isFinite(limit) ? limit : 50,
   });
 
-  return NextResponse.json(rows.map(mapDbCommunityPostToView), {
+  const views = rows.map(mapDbCommunityPostToView);
+  const user = await getApiUser();
+  if (!user) {
+    return NextResponse.json(views, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
+  const likedIds = await listLikedPostIds(
+    user.id,
+    views.map((p) => p.id),
+  );
+  return NextResponse.json(applyLikedByMe(views, likedIds), {
     headers: { "Cache-Control": "private, no-store" },
   });
 }
@@ -77,7 +90,13 @@ export async function POST(request: NextRequest) {
   const bodyText = String(data.body ?? "").slice(0, 1000);
   const areaLabel = String(data.area ?? "").slice(0, 120);
   const mediaUrl = String(data.mediaUrl ?? "").trim();
-  const status = data.status === "draft" ? "draft" : "public";
+  const statusRaw = String(data.status ?? "public");
+  const status =
+    statusRaw === "draft"
+      ? "draft"
+      : statusRaw === "hidden"
+        ? "hidden"
+        : "public";
   const isDraft = status === "draft";
 
   if (!CATEGORIES.has(category as PostCategory)) {
@@ -106,6 +125,7 @@ export async function POST(request: NextRequest) {
         galleryImages,
         mediaType: "image",
         status,
+        relatedUrl: String(data.relatedUrl ?? "").trim(),
       });
 
       return NextResponse.json(mapDbCommunityPostToView(row), { status: 201 });
@@ -140,6 +160,7 @@ export async function POST(request: NextRequest) {
       durationSec,
       mediaType: "video",
       status,
+      relatedUrl: String(data.relatedUrl ?? "").trim(),
     });
 
     return NextResponse.json(mapDbCommunityPostToView(row), { status: 201 });

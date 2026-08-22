@@ -25,6 +25,7 @@ export function MobileMainShell({ children }: Props) {
   /** モバイルでグローバル上・下を外し、画面専用UIに任せる */
   const profileEdit = isProfileEditRoute(pathname ?? "");
   const immersiveMobile = eventDetail || chatConversation || profileEdit;
+  const followsPage = pathname?.startsWith("/profile/follows") ?? false;
   const topHeaderH = getMobileTopHeaderHeightPx(pathname ?? "");
   const organizerArea =
     pathname === "/organizer" || (pathname?.startsWith("/organizer/") ?? false);
@@ -40,7 +41,9 @@ export function MobileMainShell({ children }: Props) {
     ? "min-[900px]:pl-0 max-[899px]:bg-transparent"
     : immersiveMobile
       ? "min-[900px]:pl-20 max-[899px]:bg-transparent"
-      : "min-[900px]:pl-20";
+      : followsPage
+        ? "min-[900px]:pl-20 max-[899px]:bg-white"
+        : "min-[900px]:pl-20";
 
   // プロフィール編集: グローバル上下ナビを外し画面専用UI。
   // h-dvh +（PCのみ）pt(トップナビ) で border-box により可視領域いっぱいに収める。

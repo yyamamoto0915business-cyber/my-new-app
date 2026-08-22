@@ -30,9 +30,10 @@ export async function fetchInboxDirectDb(
           c.event_id,
           c.organizer_id,
           c.other_user_id,
+          c.peer_user_id,
           o.profile_id AS organizer_profile_id
         FROM public.conversations c
-        JOIN public.organizers o ON o.id = c.organizer_id
+        LEFT JOIN public.organizers o ON o.id = c.organizer_id
         WHERE c.id IN (SELECT conversation_id FROM my_conversations)
       ),
       other_users AS (
@@ -40,8 +41,10 @@ export async function fetchInboxDirectDb(
           cwo.id AS conv_id,
           cwo.event_id,
           CASE
+            WHEN cwo.kind = 'follow_dm' THEN
+              CASE WHEN cwo.peer_user_id = $1 THEN cwo.other_user_id ELSE cwo.peer_user_id END
             WHEN cwo.organizer_profile_id = $1 THEN cwo.other_user_id
-            ELSE cwo.organizer_profile_id
+            ELSE COALESCE(cwo.organizer_profile_id, cwo.other_user_id)
           END AS other_id
         FROM convs_with_org cwo
       ),
@@ -73,6 +76,7 @@ export async function fetchInboxDirectDb(
         ev.image_url AS event_image_url,
         ou.other_id AS other_user_id,
         CASE
+          WHEN cwo.kind = 'follow_dm' THEN 'volunteer'
           WHEN cwo.organizer_profile_id = $1 THEN 'organizer'
           ELSE 'volunteer'
         END AS my_role,
@@ -109,7 +113,7 @@ export async function fetchInboxDirectDb(
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       // マイグレーション未適用環境では新カラム参照で失敗するため旧SQLで継続
-      if (/participant_avatar_url|organizer_avatar_url|42703/i.test(msg)) {
+      if (/participant_avatar_url|organizer_avatar_url|peer_user_id|42703/i.test(msg)) {
         result = await client.query(queryLegacy, [userId, limit]);
       } else {
         throw e;

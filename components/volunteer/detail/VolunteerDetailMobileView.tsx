@@ -30,6 +30,10 @@ import {
   hasVenueInfo,
   type InfoSection,
 } from "./build-info-sections";
+/** 下部ナビのアイコン行（safe-area 除く）。Link は min-h-[48px] */
+const MOBILE_NAV_ICON_ROW_PX = 48;
+/** 下部固定CTAのおおよその高さ（募集中ラベル＋応募ボタン＋相談リンク） */
+const MOBILE_VOLUNTEER_CTA_BAR_PX = 128;
 
 const BASE_TABS = ["概要", "会場", "主催者"] as const;
 type Tab = (typeof BASE_TABS)[number];
@@ -147,7 +151,12 @@ export function VolunteerDetailMobileView({
         : "応募済み";
 
   return (
-    <div className="min-[900px]:hidden pb-24">
+    <div
+      className="min-[900px]:hidden"
+      style={{
+        paddingBottom: `calc(${MOBILE_VOLUNTEER_CTA_BAR_PX + MOBILE_NAV_ICON_ROW_PX + 16}px + env(safe-area-inset-bottom, 0px))`,
+      }}
+    >
       <div className="border-b border-[#DDE8DF] bg-white px-3 py-2">
         <Link
           href="/?kind=volunteer"
@@ -418,7 +427,12 @@ export function VolunteerDetailMobileView({
       </div>
 
       {/* Bottom CTA bar */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[#DDE8DF] bg-white/95 px-3 py-2.5 backdrop-blur-sm">
+      <div
+        className="fixed inset-x-0 z-40 border-t border-[#DDE8DF] bg-white/95 px-3 py-2.5 backdrop-blur-sm min-[900px]:hidden"
+        style={{
+          bottom: `calc(${MOBILE_NAV_ICON_ROW_PX}px + env(safe-area-inset-bottom, 0px))`,
+        }}
+      >
         <div className="mb-1.5 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[12px] font-semibold text-[#1A2214]">
             <span className="h-2 w-2 rounded-full bg-[#4CAF50]" />

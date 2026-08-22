@@ -14,7 +14,7 @@ type QuickItem = {
 
 const QUICK_ITEMS: QuickItem[] = [
   { href: "/messages", icon: "messages", title: "メッセージ", subtitle: "未読件数ややり取り状況" },
-  { href: "/saved", icon: "saved", title: "保存したイベント", subtitle: "気になるイベント一覧へ" },
+  { href: "/saved?tab=events", icon: "saved", title: "保存したイベント", subtitle: "気になるイベント一覧へ" },
   { href: "/profile?mode=volunteer", icon: "volunteer", title: "応募中のボランティア", subtitle: "応募状況や参加予定へ" },
   { href: "/points", icon: "points", title: "マイポイント", subtitle: "保有ポイントと履歴確認" },
 ];

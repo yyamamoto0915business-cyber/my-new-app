@@ -6,7 +6,10 @@ export type NotificationType =
   | "system_message"
   | "participation_confirmed"
   | "status_updated"
-  | "other";
+  | "other"
+  | "follow_request"
+  | "follow_accepted"
+  | "post_like";
 
 export type Notification = {
   id: string;

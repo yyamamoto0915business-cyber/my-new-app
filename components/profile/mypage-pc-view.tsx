@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   HelpCircle,
+  Lock,
   LogOut,
   MapPin,
   MessageSquare,
@@ -58,6 +59,11 @@ export type MypagePcViewProps = {
   activity: MypageActivityItem[];
   unreadCount: number;
   isOrganizerRegistered: boolean;
+  social?: {
+    album: number;
+    followers: number;
+    following: number;
+  };
   onLogout: () => void;
 };
 
@@ -252,7 +258,7 @@ function MypagePcSidebar({
           badge={counts.passes}
         />
         <MenuRow
-          href="/saved"
+          href="/saved?tab=events"
           title="あとで見る"
           icon={<Bookmark className={ICON_SM} strokeWidth={2} />}
           badge={counts.interested}
@@ -300,6 +306,11 @@ function MypagePcSidebar({
               icon={<UserRound className={ICON_SM} strokeWidth={2} />}
             />
             <MenuRow
+              href="/profile/privacy"
+              title="公開 / 非公開"
+              icon={<Lock className={ICON_SM} strokeWidth={2} />}
+            />
+            <MenuRow
               href="/profile/settings"
               title="通知設定"
               icon={<Bell className={ICON_SM} strokeWidth={2} />}
@@ -339,6 +350,7 @@ export function MypagePcView({
   activity,
   unreadCount,
   isOrganizerRegistered,
+  social,
   onLogout,
 }: MypagePcViewProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -358,6 +370,7 @@ export function MypagePcView({
           isOrganizerRegistered={isOrganizerRegistered}
           onLogout={onLogout}
           showLogout={false}
+          social={social}
         />
 
         <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12">
