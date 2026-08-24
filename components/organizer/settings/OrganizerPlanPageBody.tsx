@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
@@ -10,41 +10,22 @@ import { useOrganizerBilling } from "@/hooks/use-organizer-billing";
 import {
   isPaidPlan,
   isFounderActive,
-  getNormalSlotsUsed,
   getFounderBonusSlotsUsed,
-  NORMAL_SLOTS,
   FOUNDER_BONUS_SLOTS_UI,
 } from "@/lib/organizer-billing-display";
-import { SECTION_TONES } from "@/lib/section-tones";
+import {
+  ORGANIZER_CATALOG_PLANS,
+  getCurrentOrganizerCatalogPlanId,
+  getOrganizerCatalogPlan,
+  type OrganizerCatalogPlan,
+  type OrganizerCatalogPlanId,
+} from "@/lib/organizer-plans";
 
-const COMPARE_ROWS = [
-  ["月額料金", "0円", "月額980円"],
-  ["公開枠", "毎月1件まで", "制限なし"],
-  ["イベント作成", "利用可能", "利用可能"],
-  ["ボランティア募集管理", "利用可能", "利用可能"],
-  ["チャット", "利用可能", "利用可能"],
-  ["売上受取（Stripe）", "別途設定", "別途設定"],
-  ["協賛受付", "対応", "対応"],
-  ["おすすめ", "無料で始めたい方", "本格的に主催したい方"],
-] as const;
+const MG_GOLD = "#b8860b";
+const MG_GOLD_DARK = "#8a6510";
 
-const usageTone = SECTION_TONES.organizer;
-const proTone = SECTION_TONES.security;
-const MG_ACCENT = "#b8860b";
-const MG_ACCENT_LIGHT = "#c9a227";
-const MG_ACCENT_DARK = "#8a6510";
-
-const cardBase =
-  "rounded-2xl bg-white p-3 shadow-[0_1px_8px_rgba(0,0,0,0.05)] sm:p-4 dark:bg-zinc-900";
-const cardBorderSoft = "border-[0.5px] border-[#e8e6e0] dark:border-zinc-700";
 const pageBottomPad =
   "max-[899px]:pb-[calc(2rem+env(safe-area-inset-bottom,0px))] min-[900px]:pb-8";
-
-const PRO_FEATURES = [
-  "公開枠無制限",
-  "継続的な主催に向いたプラン",
-  "Stripe で安全にお支払い管理",
-] as const;
 
 function PlanIcon({
   src,
@@ -68,6 +49,221 @@ function PlanIcon({
   );
 }
 
+function CheckIcon() {
+  return (
+    <span className="org-plan-tier__check" aria-hidden>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    </span>
+  );
+}
+
+function CatalogPlanCard({
+  plan,
+  currentId,
+  expanded,
+  onToggle,
+  pastDue,
+  checkoutLoading,
+  portalLoading,
+  billingAgreed,
+  setBillingAgreed,
+  onCheckout,
+  onPortal,
+}: {
+  plan: OrganizerCatalogPlan;
+  currentId: OrganizerCatalogPlanId;
+  expanded: boolean;
+  onToggle: () => void;
+  pastDue: boolean;
+  checkoutLoading: boolean;
+  portalLoading: boolean;
+  billingAgreed: boolean;
+  setBillingAgreed: (v: boolean) => void;
+  onCheckout: () => void;
+  onPortal: () => void;
+}) {
+  const cardRef = useRef<HTMLElement>(null);
+  const isCurrent = plan.id === currentId;
+  const showCheckoutForm = plan.checkoutEnabled && !isCurrent;
+
+  useEffect(() => {
+    if (!expanded || !cardRef.current) return;
+    const node = cardRef.current;
+    const frame = requestAnimationFrame(() => {
+      node.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [expanded]);
+
+  let cta: ReactNode;
+  if (isCurrent && plan.checkoutEnabled && pastDue) {
+    cta = (
+      <button
+        type="button"
+        onClick={onPortal}
+        disabled={portalLoading}
+        className="org-plan-tier__cta org-plan-tier__cta--action"
+      >
+        {portalLoading ? "処理中..." : "カード情報を確認する"}
+      </button>
+    );
+  } else if (isCurrent && plan.checkoutEnabled) {
+    cta = (
+      <>
+        <button
+          type="button"
+          onClick={onPortal}
+          disabled={portalLoading}
+          className="org-plan-tier__cta org-plan-tier__cta--action org-plan-tier__cta--desktop-portal"
+        >
+          {portalLoading ? "処理中..." : "支払いを変更する"}
+        </button>
+        <span className="org-plan-tier__cta org-plan-tier__cta--current org-plan-tier__cta--mobile-status">
+          利用中
+        </span>
+      </>
+    );
+  } else if (isCurrent) {
+    cta = <span className="org-plan-tier__cta org-plan-tier__cta--current">{plan.ctaLabel}</span>;
+  } else if (showCheckoutForm) {
+    cta = (
+      <>
+        <div className="org-plan-tier__legal">
+          <p>
+            お申し込み前に、
+            <Link href="/terms" target="_blank" className="org-plan-tier__legal-link">
+              利用規約
+            </Link>
+            、
+            <Link href="/commerce" target="_blank" className="org-plan-tier__legal-link">
+              特定商取引法に基づく表記
+            </Link>
+            、
+            <Link href="/terms#cancellation" target="_blank" className="org-plan-tier__legal-link">
+              キャンセル条件
+            </Link>
+            をご確認ください。
+          </p>
+          <label className="org-plan-tier__agree">
+            <input
+              type="checkbox"
+              checked={billingAgreed}
+              onChange={(e) => setBillingAgreed(e.target.checked)}
+            />
+            <span>上記に同意します</span>
+          </label>
+        </div>
+        <button
+          type="button"
+          onClick={onCheckout}
+          disabled={checkoutLoading || !billingAgreed}
+          className="org-plan-tier__cta org-plan-tier__cta--action"
+        >
+          {checkoutLoading ? "処理中..." : plan.ctaLabel}
+        </button>
+      </>
+    );
+  } else if (plan.id === "free") {
+    cta = <span className="org-plan-tier__cta org-plan-tier__cta--ghost">{plan.ctaLabel}</span>;
+  } else {
+    cta = (
+      <button type="button" disabled className="org-plan-tier__cta org-plan-tier__cta--soon">
+        準備中
+      </button>
+    );
+  }
+
+  return (
+    <article
+      ref={cardRef}
+      className={`org-plan-tier org-plan-tier--${plan.tone}${plan.recommended ? " org-plan-tier--featured" : ""}${expanded ? " org-plan-tier--open" : ""}`}
+    >
+      {plan.recommended ? (
+        <>
+          <span className="org-plan-tier__sparkle org-plan-tier__sparkle--1" aria-hidden />
+          <span className="org-plan-tier__sparkle org-plan-tier__sparkle--2" aria-hidden />
+          <span className="org-plan-tier__badge">おすすめ</span>
+        </>
+      ) : null}
+      <button
+        type="button"
+        className="org-plan-tier__hit"
+        aria-expanded={expanded}
+        onClick={onToggle}
+      >
+        <div className="org-plan-tier__head">
+          <h3 className="org-plan-tier__name">{plan.name}</h3>
+          <p className="org-plan-tier__price">{plan.priceLabel}</p>
+          <p className="org-plan-tier__tagline">{plan.tagline}</p>
+          <p className="org-plan-tier__desc">{plan.description}</p>
+        </div>
+        {plan.includesLabel ? (
+          <p className="org-plan-tier__includes org-plan-tier__includes--always">
+            {plan.includesLabel}
+          </p>
+        ) : null}
+        <ul className="org-plan-tier__highlights">
+          {plan.highlights.map((text) => (
+            <li key={text}>
+              <CheckIcon />
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
+        <span className="org-plan-tier__toggle org-plan-tier__toggle--in-hit">
+          {expanded ? "とじる" : "ほかの機能"}
+        </span>
+      </button>
+      <div className="org-plan-tier__details">
+        {plan.includesLabel ? (
+          <p className="org-plan-tier__includes org-plan-tier__includes--desktop">
+            <CheckIcon />
+            {plan.includesLabel}
+          </p>
+        ) : (
+          <p className="org-plan-tier__includes-spacer">含まれる機能</p>
+        )}
+        {plan.includesLabel ? <p className="org-plan-tier__more">さらに</p> : null}
+        <ul className="org-plan-tier__features org-plan-tier__features--full">
+          {plan.features.map((text) => (
+            <li key={text}>
+              <CheckIcon />
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="org-plan-tier__extra-label">ほかの機能</p>
+        <ul className="org-plan-tier__features org-plan-tier__features--extra">
+          {plan.extraFeatures.map((text) => (
+            <li key={text}>
+              <CheckIcon />
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
+        {expanded ? (
+          <button
+            type="button"
+            className="org-plan-tier__toggle org-plan-tier__toggle--after"
+            onClick={onToggle}
+          >
+            とじる
+          </button>
+        ) : null}
+      </div>
+      <div
+        className="org-plan-tier__footer"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        {cta}
+      </div>
+    </article>
+  );
+}
+
 export function OrganizerPlanPageBody() {
   const {
     data,
@@ -80,18 +276,21 @@ export function OrganizerPlanPageBody() {
     handlePortal,
   } = useOrganizerBilling();
   const [billingAgreed, setBillingAgreed] = useState(false);
-  const [showCompare, setShowCompare] = useState(false);
+  const [openPlanId, setOpenPlanId] = useState<OrganizerCatalogPlanId | null>(null);
 
   if (loading) {
     return (
       <OrganizerPageShell
         className={`org-plan-page ${pageBottomPad}`}
-        contentClassName="mx-auto w-full max-w-5xl space-y-3"
+        contentClassName="mx-auto w-full max-w-6xl space-y-3"
       >
         <div className="h-12 animate-pulse rounded-xl bg-[#e4ede0] min-[900px]:h-16" />
-        <div className="org-plan-page__grid min-[900px]:grid-cols-2">
-          <div className="h-44 animate-pulse rounded-2xl bg-[#d8e8dc]" />
-          <div className="h-44 animate-pulse rounded-2xl bg-[#ebe4d8]" />
+        <div className="h-14 animate-pulse rounded-2xl bg-[#ebe4d8] min-[900px]:h-20" />
+        <div className="grid grid-cols-2 gap-2 min-[1100px]:grid-cols-4">
+          <div className="h-36 animate-pulse rounded-2xl bg-[#d8e8dc] min-[900px]:h-64" />
+          <div className="h-36 animate-pulse rounded-2xl bg-[#d8e8dc] min-[900px]:h-64" />
+          <div className="h-36 animate-pulse rounded-2xl bg-[#d8e8dc] min-[900px]:h-64" />
+          <div className="h-36 animate-pulse rounded-2xl bg-[#d8e8dc] min-[900px]:h-64" />
         </div>
       </OrganizerPageShell>
     );
@@ -99,6 +298,9 @@ export function OrganizerPlanPageBody() {
 
   const paid = data ? isPaidPlan(data) : false;
   const founder = data ? isFounderActive(data) : false;
+  const currentId = getCurrentOrganizerCatalogPlanId(paid);
+  const currentPlan = getOrganizerCatalogPlan(currentId);
+  const pastDue = data?.organizer.subscription_status === "past_due";
 
   const shellClass = [
     "org-plan-page",
@@ -113,19 +315,18 @@ export function OrganizerPlanPageBody() {
   return (
     <OrganizerPageShell
       className={shellClass}
-      contentClassName="mx-auto w-full max-w-5xl space-y-2 min-[900px]:space-y-3.5"
+      contentClassName="mx-auto w-full max-w-6xl space-y-3 min-[900px]:space-y-5"
     >
       <OrganizerWorkspacePageHeader
         className="min-[900px]:hidden"
         compact
         title="主催者プラン"
-        subtitle="Starter（無料）と Pro（月額980円）から選べます。公開枠や特典をここで確認できます。"
       />
       <div className="hidden min-[900px]:block">
         <OrganizerPlanHero />
       </div>
 
-      <div className="w-full space-y-2 min-[900px]:space-y-3.5">
+      <div className="w-full space-y-3 min-[900px]:space-y-5">
         {error ? (
           <p className="text-[12px] text-red-600 sm:text-sm">{error}</p>
         ) : data ? (
@@ -136,253 +337,101 @@ export function OrganizerPlanPageBody() {
               </div>
             )}
 
-            <div className="org-plan-page__grid min-[900px]:grid-cols-2">
-              {/* 現在のご利用状況 */}
-              <section className="org-plan-usage-card flex flex-col" aria-labelledby="plan-usage-heading">
-                <div className="org-plan-usage-card__header">
-                  <div className="org-plan-usage-card__header-title">
-                    <PlanIcon src="/organizer/plan/usage-status.png" size={32} />
-                    <h2 id="plan-usage-heading">現在のご利用状況</h2>
-                  </div>
-                  <span
-                    className={`org-plan-usage-card__badge ${
-                      paid ? "org-plan-usage-card__badge--pro" : "org-plan-usage-card__badge--starter"
-                    }`}
-                  >
-                    {paid ? "現在利用中" : "Starter"}
-                  </span>
-                </div>
-                <div className="org-plan-usage-card__body">
-                  <div className="org-plan-usage-card__stats">
-                    <div className="org-plan-usage-card__stat-row org-plan-usage-card__stat-row--plan">
-                      <span className="org-plan-usage-card__stat-label">
-                        <PlanIcon src="/organizer/plan/usage-status.png" size={18} className="org-plan-usage-card__stat-icon" />
-                        現在のプラン
-                      </span>
-                      <span className="org-plan-usage-card__stat-value">
-                        {paid ? "Proプラン" : "Starter（無料）"}
-                      </span>
-                    </div>
-                    {founder && (
-                      <div className="org-plan-usage-card__stat-row">
-                        <span className="org-plan-usage-card__stat-label">
-                          <PlanIcon src="/organizer/plan/gift.png" size={18} className="org-plan-usage-card__stat-icon" />
-                          特典の公開枠
-                        </span>
-                        <span className="org-plan-usage-card__stat-value">
-                          {getFounderBonusSlotsUsed(data.monthlyPublished)} / {FOUNDER_BONUS_SLOTS_UI} 件
-                        </span>
-                      </div>
-                    )}
-                    {paid ? (
-                      <div className="org-plan-usage-card__stat-row org-plan-usage-card__stat-row--slots">
-                        <span className="org-plan-usage-card__stat-label">
-                          <PlanIcon src="/organizer/plan/calendar.png" size={18} className="org-plan-usage-card__stat-icon" />
-                          今月公開できる件数
-                        </span>
-                        <span className="org-plan-usage-card__stat-value org-plan-usage-card__stat-value--accent">
-                          無制限
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="org-plan-usage-card__stat-row">
-                        <span className="org-plan-usage-card__stat-label">
-                          <PlanIcon src="/organizer/plan/calendar.png" size={18} className="org-plan-usage-card__stat-icon" />
-                          毎月の公開枠
-                        </span>
-                        <span className="org-plan-usage-card__stat-value">
-                          {getNormalSlotsUsed(data.monthlyPublished)} / {NORMAL_SLOTS} 件
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="org-plan-usage-card__note">
-                    <PlanIcon src="/organizer/plan/calendar.png" size={18} className="mt-0.5" />
-                    <span>参加費・協賛金の受け取りは Stripe の売上受取設定で行います。</span>
+            <section
+              className={`org-plan-current${paid ? " org-plan-current--paid" : ""}`}
+              aria-labelledby="plan-current-heading"
+            >
+              <div className="org-plan-current__who">
+                <span className="org-plan-current__crown">
+                  <PlanIcon src="/organizer/plan/crown.png" size={22} />
+                </span>
+                <div className="org-plan-current__who-text">
+                  <h2 id="plan-current-heading">いまのプラン</h2>
+                  <p className="org-plan-current__summary">
+                    <span className="org-plan-current__name">{currentPlan.name}</span>
+                    <span className="org-plan-current__price">{currentPlan.monthlyPriceLabel}</span>
                   </p>
-
-                  <Link href="/organizer/settings/payouts" className="org-plan-usage-card__cta">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                      <rect x="1" y="4" width="22" height="16" rx="2" />
-                      <line x1="1" y1="10" x2="23" y2="10" />
-                    </svg>
-                    売上受取設定へ
-                  </Link>
+                  <span className="org-plan-current__status">現在利用中</span>
+                  <p className="org-plan-current__desc">{currentPlan.description}</p>
                 </div>
-              </section>
-
-              {/* Proプラン */}
-              <section className="org-plan-pro-card flex flex-col" aria-labelledby="plan-pro-heading">
-                <div className="org-plan-pro-card__ribbon">おすすめ</div>
-                <div className="org-plan-pro-card__top">
-                  <PlanIcon src="/organizer/plan/pro-plan.png" size={56} className="org-plan-pro-card__illus" />
-                  <div className="min-w-0 flex-1">
-                    <h2 id="plan-pro-heading" className="org-plan-pro-card__title">
-                      Proプラン
-                    </h2>
-                    <p className="org-plan-pro-card__price">月額980円（税込）</p>
-                    <p className="org-plan-pro-card__desc">
-                      公開枠の制限なく、継続的に主催できます。
+              </div>
+              <div className="org-plan-current__actions">
+                {pastDue ? (
+                  <>
+                    <span className="org-plan-current__warn">要対応</span>
+                    <p className="org-plan-current__warn-text">
+                      お支払いでエラーが発生しています。カード情報をご確認ください。
                     </p>
-                  </div>
-                </div>
-                <div className="org-plan-pro-card__content flex flex-1 flex-col">
-                  <ul className="org-plan-pro-card__features">
-                    {PRO_FEATURES.map((text) => (
-                      <li key={text} className="org-plan-pro-card__feature">
-                        <span className="org-plan-pro-card__feature-check" aria-hidden>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </span>
-                        {text}
-                      </li>
-                    ))}
-                  </ul>
+                    <button
+                      type="button"
+                      onClick={handlePortal}
+                      disabled={portalLoading}
+                      className="org-plan-current__cta"
+                    >
+                      {portalLoading ? "処理中..." : "カード情報を確認する"}
+                    </button>
+                  </>
+                ) : paid ? (
+                  <>
+                    {data.organizer.current_period_end ? (
+                      <p className="org-plan-current__renew">
+                        次回更新：
+                        {new Date(data.organizer.current_period_end).toLocaleDateString("ja-JP")}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={handlePortal}
+                      disabled={portalLoading}
+                      className="org-plan-current__cta"
+                    >
+                      {portalLoading ? "処理中..." : "支払いを変更"}
+                    </button>
+                  </>
+                ) : (
+                  <p className="org-plan-current__hint">下からプランを選べます。</p>
+                )}
+              </div>
+            </section>
 
-                  <div className="org-plan-pro-card__footer mt-auto">
-                    {paid ? (
-                      <>
-                        <span className="org-plan-pro-card__active-badge">現在利用中</span>
-                        {data.organizer.current_period_end ? (
-                          <p className="text-center text-[11px] text-[#7a6a58]">
-                            次回更新：
-                            {new Date(data.organizer.current_period_end).toLocaleDateString("ja-JP")}
-                          </p>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={handlePortal}
-                          disabled={portalLoading}
-                          className="org-plan-pro-card__cta"
-                        >
-                          <PlanIcon src="/organizer/plan/crown.png" size={22} />
-                          {portalLoading ? "処理中..." : "お支払い・プランを管理する"}
-                        </button>
-                      </>
-                    ) : data.organizer.subscription_status === "past_due" ? (
-                      <>
-                        <span className="mx-auto w-fit rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-800">
-                          要対応
-                        </span>
-                        <p className="text-center text-[12px] text-[#566358]">
-                          お支払いでエラーが発生しています。カード情報をご確認ください。
-                        </p>
-                        <button
-                          type="button"
-                          onClick={handlePortal}
-                          disabled={portalLoading}
-                          className="org-plan-pro-card__cta org-plan-pro-card__cta--green"
-                        >
-                          {portalLoading ? "処理中..." : "カード情報を確認する"}
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
-                          <p className="text-[10px] leading-relaxed text-slate-500 sm:text-[11px]">
-                            お申し込み前に、
-                            <Link href="/terms" target="_blank" className="hover:underline" style={{ color: MG_ACCENT }}>
-                              利用規約
-                            </Link>
-                            、
-                            <Link href="/commerce" target="_blank" className="hover:underline" style={{ color: MG_ACCENT }}>
-                              特定商取引法に基づく表記
-                            </Link>
-                            、
-                            <Link href="/terms#cancellation" target="_blank" className="hover:underline" style={{ color: MG_ACCENT }}>
-                              キャンセル条件
-                            </Link>
-                            をご確認ください。
-                          </p>
-                          <label className="flex cursor-pointer items-start gap-2">
-                            <input
-                              type="checkbox"
-                              checked={billingAgreed}
-                              onChange={(e) => setBillingAgreed(e.target.checked)}
-                              className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300"
-                            />
-                            <span className="text-[10px] leading-snug text-slate-700 sm:text-[11px]">
-                              上記に同意します
-                            </span>
-                          </label>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleCheckout}
-                          disabled={checkoutLoading || !billingAgreed}
-                          className="org-plan-pro-card__cta org-plan-pro-card__cta--green"
-                        >
-                          {checkoutLoading ? "処理中..." : "Pro にアップグレード"}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </section>
+            <section className="org-plan-compare" aria-labelledby="plan-compare-heading">
+              <h2 id="plan-compare-heading">プランを比較</h2>
+              <p>活動が広がるほど、掲載・受付・イベント向けの機能が増えます。</p>
+              <p className="org-plan-compare__flow">
+                FREEから始まり、プランが上がるごとに新しい機能が追加されます。
+              </p>
+            </section>
+
+            <div className="org-plan-tier-grid">
+              {ORGANIZER_CATALOG_PLANS.map((plan) => (
+                <CatalogPlanCard
+                  key={plan.id}
+                  plan={plan}
+                  currentId={currentId}
+                  expanded={openPlanId === plan.id}
+                  onToggle={() =>
+                    setOpenPlanId((id) => (id === plan.id ? null : plan.id))
+                  }
+                  checkoutLoading={checkoutLoading}
+                  portalLoading={portalLoading}
+                  pastDue={pastDue}
+                  billingAgreed={billingAgreed}
+                  setBillingAgreed={setBillingAgreed}
+                  onCheckout={handleCheckout}
+                  onPortal={handlePortal}
+                />
+              ))}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowCompare((v) => !v)}
-              className="org-plan-compare-toggle"
-              aria-expanded={showCompare}
-            >
-              {showCompare ? "▲ プラン比較を閉じる" : "▼ プラン比較を見る"}
-            </button>
-
-            {showCompare && (
-              <div className={`${cardBase} ${cardBorderSoft} overflow-hidden overflow-x-auto`}>
-                <table className="w-full min-w-[280px] border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="w-[40%] border-b border-[#e8e6e0] bg-[#fafaf8] p-2 text-left text-[11px] font-medium text-[var(--mg-muted)] sm:p-3 sm:text-[12px]" />
-                      <th
-                        className="border-b p-2 text-center text-[11px] font-semibold sm:p-3 sm:text-[12px]"
-                        style={{ background: usageTone.infoBg, color: usageTone.btnText, borderColor: usageTone.border }}
-                      >
-                        Starter
-                      </th>
-                      <th
-                        className="border-b p-2 text-center text-[11px] font-bold sm:p-3 sm:text-[12px]"
-                        style={{
-                          background: proTone.infoBg,
-                          color: proTone.btnText,
-                          borderColor: proTone.infoBorder,
-                        }}
-                      >
-                        Pro プラン
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {COMPARE_ROWS.map(([label, free, pro], i) => (
-                      <tr
-                        key={label}
-                        className={i < COMPARE_ROWS.length - 1 ? "border-b border-[#f5f3ef]" : ""}
-                      >
-                        <td className="bg-[#fafaf8] p-2 text-[11px] font-medium text-[var(--mg-ink)] sm:p-3 sm:text-[12px]">
-                          {label}
-                        </td>
-                        <td
-                          className="p-2 text-center text-[11px] sm:p-3 sm:text-[12px]"
-                          style={{ background: usageTone.bodyBg, color: usageTone.desc }}
-                        >
-                          {free}
-                        </td>
-                        <td
-                          className="p-2 text-center text-[11px] font-semibold sm:p-3 sm:text-[12px]"
-                          style={{ background: proTone.bodyBg, color: proTone.btnText }}
-                        >
-                          {pro}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <aside className="org-plan-commons">
+              <PlanIcon src="/organizer/plan/starter-leaf.png" size={32} />
+              <div>
+                <p className="org-plan-commons__title">投稿・いいね・アルバム・マップは、どのプランでも無料です。</p>
+                <p className="org-plan-commons__desc">
+                  保存やマイアルバムも、すべてのユーザーが無料で使えます。
+                </p>
               </div>
-            )}
+            </aside>
 
             {founder && (
               <section className="org-plan-founder-card" aria-label="先着特典">
@@ -392,16 +441,17 @@ export function OrganizerPlanPageBody() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span
                         className="rounded-md px-2 py-0.5 text-[10px] font-bold"
-                        style={{ background: "var(--mg-accent-soft)", color: MG_ACCENT_DARK }}
+                        style={{ background: "var(--mg-accent-soft)", color: MG_GOLD_DARK }}
                       >
                         先着特典
                       </span>
-                      <span className="text-[11px] font-semibold" style={{ color: MG_ACCENT }}>
+                      <span className="text-[11px] font-semibold" style={{ color: MG_GOLD }}>
                         ご利用中
                       </span>
                     </div>
                     <p className="mt-2 text-[12px] leading-relaxed text-[#7a6a58]">
-                      特典の公開枠：{getFounderBonusSlotsUsed(data.monthlyPublished)} / {FOUNDER_BONUS_SLOTS_UI} 件
+                      特典の公開枠：{getFounderBonusSlotsUsed(data.monthlyPublished)} /{" "}
+                      {FOUNDER_BONUS_SLOTS_UI} 件
                       <br />
                       特典終了日：
                       {new Date(data.organizer.founder30_end_at!).toLocaleDateString("ja-JP", {
@@ -421,7 +471,7 @@ export function OrganizerPlanPageBody() {
             )}
 
             <div
-              className="max-[899px]:block min-[900px]:hidden h-[calc(3.5rem+env(safe-area-inset-bottom,0px))] shrink-0"
+              className="h-[calc(3.5rem+env(safe-area-inset-bottom,0px))] shrink-0 max-[899px]:block min-[900px]:hidden"
               aria-hidden
             />
           </>

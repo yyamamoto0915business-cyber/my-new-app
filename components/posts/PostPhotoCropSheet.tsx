@@ -75,14 +75,29 @@ export function PostPhotoCropSheet({
   const measure = useCallback(() => {
     const el = viewportRef.current;
     if (!el) return;
-    const width = el.clientWidth;
-    setViewport({ width, height: width / POST_PHOTO_ASPECT_RATIO });
+    const boxW = el.clientWidth;
+    const boxH = el.clientHeight;
+    if (boxW < 8 || boxH < 8) return;
+    const byWidth = boxW / POST_PHOTO_ASPECT_RATIO;
+    const next =
+      byWidth <= boxH
+        ? { width: boxW, height: byWidth }
+        : { width: boxH * POST_PHOTO_ASPECT_RATIO, height: boxH };
+    setViewport((prev) =>
+      prev.width === next.width && prev.height === next.height ? prev : next,
+    );
   }, []);
 
   useEffect(() => {
     measure();
+    const el = viewportRef.current;
+    const observer = el ? new ResizeObserver(() => measure()) : null;
+    if (el) observer?.observe(el);
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, [measure, file]);
 
   const applyTransform = useCallback(
@@ -214,32 +229,33 @@ export function PostPhotoCropSheet({
           </button>
         </div>
 
-        <div
-          ref={viewportRef}
-          className="posts-photo-crop__viewport"
-          style={{ height: viewport.height }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          onWheel={handleWheel}
-        >
-          {previewUrl && draw ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={previewUrl}
-              alt=""
-              draggable={false}
-              className="posts-photo-crop__img"
-              style={{
-                width: draw.width,
-                height: draw.height,
-                transform: `translate(${draw.left}px, ${draw.top}px)`,
-              }}
-            />
-          ) : (
-            <p className="posts-photo-crop__loading">読み込み中…</p>
-          )}
+        <div ref={viewportRef} className="posts-photo-crop__stage">
+          <div
+            className="posts-photo-crop__viewport"
+            style={{ width: viewport.width, height: viewport.height }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onWheel={handleWheel}
+          >
+            {previewUrl && draw ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={previewUrl}
+                alt=""
+                draggable={false}
+                className="posts-photo-crop__img"
+                style={{
+                  width: draw.width,
+                  height: draw.height,
+                  transform: `translate(${draw.left}px, ${draw.top}px)`,
+                }}
+              />
+            ) : (
+              <p className="posts-photo-crop__loading">読み込み中…</p>
+            )}
+          </div>
         </div>
 
         <label className="posts-photo-crop__zoom">

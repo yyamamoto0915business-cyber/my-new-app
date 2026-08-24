@@ -18,7 +18,7 @@ export function OrganizerPlanHero() {
         <div className="min-w-0">
           <h1 className="org-plan-page__title">主催者プラン</h1>
           <p className="org-plan-page__desc">
-            Starter（無料）と Pro（月額980円）から選べます。公開枠や特典をここで確認できます。
+            活動の広がりに合わせて、ぴったりのプランを選べます。
           </p>
         </div>
       </div>
