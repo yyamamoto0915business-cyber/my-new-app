@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { fetchJsonArray } from "@/lib/fetch-json-array";
 import type { Event } from "@/lib/db/types";
 import type { CategoryKey } from "@/lib/categories";
 import type { StoreRecord } from "@/lib/stores/types";
 import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
+import { FeedLoadError } from "@/components/home/FeedLoadError";
 import { getRegionPreference, setRegionPreference } from "@/lib/area-preference-storage";
 import { useRegionPreference } from "@/hooks/use-region-preference";
 import { getCategoryPrefs } from "@/lib/category-preference-storage";
@@ -51,7 +52,13 @@ export function HomeOtonami() {
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [stores, setStores] = useState<StoreRecord[]>([]);
   const [volunteers, setVolunteers] = useState<VolunteerRoleWithEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [storesLoading, setStoresLoading] = useState(true);
+  const [volunteersLoading, setVolunteersLoading] = useState(true);
+  const [eventsError, setEventsError] = useState(false);
+  const [storesError, setStoresError] = useState(false);
+  const [volunteersError, setVolunteersError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [categoryPrefs, setCategoryPrefsState] = useState<CategoryKey[]>([]);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -83,30 +90,66 @@ export function HomeOtonami() {
     });
   }, [prefecture, city]);
 
-  const loadData = useCallback(() => {
-    setLoading(true);
-    Promise.all([
-      fetchWithTimeout("/api/events?limit=100")
-        .then((r) => r.json())
-        .catch(() => []),
-      fetchWithTimeout("/api/stores?limit=50")
-        .then((r) => r.json())
-        .catch(() => []),
-      fetchWithTimeout("/api/volunteer/roles")
-        .then((r) => r.json())
-        .catch(() => []),
-    ])
-      .then(([events, storeList, roles]) => {
-        setAllEvents(Array.isArray(events) ? events : []);
-        setStores(Array.isArray(storeList) ? storeList : []);
-        setVolunteers(Array.isArray(roles) ? roles : []);
-      })
-      .finally(() => setLoading(false));
+  useEffect(() => {
+    let cancelled = false;
+
+    setEventsLoading(true);
+    setStoresLoading(true);
+    setVolunteersLoading(true);
+    setEventsError(false);
+    setStoresError(false);
+    setVolunteersError(false);
+
+    void fetchJsonArray<Event>("/api/events?limit=100").then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        setAllEvents(result.data);
+        setEventsError(false);
+      } else {
+        setEventsError(true);
+      }
+      setEventsLoading(false);
+    });
+
+    void fetchJsonArray<StoreRecord>("/api/stores?limit=50").then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        setStores(result.data);
+        setStoresError(false);
+      } else {
+        setStoresError(true);
+      }
+      setStoresLoading(false);
+    });
+
+    void fetchJsonArray<VolunteerRoleWithEvent>("/api/volunteer/roles").then(
+      (result) => {
+        if (cancelled) return;
+        if (result.ok) {
+          setVolunteers(result.data);
+          setVolunteersError(false);
+        } else {
+          setVolunteersError(true);
+        }
+        setVolunteersLoading(false);
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
+  const retryTownData = useCallback(() => {
+    setReloadKey((n) => n + 1);
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const hasTownItems =
+    allEvents.length > 0 || stores.length > 0 || volunteers.length > 0;
+  const bootLoading =
+    eventsLoading && storesLoading && volunteersLoading && !hasTownItems;
+  const eventsSectionLoading = eventsLoading && allEvents.length === 0;
+  const townLoadError = eventsError || storesError || volunteersError;
 
   const isTownKindView =
     activeChip === "store" || activeChip === "volunteer" || activeChip === "kitchen";
@@ -215,32 +258,50 @@ export function HomeOtonami() {
               />
             ) : (
               <>
-                <PcRecommendedRow
-                  events={allEvents}
-                  stores={stores}
-                  volunteers={volunteers}
-                  filteredEvents={filteredEvents}
-                  hasActiveFilter={hasActiveFilter}
-                  eventOnlyFilter={isEventFocused}
-                  loading={loading}
-                  areaPreference={effectiveArea}
-                  categoryPrefs={categoryPrefs}
-                  searchQuery={searchQuery}
-                  selectedArea={selectedArea}
-                  title="今、まちで見つかる"
-                  columns={4}
-                  hideTabs
-                  sortMode={sortMode}
-                  includeEnded={showEnded}
-                />
+                {townLoadError ? (
+                  <FeedLoadError
+                    message={
+                      hasTownItems
+                        ? "一部の情報を読み込めませんでした"
+                        : "まちの情報を読み込めませんでした"
+                    }
+                    onRetry={retryTownData}
+                  />
+                ) : null}
+                {!(townLoadError && !hasTownItems) ? (
+                  <PcRecommendedRow
+                    events={allEvents}
+                    stores={stores}
+                    volunteers={volunteers}
+                    filteredEvents={filteredEvents}
+                    hasActiveFilter={hasActiveFilter}
+                    eventOnlyFilter={isEventFocused}
+                    loading={bootLoading}
+                    areaPreference={effectiveArea}
+                    categoryPrefs={categoryPrefs}
+                    searchQuery={searchQuery}
+                    selectedArea={selectedArea}
+                    title="今、まちで見つかる"
+                    columns={4}
+                    hideTabs
+                    sortMode={sortMode}
+                    includeEnded={showEnded}
+                  />
+                ) : null}
                 {activeChip === "all" && !hasActiveFilter && (
                   <PcTownKindColumns
                     events={allEvents}
                     stores={stores}
                     volunteers={volunteers}
-                    loading={loading}
+                    loading={bootLoading}
                     includeEnded={showEnded}
                     onChipClick={handleChipClick}
+                    kindLoading={{
+                      event: eventsLoading && allEvents.length === 0,
+                      kitchen: storesLoading && stores.length === 0,
+                      store: storesLoading && stores.length === 0,
+                      volunteer: volunteersLoading && volunteers.length === 0,
+                    }}
                   />
                 )}
               </>
@@ -251,11 +312,11 @@ export function HomeOtonami() {
             events={allEvents}
             stores={stores}
             volunteers={volunteers}
-            loading={loading}
+            loading={bootLoading}
           />
         </div>
 
-        <PcPastEventsRow events={allEvents} loading={loading} />
+        <PcPastEventsRow events={allEvents} loading={eventsSectionLoading} />
         <TownGallery />
       </main>
 
@@ -285,23 +346,41 @@ export function HomeOtonami() {
           />
         ) : (
           <>
-            <MobileRecommendedCarousel
-              events={allEvents}
-              stores={stores}
-              volunteers={volunteers}
-              filteredEvents={filteredEvents}
-              hasActiveFilter={hasActiveFilter}
-              eventOnlyFilter={isEventFocused}
-              loading={loading}
-              areaPreference={effectiveArea}
-              categoryPrefs={categoryPrefs}
-              searchQuery={searchQuery}
-              selectedArea={selectedArea}
-            />
+            {townLoadError ? (
+              <FeedLoadError
+                message={
+                  hasTownItems
+                    ? "一部の情報を読み込めませんでした"
+                    : "まちの情報を読み込めませんでした"
+                }
+                onRetry={retryTownData}
+              />
+            ) : null}
+            {!(townLoadError && !hasTownItems) ? (
+              <MobileRecommendedCarousel
+                events={allEvents}
+                stores={stores}
+                volunteers={volunteers}
+                filteredEvents={filteredEvents}
+                hasActiveFilter={hasActiveFilter}
+                eventOnlyFilter={isEventFocused}
+                loading={bootLoading}
+                areaPreference={effectiveArea}
+                categoryPrefs={categoryPrefs}
+                searchQuery={searchQuery}
+                selectedArea={selectedArea}
+              />
+            ) : null}
             {activeChip === "all" && !hasActiveFilter && (
-              <MobileWeekendEventsSection events={allEvents} loading={loading} />
+              <MobileWeekendEventsSection
+                events={allEvents}
+                loading={eventsSectionLoading}
+              />
             )}
-            <MobilePastEventsSection events={allEvents} loading={loading} />
+            <MobilePastEventsSection
+              events={allEvents}
+              loading={eventsSectionLoading}
+            />
             <TownGallery />
           </>
         )}

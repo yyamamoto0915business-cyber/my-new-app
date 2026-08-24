@@ -46,28 +46,40 @@ export async function GET(request: NextRequest) {
   const limitRaw = searchParams.get("limit");
   const limit = limitRaw ? Math.min(100, Math.max(1, Number(limitRaw))) : 50;
 
-  const rows = await listPublicCommunityPosts({
-    category:
-      category && category !== "all" && CATEGORIES.has(category as PostCategory)
-        ? (category as PostCategory)
-        : "all",
-    limit: Number.isFinite(limit) ? limit : 50,
-  });
+  try {
+    const [rows, user] = await Promise.all([
+      listPublicCommunityPosts({
+        category:
+          category &&
+          category !== "all" &&
+          CATEGORIES.has(category as PostCategory)
+            ? (category as PostCategory)
+            : "all",
+        limit: Number.isFinite(limit) ? limit : 50,
+      }),
+      getApiUser(),
+    ]);
 
-  const views = rows.map(mapDbCommunityPostToView);
-  const user = await getApiUser();
-  if (!user) {
-    return NextResponse.json(views, {
+    const views = rows.map(mapDbCommunityPostToView);
+    if (!user) {
+      return NextResponse.json(views, {
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    }
+    const likedIds = await listLikedPostIds(
+      user.id,
+      views.map((p) => p.id),
+    );
+    return NextResponse.json(applyLikedByMe(views, likedIds), {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  } catch (e) {
+    console.error("posts GET:", e);
+    return NextResponse.json([], {
+      status: 503,
       headers: { "Cache-Control": "private, no-store" },
     });
   }
-  const likedIds = await listLikedPostIds(
-    user.id,
-    views.map((p) => p.id),
-  );
-  return NextResponse.json(applyLikedByMe(views, likedIds), {
-    headers: { "Cache-Control": "private, no-store" },
-  });
 }
 
 export async function POST(request: NextRequest) {

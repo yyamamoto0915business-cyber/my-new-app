@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { fetchJsonArray } from "@/lib/fetch-json-array";
 import type { StoreRecord } from "@/lib/stores/types";
 import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
 import {
@@ -10,6 +10,7 @@ import {
   type MachiKindTab,
 } from "@/lib/machi/feed";
 import { MachiFeedCard } from "@/components/machi/MachiFeedCard";
+import { FeedLoadError } from "@/components/home/FeedLoadError";
 
 type Props = {
   kind: "store" | "volunteer" | "kitchen";
@@ -20,51 +21,51 @@ export function TownInfoKindFeed({ kind, searchQuery }: Props) {
   const [stores, setStores] = useState<StoreRecord[]>([]);
   const [volunteers, setVolunteers] = useState<VolunteerRoleWithEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setError(false);
 
-    const tasks: Promise<void>[] = [];
+    const tasks: Promise<boolean>[] = [];
 
-    // お店・キッチンカーは stores、ボランティアは roles を利用
     if (kind === "store" || kind === "kitchen") {
       tasks.push(
-        fetchWithTimeout("/api/stores?limit=50")
-          .then((r) => r.json())
-          .then((data) => {
-            if (!cancelled) {
-              setStores(Array.isArray(data) ? data : []);
-            }
-          })
-          .catch(() => {
-            if (!cancelled) setStores([]);
-          }),
+        fetchJsonArray<StoreRecord>("/api/stores?limit=50").then((result) => {
+          if (cancelled) return result.ok;
+          if (result.ok) setStores(result.data);
+          return result.ok;
+        }),
       );
     }
     if (kind === "volunteer") {
       tasks.push(
-        fetchWithTimeout("/api/volunteer/roles")
-          .then((r) => r.json())
-          .then((data) => {
-            if (!cancelled) {
-              setVolunteers(Array.isArray(data) ? data : []);
-            }
-          })
-          .catch(() => {
-            if (!cancelled) setVolunteers([]);
-          }),
+        fetchJsonArray<VolunteerRoleWithEvent>("/api/volunteer/roles").then(
+          (result) => {
+            if (cancelled) return result.ok;
+            if (result.ok) setVolunteers(result.data);
+            return result.ok;
+          },
+        ),
       );
     }
 
-    Promise.all(tasks).finally(() => {
-      if (!cancelled) setLoading(false);
+    void Promise.all(tasks).then((oks) => {
+      if (cancelled) return;
+      setError(oks.some((ok) => !ok));
+      setLoading(false);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [kind]);
+  }, [kind, reloadKey]);
+
+  const retry = useCallback(() => {
+    setReloadKey((n) => n + 1);
+  }, []);
 
   const kindTab: MachiKindTab =
     kind === "store" ? "store" : kind === "volunteer" ? "volunteer" : "all";
@@ -113,6 +114,11 @@ export function TownInfoKindFeed({ kind, searchQuery }: Props) {
             />
           ))}
         </div>
+      ) : error && items.length === 0 ? (
+        <FeedLoadError
+          message={`${title}を読み込めませんでした`}
+          onRetry={retry}
+        />
       ) : items.length === 0 ? (
         <p className="rounded-[14px] border border-dashed border-[#ddd6cc] bg-white px-4 py-10 text-center text-[13px] text-[#8a9088]">
           条件に合う{title}はまだありません

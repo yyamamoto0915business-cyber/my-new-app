@@ -36,6 +36,20 @@ function normalizeAuthorId(authorId: string | null): string | null {
   return isUuid(authorId) ? authorId : null;
 }
 
+/** related_* 未マイグレーション時のフォールバック用 */
+const COMMUNITY_POST_SELECT_CORE =
+  "id, author_id, author_display_name, category, title, body, area_label, media_type, media_url, poster_url, duration_sec, gallery_images, status, like_count, comment_count, created_at, updated_at";
+
+function withRelatedLinkDefaults(row: DbCommunityPost): DbCommunityPost {
+  return {
+    ...row,
+    related_url: row.related_url ?? "",
+    related_title: row.related_title ?? "",
+    related_image_url: row.related_image_url ?? "",
+    related_site_name: row.related_site_name ?? "",
+  };
+}
+
 export async function listPublicCommunityPosts(options?: {
   category?: PostCategory | "all";
   limit?: number;
@@ -50,26 +64,37 @@ export async function listPublicCommunityPosts(options?: {
     );
   }
 
-  let query = supabase
-    .from("community_posts")
-    .select("*")
-    .eq("status", "public")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const category =
+    options?.category && options.category !== "all" ? options.category : null;
 
-  if (options?.category && options.category !== "all") {
-    query = query.eq("category", options.category);
-  }
+  const run = (select: string) => {
+    let query = supabase
+      .from("community_posts")
+      .select(select)
+      .eq("status", "public")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (category) query = query.eq("category", category);
+    return query;
+  };
 
-  const { data, error } = await query;
+  let { data, error } = await run("*");
   if (error) {
     console.error("listPublicCommunityPosts:", error.message);
-    return withAuthorAvatars(
-      filterByCategory(memory, options?.category).slice(0, limit),
-    );
+    const fallback = await run(COMMUNITY_POST_SELECT_CORE);
+    data = fallback.data;
+    error = fallback.error;
+    if (error) {
+      console.error("listPublicCommunityPosts fallback:", error.message);
+      return withAuthorAvatars(
+        filterByCategory(memory, options?.category).slice(0, limit),
+      );
+    }
   }
 
-  const dbRows = (data ?? []) as DbCommunityPost[];
+  const dbRows = ((data ?? []) as unknown as DbCommunityPost[]).map(
+    withRelatedLinkDefaults,
+  );
   const merged = mergePosts(dbRows, memory);
   return withAuthorAvatars(
     filterByCategory(merged, options?.category).slice(0, limit),
@@ -258,30 +283,30 @@ export async function createCommunityPost(
   const admin = createAdminClient();
   const writer = admin ?? supabase;
 
-  if (writer) {
-    const { data, error } = await writer
-      .from("community_posts")
-      .insert(payload)
-      .select("*")
-      .single();
-
-    if (!error && data) {
-      return withAuthorAvatar(data as DbCommunityPost);
-    }
-    if (error) {
-      console.error("createCommunityPost:", error.message);
-    }
+  if (!writer) {
+    return withAuthorAvatar(
+      addMemoryCommunityPost({
+        ...input,
+        relatedUrl: related.related_url,
+        relatedTitle: related.related_title,
+        relatedImageUrl: related.related_image_url,
+        relatedSiteName: related.related_site_name,
+      }),
+    );
   }
 
-  return withAuthorAvatar(
-    addMemoryCommunityPost({
-      ...input,
-      relatedUrl: related.related_url,
-      relatedTitle: related.related_title,
-      relatedImageUrl: related.related_image_url,
-      relatedSiteName: related.related_site_name,
-    }),
-  );
+  const { data, error } = await writer
+    .from("community_posts")
+    .insert(payload)
+    .select("*")
+    .single();
+
+  if (!error && data) {
+    return withAuthorAvatar(data as DbCommunityPost);
+  }
+
+  console.error("createCommunityPost:", error?.message ?? "unknown insert error");
+  throw new Error("投稿の保存に失敗しました");
 }
 
 /** 本人の投稿を状態問わず1件取得（編集画面用） */

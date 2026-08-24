@@ -13,6 +13,8 @@ import {
   type MachiFeedItem,
 } from "@/lib/machi/feed";
 
+type KindLoadingKey = "event" | "kitchen" | "store" | "volunteer";
+
 type Props = {
   events: Event[];
   stores: StoreRecord[];
@@ -20,6 +22,7 @@ type Props = {
   loading: boolean;
   includeEnded: boolean;
   onChipClick: (key: string) => void;
+  kindLoading?: Partial<Record<KindLoadingKey, boolean>>;
 };
 
 type ColumnDef = {
@@ -73,6 +76,7 @@ export function PcTownKindColumns({
   loading,
   includeEnded,
   onChipClick,
+  kindLoading,
 }: Props) {
   const byKind = useMemo(() => {
     const eventItems = eventsToMachiItems(events, includeEnded).slice(0, 2);
@@ -105,6 +109,8 @@ export function PcTownKindColumns({
     >
       {COLUMNS.map(({ key, label, Icon, color }) => {
         const items = byKind[key] ?? [];
+        const columnLoading =
+          kindLoading?.[key as KindLoadingKey] ?? loading;
         return (
           <div key={key} className="min-w-0">
             <div className="mb-1.5 flex items-center justify-between gap-1">
@@ -123,7 +129,7 @@ export function PcTownKindColumns({
               </button>
             </div>
             <div className="border-t border-[#f2ede6] pt-0.5">
-              {loading ? (
+              {columnLoading ? (
                 <div className="space-y-2 py-1">
                   {Array.from({ length: 2 }).map((_, i) => (
                     <div key={i} className="h-10 animate-pulse rounded-[8px] bg-[#f3ebe3]" />

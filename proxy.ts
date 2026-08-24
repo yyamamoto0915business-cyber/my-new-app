@@ -3,6 +3,7 @@ import { requiresAuth } from "@/lib/auth-utils";
 import { isDeveloperAdminFromSupabaseUser } from "@/lib/admin-auth";
 import { createProxySupabase, mergeSupabaseCookies } from "@/lib/supabase/proxy";
 import { parsePassOnlinePreviewMode } from "@/lib/pass-online-preview";
+import { isDevPublishSuccessPreviewPath } from "@/lib/dev-publish-success-preview";
 
 function isAuthDisabled(): boolean {
   return (
@@ -121,16 +122,15 @@ export async function proxy(request: NextRequest) {
     path === "/pass" &&
     parsePassOnlinePreviewMode(request.nextUrl.searchParams.get("preview")) !=
       null;
-  // 募集公開完了UIの見た目確認（開発時のみ）
-  const isRecruitmentPublishPreview =
-    process.env.NODE_ENV !== "production" &&
-    path === "/organizer/recruitments/new" &&
-    request.nextUrl.searchParams.get("previewSuccess") === "1";
+  const isPublishSuccessPreview = isDevPublishSuccessPreviewPath(
+    path,
+    request.nextUrl.searchParams.get("previewSuccess"),
+  );
   if (
     !user &&
     requiresAuth(path) &&
     !isPassOnlinePreview &&
-    !isRecruitmentPublishPreview
+    !isPublishSuccessPreview
   ) {
     const authUrl = new URL("/auth", request.url);
     authUrl.searchParams.set("next", path + request.nextUrl.search);

@@ -1,33 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Images, Play } from "lucide-react";
-import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { fetchJsonArray } from "@/lib/fetch-json-array";
 import type { CommunityPost } from "@/lib/posts/mock-feed";
 import { formatVideoDuration } from "@/lib/posts/post-video";
+import { FeedLoadError } from "@/components/home/FeedLoadError";
 
 /** みんなの投稿（タイトル付きカードの横スクロール） */
 export function TownGallery() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    fetchWithTimeout("/api/posts?limit=14")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data: CommunityPost[]) => {
-        if (!cancelled) setPosts(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {
-        if (!cancelled) setPosts([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    setLoading(true);
+    setError(false);
+    void fetchJsonArray<CommunityPost>("/api/posts?limit=14").then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        setPosts(result.data);
+        setError(false);
+      } else {
+        setError(true);
+      }
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
+  }, [reloadKey]);
+
+  const retry = useCallback(() => {
+    setReloadKey((n) => n + 1);
   }, []);
 
   return (
@@ -63,6 +71,11 @@ export function TownGallery() {
             />
           ))}
         </div>
+      ) : error && posts.length === 0 ? (
+        <FeedLoadError
+          message="みんなの投稿を読み込めませんでした"
+          onRetry={retry}
+        />
       ) : posts.length === 0 ? (
         <p className="py-6 text-center text-[12px] text-[#8a7a68]">
           まだ投稿がありません

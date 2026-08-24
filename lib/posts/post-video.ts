@@ -1,8 +1,14 @@
 /** 投稿動画の最大秒数 */
-export const POST_VIDEO_MAX_DURATION_SEC = 15;
+export const POST_VIDEO_MAX_DURATION_SEC = 60;
 
-/** クライアント側のファイルサイズ上限（約25MB） */
-export const POST_VIDEO_MAX_BYTES = 25 * 1024 * 1024;
+/** 選択時のファイルサイズ上限。送信前に縮小する */
+export const POST_VIDEO_MAX_BYTES = 80 * 1024 * 1024;
+
+/** アップロード本体の目標サイズ。Vercel の約4.5MB制限に余裕を持たせる */
+export const POST_VIDEO_UPLOAD_MAX_BYTES = 3.5 * 1024 * 1024;
+
+/** サーバーが受け付ける上限（圧縮の誤差を許容） */
+export const POST_VIDEO_UPLOAD_SERVER_MAX_BYTES = 4 * 1024 * 1024;
 
 export const POST_VIDEO_ACCEPT = "video/mp4,video/webm,video/quicktime,video/*";
 
@@ -14,11 +20,13 @@ export function isAcceptedVideoMime(type: string): boolean {
 
 export function formatVideoDuration(seconds: number): string {
   const sec = Math.max(0, Math.round(seconds));
-  return `0:${sec.toString().padStart(2, "0")}`;
+  const mins = Math.floor(sec / 60);
+  const rest = sec % 60;
+  return `${mins}:${rest.toString().padStart(2, "0")}`;
 }
 
 export function isVideoDurationValid(durationSec: number): boolean {
-  return durationSec > 0 && durationSec <= POST_VIDEO_MAX_DURATION_SEC + 0.05;
+  return durationSec > 0 && durationSec <= POST_VIDEO_MAX_DURATION_SEC + 0.25;
 }
 
 /** ファイルから動画の長さ（秒）を取得 */
@@ -66,7 +74,7 @@ export async function validateVideoFile(file: File): Promise<number> {
     throw new Error("対応している動画形式（MP4 / WebM など）を選んでください");
   }
   if (file.size > POST_VIDEO_MAX_BYTES) {
-    throw new Error("動画サイズは25MB以内にしてください");
+    throw new Error("動画サイズは80MB以内にしてください");
   }
   const duration = await getVideoDurationFromFile(file);
   if (!isVideoDurationValid(duration)) {

@@ -10,6 +10,7 @@ import { EventGalleryImagesInput } from "@/components/organizer/events/EventGall
 import { ApplicationFormSettingsPc } from "@/components/organizer/recruitments/ApplicationFormSettingsPc";
 import { RecruitmentFormPcStepIndicator } from "@/components/organizer/recruitments/RecruitmentFormPcStepIndicator";
 import { RecruitmentPublishSuccess } from "@/components/organizer/recruitments/RecruitmentPublishSuccess";
+import { isDevPreviewSuccessQuery } from "@/lib/dev-publish-success-preview";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -411,9 +412,7 @@ function NewRecruitmentPageContent() {
   const searchParams = useSearchParams();
   const editId = searchParams?.get("editId")?.trim() || null;
   const isEdit = Boolean(editId);
-  const previewSuccess =
-    process.env.NODE_ENV !== "production" &&
-    searchParams?.get("previewSuccess") === "1";
+  const previewSuccess = isDevPreviewSuccessQuery(searchParams?.get("previewSuccess"));
 
   const [step, setStep] = useState<Step>(previewSuccess ? 4 : 1);
   const [pcStep, setPcStep] = useState<PcStep>(previewSuccess ? 3 : 1);
@@ -1445,9 +1444,7 @@ export default function NewRecruitmentPage() {
 
 function NewRecruitmentPageEntry() {
   const searchParams = useSearchParams();
-  const previewSuccess =
-    process.env.NODE_ENV !== "production" &&
-    searchParams?.get("previewSuccess") === "1";
+  const previewSuccess = isDevPreviewSuccessQuery(searchParams?.get("previewSuccess"));
 
   if (previewSuccess) {
     return <NewRecruitmentPageContent />;

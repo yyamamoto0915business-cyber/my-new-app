@@ -22,6 +22,8 @@ import { getJstNowHm, getJstTodayYmd, toJstTimestamp } from "@/lib/jst-date";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { validateOnlineEventFormFields } from "@/lib/event-online-validation";
+import { EventPublishSuccess } from "@/components/organizer/events/EventPublishSuccess";
+import { isDevPreviewSuccessQuery } from "@/lib/dev-publish-success-preview";
 
 type Step = EventFormStep;
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
@@ -83,7 +85,7 @@ function validateForm(data: EventFormData): FormErrors {
 
 // ── PC step bar ──
 function PcStepBar({
-  current, onGo, onBack, onDraft, onPublish, submitting, planSummary, publishDisabledReason, backLabelOverride,
+  current, onGo, onBack, onDraft, onPublish, submitting, planSummary, publishDisabledReason, backLabelOverride, hideActions,
 }: {
   current: Step; onGo: (s: Step) => void; onBack: () => void;
   onDraft: () => void; onPublish: () => void;
@@ -91,6 +93,7 @@ function PcStepBar({
   planSummary: PlanSummary | null;
   publishDisabledReason: null | "required_missing" | "no_slots";
   backLabelOverride?: string;
+  hideActions?: boolean;
 }) {
   const backLabel = backLabelOverride ?? (current === 1 ? "イベント一覧へ" : ["","基本情報に戻る","開催情報に戻る","詳細情報に戻る",""][current]);
   const planLabel = planSummary
@@ -117,6 +120,7 @@ function PcStepBar({
       </div>
 
       {/* 2行目: プラン + アクション */}
+      {!hideActions ? (
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#edeae4] bg-[#fafaf8] px-6 py-1.5">
         <div className="flex min-w-0 shrink-0 items-center gap-1.5 rounded-full border border-[#d0ccc4] bg-white px-3 py-1 text-[11px] text-[#5c5a54]">
           <strong className="font-semibold text-[#1a1a1a]">{planName}</strong>
@@ -154,6 +158,7 @@ function PcStepBar({
           </button>
         </div>
       </div>
+      ) : null}
     </header>
   );
 }
@@ -172,6 +177,7 @@ function NewEventPageContent() {
   const searchParams = useSearchParams();
   const copyFromId = searchParams.get("copyFrom");
   const storeIdParam = searchParams.get("storeId");
+  const previewSuccess = isDevPreviewSuccessQuery(searchParams.get("previewSuccess"));
   const formTopRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState<EventFormData>(initialForm);
@@ -184,8 +190,10 @@ function NewEventPageContent() {
   const [copyLoading, setCopyLoading] = useState(false);
   const [toast, setToast] = useState<null | { type: "success" | "error"; message: string }>(null);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
-  const [currentStep, setCurrentStep] = useState<Step>(1);
+  const [currentStep, setCurrentStep] = useState<Step>(previewSuccess ? 4 : 1);
   const [showPassSettings, setShowPassSettings] = useState(false);
+  const [publishDone, setPublishDone] = useState(previewSuccess);
+  const [publishedId, setPublishedId] = useState("");
   const { user } = useSupabaseUser();
 
   const showToast = (type: "success" | "error", message: string) => {
@@ -217,6 +225,27 @@ function NewEventPageContent() {
     })();
     return () => { cancelled = true; };
   }, [copyFromId]);
+
+  useEffect(() => {
+    if (!previewSuccess) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/events?limit=1");
+        if (!res.ok) return;
+        const data = (await res.json().catch(() => null)) as Array<{ id?: string }> | null;
+        const sample = Array.isArray(data)
+          ? data.find((e) => typeof e.id === "string" && e.id.length > 0)?.id
+          : null;
+        if (!cancelled && sample) setPublishedId(sample);
+      } catch {
+        /* プレビュー用サンプルがなくても完了UIは表示する */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [previewSuccess]);
 
   useEffect(() => {
     if (!storeIdParam?.trim() || copyFromId) return;
@@ -342,9 +371,11 @@ function NewEventPageContent() {
         setSubmitError(typeof pubJson?.error === "string" ? pubJson.error : "公開に失敗しました");
         return;
       }
-      showToast("success", "イベントを公開しました");
+      setPublishedId(eventId);
+      setPublishDone(true);
+      setCurrentStep(4);
+      setShowPublishConfirm(false);
       router.refresh();
-      setTimeout(() => router.push("/organizer/events"), 350);
     } catch {
       setSubmitError("通信に失敗しました");
     } finally {
@@ -365,14 +396,20 @@ function NewEventPageContent() {
   const startTimeMin = form.date === todayJst ? nowJstHm : undefined;
 
   const goToStep = (s: Step) => {
+    if (publishDone) return;
     setShowPassSettings(false);
     setCurrentStep(s);
   };
   const goNext = () => {
+    if (publishDone) return;
     setShowPassSettings(false);
     if (currentStep < 4) setCurrentStep(s => (s + 1) as Step);
   };
   const goPrev = () => {
+    if (publishDone) {
+      router.push("/organizer/events");
+      return;
+    }
     if (showPassSettings) {
       setShowPassSettings(false);
       return;
@@ -408,9 +445,10 @@ function NewEventPageContent() {
       {/* ── PC step bar ── */}
       <PcStepBar
         current={currentStep} onGo={goToStep} onBack={goPrev}
-        backLabelOverride={showPassSettings ? "詳細情報に戻る" : undefined}
         onDraft={saveDraft} onPublish={() => { if (!agreedToTerms) { showToast("error","利用規約への同意が必要です"); return; } setShowPublishConfirm(true); }}
         submitting={submitting} planSummary={planSummary} publishDisabledReason={publishDisabledReason}
+        hideActions={publishDone}
+        backLabelOverride={publishDone ? "イベント一覧へ" : showPassSettings ? "詳細情報に戻る" : undefined}
       />
 
       {/* ── Mobile header ── */}
@@ -420,7 +458,9 @@ function NewEventPageContent() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
           <div className="min-w-0 flex-1 truncate text-[13px] font-[600]">
-            {showPassSettings
+            {publishDone
+              ? "公開完了"
+              : showPassSettings
               ? "参加パス設定"
               : currentStep === 1
                 ? "新しいイベントを作成"
@@ -428,7 +468,7 @@ function NewEventPageContent() {
           </div>
         </div>
         <div className="flex items-center px-4 pb-2 sm:px-6">
-          {!showPassSettings ? (
+          {!showPassSettings && !publishDone ? (
             <EventFormStepIndicator current={currentStep} onGo={goToStep} />
           ) : null}
         </div>
@@ -497,6 +537,11 @@ function NewEventPageContent() {
 
           {/* ══ STEP 4: 確認・公開 ══ */}
           {currentStep === 4 && (
+            publishDone ? (
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 min-[900px]:p-6">
+                <EventPublishSuccess eventId={publishedId} isPreview={previewSuccess} />
+              </div>
+            ) : (
             <div className="p-4 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden min-[900px]:p-0">
               {/* 基本情報確認 */}
               <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7">
@@ -598,6 +643,7 @@ function NewEventPageContent() {
                 <p className="mt-[10px] text-center text-[12px] text-[#888]">下書きは「イベント管理」から編集できます</p>
               </div>
             </div>
+            )
           )}
         </div>
 
@@ -651,7 +697,7 @@ function NewEventPageContent() {
           </div>
         </div>
       )}
-      {currentStep === 4 && (
+      {currentStep === 4 && !publishDone && (
         <div className="min-[900px]:hidden sticky bottom-0 z-10 border-t border-[#e8e6e0] bg-white px-4 py-2 flex gap-[8px]">
           <button type="button" onClick={goPrev} className="flex items-center rounded-[10px] border border-[#e8e6e0] bg-white px-[18px] py-[11px] text-[13px] font-[500]">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -671,7 +717,7 @@ function NewEventPageContent() {
       )}
 
       {/* ── Publish confirm modal ── */}
-      {showPublishConfirm && (
+      {showPublishConfirm && !publishDone && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setShowPublishConfirm(false)} aria-hidden />
           <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-[16px] border border-[#e8e6e0] bg-white p-6 shadow-xl">
@@ -698,10 +744,16 @@ function NewEventPageContent() {
 
 export default function NewEventPage() {
   return (
-    <OrganizerRegistrationGate>
-      <Suspense fallback={<NewEventPageSkeleton />}>
-        <NewEventPageContent />
-      </Suspense>
-    </OrganizerRegistrationGate>
+    <Suspense fallback={<NewEventPageSkeleton />}>
+      <NewEventPageEntry />
+    </Suspense>
   );
+}
+
+function NewEventPageEntry() {
+  const searchParams = useSearchParams();
+  const previewSuccess = isDevPreviewSuccessQuery(searchParams.get("previewSuccess"));
+  const content = <NewEventPageContent />;
+  if (previewSuccess) return content;
+  return <OrganizerRegistrationGate>{content}</OrganizerRegistrationGate>;
 }

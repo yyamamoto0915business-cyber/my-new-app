@@ -18,6 +18,11 @@ import {
   type PostCreateDraft,
   type PostCreateResumeSource,
 } from "@/lib/posts/post-create-draft";
+import { compressPostPhoto } from "@/lib/posts/compress-post-photo";
+import { compressPostVideo } from "@/lib/posts/compress-post-video";
+import { POST_VIDEO_MAX_DURATION_SEC } from "@/lib/posts/post-video";
+import { PostPublishSuccess } from "@/components/posts/PostPublishSuccess";
+import { isDevPreviewSuccessQuery } from "@/lib/dev-publish-success-preview";
 
 async function uploadPostFile(
   file: File,
@@ -31,8 +36,14 @@ async function uploadPostFile(
     form.append("durationSec", String(durationSec));
   }
   const res = await fetch("/api/posts/upload", { method: "POST", body: form });
-  const json = (await res.json()) as { url?: string; error?: string };
+  const json = (await res.json().catch(() => ({}))) as {
+    url?: string;
+    error?: string;
+  };
   if (!res.ok || !json.url) {
+    if (res.status === 413) {
+      throw new Error("ファイルが大きすぎて送れませんでした");
+    }
     throw new Error(json.error ?? "アップロードに失敗しました");
   }
   return json.url;
@@ -44,6 +55,7 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const draftIdParam = searchParams.get("draft");
+  const previewSuccess = isDevPreviewSuccessQuery(searchParams.get("previewSuccess"));
   // 読み込み対象: 公開/非公開の編集は postId、下書き再開は ?draft=
   const loadId = postId ?? draftIdParam;
 
@@ -54,7 +66,8 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
   const [resumeLoading, setResumeLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState(previewSuccess);
+  const [publishedPostId, setPublishedPostId] = useState("");
   const [draftSaving, setDraftSaving] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -75,8 +88,30 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
   // postId で開かれた＝公開/非公開の投稿を編集するモード
   const isEditMode = postId != null;
 
+  useEffect(() => {
+    if (!previewSuccess) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/posts");
+        if (!res.ok) return;
+        const data = (await res.json().catch(() => null)) as Array<{ id?: string }> | null;
+        const sample = Array.isArray(data)
+          ? data.find((p) => typeof p.id === "string" && p.id.length > 0)?.id
+          : null;
+        if (!cancelled && sample) setPublishedPostId(sample);
+      } catch {
+        /* プレビュー用サンプルがなくても完了UIは表示する */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [previewSuccess]);
+
   // 既存の投稿・下書きを読み込んで、続きから編集できるようにする
   useEffect(() => {
+    if (previewSuccess) return;
     if (!loadId) {
       setDraftId(null);
       setSourceStatus(null);
@@ -123,7 +158,7 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
     return () => {
       cancelled = true;
     };
-  }, [loadId, isEditMode]);
+  }, [loadId, isEditMode, previewSuccess]);
 
   useEffect(() => {
     return () => {
@@ -213,14 +248,26 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
     const resolved: string[] = [];
     for (let i = 0; i < urls.length; i += 1) {
       const file = files[i];
-      resolved.push(file ? await uploadPostFile(file, "image") : urls[i]);
+      try {
+        if (file) {
+          const compressed = await compressPostPhoto(file);
+          resolved.push(await uploadPostFile(compressed, "image"));
+        } else {
+          resolved.push(urls[i]);
+        }
+      } catch (err) {
+        const reason =
+          err instanceof Error ? err.message : "アップロードに失敗しました";
+        throw new Error(`${i + 1}枚目の写真: ${reason}`);
+      }
     }
     return resolved;
   }
 
   async function resolveVideoUrl(durationSec: number): Promise<string | null> {
     if (videoFileRef.current) {
-      return uploadPostFile(videoFileRef.current, "video", durationSec);
+      const compressed = await compressPostVideo(videoFileRef.current);
+      return uploadPostFile(compressed, "video", durationSec);
     }
     // File を持たない = サーバ既存URL（下書き復元）
     return draft.videoPreviewUrl;
@@ -278,7 +325,10 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const json = (await res.json()) as { id?: string; error?: string };
+      const json = (await res.json().catch(() => ({}))) as {
+        id?: string;
+        error?: string;
+      };
       if (!res.ok) throw new Error(json.error ?? "保存に失敗しました");
       return json.id ?? draftId;
     }
@@ -288,7 +338,10 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const json = (await res.json()) as { id?: string; error?: string };
+    const json = (await res.json().catch(() => ({}))) as {
+      id?: string;
+      error?: string;
+    };
     if (!res.ok) throw new Error(json.error ?? "保存に失敗しました");
     return json.id ?? null;
   }
@@ -302,13 +355,18 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
 
     try {
       const createdPostId = await persistPost(draft.visibility);
+      if (!createdPostId) {
+        throw new Error("投稿の保存に失敗しました");
+      }
       setDone(true);
       const publishedPublic = draft.visibility === "public";
+      if (!isEditMode && publishedPublic) {
+        setPublishedPostId(createdPostId);
+        return;
+      }
       const nextHref = isEditMode
         ? "/profile/posts"
-        : createdPostId && publishedPublic
-          ? `/posts/${createdPostId}`
-          : "/profile/posts";
+        : "/profile/posts";
       setTimeout(() => router.push(nextHref), 900);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "投稿に失敗しました");
@@ -348,6 +406,9 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
     }
   }
 
+  const showPublishCard =
+    previewSuccess || (done && !isEditMode && draft.visibility === "public");
+
   return (
     <div className="posts-create-page">
       <header className="posts-create-page__header">
@@ -362,23 +423,27 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
           <div className="posts-create-page__title-wrap">
             <h1 className="posts-create__heading">
               <Leaf className="posts-create-page__leaf" aria-hidden />
-              {isEditMode
+              {showPublishCard
+                ? "公開完了"
+                : isEditMode
                 ? "投稿を編集"
                 : draftId
                   ? "下書きを編集"
                   : "投稿を作成"}
             </h1>
             <p className="posts-create-page__subtitle">
-              {isEditMode
+              {showPublishCard
+                ? "投稿の公開が完了しました"
+                : isEditMode
                 ? "内容を編集して、変更を保存できます"
                 : draftId
                   ? "続きから編集して、投稿または下書き保存できます"
-                  : "写真または15秒動画で、まちの魅力を共有しましょう"}
+                  : `写真または${POST_VIDEO_MAX_DURATION_SEC}秒動画で、まちの魅力を共有しましょう`}
             </p>
           </div>
         </div>
         <div className="posts-create-page__header-actions">
-          {!isEditMode ? (
+          {!isEditMode && !showPublishCard ? (
             <>
               <Link
                 href="/profile/posts"
@@ -413,6 +478,9 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
       ) : null}
 
       <div className="posts-create-layout">
+        {showPublishCard ? (
+          <PostPublishSuccess postId={publishedPostId} isPreview={previewSuccess} />
+        ) : (
         <PostCreateForm
           draft={draft}
           onChange={updateDraft}
@@ -429,7 +497,7 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
           canSubmit={canSubmit}
           submitError={submitError}
           submitLabel={isEditMode ? "変更を保存" : "投稿する"}
-          submittingLabel={isEditMode ? "保存中…" : "アップロード中…"}
+          submittingLabel={isEditMode ? "保存中…" : "圧縮・アップロード中…"}
           doneTitle={isEditMode ? "変更を保存しました" : "投稿を受け付けました"}
           doneDescription={
             isEditMode
@@ -439,9 +507,12 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
                 : "みんなの投稿へ戻ります…"
           }
         />
+        )}
+        {!showPublishCard ? (
         <div className="posts-create-sidebar-wrap hidden min-[900px]:block">
           <PostCreateSidebar draft={draft} />
         </div>
+        ) : null}
       </div>
 
       <PostCreatePreviewSheet

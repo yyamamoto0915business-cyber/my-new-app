@@ -9,8 +9,10 @@ import {
 } from "@/lib/posts/post-photos";
 import {
   formatVideoDuration,
+  POST_VIDEO_MAX_DURATION_SEC,
   validateVideoFile,
 } from "@/lib/posts/post-video";
+import { PostPhotoCropSheet } from "@/components/posts/PostPhotoCropSheet";
 
 type Props = {
   imagePreviewUrls: string[];
@@ -38,6 +40,8 @@ export function PostCreateMediaInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
+  const [cropIndex, setCropIndex] = useState(0);
 
   const hasVideo = videoPreviewUrl != null;
   const hasPhotos = imagePreviewUrls.length > 0;
@@ -80,7 +84,9 @@ export function PostCreateMediaInput({
       }
 
       if (!images.length) {
-        setError("JPEG / PNG / WebP の写真、または15秒以内の動画を選んでください");
+        setError(
+          `JPEG / PNG / WebP の写真、または${POST_VIDEO_MAX_DURATION_SEC}秒以内の動画を選んでください`,
+        );
         return;
       }
 
@@ -95,13 +101,28 @@ export function PostCreateMediaInput({
         return;
       }
 
-      const urls = result.files.map((f) => URL.createObjectURL(f));
-      onPhotosAdd(result.files, urls);
+      setCropQueue(result.files);
+      setCropIndex(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "メディアを追加できませんでした");
     } finally {
       setBusy(false);
     }
+  }
+
+  function handleCropConfirm(file: File) {
+    onPhotosAdd([file], [URL.createObjectURL(file)]);
+    if (cropIndex + 1 >= cropQueue.length) {
+      setCropQueue([]);
+      setCropIndex(0);
+      return;
+    }
+    setCropIndex((i) => i + 1);
+  }
+
+  function handleCropCancel() {
+    setCropQueue([]);
+    setCropIndex(0);
   }
 
   function handleClearAll() {
@@ -156,13 +177,15 @@ export function PostCreateMediaInput({
                 <p className="posts-create-photo-area__hint">
                   タップして写真や動画を選択
                   <br />
-                  写真は最大10枚・動画は15秒
+                  写真は最大10枚・一覧と同じ比率で整えられます
+                  <br />
+                  動画は{POST_VIDEO_MAX_DURATION_SEC}秒以内・大きな動画は自動で圧縮します
                 </p>
               </>
             )}
             <p className="posts-create-photo-area__count">
               {hasVideo
-                ? "動画 1本 · 15秒"
+                ? `動画 1本 · ${POST_VIDEO_MAX_DURATION_SEC}秒`
                 : `${imagePreviewUrls.length}/${POST_PHOTO_MAX_COUNT}枚`}
             </p>
           </button>
@@ -287,6 +310,16 @@ export function PostCreateMediaInput({
         <p className="posts-create-video__hint">メディアを確認しています…</p>
       ) : null}
       {error ? <p className="posts-create-video__error">{error}</p> : null}
+
+      {cropQueue[cropIndex] ? (
+        <PostPhotoCropSheet
+          file={cropQueue[cropIndex]}
+          index={cropIndex}
+          total={cropQueue.length}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      ) : null}
     </div>
   );
 }

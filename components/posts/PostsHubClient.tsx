@@ -16,6 +16,7 @@ import {
   type PostDateKey,
   type PostSortKey,
 } from "@/lib/posts/mock-feed";
+import { fetchJsonArray } from "@/lib/fetch-json-array";
 import { POSTS_HERO_DESC_LINES, PostsHero } from "@/components/posts/PostsHero";
 import { PostsFeedCard } from "@/components/posts/PostsFeedCard";
 import { PostsSidebar } from "@/components/posts/PostsSidebar";
@@ -131,12 +132,16 @@ function PostsFeaturedSection({
   posts,
   mobile,
   loading,
+  loadError,
+  onRetry,
   mobileVisibleCount = FEATURED_POST_LIMIT,
   onMobileLoadMore,
 }: {
   posts: ReturnType<typeof filterCommunityPosts>;
   mobile?: boolean;
   loading?: boolean;
+  loadError?: boolean;
+  onRetry?: () => void;
   mobileVisibleCount?: number;
   onMobileLoadMore?: () => void;
 }) {
@@ -154,6 +159,15 @@ function PostsFeaturedSection({
       </div>
       {loading ? (
         <p className="posts-empty">投稿を読み込んでいます…</p>
+      ) : loadError && featured.length === 0 ? (
+        <div className="posts-empty space-y-3">
+          <p>投稿を読み込めませんでした</p>
+          {onRetry ? (
+            <button type="button" className="posts-load-more__btn" onClick={onRetry}>
+              再読み込み
+            </button>
+          ) : null}
+        </div>
       ) : featured.length === 0 ? (
         <p className="posts-empty">条件に合う投稿はまだありません</p>
       ) : (
@@ -198,23 +212,23 @@ export function PostsHubClient() {
   const [notify, setNotify] = useState(false);
   const [apiPosts, setApiPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [mobileVisibleCount, setMobileVisibleCount] =
     useState(FEATURED_POST_LIMIT);
   const filterBarRef = useRef<HTMLDivElement>(null);
 
   const loadPosts = useCallback(async (cat: PostCategoryTab) => {
     setLoading(true);
-    try {
-      const qs = cat !== "all" ? `?category=${encodeURIComponent(cat)}` : "";
-      const res = await fetch(`/api/posts${qs}`, { cache: "no-store" });
-      if (!res.ok) throw new Error("fetch failed");
-      const data = (await res.json()) as CommunityPost[];
-      setApiPosts(Array.isArray(data) ? data : []);
-    } catch {
-      setApiPosts([]);
-    } finally {
-      setLoading(false);
+    setLoadError(false);
+    const qs = cat !== "all" ? `?category=${encodeURIComponent(cat)}` : "";
+    const result = await fetchJsonArray<CommunityPost>(`/api/posts${qs}`);
+    if (result.ok) {
+      setApiPosts(result.data);
+      setLoadError(false);
+    } else {
+      setLoadError(true);
     }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -343,7 +357,12 @@ export function PostsHubClient() {
         {renderFilterBar()}
 
         <div className="posts-board-layout">
-          <PostsFeaturedSection posts={posts} loading={loading} />
+          <PostsFeaturedSection
+            posts={posts}
+            loading={loading}
+            loadError={loadError}
+            onRetry={() => void loadPosts(category)}
+          />
           <PostsSidebar posts={apiPosts} />
         </div>
       </main>
@@ -371,6 +390,8 @@ export function PostsHubClient() {
           posts={posts}
           mobile
           loading={loading}
+          loadError={loadError}
+          onRetry={() => void loadPosts(category)}
           mobileVisibleCount={mobileVisibleCount}
           onMobileLoadMore={() =>
             setMobileVisibleCount((c) => c + FEATURED_POST_LIMIT)

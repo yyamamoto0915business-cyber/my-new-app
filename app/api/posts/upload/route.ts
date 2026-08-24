@@ -3,11 +3,11 @@ import { getApiUser } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  POST_PHOTO_MAX_BYTES,
+  POST_PHOTO_UPLOAD_MAX_BYTES,
   isAcceptedPhotoMime,
 } from "@/lib/posts/post-photos";
 import {
-  POST_VIDEO_MAX_BYTES,
+  POST_VIDEO_UPLOAD_SERVER_MAX_BYTES,
   POST_VIDEO_MAX_DURATION_SEC,
 } from "@/lib/posts/post-video";
 
@@ -36,7 +36,7 @@ function extForImage(contentType: string): string {
 }
 
 function normalizeVideoMime(type: string, fileName: string): string {
-  const raw = type.toLowerCase();
+  const raw = type.toLowerCase().split(";")[0]?.trim() ?? "";
   if (VIDEO_MIME.has(raw)) return raw;
   const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
   const map: Record<string, string> = {
@@ -100,9 +100,9 @@ export async function POST(request: NextRequest) {
     let bytes: Uint8Array;
 
     if (kind === "image") {
-      if (file.size > POST_PHOTO_MAX_BYTES) {
+      if (file.size > POST_PHOTO_UPLOAD_MAX_BYTES) {
         return NextResponse.json(
-          { error: "写真サイズは10MB以内にしてください" },
+          { error: "写真が大きすぎます。送信前に縮小してください" },
           { status: 400 },
         );
       }
@@ -117,9 +117,9 @@ export async function POST(request: NextRequest) {
       path = `${user.id}/images/${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
       bytes = new Uint8Array(await file.arrayBuffer());
     } else {
-      if (file.size > POST_VIDEO_MAX_BYTES) {
+      if (file.size > POST_VIDEO_UPLOAD_SERVER_MAX_BYTES) {
         return NextResponse.json(
-          { error: "動画サイズは25MB以内にしてください" },
+          { error: "動画が大きすぎます。送信前に圧縮してください" },
           { status: 400 },
         );
       }
