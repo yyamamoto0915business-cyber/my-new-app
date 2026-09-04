@@ -304,7 +304,7 @@ export function DayManagementPcView({
           emptyMode={emptyMode}
           compact
           onOpenCheckinList={() => onOpenModal("checkin_list")}
-          className="min-h-0"
+          className="min-h-min"
           summary={dayOps}
           summaryLoading={dayOpsLoading}
           summaryError={dayOpsError}
@@ -312,7 +312,7 @@ export function DayManagementPcView({
           onRefreshSummary={reloadDayOps}
         />
 
-        <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact flex min-h-0 flex-col">
+        <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact flex min-h-0 flex-col overflow-hidden">
           <h2 className="mg-day-mgmt-pc__panel-title shrink-0">{scheduleTitle}</h2>
           {emptyMode ? (
             <div className="mg-day-mgmt-pc__empty-inline flex-1">
@@ -322,7 +322,7 @@ export function DayManagementPcView({
               </p>
             </div>
           ) : (
-            <ul className="mt-1.5 min-h-0 flex-1 space-y-0.5 overflow-y-auto">
+            <ul className="mt-1.5 min-h-[9.5rem] flex-1 space-y-0.5 overflow-y-auto">
               {MOCK_SCHEDULE.map((item, i) => (
                 <li
                   key={i}
