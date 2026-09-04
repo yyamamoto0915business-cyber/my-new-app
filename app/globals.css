@@ -2804,8 +2804,8 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   --mg-day-gap: 8px;
   color: var(--mg-day-ink);
   display: flex;
-  min-height: 0;
-  flex: 1;
+  min-height: min-content;
+  flex: 1 0 auto;
   flex-direction: column;
   gap: var(--mg-day-gap);
 }
@@ -2854,7 +2854,8 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 }
 .mg-day-mgmt-pc--selected .mg-day-mgmt-pc__sections {
   gap: var(--mg-day-gap);
-  grid-template-rows: 1fr 1fr;
+  /* 上段（来場状況・スケジュール）は中身の高さ、下段が余りを使う */
+  grid-template-rows: auto minmax(0, 1fr);
 }
 .mg-day-mgmt-pc--compact {
   flex: none;
@@ -3571,7 +3572,7 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 }
 .mg-ticket-sales-card--compact {
   padding: 8px 10px;
-  overflow: hidden;
+  overflow: visible;
   height: auto;
   min-height: 0;
 }

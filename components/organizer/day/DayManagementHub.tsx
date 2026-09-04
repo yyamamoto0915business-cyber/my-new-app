@@ -170,14 +170,14 @@ export function DayManagementHub({
       className={
         emptyMode
           ? "min-h-0 bg-[#F5F8F5] min-[900px]:bg-transparent"
-          : "min-h-0 bg-[#F5F8F5] min-[900px]:flex min-[900px]:h-[calc(100dvh-var(--mg-pc-top-nav-h)-4.75rem)] min-[900px]:flex-col min-[900px]:overflow-hidden min-[900px]:bg-transparent"
+          : "min-h-0 bg-[#F5F8F5] min-[900px]:flex min-[900px]:h-[calc(100dvh-var(--mg-pc-top-nav-h)-4.75rem)] min-[900px]:flex-col min-[900px]:overflow-y-auto min-[900px]:bg-transparent"
       }
     >
       <div
         className={
           emptyMode
             ? "mx-auto hidden w-full max-w-6xl min-[900px]:block"
-            : "mx-auto hidden h-full w-full max-w-6xl min-h-0 min-[900px]:flex min-[900px]:flex-col"
+            : "mx-auto hidden w-full max-w-6xl min-[900px]:flex min-[900px]:min-h-full min-[900px]:flex-col"
         }
       >
         <DayManagementPcView
