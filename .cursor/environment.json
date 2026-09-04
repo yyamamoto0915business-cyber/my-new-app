@@ -1,0 +1,17 @@
+{
+  "name": "MachiGlyph (Next.js)",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "next-dev",
+      "command": "npm run dev:network",
+      "description": "MachiGlyph の開発サーバー (Next.js, http://localhost:3000)。Supabase 未設定でもモックデータで動作します。"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Next.js dev server",
+      "port": 3000
+    }
+  ]
+}
