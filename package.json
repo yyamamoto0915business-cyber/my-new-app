@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:network": "next dev -H 0.0.0.0",
+    "dev": "bash scripts/dev.sh",
+    "dev:network": "bash scripts/dev.sh -H 0.0.0.0",
+    "dev:raw": "next dev",
+    "sync:main": "bash scripts/sync-main.sh",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

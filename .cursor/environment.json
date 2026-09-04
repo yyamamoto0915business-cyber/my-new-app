@@ -4,8 +4,8 @@
   "terminals": [
     {
       "name": "next-dev",
-      "command": "npm run dev:network",
-      "description": "MachiGlyph の開発サーバー (Next.js, http://localhost:3000)。Supabase 未設定でもモックデータで動作します。"
+      "command": "bash scripts/sync-main.sh",
+      "description": "origin/main に同期してから MachiGlyph 開発サーバーを起動 (http://localhost:3000)"
     }
   ],
   "ports": [

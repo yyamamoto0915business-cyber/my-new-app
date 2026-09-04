@@ -12,6 +12,20 @@ else
   npm install
 fi
 
+chmod +x scripts/dev.sh scripts/sync-main.sh 2>/dev/null || true
+
+# Cloud Agent 起動時は main を最新に揃える（未コミット変更がある場合は触らない）
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  if [[ "$(git branch --show-current 2>/dev/null || true)" == "main" ]] \
+    && [[ -z "$(git status --porcelain 2>/dev/null)" ]]; then
+    git fetch origin main >/dev/null 2>&1 || true
+    if git rev-parse origin/main >/dev/null 2>&1 \
+      && git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+      git merge --ff-only origin/main >/dev/null 2>&1 || true
+    fi
+  fi
+fi
+
 # ローカル開発用の .env.local を用意（未作成時のみ）。
 # Supabase 等の外部サービス未設定でもモックデータで開発サーバーが動くようにする。
 if [ ! -f .env.local ]; then
