@@ -18,12 +18,14 @@ import {
   OrganizerSidebarListingsIcon,
   OrganizerSidebarPayoutsIcon,
   OrganizerSidebarPlanIcon,
+  OrganizerSidebarPosIcon,
 } from "@/components/organizer/OrganizerSidebarIcons";
 
 const SIDEBAR_ICONS = {
   "/organizer/listings": OrganizerSidebarListingsIcon,
   "/organizer": OrganizerSidebarDashboardIcon,
   "/organizer/settings/payouts": OrganizerSidebarPayoutsIcon,
+  "/organizer/pos": OrganizerSidebarPosIcon,
   "/organizer/settings/plan": OrganizerSidebarPlanIcon,
 } as const;
 
@@ -77,7 +79,12 @@ export default function OrganizerSidebar({
                     ) : (
                       <span className="w-[22px] shrink-0" aria-hidden />
                     )}
-                    <span className="min-w-0 leading-snug">{item.label}</span>
+                    <span className="min-w-0 flex-1 leading-snug">{item.label}</span>
+                    {"badge" in item && item.badge ? (
+                      <span className="shrink-0 rounded-full bg-[#f5e6a8] px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-[#8a6a10]">
+                        {item.badge}
+                      </span>
+                    ) : null}
                   </Link>
                 </li>
               );

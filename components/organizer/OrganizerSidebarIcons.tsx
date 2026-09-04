@@ -70,6 +70,18 @@ export function OrganizerSidebarPlanIcon({ active }: NavIconProps) {
   );
 }
 
+export function OrganizerSidebarPosIcon({ active }: NavIconProps) {
+  const stroke = active ? GREEN : GREEN_MUTED;
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
+      <rect x="3" y="4" width="16" height="12" rx="2" stroke={stroke} strokeWidth="1.4" />
+      <path d="M6.5 16.5h9" stroke={stroke} strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M7 8.5h3.5M7 11.5h5" stroke={stroke} strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="15" cy="10" r="1.4" stroke={stroke} strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 export function OrganizerSidebarAdminIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>

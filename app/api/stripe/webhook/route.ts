@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, getStripeSecretKey } from "@/lib/stripe";
+import { markPosSalePaidBySession } from "@/lib/db/pos";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -159,6 +160,8 @@ export async function POST(request: NextRequest) {
                 );
               }
             }
+          } else if (type === "pos") {
+            await markPosSalePaidBySession(supabase, session.id, piId, amountJpy);
           } else {
             const pi = await stripe.paymentIntents.retrieve(session.payment_intent as string);
             const eventId = pi.metadata?.eventId as string;
