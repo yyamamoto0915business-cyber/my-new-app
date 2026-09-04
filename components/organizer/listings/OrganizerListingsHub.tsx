@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ExternalLink, Lightbulb } from "lucide-react";
+import {
+  ArrowRight,
+  Banknote,
+  CreditCard,
+  ExternalLink,
+  Lightbulb,
+  QrCode,
+  Receipt,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EventAccountStatusCards } from "@/components/organizer/events/EventAccountStatusCards";
 import type { BillingSummary } from "@/app/api/organizer/dashboard/route";
@@ -204,6 +212,47 @@ export function OrganizerListingsHub() {
           <ListingCategoryCard key={category.id} category={category} />
         ))}
       </div>
+
+      <section className="org-listings-hub__pos" aria-labelledby="listings-pos-heading">
+        <div className="org-listings-hub__pos-copy">
+          <div className="org-listings-hub__pos-title-row">
+            <h2 id="listings-pos-heading">レジ・当日販売</h2>
+            <span className="org-listings-hub__pos-badge">NEW</span>
+          </div>
+          <p>会場での物販や参加パスの会計を、その場でスムーズに行えます。</p>
+          <ul className="org-listings-hub__pos-tags">
+            <li>
+              <Banknote className="h-3.5 w-3.5" aria-hidden />
+              現金対応
+            </li>
+            <li>
+              <CreditCard className="h-3.5 w-3.5" aria-hidden />
+              クレジット
+            </li>
+            <li>
+              <QrCode className="h-3.5 w-3.5" aria-hidden />
+              QR・オンライン
+            </li>
+            <li>
+              <Receipt className="h-3.5 w-3.5" aria-hidden />
+              売上確認
+            </li>
+          </ul>
+        </div>
+        <div className="org-listings-hub__pos-visual" aria-hidden>
+          <div className="org-listings-hub__pos-device">
+            <span className="org-listings-hub__pos-device-screen" />
+            <span className="org-listings-hub__pos-device-base" />
+          </div>
+        </div>
+        <div className="org-listings-hub__pos-cta">
+          <Link href="/organizer/pos" className="org-listings-hub__pos-btn">
+            レジを開く
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+          <p>かんたんな操作でスムーズに会計。売上もすぐ確認できます。</p>
+        </div>
+      </section>
 
       <section className="org-listings-hub__about" aria-labelledby="listings-about-heading">
         <div className="org-listings-hub__about-copy">

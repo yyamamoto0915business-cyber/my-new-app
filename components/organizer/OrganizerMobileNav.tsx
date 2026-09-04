@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ClipboardList, CreditCard, Star } from "lucide-react";
+import { LayoutDashboard, ClipboardList, CreditCard, Star, ShoppingBag } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
@@ -16,6 +16,7 @@ const SIDEBAR_ICONS = {
   "/organizer/listings": ClipboardList,
   "/organizer": LayoutDashboard,
   "/organizer/settings/payouts": CreditCard,
+  "/organizer/pos": ShoppingBag,
   "/organizer/settings/plan": Star,
 } as const;
 
@@ -146,6 +147,11 @@ export default function OrganizerMobileNav({
                             />
                           ) : null}
                           <span className="min-w-0 flex-1 tracking-[0.01em]">{item.label}</span>
+                          {"badge" in item && item.badge ? (
+                            <span className="shrink-0 rounded-full bg-[#f5e6a8] px-1.5 py-0.5 text-[9px] font-bold text-[#8a6a10]">
+                              {item.badge}
+                            </span>
+                          ) : null}
                         </Link>
                       }
                     />
