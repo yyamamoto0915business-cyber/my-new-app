@@ -118,5 +118,7 @@ export async function signUpWithEmail(formData: {
     return { ok: false, message: "このメールアドレスはすでに登録されています。ログインしてください。" };
   }
 
-  return { ok: true };
+  // メール確認が無効（自動確認）の場合は signUp がセッションを返す＝すでにログイン済み。
+  // その場合は「確認メール送信」画面ではなくオンボーディングへ直接進める。
+  return { ok: true, emailConfirmationRequired: !data.session };
 }

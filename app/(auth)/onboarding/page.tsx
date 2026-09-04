@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -26,6 +26,22 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // 送信成功時は自前で遷移するため、role 反映後の自動リダイレクトを抑止する
+  const redirectingRef = useRef(false);
+
+  const currentRole = user?.user_metadata?.role as string | undefined;
+
+  // レンダー中に router を呼ぶと "Cannot update a component while rendering" になるため副作用で遷移する
+  useEffect(() => {
+    if (authLoading || redirectingRef.current) return;
+    if (!user) {
+      router.replace(AUTH_DISABLED ? "/" : "/auth");
+      return;
+    }
+    if (currentRole) {
+      router.replace("/");
+    }
+  }, [authLoading, user, currentRole, router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -69,6 +85,7 @@ export default function OnboardingPage() {
       await supabase.auth.refreshSession();
 
       setModeCookie(roleToMode(role));
+      redirectingRef.current = true;
       router.push(profileEditPath(role));
       router.refresh();
     } catch (err) {
@@ -77,27 +94,13 @@ export default function OnboardingPage() {
     }
   };
 
-  if (authLoading) {
+  // 読み込み中・未ログイン・role 設定済み（＝上の useEffect でリダイレクト対象）はフォームを描画しない
+  if (authLoading || !user || currentRole) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-sm text-zinc-500">読み込み中...</p>
       </div>
     );
-  }
-
-  if (!user) {
-    if (AUTH_DISABLED) {
-      router.replace("/");
-      return null;
-    }
-    router.replace("/auth");
-    return null;
-  }
-
-  const role = user.user_metadata?.role as string | undefined;
-  if (role) {
-    router.replace("/");
-    return null;
   }
 
   return (

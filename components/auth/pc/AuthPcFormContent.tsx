@@ -305,7 +305,7 @@ export function AuthPcFormContent({
             disabled={signupLoading || !agreedToTerms}
             className="flex h-[42px] w-full items-center justify-center gap-1 rounded-[10px] bg-gradient-to-r from-[#2a5540] via-[#315f48] to-[#3a6b50] px-4 text-[13px] font-medium text-white shadow-[0_6px_18px_rgba(42,85,64,0.28)] transition hover:opacity-95 disabled:opacity-60"
           >
-            {signupLoading ? "確認メールを送信しています..." : "登録してはじめる"}
+            {signupLoading ? "登録しています..." : "登録してはじめる"}
             {!signupLoading && <ChevronRight className="h-4 w-4" aria-hidden />}
           </button>
 

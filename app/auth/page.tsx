@@ -204,6 +204,13 @@ function AuthPageContent() {
       return;
     }
 
+    // メール確認が無効（自動確認）でセッションが発行済みなら、そのままオンボーディングへ。
+    // full navigation で Cookie セッションをクライアント／middleware に確実に反映させる。
+    if (result.emailConfirmationRequired === false) {
+      window.location.assign("/onboarding");
+      return;
+    }
+
     router.push(`/auth/check-email?email=${encodeURIComponent(signupEmail.trim().toLowerCase())}`);
   };
 
