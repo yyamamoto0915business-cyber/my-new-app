@@ -589,7 +589,7 @@ export function EventFormSidePanel({
             footerNote
           ) : form.price > 0 ? (
             <p className="text-[11px] leading-[1.55] text-[#2A5A74]">
-              参加費ありのイベントは、クレジット決済・オンライン支払い設定をご確認ください。
+              参加費ありのイベントは、売上受取設定をご確認ください。
             </p>
           ) : null}
         </div>

@@ -52,6 +52,8 @@ export async function POST(request: NextRequest) {
       ? rawEmail.trim()
       : undefined;
 
+  const businessName = organizer.organization_name?.trim() || undefined;
+
   let account: Stripe.Account;
   try {
     account = await stripe.accounts.create({
@@ -59,6 +61,7 @@ export async function POST(request: NextRequest) {
       country: "JP",
       email,
       metadata: { organizer_id: organizerId },
+      ...(businessName ? { business_profile: { name: businessName } } : {}),
     });
   } catch (err: unknown) {
     const msg = err instanceof Stripe.errors.StripeError ? err.message : String(err);

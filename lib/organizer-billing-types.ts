@@ -1,6 +1,8 @@
 export type OrganizerBillingData = {
   /** サーバーに STRIPE_SECRET_KEY があるか（Connect / Checkout API が動くか） */
   stripeConnectConfigured: boolean;
+  /** Stripe Terminal の日本 Location が設定済みか（iPhoneカードタッチ） */
+  posTapConfigured?: boolean;
   organizer: {
     plan: string;
     earlybird_eligible?: boolean;

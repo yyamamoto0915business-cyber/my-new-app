@@ -5,20 +5,8 @@ import Link from "next/link";
 import { ImageIcon, Play } from "lucide-react";
 import type { MyPostItem } from "@/app/api/me/posts/route";
 import { POST_CATEGORY_COLORS } from "@/lib/posts/mock-feed";
+import { formatMyPostSlashDate } from "@/lib/posts/visited-range";
 import { PostCardMenu, type PostMutation } from "./PostCardMenu";
-
-// アルバム内のカードだけ「2026/4/5」のスラッシュ区切り・ゼロ埋めなしで表示
-function formatAlbumDate(iso: string): string {
-  const parts = new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-  }).formatToParts(new Date(iso));
-  const get = (t: Intl.DateTimeFormatPartTypes) =>
-    parts.find((p) => p.type === t)?.value ?? "";
-  return `${get("year")}/${get("month")}/${get("day")}`;
-}
 
 export function MyAlbumCard({
   post,
@@ -78,7 +66,7 @@ export function MyAlbumCard({
         {title}
         <div className="my-album-card__foot">
           <span className="my-album-card__date">
-            {formatAlbumDate(post.createdAt)}
+            {formatMyPostSlashDate(post)}
           </span>
           <span className="my-album-card__menu-spacer" aria-hidden />
         </div>
@@ -104,7 +92,7 @@ export function MyAlbumCard({
             {title}
             <div className="my-album-card__foot">
               <span className="my-album-card__date">
-                {formatAlbumDate(post.createdAt)}
+                {formatMyPostSlashDate(post)}
               </span>
               {showMenu ? <PostCardMenu post={post} onMutated={onMutated} /> : null}
             </div>

@@ -360,7 +360,7 @@ export function DayManagementEventSwitcher({
         className={cn(
           "flex flex-col gap-2 rounded-xl border border-[#DDE8DF] bg-white/95 shadow-sm min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between",
           compact
-            ? "p-2 min-[900px]:gap-3 min-[900px]:px-3 min-[900px]:py-2"
+            ? "p-1.5 min-[900px]:gap-2 min-[900px]:px-3 min-[900px]:py-1.5"
             : "mt-2 p-3 min-[900px]:gap-4 min-[900px]:px-4 min-[900px]:py-3"
         )}
       >

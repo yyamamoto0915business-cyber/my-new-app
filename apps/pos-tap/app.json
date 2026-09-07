@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "MachiGlyphレジ",
+    "slug": "machiglyph-pos-tap",
+    "scheme": "machiglyph-pos",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "jp.machiglyph.pos",
+      "infoPlist": {
+        "NFCReaderUsageDescription": "お客さんのカードをタッチして決済するために使います。",
+        "NSLocationWhenInUseUsageDescription": "Stripe Terminal の店舗設定に位置情報が必要です。"
+      },
+      "entitlements": {
+        "com.apple.developer.proximity-reader.payment.acceptance": true
+      }
+    },
+    "plugins": ["@stripe/stripe-terminal-react-native"],
+    "extra": {
+      "apiUrl": "",
+      "supabaseUrl": "",
+      "supabaseAnonKey": ""
+    }
+  }
+}

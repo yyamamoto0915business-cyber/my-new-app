@@ -13,6 +13,11 @@ import {
   classifyRelatedHref,
   relatedLinkCtaLabel,
 } from "@/lib/posts/related-link";
+import {
+  formatVisitedDot,
+  visitedDetailLabel,
+  ymdFromDb,
+} from "@/lib/posts/visited-range";
 
 export function formatPostedAtLabel(iso: string): string {
   const then = new Date(iso).getTime();
@@ -61,6 +66,8 @@ export function mapDbCommunityPostToView(row: DbCommunityPost): CommunityPost {
   const relatedTitle = (row.related_title ?? "").trim() || undefined;
   const relatedImageUrl = (row.related_image_url ?? "").trim() || undefined;
   const relatedSiteName = (row.related_site_name ?? "").trim() || undefined;
+  const visitedFrom = ymdFromDb(row.visited_from);
+  const visitedTo = ymdFromDb(row.visited_to);
 
   return {
     id: row.id,
@@ -78,6 +85,12 @@ export function mapDbCommunityPostToView(row: DbCommunityPost): CommunityPost {
     authorAvatarUrl: row.author_avatar_url ?? null,
     areaLabel: row.area_label,
     postedAtLabel: formatPostedAtLabel(row.created_at),
+    visitedFrom,
+    visitedTo,
+    visitedLabel: visitedFrom
+      ? formatVisitedDot(visitedFrom, visitedTo)
+      : undefined,
+    visitedDetailLabel: visitedDetailLabel(visitedFrom, visitedTo),
     likeCount: row.like_count,
     likedByMe: false,
     commentCount: row.comment_count,

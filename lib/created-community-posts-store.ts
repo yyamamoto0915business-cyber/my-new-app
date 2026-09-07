@@ -37,6 +37,8 @@ export function addMemoryCommunityPost(
     related_title: input.relatedTitle ?? "",
     related_image_url: input.relatedImageUrl ?? "",
     related_site_name: input.relatedSiteName ?? "",
+    visited_from: input.visitedFrom ?? null,
+    visited_to: input.visitedTo ?? null,
   };
   memoryPosts.unshift(row);
   return row;
@@ -75,6 +77,8 @@ export type MemoryCommunityPostPatch = Partial<
     | "related_title"
     | "related_image_url"
     | "related_site_name"
+    | "visited_from"
+    | "visited_to"
   >
 >;
 

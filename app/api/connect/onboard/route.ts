@@ -43,11 +43,25 @@ export async function POST(request: NextRequest) {
   const stripe = new Stripe(stripeKey);
   const appUrl = getPublicOriginForStripeRedirect(request);
 
+  let returnTo: "pos" | "payouts" = "payouts";
+  try {
+    const raw = await request.text();
+    if (raw.trim()) {
+      const body = JSON.parse(raw) as { returnTo?: unknown };
+      if (body.returnTo === "pos") returnTo = "pos";
+    }
+  } catch {
+    returnTo = "payouts";
+  }
+
+  const basePath =
+    returnTo === "pos" ? "/organizer/pos" : "/organizer/settings/payouts";
+
   try {
     const link = await stripe.accountLinks.create({
       account: organizer.stripe_account_id,
-      refresh_url: `${appUrl}/organizer/settings/payouts?refresh=1`,
-      return_url: `${appUrl}/organizer/settings/payouts?connected=1`,
+      refresh_url: `${appUrl}${basePath}?refresh=1`,
+      return_url: `${appUrl}${basePath}?connected=1`,
       type: "account_onboarding",
     });
     return NextResponse.json({ url: link.url });
@@ -62,8 +76,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: noSuch
-          ? "保存されている Stripe 連携先が、いまの秘密鍵（本番/テスト）と一致しません。下の「連携をやり直す」を押してから、もう一度設定を始めてください。"
+          ? "保存されている Stripe 連携先が、いまの秘密鍵（本番/テスト）と一致しません。連携をやり直してから、もう一度設定を始めてください。"
           : `Stripe 連携エラー: ${msg}`,
+        code: noSuch ? "stripe_connect_mismatch" : undefined,
       },
       { status: 400 }
     );

@@ -122,14 +122,8 @@ export async function listPosProducts(
   const { data, error } = await q;
   if (error) throw error;
 
-  const rows = (data ?? []) as ProductRow[];
-  const eventId = opts?.eventId;
-  const filtered =
-    eventId == null || eventId === ""
-      ? rows
-      : rows.filter((r) => r.event_id == null || r.event_id === eventId);
-
-  return filtered.map(mapProduct);
+  // 商品は主催者の共通カタログ。eventId は売上記録用で、一覧では使わない。
+  return ((data ?? []) as ProductRow[]).map(mapProduct);
 }
 
 export type PosProductInput = {
@@ -151,7 +145,7 @@ export async function createPosProduct(
     .from("pos_products")
     .insert({
       organizer_id: organizerId,
-      event_id: input.eventId ?? null,
+      event_id: null,
       name: input.name.trim(),
       price_yen: Math.max(0, Math.round(input.priceYen)),
       category: input.category,
@@ -177,7 +171,6 @@ export async function updatePosProduct(
   if (input.priceYen != null) patch.price_yen = Math.max(0, Math.round(input.priceYen));
   if (input.category != null) patch.category = input.category;
   if (input.imageUrl !== undefined) patch.image_url = input.imageUrl;
-  if (input.eventId !== undefined) patch.event_id = input.eventId;
   if (input.sortOrder != null) patch.sort_order = input.sortOrder;
   if (input.isActive != null) patch.is_active = input.isActive;
 
@@ -306,6 +299,7 @@ export async function createPendingOnlineSale(
   opts: {
     eventId: string | null;
     lines: CheckoutLineInput[];
+    paymentMethod?: "online" | "tap";
   }
 ): Promise<{ sale: PosSale; platformFeeYen: number }> {
   const products = await listPosProducts(supabase, organizerId, {
@@ -352,7 +346,7 @@ export async function createPendingOnlineSale(
     .insert({
       organizer_id: organizerId,
       event_id: opts.eventId,
-      payment_method: "online",
+      payment_method: opts.paymentMethod === "tap" ? "tap" : "online",
       status: "pending",
       total_yen: totalYen,
       platform_fee_yen: platformFeeYen,
@@ -394,6 +388,20 @@ export async function attachStripeSessionToSale(
   if (error) throw error;
 }
 
+export async function attachStripePaymentIntentToSale(
+  supabase: DbClient,
+  saleId: string,
+  organizerId: string,
+  paymentIntentId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("pos_sales")
+    .update({ stripe_payment_intent_id: paymentIntentId })
+    .eq("id", saleId)
+    .eq("organizer_id", organizerId);
+  if (error) throw error;
+}
+
 export async function markPosSalePaidBySession(
   supabase: DbClient,
   sessionId: string,
@@ -424,6 +432,79 @@ export async function markPosSalePaidBySession(
       paid_at: now,
     })
     .eq("id", (sale as SaleRow).id);
+}
+
+/** Stripe Webhook 用: Terminal タッチ決済の完了 */
+export async function markPosSalePaidByPaymentIntent(
+  supabase: DbClient,
+  paymentIntentId: string,
+  amountYen: number
+): Promise<void> {
+  if (!paymentIntentId) return;
+  const { data: sale } = await supabase
+    .from("pos_sales")
+    .select("*")
+    .eq("stripe_payment_intent_id", paymentIntentId)
+    .maybeSingle();
+
+  if (!sale) return;
+  if ((sale as SaleRow).status === "paid") return;
+
+  const fee = (sale as SaleRow).platform_fee_yen ?? calcPosPlatformFeeYen(amountYen);
+  const net = calcPosOrganizerNetYen(amountYen, fee);
+  const now = new Date().toISOString();
+
+  await supabase
+    .from("pos_sales")
+    .update({
+      status: "paid",
+      total_yen: amountYen,
+      platform_fee_yen: fee,
+      organizer_net_yen: net,
+      paid_at: now,
+    })
+    .eq("id", (sale as SaleRow).id);
+}
+
+/** 会計を返金済みにする（現金取消／Stripe返金後） */
+export async function markPosSaleRefunded(
+  supabase: DbClient,
+  organizerId: string,
+  saleId: string
+): Promise<PosSale | null> {
+  const sale = await getPosSaleById(supabase, organizerId, saleId);
+  if (!sale) return null;
+  if (sale.status === "refunded") return sale;
+  if (sale.status !== "paid") {
+    throw new Error("not_refundable");
+  }
+
+  const { data, error } = await supabase
+    .from("pos_sales")
+    .update({ status: "refunded" })
+    .eq("id", saleId)
+    .eq("organizer_id", organizerId)
+    .eq("status", "paid")
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return mapSale(data as SaleRow, sale.items);
+}
+
+/** Stripe Webhook 用: payment_intent から POS 売上を返金済みにする */
+export async function markPosSaleRefundedByPaymentIntent(
+  supabase: DbClient,
+  paymentIntentId: string
+): Promise<void> {
+  if (!paymentIntentId) return;
+  await supabase
+    .from("pos_sales")
+    .update({ status: "refunded" })
+    .eq("stripe_payment_intent_id", paymentIntentId)
+    .eq("status", "paid");
 }
 
 export async function getPosSaleById(
@@ -471,7 +552,7 @@ export async function getPosSalesSummary(
     .from("pos_sales")
     .select("*")
     .eq("organizer_id", organizerId)
-    .eq("status", "paid")
+    .in("status", ["paid", "refunded"])
     .gte("paid_at", since)
     .order("paid_at", { ascending: false })
     .limit(100);
@@ -504,6 +585,7 @@ export async function getPosSalesSummary(
   }
 
   const sales = salesRaw.map((s) => mapSale(s, itemsBySale.get(s.id)));
+  const paidSales = sales.filter((s) => s.status === "paid");
 
   let totalYen = 0;
   let cashYen = 0;
@@ -514,7 +596,7 @@ export async function getPosSalesSummary(
     { productId: string | null; productName: string; quantity: number; totalYen: number }
   >();
 
-  for (const sale of sales) {
+  for (const sale of paidSales) {
     totalYen += sale.totalYen;
     platformFeeYen += sale.platformFeeYen;
     if (sale.paymentMethod === "cash") cashYen += sale.totalYen;
@@ -539,7 +621,7 @@ export async function getPosSalesSummary(
       totalYen,
       cashYen,
       onlineYen,
-      saleCount: sales.length,
+      saleCount: paidSales.length,
       platformFeeYen,
       byProduct: Array.from(productMap.values()).sort((a, b) => b.quantity - a.quantity),
     },

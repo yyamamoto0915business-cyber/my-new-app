@@ -1,0 +1,23 @@
+{
+  "name": "machiglyph-pos-tap",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios"
+  },
+  "dependencies": {
+    "@stripe/stripe-terminal-react-native": "^0.0.1-beta.27",
+    "@supabase/supabase-js": "^2.95.3",
+    "expo": "~54.0.0",
+    "expo-linking": "~8.0.0",
+    "expo-status-bar": "~3.0.0",
+    "react": "19.1.0",
+    "react-native": "0.81.4"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.0",
+    "typescript": "^5.9.2"
+  }
+}

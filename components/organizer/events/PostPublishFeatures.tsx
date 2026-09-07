@@ -145,8 +145,8 @@ export function PostPublishFeatures({
       {features.includes("payout") ? (
         <FeatureSettingCard
           accent="orange"
-          title="クレジット決済・オンライン支払い設定"
-          description="有料イベントのクレジット決済やオンライン支払いを受け取るための設定を行います。Stripe連携と売上の振込先口座の登録が必要です。"
+          title="売上受取設定"
+          description="カード売上は口座へ振り込まれます。設定が終わると、有料チケットや当日のカード決済が使えます。"
           buttonLabel="支払い設定へ"
           status={payoutStatus}
           href="/organizer/settings/payouts"

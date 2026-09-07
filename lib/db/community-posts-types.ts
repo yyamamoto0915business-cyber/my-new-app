@@ -22,6 +22,10 @@ export type DbCommunityPost = {
   related_title: string;
   related_image_url: string;
   related_site_name: string;
+  /** 行った日（開始）。未指定は null */
+  visited_from: string | null;
+  /** 行った日（終了）。日帰り・未指定は null */
+  visited_to: string | null;
   /** profiles から付与。DB カラムではない */
   author_avatar_url?: string | null;
 };
@@ -44,4 +48,6 @@ export type CreateCommunityPostInput = {
   relatedTitle?: string;
   relatedImageUrl?: string;
   relatedSiteName?: string;
+  visitedFrom?: string | null;
+  visitedTo?: string | null;
 };

@@ -18,6 +18,10 @@ export type PostCreateDraft = {
   locationEnabled: boolean;
   /** 公開＝みんなの投稿、非公開＝アルバム＋承認フォロワー */
   visibility: "public" | "hidden";
+  /** 行った日（開始 YYYY-MM-DD）。空なら未指定 */
+  visitedFrom: string;
+  /** 行った日（終了 YYYY-MM-DD）。空なら日帰り／未指定 */
+  visitedTo: string;
   /** 写真プレビュー（object URL） */
   imagePreviewUrls: string[];
   /** object URL（プレビュー用） */
@@ -49,6 +53,8 @@ export const DEFAULT_POST_CREATE_DRAFT: PostCreateDraft = {
   relatedUrl: "",
   locationEnabled: true,
   visibility: "public",
+  visitedFrom: "",
+  visitedTo: "",
   imagePreviewUrls: [],
   videoPreviewUrl: null,
   videoDurationSec: null,
@@ -123,6 +129,8 @@ export type PostCreateResumeSource = {
   durationSec: number | null;
   status?: "draft" | "public" | "hidden";
   relatedUrl?: string;
+  visitedFrom?: string | null;
+  visitedTo?: string | null;
 };
 
 const TAG_LINE_RE = /^#\S+(?:\s+#\S+)*$/;
@@ -191,6 +199,11 @@ export function buildPostCreateDraftFromSource(
     area: source.areaLabel,
     locationEnabled: source.areaLabel.trim().length > 0,
     visibility: source.status === "hidden" ? "hidden" : "public",
+    visitedFrom: source.visitedFrom ?? "",
+    visitedTo:
+      source.visitedTo && source.visitedTo !== source.visitedFrom
+        ? source.visitedTo
+        : "",
     imagePreviewUrls: imageUrls,
     videoPreviewUrl: isVideo ? source.mediaUrl : null,
     videoDurationSec: isVideo ? source.durationSec : null,

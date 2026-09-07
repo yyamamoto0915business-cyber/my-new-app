@@ -151,7 +151,7 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
         <ProPlanCard />
       ) : (
         <div className="org-events-status-card">
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-2.5">
             <span className="org-events-status-card__icon org-events-status-card__icon--plan" aria-hidden>
               <Crown className="h-4 w-4" strokeWidth={1.75} />
             </span>
@@ -175,7 +175,7 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
         <UnlimitedSlotsCard />
       ) : (
         <div className="org-events-status-card">
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-2.5">
             <span className="org-events-status-card__icon org-events-status-card__icon--slots" aria-hidden>
               <Users className="h-4 w-4" strokeWidth={1.75} />
             </span>
@@ -193,21 +193,28 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
         </div>
       )}
 
-      <div className="org-events-status-card">
-        <div className="flex items-start gap-3">
+      <div className="org-events-status-card org-events-status-card--payout">
+        <div className="flex items-center gap-2.5">
           <span className="org-events-status-card__icon org-events-status-card__icon--stripe" aria-hidden>
             <CreditCard className="h-4 w-4" strokeWidth={1.75} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="org-events-status-card__label">
-              <span className="org-events-status-card__label-full">Stripe設定状況</span>
-              <span className="org-events-status-card__label-short">Stripe</span>
+            <div className="org-events-status-card__payout-head">
+              <p className="org-events-status-card__label">
+                <span className="org-events-status-card__label-full">売上の受け取り</span>
+                <span className="org-events-status-card__label-short">売上受取</span>
+              </p>
+              <span className={`org-events-status-card__badge border ${stripeTone}`}>
+                {stripeLabel}
+              </span>
+            </div>
+            <p className="org-events-status-card__hint org-events-status-card__hint--payout">
+              {stripeOk
+                ? "カード売上はだいたい週1回、口座へ振り込まれます"
+                : "有料でのイベントチケット販売が可能になります"}
             </p>
-            <span className={`org-events-status-card__badge border ${stripeTone}`}>
-              {stripeLabel}
-            </span>
             <Link href={PAYOUTS_HREF} className="org-events-status-card__link">
-              設定を確認
+              {stripeOk ? "設定を確認" : "設定する"}
             </Link>
           </div>
         </div>

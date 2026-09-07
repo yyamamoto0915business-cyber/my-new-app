@@ -24,6 +24,7 @@ import type { MyPostItem } from "@/app/api/me/posts/route";
 import {
   SEASONS,
   seasonOfPost,
+  albumDateOf,
   type SeasonAlbum,
   type SeasonKey,
 } from "@/lib/posts/group-my-posts-by-season";
@@ -31,6 +32,7 @@ import {
   POST_CATEGORY_TABS,
   type PostCategory,
 } from "@/lib/posts/mock-feed";
+import { formatMyPostThumbDate } from "@/lib/posts/visited-range";
 import { MyAlbumMemoryCard } from "./MyAlbumMemoryCard";
 import type { PostMutation } from "./PostCardMenu";
 
@@ -67,17 +69,6 @@ type Props = {
   readOnly?: boolean;
   heading?: string;
 };
-
-function formatThumbDate(iso: string): string {
-  const parts = new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    month: "numeric",
-    day: "numeric",
-  }).formatToParts(new Date(iso));
-  const month = parts.find((p) => p.type === "month")?.value ?? "";
-  const day = parts.find((p) => p.type === "day")?.value ?? "";
-  return `${month}/${day}`;
-}
 
 function wrapIndex(index: number, length: number): number {
   if (length <= 0) return 0;
@@ -208,12 +199,14 @@ export function MyPostsAlbumStage({
     let list =
       season === "all"
         ? yearPosts
-        : yearPosts.filter((p) => seasonOfPost(p.createdAt) === season);
+        : yearPosts.filter((p) => seasonOfPost(albumDateOf(p)) === season);
     if (category !== "all") {
       list = list.filter((p) => p.category === category);
     }
     return [...list].sort(
-      (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt),
+      (a, b) =>
+        +new Date(albumDateOf(a)) - +new Date(albumDateOf(b)) ||
+        +new Date(a.createdAt) - +new Date(b.createdAt),
     );
   }, [yearPosts, season, category]);
 
@@ -565,7 +558,7 @@ export function MyPostsAlbumStage({
                 data-active={i === index ? "true" : "false"}
                 onClick={() => setIndex(i)}
                 aria-current={i === index ? "true" : undefined}
-                aria-label={`${formatThumbDate(post.createdAt)} ${post.title}`}
+                aria-label={`${formatMyPostThumbDate(post)} ${post.title}`}
                 ref={(el) => {
                   thumbRefs.current[post.id] = el;
                 }}
@@ -582,7 +575,7 @@ export function MyPostsAlbumStage({
                   ) : null}
                 </span>
                 <span className="my-album-stage__thumb-date">
-                  {formatThumbDate(post.createdAt)}
+                  {formatMyPostThumbDate(post)}
                 </span>
               </button>
               );

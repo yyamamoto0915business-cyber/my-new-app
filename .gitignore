@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+apps/pos-tap/node_modules
+apps/pos-tap/.expo
 /.pnp
 .pnp.*
 .yarn/*

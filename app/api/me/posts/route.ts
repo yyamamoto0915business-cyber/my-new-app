@@ -7,6 +7,7 @@ import {
   mapDbCommunityPostToView,
 } from "@/lib/posts/map-community-post";
 import type { PostCategory } from "@/lib/posts/mock-feed";
+import { ymdFromDb } from "@/lib/posts/visited-range";
 
 export type MyPostItem = {
   id: string;
@@ -18,6 +19,9 @@ export type MyPostItem = {
   status: "draft" | "public" | "hidden";
   dateLabel: string;
   createdAt: string;
+  /** 行った日（YYYY-MM-DD）。アルバムの振り分けに使う */
+  visitedFrom?: string | null;
+  visitedTo?: string | null;
   likeCount: number;
   commentCount: number;
   viewCount: number;
@@ -45,6 +49,8 @@ export async function GET() {
       status: row.status,
       dateLabel: formatPostedAtLabel(row.created_at),
       createdAt: row.created_at,
+      visitedFrom: ymdFromDb(row.visited_from),
+      visitedTo: ymdFromDb(row.visited_to),
       likeCount: view.likeCount,
       commentCount: view.commentCount,
       body: view.body,

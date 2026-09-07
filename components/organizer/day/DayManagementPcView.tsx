@@ -75,7 +75,7 @@ function KpiProgressBar({
           : "bg-transparent";
 
   return (
-    <div className={cn("mt-1.5 h-1 w-full overflow-hidden rounded-full", track)}>
+    <div className={cn("mt-1 h-1 w-full overflow-hidden rounded-full", track)}>
       <div className={cn("h-full rounded-full transition-all", fill)} style={{ width: `${pct}%` }} />
     </div>
   );
@@ -218,14 +218,14 @@ export function DayManagementPcView({
             </span>
             <span className="mg-day-mgmt-pc__kpi-label">来場者チェックイン</span>
           </div>
-          <p className="mg-day-mgmt-pc__kpi-value mt-1">
+          <p className="mg-day-mgmt-pc__kpi-value mt-0.5">
             {checkin.checkedIn}
             <span className="mg-day-mgmt-pc__kpi-unit">/ {checkin.total}人</span>
+            {!emptyMode ? (
+              <span className="mg-day-mgmt-pc__kpi-unit">{checkinPct}%</span>
+            ) : null}
           </p>
           <KpiProgressBar pct={checkinPct} tone="green" />
-          {!emptyMode ? (
-            <p className="mt-0.5 text-right text-[10px] text-[#566358]">{checkinPct}%</p>
-          ) : null}
         </div>
 
         <div className="mg-day-mgmt-pc__kpi">
@@ -235,14 +235,14 @@ export function DayManagementPcView({
             </span>
             <span className="mg-day-mgmt-pc__kpi-label">スタッフ出勤</span>
           </div>
-          <p className="mg-day-mgmt-pc__kpi-value mt-1">
+          <p className="mg-day-mgmt-pc__kpi-value mt-0.5">
             {staffPresent}
             <span className="mg-day-mgmt-pc__kpi-unit">/ {staffTotal}名</span>
+            {!emptyMode ? (
+              <span className="mg-day-mgmt-pc__kpi-unit">{staffPct}%</span>
+            ) : null}
           </p>
           <KpiProgressBar pct={staffPct} tone="blue" />
-          {!emptyMode ? (
-            <p className="mt-0.5 text-right text-[10px] text-[#566358]">{staffPct}%</p>
-          ) : null}
         </div>
 
         <div className="mg-day-mgmt-pc__kpi">
@@ -252,11 +252,11 @@ export function DayManagementPcView({
             </span>
             <span className="mg-day-mgmt-pc__kpi-label">プログラム進行</span>
           </div>
-          <p className="mg-day-mgmt-pc__kpi-value mt-1">
+          <p className="mg-day-mgmt-pc__kpi-value mt-0.5">
             {schedDone}
             <span className="mg-day-mgmt-pc__kpi-unit">/ {schedTotal}</span>
           </p>
-          <div className="mt-1.5 flex justify-end">
+          <div className="mt-1 flex justify-end">
             {!emptyMode ? (
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
@@ -284,11 +284,11 @@ export function DayManagementPcView({
             </span>
             <span className="mg-day-mgmt-pc__kpi-label">お知らせ未読</span>
           </div>
-          <p className="mg-day-mgmt-pc__kpi-value mt-1">
+          <p className="mg-day-mgmt-pc__kpi-value mt-0.5">
             {unreadNotices}
             <span className="mg-day-mgmt-pc__kpi-unit">件</span>
           </p>
-          <p className="mt-1.5 text-[10px] leading-snug text-[#566358]">
+          <p className="mt-1 text-[10px] leading-snug text-[#566358]">
             {emptyMode
               ? "未読はありません"
               : isPast
@@ -304,7 +304,6 @@ export function DayManagementPcView({
           emptyMode={emptyMode}
           compact
           onOpenCheckinList={() => onOpenModal("checkin_list")}
-          className="min-h-0"
           summary={dayOps}
           summaryLoading={dayOpsLoading}
           summaryError={dayOpsError}
@@ -322,12 +321,12 @@ export function DayManagementPcView({
               </p>
             </div>
           ) : (
-            <ul className="mt-1.5 min-h-0 flex-1 space-y-0.5 overflow-y-auto">
+            <ul className="mt-1 min-h-0 flex-1 space-y-0.5 overflow-y-auto">
               {MOCK_SCHEDULE.map((item, i) => (
                 <li
                   key={i}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-md px-2 py-1",
+                    "flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1",
                     item.status === "live"
                       ? "border-l-[3px] border-[#2D7A4F] bg-[#EAF4ED]"
                       : "border-l-[3px] border-transparent bg-[#F5F8F5]"
@@ -385,12 +384,12 @@ export function DayManagementPcView({
               </p>
             </div>
           ) : (
-            <ul className="mt-1.5 space-y-1">
+            <ul className="mt-1 min-h-0 flex-1 space-y-0.5 overflow-y-auto">
               {notices.map((notice, i) => (
                 <li
                   key={i}
                   className={cn(
-                    "flex items-start gap-1.5 rounded-md px-1.5 py-1",
+                    "flex shrink-0 items-start gap-1.5 rounded-md px-1.5 py-1",
                     notice.type === "urg" ? "bg-[#FFEBEE]" : "bg-[#E3F2FD]"
                   )}
                 >

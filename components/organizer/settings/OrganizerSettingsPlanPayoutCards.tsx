@@ -85,7 +85,7 @@ export function OrganizerSettingsPlanPayoutCards() {
         </span>
         <h2 className="mt-3 text-base font-semibold text-slate-900">売上受取設定</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Stripeで売上を受け取るための連携です。料金プランとは別の設定です。
+          カード売上を口座で受け取る設定です。だいたい週1回振り込まれます。
         </p>
         <p className="mt-4 text-sm text-slate-700">
           状態：

@@ -8,7 +8,7 @@ export default function OrganizerPosRoutePage() {
     <OrganizerRegistrationGate>
       <OrganizerPageShell
         variant="workspace"
-        contentClassName="mx-auto w-full max-w-7xl space-y-4 pb-16 min-[900px]:pb-4"
+        contentClassName="org-pos-shell mx-auto w-full max-w-7xl pb-16 min-[900px]:pb-2"
       >
         <Suspense
           fallback={

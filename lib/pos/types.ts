@@ -23,7 +23,7 @@ export type PosProduct = {
   updatedAt: string;
 };
 
-export type PosPaymentMethod = "cash" | "online";
+export type PosPaymentMethod = "cash" | "online" | "tap";
 
 export type PosSaleStatus = "pending" | "paid" | "cancelled" | "refunded";
 

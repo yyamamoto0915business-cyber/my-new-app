@@ -82,6 +82,7 @@ export function MobileTopHeader({ className }: Props) {
   return (
     <header
       ref={headerRef}
+      data-mg-chrome="mobile-top"
       className={cn(
         "sticky top-0 z-40 min-[900px]:hidden bg-[#ffffff]",
         organizerArea

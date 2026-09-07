@@ -57,7 +57,7 @@ export function MobileMainShell({ children }: Props) {
 
   return (
     <div
-      className={`${mobileShellLayoutClass} ${sidePad} ${pcTopPad}`}
+      className={`mg-main-shell ${mobileShellLayoutClass} ${sidePad} ${pcTopPad}`}
       style={
         immersiveMobile
           ? undefined

@@ -7,7 +7,6 @@ export const ORGANIZER_HOME_HREF = "/organizer/listings";
 export const ORGANIZER_SIDEBAR_NAV_ITEMS = [
   { label: "掲載管理", href: "/organizer/listings" },
   { label: "ダッシュボード", href: "/organizer" },
-  { label: "クレジット・オンライン決済", href: "/organizer/settings/payouts" },
   { label: "レジ・当日販売", href: "/organizer/pos", badge: "NEW" },
   { label: "主催者プラン", href: "/organizer/settings/plan" },
 ] as const;

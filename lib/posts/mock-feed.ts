@@ -28,6 +28,12 @@ export type CommunityPost = {
   authorAvatarUrl: string | null;
   areaLabel: string;
   postedAtLabel: string;
+  /** 行った日の短い表示（例: 2024.08.10〜08.15）。未指定ならなし */
+  visitedLabel?: string;
+  /** 詳細用（例: 2024年8月10日〜15日に訪問） */
+  visitedDetailLabel?: string;
+  visitedFrom?: string | null;
+  visitedTo?: string | null;
   likeCount: number;
   likedByMe?: boolean;
   commentCount: number;

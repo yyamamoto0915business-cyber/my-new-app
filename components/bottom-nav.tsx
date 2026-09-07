@@ -147,6 +147,7 @@ export function BottomNav() {
 
   return (
     <nav
+      data-mg-chrome="pc-rail"
       className="fixed inset-y-0 left-0 z-50 hidden w-20 flex-col items-center border-r border-[#e8ebe6] bg-white py-5 min-[900px]:flex"
       aria-label="PCナビゲーション"
     >

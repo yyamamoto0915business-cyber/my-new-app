@@ -219,7 +219,7 @@ export function OrganizerListingsHub() {
             <h2 id="listings-pos-heading">レジ・当日販売</h2>
             <span className="org-listings-hub__pos-badge">NEW</span>
           </div>
-          <p>会場での物販や参加パスの会計を、その場でスムーズに行えます。</p>
+          <p>商品は一度登録すれば、次のイベントでも使えます。会場での会計を、その場でスムーズに行えます。</p>
           <ul className="org-listings-hub__pos-tags">
             <li>
               <Banknote className="h-3.5 w-3.5" aria-hidden />

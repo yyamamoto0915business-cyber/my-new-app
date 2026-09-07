@@ -232,7 +232,7 @@ export function OrganizerSettingsMobileView({
         <MobileCardHeader
           accent="payout"
           title="売上受取設定"
-          description="Stripe連携（プランとは別）"
+          description="カード売上を口座で受け取る（プランとは別）"
           icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <rect x="1" y="4" width="22" height="16" rx="2"/>

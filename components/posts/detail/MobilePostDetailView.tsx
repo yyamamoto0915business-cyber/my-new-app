@@ -160,6 +160,9 @@ export function MobilePostDetailView({ post, viewer }: Props) {
                   <p className="posts-detail-author__name">{post.authorName}</p>
                 )}
                 <p className="posts-detail-author__time">{post.postedAtLabel}</p>
+                {post.visitedDetailLabel ? (
+                  <p className="posts-detail-visited">{post.visitedDetailLabel}</p>
+                ) : null}
               </div>
               <AuthorFollowButton authorId={post.authorId} ghost />
             </div>

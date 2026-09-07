@@ -314,6 +314,8 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
       area: areaLabel,
       mediaUrl,
       relatedUrl: draft.relatedUrl.trim(),
+      visitedFrom: draft.visitedFrom.trim() || null,
+      visitedTo: draft.visitedTo.trim() || null,
     };
     if (mediaType === "image") payload.galleryImages = galleryImages;
     if (mediaType === "video") payload.durationSec = durationSec;

@@ -4,8 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, ImageIcon, MessageCircle, Play } from "lucide-react";
 import type { MyPostItem } from "@/app/api/me/posts/route";
-import { seasonOfPost } from "@/lib/posts/group-my-posts-by-season";
+import { seasonOfPost, albumDateOf } from "@/lib/posts/group-my-posts-by-season";
 import { excerptForMyPost } from "@/lib/posts/my-posts-demo";
+import { formatMyPostDotDate } from "@/lib/posts/visited-range";
 import { PostCardMenu, type PostMutation } from "./PostCardMenu";
 
 const SEASON_ICON = {
@@ -14,17 +15,6 @@ const SEASON_ICON = {
   autumn: "/profile/album/maple-cut.png",
   winter: "/profile/album/winter-cut.png",
 } as const;
-
-function formatDotDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  })
-    .format(new Date(iso))
-    .replaceAll("-", ".");
-}
 
 function clampExcerpt(text: string, max = 72): string {
   const t = text.replace(/\s+/g, " ").trim();
@@ -49,7 +39,7 @@ export function MyAlbumMemoryCard({
   const linkable = !isDraft;
   const href = `/posts/${post.id}`;
   const excerpt = clampExcerpt(excerptForMyPost(post));
-  const season = seasonOfPost(post.createdAt);
+  const season = seasonOfPost(albumDateOf(post));
   const showMenu = showMenuProp ?? Boolean(active && interactive);
 
   const photo = (
@@ -88,7 +78,7 @@ export function MyAlbumMemoryCard({
           className="my-album-memory__season-icon"
           aria-hidden
         />
-        {formatDotDate(post.createdAt)}
+        {formatMyPostDotDate(post)}
       </span>
       {showMenu ? <span className="my-album-memory__menu-spacer" aria-hidden /> : null}
     </div>

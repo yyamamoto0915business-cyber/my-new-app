@@ -41,7 +41,7 @@ export function OrganizerPayoutsHero() {
             売上受取設定
           </h1>
           <p className="mt-1 text-[11px] leading-relaxed text-[#566358]">
-            Stripeで参加費などの売上を受け取るための設定です。
+            カード売上を口座で受け取ります。有料チケットやレジでも使えます。
           </p>
         </div>
       </div>

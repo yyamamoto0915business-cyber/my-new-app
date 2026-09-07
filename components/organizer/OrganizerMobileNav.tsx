@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ClipboardList, CreditCard, Star, ShoppingBag } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Star, ShoppingBag } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
@@ -15,7 +15,6 @@ import {
 const SIDEBAR_ICONS = {
   "/organizer/listings": ClipboardList,
   "/organizer": LayoutDashboard,
-  "/organizer/settings/payouts": CreditCard,
   "/organizer/pos": ShoppingBag,
   "/organizer/settings/plan": Star,
 } as const;
@@ -132,7 +131,7 @@ export default function OrganizerMobileNav({
                         <Link
                           href={item.href}
                           className={cn(
-                            "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] leading-snug transition-all duration-150",
+                            "flex w-full min-w-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] leading-snug transition-all duration-150",
                             active
                               ? "bg-[#EAF4ED] font-semibold text-[#1e5c38]"
                               : "text-[#4a5548] active:bg-white/80"
@@ -146,7 +145,9 @@ export default function OrganizerMobileNav({
                               aria-hidden
                             />
                           ) : null}
-                          <span className="min-w-0 flex-1 tracking-[0.01em]">{item.label}</span>
+                          <span className="min-w-0 flex-1 break-keep tracking-[0.01em]">
+                            {item.label}
+                          </span>
                           {"badge" in item && item.badge ? (
                             <span className="shrink-0 rounded-full bg-[#f5e6a8] px-1.5 py-0.5 text-[9px] font-bold text-[#8a6a10]">
                               {item.badge}

@@ -181,7 +181,7 @@ export function TicketSalesAttendanceCard({
                 <DonutChart
                   segments={donutSegments}
                   total={Math.max(donutTotal, 1)}
-                  size={compact ? 64 : 108}
+                  size={compact ? 52 : 108}
                 />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span

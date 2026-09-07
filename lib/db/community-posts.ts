@@ -47,6 +47,8 @@ function withRelatedLinkDefaults(row: DbCommunityPost): DbCommunityPost {
     related_title: row.related_title ?? "",
     related_image_url: row.related_image_url ?? "",
     related_site_name: row.related_site_name ?? "",
+    visited_from: row.visited_from ?? null,
+    visited_to: row.visited_to ?? null,
   };
 }
 
@@ -127,7 +129,7 @@ export async function listMyCommunityPosts(
     return memory.slice(0, limit);
   }
 
-  const dbRows = (data ?? []) as DbCommunityPost[];
+  const dbRows = ((data ?? []) as DbCommunityPost[]).map(withRelatedLinkDefaults);
   const merged = mergePosts(dbRows, memory);
   return merged.slice(0, limit);
 }
@@ -252,7 +254,7 @@ export async function getPublicCommunityPostById(
     return null;
   }
   const row = (data as DbCommunityPost | null) ?? null;
-  return row ? withAuthorAvatar(row) : null;
+  return row ? withAuthorAvatar(withRelatedLinkDefaults(row)) : null;
 }
 
 export async function createCommunityPost(
@@ -277,6 +279,8 @@ export async function createCommunityPost(
     related_title: related.related_title,
     related_image_url: related.related_image_url,
     related_site_name: related.related_site_name,
+    visited_from: input.visitedFrom ?? null,
+    visited_to: input.visitedTo ?? null,
   };
 
   const supabase = await createClient();
@@ -295,14 +299,21 @@ export async function createCommunityPost(
     );
   }
 
-  const { data, error } = await writer
+  let { data, error } = await writer
     .from("community_posts")
     .insert(payload)
     .select("*")
     .single();
 
+  if (error && /visited_from|visited_to/i.test(error.message)) {
+    const { visited_from: _from, visited_to: _to, ...rest } = payload;
+    const retry = await writer.from("community_posts").insert(rest).select("*").single();
+    data = retry.data;
+    error = retry.error;
+  }
+
   if (!error && data) {
-    return withAuthorAvatar(data as DbCommunityPost);
+    return withAuthorAvatar(withRelatedLinkDefaults(data as DbCommunityPost));
   }
 
   console.error("createCommunityPost:", error?.message ?? "unknown insert error");
@@ -336,7 +347,9 @@ export async function getMyCommunityPostById(
     console.error("getMyCommunityPostById:", error.message);
     return null;
   }
-  return (data as DbCommunityPost | null) ?? null;
+  return data
+    ? withRelatedLinkDefaults(data as DbCommunityPost)
+    : null;
 }
 
 export type UpdateCommunityPostPatch = MemoryCommunityPostPatch;
@@ -386,7 +399,9 @@ export async function updateCommunityPost(
     console.error("updateCommunityPost:", error.message);
     return null;
   }
-  return (data as DbCommunityPost | null) ?? null;
+  return data
+    ? withRelatedLinkDefaults(data as DbCommunityPost)
+    : null;
 }
 
 /** 本人の投稿を削除。削除できたら true */

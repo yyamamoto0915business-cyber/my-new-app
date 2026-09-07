@@ -9,6 +9,7 @@ import {
   isPaidOrganizerWithPlanState,
 } from "@/lib/billing";
 import { isStripeServerConfigured } from "@/lib/stripe";
+import { getStripeTerminalLocationId } from "@/lib/pos/tap-app";
 
 /**
  * GET: 主催者の課金・特典・公開枠情報
@@ -60,6 +61,7 @@ export async function GET() {
 
     return NextResponse.json({
       stripeConnectConfigured: isStripeServerConfigured(),
+      posTapConfigured: Boolean(getStripeTerminalLocationId()),
       organizer: {
         id: organizer.id,
         plan: organizer.plan,

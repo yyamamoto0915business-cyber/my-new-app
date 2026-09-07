@@ -81,7 +81,7 @@ export default async function OrganizerLayout({
     <div className="org-workspace-shell flex min-h-0 flex-col bg-[#f9f9f7] [--mg-organizer-subheader-h:48px] min-[900px]:mt-[var(--mg-pc-top-nav-h)] min-[900px]:min-h-[calc(100dvh-var(--mg-pc-top-nav-h))]">
       <OrganizerProSyncer isPro={isPro} />
       {/* モバイルサブヘッダー（main top headerの下に sticky） */}
-      <header className="sticky top-[calc(var(--mg-mobile-top-header-h,46px)+env(safe-area-inset-top,0px))] z-30 min-[900px]:hidden border-b border-[#e8e6e0] bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)]">
+      <header className="org-workspace-mobile-bar sticky top-[calc(var(--mg-mobile-top-header-h,46px)+env(safe-area-inset-top,0px))] z-30 min-[900px]:hidden border-b border-[#e8e6e0] bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)]">
         <div className="mx-auto w-full max-w-screen-sm px-4 py-1.5">
           <div className="flex items-center gap-2">
             <OrganizerMobileNav

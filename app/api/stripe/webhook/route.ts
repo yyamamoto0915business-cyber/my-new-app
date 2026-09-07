@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, getStripeSecretKey } from "@/lib/stripe";
-import { markPosSalePaidBySession } from "@/lib/db/pos";
+import { markPosSalePaidByPaymentIntent, markPosSalePaidBySession, markPosSaleRefundedByPaymentIntent } from "@/lib/db/pos";
+import { POS_TAP_PAYMENT_TYPE } from "@/lib/pos/tap-app";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -208,6 +209,18 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "payment_intent.succeeded": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        if (pi.metadata?.type === POS_TAP_PAYMENT_TYPE) {
+          await markPosSalePaidByPaymentIntent(
+            supabase,
+            pi.id,
+            pi.amount_received || pi.amount || 0
+          );
+        }
+        break;
+      }
+
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const sub = event.data.object as Stripe.Subscription;
@@ -288,6 +301,7 @@ export async function POST(request: NextRequest) {
             .from("event_orders")
             .update({ status: "refunded", updated_at: now })
             .eq("stripe_payment_intent_id", piId);
+          await markPosSaleRefundedByPaymentIntent(supabase, piId);
         }
         break;
       }

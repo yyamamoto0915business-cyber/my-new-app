@@ -40,6 +40,10 @@ import {
   type PostCategory,
 } from "@/lib/posts/mock-feed";
 import { classifyRelatedHref } from "@/lib/posts/related-link";
+import {
+  todayYmdTokyo,
+  visitedToMaxYmd,
+} from "@/lib/posts/visited-range";
 
 const CREATE_CATEGORIES = POST_CATEGORY_TABS.filter((t) => t.key !== "all");
 
@@ -109,7 +113,8 @@ export function PostCreateForm({
     (draft.spotName.trim() ? 1 : 0) +
     (draft.area.trim() ? 1 : 0) +
     (draft.relatedUrl.trim() ? 1 : 0) +
-    (draft.tags.length > 0 ? 1 : 0);
+    (draft.tags.length > 0 ? 1 : 0) +
+    (draft.visitedFrom.trim() ? 1 : 0);
 
   useEffect(() => {
     if (detailsFilledCount > 0) setDetailsOpen(true);
@@ -328,6 +333,66 @@ export function PostCreateForm({
             </label>
           </div>
         </div>
+
+        <fieldset className="posts-create-block">
+          <legend className="posts-create-block__label">
+            <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+            行った日
+            <span className="posts-create-row__optional">任意</span>
+          </legend>
+          <p className="posts-create-block__hint">
+            過去の旅行も残せます。日帰りなら開始だけ入れてください。
+          </p>
+          <div className="posts-create-duo">
+            <label className="posts-create-row posts-create-row--half">
+              <span className="posts-create-row__label">開始</span>
+              <input
+                type="date"
+                value={draft.visitedFrom}
+                max={todayYmdTokyo()}
+                onChange={(e) => {
+                  const visitedFrom = e.target.value;
+                  const next: Partial<PostCreateDraft> = { visitedFrom };
+                  if (!visitedFrom) {
+                    next.visitedTo = "";
+                  } else if (
+                    draft.visitedTo &&
+                    draft.visitedTo < visitedFrom
+                  ) {
+                    next.visitedTo = "";
+                  }
+                  onChange(next);
+                }}
+                className="posts-create-row__input"
+              />
+            </label>
+            <label className="posts-create-row posts-create-row--half">
+              <span className="posts-create-row__label">終了</span>
+              <input
+                type="date"
+                value={draft.visitedTo}
+                min={draft.visitedFrom || undefined}
+                max={
+                  draft.visitedFrom
+                    ? visitedToMaxYmd(draft.visitedFrom)
+                    : todayYmdTokyo()
+                }
+                onChange={(e) => onChange({ visitedTo: e.target.value })}
+                className="posts-create-row__input"
+                disabled={!draft.visitedFrom}
+              />
+            </label>
+          </div>
+          {draft.visitedFrom || draft.visitedTo ? (
+            <button
+              type="button"
+              className="posts-create-visit__clear"
+              onClick={() => onChange({ visitedFrom: "", visitedTo: "" })}
+            >
+              日付をクリア
+            </button>
+          ) : null}
+        </fieldset>
 
         <label className="posts-create-row">
           <span className="posts-create-row__label">

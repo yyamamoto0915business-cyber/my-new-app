@@ -271,7 +271,7 @@ export default function OrganizerSettingsPage() {
               </div>
               <div className="flex flex-1 flex-col p-2.5 min-[900px]:p-3">
                 <CardDesc tone="payout">
-                  Stripeで売上を受け取る連携です。料金プランとは別の設定です。
+                  カード売上を口座で受け取る設定です。だいたい週1回振り込まれます。
                 </CardDesc>
                 <div className="mb-2 flex items-center justify-between rounded-md border border-[#F0C4D4] bg-[#FEF6F8] px-2.5 py-1.5 min-[900px]:py-[7px]">
                   <span className="text-[10px] font-medium text-[#c04060]">状態</span>

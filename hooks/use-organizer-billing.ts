@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { OrganizerBillingData } from "@/lib/organizer-billing-types";
+import { startStripeConnectOnboarding } from "@/lib/organizer/start-stripe-connect";
 
 export type { OrganizerBillingData };
 
@@ -135,28 +136,8 @@ export function useOrganizerBilling() {
     setConnectLoading(true);
     setActionError(null);
     try {
-      let res = await fetch("/api/connect/create-account", { method: "POST" });
-      let json = await parseApiJson(res);
-      if (!res.ok) {
-        throw new Error(
-          getApiErrorMessage(
-            json,
-            `Stripe連携アカウント作成に失敗しました（${res.status}）`
-          )
-        );
-      }
-      res = await fetch("/api/connect/onboard", { method: "POST" });
-      json = await parseApiJson(res);
-      if (!res.ok) {
-        throw new Error(
-          getApiErrorMessage(
-            json,
-            `Stripe初期設定ページの起動に失敗しました（${res.status}）`
-          )
-        );
-      }
-      const url = json.url as string | undefined;
-      if (url) window.location.href = url;
+      const url = await startStripeConnectOnboarding("payouts");
+      window.location.href = url;
     } catch (e) {
       const raw =
         e instanceof Error

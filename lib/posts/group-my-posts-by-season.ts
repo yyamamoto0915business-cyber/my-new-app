@@ -1,5 +1,7 @@
 import type { MyPostItem } from "@/app/api/me/posts/route";
 
+import { albumDateIso } from "@/lib/posts/visited-range";
+
 export type SeasonKey = "spring" | "summer" | "autumn" | "winter";
 
 export type SeasonMeta = {
@@ -32,6 +34,11 @@ const TZ = "Asia/Tokyo";
  */
 function isAlbumVisible(post: MyPostItem): boolean {
   return post.status !== "draft";
+}
+
+/** アルバムの年・季節・月に使う日時 */
+export function albumDateOf(post: MyPostItem): string {
+  return albumDateIso(post.visitedFrom, post.createdAt);
 }
 
 function ymOf(iso: string): { year: number; month: number } {
@@ -75,8 +82,9 @@ export function buildSeasonAlbums(
   const map = new Map<number, SeasonAlbum>();
   for (const post of posts) {
     if (!isAlbumVisible(post)) continue;
-    const { month } = ymOf(post.createdAt);
-    const year = albumYearOf(post.createdAt);
+    const albumAt = albumDateOf(post);
+    const { month } = ymOf(albumAt);
+    const year = albumYearOf(albumAt);
     const season = seasonOfMonth(month);
     let album = map.get(year);
     if (!album) {
@@ -85,10 +93,14 @@ export function buildSeasonAlbums(
     }
     album[season].push(post);
   }
-  // 各季節を新しい順に
+  // 各季節を訪問日の古い順に（なければ投稿日時）
   for (const album of map.values()) {
     for (const key of Object.keys(album) as SeasonKey[]) {
-      album[key].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+      album[key].sort(
+        (a, b) =>
+          +new Date(albumDateOf(a)) - +new Date(albumDateOf(b)) ||
+          +new Date(a.createdAt) - +new Date(b.createdAt),
+      );
     }
   }
   return map;
@@ -99,7 +111,7 @@ export function listAlbumYears(posts: MyPostItem[]): number[] {
   const years = new Set<number>();
   for (const post of posts) {
     if (!isAlbumVisible(post)) continue;
-    years.add(albumYearOf(post.createdAt));
+    years.add(albumYearOf(albumDateOf(post)));
   }
   return [...years].sort((a, b) => b - a);
 }
@@ -110,8 +122,12 @@ export function postsForYear(
   year: number,
 ): MyPostItem[] {
   return posts
-    .filter((p) => isAlbumVisible(p) && albumYearOf(p.createdAt) === year)
-    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+    .filter((p) => isAlbumVisible(p) && albumYearOf(albumDateOf(p)) === year)
+    .sort(
+      (a, b) =>
+        +new Date(albumDateOf(a)) - +new Date(albumDateOf(b)) ||
+        +new Date(a.createdAt) - +new Date(b.createdAt),
+    );
 }
 
 /** 指定年の月別件数（キーは暦上の月 1-12） */
@@ -121,7 +137,7 @@ export function monthCountsForYear(
 ): Record<number, number> {
   const counts: Record<number, number> = {};
   for (const post of postsForYear(posts, year)) {
-    const { month } = ymOf(post.createdAt);
+    const { month } = ymOf(albumDateOf(post));
     counts[month] = (counts[month] ?? 0) + 1;
   }
   return counts;

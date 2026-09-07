@@ -177,6 +177,9 @@ export function PostsFeedCard({ post, index = 0 }: Props) {
               {post.authorName}
             </p>
             <p className="text-[10px] text-[#9a9088]">{post.postedAtLabel}</p>
+            {post.visitedLabel ? (
+              <p className="posts-card__visited">{post.visitedLabel}</p>
+            ) : null}
           </div>
         </div>
 

@@ -14,6 +14,7 @@ import {
 } from "@/lib/posts/map-community-post";
 import type { MyPostItem } from "@/app/api/me/posts/route";
 import { MY_POSTS_DEMO } from "@/lib/posts/my-posts-demo";
+import { ymdFromDb } from "@/lib/posts/visited-range";
 import { getFollowPreviewPerson, isFollowPreviewUserId, PREVIEW_FOLLOWERS, PREVIEW_FOLLOWING } from "@/lib/follows/preview-people";
 import {
   normalizeProfileAvatarRole,
@@ -97,6 +98,8 @@ export async function GET(_request: Request, { params }: Params) {
       status: row.status,
       dateLabel: formatPostedAtLabel(row.created_at),
       createdAt: row.created_at,
+      visitedFrom: ymdFromDb(row.visited_from),
+      visitedTo: ymdFromDb(row.visited_to),
       likeCount: view.likeCount,
       commentCount: view.commentCount,
       viewCount: 0,

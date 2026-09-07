@@ -24,6 +24,7 @@ import {
   listAlbumYears,
   monthCountsForYear,
   postsForYear,
+  albumDateOf,
   type SeasonAlbum,
 } from "@/lib/posts/group-my-posts-by-season";
 import { MyPostsAlbumSkeleton } from "./MyPostsAlbumSkeleton";
@@ -205,7 +206,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
   const monthPosts = useMemo(
     () =>
       monthKey
-        ? yearPosts.filter((p) => calendarMonthKey(p.createdAt) === monthKey)
+        ? yearPosts.filter((p) => calendarMonthKey(albumDateOf(p)) === monthKey)
         : [],
     [yearPosts, monthKey],
   );

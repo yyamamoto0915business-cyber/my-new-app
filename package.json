@@ -12,7 +12,10 @@
     "lint": "eslint",
     "supabase:setup": "./scripts/supabase-setup.sh",
     "supabase:link": "./scripts/supabase-link.sh",
-    "supabase:push": "npx supabase db push"
+    "supabase:push": "npx supabase db push",
+    "pos:tap-migrate": "npx tsx scripts/run-migration-83.ts",
+    "pos:tap-location": "npx tsx scripts/create-stripe-terminal-location.ts",
+    "pos:tap-webhook": "npx tsx scripts/ensure-stripe-tap-webhook.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

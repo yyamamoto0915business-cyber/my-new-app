@@ -16,6 +16,7 @@ import {
   isVideoDurationValid,
 } from "@/lib/posts/post-video";
 import type { PostCategory } from "@/lib/posts/mock-feed";
+import { parseVisitedRangeInput } from "@/lib/posts/visited-range";
 
 const CATEGORIES = new Set<PostCategory>([
   "event",
@@ -118,6 +119,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "メディアURLが必要です" }, { status: 400 });
   }
 
+  const visited = parseVisitedRangeInput(data.visitedFrom, data.visitedTo);
+  if (!visited.ok) {
+    return NextResponse.json({ error: visited.error }, { status: 400 });
+  }
+
   if (mediaType === "image") {
     const title = titleRaw.trim();
     if (!title && !isDraft) {
@@ -138,6 +144,8 @@ export async function POST(request: NextRequest) {
         mediaType: "image",
         status,
         relatedUrl: String(data.relatedUrl ?? "").trim(),
+        visitedFrom: visited.visitedFrom,
+        visitedTo: visited.visitedTo,
       });
 
       return NextResponse.json(mapDbCommunityPostToView(row), { status: 201 });
@@ -173,6 +181,8 @@ export async function POST(request: NextRequest) {
       mediaType: "video",
       status,
       relatedUrl: String(data.relatedUrl ?? "").trim(),
+      visitedFrom: visited.visitedFrom,
+      visitedTo: visited.visitedTo,
     });
 
     return NextResponse.json(mapDbCommunityPostToView(row), { status: 201 });

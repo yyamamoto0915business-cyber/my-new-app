@@ -10,6 +10,7 @@ import { getCategoryLabel } from "@/lib/posts/map-community-post";
 import type { PostCategory } from "@/lib/posts/mock-feed";
 import type { MyPostItem } from "@/app/api/me/posts/route";
 import type { DbCommunityPost } from "@/lib/db/community-posts-types";
+import { parseVisitedRangeInput, ymdFromDb } from "@/lib/posts/visited-range";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -38,6 +39,8 @@ type MyPostDetail = MyPostItem & {
   durationSec: number | null;
   /** 関連リンク（未設定なら undefined） */
   relatedUrl?: string;
+  visitedFrom?: string | null;
+  visitedTo?: string | null;
 };
 
 function toDetail(row: DbCommunityPost): MyPostDetail {
@@ -52,6 +55,8 @@ function toDetail(row: DbCommunityPost): MyPostDetail {
     status: row.status,
     dateLabel: row.created_at,
     createdAt: row.created_at,
+    visitedFrom: ymdFromDb(row.visited_from),
+    visitedTo: ymdFromDb(row.visited_to),
     likeCount: row.like_count,
     commentCount: row.comment_count,
     viewCount: 0,
@@ -163,6 +168,15 @@ export async function PATCH(request: Request, { params }: Params) {
 
   if (data.relatedUrl !== undefined) {
     patch.related_url = String(data.relatedUrl).trim().slice(0, 2000);
+  }
+
+  if (data.visitedFrom !== undefined || data.visitedTo !== undefined) {
+    const visited = parseVisitedRangeInput(data.visitedFrom, data.visitedTo);
+    if (!visited.ok) {
+      return NextResponse.json({ error: visited.error }, { status: 400 });
+    }
+    patch.visited_from = visited.visitedFrom;
+    patch.visited_to = visited.visitedTo;
   }
 
   if (Object.keys(patch).length === 0) {

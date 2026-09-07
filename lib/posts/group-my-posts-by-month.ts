@@ -1,4 +1,5 @@
 import type { MyPostItem } from "@/app/api/me/posts/route";
+import { albumDateIso } from "@/lib/posts/visited-range";
 
 export type MyPostMonthGroup = {
   key: string;
@@ -21,7 +22,7 @@ export function formatPostDate(iso: string): string {
   return `${get("year")}.${get("month")}.${get("day")}`;
 }
 
-/** 投稿を年月ごとにまとめ、新しい月・新しい投稿が先頭に来るよう並べる */
+/** 投稿を年月ごとにまとめ、新しい月が先頭・月内は訪問日の古い順 */
 export function groupMyPostsByMonth(posts: MyPostItem[]): MyPostMonthGroup[] {
   const map = new Map<string, MyPostItem[]>();
 
@@ -30,7 +31,7 @@ export function groupMyPostsByMonth(posts: MyPostItem[]): MyPostMonthGroup[] {
       timeZone: TZ,
       year: "numeric",
       month: "2-digit",
-    }).format(new Date(post.createdAt));
+    }).format(new Date(albumDateIso(post.visitedFrom, post.createdAt)));
     const list = map.get(ym);
     if (list) list.push(post);
     else map.set(ym, [post]);
@@ -44,7 +45,10 @@ export function groupMyPostsByMonth(posts: MyPostItem[]): MyPostMonthGroup[] {
         key,
         label: `${year}年${Number(month)}月`,
         posts: list.sort(
-          (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
+          (a, b) =>
+            +new Date(albumDateIso(a.visitedFrom, a.createdAt)) -
+              +new Date(albumDateIso(b.visitedFrom, b.createdAt)) ||
+            +new Date(a.createdAt) - +new Date(b.createdAt),
         ),
       };
     });

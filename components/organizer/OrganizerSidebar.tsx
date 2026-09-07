@@ -16,7 +16,6 @@ import {
   OrganizerSidebarBrandLogo,
   OrganizerSidebarDashboardIcon,
   OrganizerSidebarListingsIcon,
-  OrganizerSidebarPayoutsIcon,
   OrganizerSidebarPlanIcon,
   OrganizerSidebarPosIcon,
 } from "@/components/organizer/OrganizerSidebarIcons";
@@ -24,7 +23,6 @@ import {
 const SIDEBAR_ICONS = {
   "/organizer/listings": OrganizerSidebarListingsIcon,
   "/organizer": OrganizerSidebarDashboardIcon,
-  "/organizer/settings/payouts": OrganizerSidebarPayoutsIcon,
   "/organizer/pos": OrganizerSidebarPosIcon,
   "/organizer/settings/plan": OrganizerSidebarPlanIcon,
 } as const;
@@ -42,7 +40,7 @@ export default function OrganizerSidebar({
 
   return (
     <aside className="org-sidebar hidden min-[900px]:sticky min-[900px]:top-0 min-[900px]:z-20 min-[900px]:flex min-[900px]:w-[252px] min-[900px]:shrink-0 min-[900px]:self-start min-[900px]:flex-col min-[900px]:px-3 min-[900px]:pb-3 min-[900px]:pt-2">
-      <div className="flex flex-col overflow-visible rounded-[20px] border border-[#cfe0d6] bg-white shadow-[0_2px_16px_rgba(30,56,40,0.07)]">
+      <div className="flex flex-col overflow-hidden rounded-[20px] border border-[#cfe0d6] bg-white shadow-[0_2px_16px_rgba(30,56,40,0.07)]">
         <div className="org-sidebar__brand shrink-0 px-4 pt-4 pb-4">
           <div className="flex min-h-11 items-center gap-2.5">
             <OrganizerSidebarBrandLogo />
@@ -68,7 +66,7 @@ export default function OrganizerSidebar({
                   <Link
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] leading-snug transition-all duration-150",
+                      "flex w-full min-w-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] leading-snug transition-all duration-150",
                       active
                         ? "bg-[#E8F3EC] font-semibold text-[#1a4d32] shadow-[0_1px_4px_rgba(45,90,63,0.1)]"
                         : "font-medium text-[#2d5a3f] hover:bg-[#f4f8f5] active:bg-[#eaf4ed]/70"
@@ -79,7 +77,9 @@ export default function OrganizerSidebar({
                     ) : (
                       <span className="w-[22px] shrink-0" aria-hidden />
                     )}
-                    <span className="min-w-0 flex-1 leading-snug">{item.label}</span>
+                    <span className="min-w-0 flex-1 break-keep leading-snug">
+                      {item.label}
+                    </span>
                     {"badge" in item && item.badge ? (
                       <span className="shrink-0 rounded-full bg-[#f5e6a8] px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-[#8a6a10]">
                         {item.badge}

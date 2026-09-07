@@ -4,11 +4,17 @@ import { getApiUser } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import {
+  attachStripePaymentIntentToSale,
   attachStripeSessionToSale,
   createCashSale,
   createPendingOnlineSale,
 } from "@/lib/db/pos";
 import { getAppUrl, getStripeSecretKey } from "@/lib/stripe";
+import {
+  getStripeTerminalLocationId,
+  POS_TAP_PAYMENT_TYPE,
+  posTapAppLink,
+} from "@/lib/pos/tap-app";
 
 type LineBody = { productId?: string; quantity?: number };
 
@@ -30,7 +36,7 @@ export async function POST(request: NextRequest) {
   }
 
   let body: {
-    paymentMethod?: "cash" | "online";
+    paymentMethod?: "cash" | "online" | "tap";
     eventId?: string | null;
     lines?: LineBody[];
     cashReceivedYen?: number;
@@ -42,7 +48,7 @@ export async function POST(request: NextRequest) {
   }
 
   const paymentMethod = body.paymentMethod;
-  if (paymentMethod !== "cash" && paymentMethod !== "online") {
+  if (paymentMethod !== "cash" && paymentMethod !== "online" && paymentMethod !== "tap") {
     return NextResponse.json({ error: "支払い方法が不正です" }, { status: 400 });
   }
 
@@ -95,13 +101,65 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "オンライン決済には Stripe 受取設定が必要です。「クレジット・オンライン決済」から設定してください。",
+          "オンライン決済には売上受取設定が必要です。「売上受取設定」から設定してください。",
       },
       { status: 400 }
     );
   }
 
   try {
+    if (paymentMethod === "tap") {
+      const locationId = getStripeTerminalLocationId();
+      if (!locationId) {
+        return NextResponse.json(
+          {
+            error:
+              "カードタッチはまだ店舗設定がありません。いまはスマホ払いをご利用ください。",
+          },
+          { status: 503 }
+        );
+      }
+
+      const { sale, platformFeeYen } = await createPendingOnlineSale(supabase, organizerId, {
+        eventId,
+        lines,
+        paymentMethod: "tap",
+      });
+
+      const stripe = new Stripe(stripeKey);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: sale.totalYen,
+        currency: "jpy",
+        payment_method_types: ["card_present"],
+        capture_method: "automatic",
+        application_fee_amount: platformFeeYen,
+        transfer_data: { destination: organizer.stripe_account_id },
+        on_behalf_of: organizer.stripe_account_id,
+        metadata: {
+          type: POS_TAP_PAYMENT_TYPE,
+          saleId: sale.id,
+          organizerId,
+          eventId: eventId ?? "",
+          platformFeeJpy: String(platformFeeYen),
+        },
+      });
+
+      await attachStripePaymentIntentToSale(
+        supabase,
+        sale.id,
+        organizerId,
+        paymentIntent.id
+      );
+
+      return NextResponse.json({
+        sale: { ...sale, stripePaymentIntentId: paymentIntent.id },
+        appLink: posTapAppLink(sale.id),
+        locationId,
+        connectedAccountId: organizer.stripe_account_id,
+        platformFeeYen,
+      });
+    }
+
     const { sale, platformFeeYen } = await createPendingOnlineSale(supabase, organizerId, {
       eventId,
       lines,
@@ -120,9 +178,20 @@ export async function POST(request: NextRequest) {
       quantity: item.quantity,
     }));
 
+    // card にすると Apple Pay / Google Pay も出る。PayPay は Connect 非対応のため入れない。
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      locale: "ja",
+      submit_type: "pay",
+      billing_address_collection: "auto",
+      payment_method_types: ["card"],
       line_items: lineItems,
+      custom_text: {
+        submit: {
+          message:
+            "カード番号の手入力は不要です。Apple Pay または Google Pay でお支払いください。",
+        },
+      },
       payment_intent_data: {
         application_fee_amount: platformFeeYen,
         transfer_data: { destination: organizer.stripe_account_id },

@@ -12,6 +12,7 @@ import {
 } from "@/lib/posts/post-create-draft";
 import { formatVideoDuration } from "@/lib/posts/post-video";
 import { POST_CATEGORY_COLORS } from "@/lib/posts/mock-feed";
+import { formatVisitedDot } from "@/lib/posts/visited-range";
 
 type Props = {
   draft: PostCreateDraft;
@@ -97,6 +98,14 @@ export function PostCreatePreviewCard({ draft }: Props) {
               あなたの投稿
             </p>
             <p className="text-[10px] text-[#9a9088]">いま · 公開前</p>
+            {draft.visitedFrom ? (
+              <p className="text-[10px] text-[#9a9088]">
+                {formatVisitedDot(
+                  draft.visitedFrom,
+                  draft.visitedTo || null,
+                )}
+              </p>
+            ) : null}
           </div>
         </div>
 

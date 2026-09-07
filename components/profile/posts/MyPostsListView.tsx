@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Eye, Heart, ImageIcon, MessageCircle, Play } from "lucide-react";
 import type { MyPostItem } from "@/app/api/me/posts/route";
-import { formatPostDate } from "@/lib/posts/group-my-posts-by-month";
+import { formatMyPostDotDate } from "@/lib/posts/visited-range";
 import { PostCardMenu, type PostMutation } from "./PostCardMenu";
 
 export function MyPostsListView({
@@ -62,7 +62,7 @@ function MyPostRow({
           {isDraft && <span className="my-list-row__draft">下書き</span>}
         </div>
         <p className="my-list-row__title">{post.title}</p>
-        <p className="my-list-row__date">{formatPostDate(post.createdAt)}</p>
+        <p className="my-list-row__date">{formatMyPostDotDate(post)}</p>
       </div>
       <div className="my-list-row__stats">
         <span className="inline-flex items-center gap-0.5">

@@ -295,8 +295,7 @@ export function StaffStatusCard({
       ? "mg-day-mgmt-m__panel mg-staff-status--mobile"
       : "mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact mg-staff-status--pc",
     emptyMode ? "mg-staff-status--empty" : "mg-staff-status--filled",
-    "flex flex-col",
-    !emptyMode && "min-h-0"
+    "flex min-h-0 flex-col"
   );
 
   const titleClass = isMobile

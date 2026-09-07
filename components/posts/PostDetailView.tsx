@@ -163,11 +163,16 @@ function DesktopPostDetailView({ post, viewer }: Props) {
 
                 <header className="posts-detail-body__head">
                   <h1 className="posts-detail-title">{post.title}</h1>
-                  {(post.areaLabel || post.postedAtLabel) && (
+                  {(post.areaLabel || post.postedAtLabel || post.visitedDetailLabel) && (
                     <div className="posts-detail-meta-row">
                       {post.postedAtLabel ? (
                         <span className="posts-detail-body__time">
                           {post.postedAtLabel}
+                        </span>
+                      ) : null}
+                      {post.visitedDetailLabel ? (
+                        <span className="posts-detail-visited">
+                          {post.visitedDetailLabel}
                         </span>
                       ) : null}
                       {post.areaLabel ? (
