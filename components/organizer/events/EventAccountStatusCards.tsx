@@ -25,7 +25,11 @@ const SLOT_SPARKLES = [
 
 function ProPlanCard() {
   return (
-    <div className="org-events-status-card org-events-status-card--pro">
+    <Link
+      href={PLAN_HREF}
+      className="org-events-status-card org-events-status-card--pro org-events-status-card--link"
+      aria-label="プラン設定を開く"
+    >
       <div className="org-pro-plan-card">
         <div className="org-pro-plan-card__badge" aria-hidden>
           <Image
@@ -46,14 +50,17 @@ function ProPlanCard() {
           </p>
           <p className="org-pro-plan-card__title">
             <span className="org-pro-plan-card__pro">Pro</span>
+            <span className="org-events-status-card__go" aria-hidden>
+              ›
+            </span>
             <span className="org-pro-plan-spark org-pro-plan-spark--title" aria-hidden />
           </p>
-          <Link href={PLAN_HREF} className="org-pro-plan-card__link">
+          <span className="org-pro-plan-card__link">
             プランを確認
             <span className="org-pro-plan-card__chevron" aria-hidden>
               ›
             </span>
-          </Link>
+          </span>
         </div>
         <svg
           className="org-pro-plan-card__flourish"
@@ -95,7 +102,7 @@ function ProPlanCard() {
         <span className="org-pro-plan-spark org-pro-plan-spark--silver-5" aria-hidden />
         <span className="org-pro-plan-spark org-pro-plan-spark--silver-6" aria-hidden />
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -150,7 +157,11 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
       {isPro ? (
         <ProPlanCard />
       ) : (
-        <div className="org-events-status-card">
+        <Link
+          href={PLAN_HREF}
+          className="org-events-status-card org-events-status-card--link"
+          aria-label="プラン設定を開く"
+        >
           <div className="flex items-center gap-2.5">
             <span className="org-events-status-card__icon org-events-status-card__icon--plan" aria-hidden>
               <Crown className="h-4 w-4" strokeWidth={1.75} />
@@ -162,13 +173,14 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
               </p>
               <p className="org-events-status-card__value">
                 {planSummary?.planLabel ?? "—"}
+                <span className="org-events-status-card__go" aria-hidden>
+                  ›
+                </span>
               </p>
-              <Link href={PLAN_HREF} className="org-events-status-card__link">
-                プランを変更
-              </Link>
+              <span className="org-events-status-card__link">プランを変更</span>
             </div>
           </div>
-        </div>
+        </Link>
       )}
 
       {isUnlimited ? (
@@ -193,7 +205,11 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
         </div>
       )}
 
-      <div className="org-events-status-card org-events-status-card--payout">
+      <Link
+        href={PAYOUTS_HREF}
+        className="org-events-status-card org-events-status-card--payout org-events-status-card--link"
+        aria-label={stripeOk ? "売上受取設定を確認" : "売上受取設定を開く"}
+      >
         <div className="flex items-center gap-2.5">
           <span className="org-events-status-card__icon org-events-status-card__icon--stripe" aria-hidden>
             <CreditCard className="h-4 w-4" strokeWidth={1.75} />
@@ -206,6 +222,9 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
               </p>
               <span className={`org-events-status-card__badge border ${stripeTone}`}>
                 {stripeLabel}
+                <span className="org-events-status-card__go" aria-hidden>
+                  ›
+                </span>
               </span>
             </div>
             <p className="org-events-status-card__hint org-events-status-card__hint--payout">
@@ -213,12 +232,12 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
                 ? "カード売上はだいたい週1回、口座へ振り込まれます"
                 : "有料でのイベントチケット販売が可能になります"}
             </p>
-            <Link href={PAYOUTS_HREF} className="org-events-status-card__link">
+            <span className="org-events-status-card__link">
               {stripeOk ? "設定を確認" : "設定する"}
-            </Link>
+            </span>
           </div>
         </div>
-      </div>
+      </Link>
     </section>
   );
 }

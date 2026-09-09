@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { OrganizerBillingData } from "@/lib/organizer-billing-types";
-import { startStripeConnectOnboarding } from "@/lib/organizer/start-stripe-connect";
+import {
+  resetAndStartStripeConnectOnboarding,
+  startStripeConnectOnboarding,
+} from "@/lib/organizer/start-stripe-connect";
 
 export type { OrganizerBillingData };
 
@@ -175,6 +178,23 @@ export function useOrganizerBilling() {
     }
   }, [fetchBilling]);
 
+  const handleResetAndStartStripeConnect = async () => {
+    setResetConnectLoading(true);
+    setActionError(null);
+    try {
+      const url = await resetAndStartStripeConnectOnboarding("payouts");
+      window.location.href = url;
+    } catch (e) {
+      const raw =
+        e instanceof Error
+          ? e.message
+          : "Stripe連携のやり直しに失敗しました。時間をおいて再度お試しください。";
+      setActionError(humanizeClientError(raw));
+    } finally {
+      setResetConnectLoading(false);
+    }
+  };
+
   return {
     data,
     loading,
@@ -191,5 +211,6 @@ export function useOrganizerBilling() {
     handlePortal,
     handleConnect,
     handleResetStripeConnect,
+    handleResetAndStartStripeConnect,
   };
 }

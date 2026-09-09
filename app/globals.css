@@ -4128,6 +4128,27 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   padding: 10px 14px;
   box-shadow: 0 2px 12px rgba(26, 34, 20, 0.05);
 }
+a.org-events-status-card--link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+a.org-events-status-card--link:hover {
+  border-color: rgba(45, 122, 79, 0.35);
+  box-shadow: 0 4px 14px rgba(26, 34, 20, 0.08);
+}
+a.org-events-status-card--link:focus-visible {
+  outline: 2px solid #2d7a4f;
+  outline-offset: 2px;
+}
+a.org-events-status-card--pro:hover {
+  border-color: rgba(201, 162, 39, 0.55);
+}
+a.org-events-status-card--payout:hover {
+  border-color: rgba(25, 118, 210, 0.35);
+}
 .org-events-status-card__icon {
   display: flex;
   height: 32px;
@@ -4187,10 +4208,19 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 .org-events-status-card__badge {
   margin-top: 4px;
   display: inline-flex;
+  align-items: center;
+  gap: 2px;
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 11px;
   font-weight: 600;
+}
+.org-events-status-card__go {
+  display: none;
+  margin-left: 1px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
 }
 .org-events-status-card__link {
   margin-top: 3px;
@@ -4201,7 +4231,8 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.org-events-status-card__link:hover {
+.org-events-status-card--link:hover .org-events-status-card__link,
+.org-events-status-card--link:hover .org-pro-plan-card__link {
   color: #1e5c38;
 }
 .org-events-status-card__label-short {
@@ -5355,6 +5386,18 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
     display: none;
   }
 
+  :is(.org-events-mgmt--compact, .org-listings-hub__status) a.org-events-status-card--link .org-events-status-card__go {
+    display: inline;
+  }
+
+  :is(.org-events-mgmt--compact, .org-listings-hub__status) a.org-events-status-card--link {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :is(.org-events-mgmt--compact, .org-listings-hub__status) a.org-events-status-card--link:active {
+    opacity: 0.88;
+  }
+
   :is(.org-events-mgmt--compact, .org-listings-hub__status) .org-pro-plan-card__flourish,
   :is(.org-events-mgmt--compact, .org-listings-hub__status) .org-pro-plan-spark,
   :is(.org-events-mgmt--compact, .org-listings-hub__status) .org-unlimited-spark {
@@ -5383,6 +5426,13 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
     font-size: 11px;
     font-weight: 700;
     line-height: 1.3;
+  }
+
+  :is(.org-events-mgmt--compact, .org-listings-hub__status) .org-events-status-card__payout-head {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 2px;
   }
 
   .org-events-mgmt--compact section[aria-label="イベントの概要"] > div {

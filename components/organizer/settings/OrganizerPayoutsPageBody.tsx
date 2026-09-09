@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, type Ref } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
@@ -94,16 +95,64 @@ function getProgressState(organizer: {
   };
 }
 
+function StripeConnectErrorAlert({
+  message,
+  onReset,
+  resetLoading,
+  alertRef,
+}: {
+  message: string;
+  onReset: () => void;
+  resetLoading: boolean;
+  alertRef?: Ref<HTMLDivElement>;
+}) {
+  return (
+    <div
+      ref={alertRef}
+      className="org-payouts-alert org-payouts-alert--error scroll-mt-24"
+      role="alert"
+    >
+      <p>{message}</p>
+      {showStripeAppUrlHttpsHint(message) ? (
+        <p className="mt-1.5 text-[11px] leading-snug opacity-90">
+          Vercel の環境変数 <code className="rounded bg-white/90 px-1 py-0.5 text-[10px]">APP_URL</code> が{" "}
+          <code className="text-[10px]">http://</code> で始まっていると本番で失敗します。{" "}
+          <code className="text-[10px]">https://www.machiglyph.jp</code> のように <strong>https</strong>{" "}
+          で保存し、再デプロイしてください。
+        </p>
+      ) : null}
+      {showStripeConnectResetCta(message) ? (
+        <button
+          type="button"
+          onClick={onReset}
+          disabled={resetLoading}
+          className="org-payouts-alert__btn mt-2 touch-manipulation"
+        >
+          {resetLoading ? "処理中..." : "連携をやり直す（古いStripeアカウント紐付けを消去）"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function OrganizerPayoutsPageBody() {
   const {
     data,
     loading,
     error,
+    actionError,
     connectLoading,
     resetConnectLoading,
     handleConnect,
     handleResetStripeConnect,
+    handleResetAndStartStripeConnect,
   } = useOrganizerBilling();
+  const actionAlertRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!actionError) return;
+    actionAlertRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [actionError]);
 
   function confirmAndResetStripeConnect() {
     const ok = window.confirm(
@@ -112,6 +161,17 @@ export function OrganizerPayoutsPageBody() {
     if (!ok) return;
     void handleResetStripeConnect();
   }
+
+  function confirmAndResetAndStartStripeConnect() {
+    const ok = window.confirm(
+      "保存されている Stripe 連携を解除し、いまの環境で設定をやり直します。参加費・協賛・レジのカード決済も同じ連携です。よろしいですか？"
+    );
+    if (!ok) return;
+    void handleResetAndStartStripeConnect();
+  }
+
+  const loadError =
+    error && data && data.stripeConnectConfigured !== false ? error : null;
 
   if (loading) {
     return (
@@ -147,29 +207,13 @@ export function OrganizerPayoutsPageBody() {
       </div>
 
       <div className="w-full space-y-2.5 min-[900px]:space-y-3">
-        {error && data && data.stripeConnectConfigured !== false && (
-          <div className="org-payouts-alert org-payouts-alert--error" role="alert">
-            <p>{error}</p>
-            {showStripeAppUrlHttpsHint(error) && (
-              <p className="mt-1.5 text-[11px] leading-snug opacity-90">
-                Vercel の環境変数 <code className="rounded bg-white/90 px-1 py-0.5 text-[10px]">APP_URL</code> が{" "}
-                <code className="text-[10px]">http://</code> で始まっていると本番で失敗します。{" "}
-                <code className="text-[10px]">https://www.machiglyph.jp</code> のように <strong>https</strong>{" "}
-                で保存し、再デプロイしてください。
-              </p>
-            )}
-            {showStripeConnectResetCta(error) && (
-              <button
-                type="button"
-                onClick={confirmAndResetStripeConnect}
-                disabled={resetConnectLoading}
-                className="org-payouts-alert__btn mt-2"
-              >
-                {resetConnectLoading ? "処理中..." : "連携をやり直す（古いStripeアカウント紐付けを消去）"}
-              </button>
-            )}
-          </div>
-        )}
+        {loadError ? (
+          <StripeConnectErrorAlert
+            message={loadError}
+            onReset={confirmAndResetAndStartStripeConnect}
+            resetLoading={resetConnectLoading}
+          />
+        ) : null}
 
         {data && !stripeConfigured && (
           <div className="org-payouts-alert org-payouts-alert--warn">
@@ -232,12 +276,22 @@ export function OrganizerPayoutsPageBody() {
                       </p>
                     </div>
                   </div>
+                  {actionError ? (
+                    <div className="mb-3">
+                      <StripeConnectErrorAlert
+                        message={actionError}
+                        onReset={confirmAndResetAndStartStripeConnect}
+                        resetLoading={resetConnectLoading}
+                        alertRef={actionAlertRef}
+                      />
+                    </div>
+                  ) : null}
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={handleConnect}
                       disabled={connectLoading || !stripeConfigured}
-                      className="rounded-[8px] bg-[#2f4a7e] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
+                      className="rounded-[8px] bg-[#2f4a7e] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50 touch-manipulation"
                     >
                       {connectLoading ? "処理中..." : "振込日・口座を確認する"}
                     </button>
@@ -292,11 +346,21 @@ export function OrganizerPayoutsPageBody() {
                   <p className="mb-3 text-[11px] leading-relaxed text-[#566358]">
                     主催者プラン（公開枠）とは別の設定です。レジのカード決済も、この同じ設定を使います。設定が終わると、カード売上が口座へ振り込まれます。現金はその場の受け取りです。
                   </p>
+                  {actionError ? (
+                    <div className="mb-3">
+                      <StripeConnectErrorAlert
+                        message={actionError}
+                        onReset={confirmAndResetAndStartStripeConnect}
+                        resetLoading={resetConnectLoading}
+                        alertRef={actionAlertRef}
+                      />
+                    </div>
+                  ) : null}
                   <button
                     type="button"
                     onClick={handleConnect}
                     disabled={connectLoading || !stripeConfigured}
-                    className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-[#2d7a4f] px-3.5 py-2.5 text-[13px] font-bold text-white shadow-[0_2px_8px_rgba(45,122,79,0.24)] hover:opacity-92 disabled:opacity-50"
+                    className="flex min-h-[44px] w-full touch-manipulation items-center justify-center gap-2 rounded-[10px] bg-[#2d7a4f] px-3.5 py-2.5 text-[13px] font-bold text-white shadow-[0_2px_8px_rgba(45,122,79,0.24)] hover:opacity-92 disabled:opacity-50"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
                       <rect x="1" y="4" width="22" height="16" rx="2" />

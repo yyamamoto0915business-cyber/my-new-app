@@ -3,12 +3,12 @@ export type OrganizerNavVariant = "full" | "lite";
 /** 主催モードの入口（掲載管理） */
 export const ORGANIZER_HOME_HREF = "/organizer/listings";
 
-/** 左サイドバー（セクション切替はここだけ） */
+/** 左サイドバー（セクション切替はここだけ）。shortLabel はモバイルタブ専用 */
 export const ORGANIZER_SIDEBAR_NAV_ITEMS = [
-  { label: "掲載管理", href: "/organizer/listings" },
-  { label: "ダッシュボード", href: "/organizer" },
-  { label: "レジ・当日販売", href: "/organizer/pos", badge: "NEW" },
-  { label: "主催者プラン", href: "/organizer/settings/plan" },
+  { label: "掲載管理", shortLabel: "掲載", href: "/organizer/listings" },
+  { label: "ダッシュボード", shortLabel: "ダッシュボード", href: "/organizer" },
+  { label: "レジ・当日販売", shortLabel: "レジ", href: "/organizer/pos", badge: "NEW" },
+  { label: "主催者プラン", shortLabel: "プラン", href: "/organizer/settings/plan" },
 ] as const;
 
 /** @deprecated ORGANIZER_SIDEBAR_NAV_ITEMS を使用 */
