@@ -25,8 +25,8 @@ export function NotificationBell({ className, showLabel = false }: Props) {
     let cancelled = false;
     const load = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
           if (!cancelled) setUnreadCount(0);
           return;
         }

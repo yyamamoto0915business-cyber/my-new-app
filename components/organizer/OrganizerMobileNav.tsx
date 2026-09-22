@@ -22,7 +22,7 @@ export default function OrganizerMobileNav({
       <ul
         className={cn(
           "grid min-h-[44px]",
-          variant === "lite" ? "grid-cols-3" : "grid-cols-4"
+          variant === "lite" ? "grid-cols-3" : "grid-cols-5"
         )}
       >
         {navItems.map((item) => {

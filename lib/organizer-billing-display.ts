@@ -1,13 +1,13 @@
 import type { OrganizerBillingData } from "@/lib/organizer-billing-types";
 import { FREE_PLAN_NORMAL_SLOTS, FOUNDER_BONUS_SLOTS } from "@/lib/billing";
 import { isPaidOrganizer } from "@/lib/billing";
+import { getOrganizerCatalogPlanName } from "@/lib/organizer-plans";
 
 export const NORMAL_SLOTS = FREE_PLAN_NORMAL_SLOTS;
 export const FOUNDER_BONUS_SLOTS_UI = FOUNDER_BONUS_SLOTS;
 
 export function getPlanLabel(data: OrganizerBillingData): string {
-  if (isPaidOrganizer(data.organizer)) return "Proプラン";
-  return "Starterプラン";
+  return getOrganizerCatalogPlanName(isPaidOrganizer(data.organizer));
 }
 
 export function isPaidPlan(data: OrganizerBillingData): boolean {

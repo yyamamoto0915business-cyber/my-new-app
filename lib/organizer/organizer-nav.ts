@@ -6,8 +6,9 @@ export const ORGANIZER_HOME_HREF = "/organizer/listings";
 /** 左サイドバー（セクション切替はここだけ）。shortLabel はモバイルタブ専用 */
 export const ORGANIZER_SIDEBAR_NAV_ITEMS = [
   { label: "掲載管理", shortLabel: "掲載", href: "/organizer/listings" },
-  { label: "ダッシュボード", shortLabel: "ダッシュボード", href: "/organizer" },
+  { label: "ダッシュボード", shortLabel: "ダッシュ", href: "/organizer" },
   { label: "レジ・当日販売", shortLabel: "レジ", href: "/organizer/pos", badge: "NEW" },
+  { label: "ゲーム機能", shortLabel: "ゲーム", href: "/organizer/games", badge: "NEW" },
   { label: "主催者プラン", shortLabel: "プラン", href: "/organizer/settings/plan" },
 ] as const;
 
@@ -45,6 +46,7 @@ export function shouldShowOrganizerMainHeroBg(pathname: string): boolean {
   if (pathname.startsWith("/organizer/settings/plan")) return true;
   if (pathname.startsWith("/organizer/settings/payouts")) return true;
   if (pathname === "/organizer/pos" || pathname.startsWith("/organizer/pos/")) return true;
+  if (pathname === "/organizer/games" || pathname.startsWith("/organizer/games/")) return true;
   return false;
 }
 
@@ -97,6 +99,9 @@ export function organizerSidebarNavIsActive(pathname: string, href: string): boo
   }
   if (href === "/organizer/pos") {
     return pathname === "/organizer/pos" || pathname.startsWith("/organizer/pos/");
+  }
+  if (href === "/organizer/games") {
+    return pathname === "/organizer/games" || pathname.startsWith("/organizer/games/");
   }
   return pathname === href || pathname.startsWith(href + "/");
 }

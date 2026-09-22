@@ -17,6 +17,7 @@ import {
   OrganizerSidebarDashboardIcon,
   OrganizerSidebarListingsIcon,
   OrganizerSidebarPlanIcon,
+  OrganizerSidebarGamesIcon,
   OrganizerSidebarPosIcon,
 } from "@/components/organizer/OrganizerSidebarIcons";
 
@@ -24,6 +25,7 @@ const SIDEBAR_ICONS = {
   "/organizer/listings": OrganizerSidebarListingsIcon,
   "/organizer": OrganizerSidebarDashboardIcon,
   "/organizer/pos": OrganizerSidebarPosIcon,
+  "/organizer/games": OrganizerSidebarGamesIcon,
   "/organizer/settings/plan": OrganizerSidebarPlanIcon,
 } as const;
 

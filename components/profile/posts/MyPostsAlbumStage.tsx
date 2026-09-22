@@ -61,13 +61,18 @@ type Props = {
   years: number[];
   yearPosts: MyPostItem[];
   album: SeasonAlbum;
-  recordButton: ReactNode;
+  recordButton?: ReactNode;
   onYearSelect: (year: number) => void;
   onOpenMonths: () => void;
   onMutated?: (id: string, change: PostMutation) => void;
   /** 他人のアルバム。投稿作成・メニューを出さない */
   readOnly?: boolean;
   heading?: string;
+  /** ハブに埋め込むとき、表紙・季節バーと重複する帯を隠す */
+  embedded?: boolean;
+  season?: SeasonFilter;
+  onSeasonChange?: (next: SeasonFilter) => void;
+  category?: CategoryFilter;
 };
 
 function wrapIndex(index: number, length: number): number {
@@ -183,9 +188,17 @@ export function MyPostsAlbumStage({
   onMutated,
   readOnly = false,
   heading = "マイアルバム",
+  embedded = false,
+  season: seasonProp,
+  onSeasonChange,
+  category: categoryProp,
 }: Props) {
-  const [season, setSeason] = useState<SeasonFilter>("all");
-  const [category, setCategory] = useState<CategoryFilter>("all");
+  const [seasonInner, setSeasonInner] = useState<SeasonFilter>("all");
+  const [categoryInner, setCategoryInner] = useState<CategoryFilter>("all");
+  const season = seasonProp ?? seasonInner;
+  const category = categoryProp ?? categoryInner;
+  const setSeason = onSeasonChange ?? setSeasonInner;
+  const setCategory = setCategoryInner;
   const [index, setIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const drag = useRef<{ x: number; active: boolean; moved: boolean }>({
@@ -211,9 +224,10 @@ export function MyPostsAlbumStage({
   }, [yearPosts, season, category]);
 
   useEffect(() => {
+    if (seasonProp !== undefined) return;
     if (season === "all") return;
     if (album[season].length === 0) setSeason("all");
-  }, [album, season]);
+  }, [album, season, seasonProp, setSeason]);
 
   useEffect(() => {
     setIndex(0);
@@ -358,14 +372,22 @@ export function MyPostsAlbumStage({
     );
 
   return (
-    <section className="my-album-stage" aria-label="投稿をアルバムのように見る">
+    <section
+      className={`my-album-stage${embedded ? " my-album-stage--embedded" : ""}`}
+      aria-label="投稿をアルバムのように見る"
+    >
+      {embedded ? null : (
+        <>
       <div className="my-album-stage__flora my-album-stage__flora--left" aria-hidden>
         <Image src={LEAVES_LEFT} alt="" fill sizes="280px" className="object-contain object-left-bottom" />
       </div>
       <div className="my-album-stage__flora my-album-stage__flora--right" aria-hidden>
         <Image src={MAPLE} alt="" width={160} height={180} />
       </div>
+        </>
+      )}
 
+      {embedded ? null : (
       <div className="my-album-stage__toolbar">
         <div className="my-album-stage__brand">
           <h1 className="my-album-stage__title">
@@ -420,6 +442,7 @@ export function MyPostsAlbumStage({
         <p className="my-album-stage__count">{countLabel}</p>
         <div className="my-album-stage__record">{recordButton}</div>
       </div>
+      )}
 
       <div className="my-album-stage__main">
           <button
@@ -512,7 +535,7 @@ export function MyPostsAlbumStage({
           </button>
         </div>
 
-      <p className="my-album-stage__hint">
+      <p className={embedded ? "hidden" : "my-album-stage__hint"}>
         左右にスワイプして思い出をめくってみましょう
       </p>
 
@@ -616,6 +639,7 @@ export function MyPostsAlbumStage({
           </button>
         </div>
 
+      {embedded ? null : (
       <div className="my-album-stage__bar">
         <button
           type="button"
@@ -663,6 +687,7 @@ export function MyPostsAlbumStage({
           アルバム一覧
         </button>
         </div>
+      )}
     </section>
   );
 }

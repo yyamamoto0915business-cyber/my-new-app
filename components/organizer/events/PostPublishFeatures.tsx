@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, QrCode, CreditCard } from "lucide-react";
+import { Users, QrCode, CreditCard, Stamp } from "lucide-react";
 import {
   FeatureSettingCard,
   type FeatureSettingStatus,
@@ -60,17 +60,17 @@ function resolvePayoutStatus(organizer: {
 
 /**
  * PC版イベント作成 STEP3 中央カラム
- * 「公開後に設定できること」— スタッフ / 参加パス / 決済の3カードのみ
+ * 「公開後に設定できること」— スタッフ / 参加パス / 決済 / ゲーム
  */
 export function PostPublishFeatures({
   form,
   onOpenPassSettings,
-  features = ["staff", "pass", "payout"],
+  features = ["staff", "pass", "payout", "game"],
 }: {
   eventId?: string;
   form: PassFormSlice;
   onOpenPassSettings?: () => void;
-  features?: Array<"staff" | "pass" | "payout">;
+  features?: Array<"staff" | "pass" | "payout" | "game">;
 }) {
   const [payoutStatus, setPayoutStatus] =
     useState<FeatureSettingStatus>("未設定");
@@ -151,6 +151,17 @@ export function PostPublishFeatures({
           status={payoutStatus}
           href="/organizer/settings/payouts"
           icon={<CreditCard className="h-4 w-4" strokeWidth={2} />}
+        />
+      ) : null}
+
+      {features.includes("game") ? (
+        <FeatureSettingCard
+          accent="green"
+          title="ゲームを付ける"
+          description="スタンプラリーなど、参加者がまちを巡れる遊びをイベントに添えられます。"
+          buttonLabel="ゲーム機能へ"
+          href="/organizer/games"
+          icon={<Stamp className="h-4 w-4" strokeWidth={2} />}
         />
       ) : null}
     </div>

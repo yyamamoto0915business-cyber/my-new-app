@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { hasDocumentSupabaseAuthCookie } from "@/lib/supabase/auth-cookie";
 import { syncSupabaseSessionFromServer } from "@/lib/supabase/sync-session-from-server";
 import { isAbortLikeError } from "@/lib/is-abort-like-error";
 import type { User } from "@supabase/supabase-js";
@@ -112,6 +113,12 @@ export function useSupabaseUser(): SupabaseUserState {
         if (cancelled) return;
         if (sessionUser) {
           setUser(sessionUser);
+          return;
+        }
+
+        // Cookie が無い未ログイン訪問では、getUser と /api/auth/me の再試行をしない
+        if (!hasDocumentSupabaseAuthCookie()) {
+          if (!cancelled) setUser(null);
           return;
         }
 

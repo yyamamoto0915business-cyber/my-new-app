@@ -26,6 +26,8 @@ export type MyPostItem = {
   commentCount: number;
   viewCount: number;
   body?: string;
+  areaLabel?: string;
+  tags?: string[];
 };
 
 /** GET: ログインユーザー自身の投稿一覧（公開＋下書き）を返す */
@@ -54,6 +56,8 @@ export async function GET() {
       likeCount: view.likeCount,
       commentCount: view.commentCount,
       body: view.body,
+      areaLabel: view.areaLabel,
+      tags: view.tags,
       // TODO: view_count 列を追加したら row の値を返す
       viewCount: 0,
     };

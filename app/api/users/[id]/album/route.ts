@@ -36,6 +36,7 @@ export async function GET(_request: Request, { params }: Params) {
         displayName: preview.displayName,
         avatarUrl: preview.avatarUrl,
         bio: null,
+        region: null,
       },
       isSelf: false,
       follow: { status: "accepted", id: null },
@@ -53,18 +54,20 @@ export async function GET(_request: Request, { params }: Params) {
   let displayName = "ユーザー";
   let avatarUrl: string | null = null;
   let bio: string | null = null;
+  let region: string | null = null;
 
   if (supabase) {
     const { data } = await supabase
       .from("profiles")
       .select(
-        "id, display_name, avatar_url, bio, participant_avatar_url, organizer_avatar_url, active_profile_role",
+        "id, display_name, avatar_url, bio, region, participant_avatar_url, organizer_avatar_url, active_profile_role",
       )
       .eq("id", authorId)
       .maybeSingle();
     if (data) {
       displayName = (data.display_name as string | null)?.trim() || displayName;
       bio = (data.bio as string | null) ?? null;
+      region = (data.region as string | null) ?? null;
       avatarUrl = resolveAvatarUrlByRole(
         {
           avatar_url: data.avatar_url as string | null,
@@ -104,11 +107,13 @@ export async function GET(_request: Request, { params }: Params) {
       commentCount: view.commentCount,
       viewCount: 0,
       body: view.body,
+      areaLabel: view.areaLabel,
+      tags: view.tags,
     };
   });
 
   return NextResponse.json({
-    profile: { id: authorId, displayName, avatarUrl, bio },
+    profile: { id: authorId, displayName, avatarUrl, bio, region },
     isSelf,
     follow: {
       status: isSelf ? "self" : (followRow?.status ?? "none"),

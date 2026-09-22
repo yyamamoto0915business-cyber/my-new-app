@@ -70,6 +70,19 @@ export function OrganizerSidebarPlanIcon({ active }: NavIconProps) {
   );
 }
 
+export function OrganizerSidebarGamesIcon({ active }: NavIconProps) {
+  const stroke = active ? GREEN : GREEN_MUTED;
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
+      <rect x="3" y="4.5" width="16" height="13" rx="3" stroke={stroke} strokeWidth="1.4" />
+      <circle cx="8" cy="10" r="1.3" stroke={stroke} strokeWidth="1.2" />
+      <circle cx="14" cy="10" r="1.3" stroke={stroke} strokeWidth="1.2" />
+      <path d="M8 14.2h6" stroke={stroke} strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M6.2 7.2h1.6M14.2 7.2h1.6" stroke={stroke} strokeWidth="1.15" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function OrganizerSidebarPosIcon({ active }: NavIconProps) {
   const stroke = active ? GREEN : GREEN_MUTED;
   return (

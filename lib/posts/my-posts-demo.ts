@@ -427,6 +427,10 @@ const DEMO_POST_DETAILS: Record<string, DemoPostDetail> = {
   },
 };
 
+export function demoDetailFor(id: string) {
+  return DEMO_POST_DETAILS[id];
+}
+
 /** アルバムカード用の本文。実投稿は body、デモは詳細テーブルから補う */
 export function excerptForMyPost(post: MyPostItem): string {
   const own = post.body?.trim();

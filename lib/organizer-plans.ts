@@ -134,3 +134,7 @@ export function getCurrentOrganizerCatalogPlanId(
 ): OrganizerCatalogPlanId {
   return isPaid ? "standard" : "free";
 }
+
+export function getOrganizerCatalogPlanName(isPaid: boolean): string {
+  return getOrganizerCatalogPlan(getCurrentOrganizerCatalogPlanId(isPaid)).name;
+}

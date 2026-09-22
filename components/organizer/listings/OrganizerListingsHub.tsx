@@ -6,11 +6,14 @@ import Link from "next/link";
 import {
   ArrowRight,
   Banknote,
+  Camera,
   CreditCard,
   ExternalLink,
   Lightbulb,
+  MapPin,
   QrCode,
   Receipt,
+  Stamp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EventAccountStatusCards } from "@/components/organizer/events/EventAccountStatusCards";
@@ -141,7 +144,7 @@ function AccountStatusSkeleton() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="h-[3.75rem] animate-pulse rounded-xl bg-[#e4ede0] min-[900px]:h-24 min-[900px]:rounded-2xl"
+          className="h-[4.75rem] animate-pulse rounded-xl bg-[#e4ede0] min-[900px]:h-24 min-[900px]:rounded-2xl"
         />
       ))}
     </div>
@@ -251,6 +254,49 @@ export function OrganizerListingsHub() {
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
           <p>かんたんな操作でスムーズに会計。売上もすぐ確認できます。</p>
+        </div>
+      </section>
+
+      <section className="org-listings-hub__pos org-listings-hub__games" aria-labelledby="listings-games-heading">
+        <div className="org-listings-hub__pos-copy">
+          <div className="org-listings-hub__pos-title-row">
+            <h2 id="listings-games-heading">ゲーム機能</h2>
+            <span className="org-listings-hub__pos-badge">NEW</span>
+          </div>
+          <p>スタンプラリーなど、参加者がまちを巡れる遊びをイベントに添えられます。</p>
+          <ul className="org-listings-hub__pos-tags">
+            <li>
+              <Stamp className="h-3.5 w-3.5" aria-hidden />
+              スタンプラリー
+            </li>
+            <li>
+              <QrCode className="h-3.5 w-3.5" aria-hidden />
+              QRで参加
+            </li>
+            <li>
+              <MapPin className="h-3.5 w-3.5" aria-hidden />
+              スポット巡り
+            </li>
+            <li>
+              <Camera className="h-3.5 w-3.5" aria-hidden />
+              フォト・クイズ
+            </li>
+          </ul>
+        </div>
+        <div className="org-listings-hub__pos-visual" aria-hidden>
+          <div className="org-listings-hub__games-stamp">
+            <span className="org-listings-hub__games-stamp-card" />
+            <span className="org-listings-hub__games-stamp-dot is-1" />
+            <span className="org-listings-hub__games-stamp-dot is-2" />
+            <span className="org-listings-hub__games-stamp-dot is-3" />
+          </div>
+        </div>
+        <div className="org-listings-hub__pos-cta">
+          <Link href="/organizer/games" className="org-listings-hub__pos-btn">
+            ゲームを開く
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+          <p>まずはスタンプラリーから。ニックネームと合言葉で途中参加もできます。</p>
         </div>
       </section>
 

@@ -23,7 +23,7 @@ const SLOT_SPARKLES = [
   { className: "org-unlimited-spark org-unlimited-spark--f", style: { top: "28%", left: "48%" } },
 ] as const;
 
-function ProPlanCard() {
+function ProPlanCard({ planLabel }: { planLabel: string }) {
   return (
     <Link
       href={PLAN_HREF}
@@ -49,7 +49,7 @@ function ProPlanCard() {
             <span className="org-events-status-card__label-short">プラン</span>
           </p>
           <p className="org-pro-plan-card__title">
-            <span className="org-pro-plan-card__pro">Pro</span>
+            <span className="org-pro-plan-card__pro">{planLabel}</span>
             <span className="org-events-status-card__go" aria-hidden>
               ›
             </span>
@@ -143,6 +143,7 @@ function UnlimitedSlotsCard() {
 export function EventAccountStatusCards({ planSummary, billingSummary }: Props) {
   const stripeOk = billingSummary?.paymentSetupStatus === "ok";
   const stripeLabel = stripeOk ? "設定済み" : "未設定";
+  const stripeLabelShort = stripeOk ? "設定済" : "未設定";
   const stripeTone = stripeOk
     ? "text-[#2D7A4F] bg-[#EAF4ED] border-[#C5DFC5]"
     : "text-[#9a7b20] bg-[#FFF8E8] border-[#E8D9A8]";
@@ -155,7 +156,7 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
       aria-label="アカウント状況"
     >
       {isPro ? (
-        <ProPlanCard />
+        <ProPlanCard planLabel={planSummary?.planLabel ?? "STANDARD"} />
       ) : (
         <Link
           href={PLAN_HREF}
@@ -218,7 +219,7 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
             <div className="org-events-status-card__payout-head">
               <p className="org-events-status-card__label">
                 <span className="org-events-status-card__label-full">売上の受け取り</span>
-                <span className="org-events-status-card__label-short">売上受取</span>
+                <span className="org-events-status-card__label-short">受取</span>
               </p>
               <span className={`org-events-status-card__badge border ${stripeTone}`}>
                 {stripeLabel}
@@ -227,6 +228,9 @@ export function EventAccountStatusCards({ planSummary, billingSummary }: Props) 
                 </span>
               </span>
             </div>
+            <p className="org-events-status-card__value org-events-status-card__value--payout">
+              {stripeLabelShort}
+            </p>
             <p className="org-events-status-card__hint org-events-status-card__hint--payout">
               {stripeOk
                 ? "カード売上はだいたい週1回、口座へ振り込まれます"

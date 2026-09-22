@@ -101,7 +101,7 @@ function PcStepBar({
       ? "公開枠 無制限"
       : `公開枠 ${planSummary.monthlyPublished}/${planSummary.publishLimit}件`
     : "";
-  const planName = planSummary?.isFreePlan ? "Starterプラン" : "Proプラン";
+  const planName = planSummary?.planLabel ?? "—";
   const canPublish = publishDisabledReason === null && !submitting;
 
   return (

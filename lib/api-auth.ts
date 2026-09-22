@@ -4,8 +4,8 @@
  */
 import { createClient as createJwtClient } from "@supabase/supabase-js";
 import { headers } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
 import { getAuth } from "@/lib/get-auth";
+import { getCachedAuthUser } from "@/lib/supabase/get-cached-auth-user";
 
 export type ApiUser = {
   id: string;
@@ -56,16 +56,9 @@ export async function getApiUser(): Promise<ApiUser | null> {
     /* headers() が使えないコンテキストでは Cookie 認証へ */
   }
 
-  const supabase = await createClient();
-
-  if (supabase) {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-    if (!error && user) {
-      return toApiUser(user);
-    }
+  const user = await getCachedAuthUser();
+  if (user) {
+    return toApiUser(user);
   }
 
   // Supabase 未設定 or 未ログイン時: AUTH_DISABLED なら開発ユーザー

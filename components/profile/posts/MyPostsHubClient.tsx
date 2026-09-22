@@ -1,97 +1,75 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  CalendarDays,
-  ChevronLeft,
-  PanelRightClose,
-  Plus,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import type { MyPostItem } from "@/app/api/me/posts/route";
 import {
   getPrefetchedMyPosts,
   prefetchMyPosts,
 } from "@/lib/prefetch-my-posts";
-import { cn } from "@/lib/utils";
-import { computeMyPostsStats } from "@/lib/posts/my-posts-stats";
-import { MY_POSTS_DEMO } from "@/lib/posts/my-posts-demo";
 import {
-  buildSeasonAlbums,
-  calendarMonthKey,
-  listAlbumYears,
-  monthCountsForYear,
-  postsForYear,
-  albumDateOf,
-  type SeasonAlbum,
-} from "@/lib/posts/group-my-posts-by-season";
-import { MyPostsAlbumSkeleton } from "./MyPostsAlbumSkeleton";
-import { MyPostsHero } from "./MyPostsHero";
-import { MyPostsYearTabs } from "./MyPostsYearTabs";
-import { MyPostsAlbumStage } from "./MyPostsAlbumStage";
-import { MyPostsMonthBook } from "./MyPostsMonthBook";
-import { MyPostsAlbumGrid } from "./MyPostsAlbumGrid";
-import { MyPostsListView } from "./MyPostsListView";
-import { MyPostsSidebar } from "./MyPostsSidebar";
+  prefetchMypageSummary,
+  type MypageSummaryResponse,
+} from "@/lib/prefetch-mypage-summary";
+import { cn } from "@/lib/utils";
+import { MY_POSTS_DEMO } from "@/lib/posts/my-posts-demo";
+import { listAlbumYears } from "@/lib/posts/group-my-posts-by-season";
+import {
+  filterAlbumPosts,
+  handleFromEmail,
+  type AlbumCategoryFilter,
+  type AlbumHubTab,
+  type AlbumSeasonFilter,
+  type AlbumSortKey,
+  type AlbumStatusFilter,
+} from "@/lib/posts/my-album-view";
+import { useOrganizerPro } from "@/lib/organizer-pro-store";
 import type { PostMutation } from "./PostCardMenu";
-import { AuthorFollowButton } from "@/components/posts/AuthorFollowButton";
-import { ProfileBannerAvatar } from "@/components/profile/profile-banner-avatar";
+import {
+  MyAlbumProfileHeader,
+  MyAlbumProfileSkeleton,
+  type AlbumProfile,
+} from "./MyAlbumProfileHeader";
+import { MyAlbumSeasonBar } from "./MyAlbumSeasonBar";
+import { MyAlbumFilterBar } from "./MyAlbumFilterBar";
+import { MyAlbumViewTabs } from "./MyAlbumViewTabs";
+import { MyAlbumMediaGrid } from "./MyAlbumMediaGrid";
+import { MyAlbumMapPane } from "./MyAlbumMapPane";
+import { MySharedAlbumsPane } from "./MySharedAlbumsPane";
 
-function HostbarLeaf({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 36"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.55"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 2.2c5.2 7.6 7.4 14.2 0 31.2C4.8 16.4 6.8 9.8 12 2.2Z" />
-      <path d="M12 8.5v18.2" />
-      <path d="M12 14.2c1.7 1.1 2.6 2.4 2.8 4.2" />
-      <path d="M12 19c-1.5 1-2.3 2.1-2.5 3.6" />
-    </svg>
-  );
+type HostProfile = AlbumProfile;
+
+function tabFromSearch(value: string | null): AlbumHubTab {
+  if (value === "album" || value === "map") return value;
+  return "posts";
 }
-
-type ViewMode = "book" | "months" | "drafts";
-
-const EMPTY_ALBUM: SeasonAlbum = {
-  spring: [],
-  summer: [],
-  autumn: [],
-  winter: [],
-};
-
-type HostProfile = {
-  displayName: string;
-  avatarUrl: string | null;
-  bio: string | null;
-  counts: { posts: number; followers: number; following: number };
-};
 
 export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
   const isForeign = Boolean(authorId);
   const router = useRouter();
   const { user, loading: authLoading } = useSupabaseUser();
+  const isPro = useOrganizerPro();
   const searchParams = useSearchParams();
   const [items, setItems] = useState<MyPostItem[]>([]);
   const [host, setHost] = useState<HostProfile | null>(null);
+  const [selfProfile, setSelfProfile] = useState<AlbumProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [monthKey, setMonthKey] = useState<string | null>(null);
-  const [mode, setMode] = useState<ViewMode>(() =>
-    !isForeign && searchParams.get("view") === "drafts" ? "drafts" : "book",
+  const [selectedYear, setSelectedYear] = useState<number | "all">("all");
+  const [tab, setTab] = useState<AlbumHubTab>(() => {
+    if (searchParams.get("join") || searchParams.get("album")) return "album";
+    if (!isForeign && searchParams.get("view") === "drafts") return "posts";
+    return tabFromSearch(searchParams.get("tab"));
+  });
+  const [season, setSeason] = useState<AlbumSeasonFilter>("all");
+  const [category, setCategory] = useState<AlbumCategoryFilter>("all");
+  const [sort, setSort] = useState<AlbumSortKey>("new");
+  const [status, setStatus] = useState<AlbumStatusFilter>(() =>
+    !isForeign && searchParams.get("view") === "drafts" ? "draft" : "all",
   );
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const monthRefs = useRef<Record<string, HTMLElement | null>>({});
-  const pendingScroll = useRef<string | null>(null);
-  const recbtnRef = useRef<HTMLDivElement>(null);
+  const [albumDetailOpen, setAlbumDetailOpen] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -112,6 +90,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
               displayName: string;
               avatarUrl: string | null;
               bio: string | null;
+              region?: string | null;
             };
             counts: { posts: number; followers: number; following: number };
             items: MyPostItem[];
@@ -127,6 +106,9 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
             displayName: payload.profile.displayName,
             avatarUrl: payload.profile.avatarUrl,
             bio: payload.profile.bio,
+            region: payload.profile.region ?? null,
+            handle: null,
+            isPro: false,
             counts: payload.counts,
           });
           setItems(payload.items.filter((p) => p.status !== "draft"));
@@ -146,6 +128,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
     if (!user) {
       setItems([]);
       setHost(null);
+      setSelfProfile(null);
       setLoading(false);
       return;
     }
@@ -158,13 +141,33 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
     const prefetched = getPrefetchedMyPosts();
     if (prefetched) {
       applyItems(prefetched);
-      return;
+    } else {
+      setLoading(true);
+      void prefetchMyPosts().then((arr) => {
+        applyItems(arr ?? []);
+      });
     }
 
-    setLoading(true);
-    void prefetchMyPosts().then((arr) => {
-      applyItems(arr ?? []);
+    let cancelled = false;
+    void prefetchMypageSummary().then((data: MypageSummaryResponse | null) => {
+      if (cancelled || !data) return;
+      setSelfProfile({
+        displayName: data.profile.displayName,
+        avatarUrl: data.profile.avatarUrl,
+        bio: data.profile.bio,
+        region: data.profile.region,
+        handle: handleFromEmail(user.email),
+        isPro,
+        counts: {
+          posts: data.stats.posts,
+          followers: data.stats.followers,
+          following: data.stats.following,
+        },
+      });
     });
+    return () => {
+      cancelled = true;
+    };
   }, [user, authLoading, authorId, router]);
 
   const settled = !loading && !authLoading;
@@ -178,203 +181,92 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
     });
   }, []);
 
-  const sourceItems =
-    !isForeign && searchParams.get("demo") === "1" ? MY_POSTS_DEMO : items;
+  const demoMode = !isForeign && searchParams.get("demo") === "1";
+  const sourceItems = demoMode ? MY_POSTS_DEMO : items;
 
   const years = useMemo(() => listAlbumYears(sourceItems), [sourceItems]);
-  const albums = useMemo(() => buildSeasonAlbums(sourceItems), [sourceItems]);
 
-  // 選択年の初期化・整合
-  useEffect(() => {
-    if (years.length === 0) return;
-    if (selectedYear === null || !years.includes(selectedYear)) {
-      setSelectedYear(years[0]);
-    }
-  }, [years, selectedYear]);
-
-  const activeYear = selectedYear ?? years[0] ?? new Date().getFullYear();
-  const album = albums.get(activeYear) ?? EMPTY_ALBUM;
-  const yearPosts = useMemo(
-    () => postsForYear(sourceItems, activeYear),
-    [sourceItems, activeYear],
-  );
-  const monthCounts = useMemo(
-    () => monthCountsForYear(sourceItems, activeYear),
-    [sourceItems, activeYear],
-  );
-  const stats = useMemo(() => computeMyPostsStats(yearPosts), [yearPosts]);
-  const monthPosts = useMemo(
+  const visiblePosts = useMemo(
     () =>
-      monthKey
-        ? yearPosts.filter((p) => calendarMonthKey(albumDateOf(p)) === monthKey)
-        : [],
-    [yearPosts, monthKey],
-  );
-  const drafts = useMemo(
-    () => sourceItems.filter((p) => p.status === "draft"),
-    [sourceItems],
+      filterAlbumPosts(sourceItems, {
+        season,
+        category,
+        year: selectedYear,
+        status,
+        sort,
+        includeDrafts: false,
+      }),
+    [sourceItems, season, category, selectedYear, status, sort],
   );
 
-  // months モードに切り替わった直後にスクロール
-  useEffect(() => {
-    if (mode !== "months" || !pendingScroll.current) return;
-    const key = pendingScroll.current;
-    const t = window.setTimeout(() => {
-      monthRefs.current[key]?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-      pendingScroll.current = null;
-    }, 80);
-    return () => window.clearTimeout(t);
-  }, [mode, activeYear]);
+  const profile: AlbumProfile | null = isForeign
+    ? host
+    : selfProfile
+      ? {
+          ...selfProfile,
+          isPro,
+          handle: selfProfile.handle ?? handleFromEmail(user?.email),
+          counts: {
+            ...selfProfile.counts,
+            posts:
+              sourceItems.filter((p) => p.status !== "draft").length ||
+              selfProfile.counts.posts,
+          },
+        }
+      : user
+        ? {
+            displayName:
+              (user.user_metadata?.display_name as string | undefined) ??
+              user.email?.split("@")[0] ??
+              "あなた",
+            avatarUrl: null,
+            bio: null,
+            region: null,
+            handle: handleFromEmail(user.email),
+            isPro,
+            counts: {
+              posts: sourceItems.filter((p) => p.status !== "draft").length,
+              followers: 0,
+              following: 0,
+            },
+          }
+        : demoMode
+          ? {
+              displayName: "あなた",
+              avatarUrl: null,
+              bio: "まちの魅力を、未来のしるしに。",
+              region: null,
+              handle: null,
+              isPro: false,
+              counts: {
+                posts: sourceItems.filter((p) => p.status !== "draft").length,
+                followers: 0,
+                following: 0,
+              },
+            }
+          : null;
 
-  const handleYearSelect = useCallback((year: number) => {
-    setSelectedYear(year);
-    setMonthKey(null);
-    setMode("book");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const heading =
+    isForeign && host ? `${host.displayName}のアルバム` : "マイアルバム";
+
+  const handleTab = useCallback((next: AlbumHubTab) => {
+    setTab(next);
+    setAlbumDetailOpen(false);
   }, []);
 
-  const handleMonthClick = useCallback((key: string) => {
-    setMonthKey(key);
-    setMode("book");
-    setSidebarOpen(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  const emptyMessage = isForeign
+    ? "公開中の記録はまだありません"
+    : status === "draft"
+      ? "保存した下書きはありません"
+      : "まだ投稿がありません";
 
-  useEffect(() => {
-    if (window.localStorage.getItem("mg_album_sidebar") === "0") {
-      setSidebarOpen(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!sidebarOpen) return;
-    function handlePointer(e: PointerEvent) {
-      if (!recbtnRef.current?.contains(e.target as Node)) {
-        setSidebarOpen(false);
-      }
-    }
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setSidebarOpen(false);
-    }
-    document.addEventListener("pointerdown", handlePointer);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointer);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [sidebarOpen]);
-
-  const toggleSidebar = useCallback(() => {
-    setSidebarOpen((open) => {
-      const next = !open;
-      try {
-        window.localStorage.setItem("mg_album_sidebar", next ? "1" : "0");
-      } catch {
-        // ignore storage errors
-      }
-      return next;
-    });
-  }, []);
-
-  const isEmpty = settled && years.length === 0;
-  const isBookView = mode === "book" && !monthKey;
-  const bookVisible = settled && !isEmpty && isBookView;
-
-  const sidebar = (
-    <MyPostsSidebar
-      year={activeYear}
-      stats={stats}
-      monthCounts={monthCounts}
-      draftCount={isForeign ? 0 : drafts.length}
-      onMonthClick={handleMonthClick}
-      onDraftClick={() => setMode("drafts")}
-      hideDrafts={isForeign}
-    />
-  );
-
-  const renderRecordButton = (ref: typeof recbtnRef) => (
-    <div className="my-album-recbtn-wrap" ref={ref}>
-      <button
-        type="button"
-        className="my-album-sidebar-toggle"
-        onClick={toggleSidebar}
-        aria-expanded={sidebarOpen}
-      >
-        {sidebarOpen ? (
-          <>
-            <PanelRightClose className="h-4 w-4" aria-hidden />
-            閉じる
-          </>
-        ) : (
-          <>
-            <CalendarDays className="h-4 w-4" aria-hidden />
-            記録・月別
-          </>
-        )}
-      </button>
-      {sidebarOpen && (
-        <div className="my-album-pop" role="dialog" aria-label="記録・月別">
-          <MyPostsSidebar
-            year={activeYear}
-            stats={stats}
-            monthCounts={monthCounts}
-            draftCount={isForeign ? 0 : drafts.length}
-            onMonthClick={handleMonthClick}
-            onDraftClick={() => setMode("drafts")}
-            hideDrafts={isForeign}
-          />
-        </div>
-      )}
-    </div>
-  );
-
-  const controls = (
-    <div className="my-album-controls">
-      {years.length > 0 && (
-        <div className="my-album-yearbar">
-          <MyPostsYearTabs
-            years={years}
-            selectedYear={activeYear}
-            onSelect={handleYearSelect}
-          />
-          <p className="my-album-yearbar__caption">
-            四季をめぐる、{isForeign ? "この人" : "あなた"}の物語。
-          </p>
-        </div>
-      )}
-      {renderRecordButton(recbtnRef)}
-    </div>
-  );
-
-  const mainArea = () => {
-    if (loading || authLoading) {
-      if (isBookView) {
-        return <MyPostsAlbumSkeleton />;
-      }
+  const gridOrEmpty = (posts: MyPostItem[]) => {
+    if (posts.length === 0) {
       return (
-        <div className="my-album-grid">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="aspect-[4/5] animate-pulse rounded-[3px] bg-white/70"
-            />
-          ))}
-        </div>
-      );
-    }
-    if (isEmpty) {
-      return (
-        <div className="my-album-empty">
-          <p>
-            {isForeign
-              ? "公開中の記録はまだありません"
-              : "まだ投稿がありません"}
-          </p>
-          {isForeign ? null : (
-            <Link href="/posts/new" className="my-album-empty__cta">
+        <div className="mg-album-empty">
+          <p>{emptyMessage}</p>
+          {isForeign || status === "draft" ? null : (
+            <Link href="/posts/new" className="mg-album-empty__cta">
               <Plus className="h-4 w-4" aria-hidden />
               投稿を作成
             </Link>
@@ -382,148 +274,112 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
         </div>
       );
     }
-    if (mode === "drafts" && !isForeign) {
-      return (
-        <div className="my-album-months-view">
-          <button
-            type="button"
-            className="my-album-back"
-            onClick={() => setMode("book")}
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden />
-            アルバムに戻る
-          </button>
-          <h2 className="my-album-months-view__title">下書き</h2>
-          {drafts.length === 0 ? (
-            <div className="my-album-empty">保存した下書きはありません</div>
-          ) : (
-            <MyPostsListView posts={drafts} onMutated={handleMutated} />
-          )}
-        </div>
-      );
-    }
-    if (mode === "months") {
-      return (
-        <div className="my-album-months-view">
-          <button
-            type="button"
-            className="my-album-back"
-            onClick={() => setMode("book")}
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden />
-            アルバムに戻る
-          </button>
-          <h2 className="my-album-months-view__title">
-            {activeYear}年の思い出（月別）
-          </h2>
-          <MyPostsAlbumGrid
-            posts={yearPosts}
-            monthRefs={monthRefs}
-            onMutated={isForeign ? undefined : handleMutated}
-            showMenu={!isForeign}
-          />
-        </div>
-      );
-    }
-    if (monthKey) {
-      return (
-        <MyPostsMonthBook
-          monthKey={monthKey}
-          posts={monthPosts}
-          onBack={() => setMonthKey(null)}
-          header={controls}
-          onMutated={isForeign ? undefined : handleMutated}
-          showMenu={!isForeign}
-        />
-      );
-    }
     return (
-      <MyPostsAlbumStage
-        year={activeYear}
-        years={years}
-        yearPosts={yearPosts}
-        album={album}
-        recordButton={renderRecordButton(recbtnRef)}
-        onYearSelect={handleYearSelect}
-        onOpenMonths={() => {
-          setMonthKey(null);
-          setMode("months");
-        }}
+      <MyAlbumMediaGrid
+        posts={posts}
         onMutated={isForeign ? undefined : handleMutated}
-        readOnly={isForeign}
-        heading={
-          isForeign && host ? `${host.displayName}のアルバム` : "マイアルバム"
-        }
+        showMenu={false}
       />
     );
   };
 
-  return (
-    <div
-      className={cn(
-        "my-album-page min-h-screen",
-        isBookView && "my-album-page--book",
-      )}
-    >
-      {!isBookView && (
-        <div className="my-album-mobile-only">
-          <MyPostsHero
-            eyebrow={isForeign ? "ALBUM" : "MY ALBUM"}
-            title={
-              isForeign && host
-                ? `${host.displayName}のアルバム`
-                : "マイアルバム"
-            }
-            lead={
-              isForeign
-                ? "残したしるしを、アルバムのように。"
-                : "残したしるしを、アルバムのように。"
-            }
+  const main = () => {
+    if (tab === "album") {
+      return (
+        <MySharedAlbumsPane
+          isOwn={!isForeign}
+          demoMode={demoMode}
+          posts={sourceItems.filter((p) => p.status !== "draft")}
+          profile={profile}
+          peerId={authorId}
+          initialAlbumId={searchParams.get("album")}
+          joinToken={searchParams.get("join")}
+          onDetailOpenChange={setAlbumDetailOpen}
+        />
+      );
+    }
+    if (tab === "map") {
+      return <MyAlbumMapPane posts={visiblePosts} />;
+    }
+    return gridOrEmpty(visiblePosts);
+  };
+
+  if (!isForeign && settled && !user && !demoMode) {
+    return (
+      <div className="mg-album-hub my-album-page min-h-screen">
+        <div className="my-album-shell">
+          <MyAlbumProfileHeader
+            profile={null}
+            heading="マイアルバム"
+            lead="思い出は、まちの宝もの。"
+            isOwn
           />
-        </div>
-      )}
-      <div className="my-album-shell">
-        {isForeign && host && authorId ? (
-          <div className="my-album-hostbar">
-            <div className="my-album-hostbar__avatar-wrap">
-              <HostbarLeaf className="my-album-hostbar__avatar-leaf" />
-              <div className="my-album-hostbar__avatar">
-                <ProfileBannerAvatar
-                  avatarUrl={host.avatarUrl}
-                  displayName={host.displayName}
-                />
-              </div>
-            </div>
-            <ul className="my-album-hostbar__stats">
-              {(
-                [
-                  { value: host.counts.posts, label: "投稿" },
-                  { value: host.counts.followers, label: "フォロワー" },
-                  { value: host.counts.following, label: "フォロー中" },
-                ] as const
-              ).map((item) => (
-                <li key={item.label}>
-                  <span className="my-album-hostbar__num">{item.value}</span>
-                  <span className="my-album-hostbar__label">{item.label}</span>
-                  <HostbarLeaf className="my-album-hostbar__stat-leaf" />
-                </li>
-              ))}
-            </ul>
-            <div className="my-album-hostbar__follow-wrap">
-              <HostbarLeaf className="my-album-hostbar__follow-leaf my-album-hostbar__follow-leaf--left" />
-              <AuthorFollowButton
-                authorId={authorId}
-                className="my-album-hostbar__follow"
-              />
-              <HostbarLeaf className="my-album-hostbar__follow-leaf my-album-hostbar__follow-leaf--right" />
-            </div>
+          <div className="mg-album-empty mg-album-empty--auth">
+            <p>ログインすると、自分のアルバムを残せます。</p>
+            <Link href="/auth?next=/profile/posts" className="mg-album-empty__cta">
+              ログインはこちら
+            </Link>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  const hideChrome = albumDetailOpen && tab === "album";
+  const showPostTools = tab === "posts" && !hideChrome;
+
+  return (
+    <div className={cn("mg-album-hub my-album-page min-h-screen")}>
+      <div className="my-album-shell">
+        {hideChrome ? null : loading || authLoading ? (
+          <MyAlbumProfileSkeleton />
+        ) : (
+          <MyAlbumProfileHeader
+            profile={profile}
+            heading={heading}
+            lead="思い出は、まちの宝もの。"
+            isOwn={!isForeign}
+            authorId={authorId}
+            onSelectPosts={() => handleTab("posts")}
+          />
+        )}
+
+        {showPostTools ? (
+          <>
+            <MyAlbumSeasonBar value={season} onChange={setSeason} />
+            <MyAlbumFilterBar
+              category={category}
+              onCategory={setCategory}
+              sort={sort}
+              onSort={setSort}
+              year={selectedYear}
+              years={years}
+              onYear={setSelectedYear}
+              status={status}
+              onStatus={setStatus}
+              hideDrafts={isForeign}
+            />
+          </>
         ) : null}
-        {!bookVisible && controls}
-        <div className="my-album-layout">
-          <div className="my-album-feed">{mainArea()}</div>
-          {/* モバイルは本の下に通常表示。PCはボタンのポップオーバーで表示 */}
-          <div className="my-album-side-inline">{sidebar}</div>
+
+        {hideChrome ? null : <MyAlbumViewTabs value={tab} onChange={handleTab} />}
+
+        <div className="mg-album-main">
+          {loading || authLoading ? (
+            <div className="mg-album-grid">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="mg-album-tile is-skeleton">
+                  <div className="mg-album-tile__photo" />
+                  <div className="mg-album-tile__meta">
+                    <div className="mg-album-skel mg-album-skel--date" />
+                    <div className="mg-album-skel mg-album-skel--title" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            main()
+          )}
         </div>
       </div>
     </div>

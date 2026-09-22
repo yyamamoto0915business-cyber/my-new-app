@@ -45,6 +45,9 @@ supabase/.temp/
 # ローカル検証用のスクリーンショット出力・撮影スクリプト
 .tmp-hero/
 
+# ローカル確認用のデザインモック（本番で公開しない。docs/album-mocks/ が正）
+/public/dev/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

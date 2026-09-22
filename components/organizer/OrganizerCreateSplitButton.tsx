@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, ChevronDown, Plus, Store, Truck, Users } from "lucide-react";
+import { Calendar, ChevronDown, Plus, Stamp, Store, Truck, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +43,12 @@ const CREATE_OPTIONS: CreateOption[] = [
     label: "スタッフ募集",
     href: "/organizer/recruitments/new",
     Icon: Users,
+  },
+  {
+    id: "game",
+    label: "ゲーム機能",
+    href: "/organizer/games/new",
+    Icon: Stamp,
   },
 ];
 
