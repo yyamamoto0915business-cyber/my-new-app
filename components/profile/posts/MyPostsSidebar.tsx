@@ -4,10 +4,10 @@ import Image from "next/image";
 import {
   CalendarDays,
   FileEdit,
-  Heart,
-  Store,
-  Tent,
-  Truck,
+  Luggage,
+  MapPin,
+  Sun,
+  UtensilsCrossed,
   type LucideIcon,
 } from "lucide-react";
 import type { PostCategory } from "@/lib/posts/mock-feed";
@@ -20,11 +20,11 @@ import {
 const CLIP = "/profile/album/sprig-cut.png";
 
 const CATEGORY_ICON: Record<PostCategory, LucideIcon> = {
-  event: Tent,
-  shop: Store,
-  spot: Heart,
-  kitchen: Truck,
-  scenery: CalendarDays,
+  spot: MapPin,
+  kitchen: UtensilsCrossed,
+  scenery: Sun,
+  event: CalendarDays,
+  trip: Luggage,
 };
 
 type Props = {

@@ -2,11 +2,30 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Link2, Plus, UserPlus, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import {
+  ArrowLeft,
+  Camera,
+  ChevronRight,
+  ImageIcon,
+  Images,
+  Link2,
+  MapPin,
+  MessageCircle,
+  MoreHorizontal,
+  Plus,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
 import type { MyPostItem } from "@/app/api/me/posts/route";
 import { ProfileBannerAvatar } from "@/components/profile/profile-banner-avatar";
-import { MyAlbumMediaGrid } from "./MyAlbumMediaGrid";
+import { MyAlbumMapPane } from "./MyAlbumMapPane";
 import type { AlbumProfile } from "./MyAlbumProfileHeader";
+import {
+  SharedAlbumShotGrid,
+  SharedAlbumTimeline,
+} from "./SharedAlbumShotGrid";
 import {
   cloneDemoAlbums,
   DEMO_ALBUM_INVITEES,
@@ -20,17 +39,28 @@ import type {
 import { cn } from "@/lib/utils";
 
 function memberLabel(members: SharedAlbumMember[]) {
-  return members.map((m) => m.displayName).join(" · ");
+  return members.map((m) => m.displayName).join("・");
 }
 
-function AvatarStack({ members }: { members: SharedAlbumMember[] }) {
+function AvatarStack({
+  members,
+  limit = 4,
+  size = "sm",
+}: {
+  members: SharedAlbumMember[];
+  limit?: number;
+  size?: "sm" | "lg";
+}) {
+  const shown = members.slice(0, limit);
+  const extra = members.length - shown.length;
   return (
-    <span className="mg-share-avatars" aria-hidden>
-      {members.slice(0, 3).map((m) => (
+    <span className={cn("mg-share-avatars", size === "lg" && "mg-share-avatars--lg")} aria-hidden>
+      {shown.map((m) => (
         <span key={m.userId} className="mg-share-avatars__item">
           <ProfileBannerAvatar avatarUrl={m.avatarUrl} displayName={m.displayName} />
         </span>
       ))}
+      {extra > 0 ? <span className="mg-share-avatars__more">+{extra}</span> : null}
     </span>
   );
 }
@@ -44,19 +74,47 @@ function Sheet({
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  return (
+  const [mounted, setMounted] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const viewport = window.visualViewport;
+    const panel = panelRef.current;
+    if (!viewport || !panel) return;
+    const fit = () => {
+      const top = viewport.offsetTop;
+      panel.style.maxHeight = `${Math.max(240, viewport.height - top - 12)}px`;
+    };
+    fit();
+    viewport.addEventListener("resize", fit);
+    viewport.addEventListener("scroll", fit);
+    return () => {
+      viewport.removeEventListener("resize", fit);
+      viewport.removeEventListener("scroll", fit);
+    };
+  }, [mounted]);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="mg-share-sheet" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" className="mg-share-sheet__scrim" onClick={onClose} aria-label="閉じる" />
-      <div className="mg-share-sheet__panel">
+      <div ref={panelRef} className="mg-share-sheet__panel">
         <div className="mg-share-sheet__head">
           <p>{title}</p>
           <button type="button" onClick={onClose} aria-label="閉じる">
             <X className="h-4 w-4" />
           </button>
         </div>
-        {children}
+        <div className="mg-share-sheet__body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -89,9 +147,13 @@ export function MySharedAlbumsPane({
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<null | "invite" | "add">(null);
+  const [sheet, setSheet] = useState<null | "invite" | "add" | "edit">(null);
   const [invitees, setInvitees] = useState<SharedAlbumInvitee[]>([]);
   const [copied, setCopied] = useState(false);
+  const [detailTab, setDetailTab] = useState<"photos" | "map" | "timeline">("photos");
+  const [editTitle, setEditTitle] = useState("");
+  const [editBlurb, setEditBlurb] = useState("");
+  const [editLead, setEditLead] = useState("");
   const joinedRef = useRef(false);
   const openedInitialRef = useRef<string | null>(null);
 
@@ -108,6 +170,7 @@ export function MySharedAlbumsPane({
   const applyDetail = useCallback(
     (next: SharedAlbumDetail | null) => {
       setDetail(next);
+      setDetailTab("photos");
       onDetailOpenChange?.(Boolean(next));
     },
     [onDetailOpenChange],
@@ -333,6 +396,69 @@ export function MySharedAlbumsPane({
     }
   };
 
+  const openEdit = () => {
+    if (!detail) return;
+    setEditTitle(detail.title);
+    setEditBlurb(detail.blurb ?? "");
+    setEditLead(detail.lead ?? "みんなで集めた思い出アルバム");
+    setCopied(false);
+    setMessage(null);
+    setSheet("edit");
+  };
+
+  const saveEdit = async () => {
+    if (!detail) return;
+    const nextTitle = editTitle.trim().replace(/\s+/g, " ");
+    if (!nextTitle || nextTitle.length > 40) {
+      setMessage("アルバム名を40文字以内で入力してください");
+      return;
+    }
+    const nextBlurb = editBlurb.trim().replace(/\s+/g, " ");
+    const nextLead = editLead.trim().replace(/\s+/g, " ");
+    if (nextBlurb.length > 80) {
+      setMessage("説明は80文字以内で入力してください");
+      return;
+    }
+    if (nextLead.length > 40) {
+      setMessage("ひとことは40文字以内で入力してください");
+      return;
+    }
+    const next: SharedAlbumDetail = {
+      ...detail,
+      title: nextTitle,
+      blurb: nextBlurb || null,
+      lead: nextLead || null,
+    };
+    setBusy(true);
+    if (demoMode) {
+      setDemoDetails((prev) => prev.map((a) => (a.id === next.id ? next : a)));
+      setDetail(next);
+      setBusy(false);
+      setSheet(null);
+      setMessage(null);
+      return;
+    }
+    const res = await fetch(`/api/me/albums/${detail.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: nextTitle,
+        blurb: nextBlurb,
+        lead: nextLead,
+      }),
+    });
+    const data = (await res.json()) as { album?: SharedAlbumDetail; error?: string };
+    setBusy(false);
+    if (!res.ok || !data.album) {
+      setMessage(data.error ?? "保存できませんでした");
+      return;
+    }
+    setDetail(data.album);
+    setSheet(null);
+    setMessage(null);
+    void loadList();
+  };
+
   const addablePosts = posts.filter(
     (p) =>
       p.status !== "draft" &&
@@ -342,85 +468,161 @@ export function MySharedAlbumsPane({
   if (detail) {
     return (
       <section className="mg-share-detail">
-        <button
-          type="button"
-          className="mg-share-back"
-          onClick={() => {
-            applyDetail(null);
-            void loadList();
-          }}
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          アルバム一覧
-        </button>
-
-        <div className="mg-share-hero">
-          {detail.coverUrl ? (
-            <Image
-              src={detail.coverUrl}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="(max-width: 720px) 100vw, 720px"
-            />
-          ) : (
-            <span className="mg-share-hero__empty" />
-          )}
-          <span className="mg-share-hero__wash" aria-hidden />
-        </div>
-
-        <div className="mg-share-detail__body">
-          <h2 className="mg-share-detail__title">{detail.title}</h2>
-          <p className="mg-share-detail__people">
-            <AvatarStack members={detail.members} />
-            {memberLabel(detail.members)}
-            <span> {detail.photoCount}枚</span>
-          </p>
-
-          <div className="mg-share-detail__actions">
+        <div className="mg-share-detail__top">
+          <button
+            type="button"
+            className="mg-share-back"
+            onClick={() => {
+              applyDetail(null);
+              void loadList();
+            }}
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            アルバム一覧
+          </button>
+          <div className="mg-share-detail__top-actions">
+            <span className="mg-share-chip">
+              <Users className="h-3.5 w-3.5" aria-hidden />
+              メンバー {detail.members.length}
+            </span>
             <button
               type="button"
-              className="mg-share-btn"
+              className="mg-share-chip"
               onClick={() => {
                 setSheet("invite");
                 void loadInvitees();
               }}
             >
-              <UserPlus className="h-4 w-4" aria-hidden />
-              誘う
+              <UserPlus className="h-3.5 w-3.5" aria-hidden />
+              招待する
             </button>
             <button
               type="button"
-              className="mg-share-btn mg-share-btn--solid"
-              onClick={() => setSheet("add")}
+              className="mg-share-chip mg-share-chip--icon"
+              onClick={openEdit}
+              aria-label="アルバムを編集"
             >
-              <Plus className="h-4 w-4" aria-hidden />
-              写真を入れる
+              <MoreHorizontal className="h-4 w-4" />
             </button>
           </div>
+        </div>
 
-          {message ? <p className="mg-share-msg">{message}</p> : null}
-
-          {detail.items.length === 0 ? (
-            <div className="mg-album-empty">
-              <p>まだ写真がありません</p>
-              <button
-                type="button"
-                className="mg-album-empty__cta"
-                onClick={() => setSheet("add")}
-              >
-                写真を入れる
-              </button>
-            </div>
-          ) : (
-            <MyAlbumMediaGrid
-              posts={detail.items.map((item) => item.post)}
-              showMenu={false}
-              addedBy={Object.fromEntries(
-                detail.items.map((item) => [item.post.id, item.addedBy]),
-              )}
+        <div className="mg-share-detail__head">
+          <h2 className="mg-share-detail__title">
+            {detail.title}
+            <Image
+              src="/profile/album/title-sprig.png"
+              alt=""
+              width={18}
+              height={30}
+              className="mg-share-detail__sprig"
             />
-          )}
+          </h2>
+          <p className="mg-share-detail__blurb">
+            {detail.blurb ?? "みんなで残す、まちのアルバム。"}
+            {detail.lead ? (
+              <>
+                <br />
+                {detail.lead}
+              </>
+            ) : null}
+          </p>
+          <div className="mg-share-detail__row">
+            <AvatarStack members={detail.members} limit={4} size="lg" />
+            <span className="mg-share-bubble" aria-hidden>
+              <svg className="mg-share-bubble__doodle" viewBox="0 0 42 30" aria-hidden>
+                <path d="M6 22c6-9 14-14 28-16" fill="none" stroke="#3d8a5c" strokeWidth="1.35" strokeLinecap="round" />
+                <path d="M24 7c3-4 7-5 12-3" fill="none" stroke="#3d8a5c" strokeWidth="1.15" strokeLinecap="round" />
+                <path d="M30 12c2-2 4-2 7-1" fill="none" stroke="#3d8a5c" strokeWidth="1.05" strokeLinecap="round" />
+              </svg>
+              みんなで
+              <br />
+              作っています！
+            </span>
+            <button
+              type="button"
+              className="mg-share-btn mg-share-btn--solid mg-share-btn--add"
+              onClick={() => setSheet("add")}
+            >
+              <svg className="mg-share-spark" viewBox="0 0 24 24" aria-hidden>
+                <path fill="#f0c24b" d="M12 1.2 13.7 8.4 21 10.2 13.7 12 12 19.2 10.3 12 3 10.2 10.3 8.4Z" />
+                <path fill="#f7d56a" d="M19.2 2.2 20 5.1 23 6 20 6.9 19.2 9.8 18.4 6.9 15.4 6 18.4 5.1Z" />
+              </svg>
+              <Camera className="h-4 w-4" aria-hidden />
+              写真を追加する
+            </button>
+          </div>
+        </div>
+
+        <nav className="mg-share-detail__tabs" aria-label="アルバムの見方">
+          {(
+            [
+              ["photos", "写真", Images],
+              ["map", "地図", MapPin],
+              ["timeline", "タイムライン", MessageCircle],
+            ] as const
+          ).map(([id, label, Icon]) => (
+            <button
+              key={id}
+              type="button"
+              className={cn("mg-share-detail__tab", detailTab === id && "is-active")}
+              aria-current={detailTab === id ? "page" : undefined}
+              onClick={() => setDetailTab(id)}
+            >
+              <Icon className="h-3.5 w-3.5" aria-hidden />
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        {message ? <p className="mg-share-msg">{message}</p> : null}
+
+        {detail.items.length === 0 && detailTab === "photos" ? (
+          <div className="mg-album-empty">
+            <p>まだ写真がありません</p>
+            <button
+              type="button"
+              className="mg-album-empty__cta"
+              onClick={() => setSheet("add")}
+            >
+              写真を追加する
+            </button>
+          </div>
+        ) : detailTab === "map" ? (
+          <MyAlbumMapPane posts={detail.items.map((item) => item.post)} />
+        ) : detailTab === "timeline" ? (
+          <SharedAlbumTimeline items={detail.items} />
+        ) : (
+          <SharedAlbumShotGrid items={detail.items} />
+        )}
+
+        <div className="mg-share-composer">
+          <span className="mg-share-composer__av">
+            <ProfileBannerAvatar
+              avatarUrl={profile?.avatarUrl ?? null}
+              displayName={profile?.displayName ?? "あなた"}
+            />
+          </span>
+          <button
+            type="button"
+            className="mg-share-composer__field"
+            onClick={() => setSheet("add")}
+          >
+            思い出をみんなで残そう...
+          </button>
+          <button type="button" onClick={() => setSheet("add")} aria-label="写真を入れる">
+            <ImageIcon className="h-5 w-5" />
+          </button>
+          <button type="button" onClick={() => setSheet("add")} aria-label="カメラ">
+            <Camera className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setDetailTab("map")}
+            aria-label="地図"
+          >
+            <MapPin className="h-5 w-5" />
+          </button>
         </div>
 
         {sheet === "invite" ? (
@@ -459,6 +661,59 @@ export function MySharedAlbumsPane({
                 })
               )}
             </ul>
+          </Sheet>
+        ) : null}
+
+        {sheet === "edit" ? (
+          <Sheet title="アルバムを編集" onClose={() => setSheet(null)}>
+            <form
+              className="mg-share-edit"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void saveEdit();
+              }}
+            >
+              <button type="button" className="mg-share-link" onClick={() => void copyLink()}>
+                <Link2 className="h-4 w-4" aria-hidden />
+                {copied ? "リンクをコピーしました" : "リンクをコピー"}
+              </button>
+              <label>
+                アルバムの名前
+                <input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  maxLength={40}
+                  placeholder="春の散歩"
+                />
+              </label>
+              <label>
+                説明
+                <textarea
+                  value={editBlurb}
+                  onChange={(e) => setEditBlurb(e.target.value)}
+                  maxLength={80}
+                  rows={2}
+                  placeholder="ぽかぽかの春に見つけたまちの風景たち。"
+                />
+              </label>
+              <label>
+                ひとこと
+                <input
+                  value={editLead}
+                  onChange={(e) => setEditLead(e.target.value)}
+                  maxLength={40}
+                  placeholder="みんなで集めた思い出アルバム🌸"
+                />
+              </label>
+              {message ? <p className="mg-share-msg">{message}</p> : null}
+              <button
+                type="submit"
+                className="mg-share-btn mg-share-btn--solid"
+                disabled={busy || !detail.isOwner}
+              >
+                保存する
+              </button>
+            </form>
           </Sheet>
         ) : null}
 
@@ -525,8 +780,23 @@ export function MySharedAlbumsPane({
           </form>
         ) : (
           <button type="button" className="mg-share-create-btn" onClick={() => setCreating(true)}>
+            <span className="mg-share-create-btn__leaf" aria-hidden>
+              <Image src="/profile/album/title-sprig.png" alt="" width={28} height={44} />
+              <Image src="/profile/album/title-sprig.png" alt="" width={22} height={36} />
+            </span>
             <Plus className="h-4 w-4" aria-hidden />
-            一緒に作る
+            <span>一緒に作る</span>
+            <span className="mg-share-create-btn__thumbs" aria-hidden>
+              {visibleAlbums.slice(0, 2).map((album) =>
+                album.coverUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={album.id} src={album.coverUrl} alt="" />
+                ) : (
+                  <span key={album.id} />
+                ),
+              )}
+            </span>
+            <ChevronRight className="h-4 w-4 mg-share-create-btn__chev" aria-hidden />
           </button>
         )
       ) : null}
@@ -556,25 +826,30 @@ export function MySharedAlbumsPane({
                 className="mg-share-card"
                 onClick={() => void openAlbum(album.id)}
               >
-                <span className="mg-share-card__cover">
-                  {album.coverUrl ? (
-                    <Image
-                      src={album.coverUrl}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 720px) 100vw, 640px"
-                    />
-                  ) : (
-                    <span className="mg-share-card__blank">これから、ふたりの記録</span>
-                  )}
+                <span className="mg-share-polaroid">
+                  <span className="mg-share-polaroid__frame">
+                    {album.coverUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={album.coverUrl} alt="" />
+                    ) : (
+                      <span className="mg-share-card__blank" />
+                    )}
+                    <em>{album.title}</em>
+                  </span>
                 </span>
                 <span className="mg-share-card__body">
                   <strong>{album.title}</strong>
-                  <span>
-                    <AvatarStack members={album.members} />
-                    {memberLabel(album.members)}　{album.photoCount}枚
+                  <span className="mg-share-card__meta">
+                    {album.members.length > 1 ? (
+                      <span className="mg-share-card__who">{memberLabel(album.members)}</span>
+                    ) : null}
+                    {album.members.length > 0 ? <AvatarStack members={album.members} /> : null}
+                    {album.photoCount}枚
                   </span>
+                  {album.blurb ? <small>{album.blurb}</small> : null}
+                </span>
+                <span className="mg-share-card__more" aria-hidden>
+                  <MoreHorizontal className="h-4 w-4" />
                 </span>
               </button>
             </li>

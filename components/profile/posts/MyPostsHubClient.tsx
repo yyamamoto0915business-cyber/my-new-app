@@ -22,7 +22,6 @@ import {
   handleFromEmail,
   type AlbumCategoryFilter,
   type AlbumHubTab,
-  type AlbumSeasonFilter,
   type AlbumSortKey,
   type AlbumStatusFilter,
 } from "@/lib/posts/my-album-view";
@@ -33,7 +32,6 @@ import {
   MyAlbumProfileSkeleton,
   type AlbumProfile,
 } from "./MyAlbumProfileHeader";
-import { MyAlbumSeasonBar } from "./MyAlbumSeasonBar";
 import { MyAlbumFilterBar } from "./MyAlbumFilterBar";
 import { MyAlbumViewTabs } from "./MyAlbumViewTabs";
 import { MyAlbumMediaGrid } from "./MyAlbumMediaGrid";
@@ -63,7 +61,6 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
     if (!isForeign && searchParams.get("view") === "drafts") return "posts";
     return tabFromSearch(searchParams.get("tab"));
   });
-  const [season, setSeason] = useState<AlbumSeasonFilter>("all");
   const [category, setCategory] = useState<AlbumCategoryFilter>("all");
   const [sort, setSort] = useState<AlbumSortKey>("new");
   const [status, setStatus] = useState<AlbumStatusFilter>(() =>
@@ -189,14 +186,14 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
   const visiblePosts = useMemo(
     () =>
       filterAlbumPosts(sourceItems, {
-        season,
+        season: "all",
         category,
         year: selectedYear,
         status,
         sort,
         includeDrafts: false,
       }),
-    [sourceItems, season, category, selectedYear, status, sort],
+    [sourceItems, category, selectedYear, status, sort],
   );
 
   const profile: AlbumProfile | null = isForeign
@@ -232,16 +229,16 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
           }
         : demoMode
           ? {
-              displayName: "あなた",
-              avatarUrl: null,
+              displayName: "やま",
+              avatarUrl: "https://picsum.photos/seed/mg-yama/96/96",
               bio: "まちの魅力を、未来のしるしに。",
               region: null,
-              handle: null,
+              handle: "machi_glyph",
               isPro: false,
               counts: {
                 posts: sourceItems.filter((p) => p.status !== "draft").length,
-                followers: 0,
-                following: 0,
+                followers: 24,
+                following: 18,
               },
             }
           : null;
@@ -278,7 +275,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
       <MyAlbumMediaGrid
         posts={posts}
         onMutated={isForeign ? undefined : handleMutated}
-        showMenu={false}
+        showMenu={!isForeign}
       />
     );
   };
@@ -310,8 +307,9 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
         <div className="my-album-shell">
           <MyAlbumProfileHeader
             profile={null}
-            heading="マイアルバム"
-            lead="思い出は、まちの宝もの。"
+            eyebrow="マイアルバム"
+            headline="まちの思い出をアルバムに"
+            lead="あなたの好きな景色や出来事を、未来のしるしに残そう。"
             isOwn
           />
           <div className="mg-album-empty mg-album-empty--auth">
@@ -336,17 +334,18 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
         ) : (
           <MyAlbumProfileHeader
             profile={profile}
-            heading={heading}
-            lead="思い出は、まちの宝もの。"
+            eyebrow={heading}
+            headline="まちの思い出をアルバムに"
+            lead="あなたの好きな景色や出来事を、未来のしるしに残そう。"
             isOwn={!isForeign}
             authorId={authorId}
+            shareUserId={isForeign ? authorId : user?.id}
             onSelectPosts={() => handleTab("posts")}
           />
         )}
 
         {showPostTools ? (
-          <>
-            <MyAlbumSeasonBar value={season} onChange={setSeason} />
+          <div className="mg-album-toolbar">
             <MyAlbumFilterBar
               category={category}
               onCategory={setCategory}
@@ -359,7 +358,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
               onStatus={setStatus}
               hideDrafts={isForeign}
             />
-          </>
+          </div>
         ) : null}
 
         {hideChrome ? null : <MyAlbumViewTabs value={tab} onChange={handleTab} />}

@@ -4,6 +4,8 @@ export type MemorySharedAlbum = {
   title: string;
   cover_url: string | null;
   invite_token: string;
+  blurb: string | null;
+  lead: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -47,6 +49,8 @@ export function addMemorySharedAlbum(input: {
     title: input.title,
     cover_url: null,
     invite_token: input.inviteToken,
+    blurb: null,
+    lead: null,
     created_at: nowIso(),
     updated_at: nowIso(),
   };
@@ -73,12 +77,14 @@ export function getMemorySharedAlbumByToken(
 
 export function updateMemorySharedAlbum(
   id: string,
-  patch: Partial<Pick<MemorySharedAlbum, "title" | "cover_url">>,
+  patch: Partial<Pick<MemorySharedAlbum, "title" | "cover_url" | "blurb" | "lead">>,
 ): MemorySharedAlbum | null {
   const row = getMemorySharedAlbum(id);
   if (!row) return null;
   if (patch.title !== undefined) row.title = patch.title;
   if (patch.cover_url !== undefined) row.cover_url = patch.cover_url;
+  if (patch.blurb !== undefined) row.blurb = patch.blurb;
+  if (patch.lead !== undefined) row.lead = patch.lead;
   row.updated_at = nowIso();
   return row;
 }

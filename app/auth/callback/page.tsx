@@ -58,6 +58,11 @@ export default function AuthCallbackPage() {
         go("/auth/update-password");
         return;
       }
+      const next = new URLSearchParams(window.location.search).get("next");
+      if (next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/auth")) {
+        go(next);
+        return;
+      }
       go("/auth/verified");
       router.refresh();
     };

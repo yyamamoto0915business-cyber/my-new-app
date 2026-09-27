@@ -5,6 +5,7 @@ import {
   getCategoryLabel,
   mapDbCommunityPostToView,
 } from "@/lib/posts/map-community-post";
+import { normalizePostCategory } from "@/lib/posts/mock-feed";
 import { ymdFromDb } from "@/lib/posts/visited-range";
 
 export function toMyPostItem(row: DbCommunityPost): MyPostItem {
@@ -14,7 +15,7 @@ export function toMyPostItem(row: DbCommunityPost): MyPostItem {
     title: view.title,
     imageUrl: view.imageUrl,
     mediaType: row.media_type,
-    category: row.category,
+    category: normalizePostCategory(row.category),
     categoryLabel: getCategoryLabel(row.category),
     status: row.status,
     dateLabel: formatPostedAtLabel(row.created_at),

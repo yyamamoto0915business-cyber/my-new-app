@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerByProfileId } from "@/lib/db/organizers";
 import { getAppUrl, getStripeSecretKey } from "@/lib/stripe";
+import { isIosAppUserAgent } from "@/lib/native/app-shell";
 
 function getOrganizerPriceId(): string | undefined {
   const raw =
@@ -32,7 +33,13 @@ function stripeErrorToUserMessage(err: Stripe.errors.StripeError): string {
 /**
  * POST: 月980円サブスクのCheckout Sessionを作成
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
+  if (isIosAppUserAgent(request.headers.get("user-agent"))) {
+    return NextResponse.json(
+      { error: "アプリ内ではこのプランを申し込めません。" },
+      { status: 403 }
+    );
+  }
   const stripeKey = getStripeSecretKey();
   const priceId = getOrganizerPriceId();
   if (!stripeKey || !priceId) {

@@ -3,11 +3,11 @@
  */
 
 export type PostCategory =
-  | "event"
-  | "shop"
   | "spot"
   | "kitchen"
-  | "scenery";
+  | "scenery"
+  | "event"
+  | "trip";
 
 export type PostMediaType = "image" | "video";
 
@@ -47,21 +47,38 @@ export type CommunityPost = {
 
 export const POST_CATEGORY_TABS = [
   { key: "all", label: "すべて" },
+  { key: "spot", label: "おでかけ" },
+  { key: "kitchen", label: "ごはん" },
+  { key: "scenery", label: "景色" },
   { key: "event", label: "イベント" },
-  { key: "shop", label: "お店" },
-  { key: "spot", label: "スポット" },
-  { key: "kitchen", label: "キッチンカー" },
-  { key: "scenery", label: "風景・日常" },
+  { key: "trip", label: "旅行" },
 ] as const;
 
 export type PostCategoryTab = (typeof POST_CATEGORY_TABS)[number]["key"];
 
+export const POST_CATEGORY_KEYS: PostCategory[] = POST_CATEGORY_TABS.flatMap(
+  (tab) => (tab.key === "all" ? [] : [tab.key]),
+);
+
+const POST_CATEGORY_KEY_SET = new Set<string>(POST_CATEGORY_KEYS);
+
+export function isPostCategory(value: string): value is PostCategory {
+  return POST_CATEGORY_KEY_SET.has(value);
+}
+
+/** 旧「お店」(shop) は来店の記録として「おでかけ」に読む */
+export function normalizePostCategory(value: string): PostCategory {
+  if (value === "shop") return "spot";
+  if (isPostCategory(value)) return value;
+  return "scenery";
+}
+
 export const POST_CATEGORY_COLORS: Record<PostCategory, string> = {
-  event: "#2f7d4e",
-  shop: "#c9a227",
   spot: "#2a9b8f",
   kitchen: "#d4843a",
   scenery: "#6b8cae",
+  event: "#2f7d4e",
+  trip: "#c9a227",
 };
 
 /** 画像読み込み失敗時のフォールバック */
@@ -92,8 +109,8 @@ export const MOCK_COMMUNITY_POSTS: CommunityPost[] = [
   },
   {
     id: "p2",
-    category: "shop",
-    categoryLabel: "お店",
+    category: "kitchen",
+    categoryLabel: "ごはん",
     title: "このカフェのラテアートが毎回楽しみ",
     body: "木漏れ日の窓辺でいただくショートケーキとラテ。休日の朝にぴったりです。",
     imageUrl: mockPostImage("post-p2"),
@@ -112,7 +129,7 @@ export const MOCK_COMMUNITY_POSTS: CommunityPost[] = [
   {
     id: "p3",
     category: "spot",
-    categoryLabel: "スポット",
+    categoryLabel: "おでかけ",
     title: "公園の芝生で、ひと息",
     body: "青空の下でお弁当。週末の午後は、ここでゆっくり過ごすのがいちばん好きです。",
     imageUrl: mockPostImage("post-p3"),
@@ -127,7 +144,7 @@ export const MOCK_COMMUNITY_POSTS: CommunityPost[] = [
   {
     id: "p4",
     category: "kitchen",
-    categoryLabel: "キッチンカー",
+    categoryLabel: "ごはん",
     title: "マルシェのキッチンカーが並んでいた",
     body: "香りにつられて並びました。地元の野菜を使ったメニューがやさしい味でした。",
     imageUrl: mockPostImage("post-p4"),
@@ -142,7 +159,7 @@ export const MOCK_COMMUNITY_POSTS: CommunityPost[] = [
   {
     id: "p5",
     category: "scenery",
-    categoryLabel: "風景・日常",
+    categoryLabel: "景色",
     title: "夕方の商店街がきれい",
     body: "帰りがけに見た商店街の灯り。日常の景色なのに、ちょっと特別に感じました。",
     imageUrl: mockPostImage("post-p5"),
@@ -173,8 +190,8 @@ export const MOCK_COMMUNITY_POSTS: CommunityPost[] = [
   },
   {
     id: "p7",
-    category: "shop",
-    categoryLabel: "お店",
+    category: "kitchen",
+    categoryLabel: "ごはん",
     title: "八百屋さんの季節野菜が彩り豊か",
     body: "店先に並ぶトマトとハーブ。今日の夕飯のメニューが決まりました。",
     imageUrl: mockPostImage("post-p7"),
@@ -191,7 +208,7 @@ export const MOCK_COMMUNITY_POSTS: CommunityPost[] = [
   {
     id: "p8",
     category: "spot",
-    categoryLabel: "スポット",
+    categoryLabel: "おでかけ",
     title: "小さな神社の静けさが好き",
     body: "参道の木漏れ日がやさしくて、歩くだけで気持ちが整います。",
     imageUrl: mockPostImage("post-p8"),

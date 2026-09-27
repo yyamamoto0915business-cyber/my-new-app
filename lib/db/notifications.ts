@@ -38,6 +38,19 @@ export async function createNotification(
   });
 
   if (error || !data) return null;
+  if (typeof window === "undefined") {
+    void import("@/lib/push/send")
+      .then((mod) =>
+        mod.sendPushToUser(userId, {
+          title,
+          body: options?.body,
+          link: options?.link,
+        })
+      )
+      .catch((err) => {
+        console.error("[push]", err);
+      });
+  }
   const { data: notif } = await supabase
     .from("notifications")
     .select("*")

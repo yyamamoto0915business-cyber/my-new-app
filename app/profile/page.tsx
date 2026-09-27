@@ -236,6 +236,11 @@ function ProfileContent() {
                     title="通知設定"
                   />
                   <MobileRow
+                    href="/profile/account"
+                    icon={<UserRound className="h-4 w-4" />}
+                    title="アカウント"
+                  />
+                  <MobileRow
                     href="/contact"
                     icon={<HelpCircle className="h-4 w-4" />}
                     title="ヘルプ・お問い合わせ"

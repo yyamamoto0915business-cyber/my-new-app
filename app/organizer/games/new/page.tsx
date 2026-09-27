@@ -1,14 +1,14 @@
 import { Suspense } from "react";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import { OrganizerPageShell } from "@/components/organizer/OrganizerPageShell";
-import { OrganizerGameCreateForm } from "@/components/organizer/games/OrganizerGameCreateForm";
+import { OrganizerGameCreateSwitch } from "@/components/organizer/games/OrganizerGameCreateSwitch";
 
 export default function OrganizerGameCreatePage() {
   return (
     <OrganizerRegistrationGate>
       <OrganizerPageShell
         variant="workspace"
-        contentClassName="mx-auto w-full max-w-6xl pb-16 min-[900px]:pb-2"
+        contentClassName="mx-auto w-full max-w-7xl pb-16 min-[900px]:pb-2"
       >
         <Suspense
           fallback={
@@ -17,7 +17,7 @@ export default function OrganizerGameCreatePage() {
             </div>
           }
         >
-          <OrganizerGameCreateForm />
+          <OrganizerGameCreateSwitch />
         </Suspense>
       </OrganizerPageShell>
     </OrganizerRegistrationGate>

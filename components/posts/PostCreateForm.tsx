@@ -14,13 +14,13 @@ import {
   Eye,
   FileText,
   Link2,
+  Luggage,
   MapPin,
   Pencil,
   Plus,
   Send,
-  Store,
   Sun,
-  Truck,
+  UtensilsCrossed,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PostCreateMediaInput } from "@/components/posts/PostCreateMediaInput";
@@ -51,11 +51,11 @@ const CATEGORY_ICONS: Record<
   PostCategory,
   ComponentType<{ className?: string; strokeWidth?: number }>
 > = {
-  event: CalendarDays,
-  shop: Store,
   spot: MapPin,
-  kitchen: Truck,
+  kitchen: UtensilsCrossed,
   scenery: Sun,
+  event: CalendarDays,
+  trip: Luggage,
 };
 
 type Props = {

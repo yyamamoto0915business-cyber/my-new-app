@@ -7,7 +7,7 @@ import {
   type UpdateCommunityPostPatch,
 } from "@/lib/db/community-posts";
 import { getCategoryLabel } from "@/lib/posts/map-community-post";
-import type { PostCategory } from "@/lib/posts/mock-feed";
+import { normalizePostCategory, type PostCategory } from "@/lib/posts/mock-feed";
 import type { MyPostItem } from "@/app/api/me/posts/route";
 import type { DbCommunityPost } from "@/lib/db/community-posts-types";
 import { parseVisitedRangeInput, ymdFromDb } from "@/lib/posts/visited-range";
@@ -15,11 +15,11 @@ import { parseVisitedRangeInput, ymdFromDb } from "@/lib/posts/visited-range";
 type Params = { params: Promise<{ id: string }> };
 
 const CATEGORIES = new Set<PostCategory>([
-  "event",
-  "shop",
   "spot",
   "kitchen",
   "scenery",
+  "event",
+  "trip",
 ]);
 
 const STATUSES = new Set<DbCommunityPost["status"]>([
@@ -50,7 +50,7 @@ function toDetail(row: DbCommunityPost): MyPostDetail {
     title: row.title,
     imageUrl: isVideo ? row.poster_url ?? row.media_url : row.media_url,
     mediaType: row.media_type,
-    category: row.category,
+    category: normalizePostCategory(row.category),
     categoryLabel: getCategoryLabel(row.category),
     status: row.status,
     dateLabel: row.created_at,

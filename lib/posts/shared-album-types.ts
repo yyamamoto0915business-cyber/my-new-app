@@ -14,12 +14,16 @@ export type SharedAlbumSummary = {
   photoCount: number;
   members: SharedAlbumMember[];
   isOwner: boolean;
+  blurb?: string | null;
+  lead?: string | null;
 };
 
 export type SharedAlbumItemView = {
   id: string;
   post: MyPostItem;
   addedBy: SharedAlbumMember;
+  caption?: string | null;
+  shape?: "tall" | "wide";
 };
 
 export type SharedAlbumDetail = SharedAlbumSummary & {

@@ -80,6 +80,8 @@ export async function POST(request: NextRequest) {
     startsAt?: unknown;
     endsAt?: unknown;
     spots?: unknown;
+    status?: unknown;
+    quiz?: unknown;
   };
   try {
     body = await request.json();
@@ -108,8 +110,8 @@ export async function POST(request: NextRequest) {
   }
 
   const description = typeof body.description === "string" ? body.description.trim() : "";
-  if (description.length > 300) {
-    return NextResponse.json({ error: "説明は300文字以内にしてください" }, { status: 400 });
+  if (description.length > 400) {
+    return NextResponse.json({ error: "説明は400文字以内にしてください" }, { status: 400 });
   }
 
   const eventId = typeof body.eventId === "string" && body.eventId ? body.eventId : null;
@@ -173,6 +175,8 @@ export async function POST(request: NextRequest) {
       description,
       startsAt,
       endsAt,
+      status: body.status === "published" ? "published" : "draft",
+      settings: body.quiz && typeof body.quiz === "object" ? { quiz: body.quiz } : undefined,
       spots,
     });
     return NextResponse.json({ game }, { status: 201 });

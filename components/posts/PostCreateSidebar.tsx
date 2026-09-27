@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  CalendarDays,
   Camera,
+  Luggage,
+  CalendarDays,
   MapPin,
   Sparkles,
-  Store,
   Sun,
   Tag,
-  Truck,
+  UtensilsCrossed,
 } from "lucide-react";
 import { PostCreatePreviewCard } from "@/components/posts/PostCreatePreviewCard";
 import type { PostCreateDraft } from "@/lib/posts/post-create-draft";
@@ -38,29 +38,29 @@ const TIPS = [
 
 const CATEGORY_EXAMPLES = [
   {
-    icon: CalendarDays,
-    label: "イベント",
-    desc: "マルシェ、祭り、ワークショップなど",
-  },
-  {
-    icon: Store,
-    label: "お店",
-    desc: "カフェ、レストラン、雑貨店など",
-  },
-  {
     icon: MapPin,
-    label: "スポット",
-    desc: "公園、展望台、フォトスポットなど",
+    label: "おでかけ",
+    desc: "日帰り、散歩、近所の立ち寄り",
   },
   {
-    icon: Truck,
-    label: "キッチンカー",
-    desc: "出店情報、メニューのおすすめなど",
+    icon: UtensilsCrossed,
+    label: "ごはん",
+    desc: "カフェ、名物、キッチンカー",
   },
   {
     icon: Sun,
-    label: "風景・日常",
-    desc: "街並み、季節の風景、日常のひとコマ",
+    label: "景色",
+    desc: "季節、夕日、街並み",
+  },
+  {
+    icon: CalendarDays,
+    label: "イベント",
+    desc: "祭り、マルシェ、地域の活動",
+  },
+  {
+    icon: Luggage,
+    label: "旅行",
+    desc: "泊まりや遠出の思い出",
   },
 ] as const;
 

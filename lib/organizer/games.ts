@@ -225,6 +225,8 @@ export type CreateOrganizerGameInput = {
   description?: string;
   startsAt?: string | null;
   endsAt?: string | null;
+  status?: OrganizerGameStatus;
+  settings?: Record<string, unknown>;
   spots?: { name: string; kind: OrganizerGameSpotKind }[];
 };
 
@@ -234,21 +236,26 @@ export async function createOrganizerGame(
   input: CreateOrganizerGameInput
 ): Promise<OrganizerGame> {
   const joinToken = generateOrganizerGameToken();
-  const { data, error } = await supabase
-    .from("organizer_games")
-    .insert({
-      organizer_id: organizerId,
-      event_id: input.eventId || null,
-      type: input.type,
-      name: input.name,
-      description: input.description?.trim() || null,
-      starts_at: input.startsAt || null,
-      ends_at: input.endsAt || null,
-      status: "draft",
-      join_token: joinToken,
-    })
-    .select(GAME_SELECT_PLAIN)
-    .single();
+  const payload: Record<string, unknown> = {
+    organizer_id: organizerId,
+    event_id: input.eventId || null,
+    type: input.type,
+    name: input.name,
+    description: input.description?.trim() || null,
+    starts_at: input.startsAt || null,
+    ends_at: input.endsAt || null,
+    status: input.status === "published" ? "published" : "draft",
+    join_token: joinToken,
+  };
+  if (input.settings) payload.settings = input.settings;
+
+  let { data, error } = await supabase.from("organizer_games").insert(payload).select(GAME_SELECT_PLAIN).single();
+  if (error && input.settings && /settings/i.test(error.message)) {
+    delete payload.settings;
+    const retry = await supabase.from("organizer_games").insert(payload).select(GAME_SELECT_PLAIN).single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) throw error;
   const game = mapGame(data as GameRow);

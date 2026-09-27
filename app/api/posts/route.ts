@@ -19,11 +19,11 @@ import type { PostCategory } from "@/lib/posts/mock-feed";
 import { parseVisitedRangeInput } from "@/lib/posts/visited-range";
 
 const CATEGORIES = new Set<PostCategory>([
-  "event",
-  "shop",
   "spot",
   "kitchen",
   "scenery",
+  "event",
+  "trip",
 ]);
 
 function normalizeGalleryUrls(value: unknown, coverUrl: string): string[] {
@@ -43,7 +43,9 @@ function normalizeGalleryUrls(value: unknown, coverUrl: string): string[] {
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const category = searchParams.get("category");
+  const categoryParam = searchParams.get("category");
+  const category =
+    categoryParam === "shop" ? "spot" : categoryParam;
   const limitRaw = searchParams.get("limit");
   const limit = limitRaw ? Math.min(100, Math.max(1, Number(limitRaw))) : 50;
 

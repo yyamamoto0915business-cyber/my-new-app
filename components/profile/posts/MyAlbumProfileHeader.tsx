@@ -1,15 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Camera } from "lucide-react";
+import { Camera, Pencil, Plus, Share, User } from "lucide-react";
 import { ProfileBannerAvatar } from "@/components/profile/profile-banner-avatar";
 import { AuthorFollowButton } from "@/components/posts/AuthorFollowButton";
+import { MyAlbumProfileShareSheet } from "./MyAlbumProfileShareSheet";
 import { cn } from "@/lib/utils";
 
-const COVER_BG = "/profile/album/desk-scene.jpg";
-const COVER_BOOK = "/profile/album/book-stage.png";
+const COVER_BG = "/profile/album/desk-cover.jpg";
 const TITLE_SPRIG = "/profile/album/title-sprig.png";
+const POLAROID_FRONT = "/profile/album/spring/sakura.jpg";
+const POLAROID_BACK = "/profile/album/spring/walk.jpg";
 
 export type AlbumProfile = {
   displayName: string;
@@ -23,20 +26,50 @@ export type AlbumProfile = {
 
 export function MyAlbumProfileHeader({
   profile,
-  heading,
+  eyebrow,
+  headline,
   lead,
   isOwn,
   authorId,
+  shareUserId,
   onSelectPosts,
 }: {
   profile: AlbumProfile | null;
-  heading: string;
+  eyebrow: string;
+  headline: string;
   lead: string;
   isOwn: boolean;
   authorId?: string;
+  shareUserId?: string;
   onSelectPosts?: () => void;
 }) {
+  const [shareOpen, setShareOpen] = useState(false);
   const name = profile?.displayName ?? (isOwn ? "あなた" : "ユーザー");
+  const handle = profile?.handle?.replace(/^@/, "") || "machi_glyph";
+  const sharePath = shareUserId ? `/users/${shareUserId}/album` : "/profile/posts";
+
+  const avatarFace = profile?.avatarUrl ? (
+    <ProfileBannerAvatar avatarUrl={profile.avatarUrl} displayName={name} />
+  ) : (
+    <span className="mg-album-avatar__empty" aria-hidden>
+      <User strokeWidth={1.4} />
+    </span>
+  );
+
+  const avatar = isOwn ? (
+    <Link
+      href="/profile/edit"
+      className="mg-album-avatar"
+      aria-label="プロフィール写真を編集"
+    >
+      {avatarFace}
+      <span className="mg-album-avatar__plus" aria-hidden>
+        <Plus className="h-3 w-3" strokeWidth={2.6} />
+      </span>
+    </Link>
+  ) : (
+    <div className="mg-album-avatar">{avatarFace}</div>
+  );
 
   return (
     <header className="mg-album-profile">
@@ -46,136 +79,133 @@ export function MyAlbumProfileHeader({
           alt=""
           fill
           priority
-          className="object-cover object-center"
-          sizes="(max-width: 720px) 100vw, 720px"
-        />
-        <Image
-          src={COVER_BOOK}
-          alt=""
-          width={420}
-          height={250}
-          className="mg-album-cover__book"
-          aria-hidden
-          priority
+          className="object-cover object-[82%_center]"
+          sizes="(max-width: 899px) 100vw, 1180px"
         />
         <span className="mg-album-cover__wash" aria-hidden />
+
+        <div className="mg-album-cover__polaroids" aria-hidden>
+          <div className="mg-album-cover__polaroid is-back">
+            <Image src={POLAROID_BACK} alt="" width={180} height={220} />
+          </div>
+          <div className="mg-album-cover__polaroid is-front">
+            <Image src={POLAROID_FRONT} alt="" width={200} height={240} />
+          </div>
+          <div className="mg-album-cover__quote">
+            <p>Good memories.</p>
+            <p>
+              Make a better
+              <br />
+              tomorrow.
+            </p>
+          </div>
+        </div>
+
+        {isOwn ? (
+          <Link
+            href="/profile/edit"
+            className="mg-album-cover__edit"
+            aria-label="カバーを編集"
+          >
+            <Camera className="h-3.5 w-3.5" aria-hidden />
+            <span className="mg-album-cover__edit-label">カバーを編集</span>
+          </Link>
+        ) : null}
+
         <div className="mg-album-cover__copy">
-          <h1 className="mg-album-cover__title">
-            {heading}
+          <p className="mg-album-cover__eyebrow">
+            {eyebrow}
             <Image
               src={TITLE_SPRIG}
               alt=""
-              width={28}
-              height={44}
+              width={22}
+              height={36}
               className="mg-album-cover__sprig"
+              aria-hidden
+            />
+          </p>
+          <h1 className="mg-album-cover__title">
+            {headline}
+            <Image
+              src={TITLE_SPRIG}
+              alt=""
+              width={22}
+              height={36}
+              className="mg-album-cover__sprig mg-album-cover__sprig--title"
               aria-hidden
             />
           </h1>
           <p className="mg-album-cover__lead">{lead}</p>
         </div>
-        {isOwn ? (
-          <Link href="/profile/edit" className="mg-album-cover__edit">
-            <Camera className="h-3.5 w-3.5" aria-hidden />
-            カバーを編集
-          </Link>
-        ) : null}
-      </div>
 
-      <div className="mg-album-identity">
-        <div className="mg-album-identity__row">
-          {isOwn ? (
-            <Link
-              href="/profile/edit"
-              className="mg-album-avatar"
-              aria-label="プロフィール写真を編集"
-            >
-              <ProfileBannerAvatar avatarUrl={profile?.avatarUrl ?? null} displayName={name} />
-              <span className="mg-album-avatar__cam" aria-hidden>
-                <Camera className="h-3 w-3" />
-              </span>
-            </Link>
-          ) : (
-            <div className="mg-album-avatar">
-              <ProfileBannerAvatar avatarUrl={profile?.avatarUrl ?? null} displayName={name} />
+        <div className="mg-album-identity">
+          {avatar}
+          <ul className="mg-album-stats">
+            <li>
+              <button type="button" className="mg-album-stats__item" onClick={onSelectPosts}>
+                <span className="mg-album-stats__num">{profile?.counts.posts ?? 0}</span>
+                <span className="mg-album-stats__label">投稿</span>
+              </button>
+            </li>
+            <li>
+              {isOwn ? (
+                <Link href="/profile/follows?tab=followers" className="mg-album-stats__item">
+                  <span className="mg-album-stats__num">{profile?.counts.followers ?? 0}</span>
+                  <span className="mg-album-stats__label">フォロワー</span>
+                </Link>
+              ) : (
+                <div className="mg-album-stats__item">
+                  <span className="mg-album-stats__num">{profile?.counts.followers ?? 0}</span>
+                  <span className="mg-album-stats__label">フォロワー</span>
+                </div>
+              )}
+            </li>
+            <li>
+              {isOwn ? (
+                <Link href="/profile/follows?tab=following" className="mg-album-stats__item">
+                  <span className="mg-album-stats__num">{profile?.counts.following ?? 0}</span>
+                  <span className="mg-album-stats__label">フォロー中</span>
+                </Link>
+              ) : (
+                <div className="mg-album-stats__item">
+                  <span className="mg-album-stats__num">{profile?.counts.following ?? 0}</span>
+                  <span className="mg-album-stats__label">フォロー中</span>
+                </div>
+              )}
+            </li>
+          </ul>
+          {!isOwn && authorId ? (
+            <div className="mg-album-identity__follow">
+              <AuthorFollowButton authorId={authorId} />
             </div>
-          )}
-
-          <div className="mg-album-identity__text">
-            <div className="mg-album-identity__name-row">
-              <p className="mg-album-identity__name">{name}</p>
-              {profile?.isPro ? <span className="mg-album-pro">PRO</span> : null}
-            </div>
-            {profile?.handle ? (
-              <p className="mg-album-identity__handle">@{profile.handle}</p>
-            ) : null}
-            {profile?.bio ? (
-              <p className="mg-album-identity__bio">{profile.bio}</p>
-            ) : isOwn ? (
-              <p className="mg-album-identity__bio mg-album-identity__bio--empty">
-                まちの魅力を、未来のしるしに。
-              </p>
-            ) : null}
-            {profile?.region ? (
-              <p className="mg-album-identity__region">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  aria-hidden
-                >
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                {profile.region}
-              </p>
-            ) : null}
-            {!isOwn && authorId ? (
-              <div className="mg-album-identity__follow">
-                <AuthorFollowButton authorId={authorId} />
-              </div>
-            ) : null}
-          </div>
+          ) : null}
         </div>
-
-        <ul className="mg-album-stats">
-          <li>
-            <button type="button" className="mg-album-stats__item" onClick={onSelectPosts}>
-              <span className="mg-album-stats__num">{profile?.counts.posts ?? 0}</span>
-              <span className="mg-album-stats__label">投稿</span>
-            </button>
-          </li>
-          <li>
-            {isOwn ? (
-              <Link href="/profile/follows?tab=followers" className="mg-album-stats__item">
-                <span className="mg-album-stats__num">{profile?.counts.followers ?? 0}</span>
-                <span className="mg-album-stats__label">フォロワー</span>
-              </Link>
-            ) : (
-              <div className="mg-album-stats__item">
-                <span className="mg-album-stats__num">{profile?.counts.followers ?? 0}</span>
-                <span className="mg-album-stats__label">フォロワー</span>
-              </div>
-            )}
-          </li>
-          <li>
-            {isOwn ? (
-              <Link href="/profile/follows?tab=following" className="mg-album-stats__item">
-                <span className="mg-album-stats__num">{profile?.counts.following ?? 0}</span>
-                <span className="mg-album-stats__label">フォロー中</span>
-              </Link>
-            ) : (
-              <div className="mg-album-stats__item">
-                <span className="mg-album-stats__num">{profile?.counts.following ?? 0}</span>
-                <span className="mg-album-stats__label">フォロー中</span>
-              </div>
-            )}
-          </li>
-        </ul>
       </div>
+
+      {isOwn ? (
+        <div className="mg-album-identity__actions">
+          <Link href="/profile/edit" className="mg-album-action">
+            <Pencil className="mg-album-action__icon" aria-hidden />
+            プロフィールを編集
+          </Link>
+          <button
+            type="button"
+            className="mg-album-action mg-album-action--share"
+            onClick={() => setShareOpen(true)}
+          >
+            <Share className="mg-album-action__icon" aria-hidden />
+            プロフィールをシェア
+          </button>
+        </div>
+      ) : null}
+
+      <MyAlbumProfileShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        path={sharePath}
+        handle={handle}
+        displayName={name}
+      />
     </header>
   );
 }
@@ -183,13 +213,13 @@ export function MyAlbumProfileHeader({
 export function MyAlbumProfileSkeleton() {
   return (
     <header className={cn("mg-album-profile", "is-loading")} aria-hidden>
-      <div className="mg-album-cover mg-album-cover--skeleton" />
-      <div className="mg-album-identity">
-        <div className="mg-album-identity__row">
+      <div className="mg-album-cover mg-album-cover--skeleton">
+        <div className="mg-album-identity">
           <div className="mg-album-avatar mg-album-avatar--skeleton" />
-          <div className="mg-album-identity__text">
-            <div className="mg-album-skel mg-album-skel--name" />
-            <div className="mg-album-skel mg-album-skel--line" />
+          <div className="mg-album-stats mg-album-stats--skel">
+            <span className="mg-album-skel" />
+            <span className="mg-album-skel" />
+            <span className="mg-album-skel" />
           </div>
         </div>
       </div>

@@ -31,7 +31,7 @@ export const ORGANIZER_GAME_TYPES: readonly OrganizerGameType[] = [
     id: "quiz",
     label: "クイズラリー",
     description: "各スポットの問題に答えます",
-    available: false,
+    available: true,
   },
   {
     id: "mystery",

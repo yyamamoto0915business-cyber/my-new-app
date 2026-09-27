@@ -13,7 +13,10 @@ import type {
   CreateCommunityPostInput,
   DbCommunityPost,
 } from "@/lib/db/community-posts-types";
-import type { PostCategory } from "@/lib/posts/mock-feed";
+import {
+  normalizePostCategory,
+  type PostCategory,
+} from "@/lib/posts/mock-feed";
 import { isAcceptedFollower } from "@/lib/db/user-follows";
 import {
   canViewerSeePost,
@@ -76,7 +79,8 @@ export async function listPublicCommunityPosts(options?: {
       .eq("status", "public")
       .order("created_at", { ascending: false })
       .limit(limit);
-    if (category) query = query.eq("category", category);
+    if (category === "spot") query = query.in("category", ["spot", "shop"]);
+    else if (category) query = query.eq("category", category);
     return query;
   };
 
@@ -459,7 +463,7 @@ function filterByCategory(
   category?: PostCategory | "all",
 ): DbCommunityPost[] {
   if (!category || category === "all") return rows;
-  return rows.filter((r) => r.category === category);
+  return rows.filter((r) => normalizePostCategory(r.category) === category);
 }
 
 async function resolveRelatedLinkFields(rawUrl: string | undefined): Promise<{

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
+import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 import { cn } from "@/lib/utils";
 import { AuthMobileFormShell, FIELD_ICON_OFFSET, FIELD_ICON_OFFSET_COMPACT } from "./AuthMobileFormShell";
 
@@ -37,6 +38,10 @@ type Props = {
   onCaptchaToken: (token: string | null) => void;
   captchaResetKey: number;
   handleSignup: (e: React.FormEvent) => void;
+  googleLoading: boolean;
+  appleLoading: boolean;
+  handleGoogleLogin: () => void;
+  handleAppleLogin: () => void;
 };
 
 const labelClass = `mb-1.5 block ${FIELD_ICON_OFFSET} text-[13px] font-medium text-[#1e3828]`;
@@ -164,6 +169,10 @@ export function AuthMobileFormContent({
   onCaptchaToken,
   captchaResetKey,
   handleSignup,
+  googleLoading,
+  appleLoading,
+  handleGoogleLogin,
+  handleAppleLogin,
 }: Props) {
   const isLogin = tab === "login";
 
@@ -230,6 +239,14 @@ export function AuthMobileFormContent({
           />
 
           <SubmitButton loading={loading} label="ログインする" loadingLabel="ログイン中..." />
+
+          <SocialLoginButtons
+            size="mobile"
+            appleLoading={appleLoading}
+            googleLoading={googleLoading}
+            onApple={handleAppleLogin}
+            onGoogle={handleGoogleLogin}
+          />
 
           <div className="space-y-2 pt-1 text-center text-[13px]">
             <p className="text-[#5a7464]">

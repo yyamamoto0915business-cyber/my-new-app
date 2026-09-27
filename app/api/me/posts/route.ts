@@ -3,7 +3,6 @@ import { getApiUser } from "@/lib/api-auth";
 import { listMyCommunityPosts } from "@/lib/db/community-posts";
 import {
   formatPostedAtLabel,
-  getCategoryLabel,
   mapDbCommunityPostToView,
 } from "@/lib/posts/map-community-post";
 import type { PostCategory } from "@/lib/posts/mock-feed";
@@ -46,8 +45,8 @@ export async function GET() {
       title: view.title,
       imageUrl: view.imageUrl,
       mediaType: row.media_type,
-      category: row.category,
-      categoryLabel: getCategoryLabel(row.category),
+      category: view.category,
+      categoryLabel: view.categoryLabel,
       status: row.status,
       dateLabel: formatPostedAtLabel(row.created_at),
       createdAt: row.created_at,

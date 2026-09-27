@@ -6,6 +6,7 @@ import Link from "next/link";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
 import { OrganizerPageShell } from "@/components/organizer/OrganizerPageShell";
 import { OrganizerPlanHero } from "@/components/organizer/plan/OrganizerPlanHero";
+import { useIosAppShell } from "@/hooks/use-ios-app-shell";
 import { useOrganizerBilling } from "@/hooks/use-organizer-billing";
 import {
   isPaidPlan,
@@ -71,6 +72,7 @@ function CatalogPlanCard({
   setBillingAgreed,
   onCheckout,
   onPortal,
+  iosApp,
 }: {
   plan: OrganizerCatalogPlan;
   currentId: OrganizerCatalogPlanId;
@@ -83,6 +85,7 @@ function CatalogPlanCard({
   setBillingAgreed: (v: boolean) => void;
   onCheckout: () => void;
   onPortal: () => void;
+  iosApp: boolean;
 }) {
   const cardRef = useRef<HTMLElement>(null);
   const isCurrent = plan.id === currentId;
@@ -99,7 +102,9 @@ function CatalogPlanCard({
 
   let cta: ReactNode;
   if (isCurrent && plan.checkoutEnabled && pastDue) {
-    cta = (
+    cta = iosApp ? (
+      <span className="org-plan-tier__cta org-plan-tier__cta--current">利用中</span>
+    ) : (
       <button
         type="button"
         onClick={onPortal}
@@ -110,7 +115,9 @@ function CatalogPlanCard({
       </button>
     );
   } else if (isCurrent && plan.checkoutEnabled) {
-    cta = (
+    cta = iosApp ? (
+      <span className="org-plan-tier__cta org-plan-tier__cta--current">利用中</span>
+    ) : (
       <>
         <button
           type="button"
@@ -128,7 +135,7 @@ function CatalogPlanCard({
   } else if (isCurrent) {
     cta = <span className="org-plan-tier__cta org-plan-tier__cta--current">{plan.ctaLabel}</span>;
   } else if (showCheckoutForm) {
-    cta = (
+    cta = iosApp ? null : (
       <>
         <div className="org-plan-tier__legal">
           <p>
@@ -275,6 +282,7 @@ export function OrganizerPlanPageBody() {
     handleCheckout,
     handlePortal,
   } = useOrganizerBilling();
+  const iosApp = useIosAppShell();
   const [billingAgreed, setBillingAgreed] = useState(false);
   const [openPlanId, setOpenPlanId] = useState<OrganizerCatalogPlanId | null>(null);
 
@@ -360,8 +368,11 @@ export function OrganizerPlanPageBody() {
                   <>
                     <span className="org-plan-current__warn">要対応</span>
                     <p className="org-plan-current__warn-text">
-                      お支払いでエラーが発生しています。カード情報をご確認ください。
+                      {iosApp
+                        ? "お支払いでエラーが発生しています。"
+                        : "お支払いでエラーが発生しています。カード情報をご確認ください。"}
                     </p>
+                    {iosApp ? null : (
                     <button
                       type="button"
                       onClick={handlePortal}
@@ -370,6 +381,7 @@ export function OrganizerPlanPageBody() {
                     >
                       {portalLoading ? "処理中..." : "カード情報を確認する"}
                     </button>
+                    )}
                   </>
                 ) : paid ? (
                   <>
@@ -379,6 +391,7 @@ export function OrganizerPlanPageBody() {
                         {new Date(data.organizer.current_period_end).toLocaleDateString("ja-JP")}
                       </p>
                     ) : null}
+                    {iosApp ? null : (
                     <button
                       type="button"
                       onClick={handlePortal}
@@ -387,6 +400,7 @@ export function OrganizerPlanPageBody() {
                     >
                       {portalLoading ? "処理中..." : "支払いを変更"}
                     </button>
+                    )}
                   </>
                 ) : (
                   <p className="org-plan-current__hint">下からプランを選べます。</p>
@@ -419,6 +433,7 @@ export function OrganizerPlanPageBody() {
                   setBillingAgreed={setBillingAgreed}
                   onCheckout={handleCheckout}
                   onPortal={handlePortal}
+                  iosApp={iosApp}
                 />
               ))}
             </div>

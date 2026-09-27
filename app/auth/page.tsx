@@ -10,6 +10,7 @@ import { AuthPcFormContent } from "@/components/auth/pc/AuthPcFormContent";
 import { AuthMobileBackground } from "@/components/auth/mobile/AuthMobileBackground";
 import { AuthMobileFormContent } from "@/components/auth/mobile/AuthMobileFormContent";
 import { isTurnstileEnabledOnClient } from "@/components/auth/TurnstileWidget";
+import { signInWithProvider } from "@/lib/native/oauth";
 
 type Tab = "login" | "signup";
 
@@ -32,6 +33,7 @@ function AuthPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -141,36 +143,31 @@ function AuthPageContent() {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const startSocialLogin = async (provider: "google" | "apple") => {
     setError(null);
-    setGoogleLoading(true);
-
+    if (provider === "google") setGoogleLoading(true);
+    else setAppleLoading(true);
     try {
-      const supabase = createClient();
-      if (!supabase) {
-        setError("エラーが発生しました。しばらくしてからもう一度お試しください。");
-        setGoogleLoading(false);
+      const result = await signInWithProvider(provider, returnTo);
+      if (result.error) setError(result.error);
+      if (result.signedIn) {
+        window.location.assign(returnTo);
         return;
       }
-
-      const redirectTo = new URL("/auth/callback", window.location.origin);
-      if (returnTo !== "/") {
-        redirectTo.searchParams.set("next", returnTo);
-      }
-
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: redirectTo.toString() },
-      });
-
-      if (oauthError) {
-        setGoogleLoading(false);
-        setError("Googleログインを開始できませんでした。しばらくしてからもう一度お試しください。");
-      }
     } catch {
-      setGoogleLoading(false);
-      setError("Googleログインを開始できませんでした。しばらくしてからもう一度お試しください。");
+      const label = provider === "apple" ? "Apple" : "Google";
+      setError(`${label}ログインを開始できませんでした。しばらくしてからもう一度お試しください。`);
     }
+    if (provider === "google") setGoogleLoading(false);
+    else setAppleLoading(false);
+  };
+
+  const handleGoogleLogin = () => {
+    void startSocialLogin("google");
+  };
+
+  const handleAppleLogin = () => {
+    void startSocialLogin("apple");
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -242,7 +239,9 @@ function AuthPageContent() {
     captchaResetKey,
     handleSignup,
     googleLoading,
+    appleLoading,
     handleGoogleLogin,
+    handleAppleLogin,
   };
 
   return (

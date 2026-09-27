@@ -7,7 +7,7 @@ export default function OrganizerGamesPage() {
     <OrganizerRegistrationGate>
       <OrganizerPageShell
         variant="workspace"
-        contentClassName="mx-auto w-full max-w-6xl pb-16 min-[900px]:pb-2"
+        contentClassName="mx-auto w-full max-w-7xl pb-16 min-[900px]:pb-2"
       >
         <OrganizerGamesHub />
       </OrganizerPageShell>

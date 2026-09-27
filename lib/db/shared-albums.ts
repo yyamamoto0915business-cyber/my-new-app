@@ -46,6 +46,8 @@ export const MAX_SHARED_ALBUMS_OWNED = 30;
 export const MAX_SHARED_ALBUM_ITEMS = 80;
 export const MAX_SHARED_ALBUM_MEMBERS = 12;
 export const MAX_ALBUM_TITLE = 40;
+export const MAX_ALBUM_BLURB = 80;
+export const MAX_ALBUM_LEAD = 40;
 
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -143,6 +145,8 @@ async function toSummary(
     photoCount: itemCount,
     members: memberRows.map((m) => toMember(m, profiles.get(m.user_id))),
     isOwner: album.owner_id === viewerId,
+    blurb: album.blurb ?? null,
+    lead: album.lead ?? null,
   };
 }
 
@@ -150,6 +154,15 @@ function trimTitle(raw: string): string | null {
   const title = raw.trim().replace(/\s+/g, " ");
   if (!title || title.length > MAX_ALBUM_TITLE) return null;
   return title;
+}
+
+function trimOptional(raw: unknown, max: number): string | null | { error: string } {
+  if (raw == null) return null;
+  if (typeof raw !== "string") return { error: "入力が正しくありません" };
+  const text = raw.trim().replace(/\s+/g, " ");
+  if (!text) return null;
+  if (text.length > max) return { error: `${max}文字以内で入力してください` };
+  return text;
 }
 
 async function readAlbum(id: string): Promise<AlbumRow | null> {
@@ -424,6 +437,76 @@ export async function createSharedAlbum(
   const detail = await getSharedAlbumDetail(album.id, ownerId);
   if ("error" in detail) return detail;
   return detail;
+}
+
+export async function updateSharedAlbumMeta(
+  albumId: string,
+  userId: string,
+  input: { title?: unknown; blurb?: unknown; lead?: unknown },
+): Promise<SharedAlbumDetail | { error: string; status: number }> {
+  const album = await readAlbum(albumId);
+  if (!album) return { error: "アルバムが見つかりません", status: 404 };
+  if (album.owner_id !== userId) {
+    return { error: "アルバムを編集する権限がありません", status: 403 };
+  }
+
+  const title =
+    input.title === undefined
+      ? album.title
+      : typeof input.title === "string"
+        ? trimTitle(input.title)
+        : null;
+  if (!title) {
+    return { error: "アルバム名を40文字以内で入力してください", status: 400 };
+  }
+
+  const blurb = trimOptional(input.blurb, MAX_ALBUM_BLURB);
+  if (blurb && typeof blurb === "object" && "error" in blurb) {
+    return { error: `説明は${blurb.error}`, status: 400 };
+  }
+  const lead = trimOptional(input.lead, MAX_ALBUM_LEAD);
+  if (lead && typeof lead === "object" && "error" in lead) {
+    return { error: `ひとことは${lead.error}`, status: 400 };
+  }
+
+  const nextBlurb = (blurb as string | null) ?? null;
+  const nextLead = (lead as string | null) ?? null;
+  updateMemorySharedAlbum(albumId, {
+    title,
+    blurb: nextBlurb,
+    lead: nextLead,
+  });
+
+  const client = await writer();
+  if (client && isUuid(albumId)) {
+    const updatedAt = new Date().toISOString();
+    const { error } = await client
+      .from("shared_albums")
+      .update({
+        title,
+        blurb: nextBlurb,
+        lead: nextLead,
+        updated_at: updatedAt,
+      })
+      .eq("id", albumId);
+    if (error) {
+      if (!isMissingTable(error.message) && !/column|schema cache/i.test(error.message)) {
+        console.error("updateSharedAlbumMeta:", error.message);
+        return { error: "アルバムを保存できませんでした", status: 500 };
+      }
+      if (/column|schema cache/i.test(error.message ?? "")) {
+        const { error: titleError } = await client
+          .from("shared_albums")
+          .update({ title, updated_at: updatedAt })
+          .eq("id", albumId);
+        if (titleError && !isMissingTable(titleError.message)) {
+          console.error("updateSharedAlbumMeta title:", titleError.message);
+        }
+      }
+    }
+  }
+
+  return getSharedAlbumDetail(albumId, userId);
 }
 
 export async function inviteToSharedAlbum(

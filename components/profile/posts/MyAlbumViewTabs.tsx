@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Images, LayoutGrid, MapPin } from "lucide-react";
 import type { AlbumHubTab } from "@/lib/posts/my-album-view";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,14 @@ export function MyAlbumViewTabs({
 }) {
   return (
     <nav className="mg-album-tabs" aria-label="アルバムの見方">
+      <Image
+        src="/profile/album/title-sprig.png"
+        alt=""
+        width={64}
+        height={96}
+        className="mg-album-tabs__leaf"
+        aria-hidden
+      />
       {TABS.map((tab) => {
         const Icon = tab.icon;
         const on = value === tab.id;
@@ -35,6 +44,14 @@ export function MyAlbumViewTabs({
           </button>
         );
       })}
+      <Image
+        src="/profile/album/title-sprig.png"
+        alt=""
+        width={64}
+        height={96}
+        className="mg-album-tabs__leaf mg-album-tabs__leaf--right"
+        aria-hidden
+      />
     </nav>
   );
 }

@@ -5,6 +5,7 @@ import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerByProfileId } from "@/lib/db/organizers";
 import { getAppUrl, getStripeSecretKey } from "@/lib/stripe";
+import { isIosAppUserAgent } from "@/lib/native/app-shell";
 
 const stripeKey = getStripeSecretKey();
 
@@ -12,6 +13,12 @@ const stripeKey = getStripeSecretKey();
  * POST: Customer Portal Session（解約・カード変更）
  */
 export async function POST(request: NextRequest) {
+  if (isIosAppUserAgent(request.headers.get("user-agent"))) {
+    return NextResponse.json(
+      { error: "アプリ内では支払いの変更ができません。" },
+      { status: 403 }
+    );
+  }
   if (!stripeKey) {
     return NextResponse.json(
       { error: "Stripeが設定されていません" },

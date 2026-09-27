@@ -12,6 +12,8 @@ import { PcTopNav } from "@/components/navigation/pc-top-nav";
 import { ImmersiveAwareFooter } from "@/components/navigation/immersive-aware-footer";
 import { OrganizerProGlobalSyncer } from "@/components/organizer/OrganizerProGlobalSyncer";
 import { AbortErrorRecovery } from "@/components/abort-error-recovery";
+import { NativeAppBridge } from "@/components/native/NativeAppBridge";
+import { PushRegistration } from "@/components/native/PushRegistration";
 import "./globals.css";
 import { Geist, Klee_One, Noto_Serif_JP, Shippori_Mincho } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -104,6 +106,8 @@ export default function RootLayout({
       <body className="font-sans antialiased min-h-screen bg-[#f3f4f1]">
         <LanguageProvider>
           <AbortErrorRecovery />
+          <NativeAppBridge />
+          <PushRegistration />
           <OrganizerProGlobalSyncer />
           <SplashScreen />
           <MapBackground />

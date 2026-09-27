@@ -9,7 +9,6 @@ import {
 } from "@/lib/db/user-follows";
 import {
   formatPostedAtLabel,
-  getCategoryLabel,
   mapDbCommunityPostToView,
 } from "@/lib/posts/map-community-post";
 import type { MyPostItem } from "@/app/api/me/posts/route";
@@ -96,8 +95,8 @@ export async function GET(_request: Request, { params }: Params) {
       title: view.title,
       imageUrl: view.imageUrl,
       mediaType: row.media_type,
-      category: row.category,
-      categoryLabel: getCategoryLabel(row.category),
+      category: view.category,
+      categoryLabel: view.categoryLabel,
       status: row.status,
       dateLabel: formatPostedAtLabel(row.created_at),
       createdAt: row.created_at,

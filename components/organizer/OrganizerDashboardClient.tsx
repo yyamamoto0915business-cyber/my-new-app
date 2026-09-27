@@ -15,6 +15,7 @@ import {
   OrganizerPageShell,
   organizerHeroDenseSkeletonClass,
 } from "@/components/organizer/OrganizerPageShell";
+import { useIosAppShell } from "@/hooks/use-ios-app-shell";
 
 const RECENT_LIMIT = 3;
 
@@ -57,10 +58,12 @@ function PlanCard({
   planSummary,
   onChangePlan,
   compact = false,
+  hidePurchase = false,
 }: {
   planSummary: PlanSummary;
   onChangePlan: () => void;
   compact?: boolean;
+  hidePurchase?: boolean;
 }) {
   const isPro = !planSummary.isFreePlan;
 
@@ -141,6 +144,7 @@ function PlanCard({
 
         {/* ボタン */}
         <div style={{ display: "flex", flexDirection: compact ? "row" : "column", gap: compact ? "5px" : "6px", flexShrink: 0, zIndex: 1 }}>
+          {hidePurchase ? null : (
           <button
             type="button"
             onClick={onChangePlan}
@@ -158,6 +162,7 @@ function PlanCard({
           >
             {isPro ? "プランを変更" : "Proにアップグレード"}
           </button>
+          )}
           <Link
             href="/organizer/settings/plan"
             style={{
@@ -334,6 +339,7 @@ export default function OrganizerDashboardClient() {
   const [planSummary, setPlanSummary] = useState<PlanSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const iosApp = useIosAppShell();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -370,7 +376,7 @@ export default function OrganizerDashboardClient() {
   const showFirstPublishHint = kpis.hosting === 0;
 
   const insightItems: { key: string; node: ReactNode }[] = [];
-  if (!isPro) {
+  if (!isPro && !iosApp) {
     insightItems.push({
       key: "pro",
       node: (
@@ -464,6 +470,7 @@ export default function OrganizerDashboardClient() {
             planSummary={planSummary}
             onChangePlan={() => setShowPlanModal(true)}
             compact
+            hidePurchase={iosApp}
           />
         )}
 

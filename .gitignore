@@ -51,3 +51,9 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Capacitor iOS（生成物。ソースの ios/ プロジェクト自体は残す）
+ios/App/App/public
+ios/DerivedData
+ios/**/xcuserdata
+*.xcuserstate

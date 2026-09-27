@@ -5,6 +5,7 @@ import type {
 } from "@/lib/db/community-post-comments-types";
 import {
   POST_CATEGORY_TABS,
+  normalizePostCategory,
   type CommunityPost,
   type PostCategory,
 } from "@/lib/posts/mock-feed";
@@ -47,10 +48,9 @@ export function applyLikedByMe(
   }));
 }
 
-export function getCategoryLabel(category: PostCategory): string {
-  return (
-    POST_CATEGORY_TABS.find((t) => t.key === category)?.label ?? category
-  );
+export function getCategoryLabel(category: PostCategory | string): string {
+  const key = normalizePostCategory(category);
+  return POST_CATEGORY_TABS.find((t) => t.key === key)?.label ?? key;
 }
 
 export function mapDbCommunityPostToView(row: DbCommunityPost): CommunityPost {
@@ -68,11 +68,12 @@ export function mapDbCommunityPostToView(row: DbCommunityPost): CommunityPost {
   const relatedSiteName = (row.related_site_name ?? "").trim() || undefined;
   const visitedFrom = ymdFromDb(row.visited_from);
   const visitedTo = ymdFromDb(row.visited_to);
+  const category = normalizePostCategory(row.category);
 
   return {
     id: row.id,
-    category: row.category,
-    categoryLabel: getCategoryLabel(row.category),
+    category,
+    categoryLabel: getCategoryLabel(category),
     title: row.title,
     body: extras.body,
     mediaType: row.media_type,

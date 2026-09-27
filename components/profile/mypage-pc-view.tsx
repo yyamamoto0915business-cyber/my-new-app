@@ -316,6 +316,11 @@ function MypagePcSidebar({
               icon={<Bell className={ICON_SM} strokeWidth={2} />}
             />
             <MenuRow
+              href="/profile/account"
+              title="アカウント"
+              icon={<UserRound className={ICON_SM} strokeWidth={2} />}
+            />
+            <MenuRow
               href="/contact"
               title="ヘルプ・お問い合わせ"
               icon={<HelpCircle className={ICON_SM} strokeWidth={2} />}
