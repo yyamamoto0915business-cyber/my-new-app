@@ -55,6 +55,7 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const draftIdParam = searchParams.get("draft");
+  const albumParam = searchParams.get("album");
   const previewSuccess = isDevPreviewSuccessQuery(searchParams.get("previewSuccess"));
   // 読み込み対象: 公開/非公開の編集は postId、下書き再開は ?draft=
   const loadId = postId ?? draftIdParam;
@@ -74,6 +75,32 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
   // 下書き一覧の再取得トリガー
   const [draftsReloadToken, setDraftsReloadToken] = useState(0);
   const { drafts } = useMyDrafts(draftsReloadToken);
+  const [albums, setAlbums] = useState<{ id: string; title: string }[]>([]);
+  const [albumId, setAlbumId] = useState<string | null>(albumParam);
+
+  useEffect(() => {
+    if (postId) return;
+    let cancelled = false;
+    void fetch("/api/me/albums", { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) return { albums: [] as { id: string; title: string }[] };
+        return (await res.json()) as { albums?: { id: string; title: string }[] };
+      })
+      .then((data) => {
+        if (cancelled) return;
+        const list = data.albums ?? [];
+        setAlbums(list);
+        setAlbumId((current) =>
+          current && list.some((album) => album.id === current) ? current : null,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setAlbums([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [postId]);
 
   const videoUrlRef = useRef<string | null>(null);
   const videoFileRef = useRef<File | null>(null);
@@ -360,15 +387,27 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
       if (!createdPostId) {
         throw new Error("投稿の保存に失敗しました");
       }
+      if (!isEditMode && albumId) {
+        const albumRes = await fetch(`/api/me/albums/${albumId}/items`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId: createdPostId }),
+        });
+        const albumJson = (await albumRes.json().catch(() => ({}))) as { error?: string };
+        if (!albumRes.ok) {
+          throw new Error(albumJson.error ?? "アルバムに入れられませんでした");
+        }
+      }
       setDone(true);
       const publishedPublic = draft.visibility === "public";
       if (!isEditMode && publishedPublic) {
         setPublishedPostId(createdPostId);
         return;
       }
-      const nextHref = isEditMode
-        ? "/profile/posts"
-        : "/profile/posts";
+      const nextHref =
+        !isEditMode && albumId
+          ? `/profile/posts?tab=album&album=${albumId}`
+          : "/profile/posts";
       setTimeout(() => router.push(nextHref), 900);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "投稿に失敗しました");
@@ -394,7 +433,8 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
       if (savedId && !draftId) {
         setDraftId(savedId);
         loadedDraftIdRef.current = savedId;
-        router.replace(`/posts/new?draft=${savedId}`);
+        const albumQuery = albumId ? `&album=${encodeURIComponent(albumId)}` : "";
+        router.replace(`/posts/new?draft=${savedId}${albumQuery}`);
       }
       setDraftsReloadToken((t) => t + 1);
       setDraftSaved(true);
@@ -498,15 +538,19 @@ export function PostCreatePageClient({ postId }: { postId?: string } = {}) {
           done={done}
           canSubmit={canSubmit}
           submitError={submitError}
+          albums={isEditMode ? [] : albums}
+          albumId={isEditMode ? null : albumId}
           submitLabel={isEditMode ? "変更を保存" : "投稿する"}
           submittingLabel={isEditMode ? "保存中…" : "圧縮・アップロード中…"}
           doneTitle={isEditMode ? "変更を保存しました" : "投稿を受け付けました"}
           doneDescription={
             isEditMode
               ? "マイアルバムへ戻ります…"
-              : draft.visibility === "hidden"
-                ? "マイアルバムへ戻ります…"
-                : "みんなの投稿へ戻ります…"
+              : albumId
+                ? "アルバムへ戻ります…"
+                : draft.visibility === "hidden"
+                  ? "マイアルバムへ戻ります…"
+                  : "みんなの投稿へ戻ります…"
           }
         />
         )}

@@ -6,6 +6,15 @@ import { OrganizerProSyncer } from "@/components/organizer/OrganizerProSyncer";
 import { getOrganizerNavState } from "@/lib/organizer/get-organizer-nav-state";
 import { getDeveloperAdminContext } from "@/lib/admin-auth";
 import { isPaidOrganizerWithPlanState } from "@/lib/billing";
+import type { OrganizerCatalogPlanId } from "@/lib/organizer-plans";
+
+function organizerNavPlan(
+  organizerRegistered: boolean,
+  isPro: boolean
+): OrganizerCatalogPlanId | null {
+  if (!organizerRegistered) return null;
+  return isPro ? "standard" : "free";
+}
 
 export default async function OrganizerLayout({
   children,
@@ -39,7 +48,7 @@ export default async function OrganizerLayout({
 
   return (
     <div className="org-workspace-shell flex min-h-0 flex-col bg-[#f9f9f7] [--mg-organizer-subheader-h:44px] min-[900px]:mt-[var(--mg-pc-top-nav-h)] min-[900px]:min-h-[calc(100dvh-var(--mg-pc-top-nav-h))]">
-      <OrganizerProSyncer isPro={isPro} />
+      <OrganizerProSyncer plan={organizerNavPlan(organizerRegistered, isPro)} />
       {/* モバイルサブヘッダー（モードタブの下に sticky） */}
       <header className="org-workspace-mobile-bar sticky top-[calc(var(--mg-mobile-top-header-h,46px)+env(safe-area-inset-top,0px))] z-30 min-[900px]:hidden border-b border-[#e8e6e0] bg-white">
         <div className="flex items-stretch">

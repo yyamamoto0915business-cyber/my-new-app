@@ -20,6 +20,7 @@ import { fetchJsonArray } from "@/lib/fetch-json-array";
 import { POSTS_HERO_DESC_LINES, PostsHero } from "@/components/posts/PostsHero";
 import { PostsFeedCard } from "@/components/posts/PostsFeedCard";
 import { PostsSidebar } from "@/components/posts/PostsSidebar";
+import { PostsUserSearch } from "@/components/posts/PostsUserSearch";
 
 const FEATURED_POST_LIMIT = 8;
 
@@ -346,6 +347,7 @@ export function PostsHubClient() {
     <div className="posts-board-page">
       {/* PC */}
       <main className="posts-board-main posts-board-main--pc">
+        <PostsUserSearch />
         <div className="posts-hero-stack">
           <PostsHero />
           <PostsCategoryTabs
@@ -369,6 +371,7 @@ export function PostsHubClient() {
 
       {/* Mobile */}
       <main className="posts-board-main posts-board-main--mobile">
+        <PostsUserSearch />
         <div className="posts-hero-stack posts-hero-stack--mobile">
           <PostsHero compact />
           <PostsCategoryTabs

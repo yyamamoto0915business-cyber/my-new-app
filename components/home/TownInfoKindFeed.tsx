@@ -4,22 +4,25 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchJsonArray } from "@/lib/fetch-json-array";
 import type { StoreRecord } from "@/lib/stores/types";
 import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
+import type { PublicOrganizerGame } from "@/lib/organizer/public-games";
 import {
   buildMachiFeed,
   filterMachiFeed,
+  gameToMachiItem,
   type MachiKindTab,
 } from "@/lib/machi/feed";
 import { MachiFeedCard } from "@/components/machi/MachiFeedCard";
 import { FeedLoadError } from "@/components/home/FeedLoadError";
 
 type Props = {
-  kind: "store" | "volunteer" | "kitchen";
+  kind: "store" | "volunteer" | "kitchen" | "game";
   searchQuery: string;
 };
 
 export function TownInfoKindFeed({ kind, searchQuery }: Props) {
   const [stores, setStores] = useState<StoreRecord[]>([]);
   const [volunteers, setVolunteers] = useState<VolunteerRoleWithEvent[]>([]);
+  const [games, setGames] = useState<PublicOrganizerGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -51,6 +54,15 @@ export function TownInfoKindFeed({ kind, searchQuery }: Props) {
         ),
       );
     }
+    if (kind === "game") {
+      tasks.push(
+        fetchJsonArray<PublicOrganizerGame>("/api/games?limit=50").then((result) => {
+          if (cancelled) return result.ok;
+          if (result.ok) setGames(result.data);
+          return result.ok;
+        }),
+      );
+    }
 
     void Promise.all(tasks).then((oks) => {
       if (cancelled) return;
@@ -71,6 +83,16 @@ export function TownInfoKindFeed({ kind, searchQuery }: Props) {
     kind === "store" ? "store" : kind === "volunteer" ? "volunteer" : "all";
 
   const items = useMemo(() => {
+    if (kind === "game") {
+      const q = searchQuery.trim().toLowerCase();
+      return games
+        .map(gameToMachiItem)
+        .filter((item) => {
+          if (!q) return true;
+          const hay = `${item.title} ${item.areaLabel} ${item.tags.join(" ")}`.toLowerCase();
+          return hay.includes(q);
+        });
+    }
     const feed = buildMachiFeed(stores, volunteers);
     if (kind === "kitchen") {
       const q = searchQuery.trim().toLowerCase();
@@ -88,14 +110,16 @@ export function TownInfoKindFeed({ kind, searchQuery }: Props) {
       query: searchQuery,
       kindTab,
     });
-  }, [kind, stores, volunteers, searchQuery, kindTab]);
+  }, [kind, stores, volunteers, games, searchQuery, kindTab]);
 
   const title =
     kind === "store"
       ? "お店"
       : kind === "volunteer"
         ? "ボランティア募集"
-        : "キッチンカー";
+        : kind === "game"
+          ? "ゲーム"
+          : "キッチンカー";
 
   return (
     <section aria-label={title} className="space-y-3">

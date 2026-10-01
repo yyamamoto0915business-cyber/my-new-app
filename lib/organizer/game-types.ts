@@ -43,25 +43,25 @@ export const ORGANIZER_GAME_TYPES: readonly OrganizerGameType[] = [
     id: "mission",
     label: "ミッション",
     description: "課題をクリアして進みます",
-    available: false,
+    available: true,
   },
   {
     id: "photo",
     label: "フォトラリー",
     description: "スポットで写真を撮ります",
-    available: false,
+    available: true,
   },
   {
     id: "coupon",
     label: "クーポンラリー",
     description: "巡った先で特典を受け取れます",
-    available: false,
+    available: true,
   },
   {
     id: "checkin",
     label: "チェックイン",
     description: "訪れた記録を残します",
-    available: false,
+    available: true,
   },
 ];
 

@@ -10,6 +10,7 @@ import {
   HandHeart,
   Truck,
   LayoutGrid,
+  Gamepad2,
 } from "lucide-react";
 import {
   DiscoverHeroCatchphrase,
@@ -31,10 +32,11 @@ export const TOWN_INFO_KIND_CHIPS: ChipDef[] = [
   { key: "store", label: "お店", Icon: Store },
   { key: "volunteer", label: "ボランティア", Icon: HandHeart },
   { key: "kitchen", label: "キッチンカー", Icon: Truck },
+  { key: "game", label: "ゲーム", Icon: Gamepad2 },
 ];
 
 const ABOUT_POINTS = [
-  "イベント・店舗・募集をまとめて探せます",
+  "イベント・店舗・募集・ゲームをまとめて探せます",
   "主催者と直接つながれます",
   "参加・お手伝いの記録が残ります",
 ];

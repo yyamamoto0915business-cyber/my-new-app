@@ -6,6 +6,7 @@ import { Star, Sparkles, ArrowRight } from "lucide-react";
 import type { Event } from "@/lib/db/types";
 import type { StoreRecord } from "@/lib/stores/types";
 import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
+import type { PublicOrganizerGame } from "@/lib/organizer/public-games";
 import {
   buildMachiFeed,
   eventsToMachiItems,
@@ -17,11 +18,13 @@ type Props = {
   events: Event[];
   stores: StoreRecord[];
   volunteers: VolunteerRoleWithEvent[];
+  games?: PublicOrganizerGame[];
   loading: boolean;
 };
 
 function FeaturedRow({ item }: { item: MachiFeedItem }) {
   const isVolunteer = item.kind === "volunteer";
+  const isGame = item.kind === "game";
   return (
     <Link
       href={item.href}
@@ -42,7 +45,7 @@ function FeaturedRow({ item }: { item: MachiFeedItem }) {
           <span
             className={cn(
               "rounded-full px-1.5 py-0.5 text-[9px] font-medium",
-              isVolunteer
+              isVolunteer || isGame
                 ? "bg-[#e8f4ec] text-[#2D7A4F]"
                 : "bg-[#f5ebe0] text-[#b56a2e]",
             )}
@@ -65,15 +68,16 @@ export function PcTownSidebar({
   events,
   stores,
   volunteers,
+  games = [],
   loading,
 }: Props) {
   const featured = useMemo(() => {
     const items = [
       ...eventsToMachiItems(events),
-      ...buildMachiFeed(stores, volunteers),
+      ...buildMachiFeed(stores, volunteers, games),
     ].sort((a, b) => b.sortAt - a.sortAt);
     return items.slice(0, 4);
-  }, [events, stores, volunteers]);
+  }, [events, stores, volunteers, games]);
 
   return (
     <aside className="space-y-3">

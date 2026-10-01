@@ -20,10 +20,13 @@ export function MachiFeedCard({ item, compact }: Props) {
   const isEvent = item.kind === "event";
   const isKitchen = item.kind === "kitchen_car";
   const isSale = item.kindLabel === "特売";
+  const isGame = item.kind === "game";
 
   const badgeClass = isVolunteer
     ? "bg-[#2D7A4F]"
-    : isEvent
+    : isGame
+      ? "bg-[#2d7a4f]"
+      : isEvent
       ? "bg-[#1a2b3c]"
       : isKitchen
         ? "bg-[#d4843a]"
@@ -31,7 +34,7 @@ export function MachiFeedCard({ item, compact }: Props) {
           ? "bg-[#c45a1a]"
           : "bg-[#b56a2e]";
 
-  const gradientClass = isVolunteer
+  const gradientClass = isVolunteer || isGame
     ? "from-[#e8f4ec] via-[#eef6f2] to-[#f5f0e6]"
     : isEvent
       ? "from-[#e8eef4] via-[#eef2f6] to-[#f0f4f8]"

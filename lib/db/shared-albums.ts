@@ -616,6 +616,35 @@ export async function joinSharedAlbumByToken(
   return getSharedAlbumDetail(album.id, userId);
 }
 
+/** 非公開の投稿を、同じアルバムのメンバーには見せる */
+export async function viewerSharesAlbumWithPost(
+  viewerId: string,
+  postId: string,
+): Promise<boolean> {
+  const memoryHit = listMemorySharedAlbumsForUser(viewerId).some((album) =>
+    listMemorySharedAlbumItems(album.id).some((item) => item.post_id === postId),
+  );
+  if (memoryHit) return true;
+
+  const client = await writer();
+  if (!client || !isUuid(viewerId) || !isUuid(postId)) return false;
+
+  const { data: itemRows, error: itemError } = await client
+    .from("shared_album_items")
+    .select("album_id")
+    .eq("post_id", postId);
+  if (itemError || !itemRows?.length) return false;
+
+  const albumIds = [...new Set(itemRows.map((row) => row.album_id as string))];
+  const { data: memberRows, error: memberError } = await client
+    .from("shared_album_members")
+    .select("album_id")
+    .eq("user_id", viewerId)
+    .in("album_id", albumIds);
+  if (memberError) return false;
+  return (memberRows ?? []).length > 0;
+}
+
 export async function addPostToSharedAlbum(
   albumId: string,
   userId: string,

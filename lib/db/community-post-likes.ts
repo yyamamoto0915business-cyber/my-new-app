@@ -13,6 +13,7 @@ import {
   getCommunityPostAccess,
   getCommunityPostsByIds,
 } from "@/lib/db/community-posts";
+import { listPrivateProfileIds } from "@/lib/db/account-privacy";
 import { isAcceptedFollower } from "@/lib/db/user-follows";
 import { canViewerSeePost } from "@/lib/posts/post-visibility";
 import type { DbCommunityPost } from "@/lib/db/community-posts-types";
@@ -96,12 +97,17 @@ export async function listVisibleLikedCommunityPosts(
   const posts = await getCommunityPostsByIds(ids);
   const byId = new Map(posts.map((p) => [p.id, p]));
 
+  const privateIds = await listPrivateProfileIds(
+    posts
+      .map((post) => post.author_id)
+      .filter((id): id is string => Boolean(id)),
+  );
   const hiddenAuthors = new Set<string>();
   for (const post of posts) {
     if (
-      post.status === "hidden" &&
       post.author_id &&
-      post.author_id !== viewerId
+      post.author_id !== viewerId &&
+      (post.status === "hidden" || privateIds.has(post.author_id))
     ) {
       hiddenAuthors.add(post.author_id);
     }
@@ -123,6 +129,14 @@ export async function listVisibleLikedCommunityPosts(
     const follower =
       post.author_id === viewerId ||
       Boolean(post.author_id && followerByAuthor.get(post.author_id));
+    if (
+      post.author_id &&
+      privateIds.has(post.author_id) &&
+      post.author_id !== viewerId &&
+      !follower
+    ) {
+      continue;
+    }
     if (canViewerSeePost(post, viewerId, follower)) ordered.push(post);
   }
   return ordered;

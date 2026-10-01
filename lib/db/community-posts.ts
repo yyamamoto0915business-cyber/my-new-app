@@ -17,6 +17,7 @@ import {
   normalizePostCategory,
   type PostCategory,
 } from "@/lib/posts/mock-feed";
+import { isProfilePrivate } from "@/lib/db/account-privacy";
 import { isAcceptedFollower } from "@/lib/db/user-follows";
 import {
   canViewerSeePost,
@@ -149,6 +150,7 @@ export async function listAuthorAlbumPosts(
   const follower = isOwner
     ? true
     : await isAcceptedFollower(viewerId, authorId);
+  if (!isOwner && !follower && (await isProfilePrivate(authorId))) return [];
   const rows = await listMyCommunityPosts(authorId, { limit });
   return rows.filter((post) => {
     if (post.status === "draft") return isOwner;
@@ -189,10 +191,25 @@ export async function getCommunityPostAccess(
   const follower = isOwner
     ? true
     : await isAcceptedFollower(viewerId, row.author_id);
+  const accountPrivate =
+    !isOwner && row.author_id ? await isProfilePrivate(row.author_id) : false;
+  if (accountPrivate && !follower) {
+    if (viewerId) {
+      const { viewerSharesAlbumWithPost } = await import("@/lib/db/shared-albums");
+      if (await viewerSharesAlbumWithPost(viewerId, row.id)) {
+        return { kind: "ok", post: await withAuthorAvatar(row) };
+      }
+    }
+    return { kind: "private", authorId: row.author_id };
+  }
   if (canViewerSeePost(row, viewerId, follower)) {
     return { kind: "ok", post: await withAuthorAvatar(row) };
   }
-  if (row.status === "hidden") {
+  if (row.status === "hidden" && viewerId) {
+    const { viewerSharesAlbumWithPost } = await import("@/lib/db/shared-albums");
+    if (await viewerSharesAlbumWithPost(viewerId, row.id)) {
+      return { kind: "ok", post: await withAuthorAvatar(row) };
+    }
     return { kind: "private", authorId: row.author_id };
   }
   return { kind: "missing" };

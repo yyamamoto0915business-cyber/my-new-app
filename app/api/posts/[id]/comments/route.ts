@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiUser } from "@/lib/api-auth";
+import { getCommunityPostAccess } from "@/lib/db/community-posts";
 import {
   createPostComment,
   listCommentsByPostId,
@@ -15,6 +16,12 @@ export async function GET(_request: NextRequest, { params }: Params) {
   const postId = id.trim();
   if (!postId) {
     return NextResponse.json({ error: "投稿が不正です" }, { status: 400 });
+  }
+
+  const viewer = await getApiUser();
+  const access = await getCommunityPostAccess(postId, viewer?.id ?? null);
+  if (access.kind !== "ok") {
+    return NextResponse.json({ error: "投稿が見つかりません" }, { status: 404 });
   }
 
   const rows = await listCommentsByPostId(postId);
@@ -36,6 +43,10 @@ export async function POST(request: NextRequest, { params }: Params) {
   const user = await getApiUser();
   if (!user) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
+  }
+  const access = await getCommunityPostAccess(postId, user.id);
+  if (access.kind !== "ok") {
+    return NextResponse.json({ error: "投稿が見つかりません" }, { status: 404 });
   }
 
   let body: unknown;

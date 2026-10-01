@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Camera } from "lucide-react";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import type { MyPostItem } from "@/app/api/me/posts/route";
 import {
@@ -67,6 +67,8 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
     !isForeign && searchParams.get("view") === "drafts" ? "draft" : "all",
   );
   const [albumDetailOpen, setAlbumDetailOpen] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -83,6 +85,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
           if (!res.ok) throw new Error("failed");
           return (await res.json()) as {
             isSelf: boolean;
+            locked?: boolean;
             profile: {
               displayName: string;
               avatarUrl: string | null;
@@ -99,6 +102,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
             router.replace("/profile/posts");
             return;
           }
+          setLocked(Boolean(payload.locked));
           setHost({
             displayName: payload.profile.displayName,
             avatarUrl: payload.profile.avatarUrl,
@@ -114,6 +118,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
         .catch(() => {
           if (!cancelled) {
             setItems([]);
+            setLocked(false);
             setLoading(false);
           }
         });
@@ -165,7 +170,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
     return () => {
       cancelled = true;
     };
-  }, [user, authLoading, authorId, router]);
+  }, [user, authLoading, authorId, router, reloadKey]);
 
   const settled = !loading && !authLoading;
 
@@ -264,8 +269,8 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
           <p>{emptyMessage}</p>
           {isForeign || status === "draft" ? null : (
             <Link href="/posts/new" className="mg-album-empty__cta">
-              <Plus className="h-4 w-4" aria-hidden />
-              投稿を作成
+              <Camera className="h-4 w-4" aria-hidden />
+              写真を追加する
             </Link>
           )}
         </div>
@@ -325,11 +330,12 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
 
   const hideChrome = albumDetailOpen && tab === "album";
   const showPostTools = tab === "posts" && !hideChrome;
+  const showSkeleton = !demoMode && (loading || authLoading);
 
   return (
     <div className={cn("mg-album-hub my-album-page min-h-screen")}>
       <div className="my-album-shell">
-        {hideChrome ? null : loading || authLoading ? (
+        {hideChrome ? null : showSkeleton ? (
           <MyAlbumProfileSkeleton />
         ) : (
           <MyAlbumProfileHeader
@@ -341,30 +347,55 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
             authorId={authorId}
             shareUserId={isForeign ? authorId : user?.id}
             onSelectPosts={() => handleTab("posts")}
+            onFollowChange={(status) => {
+              if (status === "accepted" || status === "none") {
+                setReloadKey((n) => n + 1);
+              }
+            }}
           />
         )}
 
-        {showPostTools ? (
-          <div className="mg-album-toolbar">
-            <MyAlbumFilterBar
-              category={category}
-              onCategory={setCategory}
-              sort={sort}
-              onSort={setSort}
-              year={selectedYear}
-              years={years}
-              onYear={setSelectedYear}
-              status={status}
-              onStatus={setStatus}
-              hideDrafts={isForeign}
-            />
+        {isForeign && locked && !showSkeleton ? (
+          <div className="mg-album-empty mg-album-locked">
+            <p className="mg-album-locked__title">このアカウントは非公開です</p>
+            <p>フォローが承認されると、アルバムを見られます。</p>
           </div>
         ) : null}
 
-        {hideChrome ? null : <MyAlbumViewTabs value={tab} onChange={handleTab} />}
+        <div className="mg-album-controls">
+          {showPostTools && (!isForeign || (!locked && !showSkeleton)) ? (
+            <div className="mg-album-toolbar">
+              <MyAlbumFilterBar
+                category={category}
+                onCategory={setCategory}
+                sort={sort}
+                onSort={setSort}
+                year={selectedYear}
+                years={years}
+                onYear={setSelectedYear}
+                status={status}
+                onStatus={setStatus}
+                hideDrafts={isForeign}
+              />
+            </div>
+          ) : null}
+
+          {hideChrome || (isForeign && (locked || showSkeleton)) ? null : (
+            <MyAlbumViewTabs value={tab} onChange={handleTab} />
+          )}
+
+          {showPostTools && !isForeign && !showSkeleton ? (
+            <div className="mg-album-compose">
+              <Link href="/posts/new" className="mg-share-btn mg-share-btn--solid mg-album-compose__add">
+                <Camera className="h-4 w-4" aria-hidden />
+                写真を追加する
+              </Link>
+            </div>
+          ) : null}
+        </div>
 
         <div className="mg-album-main">
-          {loading || authLoading ? (
+          {showSkeleton ? (
             <div className="mg-album-grid">
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="mg-album-tile is-skeleton">
@@ -376,7 +407,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : isForeign && locked ? null : (
             main()
           )}
         </div>

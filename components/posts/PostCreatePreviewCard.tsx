@@ -8,11 +8,13 @@ import {
   getPostCreateAreaLabel,
   getPostCreateMediaKind,
   getPostCreatePreviewTitle,
+  isPostCreatePreviewEmpty,
   type PostCreateDraft,
 } from "@/lib/posts/post-create-draft";
 import { formatVideoDuration } from "@/lib/posts/post-video";
 import { POST_CATEGORY_COLORS } from "@/lib/posts/mock-feed";
 import { formatVisitedDot } from "@/lib/posts/visited-range";
+import styles from "./PostCreatePreviewCard.module.css";
 
 type Props = {
   draft: PostCreateDraft;
@@ -20,6 +22,20 @@ type Props = {
 
 export function PostCreatePreviewCard({ draft }: Props) {
   const [photoIndex, setPhotoIndex] = useState(0);
+
+  if (isPostCreatePreviewEmpty(draft)) {
+    return (
+      <article
+        className={`posts-create-preview-card ${styles.empty}`}
+        aria-label="投稿プレビュー"
+      >
+        <p className={styles.message}>
+          内容を入力すると、ここに表示されます
+        </p>
+      </article>
+    );
+  }
+
   const categoryLabel = getPostCategoryLabel(draft.category);
   const badgeColor = POST_CATEGORY_COLORS[draft.category];
   const previewTitle = getPostCreatePreviewTitle(draft);

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/api-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { isProfilePrivate } from "@/lib/db/account-privacy";
 import { listAuthorAlbumPosts } from "@/lib/db/community-posts";
 import {
   countAcceptedFollowers,
@@ -38,6 +40,7 @@ export async function GET(_request: Request, { params }: Params) {
         region: null,
       },
       isSelf: false,
+      locked: false,
       follow: { status: "accepted", id: null },
       counts: {
         posts: items.length,
@@ -49,14 +52,15 @@ export async function GET(_request: Request, { params }: Params) {
   }
   const viewer = await getApiUser();
   const supabase = await createClient();
+  const profileReader = createAdminClient() ?? supabase;
 
   let displayName = "ユーザー";
   let avatarUrl: string | null = null;
   let bio: string | null = null;
   let region: string | null = null;
 
-  if (supabase) {
-    const { data } = await supabase
+  if (profileReader) {
+    const { data } = await profileReader
       .from("profiles")
       .select(
         "id, display_name, avatar_url, bio, region, participant_avatar_url, organizer_avatar_url, active_profile_role",
@@ -81,11 +85,18 @@ export async function GET(_request: Request, { params }: Params) {
   const isSelf = viewer?.id === authorId;
   const followRow =
     viewer && !isSelf ? await getFollowByPair(viewer.id, authorId) : null;
+  const locked =
+    !isSelf &&
+    followRow?.status !== "accepted" &&
+    (await isProfilePrivate(authorId));
 
-  const [rows, followers, following] = await Promise.all([
-    listAuthorAlbumPosts(authorId, viewer?.id ?? null, { limit: 80 }),
+  const [rows, followers, following, lockedPostCount] = await Promise.all([
+    locked
+      ? Promise.resolve([])
+      : listAuthorAlbumPosts(authorId, viewer?.id ?? null, { limit: 80 }),
     countAcceptedFollowers(authorId),
     countAcceptedFollowing(authorId),
+    locked ? countAuthorAlbumPosts(authorId) : Promise.resolve(0),
   ]);
 
   const items: MyPostItem[] = rows.map((row) => {
@@ -112,17 +123,38 @@ export async function GET(_request: Request, { params }: Params) {
   });
 
   return NextResponse.json({
-    profile: { id: authorId, displayName, avatarUrl, bio, region },
+    profile: {
+      id: authorId,
+      displayName,
+      avatarUrl,
+      bio: locked ? null : bio,
+      region,
+    },
     isSelf,
+    locked,
     follow: {
       status: isSelf ? "self" : (followRow?.status ?? "none"),
       id: followRow?.id ?? null,
     },
     counts: {
-      posts: items.filter((p) => p.status !== "draft").length,
+      posts: locked
+        ? lockedPostCount
+        : items.filter((p) => p.status !== "draft").length,
       followers,
       following,
     },
     items,
   });
+}
+
+async function countAuthorAlbumPosts(authorId: string): Promise<number> {
+  const client = createAdminClient() ?? (await createClient());
+  if (!client) return 0;
+  const { count, error } = await client
+    .from("community_posts")
+    .select("id", { count: "exact", head: true })
+    .eq("author_id", authorId)
+    .neq("status", "draft");
+  if (error) return 0;
+  return count ?? 0;
 }

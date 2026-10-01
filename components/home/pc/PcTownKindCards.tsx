@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck, Truck, Store, HeartHandshake, ChevronRight } from "lucide-react";
+import { CalendarCheck, Truck, Store, HeartHandshake, Gamepad2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type KindCard = {
@@ -16,7 +16,7 @@ const CARDS: KindCard[] = [
   {
     key: "event",
     label: "イベント",
-    desc: "地域のイベントを探す",
+    desc: "イベントを探す",
     Icon: CalendarCheck,
     color: "#2f7d4e",
     bg: "#eef6f0",
@@ -24,7 +24,7 @@ const CARDS: KindCard[] = [
   {
     key: "kitchen",
     label: "キッチンカー",
-    desc: "おいしい出会いを探す",
+    desc: "おいしい出会いを",
     Icon: Truck,
     color: "#d4843a",
     bg: "#fdf3e9",
@@ -32,18 +32,26 @@ const CARDS: KindCard[] = [
   {
     key: "store",
     label: "お店",
-    desc: "すてきなお店を見つける",
+    desc: "お店を見つける",
     Icon: Store,
     color: "#4a78b8",
     bg: "#eef3fb",
   },
   {
     key: "volunteer",
-    label: "ボランティア募集",
-    desc: "誰かの役に立つ体験を",
+    label: "ボランティア",
+    desc: "役に立つ体験を",
     Icon: HeartHandshake,
     color: "#c05a7a",
     bg: "#fceef3",
+  },
+  {
+    key: "game",
+    label: "ゲーム",
+    desc: "まちをめぐる",
+    Icon: Gamepad2,
+    color: "#2d7a4f",
+    bg: "#e8f4ec",
   },
 ];
 
@@ -52,10 +60,10 @@ type Props = {
   onChipClick: (key: string) => void;
 };
 
-/** まちの情報：4種別への入口カード */
+/** まちの情報：種別への入口カード */
 export function PcTownKindCards({ activeChip, onChipClick }: Props) {
   return (
-    <section aria-label="種別から探す" className="grid grid-cols-4 gap-3">
+    <section aria-label="種別から探す" className="grid grid-cols-5 gap-3">
       {CARDS.map(({ key, label, desc, Icon, color, bg }) => {
         const active = activeChip === key;
         return (
@@ -64,7 +72,7 @@ export function PcTownKindCards({ activeChip, onChipClick }: Props) {
             type="button"
             onClick={() => onChipClick(key)}
             className={cn(
-              "group flex items-center gap-3 rounded-[14px] border bg-white px-4 py-3.5 text-left transition",
+              "flex items-center gap-2.5 rounded-[14px] border bg-white px-3 py-3 text-left transition",
               active
                 ? "border-[#e0b890] shadow-[0_4px_16px_rgba(160,100,40,0.12)]"
                 : "border-[#e8ebe6] hover:border-[#d4b898] hover:shadow-[0_2px_10px_rgba(15,23,42,0.05)]",
@@ -80,16 +88,9 @@ export function PcTownKindCards({ activeChip, onChipClick }: Props) {
               <span className="block text-[14px] font-semibold text-[#1A2214]">
                 {label}
               </span>
-              <span className="mt-0.5 block truncate text-[11px] text-[#7a6a58]">
+              <span className="mt-0.5 block text-[11px] leading-snug text-[#7a6a58]">
                 {desc}
               </span>
-            </span>
-            <span
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white transition group-hover:translate-x-0.5"
-              style={{ background: color }}
-              aria-hidden
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
             </span>
           </button>
         );
@@ -98,10 +99,10 @@ export function PcTownKindCards({ activeChip, onChipClick }: Props) {
   );
 }
 
-/** モバイル：1行4列の種別入口カード */
+/** モバイル：種別入口カード */
 export function MobileTownKindCards({ activeChip, onChipClick }: Props) {
   return (
-    <section aria-label="種別から探す" className="grid grid-cols-4 gap-1.5">
+    <section aria-label="種別から探す" className="grid grid-cols-5 gap-1.5">
       {CARDS.map(({ key, label, Icon, color, bg }) => {
         const active = activeChip === key;
         const shortLabel = key === "volunteer" ? "ボランティア" : label;

@@ -7,6 +7,7 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
+  BarChart3,
   Loader2,
   Plus,
   Printer,
@@ -208,10 +209,16 @@ export function OrganizerGameEditor() {
         title={game.name}
         subtitle={`${game.typeLabel}のスポットとQRを設定します。参加用QRは1枚、スポット用QRは場所ごとに印刷します。`}
         actions={
-          <Link href={`/organizer/games/${game.id}/print`} className="org-games__print-link">
-            <Printer className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
-            QRをまとめて印刷
-          </Link>
+          <>
+            <Link href={`/organizer/games/${game.id}/analytics`} className="org-games__print-link">
+              <BarChart3 className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
+              データを見る
+            </Link>
+            <Link href={`/organizer/games/${game.id}/print`} className="org-games__print-link">
+              <Printer className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
+              QRをまとめて印刷
+            </Link>
+          </>
         }
       />
 

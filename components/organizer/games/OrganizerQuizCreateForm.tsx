@@ -35,6 +35,7 @@ import {
   type QuizQuestion,
 } from "@/lib/organizer/quiz";
 import { OrganizerQuizPreview } from "@/components/organizer/games/OrganizerQuizPreview";
+import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
 function toIsoFromDate(date: string): string | null {
   if (!date) return null;
@@ -65,6 +66,7 @@ export function OrganizerQuizCreateForm() {
   const [previewIndex, setPreviewIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [published, setPublished] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -175,12 +177,24 @@ export function OrganizerQuizCreateForm() {
         setError(json.error ?? "作成に失敗しました");
         return;
       }
+      if (status === "published") {
+        setPublished(true);
+        return;
+      }
       router.push("/organizer/games");
     } catch {
       setError("通信エラーが発生しました");
     } finally {
       setSaving(false);
     }
+  }
+
+  if (published) {
+    return (
+      <div className="org-quiz">
+        <GamePublishSuccess typeLabel="クイズラリー" />
+      </div>
+    );
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -719,31 +720,41 @@ export function MySharedAlbumsPane({
 
         {sheet === "add" ? (
           <Sheet title="写真を入れる" onClose={() => setSheet(null)}>
-            {addablePosts.length === 0 ? (
-              <p className="mg-share-people__empty">入れられる写真は、いまありません</p>
-            ) : (
-              <ul className="mg-share-pick">
-                {addablePosts.map((post) => (
-                  <li key={post.id}>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void addPost(post.id)}
-                    >
-                      <span className="mg-share-pick__photo">
-                        {post.imageUrl ? (
-                          <Image src={post.imageUrl} alt="" fill className="object-cover" sizes="72px" />
-                        ) : null}
-                      </span>
-                      <span>
-                        <strong>{post.title}</strong>
-                        <small>{post.dateLabel}</small>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className="mg-share-add">
+              <Link
+                href={`/posts/new?album=${encodeURIComponent(detail.id)}`}
+                className="mg-share-btn mg-share-btn--solid mg-share-add__new"
+              >
+                <Camera className="h-4 w-4" aria-hidden />
+                新しく残す
+              </Link>
+              <p className="mg-share-add__label">すでに投稿した写真から選ぶ</p>
+              {addablePosts.length === 0 ? (
+                <p className="mg-share-people__empty">入れられる写真は、いまありません</p>
+              ) : (
+                <ul className="mg-share-pick">
+                  {addablePosts.map((post) => (
+                    <li key={post.id}>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void addPost(post.id)}
+                      >
+                        <span className="mg-share-pick__photo">
+                          {post.imageUrl ? (
+                            <Image src={post.imageUrl} alt="" fill className="object-cover" sizes="72px" />
+                          ) : null}
+                        </span>
+                        <span>
+                          <strong>{post.title}</strong>
+                          <small>{post.dateLabel}</small>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </Sheet>
         ) : null}
       </section>

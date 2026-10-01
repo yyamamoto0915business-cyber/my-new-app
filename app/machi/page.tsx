@@ -1,26 +1,34 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { PcTownBrowsePage } from "@/components/home/pc/PcTownBrowsePage";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "まちの情報 | MachiGlyph",
-  description: "地域のイベント・店舗・ボランティア募集など、まちの情報を探せます。",
+  title: "まちの情報をすべて見る | MachiGlyph",
+  description: "イベント・お店・体験・ボランティア・ゲームを、まとめて探せます。",
 };
 
-type Props = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
+function BrowseFallback() {
+  return (
+    <div className="mx-auto hidden max-w-[1280px] gap-4 px-6 py-4 min-[900px]:flex">
+      <div className="h-[640px] w-[212px] animate-pulse rounded-[18px] bg-[#e7f0e6]" />
+      <div className="min-w-0 flex-1 space-y-4">
+        <div className="h-[148px] animate-pulse rounded-[18px] bg-[#e7f0e6]" />
+        <div className="grid grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="aspect-[16/10] animate-pulse rounded-[16px] bg-[#e7f0e6]" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-/** 旧まち情報ハブ → まちの情報ホームへ集約 */
-export default async function MachiPage({ searchParams }: Props) {
-  const params = await searchParams;
-  const kindRaw = params.kind;
-  const kind = Array.isArray(kindRaw) ? kindRaw[0] : kindRaw;
-
-  if (kind === "volunteer") {
-    redirect("/?kind=volunteer");
-  }
-  if (kind === "store") {
-    redirect("/?kind=store");
-  }
-  redirect("/");
+export default function MachiPage() {
+  return (
+    <Suspense fallback={<BrowseFallback />}>
+      <PcTownBrowsePage />
+    </Suspense>
+  );
 }

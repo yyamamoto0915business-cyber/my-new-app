@@ -134,11 +134,11 @@ function AuthPageContent() {
 
       window.location.assign(returnTo);
     } catch (err) {
+      setLoading(false);
       if (isAbortLikeError(err)) {
-        window.location.assign(returnTo);
+        setError("ログインの確認が時間内に終わりませんでした。もう一度お試しください。");
         return;
       }
-      setLoading(false);
       setError("通信が途中で中断されました。時間をおいて、もう一度お試しください。");
     }
   };

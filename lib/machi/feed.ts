@@ -12,8 +12,9 @@ import type { StoreRecord } from "@/lib/stores/types";
 import { publicPathForKind } from "@/lib/stores/draft-shell";
 import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
 import { getCategoryLabel } from "@/lib/volunteer-utils";
+import type { PublicOrganizerGame } from "@/lib/organizer/public-games";
 
-export type MachiKind = "event" | "store" | "volunteer" | "kitchen_car";
+export type MachiKind = "event" | "store" | "volunteer" | "kitchen_car" | "game";
 
 export type MachiFeedItem = {
   id: string;
@@ -249,13 +250,42 @@ export function volunteerToMachiItem(role: VolunteerRoleWithEvent): MachiFeedIte
   };
 }
 
+export function gameToMachiItem(game: PublicOrganizerGame): MachiFeedItem {
+  const startMs = game.startsAt ? Date.parse(game.startsAt) : 0;
+  const now = Date.now();
+  const upcoming = startMs > now;
+  const dateLabel = (() => {
+    if (!game.startsAt) return "開催中";
+    const d = new Date(game.startsAt);
+    if (Number.isNaN(d.getTime())) return "開催中";
+    return d.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric", weekday: "short" });
+  })();
+
+  return {
+    id: `game:${game.id}`,
+    kind: "game",
+    title: game.name,
+    href: game.joinPath,
+    imageUrl: game.imageUrl,
+    kindLabel: "ゲーム",
+    statusLabel: upcoming ? "開催予定" : "開催中",
+    metaLabel: dateLabel,
+    areaLabel: game.areaLabel,
+    tags: [game.typeLabel, game.eventTitle].filter(Boolean).slice(0, 2) as string[],
+    sortAt: Number.isFinite(startMs) && startMs > 0 ? startMs : now,
+    filterKeys: ["game"],
+  };
+}
+
 export function buildMachiFeed(
   stores: StoreRecord[],
   volunteers: VolunteerRoleWithEvent[],
+  games: PublicOrganizerGame[] = [],
 ): MachiFeedItem[] {
   return [
     ...stores.map(storeToMachiItem),
     ...volunteers.map(volunteerToMachiItem),
+    ...games.map(gameToMachiItem),
   ].sort((a, b) => b.sortAt - a.sortAt);
 }
 
@@ -264,6 +294,7 @@ function mergeRecommendedItems(
   stores: MachiFeedItem[],
   kitchens: MachiFeedItem[],
   volunteers: MachiFeedItem[],
+  games: MachiFeedItem[],
   limit: number,
 ): MachiFeedItem[] {
   const result: MachiFeedItem[] = [];
@@ -282,8 +313,9 @@ function mergeRecommendedItems(
   add(stores[0]);
   add(kitchens[0]);
   add(volunteers[0]);
+  add(games[0]);
 
-  const rest = [...prioritizedEvents, ...stores, ...kitchens, ...volunteers]
+  const rest = [...prioritizedEvents, ...stores, ...kitchens, ...volunteers, ...games]
     .filter((item) => !usedIds.has(item.id))
     .sort((a, b) => b.sortAt - a.sortAt);
 
@@ -308,6 +340,7 @@ export function buildRecommendedFeed(
     popularEvents?: Event[];
     /** 終了したイベントも含める（既定: false） */
     includeEnded?: boolean;
+    games?: PublicOrganizerGame[];
   },
 ): MachiFeedItem[] {
   const limit = options.limit ?? 5;
@@ -326,6 +359,9 @@ export function buildRecommendedFeed(
     .sort((a, b) => b.sortAt - a.sortAt);
   const volunteerItems = volunteers
     .map(volunteerToMachiItem)
+    .sort((a, b) => b.sortAt - a.sortAt);
+  const gameItems = (options.games ?? [])
+    .map(gameToMachiItem)
     .sort((a, b) => b.sortAt - a.sortAt);
 
   let prioritizedEvents: MachiFeedItem[];
@@ -351,6 +387,7 @@ export function buildRecommendedFeed(
     storeItems,
     kitchenItems,
     volunteerItems,
+    gameItems,
     limit,
   );
 }

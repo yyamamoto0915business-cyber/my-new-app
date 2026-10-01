@@ -14,6 +14,7 @@ import {
 } from "@/lib/machi/feed";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { MachiFeedCard } from "@/components/machi/MachiFeedCard";
+import type { PublicOrganizerGame } from "@/lib/organizer/public-games";
 
 type Tab = "recommended" | "popular";
 
@@ -21,6 +22,7 @@ type Props = {
   events: Event[];
   stores: StoreRecord[];
   volunteers: VolunteerRoleWithEvent[];
+  games?: PublicOrganizerGame[];
   filteredEvents?: Event[];
   hasActiveFilter?: boolean;
   eventOnlyFilter?: boolean;
@@ -59,6 +61,7 @@ export function PcRecommendedRow({
   events,
   stores,
   volunteers,
+  games = [],
   filteredEvents,
   hasActiveFilter = false,
   eventOnlyFilter = false,
@@ -112,6 +115,7 @@ export function PcRecommendedRow({
             categoryPrefs,
             limit: 50,
             includeEnded,
+            games,
           }),
         ],
         { query: searchQuery, area: selectedArea },
@@ -126,6 +130,7 @@ export function PcRecommendedRow({
       mode: tab,
       popularEvents: tab === "popular" ? popularEvents : undefined,
       includeEnded,
+      games,
     });
   }, [
     hasActiveFilter,
@@ -138,6 +143,7 @@ export function PcRecommendedRow({
     events,
     stores,
     volunteers,
+    games,
     areaPreference,
     categoryPrefs,
     tab,
@@ -174,7 +180,7 @@ export function PcRecommendedRow({
             </span>
           )}
         </div>
-        <Link href="/" className="text-[12px] font-medium text-[#2c7a88] hover:underline">
+        <Link href="/machi" className="text-[12px] font-medium text-[#2c7a88] hover:underline">
           すべて見る →
         </Link>
       </div>

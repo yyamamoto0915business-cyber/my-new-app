@@ -5,7 +5,11 @@ import type { ComponentType } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { CalendarDays, MapPinned, BriefcaseBusiness } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useOrganizerPro } from "@/lib/organizer-pro-store";
+import { useOrganizerNavPlan } from "@/lib/organizer-pro-store";
+import {
+  OrganizerPlanTabBadge,
+  organizerPlanTabClass,
+} from "@/components/navigation/OrganizerPlanTabMark";
 import {
   getTopModeTabIdFromContext,
   isEventModePath,
@@ -90,7 +94,7 @@ export function TopModeTabs({ onTabClick, className, compact }: Props) {
     }
     return getTopModeTabIdFromContext(pathname, returnPath, modeFromCookie);
   })();
-  const isProOrganizer = useOrganizerPro();
+  const organizerPlan = useOrganizerNavPlan();
 
   return (
     <div
@@ -104,18 +108,29 @@ export function TopModeTabs({ onTabClick, className, compact }: Props) {
         const isActive = activeId === tab.id;
         const Icon = tab.icon;
         const isMachi = tab.id === "machi";
-        const isPaidOrganizerTab = tab.id === "organizer" && isProOrganizer;
+        const isOrganizerPlanTab = tab.id === "organizer" && organizerPlan;
         const widthClass = tabWidthClass(isMachi);
         const linkClass = cn(
           TAB_BASE,
           tabSizeClass(compact),
           widthClass,
-          isActive ? TAB_ACTIVE : TAB_INACTIVE
+          isOrganizerPlanTab && isActive && organizerPlan
+            ? organizerPlanTabClass(organizerPlan)
+            : isActive
+              ? TAB_ACTIVE
+              : TAB_INACTIVE
         );
 
-        if (isPaidOrganizerTab && isActive) {
+        if (isOrganizerPlanTab && organizerPlan) {
           return (
-            <span key={tab.id} className={cn("relative inline-flex", widthClass)}>
+            <span
+              key={tab.id}
+              className={cn(
+                "org-tab-plan-wrap relative inline-flex",
+                `org-tab-plan-wrap--${organizerPlan}`,
+                widthClass
+              )}
+            >
               <Link
                 href={tab.href}
                 prefetch
@@ -126,7 +141,7 @@ export function TopModeTabs({ onTabClick, className, compact }: Props) {
                 <Icon className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{tab.label}</span>
               </Link>
-              <span className="org-pro-tab-badge">PRO</span>
+              <OrganizerPlanTabBadge plan={organizerPlan} />
             </span>
           );
         }

@@ -4,7 +4,13 @@ import { ChevronDown } from "lucide-react";
 import { PREFECTURES } from "@/lib/prefectures";
 import { cn } from "@/lib/utils";
 
-export type TownTimeRange = "all" | "today" | "weekend";
+export type TownTimeRange =
+  | "all"
+  | "today"
+  | "weekend"
+  | "next_week"
+  | "month"
+  | "date";
 export type TownSortMode = "recommended" | "popular";
 
 type Props = {

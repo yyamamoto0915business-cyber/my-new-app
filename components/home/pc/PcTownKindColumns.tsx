@@ -2,23 +2,26 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { CalendarCheck, Truck, Store, HeartHandshake } from "lucide-react";
+import { CalendarCheck, Truck, Store, HeartHandshake, Gamepad2 } from "lucide-react";
 import type { Event } from "@/lib/db/types";
 import type { StoreRecord } from "@/lib/stores/types";
 import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
+import type { PublicOrganizerGame } from "@/lib/organizer/public-games";
 import {
   eventsToMachiItems,
+  gameToMachiItem,
   storeToMachiItem,
   volunteerToMachiItem,
   type MachiFeedItem,
 } from "@/lib/machi/feed";
 
-type KindLoadingKey = "event" | "kitchen" | "store" | "volunteer";
+type KindLoadingKey = "event" | "kitchen" | "store" | "volunteer" | "game";
 
 type Props = {
   events: Event[];
   stores: StoreRecord[];
   volunteers: VolunteerRoleWithEvent[];
+  games?: PublicOrganizerGame[];
   loading: boolean;
   includeEnded: boolean;
   onChipClick: (key: string) => void;
@@ -36,7 +39,8 @@ const COLUMNS: ColumnDef[] = [
   { key: "event", label: "イベント", Icon: CalendarCheck, color: "#2f7d4e" },
   { key: "kitchen", label: "キッチンカー", Icon: Truck, color: "#d4843a" },
   { key: "store", label: "お店", Icon: Store, color: "#4a78b8" },
-  { key: "volunteer", label: "ボランティア募集", Icon: HeartHandshake, color: "#c05a7a" },
+  { key: "volunteer", label: "ボランティア", Icon: HeartHandshake, color: "#c05a7a" },
+  { key: "game", label: "ゲーム", Icon: Gamepad2, color: "#2d7a4f" },
 ];
 
 function ColumnRow({ item }: { item: MachiFeedItem }) {
@@ -68,11 +72,12 @@ function ColumnRow({ item }: { item: MachiFeedItem }) {
   );
 }
 
-/** まちの情報：種別ごとの4カラム（各2件＋すべて見る） */
+/** まちの情報：種別ごとのカラム（各2件＋すべて見る） */
 export function PcTownKindColumns({
   events,
   stores,
   volunteers,
+  games = [],
   loading,
   includeEnded,
   onChipClick,
@@ -94,18 +99,23 @@ export function PcTownKindColumns({
       .map(volunteerToMachiItem)
       .sort((a, b) => b.sortAt - a.sortAt)
       .slice(0, 2);
+    const gameItems = games
+      .map(gameToMachiItem)
+      .sort((a, b) => b.sortAt - a.sortAt)
+      .slice(0, 2);
     return {
       event: eventItems,
       kitchen: kitchenItems,
       store: storeItems,
       volunteer: volunteerItems,
+      game: gameItems,
     } as Record<string, MachiFeedItem[]>;
-  }, [events, stores, volunteers, includeEnded]);
+  }, [events, stores, volunteers, games, includeEnded]);
 
   return (
     <section
       aria-label="種別ごとの新着"
-      className="grid grid-cols-4 gap-3 rounded-[16px] border border-[#ebe4dc] bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)]"
+      className="grid grid-cols-5 gap-3 rounded-[16px] border border-[#ebe4dc] bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)]"
     >
       {COLUMNS.map(({ key, label, Icon, color }) => {
         const items = byKind[key] ?? [];

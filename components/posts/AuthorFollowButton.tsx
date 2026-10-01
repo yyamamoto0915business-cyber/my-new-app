@@ -29,17 +29,30 @@ export function AuthorFollowButton({
   authorId,
   className,
   ghost = false,
+  compact = false,
+  initialStatus,
+  onStatusChange,
 }: {
   authorId: string | null | undefined;
   className?: string;
   ghost?: boolean;
+  /** 検索結果など。アルバムリンクとチャットは出さない */
+  compact?: boolean;
+  initialStatus?: FollowUiStatus;
+  onStatusChange?: (status: FollowUiStatus) => void;
 }) {
   const router = useRouter();
-  const [status, setStatus] = useState<FollowUiStatus | "loading">("loading");
+  const [status, setStatus] = useState<FollowUiStatus | "loading">(
+    initialStatus ?? "loading",
+  );
   const [busy, setBusy] = useState(false);
   const [chatBusy, setChatBusy] = useState(false);
 
   useEffect(() => {
+    if (initialStatus) {
+      setStatus(initialStatus);
+      return;
+    }
     if (!authorId) {
       setStatus("none");
       return;
@@ -60,11 +73,17 @@ export function AuthorFollowButton({
     return () => {
       cancelled = true;
     };
-  }, [authorId]);
+  }, [authorId, initialStatus]);
 
   if (!authorId) return null;
 
+  function applyStatus(next: FollowUiStatus) {
+    setStatus(next);
+    onStatusChange?.(next);
+  }
+
   if (status === "self") {
+    if (compact) return null;
     return (
       <span className="inline-flex items-center gap-1.5">
         <AuthorAlbumLink authorId={authorId} />
@@ -75,7 +94,7 @@ export function AuthorFollowButton({
   if (status === "loading") {
     return (
       <span className="inline-flex items-center gap-1.5">
-        <AuthorAlbumLink authorId={authorId} />
+        {compact ? null : <AuthorAlbumLink authorId={authorId} />}
         <span
           className={cn(
             "posts-follow-btn",
@@ -101,18 +120,27 @@ export function AuthorFollowButton({
     setBusy(true);
     try {
       if (status === "accepted" || status === "pending") {
-        await fetch(`/api/follows?userId=${encodeURIComponent(authorId)}`, {
+        const res = await fetch(`/api/follows?userId=${encodeURIComponent(authorId)}`, {
           method: "DELETE",
         });
-        setStatus("none");
+        if (res.status === 401) {
+          router.push(`/auth?next=${encodeURIComponent(window.location.pathname)}`);
+          return;
+        }
+        if (res.ok) applyStatus("none");
       } else {
         const res = await fetch("/api/follows", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: authorId }),
         });
+        if (res.status === 401) {
+          router.push(`/auth?next=${encodeURIComponent(window.location.pathname)}`);
+          return;
+        }
         const json = (await res.json()) as { status?: FollowUiStatus };
-        setStatus(json.status === "accepted" ? "accepted" : "pending");
+        if (!res.ok) return;
+        applyStatus(json.status === "accepted" ? "accepted" : "pending");
       }
     } finally {
       setBusy(false);
@@ -148,8 +176,8 @@ export function AuthorFollowButton({
 
   return (
     <span className="inline-flex items-center gap-1.5">
-      <AuthorAlbumLink authorId={authorId} />
-      {showChat ? (
+      {compact ? null : <AuthorAlbumLink authorId={authorId} />}
+      {!compact && showChat ? (
         <button
           type="button"
           disabled={chatBusy}
@@ -167,7 +195,11 @@ export function AuthorFollowButton({
       <button
         type="button"
         disabled={busy}
-        onClick={handleClick}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          void handleClick();
+        }}
         className={cn(
           "posts-follow-btn",
           ghost && "posts-follow-btn--ghost",

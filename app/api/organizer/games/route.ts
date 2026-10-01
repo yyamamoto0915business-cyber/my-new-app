@@ -16,6 +16,26 @@ import {
   isOrganizerGameSpotKind,
   MAX_ORGANIZER_GAME_SPOTS,
 } from "@/lib/organizer/game-tokens";
+import { sanitizeCheckinSettings } from "@/lib/organizer/checkin";
+import { sanitizeCouponSettings } from "@/lib/organizer/coupon";
+import { sanitizeMissionSettings } from "@/lib/organizer/mission";
+import { sanitizePhotoSettings } from "@/lib/organizer/photo";
+
+function settingsFromBody(body: { quiz?: unknown; mission?: unknown; photo?: unknown; coupon?: unknown; checkin?: unknown }) {
+  const quiz = body.quiz && typeof body.quiz === "object" ? body.quiz : null;
+  const mission = sanitizeMissionSettings(body.mission);
+  const photo = sanitizePhotoSettings(body.photo);
+  const coupon = sanitizeCouponSettings(body.coupon);
+  const checkin = sanitizeCheckinSettings(body.checkin);
+  if (!quiz && !mission && !photo && !coupon && !checkin) return undefined;
+  return {
+    ...(quiz ? { quiz } : {}),
+    ...(mission ? { mission } : {}),
+    ...(photo ? { photo } : {}),
+    ...(coupon ? { coupon } : {}),
+    ...(checkin ? { checkin } : {}),
+  };
+}
 
 /** GET: ゲーム一覧。events=1 で対象イベント候補も返す */
 export async function GET(request: NextRequest) {
@@ -82,6 +102,10 @@ export async function POST(request: NextRequest) {
     spots?: unknown;
     status?: unknown;
     quiz?: unknown;
+    mission?: unknown;
+    photo?: unknown;
+    coupon?: unknown;
+    checkin?: unknown;
   };
   try {
     body = await request.json();
@@ -104,7 +128,7 @@ export async function POST(request: NextRequest) {
   const typeMeta = getOrganizerGameType(typeRaw);
   if (!typeMeta.available) {
     return NextResponse.json(
-      { error: `${typeMeta.label}は準備中です。いまはスタンプラリーを作成できます。` },
+      { error: `${typeMeta.label}は準備中です。いまはスタンプラリー、クイズラリー、ミッション、フォトラリー、クーポンラリー、チェックインを作成できます。` },
       { status: 400 }
     );
   }
@@ -176,7 +200,7 @@ export async function POST(request: NextRequest) {
       startsAt,
       endsAt,
       status: body.status === "published" ? "published" : "draft",
-      settings: body.quiz && typeof body.quiz === "object" ? { quiz: body.quiz } : undefined,
+      settings: settingsFromBody(body),
       spots,
     });
     return NextResponse.json({ game }, { status: 201 });

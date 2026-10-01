@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { isPaidOrganizer } from "@/lib/billing";
-import { setOrganizerPro } from "@/lib/organizer-pro-store";
+import { getCurrentOrganizerCatalogPlanId } from "@/lib/organizer-plans";
+import { setOrganizerNavPlan } from "@/lib/organizer-pro-store";
 import { isAuthRoute } from "@/lib/is-auth-route";
 
 type BillingJson = {
@@ -16,7 +17,7 @@ type BillingJson = {
   };
 };
 
-/** ホームなど主催レイアウト外でも有料フラグを保持する（トップナビの PRO 表示用） */
+/** ホームなど主催レイアウト外でも契約プランを保持する（トップナビのプラン名表示用） */
 export function OrganizerProGlobalSyncer() {
   const pathname = usePathname() ?? "";
   if (isAuthRoute(pathname)) return null;
@@ -30,7 +31,7 @@ function OrganizerProGlobalSyncerInner({ pathname }: { pathname: string }) {
     if (loading) return;
 
     if (!user) {
-      setOrganizerPro(false);
+      setOrganizerNavPlan(null);
       return;
     }
 
@@ -48,9 +49,9 @@ function OrganizerProGlobalSyncerInner({ pathname }: { pathname: string }) {
         });
         if (cancelled) return;
 
-        /** 認証ずれや一時503では既存の PRO 表示を壊さない（主催レイアウト・sessionStorage の真と整合） */
+        /** 認証ずれや一時503では既存のプラン表示を壊さない（主催レイアウト・sessionStorage の真と整合） */
         if (res.status === 403) {
-          setOrganizerPro(false);
+          setOrganizerNavPlan(null);
           return;
         }
         if (!res.ok) {
@@ -65,10 +66,10 @@ function OrganizerProGlobalSyncerInner({ pathname }: { pathname: string }) {
         }
         const o = data.organizer;
         if (!o) {
-          setOrganizerPro(false);
+          setOrganizerNavPlan(null);
           return;
         }
-        setOrganizerPro(isPaidOrganizer(o));
+        setOrganizerNavPlan(getCurrentOrganizerCatalogPlanId(isPaidOrganizer(o)));
       } catch {
         /* network等: 上書きしない */
       }

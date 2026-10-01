@@ -6,15 +6,12 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
-  Calendar,
   Gamepad2,
   Heart,
   List,
   MapPin,
   Sparkles,
   Stamp,
-  Ticket,
-  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { OrganizerGameTypeId } from "@/lib/organizer/game-types";
@@ -56,7 +53,7 @@ const HUB_TYPES: {
     blurb: "指定された課題に\n挑戦しよう",
     icon: "/organizer/games/game-type-mission.png?v=hub4",
     cover: "/organizer/games/game-cover-stamp.png?v=hub2",
-    available: false,
+    available: true,
   },
   {
     id: "photo",
@@ -65,7 +62,7 @@ const HUB_TYPES: {
     blurb: "スポットで写真を撮って\n思い出を残そう",
     icon: "/organizer/games/game-type-photo.png?v=hub4",
     cover: "/organizer/games/game-cover-stamp.png?v=hub2",
-    available: false,
+    available: true,
   },
   {
     id: "coupon",
@@ -74,7 +71,7 @@ const HUB_TYPES: {
     blurb: "お得なクーポンを\n集めよう",
     icon: "/organizer/games/game-type-coupon.png?v=hub4",
     cover: "/organizer/games/game-cover-stamp.png?v=hub2",
-    available: false,
+    available: true,
   },
   {
     id: "checkin",
@@ -83,7 +80,7 @@ const HUB_TYPES: {
     blurb: "スポットに来て\nチェックイン",
     icon: "/organizer/games/game-type-checkin.png?v=hub4",
     cover: "/organizer/games/game-cover-stamp.png?v=hub2",
-    available: false,
+    available: true,
   },
 ];
 
@@ -192,9 +189,6 @@ export function OrganizerGamesHub() {
     };
   }, []);
 
-  const featured = games[0] ?? null;
-  const spotHref = featured ? `/organizer/games/${featured.id}` : "/organizer/games/new";
-
   return (
     <div className="org-games">
       <header className="org-games__hero">
@@ -219,6 +213,13 @@ export function OrganizerGamesHub() {
               <Image src="/organizer/games/game-type-photo.png?v=hub4" alt="" width={96} height={96} unoptimized />
             </li>
           </ul>
+          <Link
+            href={games[0] ? `/organizer/games/${games[0].id}/analytics` : "/organizer/games/analytics"}
+            className="org-games__hero-data"
+          >
+            <BarChart3 className="h-3.5 w-3.5" aria-hidden />
+            データを確認する
+          </Link>
           <div className="org-games__hero-copy">
             <p className="org-games__kicker">
               <Gamepad2 className="h-3.5 w-3.5" aria-hidden />
@@ -265,7 +266,6 @@ export function OrganizerGamesHub() {
           </ul>
         </section>
 
-        <div className="org-games__lower">
         <section className="org-games__list" aria-labelledby="game-list-heading">
           <div className="org-games__section-head">
             <div>
@@ -310,42 +310,6 @@ export function OrganizerGamesHub() {
             </ul>
           )}
         </section>
-
-      <aside className="org-games__aside">
-        <section className="org-games__quick" aria-labelledby="game-quick-heading">
-          <h2 id="game-quick-heading">
-            <Zap className="h-4 w-4" aria-hidden />
-            クイックアクション
-          </h2>
-          <ul>
-            <li>
-              <Link href="/organizer/events/new">
-                <Calendar className="h-4 w-4" aria-hidden />
-                イベントを作成する
-              </Link>
-            </li>
-            <li>
-              <Link href={spotHref}>
-                <MapPin className="h-4 w-4" aria-hidden />
-                スポットを登録する
-              </Link>
-            </li>
-            <li>
-              <Link href="/organizer/stores">
-                <Ticket className="h-4 w-4" aria-hidden />
-                クーポンを作成する
-              </Link>
-            </li>
-            <li>
-              <Link href="/organizer">
-                <BarChart3 className="h-4 w-4" aria-hidden />
-                データを確認する
-              </Link>
-            </li>
-          </ul>
-        </section>
-      </aside>
-        </div>
     </div>
   );
 }

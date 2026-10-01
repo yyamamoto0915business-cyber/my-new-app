@@ -226,21 +226,27 @@ export function MyAlbumMapPane({ posts }: { posts: MyPostItem[] }) {
   );
 }
 
+function areaHasPlace(area: string, needle: string) {
+  if (!needle) return false;
+  let from = 0;
+  while (from < area.length) {
+    const at = area.indexOf(needle, from);
+    if (at < 0) return false;
+    // 「東京都」に含まれる「京都」は京都府の投稿にしない
+    if (!(needle === "京都" && area[at - 1] === "東")) return true;
+    from = at + 1;
+  }
+  return false;
+}
+
 function postsForPlace(posts: MyPostItem[], slot: PrefectureAlbumSlot | undefined) {
   if (!slot) return [];
-  const label = slot.city ?? slot.name;
   const needles = slot.city ? [slot.city] : [slot.name, regionPlaceLabel(slot.name)];
-  const withPhoto = posts.filter((post) => post.status !== "draft" && Boolean(post.imageUrl));
-  const matched = withPhoto.filter((post) => {
+  return posts.filter((post) => {
+    if (post.status === "draft" || !post.imageUrl) return false;
     const area = post.areaLabel ?? "";
-    return needles.some((needle) => needle.length > 0 && area.includes(needle));
+    return needles.some((needle) => areaHasPlace(area, needle));
   });
-  if (matched.length > 0) return matched;
-  if (slot.postCount <= 0 || withPhoto.length === 0) return [];
-  const start =
-    [...label].reduce((sum, char) => sum + char.charCodeAt(0), 0) % withPhoto.length;
-  const count = Math.min(slot.postCount, withPhoto.length);
-  return Array.from({ length: count }, (_, index) => withPhoto[(start + index) % withPhoto.length]);
 }
 
 function JapanMap({

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { setOrganizerPro } from "@/lib/organizer-pro-store";
+import type { OrganizerCatalogPlanId } from "@/lib/organizer-plans";
+import { setOrganizerNavPlan } from "@/lib/organizer-pro-store";
 
-export function OrganizerProSyncer({ isPro }: { isPro: boolean }) {
+export function OrganizerProSyncer({ plan }: { plan: OrganizerCatalogPlanId | null }) {
   useEffect(() => {
-    setOrganizerPro(isPro);
-  }, [isPro]);
+    setOrganizerNavPlan(plan);
+  }, [plan]);
   return null;
 }

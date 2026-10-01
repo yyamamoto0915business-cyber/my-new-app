@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Camera, Pencil, Plus, Share, User } from "lucide-react";
+import { AccountVisibilityChip } from "@/components/profile/account-visibility-chip";
 import { ProfileBannerAvatar } from "@/components/profile/profile-banner-avatar";
 import { AuthorFollowButton } from "@/components/posts/AuthorFollowButton";
 import { MyAlbumProfileShareSheet } from "./MyAlbumProfileShareSheet";
@@ -33,6 +34,7 @@ export function MyAlbumProfileHeader({
   authorId,
   shareUserId,
   onSelectPosts,
+  onFollowChange,
 }: {
   profile: AlbumProfile | null;
   eyebrow: string;
@@ -42,6 +44,7 @@ export function MyAlbumProfileHeader({
   authorId?: string;
   shareUserId?: string;
   onSelectPosts?: () => void;
+  onFollowChange?: (status: "none" | "pending" | "accepted" | "self" | "rejected") => void;
 }) {
   const [shareOpen, setShareOpen] = useState(false);
   const name = profile?.displayName ?? (isOwn ? "あなた" : "ユーザー");
@@ -102,14 +105,17 @@ export function MyAlbumProfileHeader({
         </div>
 
         {isOwn ? (
-          <Link
-            href="/profile/edit"
-            className="mg-album-cover__edit"
-            aria-label="カバーを編集"
-          >
-            <Camera className="h-3.5 w-3.5" aria-hidden />
-            <span className="mg-album-cover__edit-label">カバーを編集</span>
-          </Link>
+          <div className="mg-album-cover__tools">
+            <AccountVisibilityChip className="shrink-0" />
+            <Link
+              href="/profile/edit"
+              className="mg-album-cover__edit"
+              aria-label="カバーを編集"
+            >
+              <Camera className="h-3.5 w-3.5" aria-hidden />
+              <span className="mg-album-cover__edit-label">カバーを編集</span>
+            </Link>
+          </div>
         ) : null}
 
         <div className="mg-album-cover__copy">
@@ -176,7 +182,7 @@ export function MyAlbumProfileHeader({
           </ul>
           {!isOwn && authorId ? (
             <div className="mg-album-identity__follow">
-              <AuthorFollowButton authorId={authorId} />
+              <AuthorFollowButton authorId={authorId} onStatusChange={onFollowChange} />
             </div>
           ) : null}
         </div>

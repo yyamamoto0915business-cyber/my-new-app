@@ -1,6 +1,7 @@
 const PREVIEW_PATHS = new Set([
   "/organizer/recruitments/new",
   "/organizer/events/new",
+  "/organizer/games/new",
   "/posts/new",
 ]);
 

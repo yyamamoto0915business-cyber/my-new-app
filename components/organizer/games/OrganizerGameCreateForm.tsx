@@ -329,7 +329,7 @@ export function OrganizerGameCreateForm() {
                 <span>2</span>
                 <div>
                   <h2 id="game-create-type">ゲームタイプ</h2>
-                  <p>いま作れるのはスタンプラリーです。タイプは1つだけ選べます。</p>
+                  <p>作成できるタイプを選べます。ここではスタンプラリーを編集しています。</p>
                 </div>
               </div>
 
@@ -337,27 +337,41 @@ export function OrganizerGameCreateForm() {
                 {ORGANIZER_GAME_TYPES.map((type) => {
                   const Icon = TYPE_ICONS[type.id];
                   const selected = type.id === typeId;
+                  const className = cn(
+                    "org-game-create__type",
+                    selected && "is-selected",
+                    !type.available && "is-soon"
+                  );
+                  const inner = (
+                    <>
+                      <span className="org-game-create__type-icon" aria-hidden>
+                        <Icon className="h-5 w-5" strokeWidth={1.8} />
+                      </span>
+                      <span className="org-game-create__type-label">{type.label}</span>
+                      {selected ? (
+                        <span className="org-game-create__type-state">選択中</span>
+                      ) : type.available ? (
+                        <span className="org-game-create__type-state">作成する</span>
+                      ) : (
+                        <span className="org-game-create__type-state">準備中</span>
+                      )}
+                    </>
+                  );
                   return (
                     <li key={type.id}>
-                      <div
-                        className={cn(
-                          "org-game-create__type",
-                          selected && "is-selected",
-                          !type.available && "is-soon"
-                        )}
-                        aria-current={selected ? "true" : undefined}
-                        aria-disabled={!type.available}
-                      >
-                        <span className="org-game-create__type-icon" aria-hidden>
-                          <Icon className="h-5 w-5" strokeWidth={1.8} />
-                        </span>
-                        <span className="org-game-create__type-label">{type.label}</span>
-                        {type.available ? (
-                          <span className="org-game-create__type-state">選択中</span>
-                        ) : (
-                          <span className="org-game-create__type-state">準備中</span>
-                        )}
-                      </div>
+                      {type.available && !selected ? (
+                        <Link href={`/organizer/games/new?type=${type.id}`} className={className}>
+                          {inner}
+                        </Link>
+                      ) : (
+                        <div
+                          className={className}
+                          aria-current={selected ? "true" : undefined}
+                          aria-disabled={!type.available}
+                        >
+                          {inner}
+                        </div>
+                      )}
                     </li>
                   );
                 })}

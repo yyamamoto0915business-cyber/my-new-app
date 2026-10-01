@@ -87,6 +87,18 @@ export function getPostCreateAreaLabel(draft: PostCreateDraft): string {
   return spot || area;
 }
 
+/** 写真・文章・場所など、プレビューに出す内容がまだない */
+export function isPostCreatePreviewEmpty(draft: PostCreateDraft): boolean {
+  if (getPostCreateMediaKind(draft)) return false;
+  if (draft.title.trim()) return false;
+  if (draft.body.trim()) return false;
+  if (draft.tags.length > 0) return false;
+  if (draft.spotName.trim() || draft.area.trim()) return false;
+  if (draft.visitedFrom.trim()) return false;
+  if (draft.relatedUrl.trim()) return false;
+  return true;
+}
+
 /** プレビュー表示用タイトル */
 export function getPostCreatePreviewTitle(draft: PostCreateDraft): string {
   const title = draft.title.trim();

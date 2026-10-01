@@ -13,6 +13,7 @@ import {
   filterRecommendedFeed,
 } from "@/lib/machi/feed";
 import { MachiFeedCard } from "@/components/machi/MachiFeedCard";
+import type { PublicOrganizerGame } from "@/lib/organizer/public-games";
 
 const CARD_COUNT = 5;
 const SKELETON_COUNT = 3;
@@ -21,6 +22,7 @@ type Props = {
   events: Event[];
   stores: StoreRecord[];
   volunteers: VolunteerRoleWithEvent[];
+  games?: PublicOrganizerGame[];
   filteredEvents?: Event[];
   hasActiveFilter?: boolean;
   eventOnlyFilter?: boolean;
@@ -35,6 +37,7 @@ export function MobileRecommendedCarousel({
   events,
   stores,
   volunteers,
+  games = [],
   filteredEvents,
   hasActiveFilter = false,
   eventOnlyFilter = false,
@@ -61,6 +64,7 @@ export function MobileRecommendedCarousel({
             areaPreference,
             categoryPrefs,
             limit: 50,
+            games,
           }),
         ],
         { query: searchQuery, area: selectedArea },
@@ -72,6 +76,7 @@ export function MobileRecommendedCarousel({
       areaPreference,
       categoryPrefs,
       limit: CARD_COUNT,
+      games,
     });
   }, [
     hasActiveFilter,
@@ -82,6 +87,7 @@ export function MobileRecommendedCarousel({
     events,
     stores,
     volunteers,
+    games,
     areaPreference,
     categoryPrefs,
   ]);

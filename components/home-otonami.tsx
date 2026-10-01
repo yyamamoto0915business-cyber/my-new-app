@@ -38,8 +38,9 @@ import { MobileWeekendEventsSection } from "@/components/home/mobile/MobileWeeke
 import { MobilePastEventsSection } from "@/components/home/mobile/MobilePastEventsSection";
 import { TownInfoKindFeed } from "@/components/home/TownInfoKindFeed";
 import { TownGallery } from "@/components/home/TownGallery";
+import type { PublicOrganizerGame } from "@/lib/organizer/public-games";
 
-const KIND_KEYS = new Set(["all", "event", "store", "volunteer", "kitchen"]);
+const KIND_KEYS = new Set(["all", "event", "store", "volunteer", "kitchen", "game"]);
 
 export function HomeOtonami() {
   const searchParams = useSearchParams();
@@ -52,12 +53,15 @@ export function HomeOtonami() {
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [stores, setStores] = useState<StoreRecord[]>([]);
   const [volunteers, setVolunteers] = useState<VolunteerRoleWithEvent[]>([]);
+  const [games, setGames] = useState<PublicOrganizerGame[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [storesLoading, setStoresLoading] = useState(true);
   const [volunteersLoading, setVolunteersLoading] = useState(true);
+  const [gamesLoading, setGamesLoading] = useState(true);
   const [eventsError, setEventsError] = useState(false);
   const [storesError, setStoresError] = useState(false);
   const [volunteersError, setVolunteersError] = useState(false);
+  const [gamesError, setGamesError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [categoryPrefs, setCategoryPrefsState] = useState<CategoryKey[]>([]);
 
@@ -96,9 +100,11 @@ export function HomeOtonami() {
     setEventsLoading(true);
     setStoresLoading(true);
     setVolunteersLoading(true);
+    setGamesLoading(true);
     setEventsError(false);
     setStoresError(false);
     setVolunteersError(false);
+    setGamesError(false);
 
     void fetchJsonArray<Event>("/api/events?limit=100").then((result) => {
       if (cancelled) return;
@@ -135,6 +141,17 @@ export function HomeOtonami() {
       },
     );
 
+    void fetchJsonArray<PublicOrganizerGame>("/api/games?limit=50").then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        setGames(result.data);
+        setGamesError(false);
+      } else {
+        setGamesError(true);
+      }
+      setGamesLoading(false);
+    });
+
     return () => {
       cancelled = true;
     };
@@ -145,14 +162,17 @@ export function HomeOtonami() {
   }, []);
 
   const hasTownItems =
-    allEvents.length > 0 || stores.length > 0 || volunteers.length > 0;
+    allEvents.length > 0 || stores.length > 0 || volunteers.length > 0 || games.length > 0;
   const bootLoading =
-    eventsLoading && storesLoading && volunteersLoading && !hasTownItems;
+    eventsLoading && storesLoading && volunteersLoading && gamesLoading && !hasTownItems;
   const eventsSectionLoading = eventsLoading && allEvents.length === 0;
-  const townLoadError = eventsError || storesError || volunteersError;
+  const townLoadError = eventsError || storesError || volunteersError || gamesError;
 
   const isTownKindView =
-    activeChip === "store" || activeChip === "volunteer" || activeChip === "kitchen";
+    activeChip === "store" ||
+    activeChip === "volunteer" ||
+    activeChip === "kitchen" ||
+    activeChip === "game";
   const isEventFocused = activeChip === "event";
 
   const hasActiveFilter =
@@ -253,7 +273,7 @@ export function HomeOtonami() {
             />
             {isTownKindView ? (
               <TownInfoKindFeed
-                kind={activeChip as "store" | "volunteer" | "kitchen"}
+                kind={activeChip as "store" | "volunteer" | "kitchen" | "game"}
                 searchQuery={searchQuery}
               />
             ) : (
@@ -273,6 +293,7 @@ export function HomeOtonami() {
                     events={allEvents}
                     stores={stores}
                     volunteers={volunteers}
+                    games={games}
                     filteredEvents={filteredEvents}
                     hasActiveFilter={hasActiveFilter}
                     eventOnlyFilter={isEventFocused}
@@ -293,6 +314,7 @@ export function HomeOtonami() {
                     events={allEvents}
                     stores={stores}
                     volunteers={volunteers}
+                    games={games}
                     loading={bootLoading}
                     includeEnded={showEnded}
                     onChipClick={handleChipClick}
@@ -301,6 +323,7 @@ export function HomeOtonami() {
                       kitchen: storesLoading && stores.length === 0,
                       store: storesLoading && stores.length === 0,
                       volunteer: volunteersLoading && volunteers.length === 0,
+                      game: gamesLoading && games.length === 0,
                     }}
                   />
                 )}
@@ -312,6 +335,7 @@ export function HomeOtonami() {
             events={allEvents}
             stores={stores}
             volunteers={volunteers}
+            games={games}
             loading={bootLoading}
           />
         </div>
@@ -341,7 +365,7 @@ export function HomeOtonami() {
         />
         {isTownKindView ? (
           <TownInfoKindFeed
-            kind={activeChip as "store" | "volunteer" | "kitchen"}
+            kind={activeChip as "store" | "volunteer" | "kitchen" | "game"}
             searchQuery={searchQuery}
           />
         ) : (
@@ -361,6 +385,7 @@ export function HomeOtonami() {
                 events={allEvents}
                 stores={stores}
                 volunteers={volunteers}
+                games={games}
                 filteredEvents={filteredEvents}
                 hasActiveFilter={hasActiveFilter}
                 eventOnlyFilter={isEventFocused}

@@ -47,6 +47,17 @@ import {
 
 const CREATE_CATEGORIES = POST_CATEGORY_TABS.filter((t) => t.key !== "all");
 
+function visibilityHint(visibility: PostCreateDraft["visibility"], albumTitle?: string) {
+  if (visibility === "public") {
+    return albumTitle
+      ? `みんなの投稿とマイアルバムに載ります。あわせて「${albumTitle}」にも入ります。`
+      : "みんなの投稿とマイアルバムに載ります。";
+  }
+  return albumTitle
+    ? `マイアルバムに載ります。フォローを承認した人と、「${albumTitle}」のメンバーにも見えます。`
+    : "マイアルバムに載ります。フォローを承認した人にも見えます。";
+}
+
 const CATEGORY_ICONS: Record<
   PostCategory,
   ComponentType<{ className?: string; strokeWidth?: number }>
@@ -80,6 +91,9 @@ type Props = {
   /** 完了パネルの見出し・説明（編集モードで差し替える） */
   doneTitle?: string;
   doneDescription?: string;
+  /** 共有アルバムから開いたとき、先に選んだアルバム */
+  albums?: { id: string; title: string }[];
+  albumId?: string | null;
 };
 
 export function PostCreateForm({
@@ -101,6 +115,8 @@ export function PostCreateForm({
   submittingLabel = "アップロード中…",
   doneTitle = "投稿を受け付けました",
   doneDescription = "みんなの投稿へ戻ります…",
+  albums = [],
+  albumId = null,
 }: Props) {
   const [tagDraft, setTagDraft] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -108,6 +124,7 @@ export function PostCreateForm({
   const mediaKind = getPostCreateMediaKind(draft);
   const hasMedia = mediaKind != null;
   const tagsFull = draft.tags.length >= POST_CREATE_TAG_MAX;
+  const albumTitle = albums.find((album) => album.id === albumId)?.title;
 
   const detailsFilledCount =
     (draft.spotName.trim() ? 1 : 0) +
@@ -473,6 +490,13 @@ export function PostCreateForm({
           ) : null}
         </div>
 
+        {albumTitle ? (
+          <p className="posts-create-album">
+            <span className="posts-create-visibility__label">共有アルバム</span>
+            <span className="posts-create-album__name">「{albumTitle}」に残します</span>
+          </p>
+        ) : null}
+
         <div className="posts-create-visibility" role="radiogroup" aria-label="公開範囲">
           <p className="posts-create-visibility__label">公開範囲</p>
           <div className="posts-create-visibility__row">
@@ -502,9 +526,7 @@ export function PostCreateForm({
             </button>
           </div>
           <p className="posts-create-visibility__hint">
-            {draft.visibility === "public"
-              ? "みんなの投稿とマイアルバムに載ります。"
-              : "マイアルバムに載ります。フォローを承認した人にも見えます。"}
+            {visibilityHint(draft.visibility, albumTitle)}
           </p>
         </div>
 

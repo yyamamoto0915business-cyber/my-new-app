@@ -13,7 +13,11 @@ import {
   type ProfileAvatarRole,
 } from "@/lib/profile-avatar";
 import { isAdmin } from "@/lib/admin";
-import { useOrganizerPro } from "@/lib/organizer-pro-store";
+import { useOrganizerNavPlan } from "@/lib/organizer-pro-store";
+import {
+  OrganizerPlanTabBadge,
+  organizerPlanTabClass,
+} from "@/components/navigation/OrganizerPlanTabMark";
 import { isEventModePath, isMachiModePath } from "@/lib/top-mode-active";
 import { CalendarDays, MapPinned } from "lucide-react";
 import { setModeCookie } from "@/lib/mode-preference";
@@ -108,7 +112,7 @@ export function PcTopNav() {
 function PcTopNavInner() {
   const pathname = usePathname() ?? "";
   const { user } = useSupabaseUser();
-  const isProOrganizer = useOrganizerPro();
+  const organizerPlan = useOrganizerNavPlan();
   const [activeProfileRole, setActiveProfileRole] =
     useState<ProfileAvatarRole>("participant");
   const [participantAvatarUrl, setParticipantAvatarUrl] = useState<string | null>(null);
@@ -204,21 +208,21 @@ function PcTopNavInner() {
       <nav className="flex items-center gap-1" aria-label="メインナビゲーション">
         {NAV_LINKS.map((link) => {
           const active = isNavActive(pathname, link.href);
-          const isPaidOrganizerLink =
-            isOrganizerEntryHref(link.href) && isProOrganizer;
+          const isOrganizerPlanLink =
+            isOrganizerEntryHref(link.href) && organizerPlan;
 
-          if (isPaidOrganizerLink) {
+          if (isOrganizerPlanLink && organizerPlan) {
             return (
               <span
                 key={link.href}
-                className="relative z-10 inline-block overflow-visible"
+                className={`org-tab-plan-wrap org-tab-plan-wrap--${organizerPlan} relative z-10 inline-block overflow-visible`}
               >
                 <Link
                   href={link.href}
                   prefetch
                   className={
                     active
-                      ? "org-tab-pro-shiny"
+                      ? organizerPlanTabClass(organizerPlan)
                       : "whitespace-nowrap rounded-[20px] px-[12px] py-[5px] text-[13px] font-medium text-[#3a5848] transition-colors hover:text-[#1e3828]"
                   }
                   aria-current={active ? "page" : undefined}
@@ -226,7 +230,7 @@ function PcTopNavInner() {
                 >
                   {link.label}
                 </Link>
-                <span className="org-pro-tab-badge">PRO</span>
+                <OrganizerPlanTabBadge plan={organizerPlan} />
                 {active ? (
                   <>
                     <span className="org-pro-star org-pro-star-1" aria-hidden />
