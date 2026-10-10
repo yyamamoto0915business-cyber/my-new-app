@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ArrowUp,
   BarChart3,
+  GripVertical,
   Loader2,
   Plus,
   Printer,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
 import { GameQrCard } from "@/components/organizer/games/GameQrCard";
+import { OrganizerCouponUses } from "@/components/organizer/games/OrganizerCouponUses";
 import {
   MAX_ORGANIZER_GAME_SPOTS,
   ORGANIZER_GAME_SPOT_KIND_LABEL,
@@ -34,6 +36,8 @@ export function OrganizerGameEditor() {
   const [error, setError] = useState<string | null>(null);
   const [playerCount, setPlayerCount] = useState(0);
   const [resetting, setResetting] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [publishing, setPublishing] = useState(false);
 
   const load = useCallback(async () => {
     if (!gameId) return;
@@ -69,6 +73,29 @@ export function OrganizerGameEditor() {
       cancelled = true;
     };
   }, [load]);
+
+  async function publish() {
+    if (!game || game.status === "published") return;
+    setPublishing(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/organizer/games/${gameId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "published" }),
+      });
+      const json = (await res.json()) as { error?: string; game?: OrganizerGame };
+      if (!res.ok || !json.game) {
+        setError(json.error ?? "公開できませんでした");
+        return;
+      }
+      setGame(json.game);
+    } catch {
+      setError("通信エラーが発生しました");
+    } finally {
+      setPublishing(false);
+    }
+  }
 
   async function addSpot() {
     setAdding(true);
@@ -140,18 +167,19 @@ export function OrganizerGameEditor() {
   }
 
   async function moveSpot(index: number, direction: -1 | 1) {
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= spots.length) return;
+    await reorderSpots(index, index + direction);
+  }
+
+  async function reorderSpots(from: number, to: number) {
+    if (from === to || from < 0 || to < 0 || from >= spots.length || to >= spots.length) return;
     const order = spots.map((s) => s.id);
-    const tmp = order[index];
-    order[index] = order[nextIndex];
-    order[nextIndex] = tmp;
+    const [moved] = order.splice(from, 1);
+    order.splice(to, 0, moved);
     const previous = spots;
     setSpots((prev) => {
       const copy = [...prev];
-      const item = copy[index];
-      copy[index] = copy[nextIndex];
-      copy[nextIndex] = item;
+      const [item] = copy.splice(from, 1);
+      copy.splice(to, 0, item);
       return copy;
     });
     setError(null);
@@ -207,9 +235,18 @@ export function OrganizerGameEditor() {
 
       <OrganizerWorkspacePageHeader
         title={game.name}
-        subtitle={`${game.typeLabel}のスポットとQRを設定します。参加用QRは1枚、スポット用QRは場所ごとに印刷します。`}
+        subtitle={
+          game.status === "published"
+            ? `公開中です。${game.typeLabel}のスポットとQRを設定します。`
+            : `下書きです。公開すると、参加用QRから入れるようになります。`
+        }
         actions={
           <>
+            {game.type === "stamp" ? (
+              <Link href={`/organizer/games/new?edit=${game.id}`} className="org-games__print-link">
+                画面と特典を直す
+              </Link>
+            ) : null}
             <Link href={`/organizer/games/${game.id}/analytics`} className="org-games__print-link">
               <BarChart3 className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
               データを見る
@@ -224,7 +261,16 @@ export function OrganizerGameEditor() {
 
       <section className="org-game-editor__panel">
         <h2>参加用QR</h2>
-        <p>会場入口やチラシに貼ります。読み込むと、ゲームの参加画面が開きます。</p>
+        {game.status === "published" ? (
+          <p>会場入口やチラシに貼ります。読み込むと、ゲームの参加画面が開きます。</p>
+        ) : (
+          <p>下書きのあいだは、このQRを読み込んでも参加画面は開きません。</p>
+        )}
+        {game.status !== "published" ? (
+          <button type="button" className="org-game-editor__publish" disabled={publishing} onClick={() => void publish()}>
+            {publishing ? "公開しています…" : "公開する"}
+          </button>
+        ) : null}
         <GameQrCard
           title="このゲームに参加する"
           caption="ニックネームと合言葉で参加・再開できます。"
@@ -270,10 +316,13 @@ export function OrganizerGameEditor() {
         </div>
       </section>
 
+      <OrganizerCouponUses gameId={game.id} gameType={game.type} />
+
       <section className="org-game-editor__panel">
         <div className="org-game-editor__panel-head">
           <div>
             <h2>スポット設定</h2>
+            <p className="org-game-editor__note">ドラッグしても、上下ボタンでも並べ替えられます。</p>
             <p>巡る場所を追加します。スタンプかゴールを選べます。</p>
           </div>
           <button
@@ -294,7 +343,18 @@ export function OrganizerGameEditor() {
         ) : (
           <ol className="org-game-spots">
             {spots.map((spot, index) => (
-              <li key={spot.id} className="org-game-spot">
+              <li
+              key={spot.id}
+              className="org-game-spot"
+              draggable
+              onDragStart={() => setDragIndex(index)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => {
+                if (dragIndex != null) void reorderSpots(dragIndex, index);
+                setDragIndex(null);
+              }}
+              onDragEnd={() => setDragIndex(null)}
+            >
                 <div className="org-game-spot__row">
                   <div className="org-game-spot__index">{index + 1}</div>
                   <div className="org-game-spot__fields">
@@ -332,6 +392,9 @@ export function OrganizerGameEditor() {
                     </label>
                   </div>
                   <div className="org-game-spot__tools">
+                    <span aria-hidden>
+                      <GripVertical className="h-4 w-4" />
+                    </span>
                     <button
                       type="button"
                       aria-label="上へ"

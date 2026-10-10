@@ -47,7 +47,7 @@ export function MachiFeedCard({ item, compact }: Props) {
         "group flex h-full flex-col overflow-hidden rounded-[14px] border border-[#ebe4dc] bg-white shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition hover:border-[#e0c4a8] hover:shadow-[0_4px_16px_rgba(160,100,40,0.1)]",
         compact && "min-w-[148px] max-w-[168px] shrink-0",
       )}
-      aria-label={`${item.title}の詳細を見る`}
+      aria-label={isGame ? `${item.title}の参加画面を開く` : `${item.title}の詳細を見る`}
     >
       <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-[#f3ebe3]">
         {hasImage ? (

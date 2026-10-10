@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { publicPlayAudience, publicPlayLimit, publicPlayStart, type GameAudience, type GamePlayLimit, type PublicPlayStart } from "@/lib/organizer/game-experience";
+import { publicQuiz, readStoredQuiz } from "@/lib/organizer/quiz-play";
+import { publicMission, readStoredMission } from "@/lib/organizer/mission-play";
+import { readStoredPhoto } from "@/lib/organizer/photo-play";
+import { readStoredCoupon } from "@/lib/organizer/coupon-play";
+import { publicCheckin, readStoredCheckin } from "@/lib/organizer/checkin-play";
+import { publicMystery, readStoredMystery } from "@/lib/organizer/mystery-play";
 import { getOrganizerGameType, isOrganizerGameTypeId } from "@/lib/organizer/game-types";
-import { getPlayDb, joinPlayGame } from "@/lib/organizer/play";
+import { getPlayDb, joinPlayGame, playGamePublished } from "@/lib/organizer/play";
+import { readPlayUserId } from "@/lib/organizer/play-user";
+import { loadPlayMoment } from "@/lib/organizer/play-moment";
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -14,6 +23,44 @@ type PlayGameRow = {
   ends_at: string | null;
   spot_count: number;
 };
+
+function formatPlayPeriod(startsAt: string | null, endsAt: string | null): string | null {
+  const fmt = (iso: string | null) => {
+    if (!iso) return "";
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  };
+  const start = fmt(startsAt);
+  const end = fmt(endsAt);
+  if (start && end) return `${start} 〜 ${end}`;
+  if (start) return `${start} から`;
+  if (end) return `${end} まで`;
+  return null;
+}
+
+async function loadPublicStart(gameId: string): Promise<{ start: PublicPlayStart; audience: GameAudience; playLimit: GamePlayLimit }> {
+  const blank = { start: publicPlayStart(null), audience: "anyone" as const, playLimit: "once" as const };
+  const db = getPlayDb();
+  if (!db) return blank;
+  const { data, error } = await db.from("organizer_games").select("settings").eq("id", gameId).maybeSingle();
+  if (error) {
+    console.error("play start settings:", error);
+    return blank;
+  }
+  const settings = (data as { settings?: unknown } | null)?.settings;
+  return {
+    start: publicPlayStart(settings),
+    audience: publicPlayAudience(settings),
+    playLimit: publicPlayLimit(settings),
+  };
+}
 
 /** GET: 参加用QRの公開情報 */
 export async function GET(_req: NextRequest, { params }: Params) {
@@ -39,8 +86,69 @@ export async function GET(_req: NextRequest, { params }: Params) {
   if (!row?.id) {
     return NextResponse.json({ error: "ゲームが見つかりません" }, { status: 404 });
   }
+  const playDb = getPlayDb();
+  if (playDb && !(await playGamePublished(playDb, row.id))) {
+    return NextResponse.json({ error: "ゲームが見つかりません" }, { status: 404 });
+  }
 
   const type = isOrganizerGameTypeId(row.type) ? row.type : "stamp";
+  const userId = await readPlayUserId();
+  let accountNickname: string | null = null;
+  if (userId && playDb) {
+    const { data: owned } = await playDb
+      .from("organizer_game_players")
+      .select("nickname")
+      .eq("game_id", row.id)
+      .eq("account_user_id", userId)
+      .maybeSingle();
+    if (typeof owned?.nickname === "string" && owned.nickname.trim()) {
+      accountNickname = owned.nickname;
+    }
+  }
+  const [opening, moment] = await Promise.all([loadPublicStart(row.id), loadPlayMoment(row.id)]);
+  const start = opening.start;
+  let quiz = null;
+  if (type === "quiz" && playDb) {
+    const { data: quizRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
+    const stored = readStoredQuiz((quizRow as { settings?: unknown } | null)?.settings);
+    quiz = stored ? publicQuiz(stored) : null;
+  }
+  let mission = null;
+  if (type === "mission" && playDb) {
+    const { data: missionRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
+    const settings = (missionRow as { settings?: unknown } | null)?.settings;
+    const storedMission = readStoredMission(settings);
+    const hints =
+      !!settings &&
+      typeof settings === "object" &&
+      !Array.isArray(settings) &&
+      typeof (settings as { mission?: { publish?: { hints?: unknown } } }).mission?.publish?.hints === "boolean"
+        ? (settings as { mission: { publish: { hints: boolean } } }).mission.publish.hints
+        : true;
+    mission = storedMission ? publicMission(storedMission, hints) : null;
+  }
+  let photo = null;
+  if (type === "photo" && playDb) {
+    const { data: photoRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
+    photo = readStoredPhoto((photoRow as { settings?: unknown } | null)?.settings);
+  }
+  let coupon = null;
+  if (type === "coupon" && playDb) {
+    const { data: couponRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
+    coupon = readStoredCoupon((couponRow as { settings?: unknown } | null)?.settings);
+  }
+  let checkin = null;
+  if (type === "checkin" && playDb) {
+    const { data: checkinRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
+    const storedCheckin = readStoredCheckin((checkinRow as { settings?: unknown } | null)?.settings);
+    checkin = storedCheckin ? publicCheckin(storedCheckin) : null;
+  }
+  let mystery = null;
+  if (type === "mystery" && playDb) {
+    const { data: mysteryRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
+    const storedMystery = readStoredMystery((mysteryRow as { settings?: unknown } | null)?.settings);
+    mystery = storedMystery ? publicMystery(storedMystery) : null;
+  }
   return NextResponse.json({
     name: row.name,
     description: row.description ?? "",
@@ -49,6 +157,21 @@ export async function GET(_req: NextRequest, { params }: Params) {
     startsAt: row.starts_at,
     endsAt: row.ends_at,
     spotCount: row.spot_count ?? 0,
+    audience: opening.audience,
+    playLimit: opening.playLimit,
+    signedIn: Boolean(userId),
+    accountNickname,
+    start: {
+      ...start,
+      periodLabel: start.showPeriod ? formatPlayPeriod(row.starts_at, row.ends_at) : null,
+    },
+    moment,
+    quiz,
+    mission,
+    photo,
+    coupon,
+    checkin,
+    mystery,
   });
 }
 
@@ -75,9 +198,9 @@ export async function POST(request: NextRequest, { params }: Params) {
   const passphrase = typeof body.passphrase === "string" ? body.passphrase : "";
 
   try {
-    const result = await joinPlayGame(db, token, nickname, passphrase);
+    const result = await joinPlayGame(db, token, nickname, passphrase, await readPlayUserId());
     if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: result.status });
+      return NextResponse.json({ error: result.error, code: result.code ?? null }, { status: result.status });
     }
     return NextResponse.json(result.session);
   } catch (e) {

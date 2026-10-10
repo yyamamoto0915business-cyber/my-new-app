@@ -50,6 +50,7 @@ const STATUS_LABEL: Record<GameAnalytics["game"]["status"], string> = {
 const TYPE_MARK: Partial<Record<OrganizerGame["type"], string>> = {
   stamp: "/organizer/games/game-type-stamp.png",
   quiz: "/organizer/games/game-type-quiz.png",
+  mystery: "/organizer/games/loading-mascot-2.png",
   mission: "/organizer/games/game-type-mission.png",
   photo: "/organizer/games/game-type-photo.png",
   coupon: "/organizer/games/game-type-coupon.png",

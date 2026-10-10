@@ -32,6 +32,7 @@ import {
   type CouponStore,
   type CouponWinMode,
 } from "@/lib/organizer/coupon";
+import { CouponTestPlay } from "@/components/organizer/games/CouponTestPlay";
 import { OrganizerCouponPreview } from "@/components/organizer/games/OrganizerCouponPreview";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
@@ -118,6 +119,7 @@ export function OrganizerCouponCreateForm() {
   const [audience, setAudience] = useState<CouponAudience>("anyone");
   const [previewTab, setPreviewTab] = useState<"cover" | "stores" | "rules">("cover");
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
 
@@ -724,6 +726,9 @@ export function OrganizerCouponCreateForm() {
           {error ? <p className="org-coupon__error">{error}</p> : null}
 
           <div className="org-coupon__footer">
+            <button type="button" className="org-game-try" disabled={saving} onClick={() => setTesting(true)}>
+              お試しで見る
+            </button>
             <button type="button" className="org-coupon__ghost" disabled={saving} onClick={() => void save("draft")}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
               下書き保存
@@ -759,6 +764,19 @@ export function OrganizerCouponCreateForm() {
           onTab={setPreviewTab}
         />
       </div>
+      {testing ? (
+        <CouponTestPlay
+          name={name}
+          description={description}
+          stores={stores}
+          winMode={winMode}
+          winCount={winCount}
+          oncePerPerson={oncePerPerson}
+          noStack={noStack}
+          autoGrant={autoGrant}
+          onClose={() => setTesting(false)}
+        />
+      ) : null}
     </div>
   );
 }

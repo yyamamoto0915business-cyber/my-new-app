@@ -23,6 +23,7 @@ import { MypageMobileProfileCard } from "@/components/profile/mypage-mobile-prof
 import { MypageMobileOrganize } from "@/components/profile/mypage-mobile-organize";
 import { MypageMobileAlbum } from "@/components/profile/mypage-mobile-album";
 import { MypageMobileFooterLinks } from "@/components/profile/mypage-mobile-footer-links";
+import { MypagePointsCard } from "@/components/profile/MypagePointsCard";
 import type {
   MypageActivityItem,
   MypageNextEvent,
@@ -250,6 +251,7 @@ function MypagePcSidebar({
 }) {
   return (
     <aside className="flex flex-col gap-2.5">
+      <MypagePointsCard />
       <SectionCard title="保存・応募">
         <MenuRow
           href="/pass"

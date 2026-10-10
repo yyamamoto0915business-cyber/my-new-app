@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSearchParamsNoSuspend } from "@/lib/use-search-params-no-suspend";
 import { createClient } from "@/lib/supabase/client";
 import { signUpWithEmail } from "@/app/auth/actions";
 import { AuthPcPageLayout } from "@/components/auth/pc/AuthPcPageLayout";
@@ -16,7 +17,7 @@ type Tab = "login" | "signup";
 
 function AuthPageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParamsNoSuspend();
   const nextParam = searchParams.get("next") ?? searchParams.get("returnTo") ?? searchParams.get("redirect") ?? searchParams.get("callbackUrl");
   const returnTo = nextParam && nextParam !== "/auth" && !nextParam.startsWith("/auth") ? nextParam : "/";
   const tabParam = searchParams.get("tab");
@@ -270,15 +271,5 @@ function AuthPageContent() {
 }
 
 export default function AuthPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[var(--mg-paper)]">
-          <p className="text-sm text-[var(--mg-muted)]">読み込み中...</p>
-        </div>
-      }
-    >
-      <AuthPageContent />
-    </Suspense>
-  );
+  return <AuthPageContent />;
 }

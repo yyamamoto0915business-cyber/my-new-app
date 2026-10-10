@@ -141,24 +141,29 @@ export async function POST(request: NextRequest) {
             const eventId = meta.eventId as string;
             const userId = meta.userId as string;
             if (eventId && userId) {
-              const { data: existingOrder } = await supabase
-                .from("event_orders")
-                .select("id")
-                .eq("stripe_checkout_session_id", session.id)
-                .maybeSingle();
+              const { data: existingOrder, error: lookupError } = await supabase
+                .from("event_orders").select("id")
+                .eq("stripe_checkout_session_id", session.id).maybeSingle();
+              if (lookupError) throw lookupError;
               if (!existingOrder) {
-                await supabase.from("event_orders").insert({
-                  user_id: userId,
-                  event_id: eventId,
+                const { error: orderError } = await supabase.from("event_orders").insert({
+                  user_id: userId, event_id: eventId,
                   stripe_checkout_session_id: session.id,
-                  stripe_payment_intent_id: piId,
-                  amount: amountJpy,
-                  status: "paid",
+                  stripe_payment_intent_id: piId, amount: amountJpy, status: "paid",
                 });
-                await supabase.from("event_participants").upsert(
+                if (orderError) throw orderError;
+              }
+              // 注文保存後に失敗した場合も、Webhook再送で参加登録を復旧する。
+              const { data: participant, error: lookupParticipantError } = await supabase
+                .from("event_participants").select("status")
+                .eq("event_id", eventId).eq("user_id", userId).maybeSingle();
+              if (lookupParticipantError) throw lookupParticipantError;
+              if (!participant || participant.status === "applied") {
+                const { error: participantError } = await supabase.from("event_participants").upsert(
                   { event_id: eventId, user_id: userId, status: "confirmed" },
                   { onConflict: "event_id,user_id" }
                 );
+                if (participantError) throw participantError;
               }
             }
           } else if (type === "pos") {

@@ -40,7 +40,7 @@ export function AuthPcFormShell({ isLogin, children }: Props) {
             )}
           >
             {isLogin
-              ? "続きから、地域のイベントや活動を見つけられます"
+              ? "続きから、まちの情報や活動を見つけられます"
               : "イベント参加も、活動の主催も、ここから始められます"}
           </p>
         </header>

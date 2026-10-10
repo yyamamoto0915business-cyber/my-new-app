@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, User, Shield } from "lucide-react";
+import { Coins, LogOut, User, Shield } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import {
@@ -203,6 +203,13 @@ export function UserMenu() {
         >
           <User className="h-4 w-4 shrink-0" />
           <span>マイページ</span>
+        </a>
+        <a
+          href="/points"
+          className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-zinc-700 outline-none transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus:bg-zinc-100 focus:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 dark:focus:bg-zinc-800 dark:focus:text-zinc-100"
+        >
+          <Coins className="h-4 w-4 shrink-0" />
+          <span>マイポイント</span>
         </a>
 
         <DropdownMenuSeparator className="my-1.5" />

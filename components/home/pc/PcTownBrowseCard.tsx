@@ -44,7 +44,7 @@ export function PcTownBrowseCard({ item }: Props) {
     <Link
       href={item.href}
       className="group flex h-full flex-col overflow-hidden rounded-[16px] border border-[#e6eee6] bg-white shadow-[0_2px_10px_rgba(22,40,28,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(22,40,28,0.08)]"
-      aria-label={`${item.title}の詳細を見る`}
+      aria-label={item.kind === "game" ? `${item.title}の参加画面を開く` : `${item.title}の詳細を見る`}
     >
       <div className="relative aspect-[2/1] w-full overflow-hidden bg-[#e7f0e6]">
         {hasImage ? (

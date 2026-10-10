@@ -38,6 +38,7 @@ import {
   type MissionKindId,
   type MissionReward,
 } from "@/lib/organizer/mission";
+import { MissionTestPlay } from "@/components/organizer/games/MissionTestPlay";
 import { OrganizerMissionPreview } from "@/components/organizer/games/OrganizerMissionPreview";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
@@ -100,6 +101,7 @@ export function OrganizerMissionCreateForm() {
   const [hintsOn, setHintsOn] = useState(true);
   const [device, setDevice] = useState<"phone" | "tablet">("phone");
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
 
@@ -662,6 +664,9 @@ export function OrganizerMissionCreateForm() {
 
       {error ? <p className="org-mission__error">{error}</p> : null}
       <div className="org-mission__actions">
+        <button type="button" className="org-game-try" disabled={saving} onClick={() => setTesting(true)}>
+          お試しで見る
+        </button>
         <button type="button" className="org-mission__draft" disabled={saving} onClick={() => void save("draft")}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
           下書き保存
@@ -671,6 +676,18 @@ export function OrganizerMissionCreateForm() {
           公開する
         </button>
       </div>
+      {testing ? (
+        <MissionTestPlay
+          name={name}
+          description={description}
+          missions={missions}
+          clearCount={clearCount}
+          hintsOn={hintsOn}
+          rewards={{ coupon: couponOn, points: pointsOn, stamp: stampOn }}
+          prizePlace={prizePlace}
+          onClose={() => setTesting(false)}
+        />
+      ) : null}
     </div>
   );
 }

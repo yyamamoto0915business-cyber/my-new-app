@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { OrganizerCheckinCreateForm } from "@/components/organizer/games/OrganizerCheckinCreateForm";
 import { OrganizerCouponCreateForm } from "@/components/organizer/games/OrganizerCouponCreateForm";
 import { OrganizerGameCreateForm } from "@/components/organizer/games/OrganizerGameCreateForm";
+import { OrganizerMysteryCreateForm } from "@/components/organizer/games/OrganizerMysteryCreateForm";
 import { OrganizerMissionCreateForm } from "@/components/organizer/games/OrganizerMissionCreateForm";
 import { OrganizerPhotoCreateForm } from "@/components/organizer/games/OrganizerPhotoCreateForm";
 import { OrganizerQuizCreateForm } from "@/components/organizer/games/OrganizerQuizCreateForm";
@@ -22,6 +23,7 @@ export function OrganizerGameCreateSwitch() {
     return <GamePublishSuccess typeLabel={typeLabel} isPreview />;
   }
   if (type === "quiz") return <OrganizerQuizCreateForm />;
+  if (type === "mystery") return <OrganizerMysteryCreateForm />;
   if (type === "mission") return <OrganizerMissionCreateForm />;
   if (type === "photo") return <OrganizerPhotoCreateForm />;
   if (type === "coupon") return <OrganizerCouponCreateForm />;

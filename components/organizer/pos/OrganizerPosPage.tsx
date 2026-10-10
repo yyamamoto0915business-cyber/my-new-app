@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -88,6 +89,7 @@ export function OrganizerPosPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [productModal, setProductModal] = useState<"closed" | "create" | "edit">("closed");
+  const [productModalHostReady, setProductModalHostReady] = useState(false);
   const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
   const [savingProduct, setSavingProduct] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -136,6 +138,19 @@ export function OrganizerPosPage() {
     setStripeStatusReady(true);
     return { ready, submitted };
   }, []);
+
+  useEffect(() => {
+    setProductModalHostReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (productModal === "closed") return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [productModal]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1044,8 +1059,9 @@ export function OrganizerPosPage() {
         </aside>
       </div>
 
-      {productModal !== "closed" && (
-        <div className="org-pos__modal-backdrop" role="presentation">
+      {productModal !== "closed" && productModalHostReady
+        ? createPortal(
+            <div className="org-pos__modal-backdrop" role="presentation">
           <div
             className="org-pos__modal"
             role="dialog"
@@ -1152,8 +1168,10 @@ export function OrganizerPosPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

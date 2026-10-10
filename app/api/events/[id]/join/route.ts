@@ -1,3 +1,4 @@
+import { getRegistrationError } from "@/lib/event-registration";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
@@ -60,6 +61,17 @@ export async function POST(_request: Request, { params }: Params) {
       { error: "このイベントは申込制ではありません" },
       { status: 400 }
     );
+  }
+
+  if (event.price > 0 && (event.paymentMethod === "online" || event.paymentMethod === "both")) {
+    return NextResponse.json({ error: "オンライン決済からお申し込みください" }, { status: 400 });
+  }
+  try {
+    const error = await getRegistrationError(event);
+    if (error) return NextResponse.json({ error }, { status: 400 });
+  } catch (error) {
+    console.error("registration availability:", error);
+    return NextResponse.json({ error: "受付状況を確認できません" }, { status: 503 });
   }
 
   const existing = await getParticipantStatus(supabase, eventId, user.id);

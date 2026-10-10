@@ -1,4 +1,5 @@
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
+import { isPlayRoute } from "@/lib/is-play-route";
 
 export type SiteFooterVisibility = "hidden" | "desktop-only" | "all";
 
@@ -32,7 +33,7 @@ export function getSiteFooterVisibility(pathname: string): SiteFooterVisibility 
 
   if (pathname.startsWith("/messages")) return "desktop-only";
   if (pathname.startsWith("/checkin")) return "desktop-only";
-  if (pathname.startsWith("/play")) return "desktop-only";
+  if (isPlayRoute(pathname)) return "desktop-only";
 
   return "all";
 }

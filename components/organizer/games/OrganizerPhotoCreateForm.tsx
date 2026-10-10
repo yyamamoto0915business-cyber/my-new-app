@@ -25,6 +25,7 @@ import {
   samplePhotoSpots,
   type PhotoSpot,
 } from "@/lib/organizer/photo";
+import { PhotoTestPlay } from "@/components/organizer/games/PhotoTestPlay";
 import { OrganizerPhotoPreview } from "@/components/organizer/games/OrganizerPhotoPreview";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
@@ -88,6 +89,7 @@ export function OrganizerPhotoCreateForm() {
   );
   const [previewTab, setPreviewTab] = useState<"cover" | "spots" | "rewards">("cover");
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
 
@@ -599,6 +601,9 @@ export function OrganizerPhotoCreateForm() {
           {error ? <p className="org-photo__error">{error}</p> : null}
 
           <div className="org-photo__footer">
+            <button type="button" className="org-game-try" disabled={saving} onClick={() => setTesting(true)}>
+              お試しで見る
+            </button>
             <button type="button" className="org-photo__ghost" disabled={saving} onClick={() => void save("draft")}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
               下書き保存
@@ -633,6 +638,18 @@ export function OrganizerPhotoCreateForm() {
           onTab={setPreviewTab}
         />
       </div>
+      {testing ? (
+        <PhotoTestPlay
+          name={name}
+          description={description}
+          spots={spots}
+          clearCount={clearCount}
+          photoRequired={photoRequired}
+          points={points}
+          rewards={{ points: pointsOn, coupon: couponOn, prize: prizeOn }}
+          onClose={() => setTesting(false)}
+        />
+      ) : null}
     </div>
   );
 }

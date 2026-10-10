@@ -7,6 +7,7 @@ import { useUnreadCount } from "@/hooks/use-unread-count";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 import { isAuthRoute } from "@/lib/is-auth-route";
+import { isPlayRoute } from "@/lib/is-play-route";
 import { cn } from "@/lib/utils";
 import { prefetchMypageSummary } from "@/lib/prefetch-mypage-summary";
 import { prefetchMyPosts } from "@/lib/prefetch-my-posts";
@@ -96,6 +97,7 @@ export function MobileBottomNav() {
 
   if (
     authRoute ||
+    isPlayRoute(pathname) ||
     isMessagesConversationRoute(pathname) ||
     isProfileEditRoute(pathname) ||
     pathname === "/application-form-preview" ||

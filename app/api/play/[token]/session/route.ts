@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPlayDb, resumePlayGame } from "@/lib/organizer/play";
+import { readPlayUserId } from "@/lib/organizer/play-user";
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -24,11 +25,11 @@ export async function POST(request: NextRequest, { params }: Params) {
   const deviceToken = typeof body.deviceToken === "string" ? body.deviceToken : "";
 
   try {
-    const session = await resumePlayGame(db, token, deviceToken);
-    if (!session) {
-      return NextResponse.json({ error: "再開できませんでした" }, { status: 401 });
+    const result = await resumePlayGame(db, token, deviceToken, await readPlayUserId());
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error, code: result.code ?? null }, { status: result.status });
     }
-    return NextResponse.json(session);
+    return NextResponse.json(result.session);
   } catch (e) {
     console.error("play resume POST:", e);
     return NextResponse.json({ error: "再開に失敗しました" }, { status: 500 });

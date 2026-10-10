@@ -2,38 +2,51 @@ import { NextRequest, NextResponse } from "next/server";
 import { getApiUser } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
+import { sanitizeGameExperience } from "@/lib/organizer/game-experience";
 import {
   createOrganizerGame,
   listOrganizerGameEventOptions,
+  listOrganizerGameSpots,
   listOrganizerGames,
+  parseOrganizerGameSpotDrafts,
 } from "@/lib/organizer/games";
 import {
   DEFAULT_ORGANIZER_GAME_TYPE_ID,
   getOrganizerGameType,
   isOrganizerGameTypeId,
 } from "@/lib/organizer/game-types";
-import {
-  isOrganizerGameSpotKind,
-  MAX_ORGANIZER_GAME_SPOTS,
-} from "@/lib/organizer/game-tokens";
+import { MAX_ORGANIZER_GAME_SPOTS } from "@/lib/organizer/game-tokens";
 import { sanitizeCheckinSettings } from "@/lib/organizer/checkin";
+import { sanitizeMysterySettings } from "@/lib/organizer/mystery";
 import { sanitizeCouponSettings } from "@/lib/organizer/coupon";
 import { sanitizeMissionSettings } from "@/lib/organizer/mission";
 import { sanitizePhotoSettings } from "@/lib/organizer/photo";
 
-function settingsFromBody(body: { quiz?: unknown; mission?: unknown; photo?: unknown; coupon?: unknown; checkin?: unknown }) {
+function settingsFromBody(body: {
+  quiz?: unknown;
+  mission?: unknown;
+  photo?: unknown;
+  coupon?: unknown;
+  checkin?: unknown;
+  mystery?: unknown;
+  experience?: unknown;
+}) {
   const quiz = body.quiz && typeof body.quiz === "object" ? body.quiz : null;
   const mission = sanitizeMissionSettings(body.mission);
   const photo = sanitizePhotoSettings(body.photo);
   const coupon = sanitizeCouponSettings(body.coupon);
   const checkin = sanitizeCheckinSettings(body.checkin);
-  if (!quiz && !mission && !photo && !coupon && !checkin) return undefined;
+  const mystery = sanitizeMysterySettings(body.mystery);
+  const experience = sanitizeGameExperience(body.experience);
+  if (!quiz && !mission && !photo && !coupon && !checkin && !mystery && !experience) return undefined;
   return {
     ...(quiz ? { quiz } : {}),
     ...(mission ? { mission } : {}),
     ...(photo ? { photo } : {}),
     ...(coupon ? { coupon } : {}),
     ...(checkin ? { checkin } : {}),
+    ...(mystery ? { mystery } : {}),
+    ...(experience ? { experience } : {}),
   };
 }
 
@@ -106,6 +119,8 @@ export async function POST(request: NextRequest) {
     photo?: unknown;
     coupon?: unknown;
     checkin?: unknown;
+    mystery?: unknown;
+    experience?: unknown;
   };
   try {
     body = await request.json();
@@ -128,7 +143,7 @@ export async function POST(request: NextRequest) {
   const typeMeta = getOrganizerGameType(typeRaw);
   if (!typeMeta.available) {
     return NextResponse.json(
-      { error: `${typeMeta.label}は準備中です。いまはスタンプラリー、クイズラリー、ミッション、フォトラリー、クーポンラリー、チェックインを作成できます。` },
+      { error: `${typeMeta.label}は準備中です。いまはスタンプラリー、クイズラリー、謎解き街歩き、ミッション、フォトラリー、クーポンラリー、チェックインを作成できます。` },
       { status: 400 }
     );
   }
@@ -163,32 +178,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "終了日時は開始日時より後にしてください" }, { status: 400 });
   }
 
-  const spots: { name: string; kind: "stamp" | "goal" }[] = [];
-  if (body.spots != null) {
-    if (!Array.isArray(body.spots)) {
-      return NextResponse.json({ error: "スポットの形式が不正です" }, { status: 400 });
-    }
-    if (body.spots.length > MAX_ORGANIZER_GAME_SPOTS) {
-      return NextResponse.json(
-        { error: `スポットは${MAX_ORGANIZER_GAME_SPOTS}件までです` },
-        { status: 400 }
-      );
-    }
-    for (const [index, raw] of body.spots.entries()) {
-      const row = raw && typeof raw === "object" ? (raw as { name?: unknown; kind?: unknown }) : {};
-      const spotName =
-        typeof row.name === "string" && row.name.trim()
-          ? row.name.trim()
-          : `スポット ${index + 1}`;
-      if (spotName.length > 40) {
-        return NextResponse.json({ error: "スポット名は40文字以内にしてください" }, { status: 400 });
-      }
-      const kindRaw = typeof row.kind === "string" ? row.kind : "stamp";
-      if (!isOrganizerGameSpotKind(kindRaw)) {
-        return NextResponse.json({ error: "スポットの種別が不正です" }, { status: 400 });
-      }
-      spots.push({ name: spotName, kind: kindRaw });
-    }
+  const parsedSpots = parseOrganizerGameSpotDrafts(body.spots);
+  if (!parsedSpots.ok) {
+    return NextResponse.json({ error: parsedSpots.error }, { status: 400 });
   }
 
   try {
@@ -201,9 +193,15 @@ export async function POST(request: NextRequest) {
       endsAt,
       status: body.status === "published" ? "published" : "draft",
       settings: settingsFromBody(body),
-      spots,
+      spots: parsedSpots.spots,
     });
-    return NextResponse.json({ game }, { status: 201 });
+    let spots: Awaited<ReturnType<typeof listOrganizerGameSpots>> = [];
+    try {
+      spots = await listOrganizerGameSpots(supabase, game.id);
+    } catch (spotError) {
+      console.error("organizer games POST spots:", spotError);
+    }
+    return NextResponse.json({ game, spots }, { status: 201 });
   } catch (e) {
     if (e instanceof Error && e.message === "SPOT_LIMIT") {
       return NextResponse.json(

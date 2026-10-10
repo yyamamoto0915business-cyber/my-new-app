@@ -126,7 +126,7 @@ export function TopModeTabs({ onTabClick, className, compact }: Props) {
             <span
               key={tab.id}
               className={cn(
-                "org-tab-plan-wrap relative inline-flex",
+                "org-tab-plan-wrap relative z-10 inline-flex overflow-visible",
                 `org-tab-plan-wrap--${organizerPlan}`,
                 widthClass
               )}

@@ -35,6 +35,7 @@ import {
   type QuizQuestion,
 } from "@/lib/organizer/quiz";
 import { OrganizerQuizPreview } from "@/components/organizer/games/OrganizerQuizPreview";
+import { QuizTestPlay } from "@/components/organizer/games/QuizTestPlay";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
 function toIsoFromDate(date: string): string | null {
@@ -65,6 +66,7 @@ export function OrganizerQuizCreateForm() {
   const [previewTab, setPreviewTab] = useState<"quiz" | "clear">("quiz");
   const [previewIndex, setPreviewIndex] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
 
@@ -514,6 +516,9 @@ export function OrganizerQuizCreateForm() {
             questionTotal={questions.length}
           />
           <div className="org-quiz__actions">
+            <button type="button" className="org-quiz__try" disabled={saving} onClick={() => setTesting(true)}>
+              お試しで見る
+            </button>
             <button type="button" className="org-quiz__draft" disabled={saving} onClick={() => void save("draft")}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
               下書き保存
@@ -525,6 +530,16 @@ export function OrganizerQuizCreateForm() {
           </div>
         </div>
       </div>
+      {testing ? (
+        <QuizTestPlay
+          name={name}
+          description={description}
+          questions={questions}
+          clearCount={clearCount}
+          rewards={{ coupon: couponOn, prize: prizeOn, ranking: rankingOn }}
+          onClose={() => setTesting(false)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,0 +1,424 @@
+.org-hub .org-hub__create {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.2;
+}
+
+.org-hub .org-hub__create:hover {
+  background: #185838;
+}
+
+.org-hub .org-hub__create-plus svg {
+  transition: transform 0.15s ease;
+}
+
+.org-hub .org-hub__create.is-open .org-hub__create-plus svg {
+  transform: rotate(180deg);
+}
+
+.org-hub__create-menu {
+  z-index: 70;
+  width: 16.75rem;
+  max-width: calc(100vw - 1.5rem);
+  border: 0;
+  border-radius: 1rem;
+  background: #faf9f6;
+  padding: 0.35rem;
+  box-shadow: 0 12px 28px rgba(26, 34, 20, 0.14);
+}
+
+.org-hub__create-option {
+  display: flex;
+  min-height: 2.75rem;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.08rem;
+  border-radius: 0.7rem;
+  padding: 0.4rem 0.7rem;
+}
+
+.org-hub__create-option:focus,
+.org-hub__create-option[data-highlighted] {
+  background: #e7f3ea;
+  color: inherit;
+}
+
+.org-hub__create-option-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #163524;
+}
+
+.org-hub__create-option-blurb {
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #5c6b60;
+}
+
+.org-hub .org-hub__template {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.1rem;
+  min-height: 4.5rem;
+  border-radius: 0.9rem;
+  padding: 0.32rem 1.2rem 0.32rem 0.22rem;
+  box-shadow: 0 1px 2px rgba(26, 34, 20, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.org-hub .org-hub__template-illust {
+  position: relative;
+  box-sizing: border-box;
+  width: 4.35rem;
+  height: 4.35rem;
+  flex-shrink: 0;
+  padding: 3px;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  background: #fff;
+  transform: rotate(-6deg);
+  transition: transform 0.18s ease;
+  box-shadow:
+    0 1px 0 #fff,
+    3px 5px 0 rgba(255, 255, 255, 0.55),
+    4px 8px 10px rgba(40, 48, 40, 0.22);
+}
+
+.org-hub .org-hub__template.is-quiz .org-hub__template-illust { transform: rotate(5deg); }
+.org-hub .org-hub__template.is-mystery .org-hub__template-illust { transform: rotate(-3deg); }
+.org-hub .org-hub__template.is-mission .org-hub__template-illust { transform: rotate(6deg); }
+.org-hub .org-hub__template.is-photo .org-hub__template-illust { transform: rotate(-5deg); }
+.org-hub .org-hub__template.is-coupon .org-hub__template-illust { transform: rotate(4deg); }
+.org-hub .org-hub__template.is-checkin .org-hub__template-illust { transform: rotate(-4deg); }
+
+.org-hub .org-hub__template-illust img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.6rem;
+  object-fit: cover;
+}
+
+.org-hub .org-hub__template-illust::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 0.6rem;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 36%);
+  pointer-events: none;
+}
+
+.org-hub .org-hub__template-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.06rem;
+}
+
+.org-hub .org-hub__template-label {
+  margin: 0;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.org-hub .org-hub__template-blurb {
+  margin: 0;
+  font-size: 0.54rem;
+  line-height: 1.35;
+  color: #5c675e;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.org-hub .org-hub__template-go {
+  right: 0.22rem;
+  bottom: 0.28rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid #fff;
+  background: #7ec89a;
+  color: #fff;
+  box-shadow:
+    0 2px 0 rgba(40, 48, 40, 0.08),
+    0 4px 6px rgba(26, 34, 20, 0.16);
+  transition: transform 0.18s ease;
+  overflow: hidden;
+}
+
+.org-hub .org-hub__template-go::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 16%;
+  width: 68%;
+  height: 42%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.org-hub .org-hub__template-go svg {
+  position: relative;
+  z-index: 1;
+  animation: org-hub-arrow 1.8s ease-in-out infinite;
+}
+
+@keyframes org-hub-arrow {
+  0%,
+  62%,
+  100% {
+    transform: translateX(0);
+  }
+  78% {
+    transform: translateX(2px);
+  }
+}
+
+.org-hub .org-hub__template.is-stamp .org-hub__template-go { background: #6fbf8a; }
+.org-hub .org-hub__template.is-quiz .org-hub__template-go { background: #f0a0b8; }
+.org-hub .org-hub__template.is-mystery .org-hub__template-go { background: #e0c48a; }
+.org-hub .org-hub__template.is-mission .org-hub__template-go { background: #8eb8e8; }
+.org-hub .org-hub__template.is-photo .org-hub__template-go { background: #e3c45a; }
+.org-hub .org-hub__template.is-coupon .org-hub__template-go { background: #c9a0e0; }
+.org-hub .org-hub__template.is-checkin .org-hub__template-go { background: #7ec9c2; }
+
+@media (hover: hover) {
+  .org-hub .org-hub__template:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(26, 34, 20, 0.08);
+  }
+
+  .org-hub .org-hub__template:hover .org-hub__template-go {
+    transform: translateX(2px) scale(1.08);
+  }
+}
+
+.org-hub .org-hub__template:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 2px rgba(26, 34, 20, 0.08);
+}
+
+.org-hub .org-hub__template:active .org-hub__template-illust {
+  transform: rotate(0deg) translateY(1px) scale(0.96);
+}
+
+.org-hub .org-hub__template:active .org-hub__template-go {
+  transform: translateX(3px) scale(0.92);
+  box-shadow: 0 1px 0 rgba(40, 48, 40, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-hub .org-hub__template,
+  .org-hub .org-hub__template-go,
+  .org-hub .org-hub__template-go svg {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (min-width: 900px) {
+  .org-hub .org-hub__templates {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .org-hub .org-hub__template {
+    min-height: 6.6rem;
+    gap: 0.35rem;
+    padding: 0.45rem 1.65rem 0.45rem 0.35rem;
+  }
+
+  .org-hub .org-hub__template-illust {
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+
+  .org-hub .org-hub__template-label {
+    font-size: 0.84rem;
+  }
+
+  .org-hub .org-hub__template-blurb {
+    font-size: 0.7rem;
+  }
+
+  .org-hub .org-hub__template-go {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+@media (max-width: 899px) {
+  .org-hub.org-hub {
+    gap: 0.45rem;
+  }
+
+  .org-hub .org-hub__hero {
+    min-height: 0;
+    border-radius: 1rem;
+  }
+
+  .org-hub .org-hub__hero-copy {
+    max-width: calc(100% - 4.6rem);
+    padding: 0.55rem 0.65rem 1.05rem;
+  }
+
+  .org-hub .org-hub__hero h1 {
+    max-width: 14.2rem;
+    font-size: 1.02rem;
+    line-height: 1.28;
+    letter-spacing: -0.01em;
+  }
+
+  .org-hub .org-hub__hero-copy > p {
+    max-width: 13.2rem;
+    margin-top: 0.22rem;
+    font-size: 0.64rem;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .org-hub .org-hub__create {
+    min-height: 2.35rem;
+    margin-top: 0.4rem;
+    padding: 0.2rem 0.35rem 0.2rem 0.75rem;
+    font-size: 0.72rem;
+  }
+
+  .org-hub .org-hub__create-plus {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  .org-hub .org-hub__bubble {
+    top: 0.35rem;
+    right: 0.35rem;
+    max-width: 7.2rem;
+    padding: 0.22rem 0.4rem;
+    font-size: 0.58rem;
+    line-height: 1.25;
+  }
+
+  .org-hub .org-hub__mascot {
+    width: 4.85rem;
+    right: 0.05rem;
+    bottom: 0.15rem;
+  }
+
+  .org-hub .org-hub__benefits {
+    margin: -1.15rem 0.15rem 0;
+    padding: 0.4rem 0.1rem 0.45rem;
+    border-radius: 0.95rem;
+  }
+
+  .org-hub .org-hub__benefit {
+    min-height: 0;
+    gap: 0.12rem;
+    padding-top: 0;
+  }
+
+  .org-hub .org-hub__benefit-icon {
+    width: 1.65rem;
+    height: 1.65rem;
+  }
+
+  .org-hub .org-hub__benefit-icon svg {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  .org-hub .org-hub__benefit-title {
+    font-size: 0.62rem;
+  }
+
+  .org-hub .org-hub__benefit-text {
+    font-size: 0.52rem;
+  }
+
+  .org-hub .org-hub__section {
+    gap: 0.35rem;
+  }
+
+  .org-hub .org-hub__head h2 {
+    font-size: 0.86rem;
+  }
+
+  .org-hub .org-hub__filter {
+    min-height: 1.75rem;
+    padding: 0.1rem 0.6rem;
+    font-size: 0.68rem;
+  }
+
+  .org-hub .org-hub__game {
+    width: 10.15rem;
+    flex-basis: 10.15rem;
+    border-radius: 0.85rem;
+  }
+
+  .org-hub .org-hub__game-cover {
+    aspect-ratio: 16 / 9;
+  }
+
+  .org-hub .org-hub__game-body {
+    gap: 0.12rem;
+    padding: 0.38rem 0.42rem 0.42rem;
+  }
+
+  .org-hub .org-hub__game-name {
+    font-size: 0.7rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .org-hub .org-hub__game-period {
+    font-size: 0.55rem;
+    line-height: 1.35;
+  }
+
+  .org-hub .org-hub__templates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .org-hub .org-hub__template {
+    min-height: 5.85rem;
+    gap: 0.15rem;
+    padding: 0.32rem 0.95rem 0.32rem 0.18rem;
+  }
+
+  .org-hub .org-hub__template-illust {
+    width: 4.85rem;
+    height: 4.85rem;
+  }
+
+  .org-hub .org-hub__template-label {
+    font-size: 0.7rem;
+    letter-spacing: -0.04em;
+  }
+
+  .org-hub .org-hub__template-blurb {
+    font-size: 0.62rem;
+  }
+
+  .org-hub .org-hub__template-go {
+    width: 1.05rem;
+    height: 1.05rem;
+    right: 0.28rem;
+    bottom: 0.32rem;
+  }
+}

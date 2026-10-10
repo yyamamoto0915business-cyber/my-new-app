@@ -7,6 +7,7 @@ import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 import { isAuthRoute } from "@/lib/is-auth-route";
+import { isPlayRoute } from "@/lib/is-play-route";
 
 type Props = {
   children: ReactNode;
@@ -24,7 +25,8 @@ export function MobileMainShell({ children }: Props) {
   const chatConversation = isMessagesConversationRoute(pathname ?? "");
   /** モバイルでグローバル上・下を外し、画面専用UIに任せる */
   const profileEdit = isProfileEditRoute(pathname ?? "");
-  const immersiveMobile = eventDetail || chatConversation || profileEdit;
+  const playRoute = isPlayRoute(pathname);
+  const immersiveMobile = eventDetail || chatConversation || profileEdit || playRoute;
   const followsPage = pathname?.startsWith("/profile/follows") ?? false;
   const topHeaderH = getMobileTopHeaderHeightPx(pathname ?? "");
   const organizerArea =

@@ -37,7 +37,7 @@ export const ORGANIZER_GAME_TYPES: readonly OrganizerGameType[] = [
     id: "mystery",
     label: "謎解き街歩き",
     description: "ヒントをたどってまちを歩きます",
-    available: false,
+    available: true,
   },
   {
     id: "mission",

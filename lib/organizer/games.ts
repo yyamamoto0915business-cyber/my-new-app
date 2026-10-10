@@ -218,6 +218,12 @@ async function ensureJoinToken(
   };
 }
 
+export type OrganizerGameSpotDraft = {
+  id?: string;
+  name: string;
+  kind: OrganizerGameSpotKind;
+};
+
 export type CreateOrganizerGameInput = {
   name: string;
   type: OrganizerGameTypeId;
@@ -227,8 +233,32 @@ export type CreateOrganizerGameInput = {
   endsAt?: string | null;
   status?: OrganizerGameStatus;
   settings?: Record<string, unknown>;
-  spots?: { name: string; kind: OrganizerGameSpotKind }[];
+  spots?: OrganizerGameSpotDraft[];
 };
+
+const SPOT_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function parseOrganizerGameSpotDrafts(
+  raw: unknown
+): { ok: true; spots: OrganizerGameSpotDraft[] } | { ok: false; error: string } {
+  if (raw == null) return { ok: true, spots: [] };
+  if (!Array.isArray(raw)) return { ok: false, error: "スポットの形式が不正です" };
+  if (raw.length > MAX_ORGANIZER_GAME_SPOTS) {
+    return { ok: false, error: `スポットは${MAX_ORGANIZER_GAME_SPOTS}件までです` };
+  }
+  const spots: OrganizerGameSpotDraft[] = [];
+  for (const [index, item] of raw.entries()) {
+    const row = item && typeof item === "object" ? (item as { id?: unknown; name?: unknown; kind?: unknown }) : {};
+    const name =
+      typeof row.name === "string" && row.name.trim() ? row.name.trim() : `スポット ${index + 1}`;
+    if (name.length > 40) return { ok: false, error: "スポット名は40文字以内にしてください" };
+    const kindRaw = typeof row.kind === "string" ? row.kind : "stamp";
+    if (!isOrganizerGameSpotKind(kindRaw)) return { ok: false, error: "スポットの種別が不正です" };
+    const id = typeof row.id === "string" && SPOT_ID_RE.test(row.id) ? row.id : undefined;
+    spots.push({ id, name, kind: kindRaw });
+  }
+  return { ok: true, spots };
+}
 
 export async function createOrganizerGame(
   supabase: SupabaseClient,
@@ -391,4 +421,106 @@ export async function reorderOrganizerGameSpots(
     if (error) throw error;
   }
   return listOrganizerGameSpots(supabase, gameId);
+}
+
+export async function syncOrganizerGameDraftSpots(
+  supabase: SupabaseClient,
+  gameId: string,
+  spots: OrganizerGameSpotDraft[]
+): Promise<OrganizerGameSpot[]> {
+  if (spots.length > MAX_ORGANIZER_GAME_SPOTS) throw new Error("SPOT_LIMIT");
+  const existing = await listOrganizerGameSpots(supabase, gameId);
+  const existingIds = new Set(existing.map((spot) => spot.id));
+  const keep = new Set<string>();
+
+  for (let index = 0; index < spots.length; index += 1) {
+    const spot = spots[index];
+    const name = spot.name.trim() || `スポット ${index + 1}`;
+    if (spot.id && existingIds.has(spot.id)) {
+      const { error } = await supabase
+        .from("organizer_game_spots")
+        .update({ name, kind: spot.kind, sort_order: index })
+        .eq("id", spot.id)
+        .eq("game_id", gameId);
+      if (error) throw error;
+      keep.add(spot.id);
+      continue;
+    }
+    const { data, error } = await supabase
+      .from("organizer_game_spots")
+      .insert({
+        game_id: gameId,
+        name,
+        kind: spot.kind,
+        sort_order: index,
+        token: generateOrganizerGameToken(),
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    keep.add(data.id as string);
+  }
+
+  for (const old of existing) {
+    if (keep.has(old.id)) continue;
+    const { error } = await supabase
+      .from("organizer_game_spots")
+      .delete()
+      .eq("id", old.id)
+      .eq("game_id", gameId);
+    if (error) throw error;
+  }
+
+  return listOrganizerGameSpots(supabase, gameId);
+}
+
+export async function updateOrganizerGameDraft(
+  supabase: SupabaseClient,
+  organizerId: string,
+  gameId: string,
+  input: Omit<CreateOrganizerGameInput, "type">
+): Promise<{ game: OrganizerGame; spots: OrganizerGameSpot[] }> {
+  const { data: current, error: readError } = await supabase
+    .from("organizer_games")
+    .select("settings")
+    .eq("id", gameId)
+    .eq("organizer_id", organizerId)
+    .maybeSingle();
+  if (readError) throw readError;
+
+  const prev =
+    current?.settings && typeof current.settings === "object" && !Array.isArray(current.settings)
+      ? (current.settings as Record<string, unknown>)
+      : {};
+  const payload: Record<string, unknown> = {
+    event_id: input.eventId || null,
+    name: input.name,
+    description: input.description?.trim() || null,
+    starts_at: input.startsAt || null,
+    ends_at: input.endsAt || null,
+  };
+  if (input.status === "published" || input.status === "draft") payload.status = input.status;
+  if (input.settings) payload.settings = { ...prev, ...input.settings };
+
+  let { error } = await supabase
+    .from("organizer_games")
+    .update(payload)
+    .eq("id", gameId)
+    .eq("organizer_id", organizerId);
+  if (error && input.settings && /settings/i.test(error.message)) {
+    delete payload.settings;
+    const retry = await supabase
+      .from("organizer_games")
+      .update(payload)
+      .eq("id", gameId)
+      .eq("organizer_id", organizerId);
+    error = retry.error;
+  }
+  if (error) throw error;
+
+  const spots = input.spots ? await syncOrganizerGameDraftSpots(supabase, gameId, input.spots) : await listOrganizerGameSpots(supabase, gameId);
+  const game = await getOwnedOrganizerGame(supabase, organizerId, gameId);
+  if (!game) throw new Error("GAME_NOT_FOUND");
+  game.spotCount = spots.length;
+  return { game, spots };
 }

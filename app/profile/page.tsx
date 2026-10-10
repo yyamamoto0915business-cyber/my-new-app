@@ -20,6 +20,7 @@ import { MypageMobileProfileCard } from "@/components/profile/mypage-mobile-prof
 import { MypageMobileOrganize } from "@/components/profile/mypage-mobile-organize";
 import { MypageMobileAlbum } from "@/components/profile/mypage-mobile-album";
 import { MypageMobileFooterLinks } from "@/components/profile/mypage-mobile-footer-links";
+import { MypagePointsCard } from "@/components/profile/MypagePointsCard";
 import { MypagePcView } from "@/components/profile/mypage-pc-view";
 import {
   prefetchMypageSummary,
@@ -199,6 +200,8 @@ function ProfileContent() {
             />
 
             <MypageMobileAlbum />
+
+            <MypagePointsCard />
 
             <section
               className="overflow-hidden rounded-[14px] border border-[#e8e6e0] bg-white"

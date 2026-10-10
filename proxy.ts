@@ -56,12 +56,25 @@ function forbiddenAdminApi() {
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthPage = isAuthPagePath(path);
+  const isLoginScreen =
+    path === "/auth" ||
+    path.startsWith("/auth/") ||
+    path === "/login" ||
+    path.startsWith("/login/") ||
+    path === "/signup" ||
+    path.startsWith("/signup/");
   const isAdminAppPage = path === "/admin" || path.startsWith("/admin/");
   const isAdminApiRoute = path.startsWith("/api/admin/");
   const isApiRoute = path.startsWith("/api/");
 
   // 認証オフならセッション更新もゲートも不要
   if (isAuthDisabled()) {
+    return NextResponse.next({ request });
+  }
+
+  // ログイン画面はフォーム表示にセッション更新が不要。
+  // 期限切れ Cookie があると getUser が遷移を止める。
+  if (isLoginScreen) {
     return NextResponse.next({ request });
   }
 

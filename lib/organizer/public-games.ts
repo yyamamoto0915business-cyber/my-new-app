@@ -6,6 +6,7 @@ import {
   type OrganizerGameTypeId,
 } from "@/lib/organizer/game-types";
 import { organizerGameJoinPath } from "@/lib/organizer/game-tokens";
+import { publicPlayStart } from "@/lib/organizer/game-experience";
 
 export type PublicOrganizerGame = {
   id: string;
@@ -22,6 +23,8 @@ export type PublicOrganizerGame = {
 };
 
 function coverFromSettings(settings: unknown, type: OrganizerGameTypeId): string | null {
+  const startImage = publicPlayStart(settings).imageUrl;
+  if (startImage) return startImage;
   if (!settings || typeof settings !== "object") return null;
   const nested = (settings as Record<string, unknown>)[type];
   if (!nested || typeof nested !== "object") return null;
@@ -92,6 +95,7 @@ export async function listPublishedOrganizerGames(
     const event = Array.isArray(eventRaw) ? eventRaw[0] : eventRaw;
     const eventObj = event && typeof event === "object" ? (event as Record<string, unknown>) : null;
     const eventTitle = typeof eventObj?.title === "string" ? eventObj.title : null;
+    const startTitle = publicPlayStart(row.settings).title.trim();
     const areaLabel =
       (typeof eventObj?.prefecture === "string" && eventObj.prefecture) ||
       (typeof eventObj?.city === "string" && eventObj.city) ||
@@ -102,7 +106,7 @@ export async function listPublishedOrganizerGames(
         id: String(row.id),
         type,
         typeLabel: getOrganizerGameType(type).label,
-        name: typeof row.name === "string" ? row.name : "ゲーム",
+        name: startTitle || (typeof row.name === "string" ? row.name : "ゲーム"),
         description: typeof row.description === "string" ? row.description : "",
         startsAt: typeof row.starts_at === "string" ? row.starts_at : null,
         endsAt,

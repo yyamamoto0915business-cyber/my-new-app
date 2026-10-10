@@ -6,7 +6,9 @@ import {
   isOrganizerGameSpotKind,
   organizerGameJoinPath,
 } from "@/lib/organizer/game-tokens";
-import { getPlayDb, stampPlaySpot } from "@/lib/organizer/play";
+import { getPlayDb, playGamePublished, stampPlaySpot } from "@/lib/organizer/play";
+import { readPlayUserId } from "@/lib/organizer/play-user";
+import { loadPlayMoment, loadPlayMomentBySpot } from "@/lib/organizer/play-moment";
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -44,18 +46,25 @@ export async function GET(_req: NextRequest, { params }: Params) {
   if (!row?.spot_id) {
     return NextResponse.json({ error: "スポットが見つかりません" }, { status: 404 });
   }
+  const playDb = getPlayDb();
+  if (playDb && !(await playGamePublished(playDb, row.game_id))) {
+    return NextResponse.json({ error: "スポットが見つかりません" }, { status: 404 });
+  }
 
   const kind = isOrganizerGameSpotKind(row.spot_kind) ? row.spot_kind : "stamp";
   const type = isOrganizerGameTypeId(row.game_type) ? row.game_type : "stamp";
   const joinToken = row.join_token?.trim() || "";
+  const moment = await loadPlayMoment(row.game_id, row.spot_id);
   return NextResponse.json({
     spotName: row.spot_name,
     kind,
     kindLabel: ORGANIZER_GAME_SPOT_KIND_LABEL[kind],
     gameName: row.game_name,
+    type,
     typeLabel: getOrganizerGameType(type).label,
     joinToken,
     joinPath: joinToken ? organizerGameJoinPath(joinToken) : "",
+    moment,
   });
 }
 
@@ -71,23 +80,30 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "スタンプを押せません" }, { status: 503 });
   }
 
-  let body: { deviceToken?: unknown };
+  let body: { deviceToken?: unknown; keyword?: unknown; lat?: unknown; lng?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
   const deviceToken = typeof body.deviceToken === "string" ? body.deviceToken : "";
+  const keyword = typeof body.keyword === "string" ? body.keyword : "";
 
   try {
-    const result = await stampPlaySpot(db, token, deviceToken);
+    const result = await stampPlaySpot(db, token, deviceToken, keyword, { lat: body.lat, lng: body.lng }, await readPlayUserId());
     if (!result.ok) {
       return NextResponse.json(
-        { error: result.error, joinPath: result.joinPath ?? null },
+        {
+          error: result.error,
+          joinPath: result.joinPath ?? null,
+          code: result.code ?? null,
+          progress: result.progress ?? null,
+        },
         { status: result.status }
       );
     }
-    return NextResponse.json(result.result);
+    const moment = await loadPlayMomentBySpot(result.result.spotId);
+    return NextResponse.json({ ...result.result, moment });
   } catch (e) {
     console.error("play stamp POST:", e);
     return NextResponse.json({ error: "スタンプに失敗しました" }, { status: 500 });

@@ -14,9 +14,10 @@ import { isAuthRoute } from "@/lib/is-auth-route";
 import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
+import { isPlayRoute } from "@/lib/is-play-route";
 
 /** 通常時（イベント・まち情報中心）のモバイル上部の目安高さ（safe-area 除く） */
-export const MOBILE_TOP_HEADER_HEIGHT_PX = 88;
+export const MOBILE_TOP_HEADER_HEIGHT_PX = 98;
 
 /** 主催者ルート（モードタブのみ）のフォールバック高さ（safe-area 除く・実測で上書き） */
 export const MOBILE_TOP_HEADER_HEIGHT_ORGANIZER_PX = 46;
@@ -74,7 +75,8 @@ export function MobileTopHeader({ className }: Props) {
   if (
     isEventDetailRoute(pathname ?? "") ||
     isMessagesConversationRoute(pathname ?? "") ||
-    isProfileEditRoute(pathname ?? "")
+    isProfileEditRoute(pathname ?? "") ||
+    isPlayRoute(pathname)
   ) {
     return null;
   }
@@ -93,7 +95,7 @@ export function MobileTopHeader({ className }: Props) {
       aria-label="MachiGlyph 上部ヘッダー"
     >
       <div className="w-full px-3">
-        <div className={organizerArea ? "mt-0.5 pb-1" : "pt-0.5"}>
+        <div className={organizerArea ? "pt-3 pb-1" : "pt-3"}>
           <TopModeTabs compact={organizerArea} onTabClick={handleTabClick} />
         </div>
 

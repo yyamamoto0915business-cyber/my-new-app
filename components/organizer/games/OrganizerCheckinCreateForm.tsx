@@ -41,6 +41,7 @@ import {
   type CheckinMethod,
   type CheckinSpot,
 } from "@/lib/organizer/checkin";
+import { CheckinTestPlay } from "@/components/organizer/games/CheckinTestPlay";
 import { OrganizerCheckinPreview } from "@/components/organizer/games/OrganizerCheckinPreview";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
@@ -141,6 +142,7 @@ export function OrganizerCheckinCreateForm() {
   const [confirmOk, setConfirmOk] = useState(false);
   const [previewTab, setPreviewTab] = useState<"cover" | "spots" | "rewards">("cover");
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
 
@@ -922,6 +924,9 @@ export function OrganizerCheckinCreateForm() {
           {error ? <p className="org-checkin__error">{error}</p> : null}
 
           <div className="org-checkin__footer">
+            <button type="button" className="org-game-try" disabled={saving} onClick={() => setTesting(true)}>
+              お試しで見る
+            </button>
             {stepIndex > 0 ? (
               <button type="button" className="org-checkin__ghost" onClick={goPrev}>
                 前のステップへ
@@ -962,6 +967,23 @@ export function OrganizerCheckinCreateForm() {
           onTab={setPreviewTab}
         />
       </div>
+      {testing ? (
+        <CheckinTestPlay
+          name={name}
+          description={description}
+          spots={spots}
+          clearMode={clearMode}
+          clearCount={clearCount}
+          couponOn={couponOn}
+          couponName={couponName}
+          pointsOn={pointsOn}
+          points={points}
+          stampOn={stampOn}
+          prizeOn={prizeOn}
+          receivePlace={receivePlace}
+          onClose={() => setTesting(false)}
+        />
+      ) : null}
     </div>
   );
 }

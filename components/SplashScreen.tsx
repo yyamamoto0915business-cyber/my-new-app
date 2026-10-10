@@ -266,7 +266,7 @@ export function SplashScreen() {
   }, [applyVisibility]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || gone) return;
 
     const bg = bgRef.current;
     if (bg) drawBackground(bg);
@@ -327,7 +327,7 @@ export function SplashScreen() {
       cancelAnimationFrame(rafRef.current);
       if (respawnRef.current) clearTimeout(respawnRef.current);
     };
-  }, [ready]);
+  }, [ready, gone]);
 
   const dismiss = useCallback(() => {
     if (fading) return;
@@ -348,10 +348,20 @@ export function SplashScreen() {
         target.pathname === window.location.pathname &&
         target.search === window.location.search;
 
-      dismiss();
-      if (sameLocation) return;
+      if (sameLocation) {
+        dismiss();
+        return;
+      }
 
       const path = `${target.pathname}${target.search}${target.hash}`;
+      // ログイン画面はソフト遷移だと Suspense の「読み込み中」で止まる。
+      // クリックと同じターンでフル遷移する。
+      if (target.pathname === "/auth" || target.pathname.startsWith("/auth/")) {
+        window.location.assign(path);
+        return;
+      }
+
+      dismiss();
       setTimeout(() => router.push(path), NAV_DELAY_MS);
     },
     [dismiss, router, user]
