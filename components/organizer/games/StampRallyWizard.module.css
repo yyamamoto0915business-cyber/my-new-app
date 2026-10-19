@@ -906,3 +906,126 @@
     min-height: 48px;
   }
 }
+
+/* スポットの地図での見せ方 */
+.mapLook {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mapStyles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.mapStyle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0.4rem;
+  border: 1.5px solid #dfe7e1;
+  border-radius: 0.9rem;
+  background: #fff;
+  color: #3c4a40;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mapStyle.is-on {
+  border-color: #1f7a4a;
+  background: #eef7f1;
+  color: #1f7a4a;
+}
+
+.mapStyleArt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  color: #9aa79e;
+}
+
+.mapStyleArt img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.mapStylePhoto {
+  overflow: hidden;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  outline: 2px solid #1f7a4a;
+  background: #f1f4f2;
+}
+
+.mapStylePhoto img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+}
+
+.mapLookSub {
+  margin-top: 0.6rem;
+}
+
+.iconGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 22rem;
+  overflow-y: auto;
+  padding: 0.2rem 0.1rem;
+}
+
+.iconGroup > p {
+  margin: 0 0 0.3rem;
+  color: #66726a;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.iconGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr));
+  gap: 0.4rem;
+}
+
+.iconPick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.35rem 0.2rem;
+  border: 1.5px solid transparent;
+  border-radius: 0.75rem;
+  background: #f6f8f6;
+  cursor: pointer;
+}
+
+.iconPick img {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+}
+
+.iconPick small {
+  max-width: 100%;
+  overflow: hidden;
+  color: #3c4a40;
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iconPick.is-on {
+  border-color: #1f7a4a;
+  background: #eef7f1;
+}

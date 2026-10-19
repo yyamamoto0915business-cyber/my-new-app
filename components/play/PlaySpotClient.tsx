@@ -23,6 +23,13 @@ type PlaySpot = {
   moment: PublicPlayMoment | null;
 };
 
+/** スタンプラリーは、押したあとラリー画面へ戻して獲得演出を出す。 */
+function rallyGotPath(spot: PlaySpot, spotId: string, already: boolean): string | null {
+  if (spot.type !== "stamp" || !spot.joinToken) return null;
+  const base = spot.joinPath || `/play/${spot.joinToken}`;
+  return `${base}?got=${encodeURIComponent(spotId)}${already ? "&again=1" : ""}`;
+}
+
 export function PlaySpotClient() {
   const params = useParams();
   const router = useRouter();
@@ -135,6 +142,11 @@ export function PlaySpotClient() {
           return;
         }
         if (cancelled) return;
+        const gotPath = rallyGotPath(nextSpot, stampJson.spotId, stampJson.alreadyStamped);
+        if (gotPath) {
+          router.replace(gotPath);
+          return;
+        }
         setKeywordMode(false);
         setAlreadyStamped(stampJson.alreadyStamped);
         setStampedSpotId(stampJson.spotId);
@@ -244,6 +256,11 @@ export function PlaySpotClient() {
         setKeywordError(json.error ?? "スタンプを押せませんでした");
         return;
       }
+      const gotPath = rallyGotPath(spot, json.spotId, json.alreadyStamped);
+      if (gotPath) {
+        router.replace(gotPath);
+        return;
+      }
       setKeywordMode(false);
       setAlreadyStamped(json.alreadyStamped);
       setStampedSpotId(json.spotId);
@@ -314,6 +331,11 @@ export function PlaySpotClient() {
       }
       if (!res.ok) {
         setGpsError(json.error ?? "スタンプを押せませんでした");
+        return;
+      }
+      const gotPath = rallyGotPath(spot, json.spotId, json.alreadyStamped);
+      if (gotPath) {
+        router.replace(gotPath);
         return;
       }
       setGpsMode(false);

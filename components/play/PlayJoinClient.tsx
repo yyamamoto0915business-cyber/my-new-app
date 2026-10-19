@@ -1,19 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Flag, Gift, MapPin, QrCode, Stamp, type LucideIcon } from "lucide-react";
-import { PlayClearPanel, PlaySpotCopy, PlayStampBurst, playMomentHasClear } from "@/components/play/PlayMoment";
+import { Stamp } from "lucide-react";
 import { PlayMission } from "@/components/play/PlayMission";
 import { PlayMystery } from "@/components/play/PlayMystery";
 import { PlayCheckin } from "@/components/play/PlayCheckin";
 import { PlayCoupon } from "@/components/play/PlayCoupon";
 import { PlayPhoto } from "@/components/play/PlayPhoto";
 import { PlayQuiz } from "@/components/play/PlayQuiz";
-import { PlaySpotPlace } from "@/components/play/PlaySpotPlace";
 import { PlayProgressCard } from "@/components/play/PlayProgressCard";
+import { RallyApp } from "@/components/play/rally/RallyApp";
+import { RallyStartScreen } from "@/components/play/rally/RallyStartScreen";
+import type { PlayStart, RallyStampEvent } from "@/components/play/rally/types";
 import {
   GAME_HOWTO_ICONS,
   readPublicPlayMoment,
@@ -42,35 +42,6 @@ import { readPublicCoupon, type PublicCouponPlay } from "@/lib/organizer/coupon-
 import { readPublicPhoto, type PublicPhotoPlay } from "@/lib/organizer/photo-play";
 import { readPublicQuiz, type PublicQuiz } from "@/lib/organizer/quiz-play";
 import { usePlayCopy } from "@/components/play/usePlayCopy";
-
-const HOWTO_ICONS: Record<GameHowtoIcon, LucideIcon> = {
-  pin: MapPin,
-  qr: QrCode,
-  stamp: Stamp,
-  gift: Gift,
-  flag: Flag,
-};
-
-type PlayStartStep = {
-  icon: GameHowtoIcon;
-  label: string;
-};
-
-type PlayStart = {
-  configured: boolean;
-  title: string;
-  catchCopy: string;
-  description: string;
-  imageUrl: string;
-  videoUrl: string;
-  steps: PlayStartStep[];
-  buttonLabel: string;
-  showCharacter: boolean;
-  showFreeBadge: boolean;
-  showPeriod: boolean;
-  showShare: boolean;
-  periodLabel: string | null;
-};
 
 type PlayAudience = "anyone" | "event" | "pass";
 
@@ -138,6 +109,7 @@ export function PlayJoinClient() {
   const [highlightSpotId, setHighlightSpotId] = useState<string | null>(null);
   const [stampMessage, setStampMessage] = useState<{ name: string; already: boolean } | null>(null);
   const [stampMoment, setStampMoment] = useState<PublicPlayMoment | null>(null);
+  const [stampEvent, setStampEvent] = useState<RallyStampEvent | null>(null);
   const [nickname, setNickname] = useState("");
   const [passphrase, setPassphrase] = useState("");
   const [shareNote, setShareNote] = useState<string | null>(null);
@@ -158,8 +130,11 @@ export function PlayJoinClient() {
       setLoading(false);
       return;
     }
-    const spotFromUrl =
-      typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("spot") ?? "" : "";
+    const search = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const spotFromUrl = search?.get("spot") ?? "";
+    // スポット画面でキーワードやGPSで押したあと、獲得演出を出すために戻ってくる。
+    const gotSpotId = search?.get("got") ?? "";
+    const gotAgain = search?.get("again") === "1";
     setPendingSpot(spotFromUrl);
     let cancelled = false;
 
@@ -220,6 +195,13 @@ export function PlayJoinClient() {
         setProgress(session.progress);
         if (spotFromUrl) {
           await stampPendingSpot(token, session.deviceToken, spotFromUrl, cancelled);
+        } else if (gotSpotId) {
+          const got = session.progress.spots.find((spot) => spot.id === gotSpotId);
+          if (got?.stamped) {
+            setStampEvent({ spotId: got.id, name: got.name, already: gotAgain });
+            setHighlightSpotId(got.id);
+          }
+          router.replace(`/play/${token}`);
         }
       } catch {
         if (!cancelled) setError("読み込みに失敗しました");
@@ -232,6 +214,27 @@ export function PlayJoinClient() {
       cancelled = true;
     };
   }, [token]);
+
+  // 通常画面の「ゲームに戻る」に出す名前と進捗を残す。進捗が動いたときだけ時刻を進める。
+  const playTitle = game ? game.start?.title.trim() || game.name : "";
+  useEffect(() => {
+    if (!token || !progress || !playTitle) return;
+    const stored = readPlaySession(token);
+    if (!stored) return;
+    const moved =
+      stored.title !== playTitle ||
+      stored.stampedCount !== progress.stampedCount ||
+      stored.spotCount !== progress.spotCount ||
+      stored.completed !== progress.completed;
+    if (!moved) return;
+    writePlaySession(token, {
+      title: playTitle,
+      stampedCount: progress.stampedCount,
+      spotCount: progress.spotCount,
+      completed: progress.completed,
+      updatedAt: Date.now(),
+    });
+  }, [token, progress, playTitle]);
 
   async function stampPendingSpot(
     joinToken: string,
@@ -265,6 +268,7 @@ export function PlayJoinClient() {
       setStampMoment(readPublicPlayMoment(json.moment));
       setProgress(json.progress);
       setStampMessage({ name: json.spotName, already: json.alreadyStamped });
+      setStampEvent({ spotId: json.spotId ?? null, name: json.spotName, already: json.alreadyStamped });
       setHighlightSpotId(json.spotId ?? null);
       router.replace(`/play/${joinToken}`);
     } catch {
@@ -293,6 +297,7 @@ export function PlayJoinClient() {
       setNeedsLogin(false);
       setProgress(json.progress);
       setStampMessage(null);
+      setStampEvent(null);
       setStampMoment(null);
       setHighlightSpotId(null);
     } catch {
@@ -459,66 +464,37 @@ export function PlayJoinClient() {
   const loginHref = `/auth?next=${encodeURIComponent(`/play/${token}`)}`;
 
   if (showStart) {
-    const title = start?.title.trim() || game.name;
-    const buttonLabel = start?.buttonLabel.trim() || "ラリーをはじめる";
     return (
-      <main className="play-game">
-        <div className="play-game__card play-start">
-          {start?.videoUrl ? (
-            <video className="play-start__video" src={start.videoUrl} controls playsInline preload="metadata" />
-          ) : null}
-          {start?.imageUrl ? <img className="play-start__photo" src={start.imageUrl} alt="" /> : null}
-          {start?.showFreeBadge ? <p className="play-start__badge">{copy.freeToJoin}</p> : null}
-          {start?.showCharacter ? (
-            <Image
-              className="play-start__character"
-              src="/organizer/games/loading-mascot-1.png"
-              alt=""
-              width={72}
-              height={72}
-            />
-          ) : null}
-          <h1>{title}</h1>
-          {start?.catchCopy ? <p className="play-start__catch">{start.catchCopy}</p> : null}
-          {start?.description ? <p className="play-game__desc">{start.description}</p> : null}
-          {start && start.steps.length > 0 ? (
-            <ol className="play-start__steps">
-              {start.steps.map((step, index) => {
-                const Icon = HOWTO_ICONS[step.icon];
-                return (
-                  <li key={`${step.icon}-${index}`}>
-                    <Icon className="h-4 w-4" strokeWidth={1.8} aria-hidden />
-                    <span>
-                      {index + 1}. {step.label}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
-          ) : null}
-          {start?.periodLabel ? <p className="play-game__meta">{copy.msg(start.periodLabel)}</p> : null}
-          {start?.showShare ? (
-            <button type="button" className="play-start__share" onClick={() => void shareStart()}>
-              {copy.share}
-            </button>
-          ) : null}
-          {shareNote ? (
-            <p className="play-start__note" role="status">
-              {copy.msg(shareNote)}
-            </p>
-          ) : null}
-          <div className={loginRequired && !game.signedIn ? "play-dock play-dock--pair" : "play-dock"}>
-            {loginRequired && !game.signedIn ? (
-              <Link className="play-dock__link" href={loginHref}>
-                {copy.login}
-              </Link>
-            ) : null}
-            <button type="button" className="play-dock__go" onClick={() => setShowJoin(true)}>
-              {copy.msg(buttonLabel)}
-            </button>
-          </div>
-        </div>
-      </main>
+      <RallyStartScreen
+        start={start}
+        title={start?.title.trim() || game.name}
+        fallbackDescription={game.description}
+        showLogin={loginRequired && !game.signedIn}
+        loginHref={loginHref}
+        shareNote={shareNote}
+        onShare={() => void shareStart()}
+        onStart={() => setShowJoin(true)}
+      />
+    );
+  }
+
+  if (progress && game.type === "stamp") {
+    return (
+      <RallyApp
+        favoritesKey={`mg-play-fav:${token}`}
+        title={start?.title.trim() || game.name}
+        heroImageUrl={start?.imageUrl ?? ""}
+        progress={progress}
+        moment={shownMoment}
+        stampEvent={stampEvent}
+        onStampEventSeen={() => setStampEvent(null)}
+        claimHref={loginHref}
+        loginHref={loginHref}
+        showLogin={needsLogin || (loginRequired && !game.signedIn)}
+        replaying={replaying}
+        replayError={error}
+        onReplay={() => void replay()}
+      />
     );
   }
 
@@ -551,42 +527,6 @@ export function PlayJoinClient() {
 
         {progress ? (
           <>
-            {game.type === "stamp" && shownMoment && stampMessage ? (
-              <PlaySpotCopy
-                intro={shownMoment.intro}
-                description={shownMoment.description}
-                hint={shownMoment.hint}
-                imageUrl={shownMoment.imageUrl}
-                videoUrl={shownMoment.videoUrl}
-                imageAlt={stampMessage.name}
-              />
-            ) : null}
-            {game.type === "stamp" && shownMoment && stampMessage ? (
-              <PlaySpotPlace lat={shownMoment.lat} lng={shownMoment.lng} name={stampMessage.name} />
-            ) : null}
-            {game.type === "stamp" && shownMoment && stampMessage ? (
-              <PlayStampBurst
-                message={shownMoment.stampMessage}
-                animation={shownMoment.stampAnimation}
-                already={stampMessage.already}
-                imageUrl={shownMoment.stampImageUrl}
-                sound={shownMoment.stampSound}
-                soundUrl={shownMoment.stampSoundUrl}
-              />
-            ) : null}
-            {game.type === "stamp" && progress.completed && shownMoment ? (
-              <PlayClearPanel
-                moment={shownMoment}
-                code={progress.rewardCode}
-                used={progress.rewardUsed}
-                points={progress.rewardPoints}
-                pointsAwarded={progress.rewardPointsAwarded}
-                badge={progress.rewardBadge}
-                badgeAwarded={progress.rewardBadgeAwarded}
-                badgeImage={progress.rewardBadgeImage}
-                claimHref={`/auth?next=${encodeURIComponent(`/play/${token}`)}`}
-              />
-            ) : null}
             {progress.canReplay ? (
               <button type="button" className="play-clear__replay" disabled={replaying} onClick={() => void replay()}>
                 {replaying ? copy.replaying : copy.replay}
@@ -603,18 +543,6 @@ export function PlayJoinClient() {
               highlightSpotId={highlightSpotId}
               justStampedName={stampMessage?.name}
               alreadyStamped={stampMessage?.already}
-              quietToast={
-                game.type === "stamp" && Boolean(stampMessage && !stampMessage.already && shownMoment?.stampMessage)
-              }
-              quietDone={
-                game.type === "stamp" &&
-                (playMomentHasClear(shownMoment) ||
-                  Boolean(progress.rewardCode) ||
-                  Boolean(progress.rewardUsed) ||
-                  Boolean(progress.rewardPoints) ||
-                  Boolean(progress.rewardBadge))
-              }
-              asCard={game.type === "stamp"}
             />
           </>
         ) : (

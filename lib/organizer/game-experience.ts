@@ -23,6 +23,83 @@ export const GAME_HOWTO_ICONS = ["pin", "qr", "stamp", "gift", "flag"] as const;
 export const GAME_STAMP_ANIMATIONS = ["pop", "sparkle", "confetti", "bounce", "none"] as const;
 export const GAME_STAMP_SOUNDS = ["none", "pop", "chime"] as const;
 export const GAME_SCREEN_IDS = ["start", "spot", "stamp", "clear"] as const;
+/** スポットの種類。参加者のマップの絞り込みと札の色に使う。 */
+export const GAME_SPOT_CATEGORIES = [
+  "food",
+  "shop",
+  "sightseeing",
+  "culture",
+  "event",
+  "stamp",
+  "stay",
+  "nature",
+  "sports",
+  "transport",
+] as const;
+export type GameSpotCategory = (typeof GAME_SPOT_CATEGORIES)[number];
+export const GAME_SPOT_CATEGORY_LABEL: Record<GameSpotCategory, string> = {
+  food: "飲食店・カフェ",
+  shop: "商店・ショッピング",
+  sightseeing: "観光・名所",
+  culture: "文化・施設",
+  event: "イベント・お祭り",
+  stamp: "スタンプスポット",
+  stay: "宿泊施設",
+  nature: "自然・レジャー",
+  sports: "スポーツ・アクティビティ",
+  transport: "交通・その他",
+};
+
+/** マップに置く建物の絵（public/play/spots/{id}.webp）。種類は絵から決まる。 */
+export const GAME_SPOT_ICONS = {
+  cafe: { label: "カフェ", category: "food" },
+  restaurant: { label: "レストラン", category: "food" },
+  ramen: { label: "ラーメン店", category: "food" },
+  izakaya: { label: "居酒屋", category: "food" },
+  bakery: { label: "ベーカリー", category: "food" },
+  sweets: { label: "スイーツ店", category: "food" },
+  greengrocer: { label: "八百屋", category: "shop" },
+  drugstore: { label: "雑貨店・ドラッグストア", category: "shop" },
+  shrine: { label: "神社", category: "sightseeing" },
+  temple: { label: "お寺", category: "sightseeing" },
+  castle: { label: "お城・城跡", category: "sightseeing" },
+  historic: { label: "歴史的建造物", category: "sightseeing" },
+  viewpoint: { label: "展望スポット", category: "sightseeing" },
+  park: { label: "公園", category: "sightseeing" },
+  museum: { label: "博物館・美術館", category: "culture" },
+  community: { label: "文化施設・公民館", category: "culture" },
+  "event-hall": { label: "イベント会場", category: "event" },
+  market: { label: "マルシェ・市場", category: "event" },
+  festival: { label: "お祭り会場", category: "event" },
+  "kitchen-car": { label: "キッチンカー", category: "event" },
+  plaza: { label: "広場・イベントスペース", category: "event" },
+  stamp: { label: "スタンプラリースポット", category: "stamp" },
+  hotel: { label: "ホテル", category: "stay" },
+  ryokan: { label: "旅館", category: "stay" },
+  lake: { label: "湖・池", category: "nature" },
+  hiking: { label: "ハイキングコース", category: "nature" },
+  playground: { label: "遊び場・子ども施設", category: "nature" },
+  river: { label: "川・水辺", category: "nature" },
+  sports: { label: "スポーツ施設", category: "sports" },
+  cycle: { label: "レンタサイクル", category: "sports" },
+  station: { label: "駅", category: "transport" },
+  "bus-stop": { label: "バス停", category: "transport" },
+} as const satisfies Record<string, { label: string; category: GameSpotCategory }>;
+export type GameSpotIcon = keyof typeof GAME_SPOT_ICONS;
+export const GAME_SPOT_ICON_IDS = Object.keys(GAME_SPOT_ICONS) as GameSpotIcon[];
+
+/** 地図での見せ方。marker は種類のマーカー、art は建物の絵、photo は写真（mapImageUrl か、なければスポットの写真）。 */
+export const GAME_SPOT_MAP_STYLES = ["marker", "art", "photo"] as const;
+export type GameSpotMapStyle = (typeof GAME_SPOT_MAP_STYLES)[number];
+export const GAME_SPOT_MAP_STYLE_LABEL: Record<GameSpotMapStyle, string> = {
+  marker: "マーカー",
+  art: "建物イラスト",
+  photo: "写真・オリジナル画像",
+};
+
+export function spotIconCategory(icon: GameSpotIcon | undefined | null): GameSpotCategory {
+  return icon && icon in GAME_SPOT_ICONS ? GAME_SPOT_ICONS[icon].category : "stamp";
+}
 export const GAME_REWARD_KINDS = ["name", "coupon", "points", "badge"] as const;
 export type GameRewardKind = (typeof GAME_REWARD_KINDS)[number];
 
@@ -60,6 +137,10 @@ export type GameExperienceSpot = {
   keyword: string;
   lat: number | null;
   lng: number | null;
+  icon: GameSpotIcon;
+  mapStyle: GameSpotMapStyle;
+  /** 地図に出す画像。空ならスポットの写真を使う。 */
+  mapImageUrl: string;
 };
 
 export type GameExperience = {
@@ -182,6 +263,9 @@ export function createExperienceSpot(): GameExperienceSpot {
     keyword: "",
     lat: null,
     lng: null,
+    icon: "stamp",
+    mapStyle: "marker",
+    mapImageUrl: "",
   };
 }
 
@@ -268,6 +352,9 @@ function sanitizeSpot(raw: unknown): GameExperienceSpot | null {
     keyword: text(row.keyword, 40),
     lat: place?.lat ?? null,
     lng: place?.lng ?? null,
+    icon: oneOf(row.icon, GAME_SPOT_ICON_IDS, "stamp"),
+    mapStyle: oneOf(row.mapStyle, GAME_SPOT_MAP_STYLES, "marker"),
+    mapImageUrl: safeImageUrl(row.mapImageUrl),
   };
 }
 

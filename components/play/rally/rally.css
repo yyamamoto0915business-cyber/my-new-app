@@ -1,0 +1,2622 @@
+/* スタンプラリーの参加者画面（スタート・ラリーホーム・マップ・スポット詳細・獲得演出・特典） */
+
+.play-game-shell:has(.rally-app) > .play-locale-bar {
+  display: none;
+}
+
+.play-game-shell:has(.rally-start) {
+  position: relative;
+}
+
+.play-game-shell:has(.rally-start) > .play-locale-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+}
+
+.play-game-shell:has(.rally-start) > .play-locale-bar .play-exit {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.rally-bar__exit {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.7rem;
+}
+
+.rally-bar h1 {
+  padding: 0 5.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rally-spots__top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.rally-spots__top .rally-segment {
+  flex: 1;
+}
+
+.rally-clear__exit {
+  position: absolute;
+  top: calc(0.8rem + env(safe-area-inset-top, 0px));
+  left: 0.8rem;
+  z-index: 2;
+}
+
+.rally-start,
+.rally-app {
+  --rally-green: #1f7a4a;
+  --rally-green-deep: #17603a;
+  --rally-green-soft: #e7f4ec;
+  --rally-ink: #1d2a22;
+  --rally-muted: #66726a;
+  --rally-line: #e2ebe5;
+  --rally-paper: #f7f8f4;
+  --rally-gold: #f2b233;
+  --rally-red: #d9452b;
+  color: var(--rally-ink);
+}
+
+/* ───────── 共通ボタン ───────── */
+
+.rally-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 3.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2a9159, var(--rally-green));
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.85),
+    0 10px 22px rgba(23, 96, 58, 0.32);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.rally-cta:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.rally-cta svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.rally-cta--small {
+  min-height: 2.75rem;
+  font-size: 0.92rem;
+  box-shadow: 0 6px 14px rgba(23, 96, 58, 0.22);
+}
+
+.rally-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  min-height: 3rem;
+  border: 1.5px solid var(--rally-green);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--rally-green);
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.rally-ghost:disabled {
+  opacity: 0.6;
+}
+
+.rally-ghost svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.rally-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  border: 0;
+  background: none;
+  color: var(--rally-green);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.rally-link svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ───────── スタート画面 ───────── */
+
+.rally-start {
+  position: relative;
+  display: flex;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #1c2620;
+  color: #fff;
+}
+
+.rally-start--plain {
+  background: radial-gradient(120% 80% at 50% 0%, #2f8f5c 0%, #17603a 55%, #0f3d26 100%);
+}
+
+.rally-start__media {
+  position: absolute;
+  inset: 0;
+}
+
+.rally-start__media img,
+.rally-start__media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rally-start__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(10, 16, 12, 0.35) 0%, rgba(10, 16, 12, 0.05) 30%, rgba(10, 16, 12, 0.15) 55%, rgba(10, 16, 12, 0.78) 100%);
+}
+
+.rally-start__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: min(30rem, 100%);
+  margin: 0 auto;
+  padding: calc(3.6rem + env(safe-area-inset-top, 0px)) 1.25rem calc(1.4rem + env(safe-area-inset-bottom, 0px));
+  gap: 1.5rem;
+}
+
+.rally-start__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.rally-start__character {
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+}
+
+.rally-start__catch {
+  margin: 0;
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--rally-ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.rally-start__title {
+  margin: 0;
+  font-size: clamp(2.3rem, 11vw, 3.3rem);
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.25),
+    0 6px 22px rgba(0, 0, 0, 0.45);
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.12);
+}
+
+.rally-start__desc {
+  margin: 0;
+  max-width: 22rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.7;
+  white-space: pre-line;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+}
+
+.rally-start__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.rally-start__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.95rem 1.05rem;
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--rally-ink);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
+}
+
+.rally-start__info p {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.rally-start__info p svg {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--rally-green);
+}
+
+.rally-start__info .rally-start__free {
+  align-self: flex-start;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: var(--rally-green-soft);
+  color: var(--rally-green-deep);
+  font-size: 0.8rem;
+}
+
+.rally-start__steps {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0;
+  padding: 0.6rem 0 0;
+  border-top: 1px dashed var(--rally-line);
+  list-style: none;
+}
+
+.rally-start__steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.rally-start__steps li > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: var(--rally-green-soft);
+  color: var(--rally-green);
+}
+
+.rally-start__steps svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.rally-start__sub {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.rally-start__subbtn {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+
+.rally-start__subbtn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.rally-start__note {
+  margin: 0;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+/* ───────── アプリ枠・下タブ ───────── */
+
+.rally-app {
+  min-height: 100dvh;
+  width: min(30rem, 100%);
+  margin: 0 auto;
+  background: var(--rally-paper);
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.rally-tabs {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: end;
+  width: min(30rem, 100%);
+  transform: translateX(-50%);
+  padding: 0.35rem 0.4rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
+  background: rgba(255, 255, 255, 0.97);
+  border-top: 1px solid var(--rally-line);
+  box-shadow: 0 -6px 20px rgba(23, 40, 30, 0.07);
+  backdrop-filter: blur(8px);
+}
+
+.rally-tabs__btn,
+.rally-tabs__scan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.18rem;
+  min-height: 3.2rem;
+  padding: 0.25rem 0;
+  border: 0;
+  background: none;
+  color: #8a958d;
+  font-size: 0.66rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rally-tabs__btn.is-current,
+.rally-tabs__scan.is-current {
+  color: var(--rally-green);
+}
+
+.rally-tabs__icon {
+  position: relative;
+  display: inline-flex;
+}
+
+.rally-tabs__icon svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.rally-tabs__dot {
+  position: absolute;
+  top: -0.1rem;
+  right: -0.25rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--rally-red);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.rally-tabs__scan > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin-top: -1.6rem;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #2a9159, var(--rally-green));
+  color: #fff;
+  box-shadow:
+    0 0 0 4px #fff,
+    0 8px 18px rgba(23, 96, 58, 0.35);
+}
+
+.rally-tabs__scan svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+/* ───────── ページ共通 ───────── */
+
+.rally-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0 1rem 1.5rem;
+}
+
+.rally-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 0 -1rem;
+  padding: calc(0.85rem + env(safe-area-inset-top, 0px)) 1rem 0.85rem;
+  background: rgba(247, 248, 244, 0.95);
+  backdrop-filter: blur(8px);
+  text-align: center;
+}
+
+.rally-bar h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.rally-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.rally-section__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--rally-green-deep);
+}
+
+/* 進捗メーター */
+.rally-meter {
+  padding: 1rem 1.1rem 0.95rem;
+  border-radius: 1.1rem;
+  background: #fff;
+  border: 1px solid var(--rally-line);
+  box-shadow: 0 6px 18px rgba(23, 40, 30, 0.05);
+}
+
+.rally-meter__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.rally-meter__label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--rally-green-deep);
+}
+
+.rally-meter__count {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--rally-muted);
+}
+
+.rally-meter__count strong {
+  font-size: 1.9rem;
+  color: var(--rally-green);
+}
+
+.rally-meter__bar {
+  height: 0.7rem;
+  margin-top: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e7ece8;
+}
+
+.rally-meter__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #39b26c, var(--rally-green));
+  transition: width 0.6s ease;
+}
+
+.rally-meter__left {
+  width: fit-content;
+  margin: 0.6rem auto 0;
+  padding: 0.25rem 0.85rem;
+  border-radius: 999px;
+  background: #fff4dc;
+  color: #9a5a00;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+/* スタンプ帳 */
+.rally-book {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem 0.6rem;
+  margin: 0;
+  padding: 1rem 0.75rem;
+  border-radius: 1.1rem;
+  background: #fff;
+  border: 1px solid var(--rally-line);
+  list-style: none;
+}
+
+.rally-seal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.rally-seal__face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(5.2rem, 100%);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 2px dashed #cdd6d0;
+  background: #f1f3f1;
+}
+
+.rally-seal.is-stamped .rally-seal__face {
+  border: 3px solid var(--rally-red);
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(217, 69, 43, 0.18);
+}
+
+.rally-seal.is-next .rally-seal__face {
+  border-color: var(--rally-green);
+  border-style: solid;
+  animation: rally-pulse 1.8s ease-in-out infinite;
+}
+
+.rally-seal__face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rally-seal__face .rally-seal__mark {
+  object-fit: contain;
+  padding: 12%;
+}
+
+.rally-seal__icon {
+  width: 45%;
+  height: 45%;
+  color: var(--rally-red);
+}
+
+.rally-seal__unknown {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #bcc5bf;
+}
+
+.rally-seal__check {
+  position: absolute;
+  top: calc(min(5.2rem, 100%) - 1.45rem);
+  right: calc(50% - min(2.6rem, 50%) - 0.1rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  background: var(--rally-green);
+  color: #fff;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.rally-seal__check svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  stroke-width: 3;
+}
+
+.rally-seal__name {
+  max-width: 100%;
+  min-height: 1.1em;
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes rally-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(31, 122, 74, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(31, 122, 74, 0);
+  }
+}
+
+/* つぎのスポット */
+.rally-next {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: 1.1rem;
+  background: #fff;
+  border: 1px solid var(--rally-line);
+}
+
+.rally-next__body,
+.rally-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rally-next__thumb,
+.rally-row__thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 4.6rem;
+  height: 4.6rem;
+  overflow: hidden;
+  border-radius: 0.8rem;
+  background: var(--rally-green-soft);
+  color: var(--rally-green);
+}
+
+.rally-row__thumb {
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
+.rally-next__thumb img,
+.rally-row__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rally-next__text,
+.rally-row__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.rally-next__text strong,
+.rally-row__text strong {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.rally-next__text span,
+.rally-row__text span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--rally-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.rally-next__text em,
+.rally-row__text em {
+  color: var(--rally-green);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.rally-next__chev,
+.rally-row__chev {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: #a5b0a8;
+}
+
+.rally-row__done {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--rally-green);
+  color: #fff;
+}
+
+.rally-row__done svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  stroke-width: 3;
+}
+
+/* ───────── マップ・リスト ───────── */
+
+.rally-spots {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 5rem - env(safe-area-inset-bottom, 0px));
+}
+
+.rally-spots__head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: calc(0.8rem + env(safe-area-inset-top, 0px)) 1rem 0.7rem;
+  background: rgba(247, 248, 244, 0.97);
+  backdrop-filter: blur(8px);
+}
+
+.rally-spots__note {
+  margin: 0;
+  color: var(--rally-muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.rally-segment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: #e8ede9;
+}
+
+.rally-segment button {
+  min-height: 2.3rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--rally-muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.rally-segment button[aria-selected="true"] {
+  background: var(--rally-green);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(23, 96, 58, 0.25);
+}
+
+.rally-chips {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.rally-chips button {
+  flex: none;
+  min-height: 2rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--rally-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--rally-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rally-chips button[aria-pressed="true"] {
+  border-color: var(--rally-green);
+  background: var(--rally-green);
+  color: #fff;
+}
+
+.rally-map {
+  position: relative;
+  flex: 1;
+  min-height: 24rem;
+  /* 地図の中の重なり順をここで閉じ、スポット詳細などの上に出ないようにする。 */
+  isolation: isolate;
+}
+
+.rally-map__canvas {
+  position: absolute;
+  inset: 0;
+  background: #eef1e8;
+}
+
+/* 淡い地図を、少し明るく・緑寄りに。道は白、公園は淡い緑のまま残す。 */
+.rally-map .rally-tiles {
+  filter: sepia(0.08) saturate(0.85) hue-rotate(22deg) brightness(1.1) contrast(0.84);
+}
+
+.rally-map__canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 450;
+  pointer-events: none;
+  background: radial-gradient(130% 100% at 50% 45%, transparent 62%, rgba(31, 122, 74, 0.1));
+}
+
+.rally-map .leaflet-top.leaflet-right {
+  top: 4.4rem;
+}
+
+.rally-map .leaflet-control-zoom {
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(23, 40, 30, 0.2);
+}
+
+.rally-map .leaflet-control-zoom a {
+  width: 2.8rem;
+  height: 2.6rem;
+  border: 0;
+  background: #fff;
+  color: var(--rally-green);
+  font-size: 1.25rem;
+  line-height: 2.6rem;
+}
+
+.rally-map .leaflet-control-zoom a + a {
+  border-top: 1px solid var(--rally-line);
+}
+
+.rally-map .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 9px;
+}
+
+.rally-route {
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.9));
+}
+
+.rally-map__locate {
+  position: absolute;
+  right: 0.9rem;
+  top: 0.9rem;
+  z-index: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--rally-green);
+  box-shadow: 0 4px 14px rgba(23, 40, 30, 0.2);
+  cursor: pointer;
+}
+
+.rally-map__locate svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.rally-map__empty {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  top: 40%;
+  z-index: 500;
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--rally-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.rally-map__card {
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 500;
+  padding: 0.8rem 2.4rem 0.8rem 0.8rem;
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(23, 40, 30, 0.22);
+}
+
+.rally-map__close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 0;
+  border-radius: 50%;
+  background: #f0f3f1;
+  color: var(--rally-muted);
+  cursor: pointer;
+}
+
+.rally-map__close svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.rally-pin-wrap {
+  background: none;
+  border: 0;
+}
+
+.rally-pin {
+  position: relative;
+  display: block;
+  width: 52px;
+  height: 60px;
+}
+
+.rally-pin__face {
+  position: absolute;
+  top: 0;
+  left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: var(--rally-green, #1f7a4a);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
+}
+
+.rally-pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  background: #fff;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.18);
+  z-index: -1;
+}
+
+.rally-pin__face img {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+  margin: 0;
+  object-fit: cover;
+}
+
+.rally-pin__face:has(img) {
+  background: #fff;
+}
+
+.rally-pin:not(.is-stamped) .rally-pin__face img {
+  filter: saturate(0.85);
+}
+
+.rally-pin__label {
+  position: absolute;
+  top: 62px;
+  left: 50%;
+  max-width: 7.5rem;
+  overflow: hidden;
+  padding: 2px 8px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #1d2a22;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(23, 40, 30, 0.18);
+}
+
+.rally-pin.is-stamped .rally-pin__label {
+  color: #1f7a4a;
+}
+
+.rally-pin.is-selected .rally-pin__label {
+  background: #1f7a4a;
+  color: #fff;
+}
+
+.rally-pin.is-selected .rally-pin__face {
+  border-color: #1f7a4a;
+  transform: scale(1.12);
+}
+
+.rally-pin__check {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #1f7a4a;
+}
+
+.rally-pin__check::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.rally-here__dot {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  background: #2f7cf6;
+  box-shadow: 0 0 0 8px rgba(47, 124, 246, 0.2);
+}
+
+.rally-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.3rem 1rem 1.5rem;
+  list-style: none;
+}
+
+.rally-list li {
+  padding: 0.7rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid var(--rally-line);
+}
+
+.rally-list .rally-list__empty {
+  color: var(--rally-muted);
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+/* ───────── スポット詳細 ───────── */
+
+.rally-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: min(30rem, 100%);
+  margin: 0 auto;
+  overflow-y: auto;
+  background: var(--rally-paper);
+  animation: rally-rise 0.22s ease-out;
+}
+
+@keyframes rally-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.rally-sheet__media {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  height: 17rem;
+  background: var(--rally-green-soft);
+  color: var(--rally-green);
+}
+
+.rally-sheet__media > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rally-sheet__media > svg {
+  width: 3rem;
+  height: 3rem;
+}
+
+.rally-sheet__back {
+  position: absolute;
+  top: calc(0.8rem + env(safe-area-inset-top, 0px));
+  left: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--rally-ink);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.rally-sheet__badge {
+  position: absolute;
+  right: 0.8rem;
+  bottom: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: var(--rally-green);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.rally-sheet__badge svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  stroke-width: 3;
+}
+
+.rally-sheet__body {
+  position: relative;
+  flex: 1;
+  margin-top: -1rem;
+  padding: 1.3rem 1.15rem 1rem;
+  border-radius: 1.3rem 1.3rem 0 0;
+  background: #fff;
+}
+
+.rally-sheet__kicker {
+  margin: 0;
+  color: var(--rally-green);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.rally-sheet__body h2 {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.rally-sheet__desc {
+  margin: 0 0 1rem;
+  color: #3e4a42;
+  font-size: 0.92rem;
+  line-height: 1.75;
+  white-space: pre-line;
+}
+
+.rally-sheet__sub {
+  margin: 1.1rem 0 0.55rem;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.rally-info {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.95rem;
+  border: 1px solid var(--rally-line);
+  background: #fbfcfa;
+}
+
+.rally-info + .rally-info {
+  margin-top: 0.6rem;
+}
+
+.rally-info__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  background: var(--rally-green-soft);
+  color: var(--rally-green);
+}
+
+.rally-info__icon--hint {
+  background: #fff4dc;
+  color: #c98400;
+}
+
+.rally-info__icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.rally-info strong {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.rally-info p {
+  margin: 0.15rem 0 0;
+  color: var(--rally-muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.rally-sheet__dock {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem 1.15rem calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  background: #fff;
+  border-top: 1px solid var(--rally-line);
+}
+
+.rally-sheet__links {
+  display: flex;
+  justify-content: center;
+  gap: 1.4rem;
+}
+
+/* ───────── 読み取る ───────── */
+
+.rally-camera {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100dvh - 12rem - env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+  border-radius: 1.3rem;
+  background: #111;
+}
+
+.rally-camera video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rally-camera__frame {
+  position: relative;
+  width: min(68vw, 16rem);
+  aspect-ratio: 1;
+  border-radius: 1.2rem;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+}
+
+.rally-camera__frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 4px solid #4fd18b;
+  border-radius: 1.2rem;
+  -webkit-mask:
+    linear-gradient(#000 0 0) top left / 26% 26% no-repeat,
+    linear-gradient(#000 0 0) top right / 26% 26% no-repeat,
+    linear-gradient(#000 0 0) bottom left / 26% 26% no-repeat,
+    linear-gradient(#000 0 0) bottom right / 26% 26% no-repeat;
+  mask:
+    linear-gradient(#000 0 0) top left / 26% 26% no-repeat,
+    linear-gradient(#000 0 0) top right / 26% 26% no-repeat,
+    linear-gradient(#000 0 0) bottom left / 26% 26% no-repeat,
+    linear-gradient(#000 0 0) bottom right / 26% 26% no-repeat;
+}
+
+.rally-camera__frame > span {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 2px;
+  background: #4fd18b;
+  box-shadow: 0 0 10px #4fd18b;
+  animation: rally-scanline-wide 2.2s ease-in-out infinite;
+}
+
+@keyframes rally-scanline-wide {
+  0%,
+  100% {
+    transform: translateY(-6rem);
+  }
+  50% {
+    transform: translateY(6rem);
+  }
+}
+
+.rally-camera__note {
+  position: relative;
+  max-width: 18rem;
+  margin: 1.4rem 1rem 0;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.rally-scan .rally-scan__why {
+  color: var(--rally-red);
+  font-weight: 700;
+}
+
+.rally-scan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1.4rem 1.1rem;
+  border-radius: 1.2rem;
+  background: #fff;
+  border: 1px solid var(--rally-line);
+  text-align: center;
+}
+
+.rally-scan__frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 11rem;
+  height: 11rem;
+  border-radius: 1.2rem;
+  background: #1d2a22;
+  color: #fff;
+}
+
+.rally-scan__frame::before {
+  content: "";
+  position: absolute;
+  inset: 1rem;
+  border: 3px solid #4fd18b;
+  border-radius: 0.8rem;
+  -webkit-mask:
+    linear-gradient(#000 0 0) top left / 28% 28% no-repeat,
+    linear-gradient(#000 0 0) top right / 28% 28% no-repeat,
+    linear-gradient(#000 0 0) bottom left / 28% 28% no-repeat,
+    linear-gradient(#000 0 0) bottom right / 28% 28% no-repeat;
+  mask:
+    linear-gradient(#000 0 0) top left / 28% 28% no-repeat,
+    linear-gradient(#000 0 0) top right / 28% 28% no-repeat,
+    linear-gradient(#000 0 0) bottom left / 28% 28% no-repeat,
+    linear-gradient(#000 0 0) bottom right / 28% 28% no-repeat;
+}
+
+.rally-scan__frame > span {
+  position: absolute;
+  left: 1.4rem;
+  right: 1.4rem;
+  top: 50%;
+  height: 2px;
+  background: #4fd18b;
+  box-shadow: 0 0 10px #4fd18b;
+  animation: rally-scanline 2.2s ease-in-out infinite;
+}
+
+.rally-scan__frame svg {
+  width: 4.5rem;
+  height: 4.5rem;
+  opacity: 0.85;
+}
+
+@keyframes rally-scanline {
+  0%,
+  100% {
+    transform: translateY(-3.2rem);
+  }
+  50% {
+    transform: translateY(3.2rem);
+  }
+}
+
+.rally-scan h2 {
+  margin: 0.4rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.rally-scan > p {
+  margin: 0;
+  color: var(--rally-muted);
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+.rally-scan__steps {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.rally-scan__steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.8rem;
+  background: var(--rally-paper);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.rally-scan__steps span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--rally-green);
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+/* ───────── 演出の共通部品 ───────── */
+
+.rally-ribbon {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0.45rem 1.6rem;
+  background: linear-gradient(180deg, #e8553a, #c43a22);
+  color: #fff;
+  font-size: clamp(1.6rem, 8vw, 2.2rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+  transform: rotate(-4deg);
+  clip-path: polygon(0 0, 100% 0, 96% 50%, 100% 100%, 0 100%, 4% 50%);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+
+.rally-ribbon--small {
+  padding: 0.3rem 1.3rem;
+  background: #fff;
+  color: #c43a22;
+  font-size: 1.15rem;
+  transform: rotate(-4deg) translateY(0.4rem);
+}
+
+.rally-burst {
+  position: absolute;
+  inset: -40%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 214, 120, 0.22) 0deg 8deg, transparent 8deg 22deg);
+  animation: rally-spin 30s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rally-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ───────── スタンプ獲得 ───────── */
+
+.rally-get {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: center;
+  overflow: hidden auto;
+  background: radial-gradient(90% 60% at 50% 30%, #6b2a17 0%, #2b130c 70%, #170a06 100%);
+  animation: rally-fade 0.25s ease-out;
+}
+
+@keyframes rally-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.rally-get__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+  filter: blur(2px) saturate(1.2);
+}
+
+.rally-get__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: min(26rem, 100%);
+  padding: calc(2.4rem + env(safe-area-inset-top, 0px)) 1.25rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.rally-get__seal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 11.5rem;
+  height: 11.5rem;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 5px solid #fff;
+  background: #fff;
+  color: var(--rally-red);
+  box-shadow:
+    0 0 0 5px var(--rally-red),
+    0 0 0 13px rgba(255, 214, 120, 0.4),
+    0 14px 40px rgba(0, 0, 0, 0.45);
+}
+
+.rally-get__seal img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rally-get__seal svg {
+  width: 45%;
+  height: 45%;
+}
+
+.rally-get__seal--pop {
+  animation: rally-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.rally-get__seal--bounce {
+  animation: rally-bounce 0.9s ease-out;
+}
+
+.rally-get__seal--sparkle,
+.rally-get__seal--confetti {
+  animation: rally-pop 0.55s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+@keyframes rally-pop {
+  from {
+    transform: scale(0.2) rotate(-20deg);
+    opacity: 0;
+  }
+}
+
+@keyframes rally-bounce {
+  0% {
+    transform: translateY(-60px) scale(0.6);
+    opacity: 0;
+  }
+  45% {
+    transform: translateY(0) scale(1.08);
+    opacity: 1;
+  }
+  65% {
+    transform: translateY(-14px) scale(0.98);
+  }
+  85% {
+    transform: translateY(0) scale(1.02);
+  }
+}
+
+.rally-get__name {
+  margin: -1.6rem 0 0;
+  position: relative;
+  padding: 0.4rem 1.5rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e8553a, #c43a22);
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 900;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.rally-get__msg {
+  margin: 0;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.rally-get__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 1.1rem 1.1rem 1.15rem;
+  border-radius: 1.3rem;
+  background: #fffaf0;
+  color: var(--rally-ink);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.rally-get__count {
+  margin: 0;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--rally-muted);
+}
+
+.rally-get__count strong {
+  font-size: 2.3rem;
+  color: var(--rally-green);
+}
+
+.rally-get__card .rally-meter__bar {
+  margin-top: 0;
+}
+
+.rally-get__card .rally-meter__left {
+  margin-top: 0;
+}
+
+.rally-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.rally-confetti span {
+  position: absolute;
+  top: -5%;
+  left: calc(var(--i) * 5.5% + 1%);
+  width: 0.55rem;
+  height: 0.9rem;
+  border-radius: 2px;
+  background: hsl(calc(var(--i) * 47deg) 85% 60%);
+  animation: rally-fall calc(2.4s + var(--i) * 0.09s) ease-in calc(var(--i) * 0.07s) both;
+}
+
+.rally-confetti--sparkle span {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #ffe39a;
+  box-shadow: 0 0 8px #ffd25c;
+}
+
+@keyframes rally-fall {
+  from {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(110vh) rotate(540deg);
+    opacity: 0.6;
+  }
+}
+
+/* ───────── 特典・クリア ───────── */
+
+.rally-clear {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 5rem);
+  background: radial-gradient(90% 50% at 50% 15%, #8a3b1d 0%, #3a170b 60%, #24100a 100%);
+}
+
+.rally-clear__hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  overflow: hidden;
+  padding: calc(2.4rem + env(safe-area-inset-top, 0px)) 1rem 1.2rem;
+}
+
+.rally-clear__hero > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.3;
+}
+
+.rally-clear__trophy {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 8rem;
+  height: 8rem;
+  margin-top: 1.1rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ffe6a3, var(--rally-gold) 60%, #c98400);
+  color: #7a4300;
+  box-shadow:
+    0 0 0 8px rgba(255, 214, 120, 0.3),
+    0 0 50px rgba(255, 200, 80, 0.6);
+  animation: rally-pop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.rally-clear__trophy svg {
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
+.rally-clear__card {
+  position: relative;
+  margin: 0 0.9rem 1rem;
+  padding: 1.2rem 1.1rem;
+  border-radius: 1.3rem;
+  background: #fffaf0;
+  text-align: center;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.rally-clear__lead {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.rally-clear__title {
+  margin: 0.2rem 0 0;
+  color: var(--rally-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.rally-clear__card .play-clear {
+  margin-top: 0.9rem;
+  border: 0;
+  background: none;
+  padding: 0;
+}
+
+.rally-clear__card .play-clear h2 {
+  display: none;
+}
+
+.rally-clear__card .play-clear__reward {
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.9rem;
+  border: 1.5px dashed var(--rally-red);
+  background: #fff;
+  color: var(--rally-red);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.rally-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.6rem 1.1rem;
+  border-radius: 1.2rem;
+  background: #fff;
+  border: 1px solid var(--rally-line);
+  text-align: center;
+}
+
+.rally-locked p {
+  margin: 0;
+  color: var(--rally-muted);
+  font-size: 0.88rem;
+}
+
+.rally-locked__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.2rem;
+  height: 4.2rem;
+  border-radius: 50%;
+  background: #fff4dc;
+  color: #c98400;
+}
+
+.rally-locked__icon svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.rally-locked .rally-locked__label {
+  color: var(--rally-ink);
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+/* ───────── マイページ ───────── */
+
+.rally-me {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.rally-me__card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1.1rem;
+  background: #fff;
+  border: 1px solid var(--rally-line);
+}
+
+.rally-me__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  background: var(--rally-green-soft);
+  color: var(--rally-green);
+}
+
+.rally-me__card p {
+  margin: 0;
+}
+
+.rally-me__label {
+  color: var(--rally-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.rally-me__name {
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.rally-me__game {
+  color: var(--rally-muted);
+  font-size: 0.8rem;
+}
+
+.rally-me__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1.1rem;
+  border-radius: 1.1rem;
+  background: #fff;
+  border: 1px solid var(--rally-line);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.rally-me__row .play-locale-bar {
+  padding: 0;
+}
+
+.rally-me__error {
+  margin: 0;
+  color: var(--rally-red);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rally-burst,
+  .rally-confetti span,
+  .rally-scan__frame > span,
+  .rally-camera__frame > span,
+  .rally-seal.is-next .rally-seal__face,
+  .rally-get__seal,
+  .rally-clear__trophy,
+  .rally-sheet,
+  .rally-get {
+    animation: none;
+  }
+}
+
+/* ───────── 立体マップ（MapLibre） ───────── */
+
+.rally-map__canvas--vector {
+  background: #eef3e2;
+}
+
+/* maplibre-gl.css の .maplibregl-map { position: relative } に負けないようにする。 */
+.rally-map .rally-map__canvas.maplibregl-map {
+  position: absolute;
+  inset: 0;
+}
+
+.rally-map__canvas--vector::after {
+  display: none;
+}
+
+.rally-map .maplibregl-ctrl-top-right {
+  top: 4.4rem;
+  right: 0.35rem;
+}
+
+.rally-map .maplibregl-ctrl-group {
+  overflow: hidden;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(23, 40, 30, 0.2);
+}
+
+.rally-map .maplibregl-ctrl-group button {
+  width: 2.8rem;
+  height: 2.6rem;
+}
+
+.rally-map .maplibregl-ctrl-attrib {
+  font-size: 9px;
+}
+
+.rally-vpin-wrap {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.rally-vpin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  filter: drop-shadow(0 4px 6px rgba(23, 40, 30, 0.28));
+}
+
+.rally-vpin__head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 3px solid #fff;
+  background: var(--pin);
+  transition: transform 0.15s ease;
+}
+
+.rally-vpin__head > svg {
+  width: 20px;
+  height: 20px;
+  color: #fff;
+  transform: rotate(45deg);
+  stroke-width: 2.3;
+}
+
+.rally-vpin.is-selected .rally-vpin__head {
+  transform: rotate(-45deg) scale(1.18);
+}
+
+.rally-vpin__check {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  transform: rotate(45deg);
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #1f7a4a;
+}
+
+.rally-vpin__check svg {
+  width: 10px;
+  height: 10px;
+  color: #fff;
+  stroke-width: 3.5;
+}
+
+.rally-vpin__label {
+  max-width: 8rem;
+  overflow: hidden;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #1d2a22;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rally-vpin.is-selected .rally-vpin__label {
+  background: var(--pin);
+  color: #fff;
+}
+
+.rally-vpin:not(.is-stamped):not(.is-selected) .rally-vpin__head {
+  opacity: 0.92;
+}
+
+/* 札・距離 */
+.rally-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.rally-tag svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  stroke-width: 3;
+}
+
+.rally-tag--done {
+  background: var(--rally-green-soft);
+  color: var(--rally-green);
+}
+
+.rally-walk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--rally-green);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.rally-walk svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+/* 地図の下のカード */
+.rally-map__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.85rem;
+}
+
+.rally-mapcard {
+  display: flex;
+  gap: 0.8rem;
+  padding-right: 1.6rem;
+}
+
+.rally-mapcard__thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 5.2rem;
+  height: 5.2rem;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  background: var(--rally-green-soft);
+  color: var(--rally-green);
+}
+
+.rally-mapcard__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rally-mapcard__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.rally-mapcard__text strong {
+  font-size: 1.02rem;
+  font-weight: 900;
+}
+
+.rally-mapcard__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.rally-mapcard__text p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--rally-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* スポット詳細 */
+.rally-sheet__fav {
+  position: absolute;
+  top: calc(0.8rem + env(safe-area-inset-top, 0px));
+  right: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: #8a958d;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.rally-sheet__fav.is-on {
+  color: #e84b6a;
+}
+
+.rally-sheet__fav.is-on svg {
+  fill: currentColor;
+}
+
+.rally-sheet__title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.rally-sheet__title h2 {
+  margin: 0 0 0.25rem;
+}
+
+.rally-sheet__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.9rem;
+}
+
+.rally-sheet__icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.rally-sheet__body > .rally-walk {
+  margin-bottom: 0.6rem;
+}
+
+.rally-actions {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  margin: 0.2rem 0 0.4rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--rally-line);
+  background: #fbfcfa;
+}
+
+.rally-actions > a,
+.rally-actions > button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.75rem 0.25rem;
+  border: 0;
+  background: none;
+  color: var(--rally-green);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.rally-actions > * + * {
+  border-left: 1px solid var(--rally-line) !important;
+}
+
+.rally-actions svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.rally-sheet__note {
+  margin: 0.3rem 0 0;
+  color: var(--rally-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.rally-media {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.rally-media img,
+.rally-media video {
+  flex: none;
+  width: 70%;
+  aspect-ratio: 4 / 3;
+  border-radius: 0.9rem;
+  background: #111;
+  object-fit: cover;
+}
+
+.rally-tip {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 1rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid #f6dfa6;
+  background: #fff8e6;
+}
+
+.rally-tip > svg {
+  flex: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  color: #e0a100;
+}
+
+.rally-tip strong {
+  color: #a36a00;
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.rally-tip p {
+  margin: 0.2rem 0 0;
+  color: #5b5136;
+  font-size: 0.84rem;
+  line-height: 1.65;
+}
+
+.rally-related {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rally-related button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rally-related__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: var(--rally-green-soft);
+  color: var(--rally-green);
+}
+
+.rally-related__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rally-related strong {
+  overflow: hidden;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rally-related em {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--rally-muted);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.rally-related em svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.rally-map__credit {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.55rem;
+  z-index: 2;
+  margin: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.rally-map__credit a {
+  color: #66726a;
+  text-decoration: none;
+}
+
+/* ───────── 建物の絵のピン ───────── */
+
+.rally-vpin__art {
+  position: relative;
+  display: block;
+  width: 78px;
+  transform-origin: 50% 100%;
+  transition: transform 0.15s ease;
+}
+
+.rally-vpin__art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.rally-vpin.is-selected .rally-vpin__art,
+.rally-vpin.is-selected .rally-vpin__photo {
+  transform: scale(1.22) translateY(-4px);
+}
+
+.rally-vpin.is-selected .rally-vpin__art::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: -4px;
+  height: 12px;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--pin);
+  opacity: 0.45;
+  filter: blur(4px);
+}
+
+
+
+.rally-vpin:not(.is-stamped) .rally-vpin__art img {
+  filter: saturate(0.92);
+}
+
+.rally-mapcard__thumb img.is-art {
+  width: 88%;
+  height: auto;
+  object-fit: contain;
+}
+
+.rally-sheet__icon img {
+  width: 92%;
+  height: auto;
+}
+
+.rally-sheet__media > img.rally-sheet__art {
+  width: auto;
+  height: 82%;
+  object-fit: contain;
+}
+
+/* ───────── 現在地 ───────── */
+
+.rally-here {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+}
+
+.rally-here .rally-here__dot {
+  position: relative;
+  z-index: 1;
+}
+
+.rally-here__pulse {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: rgba(47, 124, 246, 0.22);
+  animation: rally-here-pulse 2s ease-out infinite;
+}
+
+@keyframes rally-here-pulse {
+  0% {
+    transform: scale(0.4);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.rally-map__locate.is-on {
+  background: #2f7cf6;
+  color: #fff;
+}
+
+.rally-map__notice {
+  position: absolute;
+  left: 0.75rem;
+  right: 4.2rem;
+  top: 0.75rem;
+  z-index: 3;
+  margin: 0;
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--rally-red);
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(23, 40, 30, 0.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rally-here__pulse {
+    animation: none;
+  }
+}
+
+/* ───────── マーカーのピン ───────── */
+
+.rally-vpin__marker {
+  position: relative;
+  display: block;
+  width: 40px;
+  transform-origin: 50% 100%;
+  transition: transform 0.15s ease;
+}
+
+.rally-vpin__marker img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.rally-vpin.is-selected .rally-vpin__marker {
+  transform: scale(1.3);
+}
+
+
+.rally-vpin.is-stamped:not(.is-selected) .rally-vpin__marker img {
+  opacity: 0.85;
+}
+
+/* ───────── ピンの見た目（マーカー・建物イラスト・写真） ───────── */
+
+.rally-vpin__face {
+  position: relative;
+  display: block;
+}
+
+.rally-vpin__face > .rally-vpin__check {
+  top: -4px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  transform: none;
+  z-index: 1;
+}
+
+.rally-vpin__face > .rally-vpin__check svg {
+  width: 11px;
+  height: 11px;
+}
+
+.rally-vpin__photo {
+  position: relative;
+  display: block;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 9px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  outline: 3px solid var(--pin);
+  background: #fff;
+  transform-origin: 50% 100%;
+  transition: transform 0.15s ease;
+}
+
+.rally-vpin__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* 写真の下の小さなしっぽ。先端が地点を指す。 */
+.rally-vpin__photo::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid var(--pin);
+}

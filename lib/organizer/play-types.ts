@@ -1,4 +1,5 @@
 import type { OrganizerGameSpotKind } from "@/lib/organizer/game-tokens";
+import type { GameSpotIcon, GameSpotMapStyle } from "@/lib/organizer/game-experience";
 
 export const PLAY_NICKNAME_MAX = 20;
 export const PLAY_PASSPHRASE_MIN = 4;
@@ -11,6 +12,18 @@ export type PlaySpotProgress = {
   kindLabel: string;
   stamped: boolean;
   imageUrl?: string;
+  /** スポット詳細とマップに出す紹介。正解キーワードやQRの鍵は含めない。 */
+  description?: string;
+  hint?: string;
+  checkin?: "qr" | "keyword" | "gps";
+  lat?: number | null;
+  lng?: number | null;
+  videoUrl?: string;
+  /** マップに置く建物の絵。種類（絞り込み）はこの絵から決まる。 */
+  icon?: GameSpotIcon;
+  /** 地図での見せ方。未設定はマーカー。 */
+  mapStyle?: GameSpotMapStyle;
+  mapImageUrl?: string;
 };
 
 export type PlayProgress = {

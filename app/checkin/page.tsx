@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { PlayResumeCard } from "@/components/play/PlayResume";
 
 const FLOW_STEPS = [
   {
@@ -97,11 +98,13 @@ export default function CheckinPage() {
           </h1>
           <div className="mt-2.5 h-px w-10 bg-gradient-to-r from-[#c28f13] to-transparent" />
           <p className="mt-3 max-w-[28ch] text-[13px] leading-[1.75] text-[#607083]">
-            会場のQRコードを読み取って、
+            会場やゲームのQRコードを読み取って、
             <br />
-            スムーズに受付を完了できます。
+            受付やゲームに参加できます。
           </p>
         </header>
+
+        <PlayResumeCard className="mt-5" />
 
         {/* ヒーロー */}
         <div className="relative mt-7">

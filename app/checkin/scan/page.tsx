@@ -1,193 +1,58 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import jsQR from "jsqr";
 import { parseCheckinQr } from "@/lib/checkin/parse-checkin-qr";
-
-type ScanState = "starting" | "scanning" | "unsupported" | "denied" | "error";
-
-declare global {
-  interface Window {
-    BarcodeDetector?: new (options?: { formats?: string[] }) => {
-      detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue: string }>>;
-    };
-  }
-}
+import { useQrCamera } from "@/hooks/use-qr-camera";
+import { PlayResumeCard } from "@/components/play/PlayResume";
 
 export default function CheckinScanPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanningRef = useRef(false);
-  const handledRef = useRef(false);
+  const [statusMessage, setStatusMessage] = useState("QRコードを枠内に合わせてください");
 
-  const [scanState, setScanState] = useState<ScanState>("starting");
-  const [statusMessage, setStatusMessage] = useState("カメラを起動しています…");
-
-  const stopCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
-  }, []);
-
+  /** true を返すとカメラを止める。読めないコードや受付コードの不一致は、そのまま読み続ける。 */
   const handleScanResult = useCallback(
-    async (raw: string) => {
-      if (handledRef.current) return;
+    async (raw: string): Promise<boolean> => {
       const parsed = parseCheckinQr(raw);
-      if (!parsed) return;
+      if (!parsed) {
+        setStatusMessage("このQRコードには対応していません。受付やゲームのQRコードを読み取ってください");
+        return false;
+      }
 
-      handledRef.current = true;
-      stopCamera();
-      setStatusMessage("読み取りました。受付画面へ移動します…");
+      if (parsed.type === "play") {
+        setStatusMessage("読み取りました。ゲーム画面へ移動します…");
+        router.push(parsed.path);
+        return true;
+      }
 
       if (parsed.type === "token") {
+        setStatusMessage("読み取りました。受付画面へ移動します…");
         router.push(`/checkin/t/${parsed.token}`);
-        return;
+        return true;
       }
 
       try {
         const res = await fetch(`/api/checkin/code/${parsed.code}`);
         if (res.ok) {
           const data = await res.json();
+          setStatusMessage("読み取りました。受付画面へ移動します…");
           router.push(`/checkin/t/${data.token}`);
-        } else {
-          handledRef.current = false;
-          setStatusMessage("受付コードが見つかりません。もう一度お試しください。");
+          return true;
         }
+        setStatusMessage("受付コードが見つかりません。もう一度お試しください。");
       } catch {
-        handledRef.current = false;
         setStatusMessage("通信エラーが発生しました。もう一度お試しください。");
       }
+      return false;
     },
-    [router, stopCamera],
+    [router],
   );
 
-  useEffect(() => {
-    let cancelled = false;
-    let frameId = 0;
-
-    const detectWithJsQr = (video: HTMLVideoElement): string | null => {
-      const w = video.videoWidth;
-      const h = video.videoHeight;
-      if (!w || !h) return null;
-
-      if (!canvasRef.current) {
-        canvasRef.current = document.createElement("canvas");
-      }
-      const canvas = canvasRef.current;
-      // 処理負荷を抑えるため解像度を制限
-      const maxSide = 480;
-      const scale = Math.min(1, maxSide / Math.max(w, h));
-      const cw = Math.max(1, Math.round(w * scale));
-      const ch = Math.max(1, Math.round(h * scale));
-      if (canvas.width !== cw || canvas.height !== ch) {
-        canvas.width = cw;
-        canvas.height = ch;
-      }
-
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return null;
-      ctx.drawImage(video, 0, 0, cw, ch);
-      const imageData = ctx.getImageData(0, 0, cw, ch);
-      const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: "dontInvert",
-      });
-      return code?.data ?? null;
-    };
-
-    const start = async () => {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setScanState("unsupported");
-        return;
-      }
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-          audio: false,
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-
-        streamRef.current = stream;
-        const video = videoRef.current;
-        if (!video) return;
-
-        video.srcObject = stream;
-        await video.play();
-
-        const useNative = typeof window.BarcodeDetector === "function";
-        const detector = useNative
-          ? new window.BarcodeDetector!({ formats: ["qr_code"] })
-          : null;
-
-        setScanState("scanning");
-        setStatusMessage("QRコードを枠内に合わせてください");
-
-        // jsQR は CPU 負荷が高いため間引き、BarcodeDetector は毎フレーム可
-        const scheduleNext = () => {
-          if (cancelled || handledRef.current) return;
-          if (detector) {
-            frameId = requestAnimationFrame(scanFrame);
-          } else {
-            frameId = window.setTimeout(() => {
-              frameId = requestAnimationFrame(scanFrame);
-            }, 120) as unknown as number;
-          }
-        };
-
-        const scanFrame = async () => {
-          if (cancelled || handledRef.current) return;
-          if (!video.videoWidth || scanningRef.current) {
-            scheduleNext();
-            return;
-          }
-
-          scanningRef.current = true;
-          try {
-            let raw: string | null = null;
-            if (detector) {
-              const codes = await detector.detect(video);
-              raw = codes[0]?.rawValue ?? null;
-            } else {
-              raw = detectWithJsQr(video);
-            }
-            if (raw) {
-              await handleScanResult(raw);
-            }
-          } catch {
-            // フレーム単位の検出失敗は無視して継続
-          } finally {
-            scanningRef.current = false;
-          }
-
-          scheduleNext();
-        };
-
-        frameId = requestAnimationFrame(scanFrame);
-      } catch (err) {
-        const denied =
-          err instanceof DOMException &&
-          (err.name === "NotAllowedError" || err.name === "PermissionDeniedError");
-        setScanState(denied ? "denied" : "error");
-      }
-    };
-
-    void start();
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(frameId);
-      clearTimeout(frameId);
-      stopCamera();
-    };
-  }, [handleScanResult, stopCamera]);
+  const { state: scanState, stop: stopCamera } = useQrCamera(videoRef, handleScanResult);
+  const shownMessage = scanState === "starting" ? "カメラを起動しています…" : statusMessage;
 
   return (
     <div
@@ -212,7 +77,7 @@ export default function CheckinScanPage() {
         </Link>
         <div>
           <h1 className="text-[16px] font-bold text-white">QRコードを読み取る</h1>
-          <p className="text-[11px] text-white/70">会場のQRコードを枠内に合わせてください</p>
+          <p className="text-[11px] text-white/70">会場やゲームのQRコードを枠内に合わせてください</p>
         </div>
       </header>
 
@@ -234,7 +99,7 @@ export default function CheckinScanPage() {
             <span className="absolute -bottom-0.5 -right-0.5 h-6 w-6 rounded-br-lg border-b-4 border-r-4 border-[#d49a25]" />
           </div>
 
-          <p className="mt-6 text-center text-[13px] font-medium text-white">{statusMessage}</p>
+          <p className="mt-6 text-center text-[13px] font-medium text-white">{shownMessage}</p>
         </div>
 
         {(scanState === "unsupported" || scanState === "denied" || scanState === "error") && (
@@ -270,7 +135,8 @@ export default function CheckinScanPage() {
         )}
       </div>
 
-      <div className="px-4 py-4">
+      <div className="flex flex-col gap-3 px-4 py-4">
+        <PlayResumeCard tone="dark" />
         <Link
           href="/checkin"
           onClick={stopCamera}

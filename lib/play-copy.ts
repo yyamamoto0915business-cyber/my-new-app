@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n";
+import { GAME_SPOT_CATEGORY_LABEL, type GameSpotCategory } from "@/lib/organizer/game-experience";
 
 /** 参加画面のシステム文言。主催者が書いた題名・問題・ヒントは対象外。 */
 const EXACT: Record<string, string> = {
@@ -202,6 +203,7 @@ export function playCopy(locale: Locale) {
     join: en ? "Join" : "参加する",
     joining: en ? "Joining…" : "入っています…",
     backToStart: en ? "Back to the start" : "スタート画面に戻る",
+    toApp: en ? "App" : "アプリへ",
     backToCard: en ? "Back to your stamp card" : "スタンプ帳へ戻る",
     backToList: en ? "Back to the list" : "一覧へ戻る",
     share: en ? "Share" : "シェアする",
@@ -356,6 +358,145 @@ export function playCopy(locale: Locale) {
     },
     spotMeta(count: number) {
       return en ? `${count} spots` : `スポット ${count} か所`;
+    },
+    rally: {
+      tabHome: en ? "Home" : "ホーム",
+      tabMap: en ? "Map" : "マップ",
+      tabScan: en ? "Scan" : "読み取る",
+      tabReward: en ? "Reward" : "特典",
+      tabMe: en ? "My page" : "マイページ",
+      stampStatus: en ? "Stamps collected" : "スタンプ獲得状況",
+      stampBook: en ? "Stamp book" : "スタンプ帳",
+      nextPick: en ? "Recommended next spot" : "次に行くおすすめスポット",
+      seeOnMap: en ? "See it on the map" : "マップで場所を見る",
+      allDone: en ? "Every stamp collected!" : "すべてのスタンプを集めました！",
+      map: en ? "Map" : "地図",
+      list: en ? "List" : "リスト",
+      filterAll: en ? "All" : "すべて",
+      filterOpen: en ? "Not yet" : "未獲得",
+      filterDone: en ? "Collected" : "獲得済み",
+      filterNear: en ? "Nearest" : "近い順",
+      noPins: en ? "No spots have a map pin yet." : "地図にピンのあるスポットはまだありません。",
+      noSpots: en ? "No spots match." : "該当するスポットはありません。",
+      locating: en ? "Finding your location…" : "現在地を確認しています…",
+      locateFailed: en
+        ? "Couldn’t get your location. Allow location access in your settings."
+        : "現在地を取得できませんでした。位置情報の利用を許可してください。",
+      myLocation: en ? "Show my location" : "現在地を表示",
+      details: en ? "Details" : "詳細を見る",
+      hint: en ? "Hint" : "ヒント",
+      checkinHow: en ? "How to check in" : "チェックイン方法",
+      checkinQr: en ? "QR code" : "QRコード",
+      checkinQrNote: en
+        ? "Scan the QR code posted at the spot to get the stamp."
+        : "設置されたQRコードを読み取ってスタンプを獲得できます。",
+      checkinGps: en ? "GPS" : "GPSチェックイン",
+      checkinGpsNote: en
+        ? "Scan the QR code at the spot, then check in near the pin."
+        : "現地のQRコードを読み取り、ピンの近くでチェックインします。",
+      checkinKeyword: en ? "Keyword" : "キーワード",
+      checkinKeywordNote: en
+        ? "Scan the QR code at the spot, then enter the keyword you find there."
+        : "現地のQRコードを読み取り、その場所で見つけたキーワードを入れます。",
+      scanQr: en ? "Scan the QR code" : "QRコードを読み取る",
+      openMaps: en ? "Open in Maps" : "地図アプリで開く",
+      stamped: en ? "Collected" : "獲得済み",
+      scanTitle: en ? "Scan the QR code at the spot" : "スポットのQRコードを読み取る",
+      scanLead: en
+        ? "Open your phone’s camera and point it at the QR code posted at the spot. The stamp page opens automatically."
+        : "スマホのカメラを起動して、スポットに設置されたQRコードに向けてください。スタンプ画面が自動でひらきます。",
+      scanStarting: en ? "Starting the camera…" : "カメラを起動しています…",
+      scanAim: en ? "Fit the spot’s QR code inside the frame" : "スポットのQRコードを枠内に合わせてください",
+      scanFound: en ? "Got it. Opening the stamp…" : "読み取りました。スタンプを押しています…",
+      scanWrong: en
+        ? "That isn’t a game QR code. Scan the one posted at the spot."
+        : "ゲームのQRコードではありません。スポットに設置されたQRコードを読み取ってください",
+      scanDenied: en
+        ? "Camera access isn’t allowed. You can still scan with your phone’s camera app."
+        : "カメラの使用が許可されていません。スマホのカメラアプリでも読み取れます。",
+      scanNoCamera: en
+        ? "The camera can’t be used here. You can still scan with your phone’s camera app."
+        : "ここではカメラを使えません。スマホのカメラアプリでも読み取れます。",
+      scanStep1: en ? "Open the camera app" : "カメラアプリをひらく",
+      scanStep2: en ? "Point it at the QR code" : "QRコードに向ける",
+      scanStep3: en ? "Tap the link that appears" : "表示されたリンクをタップ",
+      stampGet: en ? "Stamp GET!" : "スタンプGET!",
+      alreadyGot: en ? "Already collected" : "獲得済みのスタンプです",
+      nextSpot: en ? "Next spot" : "つぎのスポットへ",
+      seeBook: en ? "See the stamp book" : "スタンプ帳をみる",
+      toReward: en ? "Get your reward" : "特典を受け取る",
+      congrats: en ? "Congratulations!" : "おめでとう！",
+      complete: en ? "Complete!" : "コンプリート！",
+      rewardLocked: en ? "Collect the stamps to unlock the reward" : "スタンプを集めると特典がもらえます",
+      rewardTitle: en ? "Reward" : "特典",
+      playerName: en ? "Nickname" : "ニックネーム",
+      language: en ? "Language" : "言語",
+      progressLabel: en ? "Progress" : "進捗",
+      close: en ? "Close" : "閉じる",
+      back: en ? "Back" : "戻る",
+      eventInfo: en ? "About this event" : "イベントについて",
+      route: en ? "Directions" : "ルート案内",
+      media: en ? "Photos & video" : "写真・動画",
+      related: en ? "Nearby spots" : "近くのスポット",
+      favorite: en ? "Favorite" : "お気に入り",
+      stampHere: en ? "Get the stamp at this spot" : "このスポットでスタンプを獲得する",
+      copied: en ? "Link copied" : "リンクをコピーしました",
+      shareFailed: en ? "Couldn’t share" : "共有できませんでした",
+    },
+    spotCategory(category: GameSpotCategory) {
+      if (!en) return GAME_SPOT_CATEGORY_LABEL[category];
+      return {
+        food: "Food & café",
+        shop: "Shops",
+        sightseeing: "Sightseeing",
+        culture: "Culture",
+        event: "Events & festivals",
+        stamp: "Stamp spot",
+        stay: "Stay",
+        nature: "Nature & leisure",
+        sports: "Sports & activities",
+        transport: "Transport & more",
+      }[category];
+    },
+    spotCategoryShort(category: GameSpotCategory) {
+      if (en) {
+        return {
+          food: "Food",
+          shop: "Shops",
+          sightseeing: "Sights",
+          culture: "Culture",
+          event: "Events",
+          stamp: "Stamps",
+          stay: "Stay",
+          nature: "Nature",
+          sports: "Sports",
+          transport: "Transport",
+        }[category];
+      }
+      return {
+        food: "グルメ",
+        shop: "お店",
+        sightseeing: "観光",
+        culture: "文化",
+        event: "イベント",
+        stamp: "スタンプ",
+        stay: "宿泊",
+        nature: "自然",
+        sports: "スポーツ",
+        transport: "交通",
+      }[category];
+    },
+    walkMinutes(meters: number) {
+      // 直線距離に道の曲がりぶんを足し、分速80mで見積もる。
+      const minutes = Math.max(1, Math.round((meters * 1.3) / 80));
+      return en ? `About ${minutes} min walk` : `徒歩 約${minutes}分`;
+    },
+    rallyLeft(left: number) {
+      return en ? `${left} more to complete!` : `あと ${left} 個でコンプリート！`;
+    },
+    rallyDistance(meters: number) {
+      if (meters < 1000) return `${Math.round(meters / 10) * 10} m`;
+      return `${(meters / 1000).toFixed(1)} km`;
     },
     wrongHint(hint: string) {
       if (!en) return hint.startsWith("ちがいます") ? hint : `ちがいます。${hint}`;

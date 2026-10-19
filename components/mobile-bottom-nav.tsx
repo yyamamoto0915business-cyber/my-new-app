@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { prefetchMypageSummary } from "@/lib/prefetch-mypage-summary";
 import { prefetchMyPosts } from "@/lib/prefetch-my-posts";
 import { MyAlbumIcon } from "@/components/profile/MyAlbumIcon";
+import { PlayResumeBar } from "@/components/play/PlayResume";
 
 const MOBILE_ITEMS = [
   { id: "home" as const, href: "/", label: "ホーム", icon: "home" },
@@ -115,6 +116,7 @@ export function MobileBottomNav() {
       role="navigation"
       suppressHydrationWarning
     >
+      <PlayResumeBar />
       <div className="flex w-full items-stretch justify-around gap-0 px-1">
         {items.map((item) => {
           const href = getHref(item);

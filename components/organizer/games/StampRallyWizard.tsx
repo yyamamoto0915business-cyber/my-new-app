@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDown, ArrowLeft, ArrowUp, Check, GripVertical, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Check, GripVertical, ImageIcon, Loader2, Plus, Trash2 } from "lucide-react";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
 import { GameAudioField } from "@/components/organizer/games/GameAudioField";
 import { GameImageField } from "@/components/organizer/games/GameImageField";
@@ -47,7 +47,14 @@ import {
   type GameExperienceSpot,
   type GameHowtoIcon,
   type GameScreenId,
+  GAME_SPOT_CATEGORIES,
+  GAME_SPOT_CATEGORY_LABEL,
+  GAME_SPOT_ICONS,
+  GAME_SPOT_ICON_IDS,
+  GAME_SPOT_MAP_STYLES,
+  GAME_SPOT_MAP_STYLE_LABEL,
 } from "@/lib/organizer/game-experience";
+import { spotIconUrl, spotMarkerUrl } from "@/components/play/rally/spotCategory";
 import {
   MAX_ORGANIZER_GAME_SPOTS,
   ORGANIZER_GAME_SPOT_KIND_LABEL,
@@ -438,6 +445,9 @@ export function StampRallyWizard() {
         keyword: spot.keyword,
         lat: spot.lat,
         lng: spot.lng,
+        icon: spot.icon,
+        mapStyle: spot.mapStyle,
+        mapImageUrl: spot.mapImageUrl,
       })),
     });
     try {
@@ -877,6 +887,74 @@ export function StampRallyWizard() {
                         onChange={(e) => updateSpot(selectedSpot.key, { name: e.target.value })}
                       />
                     </label>
+                    <div className={cn("org-store-intro__field org-store-intro__field--full", styles.mapLook)}>
+                      <span>地図での見せ方</span>
+                      <div className={styles.mapStyles} role="radiogroup" aria-label="地図での見せ方">
+                        {GAME_SPOT_MAP_STYLES.map((mapStyle) => {
+                          const preview =
+                            mapStyle === "marker"
+                              ? spotMarkerUrl(selectedSpot)
+                              : mapStyle === "art"
+                                ? spotIconUrl(selectedSpot)
+                                : selectedSpot.mapImageUrl || selectedSpot.imageUrl || "";
+                          return (
+                            <button
+                              key={mapStyle}
+                              type="button"
+                              role="radio"
+                              aria-checked={selectedSpot.mapStyle === mapStyle}
+                              className={cn(styles.mapStyle, selectedSpot.mapStyle === mapStyle && styles["is-on"])}
+                              onClick={() => updateSpot(selectedSpot.key, { mapStyle })}
+                            >
+                              <span className={cn(styles.mapStyleArt, mapStyle === "photo" && styles.mapStylePhoto)}>
+                                {preview ? <img src={preview} alt="" /> : <ImageIcon className="h-5 w-5" aria-hidden />}
+                              </span>
+                              {GAME_SPOT_MAP_STYLE_LABEL[mapStyle]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {selectedSpot.mapStyle === "photo" ? (
+                        <div className="mt-2">
+                          <GameImageField
+                            label="地図に出す画像（空ならスポットの写真）"
+                            url={selectedSpot.mapImageUrl ?? ""}
+                            gameId={savedGameId}
+                            onChange={(mapImageUrl) => updateSpot(selectedSpot.key, { mapImageUrl })}
+                          />
+                          {!selectedSpot.mapImageUrl && !selectedSpot.imageUrl ? (
+                            <small>画像がないあいだは、マーカーで表示します。</small>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      <span className={styles.mapLookSub}>種類（マーカーの形・絞り込み・建物イラスト）</span>
+                      <div className={styles.iconGroups}>
+                        {GAME_SPOT_CATEGORIES.map((category) => {
+                          const icons = GAME_SPOT_ICON_IDS.filter((id) => GAME_SPOT_ICONS[id].category === category);
+                          if (icons.length === 0) return null;
+                          return (
+                            <div key={category} className={styles.iconGroup}>
+                              <p>{GAME_SPOT_CATEGORY_LABEL[category]}</p>
+                              <div className={styles.iconGrid}>
+                                {icons.map((icon) => (
+                                  <button
+                                    key={icon}
+                                    type="button"
+                                    aria-pressed={selectedSpot.icon === icon}
+                                    className={cn(styles.iconPick, selectedSpot.icon === icon && styles["is-on"])}
+                                    onClick={() => updateSpot(selectedSpot.key, { icon })}
+                                    title={GAME_SPOT_ICONS[icon].label}
+                                  >
+                                    <img src={`/play/spots/${icon}.webp`} alt="" />
+                                    <small>{GAME_SPOT_ICONS[icon].label}</small>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                     <label className="org-store-intro__field">
                       <span>種別</span>
                       <select
