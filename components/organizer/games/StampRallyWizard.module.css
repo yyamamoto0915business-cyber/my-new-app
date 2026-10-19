@@ -269,10 +269,33 @@
 }
 
 .templates {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
   gap: 0.45rem;
-  margin: 0 0 1rem;
+  margin: 0 -1rem 0.9rem;
+  padding: 0 1rem 0.2rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+
+.templates .template {
+  flex: 0 0 46%;
+  min-width: 8.4rem;
+  max-width: 11rem;
+  scroll-snap-align: start;
+}
+
+@media (min-width: 720px) {
+  .templates {
+    flex-wrap: wrap;
+    margin: 0 0 1rem;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .templates .template {
+    flex: 1 1 8.5rem;
+    max-width: none;
+  }
 }
 
 .template {
@@ -511,19 +534,28 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  justify-content: flex-end;
+  gap: 0.45rem;
   border-radius: 1rem;
   border: 1px solid #d9eadf;
   background: rgba(255, 255, 255, 0.96);
   padding: 0.65rem;
 }
 
-.footerActions {
+.footerQuiet {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
-  margin-left: auto;
+}
+
+.layout :global(#game-create-preview) {
+  display: none;
+}
+
+@media (min-width: 1080px) {
+  .layout :global(#game-create-preview) {
+    display: grid;
+  }
 }
 
 .secondary,
@@ -552,6 +584,23 @@
   color: #fff;
 }
 
+.textAction {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  border: 1px solid #b7d7c4;
+  background: #fff;
+  padding: 0 1rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #1a5c38;
+  cursor: pointer;
+}
+
+.textAction:disabled,
 .secondary:disabled,
 .primary:disabled {
   opacity: 0.55;
@@ -730,4 +779,130 @@
 .testBar button,
 .testSheet .secondary {
   min-height: 44px;
+}
+
+.fold {
+  margin-top: 0.85rem;
+  border-radius: 0.9rem;
+  border: 1px solid #d9eadf;
+  background: #fbfdfb;
+  padding: 0 0.85rem;
+}
+
+.fold[open] {
+  padding-bottom: 0.9rem;
+}
+
+.fold summary {
+  display: flex;
+  min-height: 48px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.1rem 0.6rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #1a4d32;
+}
+
+.fold summary::-webkit-details-marker {
+  display: none;
+}
+
+.fold summary small {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #6a7568;
+}
+
+.fold summary::after {
+  content: "＋";
+  margin-left: auto;
+  color: #2d7a4f;
+}
+
+.fold[open] summary::after {
+  content: "－";
+}
+
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.help {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid #b7d7c4;
+  background: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #2d7a4f;
+  cursor: pointer;
+}
+
+@media (max-width: 719px) {
+  .wizard {
+    padding-bottom: calc(4.8rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .leadAside {
+    display: none;
+  }
+
+  .templates {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0 0 0.9rem;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .templates .template {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .templates .template small {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  .steps button:not(.is-current) {
+    flex: 0 0 auto;
+    font-size: 0;
+    gap: 0;
+  }
+
+  .footer {
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.2rem;
+    padding: 0.45rem 0.7rem 0.6rem;
+  }
+
+  .footerQuiet {
+    justify-content: center;
+    gap: 0.15rem 1rem;
+  }
+
+  .textAction {
+    min-height: 36px;
+    border: 0;
+    background: transparent;
+    padding: 0 0.15rem;
+    font-size: 0.78rem;
+  }
+
+  .primary {
+    width: 100%;
+    min-height: 48px;
+  }
 }

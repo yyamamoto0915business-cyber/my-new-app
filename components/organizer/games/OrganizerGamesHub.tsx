@@ -1,7 +1,7 @@
 "use client";
 
 import "./organizer-games-hub.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,8 +11,10 @@ import {
   BookOpen,
   Calendar,
   ChevronDown,
+  FileText,
   Gamepad2,
   MapPin,
+  Plus,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -110,6 +112,15 @@ const COVER_BY_THEME: Record<HubTheme, string> = {
   checkin: "/profile/album/spring/sunset.jpg",
 };
 
+const MOBILE_ART_BY_THEME: Partial<Record<HubTheme, string>> = {
+  stamp: "/organizer/games/template-stamp.jpg",
+  quiz: "/organizer/games/template-quiz.jpg",
+  mystery: "/organizer/games/template-mystery.jpg",
+  mission: "/organizer/games/template-mission.jpg",
+  photo: "/organizer/games/template-photo.jpg",
+  coupon: "/organizer/games/template-coupon.jpg",
+};
+
 const FILTERS: { id: GameFilter; label: string }[] = [
   { id: "draft", label: "下書き" },
   { id: "published", label: "公開中" },
@@ -189,7 +200,12 @@ function GameCard({ game }: { game: OrganizerGame }) {
 
 export function OrganizerGamesHub() {
   const router = useRouter();
-  const [createOpen, setCreateOpen] = useState(false);
+  const listRef = useRef<HTMLElement>(null);
+  const templatesRef = useRef<HTMLElement>(null);
+  const [pcCreateOpen, setPcCreateOpen] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [showGameList, setShowGameList] = useState(false);
+  const [showAllTemplates, setShowAllTemplates] = useState(false);
   const [games, setGames] = useState<OrganizerGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -256,8 +272,117 @@ export function OrganizerGamesHub() {
     { title: "効果を見える化", text: "データで振り返り", tone: "green", icon: BarChart3, href: analyticsHref },
   ];
 
+  const mobileTemplates = showAllTemplates ? HUB_TYPES : HUB_TYPES.filter((type) => type.id !== "checkin");
+
+  const openGameList = () => {
+    setShowGameList(true);
+    window.setTimeout(() => {
+      listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 40);
+  };
+
+  const focusTemplates = () => {
+    setPicking(true);
+    window.setTimeout(() => {
+      templatesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 40);
+  };
+
   return (
     <div className="org-hub">
+      <div className="org-hub__mobile-home">
+        <div className="org-hub__mobile-actions">
+          <button
+            type="button"
+            className={cn("org-hub__mobile-create", picking && "is-picking")}
+            aria-expanded={picking}
+            aria-controls="mobile-templates"
+            onClick={focusTemplates}
+          >
+            <span className="org-hub__mobile-create-title">ゲームを作る</span>
+            <span className="org-hub__mobile-create-plus" aria-hidden>
+              <Plus className="h-5 w-5" strokeWidth={2.4} />
+            </span>
+            <span className="org-hub__mobile-create-label">
+              {picking ? "下のカードをタップ" : "種類を選ぶ"}
+            </span>
+          </button>
+
+          <button type="button" className="org-hub__mobile-library" onClick={openGameList}>
+            <span className="org-hub__mobile-library-title">作成したゲーム</span>
+            <span className="org-hub__mobile-library-mark" aria-hidden>
+              <FileText className="h-5 w-5" strokeWidth={1.8} />
+              <span className="org-hub__mobile-count">{loading ? "–" : games.length}</span>
+            </span>
+            <span className="org-hub__mobile-library-label">一覧を見る</span>
+          </button>
+        </div>
+
+        <section
+          id="mobile-templates"
+          ref={templatesRef}
+          className={cn("org-hub__mobile-templates", picking && "is-picking")}
+          aria-labelledby="mobile-templates-heading"
+        >
+          <div className="org-hub__mobile-templates-head">
+            <h2 id="mobile-templates-heading">
+              <Sparkles className="h-4 w-4" aria-hidden />
+              ゲームテンプレート
+            </h2>
+            <button
+              type="button"
+              className="org-hub__mobile-more"
+              aria-expanded={showAllTemplates}
+              onClick={() => setShowAllTemplates((open) => !open)}
+            >
+              {showAllTemplates ? "閉じる" : "すべて見る"}
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </div>
+          <p className="org-hub__mobile-hint">
+            {picking ? "作りたいゲームをタップしてください" : "種類を選ぶと、作成が始まります。"}
+          </p>
+          <ul className="org-hub__mobile-grid">
+            {mobileTemplates.map((type) => (
+              <li key={type.id}>
+                <button
+                  type="button"
+                  className="org-hub__mobile-card"
+                  onClick={() => router.push(`/organizer/games/new?type=${type.id}`)}
+                >
+                  <span className="org-hub__mobile-card-photo">
+                    {MOBILE_ART_BY_THEME[type.theme] ? (
+                      <Image
+                        src={MOBILE_ART_BY_THEME[type.theme]!}
+                        alt=""
+                        fill
+                        sizes="140px"
+                        className="org-hub__mobile-card-art"
+                        unoptimized
+                      />
+                    ) : (
+                      <>
+                        <Image
+                          src={COVER_BY_THEME[type.theme]}
+                          alt=""
+                          fill
+                          sizes="140px"
+                          unoptimized
+                        />
+                        <span className="org-hub__mobile-card-mark">
+                          <Image src={type.icon} alt="" width={96} height={96} unoptimized />
+                        </span>
+                      </>
+                    )}
+                  </span>
+                  <span className="org-hub__mobile-card-label">{type.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
       <header className="org-hub__hero">
         <Image
           className="org-hub__hero-photo"
@@ -273,12 +398,12 @@ export function OrganizerGamesHub() {
             <span>まちをもっと盛り上げよう！</span>
           </h1>
           <p>スタンプラリーやクイズなど、参加者が楽しめる体験をかんたんに作成できます。</p>
-          <DropdownMenu open={createOpen} onOpenChange={setCreateOpen}>
+          <DropdownMenu open={pcCreateOpen} onOpenChange={setPcCreateOpen}>
             <DropdownMenuTrigger
               render={
                 <button
                   type="button"
-                  className={cn("org-hub__create", createOpen && "is-open")}
+                  className={cn("org-hub__create", pcCreateOpen && "is-open")}
                   aria-label="新しいゲームを作成する"
                 >
                   新しいゲームを作成する
@@ -298,7 +423,7 @@ export function OrganizerGamesHub() {
                   key={type.id}
                   className="org-hub__create-option min-h-11 cursor-pointer flex-col items-start gap-0.5 rounded-xl px-2.5 py-1.5 focus:bg-[#e7f3ea] focus:text-inherit data-highlighted:bg-[#e7f3ea]"
                   onClick={() => {
-                    setCreateOpen(false);
+                    setPcCreateOpen(false);
                     router.push(`/organizer/games/new?type=${type.id}`);
                   }}
                 >
@@ -350,7 +475,12 @@ export function OrganizerGamesHub() {
         })}
       </ul>
 
-      <section className="org-hub__section" aria-labelledby="game-list-heading">
+      <section
+        ref={listRef}
+        className={cn("org-hub__section", showGameList && "is-list-open")}
+        id="created-games"
+        aria-labelledby="game-list-heading"
+      >
         <div className="org-hub__head">
           <h2 id="game-list-heading">
             <Gamepad2 className="h-4 w-4" aria-hidden />

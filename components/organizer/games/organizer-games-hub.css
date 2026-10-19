@@ -257,10 +257,293 @@
   }
 }
 
+.org-hub__mobile-home {
+  display: none;
+}
+
 @media (max-width: 899px) {
   .org-hub.org-hub {
-    gap: 0.45rem;
+    gap: 0.9rem;
   }
+
+  .org-hub .org-hub__mobile-home {
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+  }
+
+  .org-hub .org-hub__hero,
+  .org-hub .org-hub__benefits,
+  .org-hub #game-templates,
+  .org-hub #created-games {
+    display: none;
+  }
+
+  .org-hub #created-games.is-list-open {
+    display: flex;
+  }
+
+  .org-hub__mobile-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.7rem;
+  }
+
+  .org-hub__mobile-create,
+  .org-hub__mobile-library {
+    display: flex;
+    width: 100%;
+    min-height: 9rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.42rem;
+    border: 0;
+    border-radius: 1.25rem;
+    padding: 0.95rem 0.6rem 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+  }
+
+  .org-hub__mobile-create:active,
+  .org-hub__mobile-library:active {
+    transform: scale(0.98);
+  }
+
+  .org-hub__mobile-create {
+    background: linear-gradient(165deg, #2a8558 0%, #1b5e3c 100%);
+    color: #fff;
+    box-shadow: 0 12px 24px rgba(27, 94, 60, 0.18);
+  }
+
+  .org-hub__mobile-create-title,
+  .org-hub__mobile-library-title {
+    font-size: 0.92rem;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+  .org-hub__mobile-create-plus,
+  .org-hub__mobile-library-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.55rem;
+    height: 2.55rem;
+    border-radius: 999px;
+  }
+
+  .org-hub__mobile-create-plus {
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  }
+
+  .org-hub__mobile-create-label,
+  .org-hub__mobile-library-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .org-hub__mobile-library {
+    background: #fff;
+    color: #163524;
+    box-shadow: 0 10px 22px rgba(26, 34, 20, 0.06);
+    outline: 1px solid rgba(31, 107, 69, 0.08);
+  }
+
+  .org-hub__mobile-library-mark {
+    position: relative;
+    background: #e7f3ea;
+    color: #1f6b45;
+  }
+
+  .org-hub__mobile-count {
+    position: absolute;
+    top: -0.28rem;
+    right: -0.42rem;
+    display: inline-flex;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #1f6b45;
+    padding: 0 0.28rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #fff;
+  }
+
+  .org-hub__mobile-library-label {
+    color: #5c6b60;
+  }
+
+  .org-hub__mobile-create.is-picking {
+    box-shadow: 0 0 0 3px rgba(42, 133, 88, 0.28), 0 12px 24px rgba(27, 94, 60, 0.18);
+  }
+
+  .org-hub__mobile-templates {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    scroll-margin-top: calc(var(--mg-mobile-top-header-h, 46px) + 3.4rem + env(safe-area-inset-top, 0px));
+  }
+
+  .org-hub__mobile-hint {
+    margin: -0.15rem 0 0.1rem;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: #6a7568;
+  }
+
+  .org-hub__mobile-templates.is-picking {
+    margin: 0 -0.35rem;
+    border-radius: 1.2rem;
+    background: rgba(42, 133, 88, 0.07);
+    padding: 0.7rem 0.45rem 0.8rem;
+  }
+
+  .org-hub__mobile-templates.is-picking .org-hub__mobile-hint {
+    font-size: 0.84rem;
+    font-weight: 800;
+    color: #1f6b45;
+  }
+
+  .org-hub__mobile-templates.is-picking .org-hub__mobile-card {
+    border-color: #2a8558;
+    animation: org-hub-pick 0.9s ease-in-out 2;
+    box-shadow: 0 0 0 2px rgba(42, 133, 88, 0.16);
+  }
+
+  @keyframes org-hub-pick {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  .org-hub__mobile-templates-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+  }
+
+  .org-hub__mobile-templates-head h2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #163524;
+  }
+
+  .org-hub__mobile-templates-head h2 svg {
+    color: #1f6b45;
+  }
+
+  .org-hub__mobile-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #5c6b60;
+    cursor: pointer;
+  }
+
+  .org-hub__mobile-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.9rem 0.65rem;
+    margin: 0;
+    padding: 0.15rem 0 0.2rem;
+    list-style: none;
+  }
+
+  .org-hub__mobile-card {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    border: 1.5px solid rgba(31, 107, 69, 0.22);
+    border-radius: 1.2rem;
+    background: #fff;
+    padding: 0.28rem 0.28rem 0.45rem;
+    font-family: inherit;
+    color: #163524;
+    cursor: pointer;
+    box-shadow: 0 6px 14px rgba(26, 34, 20, 0.06);
+    transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  }
+
+  .org-hub__mobile-card:active {
+    transform: scale(0.97);
+    background: #f3faf6;
+  }
+
+  .org-hub__mobile-card-photo {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1.05;
+    overflow: hidden;
+    border-radius: 0.95rem;
+    background: #e7f0e4;
+  }
+
+  .org-hub__mobile-card-photo img:first-child,
+  .org-hub__mobile-card-art {
+    object-fit: cover;
+  }
+
+  .org-hub__mobile-card-art {
+    transform: scale(1.05);
+  }
+
+  .org-hub__mobile-card-mark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    width: 54%;
+    aspect-ratio: 1;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #fff;
+    transform: translate(-50%, -52%);
+    box-shadow: 0 8px 16px rgba(26, 34, 20, 0.14);
+    outline: 3px solid rgba(255, 255, 255, 0.92);
+  }
+
+  .org-hub__mobile-card-mark img {
+    width: 118%;
+    height: 118%;
+    object-fit: cover;
+  }
+
+  .org-hub__mobile-card-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1.3;
+    text-align: center;
+    color: #163524;
+  }
+
 
   .org-hub .org-hub__hero {
     min-height: 0;
@@ -268,103 +551,108 @@
   }
 
   .org-hub .org-hub__hero-copy {
-    max-width: calc(100% - 4.6rem);
-    padding: 0.55rem 0.65rem 1.05rem;
+    max-width: 100%;
+    padding: 0.75rem 0.85rem 1.15rem;
   }
 
   .org-hub .org-hub__hero h1 {
-    max-width: 14.2rem;
-    font-size: 1.02rem;
-    line-height: 1.28;
-    letter-spacing: -0.01em;
+    max-width: none;
+    font-size: 1.16rem;
+    line-height: 1.35;
+    letter-spacing: 0;
   }
 
   .org-hub .org-hub__hero-copy > p {
-    max-width: 13.2rem;
-    margin-top: 0.22rem;
-    font-size: 0.64rem;
-    line-height: 1.45;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
+    max-width: none;
+    margin-top: 0.35rem;
+    padding-right: 6.4rem;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
   }
 
   .org-hub .org-hub__create {
-    min-height: 2.35rem;
-    margin-top: 0.4rem;
-    padding: 0.2rem 0.35rem 0.2rem 0.75rem;
-    font-size: 0.72rem;
+    min-height: 2.65rem;
+    margin-top: 0.55rem;
+    padding: 0.28rem 0.42rem 0.28rem 0.9rem;
+    font-size: 0.8rem;
   }
 
   .org-hub .org-hub__create-plus {
-    width: 1.2rem;
-    height: 1.2rem;
+    width: 1.35rem;
+    height: 1.35rem;
   }
 
   .org-hub .org-hub__bubble {
-    top: 0.35rem;
-    right: 0.35rem;
-    max-width: 7.2rem;
-    padding: 0.22rem 0.4rem;
-    font-size: 0.58rem;
-    line-height: 1.25;
+    top: 0.45rem;
+    right: 0.4rem;
+    max-width: 8rem;
+    padding: 0.32rem 0.5rem;
+    font-size: 0.62rem;
+    line-height: 1.35;
+    white-space: nowrap;
   }
 
   .org-hub .org-hub__mascot {
-    width: 4.85rem;
-    right: 0.05rem;
-    bottom: 0.15rem;
+    width: 4.6rem;
+    right: 0.1rem;
+    bottom: 0.2rem;
   }
 
   .org-hub .org-hub__benefits {
-    margin: -1.15rem 0.15rem 0;
-    padding: 0.4rem 0.1rem 0.45rem;
+    margin: -1rem 0.15rem 0;
+    padding: 0.7rem 0.3rem 0.75rem;
     border-radius: 0.95rem;
   }
 
   .org-hub .org-hub__benefit {
     min-height: 0;
-    gap: 0.12rem;
-    padding-top: 0;
+    gap: 0.22rem;
+    padding: 0.05rem 0.15rem 0;
   }
 
   .org-hub .org-hub__benefit-icon {
-    width: 1.65rem;
-    height: 1.65rem;
+    width: 1.85rem;
+    height: 1.85rem;
   }
 
   .org-hub .org-hub__benefit-icon svg {
-    width: 0.85rem;
-    height: 0.85rem;
+    width: 0.95rem;
+    height: 0.95rem;
   }
 
   .org-hub .org-hub__benefit-title {
-    font-size: 0.62rem;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    white-space: normal;
   }
 
   .org-hub .org-hub__benefit-text {
-    font-size: 0.52rem;
+    font-size: 0.58rem;
+    line-height: 1.35;
+    white-space: nowrap;
   }
 
   .org-hub .org-hub__section {
-    gap: 0.35rem;
+    gap: 0.55rem;
   }
 
   .org-hub .org-hub__head h2 {
-    font-size: 0.86rem;
+    font-size: 0.95rem;
   }
 
   .org-hub .org-hub__filter {
-    min-height: 1.75rem;
-    padding: 0.1rem 0.6rem;
-    font-size: 0.68rem;
+    min-height: 2rem;
+    padding: 0.15rem 0.72rem;
+    font-size: 0.75rem;
   }
 
   .org-hub .org-hub__game {
-    width: 10.15rem;
-    flex-basis: 10.15rem;
-    border-radius: 0.85rem;
+    width: 12.5rem;
+    flex-basis: 12.5rem;
+    border-radius: 0.95rem;
   }
 
   .org-hub .org-hub__game-cover {
@@ -372,13 +660,13 @@
   }
 
   .org-hub .org-hub__game-body {
-    gap: 0.12rem;
-    padding: 0.38rem 0.42rem 0.42rem;
+    gap: 0.22rem;
+    padding: 0.5rem 0.58rem 0.58rem;
   }
 
   .org-hub .org-hub__game-name {
-    font-size: 0.7rem;
-    line-height: 1.3;
+    font-size: 0.82rem;
+    line-height: 1.4;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -386,38 +674,48 @@
   }
 
   .org-hub .org-hub__game-period {
-    font-size: 0.55rem;
-    line-height: 1.35;
+    font-size: 0.68rem;
+    line-height: 1.4;
+  }
+
+  .org-hub .org-hub__game-type {
+    font-size: 0.68rem;
+    line-height: 1.3;
+    padding: 0.14rem 0.5rem;
   }
 
   .org-hub .org-hub__templates {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.45rem;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
 
   .org-hub .org-hub__template {
-    min-height: 5.85rem;
-    gap: 0.15rem;
-    padding: 0.32rem 0.95rem 0.32rem 0.18rem;
+    min-height: 0;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 1.6rem 0.45rem 0.4rem;
   }
 
   .org-hub .org-hub__template-illust {
-    width: 4.85rem;
-    height: 4.85rem;
+    width: 3.1rem;
+    height: 3.1rem;
   }
 
   .org-hub .org-hub__template-label {
-    font-size: 0.7rem;
-    letter-spacing: -0.04em;
+    font-size: 0.86rem;
+    line-height: 1.3;
+    letter-spacing: 0;
   }
 
   .org-hub .org-hub__template-blurb {
-    font-size: 0.62rem;
+    font-size: 0.74rem;
+    line-height: 1.45;
+    -webkit-line-clamp: 2;
   }
 
   .org-hub .org-hub__template-go {
-    width: 1.05rem;
-    height: 1.05rem;
+    width: 1.15rem;
+    height: 1.15rem;
     right: 0.28rem;
     bottom: 0.32rem;
   }

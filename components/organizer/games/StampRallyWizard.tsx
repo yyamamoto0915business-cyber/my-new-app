@@ -163,6 +163,9 @@ export function StampRallyWizard() {
   const [testing, setTesting] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [published, setPublished] = useState(false);
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [help, setHelp] = useState<string | null>(null);
   const leavingRef = useRef(false);
 
   useEffect(() => {
@@ -176,6 +179,7 @@ export function StampRallyWizard() {
       if (typeof stored.eventId === "string") setEventId(stored.eventId);
       if (typeof stored.description === "string") setDescription(stored.description.slice(0, 300));
       if (typeof stored.startDate === "string") setStartDate(stored.startDate);
+      if (stored.startDate || stored.endDate) setPeriodOpen(true);
       if (typeof stored.startTime === "string") setStartTime(stored.startTime);
       if (typeof stored.endDate === "string") setEndDate(stored.endDate);
       if (typeof stored.endTime === "string") setEndTime(stored.endTime);
@@ -247,6 +251,8 @@ export function StampRallyWizard() {
         setEventId(game.eventId ?? "");
         setDescription(game.description ?? "");
         setStartDate(start.date);
+        if (start.date || end.date) setPeriodOpen(true);
+        setMoreOpen(true);
         setStartTime(start.time);
         setEndDate(end.date);
         setEndTime(end.time);
@@ -504,7 +510,7 @@ export function StampRallyWizard() {
         subtitle={
           published
             ? "公開中です。画面や特典を直して、変更を保存できます。"
-            : "名前を入れれば下書きまで進めます。最後に公開すると、参加用QRが使えるようになります。"
+            : "名前を入れると、下書きまで進めます。"
         }
       />
 
@@ -541,7 +547,7 @@ export function StampRallyWizard() {
           {step === 1 ? (
             <section className={styles.card}>
               <h2>基本設定</h2>
-              <p className={styles.lead}>参加画面の見出しになる名前と期間です。テンプレートから始めると、文章とスポットの下書きが入ります。</p>
+              <p className={cn(styles.lead, styles.leadAside)}>テンプレートを選ぶと、名前とスポットの下書きが入ります。</p>
               <div className={styles.templates} role="group" aria-label="テンプレート">
                 {STAMP_RALLY_TEMPLATES.map((template) => (
                   <button key={template.id} type="button" className={styles.template} onClick={() => applyTemplate(template.id)}>
@@ -563,9 +569,41 @@ export function StampRallyWizard() {
                     }}
                     maxLength={80}
                     placeholder="例: 春のまち歩きスタンプラリー"
-                    autoFocus
                   />
                 </label>
+              </div>
+
+              <details className={styles.fold} open={periodOpen} onToggle={(e) => setPeriodOpen(e.currentTarget.open)}>
+                <summary>
+                  <span>期間</span>
+                  <small>{periodLabel ?? "あとで決める"}</small>
+                </summary>
+                <div className="org-store-intro__grid">
+                <label className="org-store-intro__field">
+                  <span>開始日</span>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                </label>
+                <label className="org-store-intro__field">
+                  <span>開始時刻</span>
+                  <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                </label>
+                <label className="org-store-intro__field">
+                  <span>終了日</span>
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                </label>
+                <label className="org-store-intro__field">
+                  <span>終了時刻</span>
+                  <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                </label>
+                </div>
+              </details>
+
+              <details className={styles.fold} open={moreOpen} onToggle={(e) => setMoreOpen(e.currentTarget.open)}>
+                <summary>
+                  <span>くわしい設定</span>
+                  <small>対象・回数・画像など(あとから変えられます)</small>
+                </summary>
+                <div className="org-store-intro__grid">
                 <label className="org-store-intro__field org-store-intro__field--full">
                   <span>対象イベント</span>
                   <select
@@ -582,22 +620,6 @@ export function StampRallyWizard() {
                   </select>
                   {loadingEvents ? <small>イベントを読み込み中です</small> : null}
                   {!loadingEvents && events.length === 0 ? <small>先にイベントを掲載すると、対象を選べます</small> : null}
-                </label>
-                <label className="org-store-intro__field">
-                  <span>開始日</span>
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                </label>
-                <label className="org-store-intro__field">
-                  <span>開始時刻</span>
-                  <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-                </label>
-                <label className="org-store-intro__field">
-                  <span>終了日</span>
-                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                </label>
-                <label className="org-store-intro__field">
-                  <span>終了時刻</span>
-                  <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
                 </label>
                 <label className="org-store-intro__field org-store-intro__field--full">
                   <span>説明</span>
@@ -643,10 +665,15 @@ export function StampRallyWizard() {
                     }
                   />
                 </label>
-              </div>
+                </div>
 
               <div className={styles.group} role="radiogroup" aria-label="参加対象">
-                <p>参加対象</p>
+                <p className={styles.groupTitle}>
+                  {"参加対象"}
+                  <button type="button" className={styles.help} aria-expanded={help === "audience"} onClick={() => setHelp(help === "audience" ? null : "audience")}>
+                    ?
+                  </button>
+                </p>
                 <div className={styles.choices}>
                   {GAME_AUDIENCES.map((audience) => (
                     <button
@@ -665,13 +692,20 @@ export function StampRallyWizard() {
                     </button>
                   ))}
                 </div>
-                <p className={styles.note}>
+                {help === "audience" ? (
+                  <p className={styles.note}>
                   誰でもは、ニックネームだけで入れます。イベント参加者と参加パスは、ログインしたアカウントで確認します。対象イベントが必要です。
-                </p>
+                  </p>
+                ) : null}
               </div>
 
               <div className={styles.group} role="radiogroup" aria-label="参加回数">
-                <p>参加回数</p>
+                <p className={styles.groupTitle}>
+                  {"参加回数"}
+                  <button type="button" className={styles.help} aria-expanded={help === "limit"} onClick={() => setHelp(help === "limit" ? null : "limit")}>
+                    ?
+                  </button>
+                </p>
                 <div className={styles.choices}>
                   {GAME_PLAY_LIMITS.map((limit) => (
                     <button
@@ -690,13 +724,20 @@ export function StampRallyWizard() {
                     </button>
                   ))}
                 </div>
-                <p className={styles.note}>
+                {help === "limit" ? (
+                  <p className={styles.note}>
                   1人1回は、ログインしたアカウントで1回です。ニックネームを変えても、もう一度は参加できません。何度でもは、クリア後にもう一周できます。
-                </p>
+                  </p>
+                ) : null}
               </div>
 
               <div className={styles.group} role="radiogroup" aria-label="ラリー形式">
-                <p>ラリー形式</p>
+                <p className={styles.groupTitle}>
+                  {"ラリー形式"}
+                  <button type="button" className={styles.help} aria-expanded={help === "route"} onClick={() => setHelp(help === "route" ? null : "route")}>
+                    ?
+                  </button>
+                </p>
                 <div className={cn(styles.choices, styles.choicesWide)}>
                   {GAME_ROUTES.map((route) => (
                     <button
@@ -715,9 +756,11 @@ export function StampRallyWizard() {
                     </button>
                   ))}
                 </div>
-                <p className={styles.note}>
+                {help === "route" ? (
+                  <p className={styles.note}>
                   どこからでもは、最初の1か所を自由に選び、その次から順番に巡ります。指定された順番は、上から順です。好きな順番は、いつでも好きなスポットを押せます。非公開のスポットは参加画面に出ません。
-                </p>
+                  </p>
+                ) : null}
               </div>
 
               <GameImageField
@@ -742,6 +785,7 @@ export function StampRallyWizard() {
                   }))
                 }
               />
+              </details>
             </section>
           ) : null}
 
@@ -1550,34 +1594,36 @@ export function StampRallyWizard() {
       </div>
 
       <div className={styles.footer}>
-        <button
-          type="button"
-          className={styles.secondary}
-          disabled={step === 1 || saving}
-          onClick={() => {
-            setStep((current) => (current > 1 ? ((current - 1) as Step) : current));
-            setNotice(null);
-          }}
-        >
-          前のステップへ
-        </button>
-        <div className={styles.footerActions}>
-          <button type="button" className={styles.secondary} disabled={saving} onClick={() => setTesting(true)}>
+        <div className={styles.footerQuiet}>
+          {step > 1 ? (
+            <button
+              type="button"
+              className={styles.textAction}
+              disabled={saving}
+              onClick={() => {
+                setStep((current) => (current > 1 ? ((current - 1) as Step) : current));
+                setNotice(null);
+              }}
+            >
+              戻る
+            </button>
+          ) : null}
+          <button type="button" className={styles.textAction} disabled={saving} onClick={() => setTesting(true)}>
             お試しで見る
           </button>
-          <button type="button" className={styles.secondary} disabled={saving} onClick={() => void saveDraft("stay")}>
+          <button type="button" className={styles.textAction} disabled={saving} onClick={() => void saveDraft("stay")}>
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
             下書き保存
           </button>
-          <button
-            type="button"
-            className={styles.primary}
-            disabled={saving}
-            onClick={() => void saveDraft(step === 5 ? "publish" : "next")}
-          >
-            {step === 5 ? (published ? "変更を保存" : "公開する") : "保存して次へ"}
-          </button>
         </div>
+        <button
+          type="button"
+          className={styles.primary}
+          disabled={saving}
+          onClick={() => void saveDraft(step === 5 ? "publish" : "next")}
+        >
+          {step === 5 ? (published ? "変更を保存" : "公開する") : "保存して次へ"}
+        </button>
       </div>
       {testing ? (
         <StampRallyTestPlay
