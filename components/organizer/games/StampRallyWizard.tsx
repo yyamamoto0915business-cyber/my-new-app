@@ -1,16 +1,38 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDown, ArrowLeft, ArrowUp, Check, GripVertical, ImageIcon, Loader2, Plus, Trash2 } from "lucide-react";
+import dynamic from "next/dynamic";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  Check,
+  ImageIcon,
+  Loader2,
+  LocateFixed,
+  MapPin,
+  ChevronDown,
+  Gift,
+  LayoutTemplate,
+  Palette,
+  PenLine,
+  Plus,
+  Rocket,
+  Smartphone,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
 import { GameAudioField } from "@/components/organizer/games/GameAudioField";
 import { GameImageField } from "@/components/organizer/games/GameImageField";
 import { GameVideoField } from "@/components/organizer/games/GameVideoField";
 import { StampRallyTestPlay } from "@/components/organizer/games/StampRallyTestPlay";
 import { SpotPinField } from "@/components/organizer/games/SpotPinField";
-import { StampRallyPreview } from "@/components/organizer/games/StampRallyPreview";
+import { WizardLivePreview, previewViewFor } from "@/components/organizer/games/WizardLivePreview";
 import styles from "@/components/organizer/games/StampRallyWizard.module.css";
 import {
   DEFAULT_ORGANIZER_GAME_TYPE_ID,
@@ -55,6 +77,49 @@ import {
   GAME_SPOT_MAP_STYLE_LABEL,
 } from "@/lib/organizer/game-experience";
 import { spotIconUrl, spotMarkerUrl } from "@/components/play/rally/spotCategory";
+import type { PlaySpotProgress } from "@/lib/organizer/play-types";
+import "@/components/play/rally/rally.css";
+
+const RallyVectorMap = dynamic(
+  () => import("@/components/play/rally/RallyVectorMap").then((mod) => mod.RallyVectorMap),
+  { ssr: false, loading: () => <div className="rally-map__canvas" /> },
+);
+
+/** 参加者のマップの部品が使う色。 */
+/** 名前の下に並べる、よく使う種類。マーカーの形で見せる。 */
+const QUICK_SPOT_ICONS = ["stamp", "shrine", "cafe", "greengrocer", "viewpoint", "festival", "museum", "park"] as const;
+const QUICK_SPOT_ICON_LABEL: Record<(typeof QUICK_SPOT_ICONS)[number], string> = {
+  stamp: "スタンプ",
+  shrine: "神社・寺",
+  cafe: "飲食",
+  greengrocer: "お店",
+  viewpoint: "観光",
+  festival: "イベント",
+  museum: "文化",
+  park: "公園",
+};
+
+type SpotTabId = "basic" | "look" | "media" | "checkin";
+const SPOT_TABS: { id: SpotTabId; label: string }[] = [
+  { id: "basic", label: "基本" },
+  { id: "look", label: "地図の見た目" },
+  { id: "media", label: "写真・スタンプ" },
+  { id: "checkin", label: "チェックイン" },
+];
+
+
+function spotTabTodo(spot: { checkin: string; keyword: string }, tab: SpotTabId): boolean {
+  if (tab === "checkin") return spot.checkin === "keyword" && !spot.keyword.trim();
+  return false;
+}
+
+const RALLY_MAP_VARS = {
+  "--rally-green": "#1f7a4a",
+  "--rally-green-soft": "#e7f4ec",
+  "--rally-line": "#e2ebe5",
+  "--rally-muted": "#66726a",
+  "--rally-red": "#d9452b",
+} as CSSProperties;
 import {
   MAX_ORGANIZER_GAME_SPOTS,
   ORGANIZER_GAME_SPOT_KIND_LABEL,
@@ -62,12 +127,17 @@ import {
 } from "@/lib/organizer/game-tokens";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { OrganizerGameEventOption } from "@/lib/organizer/games";
-import { STAMP_RALLY_TEMPLATES } from "@/lib/organizer/stamp-rally-templates";
+import {
+  STAMP_RALLY_TEMPLATE_GROUPS,
+  STAMP_RALLY_TEMPLATES,
+  type StampRallyTemplateGroup,
+} from "@/lib/organizer/stamp-rally-templates";
 import { cn } from "@/lib/utils";
 
 const DRAFT_KEY = "mg-stamp-rally-draft-v1";
-const STEPS = ["基本設定", "スポット設定", "画面・演出設定", "達成条件・特典", "確認・公開"] as const;
-type Step = 1 | 2 | 3 | 4 | 5;
+const STEPS = ["テンプレート", "基本設定", "スポット設定", "画面・演出設定", "達成条件・特典", "確認・公開"] as const;
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
+const STEP_ICONS = [LayoutTemplate, PenLine, MapPin, Palette, Gift, Rocket] as const;
 
 type DraftSpot = GameExperienceSpot & {
   key: string;
@@ -76,10 +146,11 @@ type DraftSpot = GameExperienceSpot & {
   kind: OrganizerGameSpotKind;
 };
 
-function createDraftSpot(index: number): DraftSpot {
+function createDraftSpot(): DraftSpot {
   return {
     key: crypto.randomUUID(),
-    name: `スポット ${index + 1}`,
+    // 空にしておき、一覧で「名前が未設定」と分かるようにする（保存時は「スポット」になる）。
+    name: "",
     kind: "stamp",
     ...createExperienceSpot(),
   };
@@ -136,7 +207,7 @@ function formatPeriod(startDate: string, startTime: string, endDate: string, end
 }
 
 function isStep(value: number): value is Step {
-  return value >= 1 && value <= 5;
+  return value >= 1 && value <= 6;
 }
 
 export function StampRallyWizard() {
@@ -168,11 +239,29 @@ export function StampRallyWizard() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [published, setPublished] = useState(false);
   const [periodOpen, setPeriodOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [help, setHelp] = useState<string | null>(null);
+  /** 選んだテンプレート。"blank" は白紙から。 */
+  const [templateId, setTemplateId] = useState<string | null>(null);
+  const [templateGroup, setTemplateGroup] = useState<"all" | StampRallyTemplateGroup>("all");
+  const [mapUnavailable, setMapUnavailable] = useState(false);
+  const [spotTab, setSpotTab] = useState<SpotTabId>("basic");
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewView, setPreviewView] = useState<ReturnType<typeof previewViewFor>>("start");
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
+  const [pickerCenter, setPickerCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [placeResults, setPlaceResults] = useState<{ title: string; lat: number; lng: number }[]>([]);
+  const [placeError, setPlaceError] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [mapFocus, setMapFocus] = useState<{ lat: number; lng: number; zoom?: number; key: number } | null>(null);
+  const [focusName, setFocusName] = useState(0);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
   const leavingRef = useRef(false);
 
   useEffect(() => {
@@ -181,7 +270,9 @@ export function StampRallyWizard() {
       const raw = sessionStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       const stored = JSON.parse(raw) as Record<string, unknown>;
-      if (stored.v !== 1) return;
+      // v1 はテンプレートのステップがなかったので、1つ後ろにずらす。
+      if (stored.v !== 1 && stored.v !== 2) return;
+      const stepShift = stored.v === 1 ? 1 : 0;
       if (typeof stored.name === "string") setName(stored.name.slice(0, 80));
       if (typeof stored.eventId === "string") setEventId(stored.eventId);
       if (typeof stored.description === "string") setDescription(stored.description.slice(0, 300));
@@ -191,7 +282,9 @@ export function StampRallyWizard() {
       if (typeof stored.endDate === "string") setEndDate(stored.endDate);
       if (typeof stored.endTime === "string") setEndTime(stored.endTime);
       if (typeof stored.savedGameId === "string") setSavedGameId(stored.savedGameId);
-      if (typeof stored.step === "number" && isStep(stored.step)) setStep(stored.step);
+      if (typeof stored.step === "number" && isStep(stored.step + stepShift)) {
+        setStep((stored.step + stepShift) as Step);
+      }
       if (typeof stored.screen === "string" && GAME_SCREEN_IDS.includes(stored.screen as GameScreenId)) {
         setScreen(stored.screen as GameScreenId);
       }
@@ -220,6 +313,7 @@ export function StampRallyWizard() {
         setSpots(nextSpots);
       }
       if (typeof stored.selectedIndex === "number") setSelectedIndex(stored.selectedIndex);
+      if (typeof stored.templateId === "string") setTemplateId(stored.templateId);
     } catch {
       /* 下書きの復元に失敗しても、空の作成から始められる */
     } finally {
@@ -276,7 +370,7 @@ export function StampRallyWizard() {
           })),
         );
         setSelectedIndex(0);
-        setStep(1);
+        setStep(2);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "ゲームを読み込めませんでした");
       } finally {
@@ -291,7 +385,8 @@ export function StampRallyWizard() {
   useEffect(() => {
     if (!ready || leavingRef.current || editId) return;
     const payload = {
-      v: 1,
+      v: 2,
+      templateId,
       step,
       screen,
       savedGameId,
@@ -323,6 +418,7 @@ export function StampRallyWizard() {
     experience,
     spots,
     editId,
+    templateId,
   ]);
 
   useEffect(() => {
@@ -350,7 +446,325 @@ export function StampRallyWizard() {
     () => experienceChecklist({ name, spots, experience }),
     [name, spots, experience]
   );
-  const previewScreen: GameScreenId = step === 3 ? screen : step === 5 ? "clear" : "start";
+  const placedSpots = spots.filter((spot) => spot.lat != null && spot.lng != null);
+  const mapSpots = useMemo<PlaySpotProgress[]>(
+    () =>
+      spots.map((spot, index) => ({
+        id: spot.key,
+        name: spot.name.trim() || `スポット ${index + 1}`,
+        kind: spot.kind,
+        kindLabel: ORGANIZER_GAME_SPOT_KIND_LABEL[spot.kind],
+        stamped: false,
+        imageUrl: spot.imageUrl,
+        lat: spot.lat,
+        lng: spot.lng,
+        icon: spot.icon,
+        mapStyle: spot.mapStyle,
+        mapImageUrl: spot.mapImageUrl,
+      })),
+    [spots],
+  );
+
+  // 「スポットを追加」のあと、名前の入力欄へ移る。
+  useEffect(() => {
+    if (!focusName) return;
+    nameInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    nameInputRef.current?.focus();
+  }, [focusName]);
+
+  // スポットがまだ地図にないときは、位置情報を許可済みなら現在地のあたりから始める（許可を新しく求めない）。
+  useEffect(() => {
+    if (pickerIndex == null || pickerCenter || spots.some((spot) => spot.lat != null)) return;
+    let cancelled = false;
+    navigator.permissions
+      ?.query({ name: "geolocation" })
+      .then((status) => {
+        if (cancelled || status.state !== "granted") return;
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (!cancelled) {
+              setMapFocus({ lat: pos.coords.latitude, lng: pos.coords.longitude, zoom: 15.5, key: Date.now() });
+            }
+          },
+          () => undefined,
+          { maximumAge: 60000, timeout: 8000 },
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+    // 場所選びを開いたときに一度だけ見る。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickerIndex]);
+
+  function addSpotAndEdit(place?: { lat: number; lng: number }) {
+    if (spots.length >= MAX_ORGANIZER_GAME_SPOTS) return;
+    addSpot(place);
+    setSpotTab("basic");
+    setDetailsOpen(false);
+    setFocusName((count) => count + 1);
+  }
+
+  /** プレビューのスタート画面で、直接書き換えたとき。 */
+  const startEdit = {
+    onChange: (field: "title" | "catchCopy" | "description" | "buttonLabel", value: string) =>
+      patchExperience((current) => ({
+        ...current,
+        screens: { ...current.screens, start: { ...current.screens.start, [field]: value } },
+      })),
+    onTextChange: (id: string, value: string) =>
+      patchExperience((current) => ({
+        ...current,
+        screens: {
+          ...current.screens,
+          start: {
+            ...current.screens.start,
+            extraTexts: current.screens.start.extraTexts.map((item) => (item.id === id ? { ...item, text: value } : item)),
+          },
+        },
+      })),
+    moment: {
+      onChange: (field: "stampMessage" | "clearTitle" | "clearMessage" | "rewardLabel", value: string) =>
+        patchExperience((current) =>
+          field === "stampMessage"
+            ? { ...current, screens: { ...current.screens, stamp: { ...current.screens.stamp, message: value } } }
+            : field === "clearTitle"
+              ? { ...current, screens: { ...current.screens, clear: { ...current.screens.clear, title: value } } }
+              : field === "clearMessage"
+                ? { ...current, screens: { ...current.screens, clear: { ...current.screens.clear, message: value } } }
+                : { ...current, reward: { ...current.reward, label: value } },
+        ),
+      onStamp: (patch: Partial<Pick<GameExperience["screens"]["stamp"], "animation" | "sound">>) =>
+        patchExperience((current) => ({
+          ...current,
+          screens: { ...current.screens, stamp: { ...current.screens.stamp, ...patch } },
+        })),
+      onRewardKind: (kind: GameExperience["reward"]["kind"]) =>
+        patchExperience((current) => ({ ...current, reward: { ...current.reward, kind } })),
+      stampImageField: (
+        <GameImageField
+          label="スタンプの絵"
+          url={experience.screens.stamp.imageUrl}
+          gameId={savedGameId}
+          onChange={(imageUrl) =>
+            patchExperience((current) => ({
+              ...current,
+              screens: { ...current.screens, stamp: { ...current.screens.stamp, imageUrl } },
+            }))
+          }
+        />
+      ),
+      onLayout: (screen: "stamp" | "clear", layout: GameExperience["screens"]["stamp"]["layout"]) =>
+        patchExperience((current) =>
+          screen === "stamp"
+            ? { ...current, screens: { ...current.screens, stamp: { ...current.screens.stamp, layout } } }
+            : { ...current, screens: { ...current.screens, clear: { ...current.screens.clear, layout } } },
+        ),
+      bgImageField: (screen: "stamp" | "clear") => {
+        const layout = screen === "stamp" ? experience.screens.stamp.layout : experience.screens.clear.layout;
+        const saveLayout = (patch: Partial<GameExperience["screens"]["stamp"]["layout"]>) =>
+          patchExperience((current) =>
+            screen === "stamp"
+              ? {
+                  ...current,
+                  screens: {
+                    ...current.screens,
+                    stamp: { ...current.screens.stamp, layout: { ...current.screens.stamp.layout, ...patch } },
+                  },
+                }
+              : {
+                  ...current,
+                  screens: {
+                    ...current.screens,
+                    clear: { ...current.screens.clear, layout: { ...current.screens.clear.layout, ...patch } },
+                  },
+                },
+          );
+        return (
+          <>
+            <GameImageField
+              label="背景の写真"
+              url={layout.bgImageUrl}
+              gameId={savedGameId}
+              onChange={(bgImageUrl) => saveLayout({ bgImageUrl })}
+            />
+            <GameVideoField
+              label="背景の動画（写真より優先）"
+              url={layout.bgVideoUrl}
+              gameId={savedGameId}
+              onChange={(bgVideoUrl) => saveLayout({ bgVideoUrl })}
+            />
+          </>
+        );
+      },
+      rewardImageField: (
+        <GameImageField
+          label="バッジの絵"
+          url={experience.reward.imageUrl}
+          gameId={savedGameId}
+          onChange={(imageUrl) => patchExperience((current) => ({ ...current, reward: { ...current.reward, imageUrl } }))}
+        />
+      ),
+    },
+    onShowCharacter: (showCharacter: boolean) =>
+      patchExperience((current) => ({
+        ...current,
+        screens: { ...current.screens, start: { ...current.screens.start, showCharacter } },
+      })),
+    onClearStartMedia: () =>
+      patchExperience((current) => ({
+        ...current,
+        screens: { ...current.screens, start: { ...current.screens.start, imageUrl: "", videoUrl: "" } },
+      })),
+    onShapesChange: (extraShapes: GameExperience["screens"]["start"]["extraShapes"]) =>
+      patchExperience((current) => ({
+        ...current,
+        screens: { ...current.screens, start: { ...current.screens.start, extraShapes } },
+      })),
+    onImagesChange: (extraImages: GameExperience["screens"]["start"]["extraImages"]) =>
+      patchExperience((current) => ({
+        ...current,
+        screens: { ...current.screens, start: { ...current.screens.start, extraImages } },
+      })),
+    uploadField: (onUploaded: (url: string) => void) => (
+      <GameImageField
+        label="写真をアップロード"
+        url=""
+        gameId={savedGameId}
+        onChange={(url) => {
+          if (url) onUploaded(url);
+        }}
+      />
+    ),
+    onTextsChange: (extraTexts: GameExperience["screens"]["start"]["extraTexts"]) =>
+      patchExperience((current) => ({
+        ...current,
+        screens: { ...current.screens, start: { ...current.screens.start, extraTexts } },
+      })),
+    onLook: (look: GameExperience["screens"]["start"]["look"]) =>
+      patchExperience((current) => ({
+        ...current,
+        screens: { ...current.screens, start: { ...current.screens.start, look } },
+      })),
+    media: (
+      <>
+        <GameImageField
+          label="背景の画像"
+          url={experience.screens.start.imageUrl}
+          gameId={savedGameId}
+          onChange={(imageUrl) =>
+            patchExperience((current) => ({
+              ...current,
+              screens: { ...current.screens, start: { ...current.screens.start, imageUrl } },
+            }))
+          }
+        />
+        <GameVideoField
+          label="背景の動画"
+          url={experience.screens.start.videoUrl}
+          gameId={savedGameId}
+          onChange={(videoUrl) =>
+            patchExperience((current) => ({
+              ...current,
+              screens: { ...current.screens, start: { ...current.screens.start, videoUrl } },
+            }))
+          }
+        />
+      </>
+    ),
+  };
+
+  // 編集している画面に合わせて、プレビューも切り替える。
+  useEffect(() => {
+    setPreviewView(previewViewFor(screen, step));
+  }, [screen, step]);
+
+  /** 場所選びを開く。いまの場所、なければ直前に置いたスポットのあたりから始める。 */
+  function openPicker(index: number) {
+    const spot = spots[index];
+    if (!spot) return;
+    setSelectedIndex(index);
+    setPlaceResults([]);
+    setPlaceError(null);
+    setLocateError(null);
+    const start =
+      spot.lat != null && spot.lng != null
+        ? { lat: spot.lat, lng: spot.lng }
+        : [...spots].reverse().find((item) => item.lat != null && item.lng != null);
+    if (start && start.lat != null && start.lng != null) {
+      setPickerCenter({ lat: start.lat, lng: start.lng });
+      setMapFocus({ lat: start.lat, lng: start.lng, zoom: 17, key: Date.now() });
+    } else {
+      setPickerCenter(null);
+    }
+    setPickerIndex(index);
+  }
+
+
+  /** 国土地理院の住所検索（キー不要）。施設名より住所・地名に強い。 */
+  async function searchPlace() {
+    const query = placeQuery.trim();
+    if (!query) return;
+    setSearching(true);
+    setPlaceError(null);
+    try {
+      const res = await fetchWithTimeout(
+        `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`,
+        {},
+        8000,
+      );
+      const rows = (await res.json()) as {
+        geometry?: { coordinates?: [number, number] };
+        properties?: { title?: string };
+      }[];
+      const places = (Array.isArray(rows) ? rows : [])
+        .flatMap((row) => {
+          const [lng, lat] = row.geometry?.coordinates ?? [];
+          const title = row.properties?.title ?? "";
+          return typeof lat === "number" && typeof lng === "number" && title ? [{ title, lat, lng }] : [];
+        })
+        .slice(0, 5);
+      if (places.length === 0) {
+        setPlaceResults([]);
+        setPlaceError("見つかりませんでした。住所や地名で探してみてください。");
+        return;
+      }
+      if (places.length === 1) {
+        setMapFocus({ lat: places[0].lat, lng: places[0].lng, zoom: 16.5, key: Date.now() });
+        setPlaceResults([]);
+        return;
+      }
+      setPlaceResults(places);
+    } catch {
+      setPlaceError("検索できませんでした。通信を確かめて、もう一度お試しください。");
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  /** 地図を現在地のあたりへ動かす（スポットは置かない）。 */
+  function goToHere() {
+    if (!navigator.geolocation) {
+      setLocateError("この端末では現在地を取れません");
+      return;
+    }
+    setLocating(true);
+    setLocateError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setMapFocus({ lat: pos.coords.latitude, lng: pos.coords.longitude, zoom: 16.5, key: Date.now() });
+        setLocating(false);
+      },
+      () => {
+        setLocateError("現在地を取得できませんでした。位置情報の利用を許可してください。");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
+    );
+  }
+
+
 
   function patchExperience(patch: (current: GameExperience) => GameExperience) {
     setNotice(null);
@@ -362,9 +776,9 @@ export function StampRallyWizard() {
     setSpots((current) => current.map((spot) => (spot.key === key ? { ...spot, ...patch } : spot)));
   }
 
-  function addSpot() {
+  function addSpot(place?: { lat: number; lng: number }) {
     if (spots.length >= MAX_ORGANIZER_GAME_SPOTS) return;
-    const next = createDraftSpot(spots.length);
+    const next = { ...createDraftSpot(), ...(place ?? {}) };
     setSpots((current) => [...current, next]);
     setSelectedIndex(spots.length);
     setNotice(null);
@@ -399,15 +813,17 @@ export function StampRallyWizard() {
     setDescription(template.description);
     setExperience(template.experience);
     setSpots(
-      template.spots.map((spot, index) => ({
-        ...createDraftSpot(index),
+      template.spots.map((spot) => ({
+        ...createDraftSpot(),
         name: spot.name,
         kind: spot.kind,
         description: spot.description,
         hint: spot.hint,
+        icon: spot.icon ?? "stamp",
       })),
     );
     setSelectedIndex(0);
+    setTemplateId(template.id);
     setNotice(`${template.name}を入れました。文章はあとから変えられます。`);
   }
 
@@ -419,14 +835,14 @@ export function StampRallyWizard() {
   async function saveDraft(mode: "stay" | "next" | "publish") {
     if (!name.trim()) {
       setError("ゲーム名を入力してください");
-      setStep(1);
+      setStep(2);
       return;
     }
     const startsAt = toIso(startDate, startTime);
     const endsAt = toIso(endDate, endTime);
     if (startsAt && endsAt && new Date(endsAt) < new Date(startsAt)) {
       setError("終了日時は開始日時より後にしてください");
-      setStep(1);
+      setStep(2);
       return;
     }
     setSaving(true);
@@ -494,7 +910,7 @@ export function StampRallyWizard() {
         router.push(`/organizer/games/${gameId}`);
         return;
       }
-      if (mode === "next") setStep((current) => (current < 5 ? ((current + 1) as Step) : current));
+      if (mode === "next") setStep((current) => (current < 6 ? ((current + 1) as Step) : current));
       setNotice("下書きを保存しました");
     } catch {
       setError("通信エラーが発生しました");
@@ -515,57 +931,150 @@ export function StampRallyWizard() {
         ゲーム機能に戻る
       </Link>
 
-      <OrganizerWorkspacePageHeader
-        title={editId ? "スタンプラリーを直す" : "スタンプラリー作成"}
-        subtitle={
-          published
-            ? "公開中です。画面や特典を直して、変更を保存できます。"
-            : "名前を入れると、下書きまで進めます。"
-        }
-      />
+      <div className="hidden md:block">
+        <OrganizerWorkspacePageHeader
+          title={editId ? "スタンプラリーを直す" : "スタンプラリー作成"}
+          subtitle={
+            published
+              ? "公開中です。画面や特典を直して、変更を保存できます。"
+              : "名前を入れると、下書きまで進めます。"
+          }
+        />
+      </div>
 
       {!selectedMeta.available ? (
         <p className={styles.note}>{selectedMeta.label}は準備中です。いまはスタンプラリーとして作成します。</p>
       ) : null}
 
-      <ol className={styles.steps} aria-label="作成ステップ">
-        {STEPS.map((label, index) => {
-          const number = (index + 1) as Step;
-          const current = step === number;
-          const done = step > number;
-          return (
-            <li key={label}>
-              <button
-                type="button"
-                className={cn(current && styles["is-current"], done && styles["is-done"])}
-                aria-current={current ? "step" : undefined}
-                onClick={() => {
-                  setStep(number);
-                  setNotice(null);
-                }}
+      <nav className={styles.stepper} aria-label="作成ステップ">
+        <div className={styles.stepperHead}>
+          <span className={styles.stepperCount}>
+            STEP <b>{step}</b>
+            <i>/ {STEPS.length}</i>
+          </span>
+          <span className={styles.stepperTitle}>{STEPS[step - 1]}</span>
+          {step < STEPS.length ? (
+            <span className={styles.stepperNext}>次：{(STEPS as readonly string[])[step]}</span>
+          ) : null}
+        </div>
+        <ol className={styles.stepperTrack}>
+          {STEPS.map((label, index) => {
+            const number = (index + 1) as Step;
+            const current = step === number;
+            const done = step > number;
+            const Icon = STEP_ICONS[index];
+            return (
+              <li
+                key={label}
+                className={cn(styles.stepperItem, current && styles["is-current"], done && styles["is-done"])}
               >
-                <span className={styles.mark}>{done ? <Check className="h-3 w-3" aria-hidden /> : number}</span>
-                {label}
-              </button>
-            </li>
-          );
-        })}
-      </ol>
+                <button
+                  type="button"
+                  aria-current={current ? "step" : undefined}
+                  aria-label={`${number}. ${label}${done ? "（済み）" : ""}`}
+                  onClick={() => {
+                    setStep(number);
+                    setNotice(null);
+                  }}
+                >
+                  <span className={styles.stepperDot}>
+                    {done ? <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> : <Icon className="h-4 w-4" aria-hidden />}
+                  </span>
+                  <span className={styles.stepperLabel}>{label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
 
       <div className={styles.layout}>
         <div className={styles.main}>
           {step === 1 ? (
             <section className={styles.card}>
-              <h2>基本設定</h2>
-              <p className={cn(styles.lead, styles.leadAside)}>テンプレートを選ぶと、名前とスポットの下書きが入ります。</p>
-              <div className={styles.templates} role="group" aria-label="テンプレート">
-                {STAMP_RALLY_TEMPLATES.map((template) => (
-                  <button key={template.id} type="button" className={styles.template} onClick={() => applyTemplate(template.id)}>
-                    <b>{template.name}</b>
-                    <small>{template.blurb}</small>
+              <h2>テンプレートを選ぶ</h2>
+              <p className={styles.lead}>
+                近いものを選ぶと、名前・スポット・画面の文章が入った状態で始まります。あとから全部変えられます。
+              </p>
+              <div className={styles.tplTabs} role="tablist" aria-label="テンプレートの種類">
+                {[{ id: "all" as const, label: "すべて" }, ...STAMP_RALLY_TEMPLATE_GROUPS].map((group) => (
+                  <button
+                    key={group.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={templateGroup === group.id}
+                    className={cn(styles.tplTab, templateGroup === group.id && styles["is-on"])}
+                    onClick={() => setTemplateGroup(group.id)}
+                  >
+                    {group.label}
                   </button>
                 ))}
               </div>
+              <div className={styles.tplGrid}>
+                <button
+                  type="button"
+                  className={cn(styles.tplCard, styles.tplBlank, templateId === "blank" && styles["is-on"])}
+                  aria-pressed={templateId === "blank"}
+                  onClick={() => {
+                    if (
+                      templateId !== "blank" &&
+                      spots.length > 0 &&
+                      !window.confirm("白紙から始めます。いまのスポットは消えます。よろしいですか？")
+                    ) {
+                      return;
+                    }
+                    if (templateId !== "blank" && spots.length > 0) {
+                      setSpots([]);
+                      setExperience(createDefaultExperience());
+                    }
+                    setTemplateId("blank");
+                    setNotice(null);
+                  }}
+                >
+                  <span className={styles.tplArt}>
+                    <Plus className="h-8 w-8" aria-hidden />
+                  </span>
+                  <b>白紙から作る</b>
+                  <small>スポットを自分で追加します</small>
+                </button>
+                {STAMP_RALLY_TEMPLATES.filter((template) => templateGroup === "all" || template.group === templateGroup).map(
+                  (template) => (
+                    <button
+                      key={template.id}
+                      type="button"
+                      className={cn(styles.tplCard, templateId === template.id && styles["is-on"])}
+                      aria-pressed={templateId === template.id}
+                      onClick={() => {
+                        if (templateId !== template.id) applyTemplate(template.id);
+                      }}
+                    >
+                      {templateId === template.id ? (
+                        <span className={styles.tplCheck} aria-hidden>
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                      ) : null}
+                      <span className={styles.tplArt}>
+                        <img src={`/play/spots/${template.art}.webp`} alt="" />
+                      </span>
+                      <b>{template.name}</b>
+                      <small>{template.blurb}</small>
+                      <span className={styles.tplSpots} aria-label={`スポット${template.spots.length}か所`}>
+                        {template.spots.map((spot, index) => (
+                          <img key={`${spot.name}-${index}`} src={spotMarkerUrl(spot)} alt="" title={spot.name} />
+                        ))}
+                        <em>{template.spots.length}か所</em>
+                      </span>
+                    </button>
+                  ),
+                )}
+              </div>
+            </section>
+          ) : null}
+
+          {step === 2 ? (
+            <section className={styles.card}>
+              <h2>基本設定</h2>
+              <p className={styles.lead}>ゲームの名前と期間を決めます。くわしい設定は、あとからでも変えられます。</p>
               <div className="org-store-intro__grid">
                 <label className="org-store-intro__field org-store-intro__field--full">
                   <span>
@@ -611,7 +1120,7 @@ export function StampRallyWizard() {
               <details className={styles.fold} open={moreOpen} onToggle={(e) => setMoreOpen(e.currentTarget.open)}>
                 <summary>
                   <span>くわしい設定</span>
-                  <small>対象・回数・画像など(あとから変えられます)</small>
+                  <small>対象・回数・形式など(あとから変えられます)</small>
                 </summary>
                 <div className="org-store-intro__grid">
                 <label className="org-store-intro__field org-store-intro__field--full">
@@ -773,331 +1282,526 @@ export function StampRallyWizard() {
                 ) : null}
               </div>
 
-              <GameImageField
-                label="メイン画像"
-                url={experience.screens.start.imageUrl}
-                gameId={savedGameId}
-                onChange={(imageUrl) =>
-                  patchExperience((current) => ({
-                    ...current,
-                    screens: { ...current.screens, start: { ...current.screens.start, imageUrl } },
-                  }))
-                }
-              />
-              <GameVideoField
-                label="スタートの動画"
-                url={experience.screens.start.videoUrl}
-                gameId={savedGameId}
-                onChange={(videoUrl) =>
-                  patchExperience((current) => ({
-                    ...current,
-                    screens: { ...current.screens, start: { ...current.screens.start, videoUrl } },
-                  }))
-                }
-              />
               </details>
             </section>
           ) : null}
 
-          {step === 2 ? (
+          {step === 3 ? (
             <section className={styles.card}>
               <h2>スポット設定</h2>
-              <p className={styles.lead}>巡る場所を追加します。QRは保存したあとに発行されます。</p>
-              <div className={styles.spotLayout}>
-                <div>
-                  {spots.length === 0 ? (
-                    <p className={styles.note}>まだスポットがありません。</p>
-                  ) : (
-                    <ol className={styles.spotList}>
-                      {spots.map((spot, index) => (
-                        <li
-                          key={spot.key}
-                          className={cn(styles.spotItem, dragIndex === index && styles["is-dragging"])}
-                          draggable
-                          onDragStart={() => setDragIndex(index)}
-                          onDragOver={(event) => event.preventDefault()}
-                          onDrop={() => {
-                            if (dragIndex != null) reorderSpot(dragIndex, index);
-                            setDragIndex(null);
+              <p className={styles.lead}>
+                巡る場所を追加して、名前と場所を決めます。写真やチェックイン方法は「詳細」からあとで決められます。
+              </p>
+
+              <ol className={styles.spotRows}>
+                {spots.map((spot, index) => {
+                  const open = index === selectedIndex && detailsOpen;
+                  const label = spot.name.trim() || `スポット ${index + 1}`;
+                  return (
+                    <li key={spot.key} className={cn(styles.spotRow, open && styles["is-open"])}>
+                      <div className={styles.spotRowMain}>
+                        <span className={styles.spotChipNum}>{index + 1}</span>
+                        <img className={styles.spotRowMark} src={spotMarkerUrl(spot)} alt="" />
+                        <input
+                          ref={index === selectedIndex ? nameInputRef : undefined}
+                          className={styles.spotRowName}
+                          value={spot.name}
+                          maxLength={40}
+                          placeholder="スポット名（例：入口の鳥居）"
+                          aria-label={`${index + 1}番目のスポット名`}
+                          enterKeyHint="done"
+                          onFocus={() => setSelectedIndex(index)}
+                          onChange={(e) => updateSpot(spot.key, { name: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                           }}
-                          onDragEnd={() => setDragIndex(null)}
+                        />
+                      </div>
+                      <div className={styles.spotRowActions}>
+                        <button
+                          type="button"
+                          className={cn(styles.placeBtn, spot.lat == null && styles["is-todo"])}
+                          onClick={() => openPicker(index)}
                         >
-                          <span className={styles.index}>{index + 1}</span>
-                          <button
-                            type="button"
-                            className={cn(styles.spotPick, index === selectedIndex && styles["is-on"])}
-                            onClick={() => setSelectedIndex(index)}
-                          >
-                            <b>{spot.name.trim() || `スポット ${index + 1}`}</b>
-                            <small>
-                              {GAME_CHECKIN_LABEL[spot.checkin]}
-                              {spot.required ? " ・ 必須" : " ・ 任意"}
-                              {spot.lat != null ? " ・ 場所あり" : ""}
-                              {spot.published ? "" : " ・ 非公開"}
-                            </small>
-                          </button>
-                          <div className={styles.spotTools}>
-                            <span className={styles.grip} aria-hidden>
-                              <GripVertical className="h-4 w-4" />
-                            </span>
-                            <button type="button" aria-label="上へ" disabled={index === 0} onClick={() => moveSpot(index, -1)}>
+                          <MapPin className="h-4 w-4" aria-hidden />
+                          {spot.lat == null ? "場所を選ぶ" : "場所OK・変更"}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.detailBtn}
+                          aria-expanded={open}
+                          onClick={() => {
+                            setSelectedIndex(index);
+                            setDetailsOpen(!open);
+                          }}
+                        >
+                          詳細
+                          <ChevronDown className={cn("h-4 w-4", open && "rotate-180")} aria-hidden />
+                        </button>
+                      </div>
+                      {open && selectedSpot ? (
+                        <div className={styles.spotRowDetail}>
+                          <div className={styles.spotRowTools}>
+                            <button type="button" disabled={index === 0} onClick={() => moveSpot(index, -1)}>
                               <ArrowUp className="h-4 w-4" aria-hidden />
+                              前へ
+                            </button>
+                            <button type="button" disabled={index === spots.length - 1} onClick={() => moveSpot(index, 1)}>
+                              <ArrowDown className="h-4 w-4" aria-hidden />
+                              後ろへ
                             </button>
                             <button
                               type="button"
-                              aria-label="下へ"
-                              disabled={index === spots.length - 1}
-                              onClick={() => moveSpot(index, 1)}
+                              className={styles.dangerText}
+                              onClick={() => {
+                                if (window.confirm(`「${label}」を削除しますか？`)) removeSpot(index);
+                              }}
                             >
-                              <ArrowDown className="h-4 w-4" aria-hidden />
+                              <Trash2 className="h-4 w-4" aria-hidden />
+                              削除
                             </button>
                           </div>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                  <p className={styles.note}>ドラッグしても、上下ボタンでも並べ替えられます。</p>
-                  <div className="mt-3">
-                    <button type="button" className={styles.add} onClick={addSpot} disabled={spots.length >= MAX_ORGANIZER_GAME_SPOTS}>
-                      <Plus className="h-3.5 w-3.5" aria-hidden />
-                      スポットを追加
-                    </button>
-                  </div>
-                </div>
+                        <div className={styles.spotTabs} role="tablist" aria-label="スポットの設定">
+                          {SPOT_TABS.map((tab) => {
+                            const todo = spotTabTodo(selectedSpot, tab.id);
+                            return (
+                              <button
+                                key={tab.id}
+                                type="button"
+                                role="tab"
+                                aria-selected={spotTab === tab.id}
+                                className={cn(styles.spotTab, spotTab === tab.id && styles["is-on"])}
+                                onClick={() => setSpotTab(tab.id)}
+                              >
+                                {tab.label}
+                                {todo ? <span className={styles.spotTabDot} aria-label="未設定あり" /> : null}
+                              </button>
+                            );
+                          })}
+                        </div>
 
-                {selectedSpot ? (
-                  <div className="org-store-intro__grid">
-                    <GameImageField
-                      label="スポットの写真"
-                      url={selectedSpot.imageUrl ?? ""}
-                      gameId={savedGameId}
-                      onChange={(imageUrl) => updateSpot(selectedSpot.key, { imageUrl })}
-                    />
-                    <GameVideoField
-                      label="スポットの動画"
-                      url={selectedSpot.videoUrl ?? ""}
-                      gameId={savedGameId}
-                      onChange={(videoUrl) => updateSpot(selectedSpot.key, { videoUrl })}
-                    />
-                    <label className="org-store-intro__field org-store-intro__field--full">
-                      <span>スポット名</span>
-                      <input
-                        value={selectedSpot.name}
-                        maxLength={40}
-                        onChange={(e) => updateSpot(selectedSpot.key, { name: e.target.value })}
-                      />
-                    </label>
-                    <div className={cn("org-store-intro__field org-store-intro__field--full", styles.mapLook)}>
-                      <span>地図での見せ方</span>
-                      <div className={styles.mapStyles} role="radiogroup" aria-label="地図での見せ方">
-                        {GAME_SPOT_MAP_STYLES.map((mapStyle) => {
-                          const preview =
-                            mapStyle === "marker"
-                              ? spotMarkerUrl(selectedSpot)
-                              : mapStyle === "art"
-                                ? spotIconUrl(selectedSpot)
-                                : selectedSpot.mapImageUrl || selectedSpot.imageUrl || "";
-                          return (
-                            <button
-                              key={mapStyle}
-                              type="button"
-                              role="radio"
-                              aria-checked={selectedSpot.mapStyle === mapStyle}
-                              className={cn(styles.mapStyle, selectedSpot.mapStyle === mapStyle && styles["is-on"])}
-                              onClick={() => updateSpot(selectedSpot.key, { mapStyle })}
-                            >
-                              <span className={cn(styles.mapStyleArt, mapStyle === "photo" && styles.mapStylePhoto)}>
-                                {preview ? <img src={preview} alt="" /> : <ImageIcon className="h-5 w-5" aria-hidden />}
-                              </span>
-                              {GAME_SPOT_MAP_STYLE_LABEL[mapStyle]}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {selectedSpot.mapStyle === "photo" ? (
-                        <div className="mt-2">
-                          <GameImageField
-                            label="地図に出す画像（空ならスポットの写真）"
-                            url={selectedSpot.mapImageUrl ?? ""}
-                            gameId={savedGameId}
-                            onChange={(mapImageUrl) => updateSpot(selectedSpot.key, { mapImageUrl })}
-                          />
-                          {!selectedSpot.mapImageUrl && !selectedSpot.imageUrl ? (
-                            <small>画像がないあいだは、マーカーで表示します。</small>
+                        <div className="org-store-intro__grid">
+                          {spotTab === "basic" ? (
+                            <>
+                              <div className="org-store-intro__field org-store-intro__field--full">
+                                <span>種類</span>
+                                <div className={styles.quickIcons} role="radiogroup" aria-label="スポットの種類">
+                                  {QUICK_SPOT_ICONS.map((icon) => (
+                                    <button
+                                      key={icon}
+                                      type="button"
+                                      role="radio"
+                                      aria-checked={selectedSpot.icon === icon}
+                                      className={cn(styles.quickIcon, selectedSpot.icon === icon && styles["is-on"])}
+                                      onClick={() => updateSpot(selectedSpot.key, { icon })}
+                                    >
+                                      <img src={spotMarkerUrl({ icon })} alt="" />
+                                      <small>{QUICK_SPOT_ICON_LABEL[icon]}</small>
+                                    </button>
+                                  ))}
+                                  <button type="button" className={styles.quickIcon} onClick={() => setSpotTab("look")}>
+                                    <span className={styles.quickMore}>…</span>
+                                    <small>ほかの種類</small>
+                                  </button>
+                                </div>
+                              </div>
+                              <label className="org-store-intro__field">
+                                <span>種別</span>
+                                <select
+                                  value={selectedSpot.kind}
+                                  onChange={(e) =>
+                                    updateSpot(selectedSpot.key, { kind: e.target.value as OrganizerGameSpotKind })
+                                  }
+                                >
+                                  {Object.entries(ORGANIZER_GAME_SPOT_KIND_LABEL).map(([value, label]) => (
+                                    <option key={value} value={value}>
+                                      {label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="org-store-intro__field org-store-intro__field--full">
+                                <span>説明</span>
+                                <textarea
+                                  value={selectedSpot.description}
+                                  maxLength={200}
+                                  rows={3}
+                                  onChange={(e) => updateSpot(selectedSpot.key, { description: e.target.value })}
+                                />
+                              </label>
+                              <label className="org-store-intro__field org-store-intro__field--full">
+                                <span>ヒント</span>
+                                <input
+                                  value={selectedSpot.hint}
+                                  maxLength={120}
+                                  onChange={(e) => updateSpot(selectedSpot.key, { hint: e.target.value })}
+                                />
+                              </label>
+                              <div className={styles.switches}>
+                                <button
+                                  type="button"
+                                  className={styles.switch}
+                                  aria-pressed={selectedSpot.required}
+                                  onClick={() => updateSpot(selectedSpot.key, { required: !selectedSpot.required })}
+                                >
+                                  必須スポット
+                                  <em>{selectedSpot.required ? "必須" : "任意"}</em>
+                                </button>
+                                <button
+                                  type="button"
+                                  className={styles.switch}
+                                  aria-pressed={selectedSpot.published}
+                                  onClick={() => updateSpot(selectedSpot.key, { published: !selectedSpot.published })}
+                                >
+                                  公開
+                                  <em>{selectedSpot.published ? "公開" : "非公開"}</em>
+                                </button>
+                              </div>
+                            </>
+                          ) : null}
+
+                          {spotTab === "look" ? (
+                            <>
+                              <p className={cn(styles.note, styles.spotSectionNote)}>
+                                参加者の地図での見え方です。場所は上の地図で置きます。
+                              </p>
+                              {mapUnavailable ? (
+                                <SpotPinField
+                                  lat={selectedSpot.lat}
+                                  lng={selectedSpot.lng}
+                                  onChange={(place) =>
+                                    updateSpot(selectedSpot.key, {
+                                      lat: place?.lat ?? null,
+                                      lng: place?.lng ?? null,
+                                    })
+                                  }
+                                />
+                              ) : null}
+                              <div className={cn("org-store-intro__field org-store-intro__field--full", styles.mapLook)}>
+                                <div className={styles.mapStyles} role="radiogroup" aria-label="地図での見せ方">
+                                  {GAME_SPOT_MAP_STYLES.map((mapStyle) => {
+                                    const preview =
+                                      mapStyle === "marker"
+                                        ? spotMarkerUrl(selectedSpot)
+                                        : mapStyle === "art"
+                                          ? spotIconUrl(selectedSpot)
+                                          : selectedSpot.mapImageUrl || selectedSpot.imageUrl || "";
+                                    return (
+                                      <button
+                                        key={mapStyle}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={selectedSpot.mapStyle === mapStyle}
+                                        className={cn(styles.mapStyle, selectedSpot.mapStyle === mapStyle && styles["is-on"])}
+                                        onClick={() => updateSpot(selectedSpot.key, { mapStyle })}
+                                      >
+                                        <span className={cn(styles.mapStyleArt, mapStyle === "photo" && styles.mapStylePhoto)}>
+                                          {preview ? <img src={preview} alt="" /> : <ImageIcon className="h-5 w-5" aria-hidden />}
+                                        </span>
+                                        {GAME_SPOT_MAP_STYLE_LABEL[mapStyle]}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                {selectedSpot.mapStyle === "photo" ? (
+                                  <div className="mt-2">
+                                    <GameImageField
+                                      label="地図に出す画像（空ならスポットの写真）"
+                                      url={selectedSpot.mapImageUrl ?? ""}
+                                      gameId={savedGameId}
+                                      onChange={(mapImageUrl) => updateSpot(selectedSpot.key, { mapImageUrl })}
+                                    />
+                                    {!selectedSpot.mapImageUrl && !selectedSpot.imageUrl ? (
+                                      <small>画像がないあいだは、マーカーで表示します。</small>
+                                    ) : null}
+                                  </div>
+                                ) : null}
+                                <span className={styles.mapLookSub}>種類（マーカーの形・絞り込み・建物イラスト）</span>
+                                <div className={styles.iconGroups}>
+                                  {GAME_SPOT_CATEGORIES.map((category) => {
+                                    const icons = GAME_SPOT_ICON_IDS.filter((id) => GAME_SPOT_ICONS[id].category === category);
+                                    if (icons.length === 0) return null;
+                                    return (
+                                      <div key={category} className={styles.iconGroup}>
+                                        <p>{GAME_SPOT_CATEGORY_LABEL[category]}</p>
+                                        <div className={styles.iconGrid}>
+                                          {icons.map((icon) => (
+                                            <button
+                                              key={icon}
+                                              type="button"
+                                              aria-pressed={selectedSpot.icon === icon}
+                                              className={cn(styles.iconPick, selectedSpot.icon === icon && styles["is-on"])}
+                                              onClick={() => updateSpot(selectedSpot.key, { icon })}
+                                              title={GAME_SPOT_ICONS[icon].label}
+                                            >
+                                              <img src={`/play/spots/${icon}.webp`} alt="" />
+                                              <small>{GAME_SPOT_ICONS[icon].label}</small>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </>
+                          ) : null}
+
+                          {spotTab === "media" ? (
+                            <>
+                              <GameImageField
+                                label="スポットの写真"
+                                url={selectedSpot.imageUrl ?? ""}
+                                gameId={savedGameId}
+                                onChange={(imageUrl) => updateSpot(selectedSpot.key, { imageUrl })}
+                              />
+                              <GameVideoField
+                                label="スポットの動画"
+                                url={selectedSpot.videoUrl ?? ""}
+                                gameId={savedGameId}
+                                onChange={(videoUrl) => updateSpot(selectedSpot.key, { videoUrl })}
+                              />
+                              <GameImageField
+                                label="このスポットのスタンプ画像"
+                                url={selectedSpot.stampImageUrl ?? ""}
+                                gameId={savedGameId}
+                                onChange={(stampImageUrl) => updateSpot(selectedSpot.key, { stampImageUrl })}
+                              />
+                              <p className={cn(styles.note, styles.spotSectionNote)}>
+                                空のときは、画面・演出設定のスタンプ画像（全スポット共通）を使います。
+                              </p>
+                            </>
+                          ) : null}
+
+                          {spotTab === "checkin" ? (
+                            <>
+                              <label className="org-store-intro__field">
+                                <span>チェックイン</span>
+                                <select
+                                  value={selectedSpot.checkin}
+                                  onChange={(e) =>
+                                    updateSpot(selectedSpot.key, {
+                                      checkin: e.target.value as DraftSpot["checkin"],
+                                    })
+                                  }
+                                >
+                                  {GAME_CHECKIN_METHODS.map((method) => (
+                                    <option key={method} value={method}>
+                                      {GAME_CHECKIN_LABEL[method]}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              {selectedSpot.checkin === "gps" ? (
+                                <label className="org-store-intro__field">
+                                  <span>判定半径（m）</span>
+                                  <select
+                                    value={
+                                      (GAME_CHECKIN_RADIUS_PRESETS as readonly number[]).includes(selectedSpot.radiusM)
+                                        ? String(selectedSpot.radiusM)
+                                        : "custom"
+                                    }
+                                    onChange={(e) => {
+                                      if (e.target.value === "custom") {
+                                        updateSpot(selectedSpot.key, { radiusM: 40 });
+                                        return;
+                                      }
+                                      updateSpot(selectedSpot.key, { radiusM: Number(e.target.value) });
+                                    }}
+                                  >
+                                    {GAME_CHECKIN_RADIUS_PRESETS.map((radius) => (
+                                      <option key={radius} value={radius}>
+                                        {radius}m
+                                      </option>
+                                    ))}
+                                    <option value="custom">任意</option>
+                                  </select>
+                                  <small>この半径の中にいるときだけ押せます。ピンがないときは、QRを読むだけで押せます。</small>
+                                </label>
+                              ) : null}
+                              {selectedSpot.checkin === "gps" &&
+                              !(GAME_CHECKIN_RADIUS_PRESETS as readonly number[]).includes(selectedSpot.radiusM) ? (
+                                <label className="org-store-intro__field">
+                                  <span>任意の半径</span>
+                                  <input
+                                    type="number"
+                                    min={5}
+                                    max={500}
+                                    value={selectedSpot.radiusM}
+                                    onChange={(e) => updateSpot(selectedSpot.key, { radiusM: Number(e.target.value) })}
+                                  />
+                                </label>
+                              ) : null}
+                              {selectedSpot.checkin === "keyword" ? (
+                                <label className="org-store-intro__field org-store-intro__field--full">
+                                  <span>正解キーワード</span>
+                                  <input
+                                    value={selectedSpot.keyword}
+                                    maxLength={40}
+                                    onChange={(e) => updateSpot(selectedSpot.key, { keyword: e.target.value })}
+                                  />
+                                  <small>この言葉を入れるとスタンプが押されます。空欄のときは、QRを読むだけで押せます。</small>
+                                </label>
+                              ) : null}
+                            </>
                           ) : null}
                         </div>
+
+                        </div>
                       ) : null}
-                      <span className={styles.mapLookSub}>種類（マーカーの形・絞り込み・建物イラスト）</span>
-                      <div className={styles.iconGroups}>
-                        {GAME_SPOT_CATEGORIES.map((category) => {
-                          const icons = GAME_SPOT_ICON_IDS.filter((id) => GAME_SPOT_ICONS[id].category === category);
-                          if (icons.length === 0) return null;
-                          return (
-                            <div key={category} className={styles.iconGroup}>
-                              <p>{GAME_SPOT_CATEGORY_LABEL[category]}</p>
-                              <div className={styles.iconGrid}>
-                                {icons.map((icon) => (
-                                  <button
-                                    key={icon}
-                                    type="button"
-                                    aria-pressed={selectedSpot.icon === icon}
-                                    className={cn(styles.iconPick, selectedSpot.icon === icon && styles["is-on"])}
-                                    onClick={() => updateSpot(selectedSpot.key, { icon })}
-                                    title={GAME_SPOT_ICONS[icon].label}
-                                  >
-                                    <img src={`/play/spots/${icon}.webp`} alt="" />
-                                    <small>{GAME_SPOT_ICONS[icon].label}</small>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <label className="org-store-intro__field">
-                      <span>種別</span>
-                      <select
-                        value={selectedSpot.kind}
-                        onChange={(e) =>
-                          updateSpot(selectedSpot.key, { kind: e.target.value as OrganizerGameSpotKind })
-                        }
-                      >
-                        {Object.entries(ORGANIZER_GAME_SPOT_KIND_LABEL).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="org-store-intro__field">
-                      <span>チェックイン</span>
-                      <select
-                        value={selectedSpot.checkin}
-                        onChange={(e) =>
-                          updateSpot(selectedSpot.key, {
-                            checkin: e.target.value as DraftSpot["checkin"],
-                          })
-                        }
-                      >
-                        {GAME_CHECKIN_METHODS.map((method) => (
-                          <option key={method} value={method}>
-                            {GAME_CHECKIN_LABEL[method]}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    {selectedSpot.checkin === "gps" ? (
-                      <label className="org-store-intro__field">
-                        <span>判定半径（m）</span>
-                        <select
-                          value={
-                            (GAME_CHECKIN_RADIUS_PRESETS as readonly number[]).includes(selectedSpot.radiusM)
-                              ? String(selectedSpot.radiusM)
-                              : "custom"
-                          }
-                          onChange={(e) => {
-                            if (e.target.value === "custom") {
-                              updateSpot(selectedSpot.key, { radiusM: 40 });
-                              return;
-                            }
-                            updateSpot(selectedSpot.key, { radiusM: Number(e.target.value) });
-                          }}
-                        >
-                          {GAME_CHECKIN_RADIUS_PRESETS.map((radius) => (
-                            <option key={radius} value={radius}>
-                              {radius}m
-                            </option>
-                          ))}
-                          <option value="custom">任意</option>
-                        </select>
-                        <small>この半径の中にいるときだけ押せます。ピンがないときは、QRを読むだけで押せます。</small>
-                      </label>
-                    ) : null}
-                    {selectedSpot.checkin === "gps" &&
-                    !(GAME_CHECKIN_RADIUS_PRESETS as readonly number[]).includes(selectedSpot.radiusM) ? (
-                      <label className="org-store-intro__field">
-                        <span>任意の半径</span>
-                        <input
-                          type="number"
-                          min={5}
-                          max={500}
-                          value={selectedSpot.radiusM}
-                          onChange={(e) => updateSpot(selectedSpot.key, { radiusM: Number(e.target.value) })}
-                        />
-                      </label>
-                    ) : null}
-                    {selectedSpot.checkin === "keyword" ? (
-                      <label className="org-store-intro__field org-store-intro__field--full">
-                        <span>正解キーワード</span>
-                        <input
-                          value={selectedSpot.keyword}
-                          maxLength={40}
-                          onChange={(e) => updateSpot(selectedSpot.key, { keyword: e.target.value })}
-                        />
-                        <small>この言葉を入れるとスタンプが押されます。空欄のときは、QRを読むだけで押せます。</small>
-                      </label>
-                    ) : null}
-                    <label className="org-store-intro__field org-store-intro__field--full">
-                      <span>説明</span>
-                      <textarea
-                        value={selectedSpot.description}
-                        maxLength={200}
-                        rows={3}
-                        onChange={(e) => updateSpot(selectedSpot.key, { description: e.target.value })}
-                      />
-                    </label>
-                    <label className="org-store-intro__field org-store-intro__field--full">
-                      <span>ヒント</span>
-                      <input
-                        value={selectedSpot.hint}
-                        maxLength={120}
-                        onChange={(e) => updateSpot(selectedSpot.key, { hint: e.target.value })}
-                      />
-                    </label>
-                    <SpotPinField
-                      lat={selectedSpot.lat}
-                      lng={selectedSpot.lng}
-                      onChange={(place) =>
-                        updateSpot(selectedSpot.key, {
-                          lat: place?.lat ?? null,
-                          lng: place?.lng ?? null,
-                        })
-                      }
+                    </li>
+                  );
+                })}
+              </ol>
+
+              <button
+                type="button"
+                className={styles.addSpotBig}
+                onClick={() => addSpotAndEdit()}
+                disabled={spots.length >= MAX_ORGANIZER_GAME_SPOTS}
+              >
+                <Plus className="h-5 w-5" aria-hidden />
+                スポットを追加
+              </button>
+
+              {mapUnavailable || placedSpots.length === 0 ? null : (
+                <div className={styles.spotMapCard}>
+                  <div className={styles.spotMapHead}>
+                    <b>全体マップ</b>
+                    <small>参加者に見える地図です。ピンを押すと、そのスポットを開きます。</small>
+                  </div>
+                  <div className={cn("rally-map", styles.spotMap, styles.spotMapSmall)} style={RALLY_MAP_VARS}>
+                    <RallyVectorMap
+                      spots={mapSpots}
+                      selectedId={selectedSpot?.key ?? null}
+                      here={null}
+                      onSelect={(key) => {
+                        const index = spots.findIndex((spot) => spot.key === key);
+                        if (index >= 0) setSelectedIndex(index);
+                      }}
+                      label="全体マップ"
+                      route={experience.basics.route !== "free"}
+                      onUnavailable={() => setMapUnavailable(true)}
                     />
-                    <div className={styles.switches}>
+                  </div>
+                </div>
+              )}
+
+              {pickerIndex != null && spots[pickerIndex] ? createPortal(
+                <div className={styles.picker} role="dialog" aria-modal="true" aria-label="場所を選ぶ">
+                  <div className={styles.pickerHead}>
+                    <button type="button" className={styles.pickerClose} onClick={() => setPickerIndex(null)} aria-label="閉じる">
+                      <X className="h-5 w-5" aria-hidden />
+                    </button>
+                    <b>「{spots[pickerIndex].name.trim() || `スポット ${pickerIndex + 1}`}」の場所</b>
+                  </div>
+                  <form
+                    className={cn(styles.placeSearch, styles.pickerSearch)}
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void searchPlace();
+                    }}
+                  >
+                    <Search className="h-4 w-4" aria-hidden />
+                    <input
+                      value={placeQuery}
+                      onChange={(event) => setPlaceQuery(event.target.value)}
+                      placeholder="住所・地名で探す"
+                      enterKeyHint="search"
+                      aria-label="住所・地名で探す"
+                    />
+                    <button type="submit" disabled={searching || !placeQuery.trim()}>
+                      {searching ? "…" : "検索"}
+                    </button>
+                  </form>
+                  {placeResults.length > 0 ? (
+                    <ul className={cn(styles.placeResults, styles.pickerResults)}>
+                      {placeResults.map((place, index) => (
+                        <li key={`${place.title}-${index}`}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMapFocus({ lat: place.lat, lng: place.lng, zoom: 17, key: Date.now() });
+                              setPlaceResults([]);
+                            }}
+                          >
+                            <MapPin className="h-3.5 w-3.5" aria-hidden />
+                            {place.title}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {placeError ? <p className={cn(styles.placeError, styles.pickerError)}>{placeError}</p> : null}
+                  <div className={cn("rally-map", styles.pickerMap)} style={RALLY_MAP_VARS}>
+                    {mapUnavailable ? (
+                      <div className={styles.pickerFallback}>
+                        <SpotPinField
+                          lat={pickerCenter?.lat ?? null}
+                          lng={pickerCenter?.lng ?? null}
+                          onChange={(place) => setPickerCenter(place)}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <RallyVectorMap
+                          spots={mapSpots.filter((spot) => spot.id !== spots[pickerIndex].key)}
+                          selectedId={null}
+                          here={null}
+                          focus={mapFocus}
+                          onSelect={() => undefined}
+                          onCenterChange={setPickerCenter}
+                          label="地図を動かして、真ん中のピンを場所に合わせます"
+                          onUnavailable={() => setMapUnavailable(true)}
+                        />
+                        <div className={styles.pickerPin} aria-hidden>
+                          <img src={spotMarkerUrl(spots[pickerIndex])} alt="" />
+                          <span />
+                        </div>
+                        <p className={styles.pickerHint}>地図を動かして、ピンを場所に合わせてください</p>
+                        <button type="button" className={styles.pickerLocate} onClick={goToHere} disabled={locating}>
+                          <LocateFixed className="h-4 w-4" aria-hidden />
+                          {locating ? "取得中…" : "現在地へ"}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {locateError ? <p className={cn(styles.placeError, styles.pickerError)}>{locateError}</p> : null}
+                  <div className={styles.pickerFoot}>
+                    {spots[pickerIndex].lat != null ? (
                       <button
                         type="button"
-                        className={styles.switch}
-                        aria-pressed={selectedSpot.required}
-                        onClick={() => updateSpot(selectedSpot.key, { required: !selectedSpot.required })}
+                        className={styles.textAction}
+                        onClick={() => {
+                          updateSpot(spots[pickerIndex].key, { lat: null, lng: null });
+                          setPickerIndex(null);
+                        }}
                       >
-                        必須スポット
-                        <em>{selectedSpot.required ? "必須" : "任意"}</em>
+                        場所を外す
                       </button>
-                      <button
-                        type="button"
-                        className={styles.switch}
-                        aria-pressed={selectedSpot.published}
-                        onClick={() => updateSpot(selectedSpot.key, { published: !selectedSpot.published })}
-                      >
-                        公開
-                        <em>{selectedSpot.published ? "公開" : "非公開"}</em>
-                      </button>
-                    </div>
-                    <button type="button" className={styles.secondary} onClick={() => removeSpot(selectedIndex)}>
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                      このスポットを削除
+                    ) : (
+                      <span />
+                    )}
+                    <button
+                      type="button"
+                      className={styles.primary}
+                      disabled={!pickerCenter}
+                      onClick={() => {
+                        if (!pickerCenter) return;
+                        updateSpot(spots[pickerIndex].key, pickerCenter);
+                        setPickerIndex(null);
+                      }}
+                    >
+                      この場所に決める
                     </button>
                   </div>
-                ) : (
-                  <p className={styles.note}>スポットを追加すると、ここに詳細が出ます。</p>
-                )}
-              </div>
+                </div>,
+                document.body,
+              ) : null}
             </section>
           ) : null}
 
-          {step === 3 ? (
+          {step === 4 ? (
             <section className={styles.card}>
               <h2>画面・演出設定</h2>
               <p className={styles.lead}>参加者が最初に見るスタート画面から作れます。</p>
@@ -1118,6 +1822,36 @@ export function StampRallyWizard() {
 
               {screen === "start" ? (
                 <div className="org-store-intro__grid">
+                  <div id="wizard-cover" className={cn("org-store-intro__field org-store-intro__field--full", styles.coverBox)}>
+                    <span>背景の画像・動画</span>
+                    <p className={styles.note}>
+                      参加者が最初に見るスタート画面の、全面の背景になります。動画があるときは動画を優先して流します。
+                    </p>
+                    <div className={styles.coverFields}>
+                      <GameImageField
+                        label="背景の画像"
+                        url={experience.screens.start.imageUrl}
+                        gameId={savedGameId}
+                        onChange={(imageUrl) =>
+                          patchExperience((current) => ({
+                            ...current,
+                            screens: { ...current.screens, start: { ...current.screens.start, imageUrl } },
+                          }))
+                        }
+                      />
+                      <GameVideoField
+                        label="背景の動画（任意）"
+                        url={experience.screens.start.videoUrl}
+                        gameId={savedGameId}
+                        onChange={(videoUrl) =>
+                          patchExperience((current) => ({
+                            ...current,
+                            screens: { ...current.screens, start: { ...current.screens.start, videoUrl } },
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
                   <label className="org-store-intro__field org-store-intro__field--full">
                     <span>タイトル</span>
                     <input
@@ -1463,7 +2197,7 @@ export function StampRallyWizard() {
             </section>
           ) : null}
 
-          {step === 4 ? (
+          {step === 5 ? (
             <section className={styles.card}>
               <h2>達成条件・特典</h2>
               <p className={styles.lead}>まずは1つの条件と、特典の名前だけ残せます。</p>
@@ -1615,7 +2349,7 @@ export function StampRallyWizard() {
             </section>
           ) : null}
 
-          {step === 5 ? (
+          {step === 6 ? (
             <section className={styles.card}>
               <h2>確認・公開</h2>
               <p className={styles.lead}>
@@ -1657,19 +2391,46 @@ export function StampRallyWizard() {
           </p>
         </div>
 
-        <StampRallyPreview
-          screen={previewScreen}
-          name={name}
-          periodLabel={periodLabel}
-          spots={spots.map((spot) => ({
-            name: spot.name,
-            description: spot.description,
-            imageUrl: spot.imageUrl ?? "",
-            hasPlace: spot.lat != null && spot.lng != null,
-          }))}
-          experience={experience}
-        />
+        <aside className={styles.livePreview} aria-label="参加者画面プレビュー">
+          <p className={styles.livePreviewTitle}>参加者に見える画面</p>
+          <WizardLivePreview
+            name={name}
+            periodLabel={periodLabel}
+            experience={experience}
+            spots={spots}
+            view={previewView}
+            onView={setPreviewView}
+            edit={startEdit}
+          />
+        </aside>
       </div>
+
+      <button type="button" className={cn("wizard-preview-fab", styles.previewFab)} onClick={() => setPreviewOpen(true)}>
+        <Smartphone className="h-4 w-4" aria-hidden />
+        プレビュー
+      </button>
+      {previewOpen
+        ? createPortal(
+            <div className="wizard-preview-sheet" role="dialog" aria-modal="true" aria-label="参加者画面プレビュー">
+              <div className="wizard-preview-sheet__head">
+                <b>参加者に見える画面</b>
+                <button type="button" onClick={() => setPreviewOpen(false)}>
+                  編集にもどる
+                </button>
+              </div>
+              <WizardLivePreview
+                name={name}
+                periodLabel={periodLabel}
+                experience={experience}
+                spots={spots}
+                view={previewView}
+                onView={setPreviewView}
+                edit={startEdit}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
 
       <div className={styles.footer}>
         <div className={styles.footerQuiet}>
@@ -1698,9 +2459,24 @@ export function StampRallyWizard() {
           type="button"
           className={styles.primary}
           disabled={saving}
-          onClick={() => void saveDraft(step === 5 ? "publish" : "next")}
+          onClick={() => {
+            if (step === 1) {
+              setStep(2);
+              setNotice(null);
+              return;
+            }
+            void saveDraft(step === 6 ? "publish" : "next");
+          }}
         >
-          {step === 5 ? (published ? "変更を保存" : "公開する") : "保存して次へ"}
+          {step === 1
+            ? templateId && templateId !== "blank"
+              ? "このテンプレートで始める"
+              : "次へ"
+            : step === 6
+              ? published
+                ? "変更を保存"
+                : "公開する"
+              : "保存して次へ"}
         </button>
       </div>
       {testing ? (

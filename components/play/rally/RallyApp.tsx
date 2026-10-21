@@ -24,18 +24,20 @@ import {
   ScanLine,
   Share2,
   Stamp,
-  Trophy,
   UserRound,
   X,
 } from "lucide-react";
-import { PlayClearPanel } from "@/components/play/PlayMoment";
 import { PlayExitLink, PlayLocaleToggle } from "@/components/play/PlayLocaleSwitch";
+import {
+  RallyClearScreen,
+  RallyStampGetScreen,
+  type RallyMomentEdit,
+} from "@/components/play/rally/RallyMomentScreens";
 import { usePlayCopy } from "@/components/play/usePlayCopy";
 import { useQrCamera } from "@/hooks/use-qr-camera";
 import { parseCheckinQr } from "@/lib/checkin/parse-checkin-qr";
 import type { GameSpotCategory, PublicPlayMoment } from "@/lib/organizer/game-experience";
 import type { PlayProgress, PlaySpotProgress } from "@/lib/organizer/play-types";
-import { playStampSound } from "@/lib/organizer/play-stamp-sound";
 import type { RallyStampEvent, RallyTab } from "@/components/play/rally/types";
 import { SPOT_CATEGORY_LOOK, SpotCategoryTag, spotCategory, spotIconUrl } from "@/components/play/rally/spotCategory";
 import "./rally.css";
@@ -51,6 +53,7 @@ const RallyMap = dynamic(() => import("@/components/play/rally/RallyMap").then((
 });
 
 type Here = { lat: number; lng: number };
+
 type MapFilter = "all" | "open" | "done" | "near" | `cat:${GameSpotCategory}`;
 
 function distanceM(a: Here, b: { lat: number; lng: number }): number {
@@ -88,6 +91,7 @@ function pickNextSpot(progress: PlayProgress, here: Here | null): PlaySpotProgre
 
 function StampFace({ spot, stampImageUrl }: { spot: PlaySpotProgress; stampImageUrl?: string }) {
   if (!spot.stamped) return <span className="rally-seal__unknown">?</span>;
+  if (spot.stampImageUrl) return <img className="rally-seal__mark" src={spot.stampImageUrl} alt="" />;
   if (spot.imageUrl) return <img src={spot.imageUrl} alt="" />;
   if (stampImageUrl) return <img className="rally-seal__mark" src={stampImageUrl} alt="" />;
   return <Stamp className="rally-seal__icon" aria-hidden />;
@@ -145,7 +149,13 @@ export function RallyApp({
   replayError,
   onReplay,
   favoritesKey,
+  initialTab = "home",
+  momentEdit,
 }: {
+  /** 渡すと、スタンプGETと特典の画面を直接編集できる（主催者のプレビュー）。 */
+  momentEdit?: RallyMomentEdit;
+  /** 最初に開くタブ（主催者のプレビュー用）。 */
+  initialTab?: RallyTab;
   /** お気に入りを端末に残すキー。ゲームごとに分ける。 */
   favoritesKey: string;
   title: string;
@@ -162,7 +172,7 @@ export function RallyApp({
   onReplay: () => void;
 }) {
   const copy = usePlayCopy();
-  const [tab, setTab] = useState<RallyTab>("home");
+  const [tab, setTab] = useState<RallyTab>(initialTab);
   const [sheetSpotId, setSheetSpotId] = useState<string | null>(null);
   const [mapSpotId, setMapSpotId] = useState<string | null>(null);
   const { here, locating, failed, locate } = useHere(tab === "map");
@@ -215,6 +225,7 @@ export function RallyApp({
           progress={progress}
           moment={moment}
           claimHref={claimHref}
+          edit={momentEdit}
         />
       ) : null}
       {tab === "me" ? (
@@ -270,11 +281,12 @@ export function RallyApp({
       ) : null}
 
       {stampEvent ? (
-        <RallyStampGet
+        <RallyStampGetScreen
           event={stampEvent}
           progress={progress}
           moment={moment}
           heroImageUrl={heroImageUrl}
+          edit={momentEdit}
           onBook={() => {
             onStampEventSeen();
             goTab("home");
@@ -992,32 +1004,34 @@ function RallyScan({ title }: { title: string }) {
   );
 }
 
-function hasReward(progress: PlayProgress, moment: PublicPlayMoment | null): boolean {
-  return Boolean(
-    moment?.rewardLabel ||
-    moment?.clearTitle ||
-    moment?.clearMessage ||
-    progress.rewardCode ||
-    progress.rewardUsed ||
-    progress.rewardPoints ||
-    progress.rewardBadge,
-  );
-}
-
 function RallyReward({
   title,
   heroImageUrl,
   progress,
   moment,
   claimHref,
+  edit,
 }: {
   title: string;
   heroImageUrl: string;
   progress: PlayProgress;
   moment: PublicPlayMoment | null;
   claimHref: string;
+  edit?: RallyMomentEdit;
 }) {
   const copy = usePlayCopy();
+  if (edit && moment) {
+    return (
+      <RallyClearScreen
+        title={title}
+        heroImageUrl={heroImageUrl}
+        progress={progress}
+        moment={moment}
+        claimHref={claimHref}
+        edit={edit}
+      />
+    );
+  }
   if (!progress.completed) {
     return (
       <main className="rally-page">
@@ -1036,36 +1050,9 @@ function RallyReward({
       </main>
     );
   }
+  if (!moment) return null;
   return (
-    <main className="rally-clear">
-      <div className="rally-clear__hero">
-        <PlayExitLink className="rally-clear__exit" />
-        {heroImageUrl ? <img src={heroImageUrl} alt="" aria-hidden /> : null}
-        <div className="rally-burst" aria-hidden />
-        <p className="rally-ribbon rally-ribbon--small">{copy.rally.congrats}</p>
-        <p className="rally-ribbon">{moment?.clearTitle ? copy.msg(moment.clearTitle) : copy.rally.complete}</p>
-        <span className="rally-clear__trophy" aria-hidden>
-          <Trophy />
-        </span>
-      </div>
-      <div className="rally-clear__card">
-        <p className="rally-clear__lead">{copy.rally.allDone}</p>
-        <p className="rally-clear__title">{title}</p>
-        {moment && hasReward(progress, moment) ? (
-          <PlayClearPanel
-            moment={{ ...moment, clearTitle: "", showCharacter: false }}
-            code={progress.rewardCode}
-            used={progress.rewardUsed}
-            points={progress.rewardPoints}
-            pointsAwarded={progress.rewardPointsAwarded}
-            badge={progress.rewardBadge}
-            badgeAwarded={progress.rewardBadgeAwarded}
-            badgeImage={progress.rewardBadgeImage}
-            claimHref={claimHref}
-          />
-        ) : null}
-      </div>
-    </main>
+    <RallyClearScreen title={title} heroImageUrl={heroImageUrl} progress={progress} moment={moment} claimHref={claimHref} />
   );
 }
 
@@ -1126,84 +1113,3 @@ function RallyMe({
   );
 }
 
-function RallyStampGet({
-  event,
-  progress,
-  moment,
-  heroImageUrl,
-  onBook,
-  onNext,
-  onReward,
-}: {
-  event: RallyStampEvent;
-  progress: PlayProgress;
-  moment: PublicPlayMoment | null;
-  heroImageUrl: string;
-  onBook: () => void;
-  onNext: () => void;
-  onReward: () => void;
-}) {
-  const copy = usePlayCopy();
-  useEscape(onBook);
-  const spot = event.spotId ? progress.spots.find((item) => item.id === event.spotId) : undefined;
-  const sound = moment?.stampSound;
-  const soundUrl = moment?.stampSoundUrl;
-
-  useEffect(() => {
-    if (event.already) return;
-    if (!soundUrl && (!sound || sound === "none")) return;
-    playStampSound(sound ?? "none", soundUrl);
-  }, [event.already, sound, soundUrl]);
-
-  const face = spot?.imageUrl || moment?.stampImageUrl || progress.stampImageUrl || "";
-  const total = progress.spotCount;
-  const done = progress.stampedCount;
-  const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
-  const left = Math.max(0, total - done);
-  const animation = event.already ? "none" : (moment?.stampAnimation ?? "pop");
-
-  return (
-    <div className="rally-get" role="dialog" aria-modal="true" aria-label={copy.rally.stampGet}>
-      {heroImageUrl ? <img className="rally-get__bg" src={heroImageUrl} alt="" aria-hidden /> : null}
-      <div className="rally-burst" aria-hidden />
-      {animation === "confetti" || animation === "sparkle" ? (
-        <div className={`rally-confetti rally-confetti--${animation}`} aria-hidden>
-          {Array.from({ length: 18 }, (_, i) => (
-            <span key={i} style={{ ["--i" as string]: i }} />
-          ))}
-        </div>
-      ) : null}
-      <div className="rally-get__inner">
-        <p className="rally-ribbon">{event.already ? copy.rally.alreadyGot : copy.rally.stampGet}</p>
-        <div className={`rally-get__seal rally-get__seal--${animation}`}>
-          {face ? <img src={face} alt="" /> : <Stamp aria-hidden />}
-        </div>
-        <p className="rally-get__name">{event.name}</p>
-        {moment?.stampMessage && !event.already ? <p className="rally-get__msg">{moment.stampMessage}</p> : null}
-        <div className="rally-get__card">
-          <p className="rally-get__count">
-            <strong>{done}</strong> / {total}
-          </p>
-          <div className="rally-meter__bar">
-            <span style={{ width: `${pct}%` }} />
-          </div>
-          <p className="rally-meter__left">{progress.completed ? copy.rally.allDone : copy.rallyLeft(left)}</p>
-          {progress.completed ? (
-            <button type="button" className="rally-cta" onClick={onReward}>
-              <Gift aria-hidden />
-              {copy.rally.toReward}
-            </button>
-          ) : (
-            <button type="button" className="rally-cta" onClick={onNext}>
-              {copy.rally.nextSpot}
-              <ArrowRight aria-hidden />
-            </button>
-          )}
-          <button type="button" className="rally-ghost" onClick={onBook}>
-            {copy.rally.seeBook}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}

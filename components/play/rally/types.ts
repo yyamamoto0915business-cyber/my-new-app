@@ -1,4 +1,10 @@
-import type { GameHowtoIcon } from "@/lib/organizer/game-experience";
+import type {
+  GameHowtoIcon,
+  GameStartImage,
+  GameStartLook,
+  GameStartShape,
+  GameStartText,
+} from "@/lib/organizer/game-experience";
 
 export type PlayStartStep = {
   icon: GameHowtoIcon;
@@ -18,6 +24,14 @@ export type PlayStart = {
   showFreeBadge: boolean;
   showPeriod: boolean;
   showShare: boolean;
+  /** 位置・色など。古いデータにはない。 */
+  look?: GameStartLook;
+  /** 主催者が足したテキスト。古いデータにはない。 */
+  extraTexts?: GameStartText[];
+  /** 主催者が足した画像・イラスト。古いデータにはない。 */
+  extraImages?: GameStartImage[];
+  /** 主催者が足した図形・ボタン。古いデータにはない。 */
+  extraShapes?: GameStartShape[];
   periodLabel: string | null;
 };
 

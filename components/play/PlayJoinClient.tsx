@@ -17,6 +17,8 @@ import type { PlayStart, RallyStampEvent } from "@/components/play/rally/types";
 import {
   GAME_HOWTO_ICONS,
   readPublicPlayMoment,
+  sanitizeStartImages,
+  sanitizeStartShapes,
   safeImageUrl,
   type GameHowtoIcon,
   type PublicPlayMoment,
@@ -94,6 +96,25 @@ function readStart(raw: unknown): PlayStart | null {
     showFreeBadge: row.showFreeBadge === true,
     showPeriod: row.showPeriod === true,
     showShare: row.showShare === true,
+    look: row.look && typeof row.look === "object" ? (row.look as PlayStart["look"]) : undefined,
+    extraImages: sanitizeStartImages(row.extraImages),
+    extraShapes: sanitizeStartShapes(row.extraShapes),
+    extraTexts: Array.isArray(row.extraTexts)
+      ? row.extraTexts.flatMap((item): NonNullable<PlayStart["extraTexts"]> => {
+          if (!item || typeof item !== "object") return [];
+          const t = item as Record<string, unknown>;
+          if (typeof t.text !== "string" || !t.text.trim()) return [];
+          return [
+            {
+              id: typeof t.id === "string" ? t.id : String(t.text).slice(0, 8),
+              text: t.text,
+              size: t.size === "s" || t.size === "l" ? t.size : "m",
+              bold: t.bold === true,
+              color: t.color === "#fff4d6" || t.color === "#1d2a22" ? t.color : "#ffffff",
+            },
+          ];
+        })
+      : undefined,
     periodLabel: typeof row.periodLabel === "string" && row.periodLabel.trim() ? row.periodLabel : null,
   };
 }

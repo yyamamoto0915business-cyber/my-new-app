@@ -300,6 +300,7 @@ async function loadRally(db: SupabaseClient, gameId: string, playerId: string, p
         icon: meta?.icon ?? "stamp",
         mapStyle: meta?.mapStyle ?? "marker",
         mapImageUrl: meta?.mapImageUrl ?? "",
+        stampImageUrl: meta?.stampImageUrl ?? "",
         required: meta ? meta.required : true,
         checkin: meta?.checkin ?? "qr",
         keyword: meta?.keyword ?? "",
@@ -671,6 +672,7 @@ async function loadProgress(
       icon: spot.icon,
       mapStyle: spot.mapStyle,
       mapImageUrl: spot.mapImageUrl,
+      stampImageUrl: spot.stampImageUrl,
     })),
   };
 }

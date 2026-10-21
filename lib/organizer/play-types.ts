@@ -24,6 +24,8 @@ export type PlaySpotProgress = {
   /** 地図での見せ方。未設定はマーカー。 */
   mapStyle?: GameSpotMapStyle;
   mapImageUrl?: string;
+  /** このスポットのスタンプの絵。なければゲーム共通の stampImageUrl。 */
+  stampImageUrl?: string;
 };
 
 export type PlayProgress = {

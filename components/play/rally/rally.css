@@ -218,7 +218,7 @@
 
 .rally-start__title {
   margin: 0;
-  font-size: clamp(2.3rem, 11vw, 3.3rem);
+  font-size: clamp(2.3rem, 11cqw, 3.3rem);
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0.02em;
@@ -1330,7 +1330,7 @@
 
 .rally-camera__frame {
   position: relative;
-  width: min(68vw, 16rem);
+  width: min(68cqw, 16rem);
   aspect-ratio: 1;
   border-radius: 1.2rem;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
@@ -1519,7 +1519,7 @@
   padding: 0.45rem 1.6rem;
   background: linear-gradient(180deg, #e8553a, #c43a22);
   color: #fff;
-  font-size: clamp(1.6rem, 8vw, 2.2rem);
+  font-size: clamp(1.6rem, 8cqw, 2.2rem);
   font-weight: 900;
   letter-spacing: 0.04em;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
@@ -1591,6 +1591,7 @@
 }
 
 .rally-get__seal {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1770,7 +1771,10 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.3;
+  opacity: 0.22;
+  filter: blur(2px) saturate(0.8);
+  -webkit-mask-image: linear-gradient(to bottom, #000 35%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 35%, transparent 100%);
 }
 
 .rally-clear__trophy {
@@ -2619,4 +2623,1063 @@
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
   border-top: 10px solid var(--pin);
+}
+
+/* 主催者プレビューの、未入力の見本 */
+.rally-start .rally-start__placeholder {
+  outline: 2px dashed rgba(255, 255, 255, 0.55);
+  outline-offset: 4px;
+  border-radius: 0.4rem;
+  opacity: 0.6;
+}
+
+.rally-start__title.rally-start__placeholder {
+  font-size: clamp(1.6rem, 8cqw, 2.2rem);
+}
+
+.rally-start__catch.rally-start__placeholder {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.rally-start__placeholder-bg {
+  margin: 0.6rem 0 0;
+  padding: 0.3rem 0.8rem;
+  border: 1.5px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* 主催者プレビューでの直接入力。見た目は本番の文字のまま、入力欄にする。 */
+.rally-start .rally-edit {
+  display: block;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  border: 0;
+  outline: 2px dashed rgba(255, 255, 255, 0.45);
+  outline-offset: 3px;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: center;
+  resize: none;
+  overflow: hidden;
+  cursor: text;
+}
+
+.rally-start .rally-edit:hover {
+  outline-color: rgba(255, 255, 255, 0.8);
+}
+
+.rally-start .rally-edit:focus {
+  outline: 2px solid #ffe08a;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.rally-start .rally-edit::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.rally-start textarea.rally-start__catch.rally-edit {
+  width: auto;
+  min-width: 60%;
+  max-width: 100%;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--rally-ink);
+  border-radius: 999px;
+}
+
+.rally-start textarea.rally-start__catch.rally-edit::placeholder {
+  color: #8a958d;
+}
+
+.rally-start textarea.rally-start__title.rally-edit {
+  line-height: 1.12;
+  border-radius: 0.5rem;
+}
+
+.rally-start textarea.rally-start__desc.rally-edit {
+  border-radius: 0.5rem;
+}
+
+.rally-edit-bg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+.rally-edit-bg svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.rally-cta--edit {
+  cursor: text;
+}
+
+.rally-cta--edit .rally-edit {
+  width: auto;
+  max-width: 75%;
+  margin: 0;
+  outline-color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  font-weight: 800;
+}
+
+/* サイト全体の入力欄の見た目（文字サイズ・太さ・余白）に負けないようにする。 */
+.rally-start textarea.rally-edit,
+.rally-start input.rally-edit {
+  font-family: inherit !important;
+  letter-spacing: inherit !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.rally-start textarea.rally-start__title.rally-edit {
+  padding: 0 0.2rem !important;
+  font-size: clamp(2.3rem, 11cqw, 3.3rem) !important;
+  font-weight: 900 !important;
+  color: #fff !important;
+}
+
+.rally-start textarea.rally-start__catch.rally-edit {
+  padding: 0.35rem 1rem !important;
+  font-size: 0.82rem !important;
+  font-weight: 800 !important;
+  color: var(--rally-ink) !important;
+}
+
+.rally-start textarea.rally-start__desc.rally-edit {
+  padding: 0.1rem 0.3rem !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  line-height: 1.7 !important;
+  color: #fff !important;
+}
+
+.rally-cta--edit input.rally-edit {
+  padding: 0.1rem 0.3rem !important;
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+  outline: 2px dashed rgba(255, 255, 255, 0.5) !important;
+}
+
+.rally-cta--edit input.rally-edit:focus {
+  outline: 2px solid #ffe08a !important;
+}
+
+/* ───────── スタート画面の見た目（主催者が選ぶ） ───────── */
+
+/* 文字の位置。hero と foot のあいだの余白で動かす。 */
+.rally-start--pos-top .rally-start__body {
+  justify-content: space-between;
+}
+
+.rally-start--pos-middle .rally-start__body,
+.rally-start--pos-bottom .rally-start__body {
+  justify-content: flex-end;
+}
+
+.rally-start--pos-middle .rally-start__hero {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.rally-start--pos-bottom .rally-start__hero {
+  margin-top: auto;
+}
+
+.rally-start--align-left .rally-start__hero {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.rally-start--align-left .rally-start .rally-edit,
+.rally-start--align-left .rally-edit {
+  text-align: left !important;
+  margin-left: 0 !important;
+}
+
+/* 文字の大きさ */
+.rally-start--size-s .rally-start__title,
+.rally-start--size-s textarea.rally-start__title.rally-edit {
+  font-size: clamp(1.8rem, 8.5cqw, 2.5rem) !important;
+}
+
+.rally-start--size-l .rally-start__title,
+.rally-start--size-l textarea.rally-start__title.rally-edit {
+  font-size: clamp(2.8rem, 14cqw, 4rem) !important;
+}
+
+/* 文字の色 */
+.rally-start .rally-start__title,
+.rally-start .rally-start__desc,
+.rally-start textarea.rally-start__title.rally-edit,
+.rally-start textarea.rally-start__desc.rally-edit {
+  color: var(--start-text, #fff) !important;
+}
+
+.rally-start--dark-text .rally-start__title,
+.rally-start--dark-text .rally-start__desc,
+.rally-start--dark-text textarea.rally-edit {
+  text-shadow: 0 1px 8px rgba(255, 255, 255, 0.7) !important;
+  -webkit-text-stroke: 0 !important;
+}
+
+/* ボタンの色 */
+.rally-start .rally-cta {
+  background: var(--start-button, #1f7a4a);
+}
+
+/* 背景の暗さ */
+.rally-start--shade-none .rally-start__shade {
+  background: none;
+}
+
+.rally-start--shade-strong .rally-start__shade {
+  background: linear-gradient(180deg, rgba(10, 16, 12, 0.55) 0%, rgba(10, 16, 12, 0.35) 45%, rgba(10, 16, 12, 0.85) 100%);
+}
+
+/* 入力欄でも、本番と同じように折り返す。 */
+.rally-start textarea.rally-edit {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  box-sizing: border-box !important;
+}
+
+.rally-start textarea.rally-start__catch.rally-edit {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 22rem !important;
+  border-radius: 1rem !important;
+}
+
+.rally-start--align-left textarea.rally-start__catch.rally-edit {
+  max-width: 100% !important;
+}
+
+/* 主催者が足したテキスト */
+.rally-start .rally-start__extra {
+  margin: 0;
+  max-width: 100%;
+  font-weight: 600;
+  line-height: 1.6;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.rally-start .rally-start__extra--s {
+  font-size: 0.85rem;
+}
+
+.rally-start .rally-start__extra--m {
+  font-size: 1.05rem;
+}
+
+.rally-start .rally-start__extra--l {
+  font-size: 1.5rem;
+  line-height: 1.35;
+}
+
+.rally-start .rally-start__extra.is-bold {
+  font-weight: 900;
+}
+
+.rally-start textarea.rally-start__extra.rally-edit {
+  padding: 0.1rem 0.3rem !important;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: 1.5 !important;
+}
+
+.rally-start textarea.rally-start__extra--s.rally-edit {
+  font-size: 0.85rem !important;
+}
+
+.rally-start textarea.rally-start__extra--m.rally-edit {
+  font-size: 1.05rem !important;
+}
+
+.rally-start textarea.rally-start__extra--l.rally-edit {
+  font-size: 1.5rem !important;
+}
+
+.rally-start textarea.rally-start__extra.is-bold.rally-edit {
+  font-weight: 900 !important;
+}
+
+.rally-start textarea.rally-start__extra.is-selected.rally-edit {
+  outline: 2px solid #ffe08a !important;
+}
+
+.rally-start--align-left .rally-start__extra {
+  text-align: left;
+}
+
+/* プレビューで選んでいるものを、黄色の枠で示す。 */
+.rally-start.is-editing {
+  cursor: pointer;
+}
+
+.rally-start.is-bg-selected::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  z-index: 4;
+  border: 3px solid #ffe08a;
+  border-radius: 1.6rem;
+  pointer-events: none;
+}
+
+.rally-start.is-text-selected textarea.rally-start__catch.rally-edit,
+.rally-start.is-text-selected textarea.rally-start__title.rally-edit,
+.rally-start.is-text-selected textarea.rally-start__desc.rally-edit {
+  outline: 2px solid #ffe08a !important;
+}
+
+.rally-start.is-button-selected .rally-cta--edit {
+  box-shadow:
+    0 0 0 3px #ffe08a,
+    0 10px 22px rgba(0, 0, 0, 0.3);
+}
+
+/* ───────── ドラッグで動かす ───────── */
+.rally-move {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.rally-start--align-left .rally-start__hero .rally-move {
+  align-items: flex-start;
+}
+
+.rally-start__foot > .rally-move {
+  align-items: stretch;
+}
+
+.rally-move.is-dragging {
+  z-index: 8 !important;
+}
+
+.rally-move.is-dragging > :first-child {
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.35));
+}
+
+/* つまみ。縮小表示でも指で押せる大きさを保つ。 */
+.rally-move__handle {
+  --handle: calc(30px / var(--preview-scale, 1));
+  position: absolute;
+  top: calc(var(--handle) / -2);
+  left: calc(var(--handle) / -3);
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--handle);
+  height: var(--handle);
+  padding: 0;
+  border: calc(2px / var(--preview-scale, 1)) solid #fff;
+  border-radius: 50%;
+  background: #ffe08a;
+  color: #1d2a22;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+  touch-action: none;
+}
+
+.rally-move__handle:active {
+  cursor: grabbing;
+}
+
+.rally-move__handle svg {
+  width: 55%;
+  height: 55%;
+}
+
+.rally-start.is-editing .rally-start__character,
+.rally-start.is-editing .rally-start__info {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.rally-start.is-editing .rally-move.is-active > .rally-start__character {
+  outline: 2px solid #ffe08a;
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+
+.rally-start.is-editing .rally-move.is-active > .rally-start__info {
+  box-shadow:
+    0 0 0 3px #ffe08a,
+    0 10px 26px rgba(0, 0, 0, 0.2);
+}
+
+.rally-start.is-dragging {
+  user-select: none;
+}
+
+/* 真ん中（元の並び）に吸いついたときのガイド線 */
+.rally-start.is-guide::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 7;
+  width: 0;
+  border-left: calc(2px / var(--preview-scale, 1)) dashed #ff5aa8;
+  pointer-events: none;
+}
+
+/* 選んでいるものは、重なっても手前に出す。 */
+.rally-move.is-active {
+  z-index: 6 !important;
+}
+
+/* ───────── 足した画像・イラスト ───────── */
+.rally-start__img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.3));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.rally-start__img--s {
+  width: 22cqw;
+}
+
+.rally-start__img--m {
+  width: 38cqw;
+}
+
+.rally-start__img--l {
+  width: 62cqw;
+}
+
+.rally-start__img.is-round {
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #fff;
+}
+
+.rally-start.is-editing .rally-start__img {
+  cursor: grab;
+  touch-action: none;
+}
+
+.rally-start.is-editing .rally-move.is-active > .rally-start__img {
+  outline: 2px solid #ffe08a;
+  outline-offset: 4px;
+}
+
+/* 絵やマスコットは、つまみを絵のすぐそばに出す。 */
+.rally-move:has(> .rally-start__img),
+.rally-move:has(> .rally-start__character) {
+  width: fit-content;
+  align-self: center;
+}
+
+.rally-start--align-left .rally-move:has(> .rally-start__img),
+.rally-start--align-left .rally-move:has(> .rally-start__character) {
+  align-self: flex-start;
+}
+
+/* 画像の入れ物。幅（画面の %）はここで決め、絵はいっぱいに広げる。 */
+.rally-start__imgbox {
+  position: relative;
+  display: block;
+  max-width: none;
+}
+
+.rally-start__imgbox > .rally-start__img {
+  width: 100%;
+}
+
+.rally-move:has(> .rally-start__imgbox) {
+  width: fit-content;
+  align-self: center;
+}
+
+.rally-start--align-left .rally-move:has(> .rally-start__imgbox) {
+  align-self: flex-start;
+}
+
+.rally-start.is-editing .rally-move.is-active .rally-start__img {
+  outline: 2px solid #ffe08a;
+  outline-offset: 4px;
+}
+
+/* 右下の角のつまみ。ドラッグで大きさを変える。 */
+.rally-start__resize {
+  --grip: calc(26px / var(--preview-scale, 1));
+  position: absolute;
+  right: calc(var(--grip) / -2);
+  bottom: calc(var(--grip) / -2);
+  z-index: 9;
+  width: var(--grip);
+  height: var(--grip);
+  padding: 0;
+  border: calc(2px / var(--preview-scale, 1)) solid #fff;
+  border-radius: 50%;
+  background:
+    linear-gradient(135deg, transparent 42%, #1d2a22 42%, #1d2a22 52%, transparent 52%),
+    linear-gradient(135deg, transparent 62%, #1d2a22 62%, #1d2a22 72%, transparent 72%),
+    #ffe08a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.rally-start.is-editing .rally-start__imgbox {
+  touch-action: none;
+}
+
+/* 選んでいるものの右上の ×。押すと画面から消す。 */
+.rally-move__delete {
+  --del: calc(28px / var(--preview-scale, 1));
+  position: absolute;
+  top: calc(var(--del) / -2);
+  right: calc(var(--del) / -3);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--del);
+  height: var(--del);
+  padding: 0;
+  border: calc(2px / var(--preview-scale, 1)) solid #fff;
+  border-radius: 50%;
+  background: #d9452b;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.rally-move__delete svg {
+  width: 58%;
+  height: 58%;
+  stroke-width: 3;
+}
+
+/* ───────── スタンプGET・特典の編集（主催者のプレビュー） ───────── */
+.rally-get .rally-edit,
+.rally-clear .rally-edit {
+  display: block;
+  width: 100%;
+  min-height: 0 !important;
+  margin: 0 auto;
+  padding: 0.15rem 0.4rem !important;
+  border: 0;
+  border-radius: 0.5rem;
+  outline: 2px dashed rgba(255, 255, 255, 0.5);
+  outline-offset: 3px;
+  background: transparent;
+  box-shadow: none !important;
+  font: inherit;
+  font-family: inherit !important;
+  color: inherit;
+  text-align: center;
+  resize: none;
+  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: text;
+}
+
+.rally-get .rally-edit:focus,
+.rally-clear .rally-edit:focus,
+.rally-get .rally-edit.is-selected,
+.rally-clear .rally-edit.is-selected {
+  outline: 2px solid #ffe08a !important;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.rally-get .rally-edit::placeholder,
+.rally-clear .rally-edit::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.rally-get textarea.rally-get__msg.rally-edit {
+  color: #fff !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+}
+
+/* 編集中は、画面の移動ボタンを押せないようにする。 */
+.rally-get.is-editing .rally-get__card .rally-cta,
+.rally-get.is-editing .rally-get__card .rally-ghost {
+  pointer-events: none;
+}
+
+.rally-get__seal.is-editable,
+.rally-clear__trophy.is-editable {
+  position: relative;
+  overflow: visible;
+  cursor: pointer;
+}
+
+.rally-get__seal.is-editable {
+  overflow: hidden;
+}
+
+.rally-get__seal.is-selected,
+.rally-clear__trophy.is-selected {
+  box-shadow:
+    0 0 0 4px #ffe08a,
+    0 14px 40px rgba(0, 0, 0, 0.45) !important;
+}
+
+.rally-edit-badge {
+  position: absolute;
+  left: 50%;
+  bottom: 10%;
+  padding: 0.15rem 0.6rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(29, 42, 34, 0.75);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.rally-clear__trophy.is-editable {
+  border: 0;
+  padding: 0;
+}
+
+.rally-clear__trophy.is-editable img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
+
+.rally-clear__trophy .rally-edit-badge {
+  bottom: -0.6rem;
+}
+
+/* リボンの中の入力 */
+.rally-ribbon--edit input.rally-edit {
+  width: 11em;
+  max-width: 100%;
+  outline-color: rgba(255, 255, 255, 0.55);
+  color: #fff;
+  font-size: inherit !important;
+  font-weight: 900 !important;
+  line-height: 1.2;
+}
+
+.rally-ribbon--edit.is-selected input.rally-edit {
+  outline: 2px solid #ffe08a !important;
+}
+
+.rally-clear textarea.rally-clear__msg.rally-edit {
+  margin-top: 0.6rem;
+  outline-color: #cfdcd3;
+  color: #3e4a42 !important;
+  font-size: 0.9rem !important;
+  line-height: 1.6;
+}
+
+.rally-clear textarea.rally-clear__msg.rally-edit::placeholder,
+.rally-clear__reward-edit input.rally-edit::placeholder {
+  color: #a3ada6;
+}
+
+.rally-clear__reward-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.9rem;
+  padding: 0.55rem 0.8rem;
+  border: 1.5px dashed var(--rally-red, #d9452b);
+  border-radius: 0.9rem;
+  background: #fff;
+  color: var(--rally-red, #d9452b);
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: text;
+}
+
+.rally-clear__reward-edit.is-selected {
+  border-style: solid;
+  box-shadow: 0 0 0 3px #ffe08a;
+}
+
+.rally-clear__reward-edit > span {
+  flex: none;
+}
+
+.rally-clear__reward-edit input.rally-edit {
+  flex: 1;
+  min-width: 0;
+  padding: 0.1rem 0.2rem !important;
+  outline: 0;
+  color: var(--rally-red, #d9452b);
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+  text-align: left;
+}
+
+.rally-clear__reward-edit input.rally-edit:focus {
+  outline: 0 !important;
+  background: none;
+}
+
+/* ───────── スタンプGET・クリアの配置（主催者が整えたもの） ───────── */
+.rally-clear.rally-layer {
+  position: relative;
+  overflow: hidden;
+}
+
+.rally-layer .rally-clear__hero {
+  z-index: 1;
+  overflow: visible;
+}
+
+.rally-layer__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* 背景の暗さ（写真が見える量） */
+.rally-layer--shade-none .rally-get__bg,
+.rally-layer--shade-none .rally-layer__bg {
+  opacity: 0.9;
+  filter: none;
+}
+
+.rally-layer--shade-strong .rally-get__bg,
+.rally-layer--shade-strong .rally-layer__bg {
+  opacity: 0.14;
+}
+
+/* 部品の入れ物：カードは横いっぱいのまま */
+.rally-get__inner > .rally-move:has(> .rally-get__card),
+.rally-clear > .rally-move:has(> .rally-clear__card) {
+  align-items: stretch;
+}
+
+.rally-clear > .rally-move:has(> .rally-clear__card) {
+  position: relative;
+  z-index: 2;
+}
+
+.rally-clear__trophy {
+  border: 0;
+  padding: 0;
+}
+
+/* メッセージの色 */
+.rally-get .rally-get__msg,
+.rally-get textarea.rally-get__msg.rally-edit {
+  color: var(--layer-text, #fff) !important;
+}
+
+/* 足したテキスト（スタンプGET・クリア） */
+.rally-layer .rally-start__extra {
+  margin: 0;
+  max-width: 100%;
+  color: #fff;
+  font-weight: 600;
+  line-height: 1.6;
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.rally-layer .rally-start__extra--s,
+.rally-layer textarea.rally-start__extra--s.rally-edit {
+  font-size: 0.85rem !important;
+}
+
+.rally-layer .rally-start__extra--m,
+.rally-layer textarea.rally-start__extra--m.rally-edit {
+  font-size: 1.05rem !important;
+}
+
+.rally-layer .rally-start__extra--l,
+.rally-layer textarea.rally-start__extra--l.rally-edit {
+  font-size: 1.5rem !important;
+  line-height: 1.35;
+}
+
+.rally-layer .rally-start__extra.is-bold,
+.rally-layer textarea.rally-start__extra.is-bold.rally-edit {
+  font-weight: 900 !important;
+}
+
+.rally-layer textarea.rally-start__extra.rally-edit {
+  padding: 0.1rem 0.3rem !important;
+  line-height: 1.5;
+}
+
+/* 編集中：選んでいる部品・背景の印 */
+.rally-layer.is-editing .is-editable {
+  cursor: pointer;
+}
+
+.rally-layer.is-editing .rally-move.is-active > .rally-ribbon,
+.rally-layer.is-editing .rally-move.is-active > .rally-get__name {
+  filter: drop-shadow(0 0 2px #ffe08a) drop-shadow(0 0 2px #ffe08a) drop-shadow(0 0 1px #ffe08a);
+}
+
+.rally-layer.is-editing .rally-move.is-active > .rally-get__card,
+.rally-layer.is-editing .rally-move.is-active > .rally-clear__card {
+  box-shadow:
+    0 0 0 3px #ffe08a,
+    0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.rally-layer.is-editing .rally-move.is-active > .rally-start__img,
+.rally-layer.is-editing .rally-move.is-active .rally-start__img {
+  outline: 2px solid #ffe08a;
+  outline-offset: 4px;
+}
+
+.rally-layer.is-bg-selected::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  z-index: 20;
+  border: 3px solid #ffe08a;
+  border-radius: 1.6rem;
+  pointer-events: none;
+}
+
+.rally-layer.is-guide::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 19;
+  width: 0;
+  border-left: calc(2px / var(--preview-scale, 1)) dashed #ff5aa8;
+  pointer-events: none;
+}
+
+.rally-layer.is-editing.is-dragging {
+  user-select: none;
+}
+
+.rally-layer.is-editing .rally-get__card .rally-cta,
+.rally-layer.is-editing .rally-get__card .rally-ghost {
+  pointer-events: none;
+}
+
+/* クリア画面のカードの入れ物が、画面の下まで伸びないように。 */
+.rally-clear > .rally-move:has(> .rally-clear__card) {
+  flex: none;
+}
+
+/* 編集中は、部品を押したままドラッグで動かせる。 */
+.rally-start.is-editing .rally-move,
+.rally-layer.is-editing .rally-move {
+  touch-action: none;
+  cursor: grab;
+}
+
+.rally-start.is-editing .rally-move textarea,
+.rally-start.is-editing .rally-move input,
+.rally-layer.is-editing .rally-move textarea,
+.rally-layer.is-editing .rally-move input {
+  cursor: text;
+}
+
+.rally-start.is-dragging,
+.rally-layer.is-dragging,
+.rally-start.is-dragging *,
+.rally-layer.is-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+/* ───────── 足した図形・ボタン ───────── */
+.rally-shape {
+  position: relative;
+  display: block;
+}
+
+.rally-shape__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25));
+}
+
+.rally-shape__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-decoration: none;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.85),
+    0 8px 18px rgba(0, 0, 0, 0.25);
+  user-select: none;
+}
+
+.rally-shape__input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 2px dashed rgba(255, 255, 255, 0.6);
+  outline-offset: 3px;
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  text-align: center;
+}
+
+.rally-start.is-editing .rally-shape,
+.rally-layer.is-editing .rally-shape {
+  cursor: grab;
+  touch-action: none;
+}
+
+.rally-start.is-editing .rally-move.is-active > .rally-shape,
+.rally-layer.is-editing .rally-move.is-active > .rally-shape {
+  outline: 2px solid #ffe08a;
+  outline-offset: 5px;
+  border-radius: 6px;
+}
+
+.rally-move:has(> .rally-shape) {
+  width: fit-content;
+  align-self: center;
+}
+
+.rally-start--align-left .rally-move:has(> .rally-shape) {
+  align-self: flex-start;
+}
+
+/* ───────── カードの色（主催者が選んだとき） ───────── */
+.rally-card-colors[style*="--card-bg"] {
+  background: var(--card-bg) !important;
+}
+
+.rally-card-colors[style*="--card-number"] .rally-get__count strong {
+  color: var(--card-number);
+}
+
+.rally-card-colors[style*="--card-text"] .rally-get__count,
+.rally-card-colors[style*="--card-text"] .rally-clear__lead,
+.rally-card-colors[style*="--card-text"] .rally-clear__title,
+.rally-card-colors[style*="--card-text"] .rally-clear__msg,
+.rally-card-colors[style*="--card-text"] .play-clear p {
+  color: var(--card-text) !important;
+}
+
+.rally-card-colors[style*="--card-text"] .rally-meter__left {
+  background: color-mix(in srgb, var(--card-text) 12%, transparent);
+  color: var(--card-text);
+}
+
+.rally-card-colors[style*="--card-accent"] .rally-meter__bar span {
+  background: var(--card-accent);
+}
+
+.rally-card-colors[style*="--card-accent"] .rally-cta {
+  background: var(--card-accent);
+}
+
+.rally-card-colors[style*="--card-accent"] .rally-ghost {
+  border-color: var(--card-accent);
+  color: var(--card-accent);
+}
+
+.rally-card-colors[style*="--card-accent"] .rally-clear__reward-edit,
+.rally-card-colors[style*="--card-accent"] .play-clear__reward {
+  border-color: var(--card-accent);
+  color: var(--card-accent) !important;
+}
+
+.rally-card-colors[style*="--card-accent"] .rally-clear__reward-edit input.rally-edit {
+  color: var(--card-accent);
+}
+
+/* ───────── 背景の色のテーマ ───────── */
+.rally-bg--brown {
+  background: radial-gradient(90% 60% at 50% 25%, #8a3b1d 0%, #3a170b 60%, #24100a 100%) !important;
+}
+
+.rally-bg--green {
+  background: radial-gradient(90% 60% at 50% 25%, #2f8f5c 0%, #17603a 55%, #0f3d26 100%) !important;
+}
+
+.rally-bg--navy {
+  background: radial-gradient(90% 60% at 50% 25%, #2d4f9e 0%, #172a5e 55%, #0d1838 100%) !important;
+}
+
+.rally-bg--purple {
+  background: radial-gradient(90% 60% at 50% 25%, #7a4bc9 0%, #3f2275 55%, #241046 100%) !important;
+}
+
+.rally-bg--pink {
+  background: radial-gradient(90% 60% at 50% 25%, #f28bb2 0%, #c24b7c 55%, #8d2d55 100%) !important;
+}
+
+.rally-bg--orange {
+  background: radial-gradient(90% 60% at 50% 25%, #f6a04d 0%, #c8601f 55%, #8a3a10 100%) !important;
+}
+
+.rally-bg--sky {
+  background: radial-gradient(90% 60% at 50% 25%, #8fd3ff 0%, #4fa3ea 55%, #2a77c9 100%) !important;
+}
+
+.rally-bg--cream {
+  background: radial-gradient(90% 60% at 50% 25%, #fffaf0 0%, #f6e8c8 55%, #efd9ae 100%) !important;
+}
+
+.rally-bg--black {
+  background: radial-gradient(90% 60% at 50% 25%, #3a3a3a 0%, #191919 55%, #0b0b0b 100%) !important;
+}
+
+/* 明るいテーマでは、光の線と文字を少し濃くして見やすくする。 */
+.rally-bg--cream .rally-burst {
+  background: repeating-conic-gradient(from 0deg, rgba(214, 160, 60, 0.18) 0deg 8deg, transparent 8deg 22deg);
+}
+
+.rally-bg--cream .rally-get__msg,
+.rally-bg--cream .rally-start__extra {
+  text-shadow: none;
+}
+
+/* 光の線を出さない */
+.rally-layer--no-rays .rally-burst {
+  display: none;
 }

@@ -5,7 +5,7 @@ import { RotateCcw, Stamp } from "lucide-react";
 import { RallyApp } from "@/components/play/rally/RallyApp";
 import { RallyStartScreen } from "@/components/play/rally/RallyStartScreen";
 import type { PlayStart, RallyStampEvent } from "@/components/play/rally/types";
-import type { PublicPlayMoment } from "@/lib/organizer/game-experience";
+import { createScreenLayout, type PublicPlayMoment } from "@/lib/organizer/game-experience";
 import type { PlayProgress, PlaySpotProgress } from "@/lib/organizer/play-types";
 
 const START: PlayStart = {
@@ -41,6 +41,8 @@ const MOMENT: PublicPlayMoment = {
   rewardLabel: "ドリンク1杯無料",
   rewardKind: "coupon",
   showCharacter: false,
+  stampLayout: createScreenLayout(),
+  clearLayout: createScreenLayout(),
   checkin: "qr",
   lat: null,
   lng: null,

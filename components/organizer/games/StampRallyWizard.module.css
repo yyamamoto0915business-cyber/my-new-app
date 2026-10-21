@@ -1029,3 +1029,1223 @@
   border-color: #1f7a4a;
   background: #eef7f1;
 }
+
+/* ───────── テンプレート選択 ───────── */
+.tplTabs {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.9rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tplTab {
+  flex: none;
+  min-height: 2.2rem;
+  padding: 0 1rem;
+  border: 1px solid #dfe7e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #3c4a40;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tplTab.is-on {
+  border-color: #1f7a4a;
+  background: #1f7a4a;
+  color: #fff;
+}
+
+.tplGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.tplCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  padding: 0.75rem;
+  border: 1.5px solid #e2ebe5;
+  border-radius: 1rem;
+  background: #fff;
+  color: #1d2a22;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tplCard:hover {
+  border-color: #b9d6c4;
+  box-shadow: 0 6px 18px rgba(23, 40, 30, 0.08);
+}
+
+.tplCard.is-on {
+  border-color: #1f7a4a;
+  box-shadow: 0 0 0 3px rgba(31, 122, 74, 0.15);
+}
+
+.tplCard b {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.tplCard small {
+  color: #66726a;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.tplArt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 6.5rem;
+  margin-bottom: 0.2rem;
+  border-radius: 0.8rem;
+  background: linear-gradient(180deg, #eef6e6, #e2efd6);
+  color: #9aa79e;
+}
+
+.tplArt img {
+  max-width: 82%;
+  max-height: 92%;
+  object-fit: contain;
+}
+
+.tplBlank .tplArt {
+  border: 2px dashed #cfdcd3;
+  background: #f8faf8;
+}
+
+.tplCheck {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #1f7a4a;
+  color: #fff;
+}
+
+.tplSpots {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-top: 0.2rem;
+}
+
+.tplSpots img {
+  width: 1.15rem;
+  height: auto;
+}
+
+.tplSpots em {
+  margin-left: 0.3rem;
+  color: #66726a;
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* ───────── スポットマップ ───────── */
+.spotMapCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.4rem 0 1rem;
+}
+
+.spotMapHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.6rem;
+}
+
+.spotMapHead b {
+  font-size: 0.92rem;
+}
+
+.spotMapHead small {
+  color: #66726a;
+  font-size: 0.75rem;
+}
+
+.spotMap {
+  position: relative;
+  height: 22rem;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid #e2ebe5;
+}
+
+.spotMap.is-placing {
+  outline: 3px solid rgba(31, 122, 74, 0.35);
+  outline-offset: -3px;
+}
+
+.spotMap.is-placing :global(.maplibregl-canvas) {
+  cursor: crosshair;
+}
+
+.spotMapBanner {
+  position: absolute;
+  left: 50%;
+  bottom: 0.75rem;
+  z-index: 3;
+  max-width: calc(100% - 1.5rem);
+  margin: 0;
+  padding: 0.45rem 0.9rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(31, 122, 74, 0.95);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.spotMapActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.spotMapActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.2rem;
+  padding: 0 0.85rem;
+  border: 1px solid #dfe7e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #1f7a4a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.spotMapActions button[aria-pressed="true"] {
+  border-color: #1f7a4a;
+  background: #eef7f1;
+}
+
+.spotMapActions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.spotMapActions small {
+  color: #d9452b;
+  font-size: 0.75rem;
+}
+
+/* スポット詳細の区切り */
+.spotSection {
+  grid-column: 1 / -1;
+  margin: 0.9rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid #e8eee9;
+  color: #1f7a4a;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.spotSection:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.spotSectionNote {
+  grid-column: 1 / -1;
+  margin-top: -0.3rem;
+}
+
+/* ───────── スポット設定（一覧・地図・タブ） ───────── */
+.spotStrip {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.8rem;
+  padding: 0.15rem 0.1rem 0.4rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+
+.spotChip,
+.spotChipAdd {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3.6rem;
+  padding: 0.45rem 0.8rem 0.45rem 0.5rem;
+  border: 1.5px solid #e2ebe5;
+  border-radius: 0.9rem;
+  background: #fff;
+  color: #1d2a22;
+  text-align: left;
+  scroll-snap-align: start;
+  cursor: pointer;
+}
+
+.spotChip.is-on {
+  border-color: #1f7a4a;
+  background: #eef7f1;
+  box-shadow: 0 0 0 3px rgba(31, 122, 74, 0.12);
+}
+
+.spotChipNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #1f7a4a;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.spotChipMark {
+  width: 1.4rem;
+  height: auto;
+}
+
+.spotChipText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 9.5rem;
+}
+
+.spotChipText b {
+  overflow: hidden;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spotChipTodo {
+  color: #d9452b;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.spotChipDone {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: #1f7a4a;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.spotChipAdd {
+  border-style: dashed;
+  border-color: #b9d6c4;
+  color: #1f7a4a;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.spotChipAdd:disabled {
+  opacity: 0.5;
+}
+
+.spotEmpty {
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: #f6faf7;
+  color: #3c4a40;
+}
+
+.spotEmpty b {
+  font-size: 0.92rem;
+}
+
+.spotEmpty ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.82rem;
+  line-height: 1.8;
+}
+
+.placeSearch {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.25rem 0.2rem 0.8rem;
+  border: 1px solid #dfe7e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #66726a;
+}
+
+.placeSearch input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.4rem;
+  border: 0;
+  background: none;
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.placeSearch button {
+  min-height: 2.1rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #1f7a4a;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.placeSearch button:disabled {
+  opacity: 0.5;
+}
+
+.placeResults {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0.3rem;
+  border: 1px solid #e2ebe5;
+  border-radius: 0.9rem;
+  background: #fff;
+  list-style: none;
+}
+
+.placeResults button {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 0;
+  border-radius: 0.6rem;
+  background: none;
+  color: #1d2a22;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.placeResults button:hover {
+  background: #f1f6f2;
+}
+
+.placeError {
+  margin: 0;
+  color: #d9452b;
+  font-size: 0.78rem;
+}
+
+.spotMapBannerQuiet {
+  background: rgba(255, 255, 255, 0.92);
+  color: #3c4a40;
+}
+
+.spotEditor {
+  margin-top: 0.4rem;
+  padding: 0.9rem;
+  border: 1.5px solid #dbe8df;
+  border-radius: 1.1rem;
+  background: #fff;
+  scroll-margin-top: 1rem;
+}
+
+.spotEditorHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spotEditorHead b {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.95rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spotTabs {
+  display: flex;
+  gap: 0.3rem;
+  margin: 0.75rem 0 0.9rem;
+  padding: 0.25rem;
+  overflow-x: auto;
+  border-radius: 0.9rem;
+  background: #f1f5f2;
+}
+
+.spotTab {
+  position: relative;
+  flex: 1 0 auto;
+  min-height: 2.3rem;
+  padding: 0 0.8rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: none;
+  color: #66726a;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.spotTab.is-on {
+  background: #fff;
+  color: #1f7a4a;
+  box-shadow: 0 2px 8px rgba(23, 40, 30, 0.1);
+}
+
+.spotTabDot {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #d9452b;
+}
+
+.spotEditorFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #e8eee9;
+}
+
+.nextSpot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.6rem;
+  padding: 0 1.1rem;
+  border: 1.5px solid #1f7a4a;
+  border-radius: 999px;
+  background: #fff;
+  color: #1f7a4a;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nextSpot:disabled {
+  opacity: 0.5;
+}
+
+/* 横に流れるスポット一覧が、カードの幅を押し広げないように。 */
+.main,
+.card {
+  min-width: 0;
+}
+
+.spotStrip {
+  max-width: 100%;
+}
+
+@media (max-width: 560px) {
+  .spotTabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .spotTab {
+    flex: none;
+  }
+
+  .spotMapActions button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+/* 選んだスポットの名前と種類（地図のすぐ上） */
+.quickSpot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 0.8rem;
+  padding: 0.75rem;
+  border-radius: 1rem;
+  background: #f3f8f4;
+}
+
+.quickName {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0 0.4rem 0 0.6rem;
+  border: 1.5px solid #cfe2d6;
+  border-radius: 0.85rem;
+  background: #fff;
+}
+
+.quickName:focus-within {
+  border-color: #1f7a4a;
+  box-shadow: 0 0 0 3px rgba(31, 122, 74, 0.15);
+}
+
+.quickName input {
+  flex: 1;
+  min-width: 0;
+  min-height: 3rem;
+  border: 0;
+  background: none;
+  color: #1d2a22;
+  font-size: 1rem;
+  font-weight: 700;
+  outline: none;
+}
+
+.quickIcons {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.quickIcon {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  width: 3.9rem;
+  padding: 0.35rem 0.2rem;
+  border: 1.5px solid transparent;
+  border-radius: 0.75rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.quickIcon img {
+  width: 1.6rem;
+  height: auto;
+}
+
+.quickIcon small {
+  color: #3c4a40;
+  font-size: 0.64rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.quickIcon.is-on {
+  border-color: #1f7a4a;
+  background: #eef7f1;
+}
+
+.quickMore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.95rem;
+  color: #66726a;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+/* ───────── スポットの縦リスト ───────── */
+.spotRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0.8rem;
+  padding: 0;
+  list-style: none;
+}
+
+.spotRow {
+  padding: 0.7rem;
+  border: 1.5px solid #e2ebe5;
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.spotRow.is-open {
+  border-color: #1f7a4a;
+  box-shadow: 0 0 0 3px rgba(31, 122, 74, 0.1);
+}
+
+.spotRowMain {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spotRowMark {
+  flex: none;
+  width: 1.5rem;
+  height: auto;
+}
+
+.spotRowName {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.8rem;
+  padding: 0 0.75rem;
+  border: 1.5px solid #dfe7e1;
+  border-radius: 0.75rem;
+  background: #fbfcfb;
+  color: #1d2a22;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.spotRowName:focus {
+  border-color: #1f7a4a;
+  background: #fff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(31, 122, 74, 0.15);
+}
+
+.spotRowActions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+  padding-left: 2rem;
+}
+
+.placeBtn,
+.detailBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.6rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.placeBtn {
+  border: 1.5px solid #cfe2d6;
+  background: #eef7f1;
+  color: #1f7a4a;
+}
+
+.placeBtn.is-todo {
+  border-color: #1f7a4a;
+  background: #1f7a4a;
+  color: #fff;
+}
+
+.detailBtn {
+  border: 1.5px solid #dfe7e1;
+  background: #fff;
+  color: #3c4a40;
+}
+
+.detailBtn svg {
+  transition: transform 0.15s ease;
+}
+
+.spotRowDetail {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid #e8eee9;
+}
+
+.spotRowTools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.spotRowTools button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.1rem;
+  padding: 0 0.75rem;
+  border: 1px solid #dfe7e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #3c4a40;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.spotRowTools button:disabled {
+  opacity: 0.4;
+}
+
+.spotRowTools .dangerText {
+  margin-left: auto;
+  color: #d9452b;
+}
+
+.addSpotBig {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 3.2rem;
+  border: 2px dashed #9cc7ad;
+  border-radius: 1rem;
+  background: #f6faf7;
+  color: #1f7a4a;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.addSpotBig:disabled {
+  opacity: 0.5;
+}
+
+.spotMapSmall {
+  height: 16rem;
+}
+
+/* ───────── 場所選び（全画面） ───────── */
+.picker {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.pickerHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: calc(0.6rem + env(safe-area-inset-top, 0px)) 0.8rem 0.4rem;
+}
+
+.pickerHead b {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickerClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: #f1f4f2;
+  color: #3c4a40;
+  cursor: pointer;
+}
+
+.pickerSearch,
+.pickerResults,
+.pickerError {
+  margin: 0 0.8rem 0.5rem;
+}
+
+.pickerMap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  isolation: isolate;
+}
+
+.pickerFallback {
+  padding: 0.8rem;
+}
+
+.pickerPin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+
+.pickerPin img {
+  width: 44px;
+  height: auto;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.pickerPin span {
+  width: 10px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.pickerHint {
+  position: absolute;
+  left: 50%;
+  top: 0.7rem;
+  z-index: 3;
+  margin: 0;
+  padding: 0.4rem 0.9rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(31, 122, 74, 0.94);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.pickerLocate {
+  position: absolute;
+  left: 0.7rem;
+  bottom: 0.8rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.6rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #1f7a4a;
+  font-size: 0.85rem;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(23, 40, 30, 0.2);
+  cursor: pointer;
+}
+
+.pickerFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.7rem 0.8rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid #e8eee9;
+}
+
+.pickerFoot .primary {
+  flex: 1;
+  max-width: 22rem;
+  margin-left: auto;
+}
+
+/* 詳細の中の入力欄が、行の幅からはみ出さないように。 */
+.spotRow,
+.spotRowDetail {
+  min-width: 0;
+}
+
+.spotRowDetail :global(.org-store-intro__grid) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.spotRowDetail :global(.org-store-intro__field) {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.spotRowDetail input,
+.spotRowDetail select,
+.spotRowDetail textarea {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.spotRowDetail .switches {
+  grid-column: 1 / -1;
+}
+
+/* ───────── ステップ表示 ───────── */
+.stepper {
+  position: relative;
+  overflow: hidden;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid #dcebe1;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(214, 238, 222, 0.7) 0%, transparent 55%),
+    linear-gradient(180deg, #ffffff, #f8fbf8);
+  box-shadow: 0 8px 24px rgba(26, 58, 38, 0.06);
+}
+
+.stepperHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.7rem;
+  margin-bottom: 0.85rem;
+}
+
+.stepperCount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #1f7a4a;
+  color: #e9f6ee;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.stepperCount b {
+  color: #fff;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+}
+
+.stepperCount i {
+  font-style: normal;
+  opacity: 0.75;
+}
+
+.stepperTitle {
+  color: #163d28;
+  font-family: var(--font-serif-display, serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.stepperNext {
+  margin-left: auto;
+  color: #7b877f;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.stepperTrack {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepperItem {
+  position: relative;
+}
+
+/* 丸どうしをつなぐ線。済んだところは緑で満たす。 */
+.stepperItem + .stepperItem::before {
+  content: "";
+  position: absolute;
+  top: 1.15rem;
+  right: calc(50% + 1.3rem);
+  left: calc(-50% + 1.3rem);
+  height: 3px;
+  border-radius: 999px;
+  background: #e3ece6;
+}
+
+.stepperItem.is-done::before,
+.stepperItem.is-current::before {
+  background: linear-gradient(90deg, #2f9a5f, #1f7a4a);
+}
+
+.stepperItem button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.stepperDot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 50%;
+  border: 2px solid #e3ece6;
+  background: #fff;
+  color: #a3b0a7;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.stepperItem button:hover .stepperDot {
+  transform: translateY(-1px);
+}
+
+.is-done .stepperDot {
+  border-color: #1f7a4a;
+  background: #1f7a4a;
+  color: #fff;
+}
+
+.is-current .stepperDot {
+  border-color: #1f7a4a;
+  background: #fff;
+  color: #1f7a4a;
+  box-shadow:
+    0 0 0 5px rgba(31, 122, 74, 0.14),
+    0 6px 14px rgba(31, 122, 74, 0.25);
+  transform: scale(1.08);
+}
+
+.stepperLabel {
+  max-width: 100%;
+  overflow: hidden;
+  color: #8a968e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.is-done .stepperLabel {
+  color: #3d6b51;
+}
+
+.is-current .stepperLabel {
+  color: #163d28;
+  font-weight: 800;
+}
+
+@media (max-width: 719px) {
+  .stepper {
+    padding: 0.8rem 0.85rem 0.85rem;
+  }
+
+  .stepperNext {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
+  /* スマホは名前を出さず、丸と線だけにする（いまの名前は上に出る）。 */
+  .stepperLabel {
+    display: none;
+  }
+
+  .stepperDot {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .stepperItem + .stepperItem::before {
+    top: 1rem;
+    right: calc(50% + 1.15rem);
+    left: calc(-50% + 1.15rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stepperDot {
+    transition: none;
+  }
+}
+
+/* スタート画面の背景（画像・動画） */
+.coverBox {
+  padding: 0.9rem;
+  border: 1.5px dashed #b9d6c4;
+  border-radius: 1rem;
+  background: #f6faf7;
+}
+
+.coverBox > span {
+  color: #1f7a4a;
+  font-weight: 800;
+}
+
+.coverBox > .note {
+  margin: 0.2rem 0 0.6rem;
+}
+
+.coverFields {
+  display: grid;
+  gap: 0.8rem;
+}
+
+@media (min-width: 720px) {
+  .coverFields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 参加者画面プレビュー（PCは右に固定、スマホはボタンから開く） */
+.livePreview {
+  display: none;
+}
+
+.livePreviewTitle {
+  margin: 0 0 0.5rem;
+  color: #163d28;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+@media (min-width: 1080px) {
+  .livePreview {
+    position: sticky;
+    top: calc(var(--mg-pc-top-nav-h, 52px) + 0.75rem);
+    display: block;
+    align-self: start;
+  }
+
+  .previewFab {
+    display: none !important;
+  }
+}
+
+/* PC：下の操作ボタンに隠れないよう、プレビューの高さを抑える。 */
+@media (min-width: 1080px) {
+  .livePreview :global(.wizard-preview__stage) {
+    height: calc(100dvh - 19rem);
+    min-height: 360px;
+  }
+}

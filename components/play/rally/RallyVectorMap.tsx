@@ -89,6 +89,9 @@ export function RallyVectorMap({
   label,
   route = false,
   recenter = 0,
+  focus = null,
+  onMapClick,
+  onCenterChange,
   onUnavailable,
 }: {
   spots: PlaySpotProgress[];
@@ -99,6 +102,12 @@ export function RallyVectorMap({
   route?: boolean;
   /** 増えるたびに現在地へ移動する（位置ボタン）。 */
   recenter?: number;
+  /** key が変わるたびに、その場所へ移動する（主催者の場所検索）。 */
+  focus?: { lat: number; lng: number; zoom?: number; key: number } | null;
+  /** 地図を動かし終えたときの中心（主催者の場所選び）。 */
+  onCenterChange?: (center: { lat: number; lng: number }) => void;
+  /** ピン以外の場所をタップしたとき（主催者がスポットの場所を置く）。 */
+  onMapClick?: (place: { lat: number; lng: number }) => void;
   onUnavailable: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -109,6 +118,10 @@ export function RallyVectorMap({
   const flownRef = useRef(0);
   const onSelectRef = useRef(onSelect);
   const onUnavailableRef = useRef(onUnavailable);
+  const onMapClickRef = useRef(onMapClick);
+  onMapClickRef.current = onMapClick;
+  const onCenterChangeRef = useRef(onCenterChange);
+  onCenterChangeRef.current = onCenterChange;
   const [ready, setReady] = useState(false);
   const [pinEls, setPinEls] = useState<Record<string, HTMLElement>>({});
   onSelectRef.current = onSelect;
@@ -141,6 +154,19 @@ export function RallyVectorMap({
         return;
       }
       map.addControl(new maplibre.NavigationControl({ showCompass: false }), "top-right");
+      map.on("moveend", () => {
+        const center = map.getCenter();
+        onCenterChangeRef.current?.({
+          lat: Math.round(center.lat * 1e6) / 1e6,
+          lng: Math.round(center.lng * 1e6) / 1e6,
+        });
+      });
+      map.on("click", (event) => {
+        onMapClickRef.current?.({
+          lat: Math.round(event.lngLat.lat * 1e6) / 1e6,
+          lng: Math.round(event.lngLat.lng * 1e6) / 1e6,
+        });
+      });
       map.on("load", () => {
         if (cancelled) return;
         void addRallyTrees(map, "water-name");
@@ -168,6 +194,11 @@ export function RallyVectorMap({
           paint: { "line-color": "#2f7cf6", "line-width": 5, "line-dasharray": [0.1, 1.8] },
         });
         setReady(true);
+        const center = map.getCenter();
+        onCenterChangeRef.current?.({
+          lat: Math.round(center.lat * 1e6) / 1e6,
+          lng: Math.round(center.lng * 1e6) / 1e6,
+        });
       });
       mapRef.current = map;
     })().catch(() => {
@@ -288,6 +319,16 @@ export function RallyVectorMap({
       cancelled = true;
     };
   }, [here, selectedId, spots, ready]);
+
+  const focusedRef = useRef(0);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !focus || focusedRef.current === focus.key) return;
+    focusedRef.current = focus.key;
+    // 場所を指定して移動したら、あとから来たスポットで勝手に画面を合わせ直さない。
+    fittedRef.current = true;
+    map.flyTo({ center: [focus.lng, focus.lat], zoom: focus.zoom ?? 16.5, duration: 900 });
+  }, [focus, ready]);
 
   // 位置ボタンのあと、現在地が分かった時点で一度だけ移動する。
   useEffect(() => {

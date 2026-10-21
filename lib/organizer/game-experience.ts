@@ -23,6 +23,296 @@ export const GAME_HOWTO_ICONS = ["pin", "qr", "stamp", "gift", "flag"] as const;
 export const GAME_STAMP_ANIMATIONS = ["pop", "sparkle", "confetti", "bounce", "none"] as const;
 export const GAME_STAMP_SOUNDS = ["none", "pop", "chime"] as const;
 export const GAME_SCREEN_IDS = ["start", "spot", "stamp", "clear"] as const;
+
+/** スタート画面の見た目。位置や色は候補から選ぶので、どの機種でも崩れない。 */
+export const START_LOOK_POSITIONS = ["top", "middle", "bottom"] as const;
+export const START_LOOK_ALIGNS = ["left", "center"] as const;
+export const START_LOOK_SIZES = ["s", "m", "l"] as const;
+export const START_LOOK_TEXT_COLORS = ["#ffffff", "#fff4d6", "#1d2a22"] as const;
+export const START_LOOK_BUTTON_COLORS = ["#1f7a4a", "#d9452b", "#f08a24", "#2f7cf6", "#8b5cf6", "#1d2a22"] as const;
+export const START_LOOK_SHADES = ["none", "light", "strong"] as const;
+export type GameStartLook = {
+  position: (typeof START_LOOK_POSITIONS)[number];
+  align: (typeof START_LOOK_ALIGNS)[number];
+  size: (typeof START_LOOK_SIZES)[number];
+  textColor: (typeof START_LOOK_TEXT_COLORS)[number];
+  buttonColor: (typeof START_LOOK_BUTTON_COLORS)[number];
+  shade: (typeof START_LOOK_SHADES)[number];
+  /**
+   * ドラッグで動かしたぶんのずれ。画面の幅・高さに対する割合（%）で持ち、機種が違っても同じ見え方に近づける。
+   * キーは mascot / catch / title / desc / info / button / extra:<id>。
+   */
+  offsets?: Record<string, StartOffset>;
+  /** × で消した、もとからある部品（catch / desc / info）。 */
+  hidden?: string[];
+  /** 背景の色のテーマ（背景の画像がないとき）。 */
+  bgTheme?: GameBgTheme;
+};
+export type StartOffset = { x: number; y: number };
+export const START_OFFSET_KEY = /^(mascot|catch|title|desc|info|button|(extra|img|shape):[A-Za-z0-9_-]{1,40})$/;
+
+/** 主催者が足せる図形とボタン。 */
+export const START_SHAPE_MAX = 8;
+export const START_SHAPE_KINDS = ["rect", "rounded", "circle", "triangle", "star", "heart", "arrow", "button"] as const;
+export type GameShapeKind = (typeof START_SHAPE_KINDS)[number];
+export const START_SHAPE_LABEL: Record<GameShapeKind, string> = {
+  rect: "四角",
+  rounded: "角丸",
+  circle: "丸",
+  triangle: "三角",
+  star: "星",
+  heart: "ハート",
+  arrow: "矢印",
+  button: "ボタン",
+};
+export const START_SHAPE_COLORS = [
+  "#ffffff",
+  "#fff4d6",
+  "#1d2a22",
+  "#1f7a4a",
+  "#d9452b",
+  "#f08a24",
+  "#f2b233",
+  "#2f7cf6",
+  "#8b5cf6",
+  "#ec5f8c",
+] as const;
+export type GameStartShape = {
+  id: string;
+  kind: GameShapeKind;
+  color: (typeof START_SHAPE_COLORS)[number];
+  /** 幅（画面の幅に対する %）。 */
+  width: number;
+  /** 透明度（%）。 */
+  opacity: number;
+  /** ボタンの文字。 */
+  label: string;
+  /** ボタンを押したときに開くページ（https のみ）。 */
+  href: string;
+};
+export const START_SHAPE_DEFAULT_WIDTH: Record<GameShapeKind, number> = {
+  rect: 50,
+  rounded: 50,
+  circle: 30,
+  triangle: 30,
+  star: 30,
+  heart: 30,
+  arrow: 30,
+  button: 60,
+};
+
+function safeLinkUrl(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const raw = value.trim().slice(0, 500);
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+export function sanitizeStartShapes(raw: unknown): GameStartShape[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, START_SHAPE_MAX).flatMap((item, index) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    const kind = oneOf(row.kind, START_SHAPE_KINDS, "rect");
+    const id = typeof row.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(row.id) ? row.id : `s${index + 1}`;
+    const width =
+      typeof row.width === "number" && Number.isFinite(row.width)
+        ? Math.round(Math.min(100, Math.max(5, row.width)) * 10) / 10
+        : START_SHAPE_DEFAULT_WIDTH[kind];
+    const opacity =
+      typeof row.opacity === "number" && Number.isFinite(row.opacity)
+        ? Math.round(Math.min(100, Math.max(10, row.opacity)))
+        : 100;
+    return [
+      {
+        id,
+        kind,
+        color: oneOf(row.color, START_SHAPE_COLORS, "#ffffff"),
+        width,
+        opacity,
+        label: text(row.label, 30),
+        href: safeLinkUrl(row.href),
+      },
+    ];
+  });
+}
+
+/** スタート画面に足せる画像・イラスト。アップロードした写真か、アプリに入っているイラスト。 */
+export const START_IMAGE_MAX = 6;
+export const START_IMAGE_SIZES = ["s", "m", "l"] as const;
+export type GameStartImage = {
+  id: string;
+  url: string;
+  size: (typeof START_IMAGE_SIZES)[number];
+  /** 丸く切り抜く（写真向け）。 */
+  round: boolean;
+  /** 指やつまみで大きさを変えたときの幅（画面の幅に対する %）。あれば size より優先。 */
+  width?: number;
+};
+export const START_IMAGE_WIDTH: Record<GameStartImage["size"], number> = { s: 22, m: 38, l: 62 };
+export const START_IMAGE_MIN_WIDTH = 8;
+export const START_IMAGE_MAX_WIDTH = 100;
+
+/**
+ * スタンプGET・クリア画面の、主催者が整えた配置。
+ * offsets は決まった部品（帯・スタンプ・カードなど）のずれ、texts と images は足したもの。
+ */
+export type GameScreenLayout = {
+  offsets: Record<string, StartOffset>;
+  texts: GameStartText[];
+  images: GameStartImage[];
+  shapes: GameStartShape[];
+  /** メッセージなどの文字の色。 */
+  textColor: (typeof START_LOOK_TEXT_COLORS)[number];
+  /** 背景の画像。空ならスタート画面の背景を使う。 */
+  bgImageUrl: string;
+  /** 背景の動画。あれば画像より優先して流す（画像は読み込むまでの表示）。 */
+  bgVideoUrl: string;
+  shade: (typeof START_LOOK_SHADES)[number];
+  /** × で消した、もとからある部品。 */
+  hidden: string[];
+  /** カードの色。空はもとの色。 */
+  card: GameCardColors;
+  /** 背景の色のテーマ。 */
+  bgTheme: GameBgTheme;
+  /** 放射状の光の線を出すか。 */
+  rays: boolean;
+};
+/** 背景の色のテーマ。空はもとの色（画面ごとに決まった色）。 */
+export const BG_THEMES = ["", "brown", "green", "navy", "purple", "pink", "orange", "sky", "cream", "black"] as const;
+export type GameBgTheme = (typeof BG_THEMES)[number];
+export const BG_THEME_LABEL: Record<GameBgTheme, string> = {
+  "": "もとの色",
+  brown: "ブラウン",
+  green: "グリーン",
+  navy: "ネイビー",
+  purple: "パープル",
+  pink: "ピンク",
+  orange: "オレンジ",
+  sky: "そら",
+  cream: "クリーム",
+  black: "ブラック",
+};
+/** 見本の色（テーマの中心の色）。 */
+export const BG_THEME_SWATCH: Record<Exclude<GameBgTheme, "">, string> = {
+  brown: "radial-gradient(circle at 50% 30%, #8a3b1d, #24100a)",
+  green: "radial-gradient(circle at 50% 30%, #2f8f5c, #0f3d26)",
+  navy: "radial-gradient(circle at 50% 30%, #2d4f9e, #0d1838)",
+  purple: "radial-gradient(circle at 50% 30%, #7a4bc9, #241046)",
+  pink: "radial-gradient(circle at 50% 30%, #f28bb2, #8d2d55)",
+  orange: "radial-gradient(circle at 50% 30%, #f6a04d, #8a3a10)",
+  sky: "radial-gradient(circle at 50% 30%, #8fd3ff, #2a77c9)",
+  cream: "radial-gradient(circle at 50% 30%, #fffaf0, #efd9ae)",
+  black: "radial-gradient(circle at 50% 30%, #3a3a3a, #0b0b0b)",
+};
+
+export type GameCardColors = {
+  bg: string;
+  number: string;
+  text: string;
+  accent: string;
+};
+/** カードに使える色（空は「もとの色」）。 */
+export const CARD_COLORS = [
+  "#ffffff",
+  "#fffaf0",
+  "#fff4d6",
+  "#eef7f1",
+  "#e3edfe",
+  "#fde7ef",
+  "#1d2a22",
+  "#1f7a4a",
+  "#d9452b",
+  "#f08a24",
+  "#f2b233",
+  "#2f7cf6",
+  "#8b5cf6",
+  "#ec5f8c",
+] as const;
+/** スタンプGET画面で動かせる部品。 */
+export const STAMP_LAYOUT_KEYS = ["ribbon", "seal", "name", "msg", "card"] as const;
+/** クリア画面で動かせる部品。 */
+export const CLEAR_LAYOUT_KEYS = ["congrats", "ribbon", "trophy", "lead", "title", "msg", "card"] as const;
+/** 消せない部品（画面を進めるボタンがあるため）。 */
+export const LAYOUT_KEEP_KEYS = ["card"] as const;
+export const LAYOUT_PART_LABEL: Record<string, string> = {
+  ribbon: "タイトルの帯",
+  seal: "スタンプ",
+  name: "スポット名",
+  msg: "メッセージ",
+  congrats: "「おめでとう！」",
+  trophy: "トロフィー",
+  lead: "「すべてのスタンプを集めました！」",
+  title: "ゲーム名",
+  catch: "キャッチコピー",
+  desc: "説明文",
+  info: "案内カード",
+  mascot: "マスコット",
+};
+
+function sanitizeCardColors(raw: unknown): GameCardColors {
+  const row = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const pick = (value: unknown) =>
+    typeof value === "string" && (CARD_COLORS as readonly string[]).includes(value) ? value : "";
+  return { bg: pick(row.bg), number: pick(row.number), text: pick(row.text), accent: pick(row.accent) };
+}
+
+export function createScreenLayout(): GameScreenLayout {
+  return { offsets: {}, texts: [], images: [], shapes: [], textColor: "#ffffff", bgImageUrl: "", bgVideoUrl: "", shade: "light", hidden: [], card: { bg: "", number: "", text: "", accent: "" }, bgTheme: "", rays: true };
+}
+
+export function sanitizeScreenLayout(raw: unknown, keys: readonly string[]): GameScreenLayout {
+  const row = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const pattern = new RegExp(`^(${keys.join("|")}|(extra|img|shape):[A-Za-z0-9_-]{1,40})$`);
+  return {
+    offsets: sanitizeStartOffsets(row.offsets, pattern),
+    texts: sanitizeStartTexts(row.texts),
+    images: sanitizeStartImages(row.images),
+    shapes: sanitizeStartShapes(row.shapes),
+    textColor: oneOf(row.textColor, START_LOOK_TEXT_COLORS, "#ffffff"),
+    bgImageUrl: safeImageUrl(row.bgImageUrl),
+    bgVideoUrl: safeImageUrl(row.bgVideoUrl),
+    shade: oneOf(row.shade, START_LOOK_SHADES, "light"),
+    card: sanitizeCardColors(row.card),
+    bgTheme: oneOf(row.bgTheme, BG_THEMES, ""),
+    rays: row.rays !== false,
+    hidden: Array.isArray(row.hidden)
+      ? [...new Set(row.hidden.filter((key): key is string => typeof key === "string" && keys.includes(key)))].filter(
+          (key) => !(LAYOUT_KEEP_KEYS as readonly string[]).includes(key),
+        )
+      : [],
+  };
+}
+
+/** アプリに入っている絵（/play/ と /organizer/games/ の下）だけ、相対パスのまま通す。 */
+export function safeStartImageUrl(value: unknown): string {
+  if (typeof value === "string" && /^\/(play|organizer\/games)\/[A-Za-z0-9_\-/]+\.(webp|png|jpe?g)$/.test(value)) {
+    return value;
+  }
+  return safeImageUrl(value);
+}
+/** スタート画面に自由に足せるテキスト。位置は上のタイトルの下に、足した順に並ぶ。 */
+export const START_TEXT_MAX = 5;
+export type GameStartText = {
+  id: string;
+  text: string;
+  size: (typeof START_LOOK_SIZES)[number];
+  bold: boolean;
+  color: (typeof START_LOOK_TEXT_COLORS)[number];
+};
+export const DEFAULT_START_LOOK: GameStartLook = {
+  position: "top",
+  align: "center",
+  size: "m",
+  textColor: "#ffffff",
+  buttonColor: "#1f7a4a",
+  shade: "light",
+};
 /** スポットの種類。参加者のマップの絞り込みと札の色に使う。 */
 export const GAME_SPOT_CATEGORIES = [
   "food",
@@ -141,6 +431,8 @@ export type GameExperienceSpot = {
   mapStyle: GameSpotMapStyle;
   /** 地図に出す画像。空ならスポットの写真を使う。 */
   mapImageUrl: string;
+  /** このスポットで押されるスタンプの絵。空ならゲーム共通のスタンプ画像。 */
+  stampImageUrl: string;
 };
 
 export type GameExperience = {
@@ -164,6 +456,10 @@ export type GameExperience = {
       showFreeBadge: boolean;
       showPeriod: boolean;
       showShare: boolean;
+      look: GameStartLook;
+      extraTexts: GameStartText[];
+      extraImages: GameStartImage[];
+      extraShapes: GameStartShape[];
     };
     spot: { intro: string };
     stamp: {
@@ -172,8 +468,9 @@ export type GameExperience = {
       imageUrl: string;
       sound: GameStampSound;
       soundUrl: string;
+      layout: GameScreenLayout;
     };
-    clear: { title: string; message: string };
+    clear: { title: string; message: string; layout: GameScreenLayout };
   };
   condition: { mode: "all" | "count"; requiredCount: number };
   reward: { kind: GameRewardKind; label: string; code: string; points: number; imageUrl: string };
@@ -266,6 +563,7 @@ export function createExperienceSpot(): GameExperienceSpot {
     icon: "stamp",
     mapStyle: "marker",
     mapImageUrl: "",
+    stampImageUrl: "",
   };
 }
 
@@ -291,10 +589,21 @@ export function createDefaultExperience(): GameExperience {
         showFreeBadge: true,
         showPeriod: true,
         showShare: false,
+        look: { ...DEFAULT_START_LOOK },
+        extraTexts: [],
+        extraImages: [],
+        extraShapes: [],
       },
       spot: { intro: "" },
-      stamp: { message: "", animation: "pop", imageUrl: "", sound: "pop", soundUrl: "" },
-      clear: { title: "", message: "" },
+      stamp: {
+        message: "",
+        animation: "pop",
+        imageUrl: "",
+        sound: "pop",
+        soundUrl: "",
+        layout: createScreenLayout(),
+      },
+      clear: { title: "", message: "", layout: createScreenLayout() },
     },
     condition: { mode: "all", requiredCount: 3 },
     reward: { kind: "name", label: "", code: "", points: 100, imageUrl: "" },
@@ -355,7 +664,81 @@ function sanitizeSpot(raw: unknown): GameExperienceSpot | null {
     icon: oneOf(row.icon, GAME_SPOT_ICON_IDS, "stamp"),
     mapStyle: oneOf(row.mapStyle, GAME_SPOT_MAP_STYLES, "marker"),
     mapImageUrl: safeImageUrl(row.mapImageUrl),
+    stampImageUrl: safeImageUrl(row.stampImageUrl),
   };
+}
+
+function sanitizeStartLook(raw: unknown): GameStartLook {
+  const row = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  return {
+    position: oneOf(row.position, START_LOOK_POSITIONS, DEFAULT_START_LOOK.position),
+    align: oneOf(row.align, START_LOOK_ALIGNS, DEFAULT_START_LOOK.align),
+    size: oneOf(row.size, START_LOOK_SIZES, DEFAULT_START_LOOK.size),
+    textColor: oneOf(row.textColor, START_LOOK_TEXT_COLORS, DEFAULT_START_LOOK.textColor),
+    buttonColor: oneOf(row.buttonColor, START_LOOK_BUTTON_COLORS, DEFAULT_START_LOOK.buttonColor),
+    shade: oneOf(row.shade, START_LOOK_SHADES, DEFAULT_START_LOOK.shade),
+    offsets: sanitizeStartOffsets(row.offsets),
+    hidden: Array.isArray(row.hidden)
+      ? [...new Set(row.hidden.filter((key): key is string => key === "catch" || key === "desc" || key === "info"))]
+      : [],
+    bgTheme: oneOf(row.bgTheme, BG_THEMES, ""),
+  };
+}
+
+export function sanitizeStartOffsets(raw: unknown, pattern: RegExp = START_OFFSET_KEY): Record<string, StartOffset> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: Record<string, StartOffset> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>).slice(0, 16)) {
+    if (!pattern.test(key) || !value || typeof value !== "object") continue;
+    const { x, y } = value as Record<string, unknown>;
+    if (typeof x !== "number" || typeof y !== "number" || !Number.isFinite(x) || !Number.isFinite(y)) continue;
+    const clamp = (n: number) => Math.round(Math.min(100, Math.max(-100, n)) * 10) / 10;
+    if (clamp(x) === 0 && clamp(y) === 0) continue;
+    out[key] = { x: clamp(x), y: clamp(y) };
+  }
+  return out;
+}
+
+export function sanitizeStartImages(raw: unknown): GameStartImage[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, START_IMAGE_MAX).flatMap((item, index) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    const url = safeStartImageUrl(row.url);
+    if (!url) return [];
+    const id = typeof row.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(row.id) ? row.id : `i${index + 1}`;
+    const width =
+      typeof row.width === "number" && Number.isFinite(row.width)
+        ? Math.round(Math.min(START_IMAGE_MAX_WIDTH, Math.max(START_IMAGE_MIN_WIDTH, row.width)) * 10) / 10
+        : undefined;
+    return [
+      {
+        id,
+        url,
+        size: oneOf(row.size, START_IMAGE_SIZES, "m"),
+        round: row.round === true,
+        ...(width ? { width } : {}),
+      },
+    ];
+  });
+}
+
+export function sanitizeStartTexts(raw: unknown): GameStartText[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, START_TEXT_MAX).flatMap((item, index) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    const id = typeof row.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(row.id) ? row.id : `t${index + 1}`;
+    return [
+      {
+        id,
+        text: text(row.text, 120),
+        size: oneOf(row.size, START_LOOK_SIZES, "m"),
+        bold: row.bold === true,
+        color: oneOf(row.color, START_LOOK_TEXT_COLORS, DEFAULT_START_LOOK.textColor),
+      },
+    ];
+  });
 }
 
 function sanitizeHowto(raw: unknown): GameHowtoStep[] {
@@ -383,6 +766,10 @@ export type PublicPlayStart = {
   showFreeBadge: boolean;
   showPeriod: boolean;
   showShare: boolean;
+  look: GameStartLook;
+  extraTexts: GameStartText[];
+  extraImages: GameStartImage[];
+  extraShapes: GameStartShape[];
 };
 
 /** 参加中に出してよい画面。正解キーワードそのものは含めない。 */
@@ -403,6 +790,9 @@ export type PublicPlayMoment = {
   rewardLabel: string;
   rewardKind: GameRewardKind;
   showCharacter: boolean;
+  /** スタンプGET・クリア画面の配置。 */
+  stampLayout: GameScreenLayout;
+  clearLayout: GameScreenLayout;
   /** keyword は言葉、gps はピンの半径内。どちらでもなければ QR。 */
   checkin: "qr" | "keyword" | "gps";
   lat: number | null;
@@ -530,6 +920,8 @@ export function publicPlayMoment(settings: unknown, spotIndex: number | null): P
     rewardLabel: "",
     rewardKind: "name",
     showCharacter: false,
+    stampLayout: createScreenLayout(),
+    clearLayout: createScreenLayout(),
     checkin: "qr",
     lat: null,
     lng: null,
@@ -559,6 +951,8 @@ export function publicPlayMoment(settings: unknown, spotIndex: number | null): P
     rewardLabel: experience.reward.label,
     rewardKind: experience.reward.kind,
     showCharacter: experience.screens.start.showCharacter,
+    stampLayout: experience.screens.stamp.layout,
+    clearLayout: experience.screens.clear.layout,
     checkin: publicCheckin(spot),
     lat: spot?.lat ?? null,
     lng: spot?.lng ?? null,
@@ -587,6 +981,8 @@ export function readPublicPlayMoment(raw: unknown): PublicPlayMoment {
     rewardLabel: text(row.rewardLabel, 40),
     rewardKind: oneOf(row.rewardKind, GAME_REWARD_KINDS, "name"),
     showCharacter: row.showCharacter === true,
+    stampLayout: sanitizeScreenLayout(row.stampLayout, STAMP_LAYOUT_KEYS),
+    clearLayout: sanitizeScreenLayout(row.clearLayout, CLEAR_LAYOUT_KEYS),
     checkin:
       row.checkin === "keyword"
         ? "keyword"
@@ -615,6 +1011,10 @@ export function publicPlayStart(settings: unknown): PublicPlayStart {
     showFreeBadge: false,
     showPeriod: false,
     showShare: false,
+    look: { ...DEFAULT_START_LOOK },
+    extraTexts: [],
+    extraImages: [],
+    extraShapes: [],
   };
   if (!settings || typeof settings !== "object" || Array.isArray(settings)) return blank;
   const experience = sanitizeGameExperience((settings as { experience?: unknown }).experience);
@@ -633,6 +1033,10 @@ export function publicPlayStart(settings: unknown): PublicPlayStart {
     showFreeBadge: start.showFreeBadge,
     showPeriod: start.showPeriod,
     showShare: start.showShare,
+    look: start.look,
+    extraTexts: start.extraTexts,
+    extraImages: start.extraImages,
+    extraShapes: start.extraShapes,
   };
 }
 
@@ -673,6 +1077,10 @@ export function sanitizeGameExperience(raw: unknown): GameExperience | null {
         showFreeBadge: start.showFreeBadge !== false,
         showPeriod: start.showPeriod !== false,
         showShare: start.showShare === true,
+        look: sanitizeStartLook(start.look),
+        extraTexts: sanitizeStartTexts(start.extraTexts),
+        extraImages: sanitizeStartImages(start.extraImages),
+        extraShapes: sanitizeStartShapes(start.extraShapes),
       },
       spot: { intro: text(spot.intro, 200) },
       stamp: {
@@ -681,10 +1089,12 @@ export function sanitizeGameExperience(raw: unknown): GameExperience | null {
         imageUrl: safeImageUrl(stamp.imageUrl),
         sound: oneOf(stamp.sound, GAME_STAMP_SOUNDS, "pop"),
         soundUrl: safeImageUrl(stamp.soundUrl),
+        layout: sanitizeScreenLayout(stamp.layout, STAMP_LAYOUT_KEYS),
       },
       clear: {
         title: text(clear.title, 40),
         message: text(clear.message, 120),
+        layout: sanitizeScreenLayout(clear.layout, CLEAR_LAYOUT_KEYS),
       },
     },
     condition: {
@@ -711,7 +1121,8 @@ export type ExperienceCheckItem = {
   id: string;
   label: string;
   done: boolean;
-  step: 1 | 2 | 3 | 4;
+  /** 作成ウィザードのステップ（1 テンプレート、2 基本設定、3 スポット、4 画面・演出、5 達成条件・特典）。 */
+  step: 2 | 3 | 4 | 5;
   screen?: GameScreenId;
 };
 
@@ -882,40 +1293,40 @@ export function experienceChecklist(input: {
   const startDone = Boolean(start.title || start.catchCopy || start.description);
   const clear = experience.screens.clear;
   return [
-    { id: "basics", label: "基本情報", done: name.trim().length > 0, step: 1 },
+    { id: "basics", label: "基本情報", done: name.trim().length > 0, step: 2 },
     {
       id: "spots",
       label: spots.length > 0 ? `スポット${spots.length}件` : "スポット",
       done: spots.length > 0,
-      step: 2,
+      step: 3,
     },
     {
       id: "checkin",
       label: "チェックイン方法",
       done: spots.length > 0,
-      step: 2,
+      step: 3,
     },
-    { id: "start", label: "スタート画面", done: startDone, step: 3, screen: "start" },
+    { id: "start", label: "スタート画面", done: startDone, step: 4, screen: "start" },
     {
       id: "stamp",
       label: "スタンプ演出",
       done: experience.screens.stamp.message.length > 0,
-      step: 3,
+      step: 4,
       screen: "stamp",
     },
     {
       id: "clear",
       label: "クリア画面",
       done: Boolean(clear.title || clear.message),
-      step: 3,
+      step: 4,
       screen: "clear",
     },
     {
       id: "condition",
       label: experience.condition.mode === "all" ? "全スポット達成" : `${experience.condition.requiredCount}スポット以上`,
       done: true,
-      step: 4,
+      step: 5,
     },
-    { id: "reward", label: "特典", done: experience.reward.label.length > 0, step: 4 },
+    { id: "reward", label: "特典", done: experience.reward.label.length > 0, step: 5 },
   ];
 }

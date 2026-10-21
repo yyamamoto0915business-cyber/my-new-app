@@ -3,16 +3,41 @@ import {
   sanitizeGameExperience,
   type GameExperience,
   type GameExperienceSpot,
+  type GameSpotIcon,
 } from "@/lib/organizer/game-experience";
 import type { OrganizerGameSpotKind } from "@/lib/organizer/game-tokens";
 
 export type StampRallyTemplateSpot = Pick<GameExperienceSpot, "description" | "hint"> & {
   name: string;
   kind: OrganizerGameSpotKind;
+  icon?: GameSpotIcon;
+};
+
+/** テンプレート選択のタブ。 */
+export const STAMP_RALLY_TEMPLATE_GROUPS = [
+  { id: "town", label: "まち・観光" },
+  { id: "event", label: "イベント・グルメ" },
+  { id: "learn", label: "学び・こども" },
+] as const;
+export type StampRallyTemplateGroup = (typeof STAMP_RALLY_TEMPLATE_GROUPS)[number]["id"];
+
+/** スポット絵（public/play/spots）のどれをテンプレートの顔にするか、とスポットの種類。 */
+const TEMPLATE_LOOK: Record<string, { group: StampRallyTemplateGroup; art: GameSpotIcon; icons: GameSpotIcon[] }> = {
+  shopping: { group: "town", art: "greengrocer", icons: ["greengrocer", "drugstore", "cafe"] },
+  sightseeing: { group: "town", art: "viewpoint", icons: ["viewpoint", "historic", "temple"] },
+  history: { group: "town", art: "castle", icons: ["historic", "shrine", "museum"] },
+  festival: { group: "event", art: "festival", icons: ["plaza", "festival", "event-hall"] },
+  gourmet: { group: "event", art: "ramen", icons: ["ramen", "bakery", "izakaya"] },
+  farm: { group: "learn", art: "market", icons: ["park", "market", "community"] },
+  safety: { group: "learn", art: "community", icons: ["sports", "park", "community"] },
+  kids: { group: "learn", art: "playground", icons: ["park", "playground", "plaza"] },
 };
 
 export type StampRallyTemplate = {
   id: string;
+  group: StampRallyTemplateGroup;
+  /** カードに出す絵（スポット絵の ID）。 */
+  art: GameSpotIcon;
   name: string;
   blurb: string;
   gameName: string;
@@ -50,20 +75,24 @@ function rallyTemplate(input: {
       clear: { title: input.clearTitle, message: input.clearMessage },
     },
     reward: { ...base.reward, kind: "name", label: input.rewardLabel },
-    spots: input.spots.map((spot) => ({
+    spots: input.spots.map((spot, index) => ({
       description: spot.description,
       hint: spot.hint,
+      icon: TEMPLATE_LOOK[input.id]?.icons[index] ?? "stamp",
     })),
   });
   if (!experience) throw new Error(input.id);
+  const look = TEMPLATE_LOOK[input.id] ?? { group: "town" as const, art: "stamp" as const, icons: [] };
   return {
     id: input.id,
+    group: look.group,
+    art: look.art,
     name: input.name,
     blurb: input.blurb,
     gameName: input.gameName,
     description: input.description,
     experience,
-    spots: input.spots,
+    spots: input.spots.map((spot, index) => ({ ...spot, icon: look.icons[index] ?? "stamp" })),
   };
 }
 
