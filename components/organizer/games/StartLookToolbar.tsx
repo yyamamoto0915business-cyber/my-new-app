@@ -414,7 +414,7 @@ export function MomentEditPanel({
   bgImageField,
   onClose,
 }: {
-  screen: "stamp" | "clear";
+  screen: "stamp" | "clear" | "home";
   selection: RallyMomentSelection;
   layout: GameScreenLayout;
   onLayout: (layout: GameScreenLayout) => void;
@@ -439,6 +439,7 @@ export function MomentEditPanel({
     image && save({ images: layout.images.map((item) => (item.id === image.id ? { ...item, ...patch } : item)) });
   const moveKey =
     selection === "background" ? null : selection === "rewardBox" ? "card" : (selection as string);
+  const isCard = selection === "card" || selection === "meter" || selection === "book" || selection === "next";
   const moved = moveKey ? Boolean(layout.offsets[moveKey]) : false;
   const resetPosition = (key: string) => {
     const offsets = { ...layout.offsets };
@@ -475,6 +476,10 @@ export function MomentEditPanel({
                 ? "メッセージ"
                 : selection === "card"
                   ? "カード"
+                  : selection === "meter" || selection === "book" || selection === "next"
+                    ? `${LAYOUT_PART_LABEL[selection] ?? "スタンプ帳"}のカード`
+                    : selection === "bookTitle" || selection === "nextTitle"
+                      ? "見出し"
                   : selection === "congrats" || selection === "lead" || selection === "title"
                     ? LAYOUT_PART_LABEL[selection]
                     : image
@@ -553,7 +558,7 @@ export function MomentEditPanel({
         </div>
       ) : null}
 
-      {selection === "card" ? (
+      {isCard ? (
         <div className="edit-panel__rows">
           {(
             [
@@ -583,6 +588,32 @@ export function MomentEditPanel({
               ))}
             </Row>
           ))}
+          {resetButton}
+        </div>
+      ) : null}
+
+      {selection === "bookTitle" || selection === "nextTitle" ? (
+        <div className="edit-panel__rows">
+          <Row label="色">
+            <button
+              type="button"
+              className={cn("edit-panel__choice", !layout.titleColor && "is-on")}
+              aria-pressed={!layout.titleColor}
+              onClick={() => save({ titleColor: "" })}
+            >
+              もとの色
+            </button>
+            {CARD_COLORS.map((color) => (
+              <Swatch
+                key={color}
+                color={color}
+                on={layout.titleColor === color}
+                label={color}
+                onClick={() => save({ titleColor: color })}
+              />
+            ))}
+          </Row>
+          <p className="edit-panel__note edit-panel__note--show">見出しの文字はタップして直せます（空ならもとの文字）</p>
           {resetButton}
         </div>
       ) : null}

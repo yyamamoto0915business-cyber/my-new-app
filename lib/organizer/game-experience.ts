@@ -182,7 +182,15 @@ export type GameScreenLayout = {
   bgTheme: GameBgTheme;
   /** 放射状の光の線を出すか。 */
   rays: boolean;
+  /** 見出しなど、もとからある文字の書き換え（空はもとの文字）。 */
+  labels: Record<string, string>;
+  /** 見出しの色（空はもとの色）。 */
+  titleColor: string;
 };
+/** ホーム画面で動かせる部品。 */
+export const HOME_LAYOUT_KEYS = ["meter", "bookTitle", "book", "nextTitle", "next"] as const;
+/** 書き換えられる見出し。 */
+export const LAYOUT_LABEL_KEYS = ["meterLabel", "bookTitle", "nextTitle"] as const;
 /** 背景の色のテーマ。空はもとの色（画面ごとに決まった色）。 */
 export const BG_THEMES = ["", "brown", "green", "navy", "purple", "pink", "orange", "sky", "cream", "black"] as const;
 export type GameBgTheme = (typeof BG_THEMES)[number];
@@ -239,7 +247,7 @@ export const STAMP_LAYOUT_KEYS = ["ribbon", "seal", "name", "msg", "card"] as co
 /** クリア画面で動かせる部品。 */
 export const CLEAR_LAYOUT_KEYS = ["congrats", "ribbon", "trophy", "lead", "title", "msg", "card"] as const;
 /** 消せない部品（画面を進めるボタンがあるため）。 */
-export const LAYOUT_KEEP_KEYS = ["card"] as const;
+export const LAYOUT_KEEP_KEYS = ["card", "book"] as const;
 export const LAYOUT_PART_LABEL: Record<string, string> = {
   ribbon: "タイトルの帯",
   seal: "スタンプ",
@@ -253,7 +261,21 @@ export const LAYOUT_PART_LABEL: Record<string, string> = {
   desc: "説明文",
   info: "案内カード",
   mascot: "マスコット",
+  meter: "スタンプ獲得状況",
+  bookTitle: "「スタンプ帳」の見出し",
+  nextTitle: "「次に行くおすすめスポット」の見出し",
+  next: "次に行くおすすめスポット",
 };
+
+function sanitizeLabels(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: Record<string, string> = {};
+  for (const key of LAYOUT_LABEL_KEYS) {
+    const value = (raw as Record<string, unknown>)[key];
+    if (typeof value === "string" && value.trim()) out[key] = value.trim().slice(0, 30);
+  }
+  return out;
+}
 
 function sanitizeCardColors(raw: unknown): GameCardColors {
   const row = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
@@ -263,7 +285,7 @@ function sanitizeCardColors(raw: unknown): GameCardColors {
 }
 
 export function createScreenLayout(): GameScreenLayout {
-  return { offsets: {}, texts: [], images: [], shapes: [], textColor: "#ffffff", bgImageUrl: "", bgVideoUrl: "", shade: "light", hidden: [], card: { bg: "", number: "", text: "", accent: "" }, bgTheme: "", rays: true };
+  return { offsets: {}, texts: [], images: [], shapes: [], textColor: "#ffffff", bgImageUrl: "", bgVideoUrl: "", shade: "light", hidden: [], card: { bg: "", number: "", text: "", accent: "" }, bgTheme: "", rays: true, labels: {}, titleColor: "" };
 }
 
 export function sanitizeScreenLayout(raw: unknown, keys: readonly string[]): GameScreenLayout {
@@ -281,6 +303,11 @@ export function sanitizeScreenLayout(raw: unknown, keys: readonly string[]): Gam
     card: sanitizeCardColors(row.card),
     bgTheme: oneOf(row.bgTheme, BG_THEMES, ""),
     rays: row.rays !== false,
+    labels: sanitizeLabels(row.labels),
+    titleColor:
+      typeof row.titleColor === "string" && (CARD_COLORS as readonly string[]).includes(row.titleColor)
+        ? row.titleColor
+        : "",
     hidden: Array.isArray(row.hidden)
       ? [...new Set(row.hidden.filter((key): key is string => typeof key === "string" && keys.includes(key)))].filter(
           (key) => !(LAYOUT_KEEP_KEYS as readonly string[]).includes(key),
@@ -471,6 +498,8 @@ export type GameExperience = {
       layout: GameScreenLayout;
     };
     clear: { title: string; message: string; layout: GameScreenLayout };
+    /** 参加中のホーム（スタンプ帳）。 */
+    home: { layout: GameScreenLayout };
   };
   condition: { mode: "all" | "count"; requiredCount: number };
   reward: { kind: GameRewardKind; label: string; code: string; points: number; imageUrl: string };
@@ -604,6 +633,7 @@ export function createDefaultExperience(): GameExperience {
         layout: createScreenLayout(),
       },
       clear: { title: "", message: "", layout: createScreenLayout() },
+      home: { layout: createScreenLayout() },
     },
     condition: { mode: "all", requiredCount: 3 },
     reward: { kind: "name", label: "", code: "", points: 100, imageUrl: "" },
@@ -793,6 +823,7 @@ export type PublicPlayMoment = {
   /** スタンプGET・クリア画面の配置。 */
   stampLayout: GameScreenLayout;
   clearLayout: GameScreenLayout;
+  homeLayout: GameScreenLayout;
   /** keyword は言葉、gps はピンの半径内。どちらでもなければ QR。 */
   checkin: "qr" | "keyword" | "gps";
   lat: number | null;
@@ -922,6 +953,7 @@ export function publicPlayMoment(settings: unknown, spotIndex: number | null): P
     showCharacter: false,
     stampLayout: createScreenLayout(),
     clearLayout: createScreenLayout(),
+    homeLayout: createScreenLayout(),
     checkin: "qr",
     lat: null,
     lng: null,
@@ -953,6 +985,7 @@ export function publicPlayMoment(settings: unknown, spotIndex: number | null): P
     showCharacter: experience.screens.start.showCharacter,
     stampLayout: experience.screens.stamp.layout,
     clearLayout: experience.screens.clear.layout,
+    homeLayout: experience.screens.home.layout,
     checkin: publicCheckin(spot),
     lat: spot?.lat ?? null,
     lng: spot?.lng ?? null,
@@ -983,6 +1016,7 @@ export function readPublicPlayMoment(raw: unknown): PublicPlayMoment {
     showCharacter: row.showCharacter === true,
     stampLayout: sanitizeScreenLayout(row.stampLayout, STAMP_LAYOUT_KEYS),
     clearLayout: sanitizeScreenLayout(row.clearLayout, CLEAR_LAYOUT_KEYS),
+    homeLayout: sanitizeScreenLayout(row.homeLayout, HOME_LAYOUT_KEYS),
     checkin:
       row.checkin === "keyword"
         ? "keyword"
@@ -1095,6 +1129,12 @@ export function sanitizeGameExperience(raw: unknown): GameExperience | null {
         title: text(clear.title, 40),
         message: text(clear.message, 120),
         layout: sanitizeScreenLayout(clear.layout, CLEAR_LAYOUT_KEYS),
+      },
+      home: {
+        layout: sanitizeScreenLayout(
+          screens.home && typeof screens.home === "object" ? (screens.home as Record<string, unknown>).layout : null,
+          HOME_LAYOUT_KEYS,
+        ),
       },
     },
     condition: {

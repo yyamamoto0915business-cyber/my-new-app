@@ -36,11 +36,17 @@ export type RallyMomentSelection =
   | "congrats"
   | "lead"
   | "title"
+  | "meter"
+  | "bookTitle"
+  | "book"
+  | "nextTitle"
+  | "next"
+  | `spotSeal:${string}`
   | "background"
   | `extra:${string}`
   | `img:${string}`
   | `shape:${string}`;
-export type RallyMomentScreen = "stamp" | "clear";
+export type RallyMomentScreen = "stamp" | "clear" | "home";
 export type RallyMomentEdit = {
   onChange: (field: RallyMomentField, value: string) => void;
   selected: RallyMomentSelection | null;
@@ -52,14 +58,15 @@ export type RallyMomentEdit = {
 };
 
 /** 選んだものが、ドラッグで動かす部品ならそのキー。 */
-function moveKeyOf(selected: RallyMomentSelection | null): string | null {
+export function moveKeyOf(selected: RallyMomentSelection | null): string | null {
   if (!selected || selected === "background") return null;
   if (selected === "rewardBox") return "card";
+  if (selected.startsWith("spotSeal:")) return "book";
   return selected;
 }
 
 /** 配置を変える関数をまとめる（スタンプGETとクリアで共通）。 */
-function layoutActions(screen: RallyMomentScreen, layout: GameScreenLayout, edit: RallyMomentEdit) {
+export function layoutActions(screen: RallyMomentScreen, layout: GameScreenLayout, edit: RallyMomentEdit) {
   const save = (next: Partial<GameScreenLayout>) => edit.onLayout(screen, { ...layout, ...next });
   return {
     onMove: (key: string, offset: StartOffset | null) => {
@@ -98,7 +105,7 @@ function layoutActions(screen: RallyMomentScreen, layout: GameScreenLayout, edit
 }
 
 /** 足したテキスト（編集中は入力欄）と画像。 */
-function Extras({
+export function Extras({
   layout,
   layer,
   edit,
@@ -137,13 +144,13 @@ function Extras({
 }
 
 /** 部品の上を押したか（部品の入れ物の余白は、背景として扱う）。 */
-function isPart(target: HTMLElement): boolean {
+export function isPart(target: HTMLElement): boolean {
   const box = target.closest(".rally-move");
   return Boolean(box && box !== target);
 }
 
 /** カードの色を CSS の変数にする（空ならもとの色）。 */
-function cardStyle(layout: GameScreenLayout): CSSProperties | undefined {
+export function cardStyle(layout: GameScreenLayout): CSSProperties | undefined {
   const card = layout.card;
   if (!card) return undefined;
   const style: Record<string, string> = {};
@@ -154,7 +161,7 @@ function cardStyle(layout: GameScreenLayout): CSSProperties | undefined {
   return Object.keys(style).length > 0 ? (style as CSSProperties) : undefined;
 }
 
-function shadeClass(layout: GameScreenLayout) {
+export function shadeClass(layout: GameScreenLayout) {
   return [
     `rally-layer--shade-${layout.shade}`,
     layout.bgTheme ? `rally-bg--${layout.bgTheme}` : "",
@@ -165,7 +172,7 @@ function shadeClass(layout: GameScreenLayout) {
 }
 
 /** 選んだ部品に、タップで選べるようにする。 */
-function selectable(edit: RallyMomentEdit | undefined, selection: RallyMomentSelection) {
+export function selectable(edit: RallyMomentEdit | undefined, selection: RallyMomentSelection) {
   if (!edit) return {};
   return {
     onClick: (event: { stopPropagation: () => void; target: EventTarget }) => {

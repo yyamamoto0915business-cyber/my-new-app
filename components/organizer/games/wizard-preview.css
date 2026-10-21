@@ -1485,3 +1485,128 @@
   height: 1.05rem;
   stroke-width: 3;
 }
+
+.wizard-preview__screen .rally-home.rally-layer {
+  min-height: calc(844px - 5rem);
+}
+
+/* 選ぶ欄が2つ並ぶときは、どちらの絵か分かるよう名前を出す。 */
+.wizard-preview-sheet .edit-panel__media--labeled > div > span {
+  display: block !important;
+  flex: none;
+  color: #3c4a40;
+  font-size: 0.66rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.wizard-preview-sheet .edit-panel__media--labeled > div {
+  gap: 0.35rem !important;
+}
+
+/* スタンプラリー以外のゲーム作成：全画面プレビューの中身はスクロールさせる。 */
+.game-create-sheet .game-create-sheet__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: 26rem;
+  overflow-y: auto;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.game-create-sheet .game-create-sheet__body > * {
+  position: static;
+}
+
+/* スタンプラリー以外の参加画面：スマホ枠の中では、いつもスマホの見た目にする（globals の 899px 以下と同じ）。 */
+.game-phone .wizard-preview__screen {
+  background: var(--mg-paper, #f9f9f7);
+}
+
+.game-phone .play-game-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.game-phone .play-game {
+  flex: 1 0 auto;
+  padding: 0;
+  min-height: 0;
+}
+
+.game-phone .play-game__card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--mg-paper, #f9f9f7);
+  padding: 1.15rem 1.15rem 1.4rem;
+}
+
+/* 参加ボタンは、実機と同じく画面の一番下に置く。 */
+.game-phone .play-join {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.game-phone .play-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  width: auto;
+  margin: auto -1.15rem -1.4rem;
+  padding: 0.7rem 1rem;
+  background: var(--mg-paper, #f9f9f7);
+  border-top: 1px solid #e3eee6;
+  box-shadow: 0 -8px 24px rgba(26, 34, 20, 0.06);
+}
+
+.game-phone .play-game .play-card__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.game-phone .play-game .game-test__photo {
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+.game-phone .play-game .game-test__choice {
+  min-height: 3.5rem;
+  padding: 0.75rem 0.9rem;
+  font-size: 1rem;
+}
+
+.game-phone .play-game .game-test__item {
+  min-height: 3.25rem;
+  font-size: 1rem;
+}
+
+.game-phone .play-game .game-test__top,
+.game-phone .play-game .play-progress__head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin-left: -1.15rem;
+  margin-right: -1.15rem;
+  padding: 0.65rem 1.15rem;
+  background: var(--mg-paper, #f9f9f7);
+}
+
+.game-phone .play-game .game-test__top {
+  font-size: 0.95rem;
+}
+
+/* 枠の中は見るだけ（スクロールはできる）。 */
+.game-phone .wizard-preview__screen > * {
+  pointer-events: none;
+}
+
+.game-phone .play-game__card > .play-game__icon {
+  align-self: center;
+}

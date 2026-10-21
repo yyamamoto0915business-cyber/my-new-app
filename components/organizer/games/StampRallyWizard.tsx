@@ -506,8 +506,30 @@ export function StampRallyWizard() {
     setFocusName((count) => count + 1);
   }
 
+  /** プレビューのマップ・リストから、スポットの編集へ移る。 */
+  const previewSpotEdit = {
+    onAdd:
+      spots.length < MAX_ORGANIZER_GAME_SPOTS
+        ? () => {
+            setPreviewOpen(false);
+            setStep(3);
+            addSpotAndEdit();
+          }
+        : undefined,
+    onEdit: (key: string) => {
+      const index = spots.findIndex((spot) => spot.key === key);
+      if (index < 0) return;
+      setPreviewOpen(false);
+      setStep(3);
+      setSelectedIndex(index);
+      setSpotTab("basic");
+      setFocusName((count) => count + 1);
+    },
+  };
+
   /** プレビューのスタート画面で、直接書き換えたとき。 */
   const startEdit = {
+    spots: previewSpotEdit,
     onChange: (field: "title" | "catchCopy" | "description" | "buttonLabel", value: string) =>
       patchExperience((current) => ({
         ...current,
@@ -544,7 +566,7 @@ export function StampRallyWizard() {
         patchExperience((current) => ({ ...current, reward: { ...current.reward, kind } })),
       stampImageField: (
         <GameImageField
-          label="スタンプの絵"
+          label="全スポット共通の絵"
           url={experience.screens.stamp.imageUrl}
           gameId={savedGameId}
           onChange={(imageUrl) =>
@@ -555,32 +577,21 @@ export function StampRallyWizard() {
           }
         />
       ),
-      onLayout: (screen: "stamp" | "clear", layout: GameExperience["screens"]["stamp"]["layout"]) =>
-        patchExperience((current) =>
-          screen === "stamp"
-            ? { ...current, screens: { ...current.screens, stamp: { ...current.screens.stamp, layout } } }
-            : { ...current, screens: { ...current.screens, clear: { ...current.screens.clear, layout } } },
-        ),
-      bgImageField: (screen: "stamp" | "clear") => {
-        const layout = screen === "stamp" ? experience.screens.stamp.layout : experience.screens.clear.layout;
+      onLayout: (screen: "stamp" | "clear" | "home", layout: GameExperience["screens"]["stamp"]["layout"]) =>
+        patchExperience((current) => ({
+          ...current,
+          screens: { ...current.screens, [screen]: { ...current.screens[screen], layout } },
+        })),
+      bgImageField: (screen: "stamp" | "clear" | "home") => {
+        const layout = experience.screens[screen].layout;
         const saveLayout = (patch: Partial<GameExperience["screens"]["stamp"]["layout"]>) =>
-          patchExperience((current) =>
-            screen === "stamp"
-              ? {
-                  ...current,
-                  screens: {
-                    ...current.screens,
-                    stamp: { ...current.screens.stamp, layout: { ...current.screens.stamp.layout, ...patch } },
-                  },
-                }
-              : {
-                  ...current,
-                  screens: {
-                    ...current.screens,
-                    clear: { ...current.screens.clear, layout: { ...current.screens.clear.layout, ...patch } },
-                  },
-                },
-          );
+          patchExperience((current) => ({
+            ...current,
+            screens: {
+              ...current.screens,
+              [screen]: { ...current.screens[screen], layout: { ...current.screens[screen].layout, ...patch } },
+            },
+          }));
         return (
           <>
             <GameImageField
@@ -596,6 +607,17 @@ export function StampRallyWizard() {
               onChange={(bgVideoUrl) => saveLayout({ bgVideoUrl })}
             />
           </>
+        );
+      },
+      spotStampField: (spotKey: string) => {
+        const spot = spots.find((item) => item.key === spotKey);
+        return (
+          <GameImageField
+            label="このスポットの絵"
+            url={spot?.stampImageUrl ?? ""}
+            gameId={savedGameId}
+            onChange={(stampImageUrl) => updateSpot(spotKey, { stampImageUrl })}
+          />
         );
       },
       rewardImageField: (

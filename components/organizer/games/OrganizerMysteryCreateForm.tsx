@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Plus, Send, Trash2 } from "lucide-react";
+import { PenLine, Plus, Search, Trash2, Trophy } from "lucide-react";
+import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 import { MysteryTestPlay } from "@/components/organizer/games/MysteryTestPlay";
 import { createMysteryStep, sampleMysterySteps, type MysteryStep } from "@/lib/organizer/mystery";
+
+const STEPS: GameCreateStep[] = [
+  { label: "基本情報", icon: PenLine },
+  { label: "謎", icon: Search },
+  { label: "クリア", icon: Trophy },
+];
 
 export function OrganizerMysteryCreateForm() {
   const router = useRouter();
@@ -17,6 +23,7 @@ export function OrganizerMysteryCreateForm() {
   const [clearCount, setClearCount] = useState(3);
   const [couponOn, setCouponOn] = useState(true);
   const [prizeOn, setPrizeOn] = useState(false);
+  const [page, setPage] = useState(0);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +34,21 @@ export function OrganizerMysteryCreateForm() {
   function updateStep(key: string, patch: Partial<MysteryStep>) {
     setSteps((current) => current.map((step) => (step.key === key ? { ...step, ...patch } : step)));
   }
+
+  /** 保存で送る設定。プレビューも同じものから描く。 */
+  const settingsBody = {
+    steps: steps.map(({ place, prompt, answer, hint, imageUrl, published: stepPublished }) => ({
+      place,
+      prompt,
+      answer,
+      hint,
+      imageUrl,
+      published: stepPublished,
+    })),
+    clearCount,
+    couponOn,
+    prizeOn,
+  };
 
   async function save(status: "draft" | "published") {
     if (!name.trim()) {
@@ -48,19 +70,7 @@ export function OrganizerMysteryCreateForm() {
           type: "mystery",
           description: description.trim(),
           status,
-          mystery: {
-            steps: steps.map(({ place, prompt, answer, hint, imageUrl, published: stepPublished }) => ({
-              place,
-              prompt,
-              answer,
-              hint,
-              imageUrl,
-              published: stepPublished,
-            })),
-            clearCount,
-            couponOn,
-            prizeOn,
-          },
+          mystery: settingsBody,
         }),
       });
       const json = await res.json();
@@ -83,22 +93,29 @@ export function OrganizerMysteryCreateForm() {
   if (published) return <GamePublishSuccess typeLabel="謎解き街歩き" />;
 
   return (
-    <div className="org-quiz">
-      <Link href="/organizer/games" className="org-quiz__back">
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        ゲーム機能に戻る
-      </Link>
-      <header className="org-quiz__hero">
-        <div className="org-quiz__hero-art">
-          <Image src="/organizer/games/loading-mascot-2.png" alt="" width={120} height={120} unoptimized />
-        </div>
-        <div className="org-quiz__hero-copy">
-          <h1>謎解き街歩き</h1>
-          <p>ヒントを順にたどって、まちを歩きます。答えは、参加する人の画面には出しません。</p>
-        </div>
-      </header>
-      <div className="org-quiz__layout">
-        <div className="org-quiz__main">
+    <GameCreateShell
+      title="謎解き街歩き作成"
+      subtitle="ヒントを順にたどって、まちを歩きます。答えは、参加する人の画面には出しません。"
+      steps={STEPS}
+      step={page}
+      onStep={setPage}
+      saving={saving}
+      error={error}
+      onTry={() => setTesting(true)}
+      onDraft={() => void save("draft")}
+      onPublish={() => void save("published")}
+      preview={
+        <GamePhonePreview
+          kind="mystery"
+          typeLabel="謎解き街歩き"
+          name={name}
+          description={description}
+          settings={settingsBody}
+          stepView={page === 0 ? "start" : page === STEPS.length - 1 ? "clear" : "play"}
+        />
+      }
+    >
+      {page === 0 ? (
           <section className="org-quiz__card">
             <h2>基本情報</h2>
             <label className="org-quiz__field org-quiz__field--wide">
@@ -110,6 +127,8 @@ export function OrganizerMysteryCreateForm() {
               <textarea value={description} maxLength={400} rows={3} onChange={(event) => setDescription(event.target.value)} />
             </label>
           </section>
+      ) : null}
+      {page === 1 ? (
           <section className="org-quiz__card">
             <div className="org-quiz__card-head">
               <h2>謎</h2>
@@ -166,6 +185,8 @@ export function OrganizerMysteryCreateForm() {
               </div>
             ))}
           </section>
+      ) : null}
+      {page === 2 ? (
           <section className="org-quiz__card">
             <h2>クリア</h2>
             <label className="org-quiz__field">
@@ -192,24 +213,7 @@ export function OrganizerMysteryCreateForm() {
             </label>
             <p>順に解きます。クリアの案内は、この画面の言葉までです。</p>
           </section>
-          {error ? <p className="org-quiz__error">{error}</p> : null}
-        </div>
-        <div className="org-quiz__side">
-          <div className="org-quiz__actions">
-            <button type="button" className="org-quiz__try" disabled={saving} onClick={() => setTesting(true)}>
-              お試しで見る
-            </button>
-            <button type="button" className="org-quiz__draft" disabled={saving} onClick={() => void save("draft")}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              下書き保存
-            </button>
-            <button type="button" className="org-quiz__publish" disabled={saving} onClick={() => void save("published")}>
-              <Send className="h-4 w-4" aria-hidden />
-              公開する
-            </button>
-          </div>
-        </div>
-      </div>
+      ) : null}
       {testing ? (
         <MysteryTestPlay
           name={name}
@@ -221,6 +225,6 @@ export function OrganizerMysteryCreateForm() {
           onClose={() => setTesting(false)}
         />
       ) : null}
-    </div>
+    </GameCreateShell>
   );
 }

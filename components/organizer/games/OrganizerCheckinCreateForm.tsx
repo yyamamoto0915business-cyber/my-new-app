@@ -2,24 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Check,
   ChevronDown,
   ChevronUp,
   Gift,
   ImagePlus,
   KeyRound,
-  Loader2,
   MapPin,
   Pencil,
   Plus,
   QrCode,
-  Share2,
   Trash2,
   Users,
+  PenLine,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
@@ -42,7 +40,8 @@ import {
   type CheckinSpot,
 } from "@/lib/organizer/checkin";
 import { CheckinTestPlay } from "@/components/organizer/games/CheckinTestPlay";
-import { OrganizerCheckinPreview } from "@/components/organizer/games/OrganizerCheckinPreview";
+import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
 const STEPS = [
@@ -54,28 +53,13 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
-const HERO: Record<StepId, { title: string; lead: string; points: string[] }> = {
-  basic: {
-    title: "まちをめぐってチェックインしよう！",
-    lead: "いろいろなスポットをめぐって、まちの魅力を発見する回遊型の体験を作成できます。",
-    points: ["回遊を促進", "来場確認ができる", "参加しやすい"],
-  },
-  spots: {
-    title: "チェックインスポットを設定しよう！",
-    lead: "まちの見どころやおすすめスポットを登録して、参加者がめぐるコースをつくりましょう。",
-    points: ["地図でかんたん設定", "さまざまなチェックイン方法", "スポットの並び順を調整"],
-  },
-  rewards: {
-    title: "達成条件・特典を設定しよう！",
-    lead: "どのくらい回るとクリアにするか、クリアしたときの特典を設定して参加の楽しさをアップさせましょう。",
-    points: ["達成の喜びを演出", "再訪を促進", "参加意欲が高まる", "まちのファンを増やす"],
-  },
-  publish: {
-    title: "設定が完了しました！",
-    lead: "内容を確認して、イベントを公開しましょう。公開すると、参加者がチェックインに参加できるようになります。",
-    points: [],
-  },
-};
+const SHELL_STEPS: GameCreateStep[] = [
+  { label: STEPS[0].label, icon: PenLine },
+  { label: STEPS[1].label, icon: MapPin },
+  { label: STEPS[2].label, icon: Gift },
+  { label: STEPS[3].label, icon: Rocket },
+];
+
 
 function toIsoFromDateTime(date: string, time: string): string | null {
   if (!date) return null;
@@ -140,7 +124,6 @@ export function OrganizerCheckinCreateForm() {
   const [showOnEvent, setShowOnEvent] = useState(true);
   const [showRanking, setShowRanking] = useState(true);
   const [confirmOk, setConfirmOk] = useState(false);
-  const [previewTab, setPreviewTab] = useState<"cover" | "spots" | "rewards">("cover");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -220,21 +203,50 @@ export function OrganizerCheckinCreateForm() {
       return;
     }
     setError(null);
-    const next = STEPS[Math.min(stepIndex + 1, STEPS.length - 1)];
-    setStep(next.id);
-    if (next.id === "spots") setPreviewTab("spots");
-    if (next.id === "rewards" || next.id === "publish") setPreviewTab("rewards");
-    if (next.id === "basic") setPreviewTab("cover");
+    goTo(STEPS[Math.min(stepIndex + 1, STEPS.length - 1)].id);
   }
 
-  function goPrev() {
-    setError(null);
-    const prev = STEPS[Math.max(stepIndex - 1, 0)];
-    setStep(prev.id);
-    if (prev.id === "spots") setPreviewTab("spots");
-    if (prev.id === "rewards") setPreviewTab("rewards");
-    if (prev.id === "basic") setPreviewTab("cover");
+  function goTo(id: StepId) {
+    setStep(id);
   }
+
+
+  /** 保存で送る設定。プレビューも同じものから描く。 */
+  const settingsBody = {
+    spots: spots.map(({ name: spotName, place, method, radius, keyword, reward, published, imageUrl, pinX, pinY }) => ({
+      name: spotName,
+      place,
+      method,
+      radius,
+      keyword,
+      reward,
+      published,
+      imageUrl,
+      pinX,
+      pinY,
+    })),
+    category,
+    tags,
+    mainImage,
+    defaultMethod,
+    audience,
+    clearMode,
+    clearCount,
+    couponOn,
+    pointsOn,
+    stampOn,
+    prizeOn,
+    couponName,
+    couponDetail,
+    points,
+    receivePlace,
+    maxCount,
+    rankingOn,
+    hintOn,
+    publicToPlayers,
+    showOnEvent,
+    showRanking,
+  };
 
   async function save(status: "draft" | "published") {
     const message = validateStep("basic") ?? (status === "published" ? validateStep("spots") : null);
@@ -261,41 +273,7 @@ export function OrganizerCheckinCreateForm() {
           endsAt: toIsoFromDateTime(endDate, endTime),
           status,
           spots: namedSpots.map((spot) => ({ name: spot.name.trim(), kind: "stamp" })),
-          checkin: {
-            spots: spots.map(({ name: spotName, place, method, radius, keyword, reward, published, imageUrl, pinX, pinY }) => ({
-              name: spotName,
-              place,
-              method,
-              radius,
-              keyword,
-              reward,
-              published,
-              imageUrl,
-              pinX,
-              pinY,
-            })),
-            category,
-            tags,
-            mainImage,
-            defaultMethod,
-            audience,
-            clearMode,
-            clearCount,
-            couponOn,
-            pointsOn,
-            stampOn,
-            prizeOn,
-            couponName,
-            couponDetail,
-            points,
-            receivePlace,
-            maxCount,
-            rankingOn,
-            hintOn,
-            publicToPlayers,
-            showOnEvent,
-            showRanking,
-          },
+          checkin: settingsBody,
         }),
       });
       const json = await res.json();
@@ -315,7 +293,6 @@ export function OrganizerCheckinCreateForm() {
     }
   }
 
-  const hero = HERO[step];
   const checks = [
     { ok: Boolean(name.trim() && description.trim() && startDate && endDate), label: "ゲームの基本情報が設定されています" },
     { ok: namedSpots.length > 0, label: "スポットが1つ以上設定されています" },
@@ -333,49 +310,32 @@ export function OrganizerCheckinCreateForm() {
   }
 
   return (
-    <div className="org-checkin">
-      <Link href="/organizer/games" className="org-checkin__back">
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-        ゲーム機能に戻る
-      </Link>
-
-      <header className="org-checkin__title">
-        <h1>チェックイン作成</h1>
-        <p>スポットに来てチェックインする、回遊型の体験をかんたん作成しましょう。</p>
-      </header>
-
-      <ol className="org-checkin__steps" aria-label="作成の手順">
-        {STEPS.map((item, index) => (
-          <li key={item.id}>
-            <button
-              type="button"
-              className={cn(step === item.id && "is-on", index < stepIndex && "is-done")}
-              onClick={() => setStep(item.id)}
-            >
-              <em>{index < stepIndex ? <Check className="h-3 w-3" aria-hidden /> : index + 1}</em>
-              {item.label}
-            </button>
-          </li>
-        ))}
-      </ol>
-
-      <section className={cn("org-checkin__banner", step === "publish" && "is-done")}>
-        <Image src="/organizer/games/game-type-checkin.png" alt="" width={120} height={120} unoptimized />
-        <div>
-          <h2>{hero.title}</h2>
-          <p>{hero.lead}</p>
-          {hero.points.length > 0 ? (
-            <ul>
-              {hero.points.map((point) => (
-                <li key={point}>{point}</li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      </section>
-
-      <div className="org-checkin__layout">
-        <div className="org-checkin__main">
+    <GameCreateShell
+      title="チェックイン作成"
+      subtitle="スポットに来てチェックインする、回遊型の体験をかんたん作成しましょう。"
+      steps={SHELL_STEPS}
+      step={stepIndex}
+      onStep={(index) => {
+        setError(null);
+        goTo(STEPS[index].id);
+      }}
+      onNext={goNext}
+      saving={saving}
+      error={error}
+      onTry={() => setTesting(true)}
+      onDraft={() => void save("draft")}
+      onPublish={() => void save("published")}
+      preview={
+        <GamePhonePreview
+          kind="checkin"
+          typeLabel="チェックイン"
+          name={name}
+          description={description}
+          settings={settingsBody}
+          stepView={stepIndex === 0 ? "start" : stepIndex === STEPS.length - 1 ? "clear" : "play"}
+        />
+      }
+    >
           {step === "basic" ? (
             <section className="org-checkin__card">
               <h2>
@@ -920,53 +880,6 @@ export function OrganizerCheckinCreateForm() {
               </label>
             </section>
           ) : null}
-
-          {error ? <p className="org-checkin__error">{error}</p> : null}
-
-          <div className="org-checkin__footer">
-            <button type="button" className="org-game-try" disabled={saving} onClick={() => setTesting(true)}>
-              お試しで見る
-            </button>
-            {stepIndex > 0 ? (
-              <button type="button" className="org-checkin__ghost" onClick={goPrev}>
-                前のステップへ
-              </button>
-            ) : null}
-            <button type="button" className="org-checkin__ghost" disabled={saving} onClick={() => void save("draft")}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              下書き保存
-            </button>
-            {stepIndex < STEPS.length - 1 ? (
-              <button type="button" className="org-checkin__next" onClick={goNext}>
-                保存して次へ
-              </button>
-            ) : (
-              <button type="button" className="org-checkin__next" disabled={saving} onClick={() => void save("published")}>
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Share2 className="h-4 w-4" aria-hidden />}
-                公開する
-              </button>
-            )}
-          </div>
-        </div>
-
-        <OrganizerCheckinPreview
-          name={name}
-          description={description}
-          coverImage={mainImage}
-          spots={spots}
-          clearMode={clearMode}
-          clearCount={clearCount}
-          couponOn={couponOn}
-          couponName={couponName}
-          couponDetail={couponDetail}
-          pointsOn={pointsOn}
-          points={points}
-          stampOn={stampOn}
-          rankingOn={rankingOn}
-          tab={previewTab}
-          onTab={setPreviewTab}
-        />
-      </div>
       {testing ? (
         <CheckinTestPlay
           name={name}
@@ -984,6 +897,6 @@ export function OrganizerCheckinCreateForm() {
           onClose={() => setTesting(false)}
         />
       ) : null}
-    </div>
+    </GameCreateShell>
   );
 }

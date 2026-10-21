@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,7 @@ import {
   Map as MapIcon,
   MapPin,
   Navigation,
+  Plus,
   QrCode,
   RotateCcw,
   ScanLine,
@@ -29,14 +30,26 @@ import {
 } from "lucide-react";
 import { PlayExitLink, PlayLocaleToggle } from "@/components/play/PlayLocaleSwitch";
 import {
+  Extras,
   RallyClearScreen,
   RallyStampGetScreen,
+  cardStyle,
+  isPart,
+  layoutActions,
+  moveKeyOf,
+  selectable,
+  shadeClass,
   type RallyMomentEdit,
 } from "@/components/play/rally/RallyMomentScreens";
+import { useMoveLayer } from "@/components/play/rally/useMoveLayer";
 import { usePlayCopy } from "@/components/play/usePlayCopy";
 import { useQrCamera } from "@/hooks/use-qr-camera";
 import { parseCheckinQr } from "@/lib/checkin/parse-checkin-qr";
-import type { GameSpotCategory, PublicPlayMoment } from "@/lib/organizer/game-experience";
+import {
+  createScreenLayout,
+  type GameSpotCategory,
+  type PublicPlayMoment,
+} from "@/lib/organizer/game-experience";
 import type { PlayProgress, PlaySpotProgress } from "@/lib/organizer/play-types";
 import type { RallyStampEvent, RallyTab } from "@/components/play/rally/types";
 import { SPOT_CATEGORY_LOOK, SpotCategoryTag, spotCategory, spotIconUrl } from "@/components/play/rally/spotCategory";
@@ -135,6 +148,13 @@ function useHere(watchWanted: boolean) {
   return { here, locating, failed, locate };
 }
 
+/** 主催者のプレビューで、マップ・リストからスポットを足したり直したりする。 */
+export type RallySpotEdit = {
+  /** なければ（上限に達したなど）追加ボタンを出さない。 */
+  onAdd?: () => void;
+  onEdit: (spotId: string) => void;
+};
+
 export function RallyApp({
   title,
   heroImageUrl,
@@ -151,7 +171,10 @@ export function RallyApp({
   favoritesKey,
   initialTab = "home",
   momentEdit,
+  spotEdit,
 }: {
+  /** 渡すと、マップ・リストからスポットを追加・編集できる（主催者のプレビュー）。 */
+  spotEdit?: RallySpotEdit;
   /** 渡すと、スタンプGETと特典の画面を直接編集できる（主催者のプレビュー）。 */
   momentEdit?: RallyMomentEdit;
   /** 最初に開くタブ（主催者のプレビュー用）。 */
@@ -203,6 +226,8 @@ export function RallyApp({
           here={here}
           onOpenSpot={setSheetSpotId}
           onOpenMap={openOnMap}
+          moment={moment}
+          edit={momentEdit}
         />
       ) : null}
       {tab === "map" ? (
@@ -210,7 +235,9 @@ export function RallyApp({
           progress={progress}
           selectedId={mapSpotId}
           onSelect={setMapSpotId}
-          onOpenSpot={setSheetSpotId}
+          onOpenSpot={spotEdit ? spotEdit.onEdit : setSheetSpotId}
+          onAddSpot={spotEdit?.onAdd}
+          editing={spotEdit != null}
           here={here}
           locating={locating}
           locateFailed={failed}
@@ -336,16 +363,29 @@ function TabButton({
   );
 }
 
-function ProgressMeter({ progress }: { progress: PlayProgress }) {
+function ProgressMeter({
+  progress,
+  label,
+  className,
+  style,
+  onClick,
+}: {
+  progress: PlayProgress;
+  /** 「スタンプ獲得状況」の文字（入力欄にするときは ReactNode を渡す）。 */
+  label?: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+  onClick?: (event: { stopPropagation: () => void; target: EventTarget }) => void;
+}) {
   const copy = usePlayCopy();
   const total = progress.spotCount;
   const done = progress.stampedCount;
   const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
   const left = Math.max(0, total - done);
   return (
-    <div className="rally-meter">
+    <div className={["rally-meter", className].filter(Boolean).join(" ")} style={style} onClick={onClick}>
       <div className="rally-meter__row">
-        <span className="rally-meter__label">{copy.rally.stampStatus}</span>
+        <span className="rally-meter__label">{label ?? copy.rally.stampStatus}</span>
         <span className="rally-meter__count">
           <strong>{done}</strong> / {total}
         </span>
@@ -374,6 +414,8 @@ function RallyHome({
   here,
   onOpenSpot,
   onOpenMap,
+  moment,
+  edit,
 }: {
   title: string;
   progress: PlayProgress;
@@ -381,68 +423,209 @@ function RallyHome({
   here: Here | null;
   onOpenSpot: (spotId: string) => void;
   onOpenMap: (spotId: string | null) => void;
+  moment: PublicPlayMoment | null;
+  /** 主催者のプレビューで、ホームを直接編集する。 */
+  edit?: RallyMomentEdit;
 }) {
   const copy = usePlayCopy();
+  const rootRef = useRef<HTMLElement>(null);
+  const layout = moment?.homeLayout ?? createScreenLayout();
+  const actions = edit ? layoutActions("home", layout, edit) : undefined;
+  const layer = useMoveLayer({
+    containerRef: rootRef,
+    offsets: layout.offsets,
+    activeKey: moveKeyOf(edit?.selected ?? null),
+    edit: actions,
+  });
+  const shown = (key: string) => !layout.hidden.includes(key);
+  const labels = layout.labels ?? {};
   const nextDistance = nextSpot ? spotDistance(nextSpot, here) : null;
+  const saveLabel = (key: string, value: string) =>
+    edit?.onLayout("home", { ...layout, labels: { ...labels, [key]: value } });
+
+  /** 見出し。編集中は入力欄にする（空なら、もとの文字に戻る）。 */
+  const heading = (key: "bookTitle" | "nextTitle", fallback: string) =>
+    layer.movable(
+      key,
+      edit ? (
+        <input
+          className={`rally-section__title rally-edit${edit.selected === key ? " is-selected" : ""}`}
+          value={labels[key] ?? ""}
+          placeholder={fallback}
+          maxLength={30}
+          aria-label={`${fallback}の見出し`}
+          onFocus={() => edit.onSelect(key)}
+          onChange={(event) => saveLabel(key, event.target.value)}
+        />
+      ) : (
+        <h2 className="rally-section__title">{labels[key] || fallback}</h2>
+      ),
+    );
+
+  const meterLabel = edit ? (
+    <input
+      className="rally-meter__label rally-edit"
+      value={labels.meterLabel ?? ""}
+      placeholder={copy.rally.stampStatus}
+      maxLength={30}
+      aria-label="スタンプ獲得状況の見出し"
+      onFocus={() => edit.onSelect("meter")}
+      onChange={(event) => saveLabel("meterLabel", event.target.value)}
+    />
+  ) : (
+    labels.meterLabel || undefined
+  );
+
   return (
-    <main className="rally-page">
+    <main
+      ref={rootRef}
+      className={[
+        "rally-page rally-home rally-layer",
+        shadeClass(layout),
+        layout.bgTheme ? "has-theme" : "",
+        edit ? "is-editing" : "",
+        edit?.selected === "background" ? "is-bg-selected" : "",
+        layer.dragging ? "is-dragging" : "",
+        layer.guide ? "is-guide" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      style={layout.titleColor ? ({ ["--home-title" as string]: layout.titleColor } as CSSProperties) : undefined}
+      onClick={
+        edit
+          ? (event) => {
+              if (layer.justGestured()) return;
+              const target = event.target as HTMLElement;
+              if (target.closest("textarea, input, button, a") || isPart(target)) return;
+              edit.onSelect("background");
+            }
+          : undefined
+      }
+    >
+      {layout.bgVideoUrl ? (
+        <video
+          className="rally-layer__bg"
+          src={layout.bgVideoUrl}
+          poster={layout.bgImageUrl || undefined}
+          autoPlay
+          muted
+          loop
+          playsInline
+          aria-hidden
+        />
+      ) : layout.bgImageUrl ? (
+        <img className="rally-layer__bg" src={layout.bgImageUrl} alt="" aria-hidden />
+      ) : null}
       <header className="rally-bar">
         <PlayExitLink className="rally-bar__exit" />
         <h1>{title}</h1>
       </header>
-      <ProgressMeter progress={progress} />
+      {shown("meter")
+        ? layer.movable(
+            "meter",
+            <ProgressMeter
+              progress={progress}
+              label={meterLabel}
+              className={`rally-card-colors${edit ? " is-editable" : ""}`}
+              style={cardStyle(layout)}
+              onClick={selectable(edit, "meter").onClick}
+            />,
+          )
+        : null}
 
       <section className="rally-section">
-        <h2 className="rally-section__title">{copy.rally.stampBook}</h2>
-        <ol className="rally-book">
-          {progress.spots.map((spot) => {
-            const isNext = nextSpot?.id === spot.id;
-            return (
-              <li key={spot.id}>
-                <button
-                  type="button"
-                  className={["rally-seal", spot.stamped ? "is-stamped" : "", isNext ? "is-next" : ""]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onClick={() => onOpenSpot(spot.id)}
-                  aria-label={spot.stamped ? `${spot.name}（${copy.rally.stamped}）` : spot.name}
-                >
-                  <span className="rally-seal__face">
-                    <StampFace spot={spot} stampImageUrl={progress.stampImageUrl} />
-                  </span>
-                  {spot.stamped ? (
-                    <span className="rally-seal__check" aria-hidden>
-                      <Check />
+        {shown("bookTitle") ? heading("bookTitle", copy.rally.stampBook) : null}
+        {layer.movable(
+          "book",
+          <ol
+            className={`rally-book rally-card-colors${edit ? " is-editable" : ""}`}
+            style={cardStyle(layout)}
+            {...selectable(edit, "book")}
+          >
+            {progress.spots.map((spot) => {
+              const isNext = nextSpot?.id === spot.id;
+              return (
+                <li key={spot.id}>
+                  <button
+                    type="button"
+                    className={[
+                      "rally-seal",
+                      spot.stamped ? "is-stamped" : "",
+                      isNext ? "is-next" : "",
+                      edit ? "is-editable" : "",
+                      edit?.selected === `spotSeal:${spot.id}` ? "is-selected" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onClick={
+                      edit
+                        ? (event) => {
+                            // 主催者は、押したスタンプの絵をここで変えられる。
+                            event.stopPropagation();
+                            edit.onSelect(`spotSeal:${spot.id}`);
+                          }
+                        : () => onOpenSpot(spot.id)
+                    }
+                    aria-label={spot.stamped ? `${spot.name}（${copy.rally.stamped}）` : spot.name}
+                  >
+                    <span className="rally-seal__face">
+                      <StampFace spot={spot} stampImageUrl={progress.stampImageUrl} />
                     </span>
-                  ) : null}
-                  <span className="rally-seal__name">{spot.stamped || isNext ? spot.name : " "}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
+                    {spot.stamped ? (
+                      <span className="rally-seal__check" aria-hidden>
+                        <Check />
+                      </span>
+                    ) : null}
+                    <span className="rally-seal__name">{spot.stamped || isNext ? spot.name : " "}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>,
+        )}
       </section>
 
-      {nextSpot ? (
+      <Extras layout={layout} layer={layer} edit={edit} actions={actions} />
+
+      {nextSpot && (shown("nextTitle") || shown("next")) ? (
         <section className="rally-section">
-          <h2 className="rally-section__title">{copy.rally.nextPick}</h2>
-          <div className="rally-next">
-            <button type="button" className="rally-next__body" onClick={() => onOpenSpot(nextSpot.id)}>
-              <span className="rally-next__thumb" aria-hidden>
-                {nextSpot.imageUrl ? <img src={nextSpot.imageUrl} alt="" /> : <MapPin />}
-              </span>
-              <span className="rally-next__text">
-                <strong>{nextSpot.name}</strong>
-                {nextSpot.description ? <span>{nextSpot.description}</span> : null}
-                {nextDistance != null ? <em>{copy.rallyDistance(nextDistance)}</em> : null}
-              </span>
-              <ChevronRight className="rally-next__chev" aria-hidden />
-            </button>
-            <button type="button" className="rally-cta rally-cta--small" onClick={() => onOpenMap(nextSpot.id)}>
-              {copy.rally.seeOnMap}
-              <ArrowRight aria-hidden />
-            </button>
-          </div>
+          {shown("nextTitle") ? heading("nextTitle", copy.rally.nextPick) : null}
+          {shown("next")
+            ? layer.movable(
+                "next",
+                <div
+                  className={`rally-next rally-card-colors${edit ? " is-editable" : ""}`}
+                  style={cardStyle(layout)}
+                  {...selectable(edit, "next")}
+                >
+                  <button
+                    type="button"
+                    className="rally-next__body"
+                    onClick={edit ? undefined : () => onOpenSpot(nextSpot.id)}
+                    tabIndex={edit ? -1 : undefined}
+                  >
+                    <span className="rally-next__thumb" aria-hidden>
+                      {nextSpot.imageUrl ? <img src={nextSpot.imageUrl} alt="" /> : <MapPin />}
+                    </span>
+                    <span className="rally-next__text">
+                      <strong>{nextSpot.name}</strong>
+                      {nextSpot.description ? <span>{nextSpot.description}</span> : null}
+                      {nextDistance != null ? <em>{copy.rallyDistance(nextDistance)}</em> : null}
+                    </span>
+                    <ChevronRight className="rally-next__chev" aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    className="rally-cta rally-cta--small"
+                    onClick={edit ? undefined : () => onOpenMap(nextSpot.id)}
+                    tabIndex={edit ? -1 : undefined}
+                  >
+                    {copy.rally.seeOnMap}
+                    <ArrowRight aria-hidden />
+                  </button>
+                </div>,
+              )
+            : null}
         </section>
       ) : null}
     </main>
@@ -454,6 +637,8 @@ function RallySpots({
   selectedId,
   onSelect,
   onOpenSpot,
+  onAddSpot,
+  editing,
   here,
   locating,
   locateFailed,
@@ -463,6 +648,9 @@ function RallySpots({
   selectedId: string | null;
   onSelect: (spotId: string | null) => void;
   onOpenSpot: (spotId: string) => void;
+  onAddSpot?: () => void;
+  /** 主催者のプレビュー。スポットを開くと編集になる。 */
+  editing: boolean;
   here: Here | null;
   locating: boolean;
   locateFailed: boolean;
@@ -582,10 +770,17 @@ function RallySpots({
           </button>
           {locateFailed ? <p className="rally-map__notice">{copy.rally.locateFailed}</p> : null}
           {pinned.length === 0 ? <p className="rally-map__empty">{copy.rally.noPins}</p> : null}
+          {onAddSpot && !selected ? (
+            <button type="button" className="rally-spot-add rally-spot-add--float" onClick={onAddSpot}>
+              <Plus aria-hidden />
+              スポットを追加
+            </button>
+          ) : null}
           {selected ? (
             <MapSpotCard
               spot={selected}
               here={here}
+              editing={editing}
               onOpen={() => onOpenSpot(selected.id)}
               onClose={() => onSelect(null)}
             />
@@ -595,10 +790,18 @@ function RallySpots({
         <ul className="rally-list">
           {shown.length === 0 ? <li className="rally-list__empty">{copy.rally.noSpots}</li> : null}
           {shown.map((spot) => (
-            <li key={spot.id}>
+            <li key={spot.id} className={editing ? "is-editable" : undefined}>
               <SpotRow spot={spot} here={here} onOpen={() => onOpenSpot(spot.id)} />
             </li>
           ))}
+          {onAddSpot ? (
+            <li className="rally-list__add">
+              <button type="button" className="rally-spot-add" onClick={onAddSpot}>
+                <Plus aria-hidden />
+                スポットを追加
+              </button>
+            </li>
+          ) : null}
         </ul>
       )}
     </main>
@@ -620,11 +823,13 @@ function WalkLine({ meters }: { meters: number }) {
 function MapSpotCard({
   spot,
   here,
+  editing,
   onOpen,
   onClose,
 }: {
   spot: PlaySpotProgress;
   here: Here | null;
+  editing: boolean;
   onOpen: () => void;
   onClose: () => void;
 }) {
@@ -651,7 +856,7 @@ function MapSpotCard({
         </div>
       </div>
       <button type="button" className="rally-cta rally-cta--small" onClick={onOpen}>
-        {copy.rally.details}
+        {editing ? "このスポットを編集" : copy.rally.details}
         <ChevronRight aria-hidden />
       </button>
     </div>

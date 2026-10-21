@@ -43,6 +43,7 @@ const MOMENT: PublicPlayMoment = {
   showCharacter: false,
   stampLayout: createScreenLayout(),
   clearLayout: createScreenLayout(),
+  homeLayout: createScreenLayout(),
   checkin: "qr",
   lat: null,
   lng: null,

@@ -2,19 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Check,
   ChevronDown,
   ChevronUp,
   ImagePlus,
-  Loader2,
   Pencil,
   Plus,
-  Share2,
   Trash2,
+  PenLine,
+  Store,
+  ListChecks,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
@@ -33,7 +33,8 @@ import {
   type CouponWinMode,
 } from "@/lib/organizer/coupon";
 import { CouponTestPlay } from "@/components/organizer/games/CouponTestPlay";
-import { OrganizerCouponPreview } from "@/components/organizer/games/OrganizerCouponPreview";
+import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
 const STEPS = [
@@ -45,24 +46,13 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
-const HERO: Record<StepId, { title: string; lead: string }> = {
-  basic: {
-    title: "クーポンラリーでまちをめぐる、うれしい体験を。",
-    lead: "地域のお店をめぐってクーポンを集め、まちの魅力をもっと楽しんでもらいましょう。",
-  },
-  stores: {
-    title: "参加店舗とクーポンを設定して、まちの魅力を伝えましょう。",
-    lead: "参加する店舗とクーポンを登録して、まちめぐりをもっと楽しくします。",
-  },
-  rules: {
-    title: "クーポンの獲得条件と利用条件を設定して、魅力的な体験に。",
-    lead: "まちの回遊を促す条件や、利用ルールを設定して、参加者にとってわかりやすいクーポンラリーを作りましょう。",
-  },
-  publish: {
-    title: "内容を確認して、クーポンラリーを公開しましょう。",
-    lead: "設定した内容でよろしければ、公開してイベントを開始できます。",
-  },
-};
+const SHELL_STEPS: GameCreateStep[] = [
+  { label: STEPS[0].label, icon: PenLine },
+  { label: STEPS[1].label, icon: Store },
+  { label: STEPS[2].label, icon: ListChecks },
+  { label: STEPS[3].label, icon: Rocket },
+];
+
 
 function toIsoFromDateTime(date: string, time: string): string | null {
   if (!date) return null;
@@ -117,7 +107,6 @@ export function OrganizerCouponCreateForm() {
   const [firstCome, setFirstCome] = useState(true);
   const [autoGrant, setAutoGrant] = useState(true);
   const [audience, setAudience] = useState<CouponAudience>("anyone");
-  const [previewTab, setPreviewTab] = useState<"cover" | "stores" | "rules">("cover");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -196,12 +185,41 @@ export function OrganizerCouponCreateForm() {
       return;
     }
     setError(null);
-    const next = STEPS[Math.min(stepIndex + 1, STEPS.length - 1)];
-    setStep(next.id);
-    if (next.id === "stores") setPreviewTab("stores");
-    if (next.id === "rules" || next.id === "publish") setPreviewTab("rules");
-    if (next.id === "basic") setPreviewTab("cover");
+    goTo(STEPS[Math.min(stepIndex + 1, STEPS.length - 1)].id);
   }
+
+  function goTo(id: StepId) {
+    setStep(id);
+  }
+
+  /** 保存で送る設定。プレビューも同じものから描く。 */
+  const settingsBody = {
+    stores: stores.map(({ name: storeName, category: storeCategory, imageUrl, offer, condition, limit, published }) => ({
+      name: storeName,
+      category: storeCategory,
+      imageUrl,
+      offer,
+      condition,
+      limit,
+      published,
+    })),
+    category,
+    tags,
+    mainImage,
+    winMode,
+    winCount,
+    oncePerPerson,
+    noStack,
+    useStart,
+    useEnd,
+    timeLimit,
+    useFrom,
+    useTo,
+    maxCount,
+    firstCome,
+    autoGrant,
+    audience,
+  };
 
   async function save(status: "draft" | "published") {
     const message = validateStep("basic") ?? (status === "published" ? validateStep("stores") : null);
@@ -224,33 +242,7 @@ export function OrganizerCouponCreateForm() {
           endsAt: toIsoFromDateTime(endDate, endTime),
           status,
           spots: namedStores.map((store) => ({ name: store.name.trim(), kind: "stamp" })),
-          coupon: {
-            stores: stores.map(({ name: storeName, category: storeCategory, imageUrl, offer, condition, limit, published }) => ({
-              name: storeName,
-              category: storeCategory,
-              imageUrl,
-              offer,
-              condition,
-              limit,
-              published,
-            })),
-            category,
-            tags,
-            mainImage,
-            winMode,
-            winCount,
-            oncePerPerson,
-            noStack,
-            useStart,
-            useEnd,
-            timeLimit,
-            useFrom,
-            useTo,
-            maxCount,
-            firstCome,
-            autoGrant,
-            audience,
-          },
+          coupon: settingsBody,
         }),
       });
       const json = await res.json();
@@ -270,7 +262,6 @@ export function OrganizerCouponCreateForm() {
     }
   }
 
-  const hero = HERO[step];
   const checks = [
     { ok: Boolean(name.trim() && description.trim() && startDate && endDate), label: "基本情報が設定されています" },
     { ok: namedStores.length > 0, label: `店舗が設定されています（${namedStores.length}店舗）` },
@@ -288,40 +279,32 @@ export function OrganizerCouponCreateForm() {
   }
 
   return (
-    <div className="org-coupon">
-      <Link href="/organizer/games" className="org-coupon__back">
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-        ゲーム機能に戻る
-      </Link>
-
-      <header className="org-coupon__hero">
-        <div className="org-coupon__hero-copy">
-          <h1>クーポンラリーを作成する</h1>
-          <p>{hero.lead}</p>
-        </div>
-        <div className="org-coupon__hero-aside">
-          <Image src="/organizer/games/game-type-coupon.png" alt="" width={120} height={120} unoptimized />
-          <strong>{hero.title}</strong>
-        </div>
-      </header>
-
-      <ol className="org-coupon__steps" aria-label="作成の手順">
-        {STEPS.map((item, index) => (
-          <li key={item.id}>
-            <button
-              type="button"
-              className={cn(step === item.id && "is-on", index < stepIndex && "is-done")}
-              onClick={() => setStep(item.id)}
-            >
-              <em>{index + 1}</em>
-              {item.label}
-            </button>
-          </li>
-        ))}
-      </ol>
-
-      <div className="org-coupon__layout">
-        <div className="org-coupon__main">
+    <GameCreateShell
+      title="クーポンラリー作成"
+      subtitle="地域のお店をめぐってクーポンを集め、まちの魅力をもっと楽しんでもらいましょう。"
+      steps={SHELL_STEPS}
+      step={stepIndex}
+      onStep={(index) => {
+        setError(null);
+        goTo(STEPS[index].id);
+      }}
+      onNext={goNext}
+      saving={saving}
+      error={error}
+      onTry={() => setTesting(true)}
+      onDraft={() => void save("draft")}
+      onPublish={() => void save("published")}
+      preview={
+        <GamePhonePreview
+          kind="coupon"
+          typeLabel="クーポンラリー"
+          name={name}
+          description={description}
+          settings={settingsBody}
+          stepView={stepIndex === 0 ? "start" : stepIndex === STEPS.length - 1 ? "clear" : "play"}
+        />
+      }
+    >
           {step === "basic" ? (
             <section className="org-coupon__card">
               <h2>
@@ -722,48 +705,6 @@ export function OrganizerCouponCreateForm() {
               </ul>
             </section>
           ) : null}
-
-          {error ? <p className="org-coupon__error">{error}</p> : null}
-
-          <div className="org-coupon__footer">
-            <button type="button" className="org-game-try" disabled={saving} onClick={() => setTesting(true)}>
-              お試しで見る
-            </button>
-            <button type="button" className="org-coupon__ghost" disabled={saving} onClick={() => void save("draft")}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              下書き保存
-            </button>
-            {stepIndex < STEPS.length - 1 ? (
-              <button type="button" className="org-coupon__next" onClick={goNext}>
-                保存して次へ
-              </button>
-            ) : (
-              <button type="button" className="org-coupon__next" disabled={saving} onClick={() => void save("published")}>
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Share2 className="h-4 w-4" aria-hidden />}
-                公開する
-              </button>
-            )}
-          </div>
-        </div>
-
-        <OrganizerCouponPreview
-          name={name}
-          description={description}
-          periodLabel={periodLabel}
-          category={category}
-          tags={tags}
-          coverImage={mainImage}
-          stores={stores}
-          winMode={winMode}
-          winCount={winCount}
-          oncePerPerson={oncePerPerson}
-          noStack={noStack}
-          useStart={useStart}
-          useEnd={useEnd}
-          tab={previewTab}
-          onTab={setPreviewTab}
-        />
-      </div>
       {testing ? (
         <CouponTestPlay
           name={name}
@@ -777,6 +718,6 @@ export function OrganizerCouponCreateForm() {
           onClose={() => setTesting(false)}
         />
       ) : null}
-    </div>
+    </GameCreateShell>
   );
 }

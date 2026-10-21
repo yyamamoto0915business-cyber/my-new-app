@@ -2,26 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   BookOpen,
   Camera,
   CircleHelp,
   Copy,
-  Footprints,
   Gift,
-  Landmark,
-  Lightbulb,
-  Loader2,
   MapPin,
   Pencil,
+  PenLine,
   Plus,
-  Send,
   Trash2,
   Trophy,
-  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
@@ -34,9 +27,17 @@ import {
   type QuizFormatId,
   type QuizQuestion,
 } from "@/lib/organizer/quiz";
-import { OrganizerQuizPreview } from "@/components/organizer/games/OrganizerQuizPreview";
 import { QuizTestPlay } from "@/components/organizer/games/QuizTestPlay";
+import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
+
+const STEPS: GameCreateStep[] = [
+  { label: "基本情報", icon: PenLine },
+  { label: "出題形式", icon: CircleHelp },
+  { label: "問題", icon: BookOpen },
+  { label: "達成条件・特典", icon: Gift },
+];
 
 function toIsoFromDate(date: string): string | null {
   if (!date) return null;
@@ -63,7 +64,7 @@ export function OrganizerQuizCreateForm() {
   const [couponOn, setCouponOn] = useState(true);
   const [prizeOn, setPrizeOn] = useState(false);
   const [rankingOn, setRankingOn] = useState(false);
-  const [previewTab, setPreviewTab] = useState<"quiz" | "clear">("quiz");
+  const [step, setStep] = useState(0);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -95,7 +96,6 @@ export function OrganizerQuizCreateForm() {
     return null;
   }, [loadingEvents, events.length]);
 
-  const activeQuestion = questions[previewIndex] ?? questions[0] ?? null;
   const editing = questions.find((question) => question.key === editingKey) ?? null;
 
   function toggleFormat(id: QuizFormatId) {
@@ -139,6 +139,22 @@ export function OrganizerQuizCreateForm() {
     );
   }
 
+  /** 保存で送る設定。プレビューも同じものから描く。 */
+  const settingsBody = {
+    formats,
+    questions: questions.map((question) => ({
+      format: question.format,
+      prompt: question.prompt,
+      category: question.category,
+      imageUrl: question.imageUrl,
+      choices: question.choices,
+      correctIndex: question.correctIndex,
+      hint: question.hint,
+    })),
+    clearCount,
+    rewards: { coupon: couponOn, prize: prizeOn, ranking: rankingOn },
+  };
+
   async function save(status: "draft" | "published") {
     if (!name.trim()) {
       setError("ゲーム名を入力してください");
@@ -158,20 +174,7 @@ export function OrganizerQuizCreateForm() {
           startsAt: toIsoFromDate(startDate),
           endsAt: toIsoFromDate(endDate),
           status,
-          quiz: {
-            formats,
-            questions: questions.map((question) => ({
-              format: question.format,
-              prompt: question.prompt,
-              category: question.category,
-              imageUrl: question.imageUrl,
-              choices: question.choices,
-              correctIndex: question.correctIndex,
-              hint: question.hint,
-            })),
-            clearCount,
-            rewards: { coupon: couponOn, prize: prizeOn, ranking: rankingOn },
-          },
+          quiz: settingsBody,
         }),
       });
       const json = await res.json();
@@ -200,55 +203,31 @@ export function OrganizerQuizCreateForm() {
   }
 
   return (
-    <div className="org-quiz">
-      <Link href="/organizer/games" className="org-quiz__back">
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-        ゲーム機能に戻る
-      </Link>
-
-      <header className="org-quiz__hero">
-        <div className="org-quiz__hero-art" aria-hidden>
-          <Image src="/organizer/games/quiz-create-hero.png" alt="" width={1440} height={810} priority unoptimized />
-        </div>
-        <div className="org-quiz__hero-copy">
-          <h1>クイズラリー作成</h1>
-          <p>まちの魅力を知ってもらえるクイズ体験を作成しましょう。</p>
-          <ul>
-            <li>
-              <Landmark className="h-3.5 w-3.5" aria-hidden />
-              地域を知る
-            </li>
-            <li>
-              <Footprints className="h-3.5 w-3.5" aria-hidden />
-              回遊を促進
-            </li>
-            <li>
-              <Lightbulb className="h-3.5 w-3.5" aria-hidden />
-              楽しく学べる
-            </li>
-          </ul>
-        </div>
-        <ul className="org-quiz__stats">
-          <li>
-            <BookOpen className="h-4 w-4" aria-hidden />
-            <span>問題</span>
-            <strong>{questions.length}問</strong>
-          </li>
-          <li>
-            <Users className="h-4 w-4" aria-hidden />
-            <span>公開設定</span>
-            <strong>公開前</strong>
-          </li>
-          <li>
-            <Gift className="h-4 w-4" aria-hidden />
-            <span>参加費用</span>
-            <strong>参加無料</strong>
-          </li>
-        </ul>
-      </header>
-
-      <div className="org-quiz__layout">
-        <div className="org-quiz__main">
+    <GameCreateShell
+      title="クイズラリー作成"
+      subtitle="まちの魅力を知ってもらえるクイズ体験を作成しましょう。"
+      steps={STEPS}
+      step={step}
+      onStep={(next) => {
+        setStep(next);
+      }}
+      saving={saving}
+      error={error}
+      onTry={() => setTesting(true)}
+      onDraft={() => void save("draft")}
+      onPublish={() => void save("published")}
+      preview={
+        <GamePhonePreview
+          kind="quiz"
+          typeLabel="クイズラリー"
+          name={name}
+          description={description}
+          settings={settingsBody} focus={previewIndex}
+          stepView={step === 0 ? "start" : step === STEPS.length - 1 ? "clear" : "play"}
+        />
+      }
+    >
+      {step === 0 ? (
           <section className="org-quiz__card" aria-labelledby="quiz-basic">
             <h2 id="quiz-basic">基本情報</h2>
             <div className="org-quiz__grid">
@@ -297,7 +276,8 @@ export function OrganizerQuizCreateForm() {
               </label>
             </div>
           </section>
-
+      ) : null}
+      {step === 1 ? (
           <section className="org-quiz__card" aria-labelledby="quiz-formats">
             <h2 id="quiz-formats">出題形式</h2>
             <p>クイズの出題方法を選択してください。（複数の形式を組み合わせることもできます）</p>
@@ -328,7 +308,8 @@ export function OrganizerQuizCreateForm() {
               })}
             </ul>
           </section>
-
+      ) : null}
+      {step === 2 ? (
           <section className="org-quiz__card" aria-labelledby="quiz-list">
             <div className="org-quiz__card-head">
               <h2 id="quiz-list">クイズ一覧</h2>
@@ -450,7 +431,8 @@ export function OrganizerQuizCreateForm() {
               </div>
             ) : null}
           </section>
-
+      ) : null}
+      {step === 3 ? (
           <section className="org-quiz__card" aria-labelledby="quiz-rewards">
             <h2 id="quiz-rewards">達成条件・特典</h2>
             <p>クリア条件と、参加者への特典を設定します。</p>
@@ -502,34 +484,7 @@ export function OrganizerQuizCreateForm() {
               </li>
             </ul>
           </section>
-
-          {error ? <p className="org-quiz__error">{error}</p> : null}
-        </div>
-
-        <div className="org-quiz__side">
-          <OrganizerQuizPreview
-            name={name}
-            previewTab={previewTab}
-            onPreviewTab={setPreviewTab}
-            activeQuestion={activeQuestion}
-            questionIndex={Math.min(previewIndex, Math.max(questions.length - 1, 0))}
-            questionTotal={questions.length}
-          />
-          <div className="org-quiz__actions">
-            <button type="button" className="org-quiz__try" disabled={saving} onClick={() => setTesting(true)}>
-              お試しで見る
-            </button>
-            <button type="button" className="org-quiz__draft" disabled={saving} onClick={() => void save("draft")}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              下書き保存
-            </button>
-            <button type="button" className="org-quiz__publish" disabled={saving} onClick={() => void save("published")}>
-              <Send className="h-4 w-4" aria-hidden />
-              公開する
-            </button>
-          </div>
-        </div>
-      </div>
+      ) : null}
       {testing ? (
         <QuizTestPlay
           name={name}
@@ -540,6 +495,6 @@ export function OrganizerQuizCreateForm() {
           onClose={() => setTesting(false)}
         />
       ) : null}
-    </div>
+    </GameCreateShell>
   );
 }

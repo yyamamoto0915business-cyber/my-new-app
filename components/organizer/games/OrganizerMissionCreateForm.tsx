@@ -1,23 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Camera,
   CircleHelp,
   Copy,
   Flag,
-  Footprints,
   Gift,
   KeyRound,
-  Loader2,
   MapPin,
   Pencil,
+  PenLine,
   Plus,
-  Send,
+  Rocket,
   Sparkles,
   Stamp,
   Trash2,
@@ -39,7 +35,8 @@ import {
   type MissionReward,
 } from "@/lib/organizer/mission";
 import { MissionTestPlay } from "@/components/organizer/games/MissionTestPlay";
-import { OrganizerMissionPreview } from "@/components/organizer/games/OrganizerMissionPreview";
+import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
 const KIND_ICONS: Record<MissionKindId, LucideIcon> = {
@@ -57,24 +54,19 @@ const REWARD_OPTIONS: { id: "coupon" | "points" | "stamp"; label: string; blurb:
   { id: "stamp", label: "スタンプラリー", blurb: "スタンプを集める達成にします" },
 ];
 
+const STEPS: GameCreateStep[] = [
+  { label: "基本情報", icon: PenLine },
+  { label: "ミッション形式", icon: Sparkles },
+  { label: "ミッション", icon: Flag },
+  { label: "達成条件・特典", icon: Gift },
+  { label: "公開設定", icon: Rocket },
+];
+
 function toIsoFromDate(date: string): string | null {
   if (!date) return null;
   const value = new Date(`${date}T00:00:00+09:00`);
   if (Number.isNaN(value.getTime())) return null;
   return value.toISOString();
-}
-
-function formatPeriod(startDate: string, endDate: string): string | null {
-  const fmt = (date: string) => {
-    const value = new Date(`${date}T00:00:00+09:00`);
-    if (Number.isNaN(value.getTime())) return date;
-    const weekday = new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(value);
-    return `${date.replaceAll("-", "/")}（${weekday}）`;
-  };
-  if (startDate && endDate) return `${fmt(startDate)} 〜 ${fmt(endDate)}`;
-  if (startDate) return `${fmt(startDate)} から`;
-  if (endDate) return `${fmt(endDate)} まで`;
-  return null;
 }
 
 export function OrganizerMissionCreateForm() {
@@ -99,7 +91,7 @@ export function OrganizerMissionCreateForm() {
   const [passOnly, setPassOnly] = useState(true);
   const [rankingOn, setRankingOn] = useState(true);
   const [hintsOn, setHintsOn] = useState(true);
-  const [device, setDevice] = useState<"phone" | "tablet">("phone");
+  const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +123,6 @@ export function OrganizerMissionCreateForm() {
   }, [loadingEvents, events.length]);
 
   const editing = missions.find((mission) => mission.key === editingKey) ?? null;
-  const periodLabel = formatPeriod(startDate, endDate);
   const clearOptions = Math.max(missions.length, clearCount, 1);
 
   function toggleFormat(id: MissionKindId) {
@@ -174,6 +165,23 @@ export function OrganizerMissionCreateForm() {
     );
   }
 
+  /** 保存で送る設定。プレビューも同じものから描く。 */
+  const settingsBody = {
+    formats,
+    missions: missions.map(({ kind, name: missionName, condition, reward, amount, published }) => ({
+      kind,
+      name: missionName,
+      condition,
+      reward,
+      amount,
+      published,
+    })),
+    clearCount,
+    rewards: { coupon: couponOn, points: pointsOn, stamp: stampOn },
+    prizePlace,
+    publish: { passOnly, ranking: rankingOn, hints: hintsOn },
+  };
+
   async function save(status: "draft" | "published") {
     if (!name.trim()) {
       setError("ゲーム名を入力してください");
@@ -193,21 +201,7 @@ export function OrganizerMissionCreateForm() {
           startsAt: toIsoFromDate(startDate),
           endsAt: toIsoFromDate(endDate),
           status,
-          mission: {
-            formats,
-            missions: missions.map(({ kind, name: missionName, condition, reward, amount, published }) => ({
-              kind,
-              name: missionName,
-              condition,
-              reward,
-              amount,
-              published,
-            })),
-            clearCount,
-            rewards: { coupon: couponOn, points: pointsOn, stamp: stampOn },
-            prizePlace,
-            publish: { passOnly, ranking: rankingOn, hints: hintsOn },
-          },
+          mission: settingsBody,
         }),
       });
       const json = await res.json();
@@ -236,49 +230,29 @@ export function OrganizerMissionCreateForm() {
   }
 
   return (
-    <div className="org-mission">
-      <Link href="/organizer/games" className="org-mission__back">
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-        ゲーム機能に戻る
-      </Link>
-
-      <header className="org-mission__page">
-        <h1>ミッション作成</h1>
-        <p>まちを楽しく巡るミッションゲームを作成して、参加者に特別な体験を届けましょう。</p>
-      </header>
-
-      <section className="org-mission__hero" aria-label="ミッションの案内">
-        <Image
-          src="/organizer/games/games-hero.png"
-          alt=""
-          fill
-          priority
-          unoptimized
-          className="org-mission__hero-img"
-          sizes="(min-width: 1080px) 70vw, 100vw"
+    <GameCreateShell
+      title="ミッション作成"
+      subtitle="まちを楽しく巡るミッションゲームを作成して、参加者に特別な体験を届けましょう。"
+      steps={STEPS}
+      step={step}
+      onStep={setStep}
+      saving={saving}
+      error={error}
+      onTry={() => setTesting(true)}
+      onDraft={() => void save("draft")}
+      onPublish={() => void save("published")}
+      preview={
+        <GamePhonePreview
+          kind="mission"
+          typeLabel="ミッション"
+          name={name}
+          description={description}
+          settings={settingsBody}
+          stepView={step === 0 ? "start" : step === STEPS.length - 1 ? "clear" : "play"}
         />
-        <div className="org-mission__hero-copy">
-          <h2>ミッションで、まちの魅力をもっと届けよう！</h2>
-          <p>参加者が楽しみながらまちを巡り、発見し、思い出をつくる体験をかんたんに作成できます。</p>
-          <ul>
-            <li>
-              <Footprints className="h-3.5 w-3.5" aria-hidden />
-              回遊を促進
-            </li>
-            <li>
-              <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              行動を引き出す
-            </li>
-            <li>
-              <Trophy className="h-3.5 w-3.5" aria-hidden />
-              達成感がある
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="org-mission__layout">
-        <div className="org-mission__main">
+      }
+    >
+      {step === 0 ? (
           <section className="org-mission__card" aria-labelledby="mission-basic">
             <div className="org-mission__card-title">
               <span>1</span>
@@ -347,7 +321,8 @@ export function OrganizerMissionCreateForm() {
               </label>
             </div>
           </section>
-
+      ) : null}
+      {step === 1 ? (
           <section className="org-mission__card" aria-labelledby="mission-formats">
             <div className="org-mission__card-title">
               <span>2</span>
@@ -377,7 +352,8 @@ export function OrganizerMissionCreateForm() {
               })}
             </ul>
           </section>
-
+      ) : null}
+      {step === 2 ? (
           <section className="org-mission__card" aria-labelledby="mission-list">
             <div className="org-mission__card-head">
               <div className="org-mission__card-title">
@@ -531,8 +507,8 @@ export function OrganizerMissionCreateForm() {
               </div>
             ) : null}
           </section>
-
-          <div className="org-mission__split">
+      ) : null}
+      {step === 3 ? (
             <section className="org-mission__card" aria-labelledby="mission-rewards">
               <div className="org-mission__card-title">
                 <span>4</span>
@@ -590,7 +566,8 @@ export function OrganizerMissionCreateForm() {
                 />
               </label>
             </section>
-
+      ) : null}
+      {step === 4 ? (
             <section className="org-mission__card" aria-labelledby="mission-publish">
               <div className="org-mission__card-title">
                 <span>5</span>
@@ -650,32 +627,7 @@ export function OrganizerMissionCreateForm() {
                 </li>
               </ul>
             </section>
-          </div>
-        </div>
-
-        <OrganizerMissionPreview
-          name={name}
-          periodLabel={periodLabel}
-          missions={missions}
-          device={device}
-          onDevice={setDevice}
-        />
-      </div>
-
-      {error ? <p className="org-mission__error">{error}</p> : null}
-      <div className="org-mission__actions">
-        <button type="button" className="org-game-try" disabled={saving} onClick={() => setTesting(true)}>
-          お試しで見る
-        </button>
-        <button type="button" className="org-mission__draft" disabled={saving} onClick={() => void save("draft")}>
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-          下書き保存
-        </button>
-        <button type="button" className="org-mission__publish-btn" disabled={saving} onClick={() => void save("published")}>
-          <Send className="h-4 w-4" aria-hidden />
-          公開する
-        </button>
-      </div>
+      ) : null}
       {testing ? (
         <MissionTestPlay
           name={name}
@@ -688,6 +640,6 @@ export function OrganizerMissionCreateForm() {
           onClose={() => setTesting(false)}
         />
       ) : null}
-    </div>
+    </GameCreateShell>
   );
 }

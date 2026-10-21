@@ -2,17 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
-  Check,
   ImagePlus,
-  Loader2,
   MapPin,
   Plus,
-  Share2,
   Trash2,
+  PenLine,
+  ListChecks,
+  Palette,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
@@ -26,7 +25,8 @@ import {
   type PhotoSpot,
 } from "@/lib/organizer/photo";
 import { PhotoTestPlay } from "@/components/organizer/games/PhotoTestPlay";
-import { OrganizerPhotoPreview } from "@/components/organizer/games/OrganizerPhotoPreview";
+import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
 const STEPS = [
@@ -38,6 +38,14 @@ const STEPS = [
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
+
+const SHELL_STEPS: GameCreateStep[] = [
+  { label: STEPS[0].label, icon: PenLine },
+  { label: STEPS[1].label, icon: MapPin },
+  { label: STEPS[2].label, icon: ListChecks },
+  { label: STEPS[3].label, icon: Palette },
+  { label: STEPS[4].label, icon: Rocket },
+];
 
 function toIsoFromDateTime(date: string, time: string): string | null {
   if (!date) return null;
@@ -87,7 +95,6 @@ export function OrganizerPhotoCreateForm() {
   const [themeColor, setThemeColor] = useState<(typeof PHOTO_THEME_COLORS)[number]["value"]>(
     PHOTO_THEME_COLORS[0].value,
   );
-  const [previewTab, setPreviewTab] = useState<"cover" | "spots" | "rewards">("cover");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -156,12 +163,31 @@ export function OrganizerPhotoCreateForm() {
       return;
     }
     setError(null);
-    const next = STEPS[Math.min(stepIndex + 1, STEPS.length - 1)];
-    setStep(next.id);
-    if (next.id === "spots") setPreviewTab("spots");
-    if (next.id === "rules" || next.id === "publish") setPreviewTab("rewards");
-    if (next.id === "basic" || next.id === "design") setPreviewTab("cover");
+    goTo(STEPS[Math.min(stepIndex + 1, STEPS.length - 1)].id);
   }
+
+  function goTo(id: StepId) {
+    setStep(id);
+  }
+
+  /** 保存で送る設定。プレビューも同じものから描く。 */
+  const settingsBody = {
+    spots: spots.map(({ name: spotName, place, prompt, imageUrl }) => ({
+      name: spotName,
+      place,
+      prompt,
+      imageUrl,
+    })),
+    clearCount,
+    photoRequired,
+    rewards: { points: pointsOn, coupon: couponOn, prize: prizeOn },
+    points,
+    category,
+    tags,
+    mainImage,
+    coverImage: coverImage || mainImage,
+    themeColor,
+  };
 
   async function save(status: "draft" | "published") {
     const message = validateStep("basic") ?? (status === "published" ? validateStep("spots") : null);
@@ -186,23 +212,7 @@ export function OrganizerPhotoCreateForm() {
           spots: spots
             .filter((spot) => spot.name.trim())
             .map((spot) => ({ name: spot.name.trim(), kind: "stamp" })),
-          photo: {
-            spots: spots.map(({ name: spotName, place, prompt, imageUrl }) => ({
-              name: spotName,
-              place,
-              prompt,
-              imageUrl,
-            })),
-            clearCount,
-            photoRequired,
-            rewards: { points: pointsOn, coupon: couponOn, prize: prizeOn },
-            points,
-            category,
-            tags,
-            mainImage,
-            coverImage: coverImage || mainImage,
-            themeColor,
-          },
+          photo: settingsBody,
         }),
       });
       const json = await res.json();
@@ -231,53 +241,32 @@ export function OrganizerPhotoCreateForm() {
   }
 
   return (
-    <div className="org-photo">
-      <Link href="/organizer/games" className="org-photo__back">
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-        ゲーム機能に戻る
-      </Link>
-
-      <header className="org-photo__hero">
-        <div className="org-photo__hero-copy">
-          <h1>フォトラリーを作成する</h1>
-          <p>スポットで写真を撮って、思い出を集めるゲームです。かんたんに作成できます。</p>
-        </div>
-        <div className="org-photo__hero-aside">
-          <Image src="/organizer/games/game-type-photo.png" alt="" width={120} height={120} unoptimized />
-          <ul>
-            <li>
-              <Check className="h-3.5 w-3.5" aria-hidden />
-              写真を撮るだけで楽しめる！
-            </li>
-            <li>
-              <Check className="h-3.5 w-3.5" aria-hidden />
-              観光スポットやお店の回遊におすすめ
-            </li>
-            <li>
-              <Check className="h-3.5 w-3.5" aria-hidden />
-              SNSでのシェアも促進できます
-            </li>
-          </ul>
-        </div>
-      </header>
-
-      <ol className="org-photo__steps" aria-label="作成の手順">
-        {STEPS.map((item, index) => (
-          <li key={item.id}>
-            <button
-              type="button"
-              className={cn(step === item.id && "is-on", index < stepIndex && "is-done")}
-              onClick={() => setStep(item.id)}
-            >
-              <em>{index + 1}</em>
-              {item.label}
-            </button>
-          </li>
-        ))}
-      </ol>
-
-      <div className="org-photo__layout">
-        <div className="org-photo__main">
+    <GameCreateShell
+      title="フォトラリー作成"
+      subtitle="スポットで写真を撮って、思い出を集めるゲームです。かんたんに作成できます。"
+      steps={SHELL_STEPS}
+      step={stepIndex}
+      onStep={(index) => {
+        setError(null);
+        goTo(STEPS[index].id);
+      }}
+      onNext={goNext}
+      saving={saving}
+      error={error}
+      onTry={() => setTesting(true)}
+      onDraft={() => void save("draft")}
+      onPublish={() => void save("published")}
+      preview={
+        <GamePhonePreview
+          kind="photo"
+          typeLabel="フォトラリー"
+          name={name}
+          description={description}
+          settings={settingsBody}
+          stepView={stepIndex === 0 ? "start" : stepIndex === STEPS.length - 1 ? "clear" : "play"}
+        />
+      }
+    >
           {step === "basic" ? (
             <section className="org-photo__card">
               <h2>
@@ -597,47 +586,6 @@ export function OrganizerPhotoCreateForm() {
               </dl>
             </section>
           ) : null}
-
-          {error ? <p className="org-photo__error">{error}</p> : null}
-
-          <div className="org-photo__footer">
-            <button type="button" className="org-game-try" disabled={saving} onClick={() => setTesting(true)}>
-              お試しで見る
-            </button>
-            <button type="button" className="org-photo__ghost" disabled={saving} onClick={() => void save("draft")}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              下書き保存
-            </button>
-            {stepIndex < STEPS.length - 1 ? (
-              <button type="button" className="org-photo__next" onClick={goNext}>
-                保存して次へ
-              </button>
-            ) : (
-              <button type="button" className="org-photo__next" disabled={saving} onClick={() => void save("published")}>
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Share2 className="h-4 w-4" aria-hidden />}
-                公開する
-              </button>
-            )}
-          </div>
-        </div>
-
-        <OrganizerPhotoPreview
-          name={name}
-          description={description}
-          periodLabel={periodLabel}
-          category={category}
-          tags={tags}
-          coverImage={coverImage || mainImage}
-          themeColor={themeColor}
-          spots={spots}
-          clearCount={clearCount}
-          photoRequired={photoRequired}
-          points={points}
-          rewards={{ points: pointsOn, coupon: couponOn, prize: prizeOn }}
-          tab={previewTab}
-          onTab={setPreviewTab}
-        />
-      </div>
       {testing ? (
         <PhotoTestPlay
           name={name}
@@ -650,6 +598,6 @@ export function OrganizerPhotoCreateForm() {
           onClose={() => setTesting(false)}
         />
       ) : null}
-    </div>
+    </GameCreateShell>
   );
 }

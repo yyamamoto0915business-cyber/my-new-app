@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { RallyApp } from "@/components/play/rally/RallyApp";
+import { RallyApp, type RallySpotEdit } from "@/components/play/rally/RallyApp";
 import {
   RallyStartScreen,
   type StartEdit,
@@ -99,9 +99,13 @@ export function WizardLivePreview({
       rewardImageField: ReactNode;
       /** 配置・足したテキストや画像・背景。 */
       onLayout: (screen: RallyMomentScreen, layout: GameScreenLayout) => void;
+      /** スポットごとのスタンプの絵を選ぶ欄（key はスポットの key）。 */
+      spotStampField: (spotKey: string) => ReactNode;
       /** 背景の画像を選ぶ欄。 */
       bgImageField: (screen: RallyMomentScreen) => ReactNode;
     };
+    /** マップ・リストからスポットを足す・直す（id はスポットの key）。 */
+    spots?: RallySpotEdit;
     /** マスコットを出すかどうか。 */
     onShowCharacter: (show: boolean) => void;
     onLook: (look: GameStartLook) => void;
@@ -129,8 +133,9 @@ export function WizardLivePreview({
   useEffect(() => {
     setMomentSelected(null);
   }, [view]);
-  const momentScreen: RallyMomentScreen | null = view === "stamp" ? "stamp" : view === "reward" ? "clear" : null;
-  const momentLayout = momentScreen === "stamp" ? experience.screens.stamp.layout : experience.screens.clear.layout;
+  const momentScreen: RallyMomentScreen | null =
+    view === "stamp" ? "stamp" : view === "reward" ? "clear" : view === "home" ? "home" : null;
+  const momentLayout = experience.screens[momentScreen ?? "clear"].layout;
   const momentEdit: RallyMomentEdit | undefined =
     edit && momentScreen
       ? {
@@ -146,6 +151,7 @@ export function WizardLivePreview({
     if (!momentSelected) return;
     const key =
       momentSelected === "background" ? null : momentSelected === "rewardBox" ? "card" : momentSelected;
+    // ホームは縦に長いので、上下ではなく常に下に出す。
     const id = window.requestAnimationFrame(() => {
       const el = key ? stageRef.current?.querySelector(`[data-move="${key}"]`) : null;
       if (!el) {
@@ -318,6 +324,10 @@ export function WizardLivePreview({
     }
   }
 
+  const spotSealKey =
+    momentScreen === "home" && momentSelected?.startsWith("spotSeal:") ? momentSelected.slice(9) : null;
+  const spotSeal = spotSealKey ? (spots.find((spot) => spot.key === spotSealKey) ?? null) : null;
+
   function closeSelection() {
     setSelected(null);
     setMomentSelected(null);
@@ -438,7 +448,7 @@ export function WizardLivePreview({
           </button>
         ))}
       </div>
-      {edit && (view === "stamp" || view === "reward") ? (
+      {edit && (view === "stamp" || view === "reward" || view === "home") ? (
         <p className="wizard-preview__edit-hint">タップで編集、押したままドラッグで移動</p>
       ) : null}
       {edit && view === "start" ? (
@@ -556,6 +566,7 @@ export function WizardLivePreview({
                   replayError={null}
                   onReplay={() => undefined}
                   momentEdit={momentEdit}
+                  spotEdit={edit?.spots}
                 />
               )}
             </div>
@@ -582,7 +593,28 @@ export function WizardLivePreview({
           />
         </div>
       ) : null}
-      {edit && momentEdit && momentScreen && momentSelected && !picking && !selectedShape ? (
+      {edit && spotSeal && !picking ? (
+        <div className="wizard-preview__toolbar" data-place="bottom">
+          <div className="edit-panel" role="dialog" aria-label="スタンプの絵">
+            <div className="edit-panel__head">
+              <b>「{spotSeal.name.trim() || "スポット"}」のスタンプ</b>
+              <button type="button" onClick={closeSelection} aria-label="閉じる">
+                <X aria-hidden />
+              </button>
+            </div>
+            <div className="edit-panel__rows">
+              <div className="edit-panel__media edit-panel__media--labeled">
+                {edit.moment.spotStampField(spotSeal.key)}
+                {edit.moment.stampImageField}
+              </div>
+              <p className="edit-panel__note edit-panel__note--show">
+                このスポットの絵がないときは、全スポット共通の絵を使います
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {edit && momentEdit && momentScreen && momentSelected && !picking && !selectedShape && !spotSeal ? (
         <div className="wizard-preview__toolbar" data-place={momentPlace}>
           <MomentEditPanel
             screen={momentScreen}
