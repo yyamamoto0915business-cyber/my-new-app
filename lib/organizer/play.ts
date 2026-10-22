@@ -37,7 +37,14 @@ import {
   type PlaySpotProgress,
   type PlayStampResult,
 } from "@/lib/organizer/play-types";
-import { normalizeQuizSolved, quizFinishRank, readStoredQuiz } from "@/lib/organizer/quiz-play";
+import {
+  normalizeQuizSolved,
+  publicQuizQuestion,
+  quizFinishRank,
+  readStoredQuiz,
+  type PublicQuizQuestion,
+  type QuizGate,
+} from "@/lib/organizer/quiz-play";
 import { missionAwardPoints, normalizeMissionDone, readStoredMission } from "@/lib/organizer/mission-play";
 import { normalizePhotoDone, readStoredPhoto } from "@/lib/organizer/photo-play";
 import { normalizeCouponDone, readStoredCoupon } from "@/lib/organizer/coupon-play";
@@ -885,6 +892,61 @@ export async function resumePlayGame(
   };
 }
 
+/** クイズのチェックポイントに着いたことの証し（現在地か、現地の合言葉）。 */
+export type QuizArrivalProof = { here: { lat: number; lng: number } | null; keyword: string };
+
+/** 着いていなければ、その理由。着いていれば null。 */
+function quizGateBlock(gate: QuizGate, proof: QuizArrivalProof): { code: string; error: string } | null {
+  if (gate.arrival === "keyword") {
+    if (!proof.keyword.trim()) return { code: "keyword_required", error: "合言葉を入れてください" };
+    return rallyKeywordMatches(gate.keyword, proof.keyword)
+      ? null
+      : { code: "keyword_mismatch", error: "合言葉が違います" };
+  }
+  const decision = rallyGpsDecision({ lat: gate.lat, lng: gate.lng, radiusM: gate.radiusM }, proof.here);
+  if (decision.ok) return null;
+  if (decision.code === "gps_required") return { code: "gps_required", error: "現在地を確認してください" };
+  return { code: "gps_far", error: decision.message };
+}
+
+/** チェックポイントに着いたことを確かめて、その問題の中身を渡す。 */
+export async function openPlayQuizCheckpoint(
+  db: SupabaseClient,
+  joinToken: string,
+  deviceToken: string,
+  questionIndex: number,
+  proof: QuizArrivalProof,
+): Promise<
+  | { ok: true; question: PublicQuizQuestion }
+  | { ok: false; status: number; error: string; code?: string }
+> {
+  if (!deviceToken || deviceToken.length < 16) {
+    return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  }
+  const game = await lookupPlayGameByJoinToken(db, joinToken);
+  if (!game) return { ok: false, status: 404, error: "ゲームが見つかりません" };
+  const { data } = await db
+    .from("organizer_game_players")
+    .select("*")
+    .eq("game_id", game.id)
+    .eq("device_token_hash", hashDeviceToken(deviceToken))
+    .maybeSingle();
+  if (!data) return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  const player = data as PlayerRow;
+  if (player.auth_epoch !== game.playEpoch) {
+    return { ok: false, status: 401, error: "合言葉がリセットされました。参加用QRから入り直してください" };
+  }
+  const { settings } = await loadRally(db, game.id, player.id, playerRound(player));
+  const stored = readStoredQuiz(settings);
+  const question = stored?.questions.find((item) => item.index === questionIndex);
+  if (!question) return { ok: false, status: 404, error: "問題が見つかりません" };
+  if (question.gate) {
+    const blocked = quizGateBlock(question.gate, proof);
+    if (blocked) return { ok: false, status: 422, error: blocked.error, code: blocked.code };
+  }
+  return { ok: true, question: publicQuizQuestion(question, true) };
+}
+
 export async function answerPlayQuiz(
   db: SupabaseClient,
   joinToken: string,
@@ -892,6 +954,7 @@ export async function answerPlayQuiz(
   questionIndex: number,
   choiceIndex: number,
   userId: string | null = null,
+  proof: QuizArrivalProof = { here: null, keyword: "" },
 ): Promise<
   | { ok: true; correct: boolean; already: boolean; hint: string; progress: PlayProgress }
   | { ok: false; status: number; error: string }
@@ -933,6 +996,10 @@ export async function answerPlayQuiz(
   }
   if (!Number.isInteger(choiceIndex) || choiceIndex < 0 || choiceIndex >= question.choices.length) {
     return { ok: false, status: 400, error: "選択肢を選んでください" };
+  }
+  // チェックポイントの問題は、着いたことを答えるたびに確かめる（問題だけ先に知っても答えられない）。
+  if (question.gate && quizGateBlock(question.gate, proof)) {
+    return { ok: false, status: 422, error: "チェックポイントに着いてから答えてください" };
   }
 
   const correct = choiceIndex === question.correctIndex;

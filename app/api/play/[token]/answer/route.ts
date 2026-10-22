@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { answerPlayQuiz, getPlayDb } from "@/lib/organizer/play";
 import { readPlayUserId } from "@/lib/organizer/play-user";
+import { readQuizArrivalProof } from "@/lib/organizer/quiz-arrival";
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "参加処理を開始できません" }, { status: 503 });
   }
 
-  let body: { deviceToken?: unknown; questionIndex?: unknown; choiceIndex?: unknown };
+  let body: { deviceToken?: unknown; questionIndex?: unknown; choiceIndex?: unknown; here?: unknown; keyword?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       questionIndex,
       choiceIndex,
       await readPlayUserId(),
+      readQuizArrivalProof(body),
     );
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status });

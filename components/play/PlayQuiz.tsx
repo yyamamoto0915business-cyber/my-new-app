@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PublicQuiz, PublicQuizQuestion } from "@/lib/organizer/quiz-play";
 import type { PlayProgress } from "@/lib/organizer/play-types";
@@ -27,6 +27,63 @@ export function PlayQuiz({ token, quiz, progress, onProgress }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const copy = usePlayCopy();
+  /** 着いて開いたチェックポイントの問題と、答えるときに一緒に送る証し。 */
+  const [opened, setOpened] = useState<
+    Record<number, { question: PublicQuizQuestion; here: { lat: number; lng: number } | null; keyword: string }>
+  >({});
+  const [gateKeyword, setGateKeyword] = useState("");
+  const [gateBusy, setGateBusy] = useState(false);
+  const [gateNote, setGateNote] = useState<string | null>(null);
+
+  async function openCheckpoint(question: PublicQuizQuestion, here: { lat: number; lng: number } | null) {
+    const stored = readPlaySession(token);
+    if (!stored) {
+      setGateNote("先に参加用QRから入ってください");
+      return;
+    }
+    setGateBusy(true);
+    setGateNote(null);
+    try {
+      const keyword = gateKeyword.trim();
+      const res = await fetch(`/api/play/${encodeURIComponent(token)}/quiz-open`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deviceToken: stored.deviceToken, questionIndex: question.index, here, keyword }),
+      });
+      const json = (await res.json()) as { question?: PublicQuizQuestion; error?: string };
+      if (!res.ok || !json.question) {
+        setGateNote(json.error ?? "チェックポイントを確かめられませんでした");
+        return;
+      }
+      setOpened((current) => ({ ...current, [question.index]: { question: json.question!, here, keyword } }));
+      setGateKeyword("");
+    } catch {
+      setGateNote("通信エラーが発生しました");
+    } finally {
+      setGateBusy(false);
+    }
+  }
+
+  function checkHere(question: PublicQuizQuestion) {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGateNote("この端末では現在地を取れません");
+      return;
+    }
+    setGateBusy(true);
+    setGateNote("現在地を確認しています…");
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        void openCheckpoint(question, {
+          lat: Math.round(position.coords.latitude * 1e6) / 1e6,
+          lng: Math.round(position.coords.longitude * 1e6) / 1e6,
+        }),
+      () => {
+        setGateBusy(false);
+        setGateNote("現在地を取得できませんでした。位置情報を許可して、もう一度押してください。");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  }
 
   async function answer(question: PublicQuizQuestion, choiceIndex: number) {
     if (verdict === "correct" || saving) return;
@@ -46,6 +103,8 @@ export function PlayQuiz({ token, quiz, progress, onProgress }: Props) {
           deviceToken: stored.deviceToken,
           questionIndex: question.index,
           choiceIndex,
+          here: opened[question.index]?.here ?? null,
+          keyword: opened[question.index]?.keyword ?? "",
         }),
       });
       const json = (await res.json()) as {
@@ -119,6 +178,61 @@ export function PlayQuiz({ token, quiz, progress, onProgress }: Props) {
   }
 
   const place = quiz.questions.findIndex((question) => question.index === current.index) + 1;
+  const shown = opened[current.index]?.question ?? current;
+  const locked = shown.checkpoint?.locked === true;
+
+  if (locked && shown.checkpoint) {
+    const checkpoint = shown.checkpoint;
+    return (
+      <div className="play-quiz">
+        <div className="game-test__top">
+          <p>
+            {solved.length} / {needed} {copy.correctCount}
+          </p>
+          <span>
+            {place} / {quiz.questions.length}
+          </span>
+        </div>
+        <div className="play-quiz__gate">
+          <span className="play-quiz__gate-icon" aria-hidden>
+            <MapPin />
+          </span>
+          <p className="play-quiz__gate-kicker">{copy.msg("チェックポイント")}</p>
+          {checkpoint.place ? <h2>{checkpoint.place}</h2> : null}
+          <p>{copy.msg("この場所に着くと、問題が出ます。")}</p>
+          {checkpoint.arrival === "keyword" ? (
+            <form
+              className="play-quiz__gate-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void openCheckpoint(current, null);
+              }}
+            >
+              <p>{copy.msg("現地にある合言葉を入れると、問題が開きます。")}</p>
+              <input
+                value={gateKeyword}
+                maxLength={40}
+                aria-label={copy.msg("合言葉")}
+                placeholder={copy.msg("合言葉")}
+                onChange={(event) => setGateKeyword(event.target.value)}
+              />
+              <button type="submit" className="play-dock__go" disabled={gateBusy || !gateKeyword.trim()}>
+                {copy.msg("問題を開く")}
+              </button>
+            </form>
+          ) : (
+            <div className="play-quiz__gate-form">
+              <p>{copy.msg("着いたら、現在地で確かめます。")}</p>
+              <button type="button" className="play-dock__go" disabled={gateBusy} onClick={() => checkHere(current)}>
+                {copy.msg("現在地で確かめる")}
+              </button>
+            </div>
+          )}
+          {gateNote ? <p className="play-quiz__gate-note">{copy.msg(gateNote)}</p> : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="play-quiz">
@@ -130,20 +244,32 @@ export function PlayQuiz({ token, quiz, progress, onProgress }: Props) {
           {place} / {quiz.questions.length}
         </span>
       </div>
-      {current.category ? <em className="game-test__chip">{current.category}</em> : null}
-      {current.imageUrl ? <img className="game-test__photo" src={current.imageUrl} alt="" /> : null}
-      <h2>{current.prompt}</h2>
-      <div className="game-test__choices">
-        {current.choices.map((choice, choiceIndex) => {
+      {shown.checkpoint ? (
+        <p className="game-test__note is-right">
+          <MapPin className="h-3.5 w-3.5" aria-hidden />
+          {copy.msg("着きました。問題に答えてください。")}
+        </p>
+      ) : null}
+      {shown.category ? <em className="game-test__chip">{shown.category}</em> : null}
+      {shown.imageUrl ? (
+        <img
+          className={cn("game-test__photo", shown.format === "photo" && "game-test__photo--large")}
+          src={shown.imageUrl}
+          alt=""
+        />
+      ) : null}
+      <h2>{shown.prompt}</h2>
+      <div className={cn("game-test__choices", shown.format === "ox" && "game-test__choices--ox")}>
+        {shown.choices.map((choice, choiceIndex) => {
           const right = verdict === "correct" && picked === choiceIndex;
           const wrong = verdict === "wrong" && picked === choiceIndex;
           return (
             <button
-              key={`${current.index}-${choiceIndex}`}
+              key={`${shown.index}-${choiceIndex}`}
               type="button"
               className={cn("game-test__choice", right && "is-right", wrong && "is-wrong")}
               disabled={saving || verdict === "correct"}
-              onClick={() => void answer(current, choiceIndex)}
+              onClick={() => void answer(shown, choiceIndex)}
             >
               {choice}
             </button>

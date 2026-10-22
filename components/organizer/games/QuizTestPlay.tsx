@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { QuizQuestion } from "@/lib/organizer/quiz";
 
@@ -130,20 +130,35 @@ export function QuizTestPlay({ name, description, questions, clearCount, rewards
             </div>
             {waitingAtSpot ? (
               <>
-                <h2>{question.prompt.trim() || "この場所の問題"}</h2>
-                <p>この場所に着くと、問題が開きます。</p>
-                <button type="button" className="play-start__go" onClick={() => setArrived(true)}>
-                  着いた
-                </button>
+                <div className="play-quiz__gate">
+                  <span className="play-quiz__gate-icon" aria-hidden>
+                    <MapPin />
+                  </span>
+                  <p className="play-quiz__gate-kicker">チェックポイント</p>
+                  {question.place.trim() ? <h2>{question.place.trim()}</h2> : null}
+                  <p>この場所に着くと、問題が出ます。</p>
+                  <p>
+                    {question.arrival === "keyword"
+                      ? "本番では、現地の合言葉を入れると開きます。"
+                      : "本番では、現在地で確かめてから開きます。"}
+                  </p>
+                  <button type="button" className="play-start__go" onClick={() => setArrived(true)}>
+                    着いたことにする（お試し）
+                  </button>
+                </div>
               </>
             ) : (
               <>
                 {question.category ? <em className="game-test__chip">{question.category}</em> : null}
                 {question.imageUrl ? (
-                  <img className="game-test__photo" src={question.imageUrl} alt="" />
+                  <img
+                    className={cn("game-test__photo", question.format === "photo" && "game-test__photo--large")}
+                    src={question.imageUrl}
+                    alt=""
+                  />
                 ) : null}
                 <h2>{question.prompt.trim() || "問題文がまだありません。"}</h2>
-                <div className="game-test__choices">
+                <div className={cn("game-test__choices", question.format === "ox" && "game-test__choices--ox")}>
                   {question.choices.map((choice, choiceIndex) => {
                     const label = choice.trim() || `選択肢 ${choiceIndex + 1}`;
                     const right = verdict === "correct" && choiceIndex === question.correctIndex;

@@ -23,11 +23,14 @@ import {
   QUIZ_CATEGORIES,
   QUIZ_FORMATS,
   createQuizQuestion,
+  quizFormatLabel,
+  quizQuestionProblem,
   sampleQuizQuestions,
   type QuizFormatId,
   type QuizQuestion,
 } from "@/lib/organizer/quiz";
 import { QuizTestPlay } from "@/components/organizer/games/QuizTestPlay";
+import { QuizCheckpointFields, QuizFormatChips } from "@/components/organizer/games/QuizQuestionSettings";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
@@ -133,6 +136,18 @@ export function OrganizerQuizCreateForm() {
     if (editingKey === key) setEditingKey(null);
   }
 
+  function moveQuestion(key: string, direction: -1 | 1) {
+    setQuestions((current) => {
+      const from = current.findIndex((question) => question.key === key);
+      const to = from + direction;
+      if (from < 0 || to < 0 || to >= current.length) return current;
+      const next = [...current];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  }
+
   function updateQuestion(key: string, patch: Partial<QuizQuestion>) {
     setQuestions((current) =>
       current.map((question) => (question.key === key ? { ...question, ...patch } : question))
@@ -141,7 +156,10 @@ export function OrganizerQuizCreateForm() {
 
   /** 保存で送る設定。プレビューも同じものから描く。 */
   const settingsBody = {
-    formats,
+    // 問題で使っている形式も、出題形式に含めて残す。
+    formats: QUIZ_FORMATS.map((format) => format.id).filter(
+      (id) => formats.includes(id) || questions.some((question) => question.format === id),
+    ),
     questions: questions.map((question) => ({
       format: question.format,
       prompt: question.prompt,
@@ -150,6 +168,16 @@ export function OrganizerQuizCreateForm() {
       choices: question.choices,
       correctIndex: question.correctIndex,
       hint: question.hint,
+      ...(question.format === "checkin"
+        ? {
+            place: question.place,
+            arrival: question.arrival,
+            lat: question.lat,
+            lng: question.lng,
+            radius: question.radius,
+            keyword: question.keyword,
+          }
+        : {}),
     })),
     clearCount,
     rewards: { coupon: couponOn, prize: prizeOn, ranking: rankingOn },
@@ -159,6 +187,16 @@ export function OrganizerQuizCreateForm() {
     if (!name.trim()) {
       setError("ゲーム名を入力してください");
       return;
+    }
+    if (status === "published") {
+      const problem = questions
+        .map((question, index) => quizQuestionProblem(question, index + 1))
+        .find((message) => message != null);
+      if (problem) {
+        setError(problem);
+        setStep(2);
+        return;
+      }
     }
     setSaving(true);
     setError(null);
@@ -222,7 +260,24 @@ export function OrganizerQuizCreateForm() {
           typeLabel="クイズラリー"
           name={name}
           description={description}
-          settings={settingsBody} focus={previewIndex}
+          settings={settingsBody}
+          focus={previewIndex}
+          edit={{
+            onName: setName,
+            onDescription: setDescription,
+            quiz: {
+              questions,
+              index: previewIndex,
+              onIndex: setPreviewIndex,
+              onChange: updateQuestion,
+              onAdd: addQuestion,
+              onDuplicate: duplicateQuestion,
+              onRemove: removeQuestion,
+              onMove: moveQuestion,
+              needed: Math.min(clearCount, Math.max(questions.length, 1)),
+              formats,
+            },
+          }}
           stepView={step === 0 ? "start" : step === STEPS.length - 1 ? "clear" : "play"}
         />
       }
@@ -280,7 +335,9 @@ export function OrganizerQuizCreateForm() {
       {step === 1 ? (
           <section className="org-quiz__card" aria-labelledby="quiz-formats">
             <h2 id="quiz-formats">出題形式</h2>
-            <p>クイズの出題方法を選択してください。（複数の形式を組み合わせることもできます）</p>
+            <p>
+              使う形式を選んでください。いくつでも選べます。複数選ぶと、問題ごとに形式を切り替えて、1つのクイズの中で組み合わせられます。
+            </p>
             <ul className="org-quiz__formats">
               {QUIZ_FORMATS.map((format) => {
                 const on = formats.includes(format.id);
@@ -342,6 +399,7 @@ export function OrganizerQuizCreateForm() {
                     <div className="org-quiz__q-body">
                       <p>{question.prompt || "問題文を入力してください"}</p>
                       <span>
+                        <em>{quizFormatLabel(question.format)}</em>
                         <em>{question.category}</em>
                         <em>正答 {question.choices[question.correctIndex] || "未設定"}</em>
                       </span>
@@ -368,6 +426,16 @@ export function OrganizerQuizCreateForm() {
             {editing ? (
               <div className="org-quiz__editor">
                 <h3>問題を編集</h3>
+                <QuizFormatChips
+                  question={editing}
+                  allowed={formats}
+                  onChange={(next) => updateQuestion(editing.key, next)}
+                />
+                <QuizCheckpointFields
+                  question={editing}
+                  map
+                  onChange={(patch) => updateQuestion(editing.key, patch)}
+                />
                 <label>
                   問題文
                   <textarea

@@ -10,6 +10,7 @@ import { PlayMystery } from "@/components/play/PlayMystery";
 import { PlayPhoto } from "@/components/play/PlayPhoto";
 import { PlayQuiz } from "@/components/play/PlayQuiz";
 import { usePlayCopy } from "@/components/play/usePlayCopy";
+import { QuizPreviewEditor, type QuizPreviewEdit } from "@/components/organizer/games/QuizPreviewEditor";
 import { publicCheckin, readStoredCheckin } from "@/lib/organizer/checkin-play";
 import { sanitizeCheckinSettings } from "@/lib/organizer/checkin";
 import { readStoredCoupon } from "@/lib/organizer/coupon-play";
@@ -66,7 +67,14 @@ export function GamePhonePreview({
   settings,
   focus,
   stepView,
+  edit,
 }: {
+  /** 渡すと、プレビューの上で直接書き換えられる（いまはクイズ）。 */
+  edit?: {
+    onName: (value: string) => void;
+    onDescription: (value: string) => void;
+    quiz?: QuizPreviewEdit;
+  };
   kind: GamePreviewKind;
   typeLabel: string;
   name: string;
@@ -245,7 +253,7 @@ export function GamePhonePreview({
   const title = name.trim() || typeLabel;
 
   return (
-    <div className="wizard-preview game-phone">
+    <div className={cn("wizard-preview game-phone", edit && "is-editing")}>
       <div className="wizard-preview__views" role="tablist" aria-label="プレビューする画面">
         {VIEWS.map((item) => (
           <button
@@ -259,6 +267,7 @@ export function GamePhonePreview({
           </button>
         ))}
       </div>
+      {edit && view !== "clear" ? <p className="wizard-preview__edit-hint">文字はタップして、そのまま書き換えられます</p> : null}
       <div className="wizard-preview__zoom">
         <span>{actual ? "実寸（100%）" : `実寸の${Math.round(scale * 100)}%`}</span>
         <button type="button" onClick={() => setActual((current) => !current)}>
@@ -274,15 +283,53 @@ export function GamePhonePreview({
             <div className="wizard-preview__screen">
               <div className="play-game-shell">
                 <PlayLocaleSwitch />
-                {view === "start" || !built ? (
+                {view === "play" && edit?.quiz ? (
+                  <main className="play-game">
+                    <div className="play-game__card">
+                      <p className="play-game__kicker">{copy.msg(typeLabel)}</p>
+                      <h1>{title}</h1>
+                      <p className="play-game__meta">プレビュー</p>
+                      <QuizPreviewEditor edit={edit.quiz} />
+                    </div>
+                  </main>
+                ) : view === "start" || !built ? (
                   <main className="play-game">
                     <div className="play-game__card">
                       <span className="play-game__icon" aria-hidden>
                         <Stamp className="h-7 w-7" strokeWidth={1.6} />
                       </span>
                       <p className="play-game__kicker">{typeLabel}</p>
-                      <h1>{title}</h1>
-                      {description.trim() ? <p className="play-game__desc">{description.trim()}</p> : null}
+                      {edit ? (
+                        <>
+                          <h1>
+                            <textarea
+                              className="quiz-edit__text quiz-edit__title"
+                              value={name}
+                              placeholder={typeLabel}
+                              aria-label="ゲーム名"
+                              maxLength={80}
+                              rows={1}
+                              onChange={(event) => edit.onName(event.target.value)}
+                            />
+                          </h1>
+                          <p className="play-game__desc">
+                            <textarea
+                              className="quiz-edit__text"
+                              value={description}
+                              placeholder="説明文を入力"
+                              aria-label="説明文"
+                              maxLength={200}
+                              rows={2}
+                              onChange={(event) => edit.onDescription(event.target.value)}
+                            />
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <h1>{title}</h1>
+                          {description.trim() ? <p className="play-game__desc">{description.trim()}</p> : null}
+                        </>
+                      )}
                       <p className="play-game__meta">{built ? built.meta : copy.spotsPreparing}</p>
                       <form className="play-join" onSubmit={(event) => event.preventDefault()}>
                         <p className="play-join__lead">{copy.joinWithWords}</p>
@@ -320,7 +367,7 @@ export function GamePhonePreview({
           </div>
         </div>
       </div>
-      {!built ? <p className="wizard-preview__note">内容を入れると、プレイ中とクリアの画面も見られます。</p> : null}
+      {!built && !edit?.quiz ? <p className="wizard-preview__note">内容を入れると、プレイ中とクリアの画面も見られます。</p> : null}
     </div>
   );
 }

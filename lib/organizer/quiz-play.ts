@@ -1,11 +1,15 @@
-import { safeImageUrl } from "@/lib/organizer/game-experience";
+import { safeImageUrl, sanitizePlace } from "@/lib/organizer/game-experience";
+import { QUIZ_FORMAT_IDS, type QuizArrival, type QuizFormatId } from "@/lib/organizer/quiz";
 
 export type PublicQuizQuestion = {
   index: number;
+  format: QuizFormatId;
   prompt: string;
   category: string;
   imageUrl: string;
   choices: string[];
+  /** チェックポイント到着の問題。着くまで、問題文・選択肢・写真は空で渡す。 */
+  checkpoint?: { place: string; arrival: QuizArrival; locked: boolean };
 };
 
 export type PublicQuiz = {
@@ -17,7 +21,32 @@ export type PublicQuiz = {
 export type StoredQuizQuestion = PublicQuizQuestion & {
   correctIndex: number;
   hint: string;
+  /** チェックポイント到着の確かめに使う。参加者には渡さない。 */
+  gate: QuizGate | null;
 };
+
+export type QuizGate =
+  | { arrival: "gps"; place: string; lat: number; lng: number; radiusM: number }
+  | { arrival: "keyword"; place: string; keyword: string };
+
+function readFormat(value: unknown): QuizFormatId {
+  return typeof value === "string" && (QUIZ_FORMAT_IDS as readonly string[]).includes(value)
+    ? (value as QuizFormatId)
+    : "choice";
+}
+
+/** 到着の確かめ方。場所や合言葉が足りなければ、確かめずに出す（null）。 */
+function readGate(row: Record<string, unknown>): QuizGate | null {
+  const place = typeof row.place === "string" ? row.place.trim().slice(0, 40) : "";
+  if (row.arrival === "keyword") {
+    const keyword = typeof row.keyword === "string" ? row.keyword.trim().slice(0, 40) : "";
+    return keyword ? { arrival: "keyword", place, keyword } : null;
+  }
+  const spot = sanitizePlace(row.lat, row.lng);
+  if (!spot) return null;
+  const radiusRaw = typeof row.radius === "number" ? Math.round(row.radius) : 50;
+  return { arrival: "gps", place, ...spot, radiusM: Math.min(500, Math.max(20, radiusRaw)) };
+}
 
 export type StoredQuiz = {
   clearCount: number;
@@ -51,9 +80,13 @@ export function readStoredQuiz(settings: unknown): StoredQuiz | null {
           : [];
         if (!prompt || choices.length < 2) return [];
         const correctRaw = typeof row.correctIndex === "number" ? Math.round(row.correctIndex) : 0;
+        const format = readFormat(row.format);
+        const gate = format === "checkin" ? readGate(row) : null;
         return [
           {
             index: 0,
+            format,
+            gate,
             prompt,
             category: typeof row.category === "string" ? row.category.trim().slice(0, 24) : "",
             imageUrl: quizImage(row.imageUrl),
@@ -101,17 +134,30 @@ export function quizFinishRank(
   return ahead + 1;
 }
 
+/** 参加者に渡す1問。opened でなければ、チェックポイントの問題は中身を隠す。 */
+export function publicQuizQuestion(question: StoredQuizQuestion, opened = false): PublicQuizQuestion {
+  const { index, format, prompt, category, imageUrl, choices, gate } = question;
+  if (!gate) return { index, format, prompt, category, imageUrl, choices };
+  const checkpoint = { place: gate.place, arrival: gate.arrival, locked: !opened };
+  if (opened) return { index, format, prompt, category, imageUrl, choices, checkpoint };
+  return { index, format, prompt: "", category, imageUrl: "", choices: [], checkpoint };
+}
+
 export function publicQuiz(quiz: StoredQuiz): PublicQuiz {
   return {
     clearCount: quiz.clearCount,
     rewards: quiz.rewards,
-    questions: quiz.questions.map(({ index, prompt, category, imageUrl, choices }) => ({
-      index,
-      prompt,
-      category,
-      imageUrl,
-      choices,
-    })),
+    questions: quiz.questions.map((question) => publicQuizQuestion(question)),
+  };
+}
+
+function readCheckpoint(raw: unknown): PublicQuizQuestion["checkpoint"] {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const row = raw as Record<string, unknown>;
+  return {
+    place: typeof row.place === "string" ? row.place : "",
+    arrival: row.arrival === "keyword" ? "keyword" : "gps",
+    locked: row.locked === true,
   };
 }
 
@@ -127,14 +173,18 @@ export function readPublicQuiz(raw: unknown): PublicQuiz | null {
           ? row.choices.filter((choice): choice is string => typeof choice === "string" && choice.trim().length > 0)
           : [];
         const index = typeof row.index === "number" ? Math.round(row.index) : -1;
-        if (!prompt || choices.length < 2 || index < 0) return [];
+        const checkpoint = readCheckpoint(row.checkpoint);
+        if (index < 0) return [];
+        if (!checkpoint?.locked && (!prompt || choices.length < 2)) return [];
         return [
           {
             index,
+            format: readFormat(row.format),
             prompt,
             category: typeof row.category === "string" ? row.category : "",
             imageUrl: quizImage(row.imageUrl),
             choices,
+            ...(checkpoint ? { checkpoint } : {}),
           },
         ];
       })

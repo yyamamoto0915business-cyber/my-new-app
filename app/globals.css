@@ -16993,6 +16993,94 @@ a.org-games__card:hover {
   color: #1a2214;
 }
 
+/* ○×クイズ：大きな2つのボタンを横に並べる */
+.game-test__choices--ox {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.game-test__choices--ox .game-test__choice {
+  min-height: 6.5rem;
+  text-align: center;
+  font-size: 1.15rem;
+}
+
+/* 写真クイズ：写真を大きく見せる */
+.game-test__photo.game-test__photo--large {
+  height: auto;
+  aspect-ratio: 4 / 3;
+}
+
+/* チェックポイント到着：着くまで問題を隠す */
+.play-quiz__gate {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  padding: 1.4rem 1rem 1.2rem;
+  border: 1px solid #d7eadc;
+  border-radius: 1.1rem;
+  background: #f6faf7;
+  text-align: center;
+}
+
+.play-quiz__gate-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  background: #2d7a4f;
+  color: #fff;
+}
+
+.play-quiz__gate-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.play-quiz__gate-kicker {
+  margin: 0.3rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #2d7a4f;
+}
+
+.play-quiz .play-quiz__gate h2 {
+  margin: 0;
+}
+
+.play-quiz__gate p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #566358;
+}
+
+.play-quiz__gate-form {
+  display: grid;
+  gap: 0.55rem;
+  width: 100%;
+  margin-top: 0.6rem;
+}
+
+.play-quiz__gate-form input {
+  min-height: 3rem;
+  padding: 0 0.9rem;
+  border: 1px solid #c5d9cc;
+  border-radius: 0.9rem;
+  background: #fff;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.play-quiz__gate-note {
+  margin-top: 0.4rem !important;
+  font-weight: 700;
+  color: #8a5a00 !important;
+}
+
 .play-quiz > p {
   text-align: left;
 }
