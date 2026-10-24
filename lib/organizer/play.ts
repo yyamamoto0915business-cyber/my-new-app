@@ -233,6 +233,67 @@ export async function playGamePublished(db: SupabaseClient, gameId: string): Pro
   return (data as { status?: string } | null)?.status === "published";
 }
 
+/** 参加コードに使う文字（読みまちがえやすい 0/O・1/I/L は使わない）。 */
+const JOIN_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+export function normalizeJoinCode(raw: string): string {
+  return raw.normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+}
+
+/** 主催者用：ゲームの参加コードを返す（まだなければ6文字で作る）。 */
+export async function ensureGameJoinCode(
+  db: SupabaseClient,
+  gameId: string,
+): Promise<{ ok: true; code: string } | { ok: false; status: number; error: string }> {
+  const { data, error } = await db.from("organizer_games").select("join_code").eq("id", gameId).maybeSingle();
+  if (error) {
+    if (/join_code/.test(error.message)) return { ok: false, status: 503, error: "参加コードの準備ができていません（データベースの更新が必要です）" };
+    throw error;
+  }
+  const existing = (data as { join_code?: unknown } | null)?.join_code;
+  if (typeof existing === "string" && existing) return { ok: true, code: existing };
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const bytes = randomBytes(6);
+    let code = "";
+    for (let i = 0; i < 6; i += 1) code += JOIN_CODE_ALPHABET[bytes[i]! % JOIN_CODE_ALPHABET.length];
+    const { data: updated, error: updateError } = await db
+      .from("organizer_games")
+      .update({ join_code: code })
+      .eq("id", gameId)
+      .is("join_code", null)
+      .select("join_code")
+      .maybeSingle();
+    if (!updateError) {
+      const saved = (updated as { join_code?: unknown } | null)?.join_code;
+      if (typeof saved === "string" && saved) return { ok: true, code: saved };
+      // ほかの画面で先に作られていたら、それを使う。
+      const { data: again } = await db.from("organizer_games").select("join_code").eq("id", gameId).maybeSingle();
+      const already = (again as { join_code?: unknown } | null)?.join_code;
+      if (typeof already === "string" && already) return { ok: true, code: already };
+      continue;
+    }
+    if (updateError.code === "23505") continue; // 同じコードがあれば作り直す
+    throw updateError;
+  }
+  return { ok: false, status: 500, error: "参加コードを作れませんでした" };
+}
+
+/** 参加者用：参加コードから、公開中のゲームの参加ページを探す。 */
+export async function lookupGameByJoinCode(db: SupabaseClient, raw: string): Promise<{ joinPath: string; name: string } | null> {
+  const code = normalizeJoinCode(raw);
+  if (code.length < 4) return null;
+  const { data, error } = await db
+    .from("organizer_games")
+    .select("name, join_token")
+    .eq("join_code", code)
+    .eq("status", "published")
+    .maybeSingle();
+  if (error || !data) return null;
+  const token = typeof (data as { join_token?: unknown }).join_token === "string" ? (data as { join_token: string }).join_token : "";
+  if (!token) return null;
+  return { joinPath: `/play/${encodeURIComponent(token)}`, name: String((data as { name?: unknown }).name ?? "") };
+}
+
 export async function lookupPlayGameByJoinToken(
   db: SupabaseClient,
   joinToken: string

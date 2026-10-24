@@ -18,6 +18,7 @@ import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWo
 import { GameQrCard } from "@/components/organizer/games/GameQrCard";
 import { OrganizerCouponUses } from "@/components/organizer/games/OrganizerCouponUses";
 import { OrganizerMissionPhotos } from "@/components/organizer/games/OrganizerMissionPhotos";
+import { GameJoinCodePanel } from "@/components/organizer/games/GameJoinCodePanel";
 import {
   MAX_ORGANIZER_GAME_SPOTS,
   ORGANIZER_GAME_SPOT_KIND_LABEL,
@@ -317,6 +318,7 @@ export function OrganizerGameEditor() {
         </div>
       </section>
 
+      <GameJoinCodePanel gameId={game.id} published={game.status === "published"} />
       <OrganizerCouponUses gameId={game.id} gameType={game.type} />
       <OrganizerMissionPhotos gameId={game.id} gameType={game.type} />
 

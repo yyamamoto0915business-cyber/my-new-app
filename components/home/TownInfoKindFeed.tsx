@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchJsonArray } from "@/lib/fetch-json-array";
 import type { StoreRecord } from "@/lib/stores/types";
@@ -129,6 +130,16 @@ export function TownInfoKindFeed({ kind, searchQuery }: Props) {
           {loading ? "読み込み中…" : `${items.length}件`}
         </span>
       </div>
+      {kind === "game" ? (
+        // QR を読めないときは、会場で聞いた参加コードを入れて参加できる。
+        <Link
+          href="/play/code"
+          className="flex items-center justify-between rounded-[14px] border border-[#cfe3d6] bg-[#f4faf6] px-4 py-3 text-[13px] font-semibold text-[#1f7a4a]"
+        >
+          <span>参加コードを持っている方はこちら</span>
+          <span aria-hidden>→</span>
+        </Link>
+      ) : null}
       {loading ? (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
