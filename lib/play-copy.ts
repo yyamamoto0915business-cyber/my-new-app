@@ -120,6 +120,11 @@ const EXACT: Record<string, string> = {
   "リンクをコピーしました": "Link copied",
   "共有できませんでした": "Couldn’t share",
   // ゲーム（謎解き・ミッション・フォト・チェックインなど）で増えた文言
+  "イベントの申し込みで参加する": "Join with your event registration",
+  "対象イベントに申し込み済みのアカウントなので、ニックネームと合言葉は要りません。": "You’re registered for the event, so no nickname or passphrase is needed.",
+  "または、ニックネームと合言葉で参加": "Or join with a nickname and passphrase",
+  "対象イベントに申し込んだアカウントだけが、この方法で参加できます": "Only accounts registered for the event can join this way",
+  "イベントに申し込んだアカウントでログインしてください": "Log in with the account you registered for the event with",
   "JPEG・PNG・WEBP の写真を送ってください": "Please send a JPEG, PNG, or WEBP photo",
   "おめでとう！": "Congratulations!",
   "このゲームにクーポンはありません": "This game has no coupon",

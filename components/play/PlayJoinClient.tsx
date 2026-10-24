@@ -58,6 +58,8 @@ type PlayGame = {
   playLimit: "once" | "repeat";
   signedIn: boolean;
   accountNickname: string | null;
+  /** 対象イベントに申し込んだアカウントで、ニックネーム・合言葉なしで参加できる。 */
+  eventEntry: boolean;
   start: PlayStart | null;
   moment: PublicPlayMoment | null;
   quiz: PublicQuiz | null;
@@ -184,6 +186,7 @@ export function PlayJoinClient() {
             playLimit: body.playLimit === "repeat" ? "repeat" : "once",
             signedIn: body.signedIn === true,
             accountNickname: knownNickname || null,
+            eventEntry: (body as { eventEntry?: unknown }).eventEntry === true,
             start: readStart(body.start),
             moment: readPublicPlayMoment(body.moment),
             quiz: readPublicQuiz(body.quiz),
@@ -350,6 +353,32 @@ export function PlayJoinClient() {
       setShareNote("リンクをコピーしました");
     } catch {
       setShareNote("共有できませんでした");
+    }
+  }
+
+  /** 対象イベントに申し込んだアカウントで参加する（ニックネーム・合言葉なし）。 */
+  async function handleEntry() {
+    if (!token) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/play/${encodeURIComponent(token)}/entry`, { method: "POST" });
+      const json = (await res.json()) as PlaySession & { error?: string; code?: string | null };
+      if (!res.ok) {
+        setError(json.error ?? "参加できませんでした");
+        setNeedsLogin(json.code === "audience_login");
+        return;
+      }
+      setNeedsLogin(false);
+      writePlaySession(token, { deviceToken: json.deviceToken, nickname: json.progress.nickname });
+      setProgress(json.progress);
+      if (pendingSpot) {
+        await stampPendingSpot(token, json.deviceToken, pendingSpot, false);
+      }
+    } catch {
+      setError("通信エラーが発生しました");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -638,6 +667,25 @@ export function PlayJoinClient() {
                   <form className="play-join" onSubmit={(e) => void handleJoin(e)}>
                     {fields(
                       <>
+                        {game.eventEntry ? (
+                          <div style={{ display: "grid", gap: "0.4rem", marginBottom: "0.4rem" }}>
+                            <button
+                              type="button"
+                              className="play-dock__go"
+                              disabled={saving}
+                              onClick={() => void handleEntry()}
+                              style={{ width: "100%" }}
+                            >
+                              {copy.msg("イベントの申し込みで参加する")}
+                            </button>
+                            <small style={{ fontSize: "0.74rem", color: "#5d6b62", lineHeight: 1.5 }}>
+                              {copy.msg("対象イベントに申し込み済みのアカウントなので、ニックネームと合言葉は要りません。")}
+                            </small>
+                            <p style={{ margin: "0.3rem 0 0", textAlign: "center", fontSize: "0.72rem", color: "#8a968e" }}>
+                              {copy.msg("または、ニックネームと合言葉で参加")}
+                            </p>
+                          </div>
+                        ) : null}
                         <p className="play-join__lead">{pendingSpot ? copy.joinBeforeStamp : copy.joinWithWords}</p>
                         {game.playLimit === "once" ? (
                           <p className="play-join__audience">

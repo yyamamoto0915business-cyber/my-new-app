@@ -9,7 +9,7 @@ import { readStoredCoupon } from "@/lib/organizer/coupon-play";
 import { publicCheckin, readStoredCheckin } from "@/lib/organizer/checkin-play";
 import { publicMystery, readStoredMystery } from "@/lib/organizer/mystery-play";
 import { getOrganizerGameType, isOrganizerGameTypeId } from "@/lib/organizer/game-types";
-import { getPlayDb, joinPlayGame, playGamePublished } from "@/lib/organizer/play";
+import { playEventEntryHeld, getPlayDb, joinPlayGame, playGamePublished } from "@/lib/organizer/play";
 import { readPlayUserId } from "@/lib/organizer/play-user";
 import { loadPlayMoment } from "@/lib/organizer/play-moment";
 
@@ -160,6 +160,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     playLimit: opening.playLimit,
     signedIn: Boolean(userId),
     accountNickname,
+    // 対象イベントに申し込んだアカウントは、ニックネーム・合言葉なしで参加できる（スタンプラリー以外）。
+    eventEntry: type !== "stamp" && playDb ? await playEventEntryHeld(playDb, row.id, userId) : false,
     start: {
       ...start,
       periodLabel: start.showPeriod ? formatPlayPeriod(row.starts_at, row.ends_at) : null,

@@ -801,6 +801,92 @@ async function issueSession(
   };
 }
 
+/** そのアカウントが、ゲームの対象イベントに申し込んでいるか（イベントがなければ false）。 */
+export async function playEventEntryHeld(db: SupabaseClient, gameId: string, userId: string | null): Promise<boolean> {
+  if (!userId) return false;
+  const { data: gameRow } = await db.from("organizer_games").select("event_id").eq("id", gameId).maybeSingle();
+  const eventId = typeof (gameRow as { event_id?: unknown } | null)?.event_id === "string" ? (gameRow as { event_id: string }).event_id : "";
+  if (!eventId) return false;
+  const { data: member } = await db
+    .from("event_participants")
+    .select("status")
+    .eq("event_id", eventId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return isEventMemberStatus(typeof member?.status === "string" ? member.status : null);
+}
+
+/**
+ * 対象イベントに申し込んだアカウントは、ニックネームと合言葉を入れずに参加できる。
+ * ニックネームはプロフィールの名前を使い、同じ名前があれば番号を付ける。合言葉はアカウントで入るので使わない。
+ */
+export async function joinPlayGameByEventEntry(
+  db: SupabaseClient,
+  joinToken: string,
+  userId: string | null,
+): Promise<{ ok: true; session: PlaySession } | { ok: false; status: number; error: string; code?: string }> {
+  if (!userId) {
+    return { ok: false, status: 401, error: "イベントに申し込んだアカウントでログインしてください", code: "audience_login" };
+  }
+  const game = await lookupPlayGameByJoinToken(db, joinToken);
+  if (!game) return { ok: false, status: 404, error: "ゲームが見つかりません" };
+  const audience = await playAudienceBlock(db, game.id, userId);
+  if (audience) return { ok: false, ...audience };
+  if (!(await playEventEntryHeld(db, game.id, userId))) {
+    return { ok: false, status: 403, error: "対象イベントに申し込んだアカウントだけが、この方法で参加できます", code: "event_entry_required" };
+  }
+
+  // すでにこのアカウントで参加していれば、そのまま続きから。
+  const { data: owned } = await db
+    .from("organizer_game_players")
+    .select("*")
+    .eq("game_id", game.id)
+    .eq("account_user_id", userId)
+    .maybeSingle();
+  if (owned) {
+    const player = owned as PlayerRow;
+    if (player.auth_epoch !== game.playEpoch) {
+      const { error } = await db.from("organizer_game_players").update({ auth_epoch: game.playEpoch }).eq("id", player.id);
+      if (error) throw error;
+    }
+    return { ok: true, session: await issueSession(db, { ...player, auth_epoch: game.playEpoch }, userId) };
+  }
+
+  const { data: profile } = await db.from("profiles").select("display_name").eq("id", userId).maybeSingle();
+  const base = normalizePlayNickname(
+    typeof (profile as { display_name?: unknown } | null)?.display_name === "string"
+      ? String((profile as { display_name: string }).display_name)
+      : "",
+  ).slice(0, 16) || "参加者";
+  const salt = newPassphraseSalt();
+  const passphraseHash = hashPassphrase(randomBytes(12).toString("hex"), salt);
+  const deviceToken = generateDeviceToken();
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const nickname = attempt === 0 ? base : `${base}${attempt + 1}`;
+    const { data, error } = await db
+      .from("organizer_game_players")
+      .insert({
+        game_id: game.id,
+        nickname,
+        nickname_key: nicknameKey(nickname),
+        passphrase_salt: salt,
+        passphrase_hash: passphraseHash,
+        device_token_hash: hashDeviceToken(deviceToken),
+        auth_epoch: game.playEpoch,
+        account_user_id: userId,
+      })
+      .select("*")
+      .single();
+    if (!error) {
+      return { ok: true, session: { deviceToken, progress: await loadProgress(db, data as PlayerRow, userId) } };
+    }
+    // 同じニックネームがいれば、番号を変えてやり直す。
+    if (error.code === "23505" && !`${error.message} ${error.details ?? ""}`.includes("account")) continue;
+    throw error;
+  }
+  return { ok: false, status: 409, error: "参加できませんでした。時間をおいて、もう一度お試しください。" };
+}
+
 export async function joinPlayGame(
   db: SupabaseClient,
   joinToken: string,
