@@ -25,7 +25,6 @@ import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { OrganizerGameEventOption } from "@/lib/organizer/games";
 import {
-  CHECKIN_AUDIENCES,
   CHECKIN_CATEGORIES,
   CHECKIN_CLEAR_MODES,
   CHECKIN_METHODS,
@@ -47,6 +46,7 @@ import { RewardFields } from "@/components/organizer/games/RewardFields";
 import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/games/RewardOptions";
 import { PlacePickerDialog } from "@/components/organizer/games/PlacePickerDialog";
 import { PeriodPresets, jstDate, periodProblem } from "@/components/organizer/games/PeriodPresets";
+import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
@@ -112,6 +112,9 @@ export function OrganizerCheckinCreateForm() {
   const [category, setCategory] = useState<CheckinCategory>("まち歩き");
   const [tags, setTags] = useState<string[]>(["まち歩き", "観光"]);
   const [tagDraft, setTagDraft] = useState("");
+  /** 参加できる人（ゲーム共通の設定。参加者の画面での確かめに使う）。 */
+  const [gameAudience, setGameAudience] = useState<GameAudienceChoice>("anyone");
+  // チェックイン独自の参加対象は使っていない（保存の形だけ残す）。
   const audience: CheckinAudience = "anyone";
   const [defaultMethod, setDefaultMethod] = useState<CheckinMethod>("gps");
   const [spots, setSpots] = useState<CheckinSpot[]>(() => sampleCheckinSpots());
@@ -277,6 +280,7 @@ export function OrganizerCheckinCreateForm() {
           name: name.trim(),
           type: "checkin",
           eventId: eventId || null,
+          audience: gameAudience,
           description: description.trim(),
           startsAt: toIsoFromDateTime(startDate, startTime),
           endsAt: toIsoFromDateTime(endDate, endTime),
@@ -386,19 +390,8 @@ export function OrganizerCheckinCreateForm() {
                   </div>
                   <PeriodPresets startDate={startDate} endDate={endDate} onStart={setStartDate} onEnd={setEndDate} />
                 </div>
-                {/* 参加できる人の絞りこみは、参加パスとあわせて最後に入れる。それまでは「準備中」で押せない。 */}
-                <div className="org-checkin__field" style={{ opacity: 0.6 }}>
-                  <span>参加対象（準備中）</span>
-                  <ul className="org-checkin__audience">
-                    {CHECKIN_AUDIENCES.map((item) => (
-                      <li key={item.id}>
-                        <button type="button" disabled className={cn(item.id === "anyone" && "is-on")} style={{ cursor: "not-allowed" }}>
-                          {item.label}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  <small>いまは誰でも参加できます。絞りこみは、このあと追加します。</small>
+                <div className="org-checkin__field org-checkin__field--wide">
+                  <AudienceField value={gameAudience} onChange={setGameAudience} eventChosen={Boolean(eventId)} />
                 </div>
                 <label className="org-checkin__field org-checkin__field--wide">
                   <span>説明文</span>

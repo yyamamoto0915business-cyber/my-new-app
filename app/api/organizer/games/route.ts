@@ -32,6 +32,7 @@ function settingsFromBody(body: {
   mystery?: unknown;
   experience?: unknown;
   look?: unknown;
+  audience?: unknown;
 }) {
   const quiz = body.quiz && typeof body.quiz === "object" ? body.quiz : null;
   const mission = sanitizeMissionSettings(body.mission);
@@ -42,6 +43,8 @@ function settingsFromBody(body: {
   const experience = sanitizeGameExperience(body.experience);
   // 参加画面のアイコンと背景（スタンプラリー以外）。
   const look = body.look && typeof body.look === "object" ? readGameLook(body.look) : null;
+  // 参加できる人（スタンプラリー以外）。誰でも以外のときだけ残す。
+  const audience = body.audience === "event" || body.audience === "pass" ? body.audience : null;
   if (!quiz && !mission && !photo && !coupon && !checkin && !mystery && !experience && !look) return undefined;
   return {
     ...(quiz ? { quiz } : {}),
@@ -52,6 +55,7 @@ function settingsFromBody(body: {
     ...(mystery ? { mystery } : {}),
     ...(experience ? { experience } : {}),
     ...(look ? { look } : {}),
+    ...(audience ? { audience } : {}),
   };
 }
 

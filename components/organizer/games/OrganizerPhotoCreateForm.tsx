@@ -36,6 +36,7 @@ import { ImageUploadTile } from "@/components/organizer/games/GameImageField";
 import { RewardFields } from "@/components/organizer/games/RewardFields";
 import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/games/RewardOptions";
 import { PeriodPresets, jstDate, periodProblem } from "@/components/organizer/games/PeriodPresets";
+import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
@@ -97,6 +98,8 @@ export function OrganizerPhotoCreateForm() {
   const [name, setName] = useState("春のまち歩きフォトラリー");
   const [description, setDescription] = useState("まちのスポットを巡って写真を撮りながら地域の魅力を見つけよう！");
   const [eventId, setEventId] = useState("");
+  /** 参加できる人。イベント参加者・参加パス保有者に絞るときは、対象イベントが必要。 */
+  const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
   // はじめは今日から1か月（過去の日付から始めない）。
   const [startDate, setStartDate] = useState(() => jstDate());
   const [startTime, setStartTime] = useState("09:00");
@@ -260,6 +263,7 @@ export function OrganizerPhotoCreateForm() {
           name: name.trim(),
           type: "photo",
           eventId: eventId || null,
+          audience,
           description: description.trim(),
           startsAt: toIsoFromDateTime(startDate, startTime),
           endsAt: toIsoFromDateTime(endDate, endTime),
@@ -428,6 +432,9 @@ export function OrganizerPhotoCreateForm() {
                   </select>
                   <small>{eventHint ?? "選ぶと、イベントのページからこのゲームに入れます。開催期間もイベントの日に合わせます。"}</small>
                 </label>
+                <div className="org-photo__field org-photo__field--wide">
+                  <AudienceField value={audience} onChange={setAudience} eventChosen={Boolean(eventId)} />
+                </div>
                 <label className="org-photo__field">
                   <span>カテゴリ</span>
                   <select

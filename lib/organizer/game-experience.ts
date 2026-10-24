@@ -1189,7 +1189,10 @@ export function rallyCanReplay(completed: boolean, playLimit: GamePlayLimit | nu
 export function publicPlayAudience(settings: unknown): GameAudience {
   if (!settings || typeof settings !== "object" || Array.isArray(settings)) return "anyone";
   const experience = sanitizeGameExperience((settings as { experience?: unknown }).experience);
-  return experience?.basics.audience ?? "anyone";
+  if (experience) return experience.basics.audience;
+  // スタンプラリー以外のゲームは、設定の一番上の audience（イベント参加者・参加パス保有者）を見る。
+  const audience = (settings as { audience?: unknown }).audience;
+  return audience === "event" || audience === "pass" ? audience : "anyone";
 }
 
 const EVENT_MEMBER_STATUSES = new Set(["applied", "confirmed", "change_requested", "checked_in", "completed"]);

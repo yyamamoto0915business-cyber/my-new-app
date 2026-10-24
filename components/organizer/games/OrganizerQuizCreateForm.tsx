@@ -36,6 +36,7 @@ import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview"
 import { GameImageField } from "@/components/organizer/games/GameImageField";
 import { RewardFields } from "@/components/organizer/games/RewardFields";
 import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/games/RewardOptions";
+import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
@@ -58,6 +59,8 @@ export function OrganizerQuizCreateForm() {
   const router = useRouter();
   const [name, setName] = useState("まちの魅力発見！春のまち歩きクイズラリー");
   const [eventId, setEventId] = useState("");
+  /** 参加できる人。イベント参加者・参加パス保有者に絞るときは、対象イベントが必要。 */
+  const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
   const [description, setDescription] = useState(
     "まち歩きながらクイズに挑戦して、地域の歴史やスポットの魅力を発見しよう！すべての問題に正解すると、素敵な特典がもらえます。"
   );
@@ -218,6 +221,7 @@ export function OrganizerQuizCreateForm() {
           name: name.trim(),
           type: "quiz",
           eventId: eventId || null,
+          audience,
           description: description.trim(),
           startsAt: toIsoFromDate(startDate),
           endsAt: toIsoFromDate(endDate),
@@ -323,6 +327,9 @@ export function OrganizerQuizCreateForm() {
                 </select>
                 {eventHint ? <small>{eventHint}</small> : null}
               </label>
+              <div className="org-quiz__field org-quiz__field--wide">
+                <AudienceField value={audience} onChange={setAudience} eventChosen={Boolean(eventId)} />
+              </div>
               <label className="org-quiz__field">
                 <span>開始日</span>
                 <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />

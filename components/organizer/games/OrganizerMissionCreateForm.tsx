@@ -40,6 +40,7 @@ import {
 import { MissionTestPlay } from "@/components/organizer/games/MissionTestPlay";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
 import { ArrivalFields } from "@/components/organizer/games/ArrivalFields";
+import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
@@ -123,6 +124,8 @@ export function OrganizerMissionCreateForm() {
   const router = useRouter();
   const [name, setName] = useState("まち巡り発見ミッション ～春のまちなかさんぽ～");
   const [eventId, setEventId] = useState("");
+  /** 参加できる人。イベント参加者・参加パス保有者に絞るときは、対象イベントが必要。 */
+  const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
   const [description, setDescription] = useState(
     "まちなかを巡って、スポットを発見したり、写真を撮ったり、クイズに挑戦しながら、このまちの魅力を再発見できるミッションゲームです。"
   );
@@ -139,8 +142,8 @@ export function OrganizerMissionCreateForm() {
   const [pointsOn, setPointsOn] = useState(false);
   const [stampOn, setStampOn] = useState(false);
   const [prizePlace, setPrizePlace] = useState("中央観光案内所");
-  // 参加パスは準備中。つなぎこむまでは、いつもオフで保存する。
-  const passOnly = false;
+  // 「参加パス購入者のみ」は、参加できる人の設定から決める。
+  const passOnly = audience === "pass";
   const [rankingOn, setRankingOn] = useState(true);
   const [hintsOn, setHintsOn] = useState(true);
   const [step, setStep] = useState(0);
@@ -265,6 +268,7 @@ export function OrganizerMissionCreateForm() {
           name: name.trim(),
           type: "mission",
           eventId: eventId || null,
+          audience,
           description: description.trim(),
           startsAt: toIsoFromDate(startDate),
           endsAt: toIsoFromDate(endDate),
@@ -824,28 +828,8 @@ export function OrganizerMissionCreateForm() {
                 </div>
               </div>
               <ul className="org-mission__publish">
-                {/* 参加パスとゲームのつなぎこみは、ゲームを作り終えてから入れる。それまでは押せない「準備中」にしておく。 */}
-                <li style={{ opacity: 0.6 }}>
-                  <div>
-                    <strong>
-                      参加パス購入者のみ参加可能
-                      <em style={{ marginLeft: "0.4rem", padding: "0.05rem 0.45rem", borderRadius: 999, background: "#eceeec", color: "#6a7568", fontSize: "0.66rem", fontStyle: "normal" }}>
-                        準備中
-                      </em>
-                    </strong>
-                    <span>いまは誰でも参加できます。参加パスとのつなぎこみは、このあと追加します。</span>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={false}
-                    aria-label="参加パス購入者のみ参加可能（準備中）"
-                    className="org-mission__switch"
-                    disabled
-                    style={{ cursor: "not-allowed" }}
-                  >
-                    <span />
-                  </button>
+                <li style={{ display: "block" }}>
+                  <AudienceField value={audience} onChange={setAudience} eventChosen={Boolean(eventId)} />
                 </li>
                 <li>
                   <div>
