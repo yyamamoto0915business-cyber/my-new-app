@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { OrganizerGameEventOption } from "@/lib/organizer/games";
 import {
-  COUPON_AUDIENCES,
   COUPON_CATEGORIES,
   COUPON_SAMPLE_IMAGES,
   COUPON_WIN_MODES,
@@ -33,6 +32,7 @@ import {
 } from "@/lib/organizer/coupon";
 import { CouponTestPlay } from "@/components/organizer/games/CouponTestPlay";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
 import { ImageUploadTile } from "@/components/organizer/games/GameImageField";
 import { PeriodPresets, jstDate, periodProblem } from "@/components/organizer/games/PeriodPresets";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
@@ -110,8 +110,9 @@ export function OrganizerCouponCreateForm() {
   const [maxCount, setMaxCount] = useState(500);
   const [firstCome, setFirstCome] = useState(true);
   const [autoGrant, setAutoGrant] = useState(true);
-  // 「誰でも」以外は準備中。つなぎこむまでは、いつも anyone で保存する。
-  const [audience, setAudience] = useState<CouponAudience>("anyone");
+  // クーポン独自の参加対象（buyers / category）は使わず、いつも anyone。絞り込みは playAudience（全ゲーム共通）で行う。
+  const [audience] = useState<CouponAudience>("anyone");
+  const [playAudience, setPlayAudience] = useState<GameAudienceChoice>("anyone");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -190,6 +191,7 @@ export function OrganizerCouponCreateForm() {
       if (problem) return problem;
     }
     if (id === "rules" && useStart && useEnd && useEnd < useStart) return "クーポンの利用終了日は開始日より後にしてください";
+    if (id === "rules" && playAudience !== "anyone" && !eventId) return "参加できる人を絞るときは、対象イベントを選んでください";
     if (id === "stores" && namedStores.length === 0) return "参加店舗を1つ以上追加してください";
     return null;
   }
@@ -254,6 +256,7 @@ export function OrganizerCouponCreateForm() {
           name: name.trim(),
           type: "coupon",
           eventId: eventId || null,
+          audience: playAudience,
           description: description.trim(),
           startsAt: toIsoFromDateTime(startDate, startTime),
           endsAt: toIsoFromDateTime(endDate, endTime),
@@ -285,6 +288,9 @@ export function OrganizerCouponCreateForm() {
     !name.trim() ? { text: "ゲーム名が入っていません", to: "basic" as StepId } : null,
     periodProblem(startDate, endDate) ? { text: periodProblem(startDate, endDate)!, to: "basic" as StepId } : null,
     namedStores.length === 0 ? { text: "参加店舗がありません", to: "stores" as StepId } : null,
+    playAudience !== "anyone" && !eventId
+      ? { text: "参加できる人を絞るときは、対象イベントを選んでください", to: "basic" as StepId }
+      : null,
     useStart && useEnd && useEnd < useStart ? { text: "クーポンの利用終了日が開始日より前です", to: "rules" as StepId } : null,
   ].filter((item): item is { text: string; to: StepId } => Boolean(item));
   const noOfferStores = namedStores.filter((store) => !store.offer.trim());
@@ -760,34 +766,7 @@ export function OrganizerCouponCreateForm() {
               </div>
 
               <div className="org-coupon__rule">
-                <h3>参加できる人</h3>
-                {/* 参加者の絞り込みは、ゲームを作り終えてから参加パスとつなぐ。それまでは「誰でも」だけ選べる。 */}
-                <ul className="org-coupon__radios org-coupon__radios--flat" role="radiogroup" aria-label="参加できる人">
-                  {COUPON_AUDIENCES.map((item) => {
-                    const ready = item.id === "anyone";
-                    const on = ready && audience === item.id;
-                    return (
-                      <li key={item.id}>
-                        <button
-                          type="button"
-                          role="radio"
-                          aria-checked={on}
-                          disabled={!ready}
-                          className={cn(on && "is-on")}
-                          onClick={() => setAudience(item.id)}
-                        >
-                          <i aria-hidden />
-                          <span>
-                            <strong>
-                              {item.label}
-                              {!ready ? <em>準備中</em> : null}
-                            </strong>
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <AudienceField value={playAudience} onChange={setPlayAudience} eventChosen={Boolean(eventId)} />
               </div>
             </section>
           ) : null}
@@ -900,7 +879,13 @@ export function OrganizerCouponCreateForm() {
                   </div>
                   <div>
                     <dt>参加できる人</dt>
-                    <dd>誰でも参加可能</dd>
+                    <dd>
+                      {playAudience === "event"
+                        ? "イベントの参加者だけ"
+                        : playAudience === "pass"
+                          ? "参加パスを持っている人だけ"
+                          : "誰でも"}
+                    </dd>
                   </div>
                 </dl>
               </div>
