@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 
 /** 種類ごとの決まった絵（画像がないときのカード）。 */
 export function gameTypeCover(type: OrganizerGameTypeId): string {
+  // 謎解きだけは種類の絵がないので、テンプレートの絵を使う。
+  if (type === "mystery") return "/organizer/games/template-mystery.jpg";
   return `/organizer/games/game-type-${type}.png`;
 }
 

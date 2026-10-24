@@ -8,10 +8,14 @@ import {
   ArrowLeft,
   ArrowUp,
   BarChart3,
+  CalendarDays,
+  Check,
   ExternalLink,
   GripVertical,
   Loader2,
+  Lock,
   Plus,
+  QrCode,
   PenLine,
   Printer,
   Trash2,
@@ -22,6 +26,7 @@ import { GameQrCard } from "@/components/organizer/games/GameQrCard";
 import { OrganizerCouponUses } from "@/components/organizer/games/OrganizerCouponUses";
 import { OrganizerMissionPhotos } from "@/components/organizer/games/OrganizerMissionPhotos";
 import { GameJoinCodePanel } from "@/components/organizer/games/GameJoinCodePanel";
+import { gameTypeCover } from "@/components/organizer/games/GameCardSetup";
 import {
   MAX_ORGANIZER_GAME_SPOTS,
   ORGANIZER_GAME_SPOT_KIND_LABEL,
@@ -33,29 +38,64 @@ import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 /** 作成画面を開き直して、保存した内容を直せるゲーム（スタンプラリーは別の入口）。 */
 const DRAFT_EDIT_TYPES = new Set<string>(["quiz", "mystery", "mission", "photo", "checkin"]);
 
-/** 状態のカードと、参加している人の欄。 */
+/** 期間を「5/1(木)〜5/31(土)」のように見せる。 */
+function formatPeriod(startsAt: string | null, endsAt: string | null): string {
+  const fmt = (iso: string) =>
+    new Date(iso).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric", weekday: "short", timeZone: "Asia/Tokyo" });
+  if (startsAt && endsAt) return `${fmt(startsAt)} 〜 ${fmt(endsAt)}`;
+  if (startsAt) return `${fmt(startsAt)} から`;
+  if (endsAt) return `${fmt(endsAt)} まで`;
+  return "期間の指定なし";
+}
+
+/** 一番上の状態のカード、公開前の QR の場所、参加している人の欄。 */
 const EDITOR_CSS = `
-.ge-status { display: grid; gap: 0.8rem; border-color: #ecdcb8; background: #fffaf0; }
-.ge-status.is-live { border-color: #bfe0cb; background: #f2faf5; }
-.ge-status__head { display: flex; align-items: flex-start; gap: 0.6rem; }
-.ge-status__badge { flex: none; border-radius: 999px; background: #b8892f; padding: 0.2rem 0.65rem; font-size: 0.75rem; font-weight: 800; color: #fff; }
-.ge-status.is-live .ge-status__badge { background: #2d7a4f; }
-.ge-status__text { margin: 0; font-size: 0.85rem; line-height: 1.55; color: #3d4a3f; }
-.ge-status__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.ge-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; min-height: 44px; border-radius: 0.8rem; border: 1px solid #cfe0d5; background: #fff; padding: 0.45rem 0.95rem; font-size: 0.85rem; font-weight: 700; color: #1a4d32; text-decoration: none; }
+.ge-hero { position: relative; overflow: hidden; display: grid; gap: 0.95rem; border-radius: 1.25rem; border: 1px solid #eadcb9; background: linear-gradient(135deg, #fffdf6 0%, #fff6e2 100%); padding: 1rem; box-shadow: 0 10px 28px -18px rgba(120, 90, 20, 0.45); }
+.ge-hero.is-live { border-color: #c4e2cf; background: linear-gradient(135deg, #fbfffc 0%, #e9f6ee 100%); box-shadow: 0 10px 28px -18px rgba(30, 100, 60, 0.45); }
+.ge-hero__top { display: flex; align-items: center; gap: 0.9rem; }
+.ge-hero__cover { flex: none; width: 92px; height: 92px; border-radius: 1rem; object-fit: cover; background: #f1ead6; box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.35); }
+.ge-hero__info { min-width: 0; display: grid; gap: 0.3rem; }
+.ge-hero__badge { justify-self: start; display: inline-flex; align-items: center; gap: 0.4rem; border-radius: 999px; background: #fff; border: 1px solid #e6d3a6; padding: 0.2rem 0.7rem 0.2rem 0.55rem; font-size: 0.75rem; font-weight: 800; color: #8a6418; }
+.ge-hero__badge i { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: #c9972f; }
+.ge-hero.is-live .ge-hero__badge { border-color: #bfe0cb; color: #1f6b43; }
+.ge-hero.is-live .ge-hero__badge i { background: #2d9a5c; box-shadow: 0 0 0 0 rgba(45, 154, 92, 0.5); animation: ge-pulse 1.8s ease-out infinite; }
+@keyframes ge-pulse { 0% { box-shadow: 0 0 0 0 rgba(45, 154, 92, 0.5); } 100% { box-shadow: 0 0 0 8px rgba(45, 154, 92, 0); } }
+.ge-hero__lead { margin: 0; font-size: 0.95rem; font-weight: 700; color: #2b3a2e; }
+.ge-hero__period { display: inline-flex; align-items: center; gap: 0.3rem; margin: 0; font-size: 0.78rem; color: #6a7568; }
+.ge-steps { display: flex; align-items: center; margin: 0; padding: 0; list-style: none; }
+.ge-steps li { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; position: relative; font-size: 0.72rem; font-weight: 700; color: #9aa39b; }
+.ge-steps li + li::before { content: ""; position: absolute; top: 0.7rem; right: 50%; width: 100%; height: 2px; background: #e8dfc9; z-index: 0; }
+.ge-steps li.is-done + li::before { background: #c9972f; }
+.ge-steps span { position: relative; z-index: 1; display: grid; place-items: center; width: 1.4rem; height: 1.4rem; border-radius: 999px; background: #fff; border: 2px solid #e2d8bf; font-size: 0.7rem; }
+.ge-steps li.is-done { color: #8a6418; }
+.ge-steps li.is-done span { background: #c9972f; border-color: #c9972f; color: #fff; }
+.ge-steps li.is-now { color: #2b3a2e; }
+.ge-steps li.is-now span { border-color: #2d7a4f; color: #2d7a4f; box-shadow: 0 0 0 4px rgba(45, 122, 79, 0.12); }
+.ge-hero__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+.ge-hero__actions > :only-child { grid-column: 1 / -1; }
+.ge-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: 48px; border-radius: 0.9rem; border: 1px solid #d6e3da; background: #fff; padding: 0.5rem 0.9rem; font-size: 0.9rem; font-weight: 700; color: #1a4d32; text-decoration: none; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.ge-btn:active { transform: scale(0.98); }
 .ge-btn:disabled { opacity: 0.6; }
-.ge-btn--primary { border-color: transparent; background: #2d7a4f; color: #fff; }
-.ge-btn--quiet { color: #8a3b3b; border-color: #e6cfcf; }
-.ge-muted .org-game-qr { opacity: 0.55; }
-.ge-muted .org-game-editor__panel { opacity: 0.75; }
+.ge-btn--primary { border-color: transparent; background: linear-gradient(180deg, #34895a 0%, #276b45 100%); color: #fff; box-shadow: 0 6px 14px -6px rgba(39, 107, 69, 0.7); }
+.ge-hero__tools { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; border-top: 1px solid rgba(0, 0, 0, 0.06); padding-top: 0.75rem; }
+.ge-hero__tools a, .ge-hero__tools button { display: inline-flex; align-items: center; gap: 0.3rem; border: 0; background: none; padding: 0.2rem 0; font-size: 0.8rem; font-weight: 700; color: #3d6b50; text-decoration: none; }
+.ge-hero__tools button { color: #8a3b3b; }
+.ge-locked { display: flex; align-items: center; gap: 0.85rem; border-radius: 1.1rem; border: 1.5px dashed #d6e3da; background: rgba(255, 255, 255, 0.7); padding: 0.95rem 1rem; }
+.ge-locked__icon { position: relative; flex: none; display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: 0.9rem; background: #eef4f0; color: #8aa293; }
+.ge-locked__lock { position: absolute; right: -0.3rem; bottom: -0.3rem; box-sizing: content-box; padding: 0.2rem; border-radius: 999px; background: #fff; color: #6a7568; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
+.ge-locked h2 { margin: 0; font-size: 0.9rem; font-weight: 700; color: #3d4a3f; }
+.ge-locked p { margin: 0.2rem 0 0; font-size: 0.75rem; line-height: 1.55; color: #7a857b; }
 .ge-players { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 0.6rem; }
 .ge-players__count { display: inline-flex; align-items: baseline; gap: 0.25rem; color: #1a4d32; }
 .ge-players__count svg { align-self: center; }
 .ge-players__count b { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
 .ge-players__count span { font-size: 0.8rem; font-weight: 700; }
 .ge-players p { flex: 1 1 14rem; margin: 0; font-size: 0.75rem; line-height: 1.6; color: #6a7568; }
-@media (max-width: 520px) {
-  .ge-status__actions .ge-btn { flex: 1 1 auto; }
+@media (min-width: 640px) {
+  .ge-hero { padding: 1.25rem; }
+  .ge-hero__cover { width: 112px; height: 112px; }
+  .ge-hero__actions { display: flex; }
+  .ge-hero__actions .ge-btn { min-width: 10rem; }
 }
 `;
 
@@ -72,6 +112,8 @@ export function OrganizerGameEditor() {
   const [resetting, setResetting] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [publishing, setPublishing] = useState(false);
+  /** まちの情報のカードに出す画像（主催者が選んだもの）。なければ種類の絵。 */
+  const [cardImage, setCardImage] = useState("");
 
   const load = useCallback(async () => {
     if (!gameId) return;
@@ -81,6 +123,7 @@ export function OrganizerGameEditor() {
       game?: OrganizerGame;
       spots?: OrganizerGameSpot[];
       playerCount?: number;
+      settings?: { cardImage?: unknown };
     };
     if (!res.ok) {
       throw new Error(json.error || "読み込みに失敗しました");
@@ -88,6 +131,7 @@ export function OrganizerGameEditor() {
     setGame(json.game as OrganizerGame);
     setSpots((json.spots ?? []) as OrganizerGameSpot[]);
     setPlayerCount(json.playerCount ?? 0);
+    setCardImage(typeof json.settings?.cardImage === "string" ? json.settings.cardImage : "");
   }, [gameId]);
 
   useEffect(() => {
@@ -263,6 +307,7 @@ export function OrganizerGameEditor() {
 
   const canAdd = spots.length < MAX_ORGANIZER_GAME_SPOTS;
   const live = game.status === "published";
+  const periodLabel = formatPeriod(game.startsAt, game.endsAt);
   const editHref =
     game.type === "stamp"
       ? `/organizer/games/new?edit=${game.id}`
@@ -282,73 +327,113 @@ export function OrganizerGameEditor() {
 
       <OrganizerWorkspacePageHeader
         title={game.name}
-        subtitle={game.typeLabel}
-        actions={
-          <>
-            <Link href={`/organizer/games/${game.id}/analytics`} className="org-games__print-link">
-              <BarChart3 className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
-              データを見る
-            </Link>
-            <Link href={`/organizer/games/${game.id}/print`} className="org-games__print-link">
-              <Printer className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
-              QRを印刷
-            </Link>
-          </>
-        }
+        subtitle={game.eventTitle ? `${game.typeLabel}・${game.eventTitle}` : game.typeLabel}
       />
 
       <style>{EDITOR_CSS}</style>
       {error ? <p className="org-store-intro__error">{error}</p> : null}
-      <section className={`org-game-editor__panel ge-status${live ? " is-live" : ""}`}>
-        <div className="ge-status__head">
-          <span className="ge-status__badge">{live ? "公開中" : "下書き"}</span>
-          <p className="ge-status__text">
-            {live
-              ? "参加用QRと参加コードから入れます。まちの情報にも載っています。"
-              : "まだ参加者には見えません。内容を確かめてから公開しましょう。"}
-          </p>
+
+      <section className={`ge-hero${live ? " is-live" : ""}`}>
+        <div className="ge-hero__top">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="ge-hero__cover" src={cardImage || gameTypeCover(game.type)} alt="" />
+          <div className="ge-hero__info">
+            <span className="ge-hero__badge">
+              <i aria-hidden />
+              {live ? "公開中" : "下書き"}
+            </span>
+            <p className="ge-hero__lead">
+              {live ? "参加者が遊べる状態です。" : "まだ参加者には見えません。"}
+            </p>
+            <p className="ge-hero__period">
+              <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+              {periodLabel}
+            </p>
+          </div>
         </div>
-        <div className="ge-status__actions">
+
+        {live ? null : (
+          <ol className="ge-steps" aria-label="公開までの流れ">
+            <li className="is-done">
+              <span>
+                <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
+              </span>
+              作成
+            </li>
+            <li className="is-now">
+              <span>2</span>
+              内容を確かめる
+            </li>
+            <li>
+              <span>3</span>
+              公開
+            </li>
+          </ol>
+        )}
+
+        <div className="ge-hero__actions">
+          {live ? (
+            <a href={game.joinPath} target="_blank" rel="noreferrer" className="ge-btn ge-btn--primary">
+              <ExternalLink className="h-4 w-4" aria-hidden />
+              参加画面を開く
+            </a>
+          ) : (
+            <button type="button" className="ge-btn ge-btn--primary" disabled={publishing} onClick={() => void changeStatus("published")}>
+              {publishing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+              {publishing ? "公開しています…" : "公開する"}
+            </button>
+          )}
           {editHref ? (
             <Link href={editHref} className="ge-btn">
               <PenLine className="h-4 w-4" aria-hidden />
               {game.type === "stamp" ? "画面と特典を直す" : "内容を直す"}
             </Link>
           ) : null}
+        </div>
+
+        <div className="ge-hero__tools">
+          <Link href={`/organizer/games/${game.id}/analytics`}>
+            <BarChart3 className="h-3.5 w-3.5" aria-hidden />
+            データを見る
+          </Link>
+          <Link href={`/organizer/games/${game.id}/print`}>
+            <Printer className="h-3.5 w-3.5" aria-hidden />
+            QRを印刷
+          </Link>
           {live ? (
-            <>
-              <a href={game.joinPath} target="_blank" rel="noreferrer" className="ge-btn">
-                <ExternalLink className="h-4 w-4" aria-hidden />
-                参加画面を開く
-              </a>
-              <button type="button" className="ge-btn ge-btn--quiet" disabled={publishing} onClick={() => void changeStatus("draft")}>
-                {publishing ? "切りかえています…" : "非公開に戻す"}
-              </button>
-            </>
-          ) : (
-            <button type="button" className="ge-btn ge-btn--primary" disabled={publishing} onClick={() => void changeStatus("published")}>
-              {publishing ? "公開しています…" : "公開する"}
+            <button type="button" disabled={publishing} onClick={() => void changeStatus("draft")}>
+              非公開に戻す
             </button>
-          )}
+          ) : null}
         </div>
       </section>
 
-      <section className={`org-game-editor__panel${live ? "" : " ge-muted"}`}>
-        <h2>参加のしかた</h2>
-        <p>
-          {live
-            ? "会場の入口やチラシにQRを貼ります。QRを読めない人には、参加コードを伝えてください。"
-            : "公開すると使えます。下書きのあいだは、読みこんでも参加画面は開きません。"}
-        </p>
-        <GameQrCard
-          title="参加用QR"
-          caption="ニックネームと合言葉で参加・再開できます。"
-          path={game.joinPath}
-          filename={`game-join-${game.id}.png`}
-        />
-        <GameJoinCodePanel gameId={game.id} published={live} />
-      </section>
+      {live ? (
+        <section className="org-game-editor__panel">
+          <h2>参加のしかた</h2>
+          <p>会場の入口やチラシにQRを貼ります。QRを読めない人には、参加コードを伝えてください。</p>
+          <GameQrCard
+            title="参加用QR"
+            caption="ニックネームと合言葉で参加・再開できます。"
+            path={game.joinPath}
+            filename={`game-join-${game.id}.png`}
+          />
+          <GameJoinCodePanel gameId={game.id} published={live} />
+        </section>
+      ) : (
+        <section className="ge-locked">
+          <span className="ge-locked__icon">
+            <QrCode className="h-6 w-6" aria-hidden />
+            <Lock className="ge-locked__lock h-3.5 w-3.5" aria-hidden />
+          </span>
+          <div>
+            <h2>参加用QRと参加コード</h2>
+            <p>公開すると、ここに出ます。会場に貼るQRと、口頭で伝える6文字のコードです。</p>
+          </div>
+        </section>
+      )}
 
+      {live || playerCount > 0 ? (
       <section className="org-game-editor__panel">
         <h2>参加している人</h2>
         <div className="ge-players">
@@ -394,6 +479,7 @@ export function OrganizerGameEditor() {
           </button>
         </div>
       </section>
+      ) : null}
 
       <OrganizerCouponUses gameId={game.id} gameType={game.type} />
       <OrganizerMissionPhotos gameId={game.id} gameType={game.type} />

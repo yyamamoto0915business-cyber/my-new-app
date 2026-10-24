@@ -47,6 +47,8 @@ function isHiddenFromPublic(settings: unknown, type: OrganizerGameTypeId): boole
 }
 
 function defaultCover(type: OrganizerGameTypeId): string {
+  // 謎解きだけは種類の絵がないので、テンプレートの絵を使う。
+  if (type === "mystery") return "/organizer/games/template-mystery.jpg";
   return `/organizer/games/game-type-${type}.png`;
 }
 
