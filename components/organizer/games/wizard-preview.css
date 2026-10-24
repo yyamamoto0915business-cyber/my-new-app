@@ -2454,3 +2454,62 @@ textarea.play-look-text.is-edit {
 textarea.play-look-text.is-edit.is-selected {
   outline: 2px solid #1f7a4a;
 }
+
+/* クリア画面の帯とトロフィー：プレビューの上で、そのまま書き換え・タップで選ぶ。 */
+.game-phone .game-scene__edit {
+  cursor: pointer;
+}
+
+.game-phone .rally-ribbon.game-scene__edit {
+  outline: 2px dashed rgba(255, 255, 255, 0.55);
+  outline-offset: 3px;
+}
+
+.game-phone .rally-ribbon.game-scene__edit:hover {
+  outline-color: rgba(255, 255, 255, 0.9);
+}
+
+.game-phone .rally-ribbon.game-scene__edit.is-selected {
+  outline: 2px solid #ffe08a;
+}
+
+.game-phone .rally-ribbon.game-scene__edit input {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-align: center;
+  text-shadow: inherit;
+  outline: none;
+  cursor: text;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.game-phone .rally-ribbon.game-scene__edit input::placeholder {
+  color: inherit;
+  opacity: 0.55;
+}
+
+.game-phone .game-scene__trophy.game-scene__edit {
+  border: 0;
+  padding: 0;
+  outline: 2px dashed rgba(255, 255, 255, 0.55);
+  outline-offset: 4px;
+}
+
+.game-phone .game-scene__trophy.game-scene__edit.is-selected {
+  outline: 2px solid #ffe08a;
+}
+
+.game-phone .game-scene__trophy.is-empty {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+  box-shadow: none;
+}

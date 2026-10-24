@@ -2156,13 +2156,29 @@
 }
 
 @media (max-width: 719px) {
+  /* スマホは入力欄を早く見せたいので、ステップ表示を薄くまとめる。 */
   .stepper {
-    padding: 0.8rem 0.85rem 0.85rem;
+    padding: 0.6rem 0.75rem 0.65rem;
+    border-radius: 1rem;
+    box-shadow: none;
+  }
+
+  .stepperHead {
+    flex-wrap: nowrap;
+    align-items: center;
+    margin-bottom: 0.55rem;
+  }
+
+  .stepperTitle {
+    font-size: 1rem;
   }
 
   .stepperNext {
-    flex-basis: 100%;
-    margin-left: 0;
+    margin-left: auto;
+    overflow: hidden;
+    font-size: 0.66rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* スマホは名前を出さず、丸と線だけにする（いまの名前は上に出る）。 */
@@ -2171,14 +2187,24 @@
   }
 
   .stepperDot {
-    width: 2rem;
-    height: 2rem;
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .stepperDot :global(svg) {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  .is-current .stepperDot {
+    box-shadow: 0 0 0 4px rgba(31, 122, 74, 0.14);
+    transform: none;
   }
 
   .stepperItem + .stepperItem::before {
-    top: 1rem;
-    right: calc(50% + 1.15rem);
-    left: calc(-50% + 1.15rem);
+    top: 0.875rem;
+    right: calc(50% + 1rem);
+    left: calc(-50% + 1rem);
   }
 }
 

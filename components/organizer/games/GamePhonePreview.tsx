@@ -564,7 +564,11 @@ export function GamePhonePreview({
         <p className="wizard-preview__edit-hint">文字はタップして、そのまま書き換えられます</p>
       ) : lookEdit ? (
         <p className="wizard-preview__edit-hint">
-          {view === "start" ? "アイコンや背景はタップして変えられます" : "部品はタップで選び、押したままドラッグで動かせます"}
+          {view === "start"
+            ? "アイコンや背景はタップして変えられます"
+            : view === "clear"
+              ? "「おめでとう！」「クリア！」の言葉や色、真ん中の絵もタップで変えられます"
+              : "部品はタップで選び、押したままドラッグで動かせます"}
         </p>
       ) : null}
       <div className="wizard-preview__zoom">
@@ -718,7 +722,23 @@ export function GamePhonePreview({
                   <main className={cn(mainClass, "play-game--scene")}>
                     <GameLookBackdrop look={look} />
                     {view === "clear" ? (
-                      <GameSceneBand look={look} scene="clear" />
+                      <GameSceneBand
+                        look={look}
+                        scene="clear"
+                        edit={
+                          lookEdit
+                            ? {
+                                selected: activeMove,
+                                onSelect: (key) => selectLook(key === "trophy" ? "clearIcon" : "text", key),
+                                onWords: (key, value) =>
+                                  update((current) => ({
+                                    ...current,
+                                    clearWords: { ...(current.clearWords ?? { congrats: "", title: "" }), [key]: value },
+                                  })),
+                              }
+                            : undefined
+                        }
+                      />
                     ) : (
                       <GameSceneBand look={look} scene="play" progress={gamePlayProgress(built.progress)} />
                     )}

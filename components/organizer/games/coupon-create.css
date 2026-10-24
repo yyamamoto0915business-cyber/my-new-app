@@ -1,0 +1,818 @@
+/* クーポンラリー作成の参加店舗の行。globals.css の .org-coupon__* と合わせて使う。 */
+
+.org-coupon__srows {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-coupon__srows > li {
+  border-radius: 1rem;
+  border: 1px solid #d9eadf;
+  background: #fbfdfb;
+}
+
+.org-coupon__srows > li.is-open {
+  border-color: #2d7a4f;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(45, 122, 79, 0.1);
+}
+
+.org-coupon__srow {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  min-height: 4.4rem;
+  border: 0;
+  background: transparent;
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.org-coupon__srow img {
+  flex: none;
+  width: 4.2rem;
+  height: 3.2rem;
+  border-radius: 0.65rem;
+  object-fit: cover;
+}
+
+.org-coupon__srow-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 0.12rem;
+}
+
+.org-coupon__srow-text strong,
+.org-coupon__srow-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-coupon__srow-text strong {
+  font-size: 0.86rem;
+  color: #163326;
+}
+
+.org-coupon__srow-text em {
+  justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8f6ec;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 800;
+  color: #1a5c38;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-coupon__srow-text em.is-empty {
+  background: #fdf1e7;
+  color: #a5561b;
+}
+
+.org-coupon__srow-text small {
+  font-size: 0.66rem;
+  color: #6a7568;
+}
+
+.org-coupon__srow-edit {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.25rem;
+  border-radius: 999px;
+  border: 1px solid #cfe0d6;
+  background: #fff;
+  padding: 0 0.7rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #2d7a4f;
+}
+
+.is-open .org-coupon__srow-edit {
+  border-color: #2d7a4f;
+  background: #2d7a4f;
+  color: #fff;
+}
+
+.org-coupon__srows .org-coupon__editor {
+  margin: 0 0.6rem 0.6rem;
+}
+
+.org-coupon__editor-foot {
+  display: flex !important;
+  grid-column: 1 / -1;
+  gap: 0.4rem;
+  border-top: 1px solid #e3ece6;
+  padding-top: 0.55rem;
+}
+
+.org-coupon__editor-foot button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border-radius: 0.7rem;
+  border: 1px solid #d5e2d8;
+  background: #fff;
+  padding: 0 0.6rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #3d6b52;
+  cursor: pointer;
+}
+
+.org-coupon__editor-foot button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.org-coupon__editor-foot .is-danger {
+  margin-left: auto;
+  border-color: #f0d4d0;
+  color: #b4433a;
+}
+
+.org-coupon__add-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 3rem;
+  margin-top: 0.6rem;
+  border-radius: 1rem;
+  border: 1.5px dashed #9cc7ad;
+  background: #f4faf6;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #2d7a4f;
+  cursor: pointer;
+}
+
+
+/* ───────── 取得・利用条件 ───────── */
+.org-coupon__rule-sum {
+  display: grid;
+  gap: 0.2rem;
+  margin-bottom: 0.4rem;
+  border-radius: 0.95rem;
+  background: linear-gradient(135deg, #1f7a4a, #2f9a5f);
+  padding: 0.75rem 0.9rem;
+  color: #fff;
+}
+
+.org-coupon__rule-sum strong {
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.org-coupon__rule-sum span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #d9f1e2;
+}
+
+.org-coupon__rule {
+  display: grid;
+  gap: 0.45rem;
+  border-top: 1px solid #e6efe9;
+  padding: 0.9rem 0 0.2rem;
+  margin-top: 0.7rem;
+}
+
+.org-coupon__rule:first-of-type {
+  border-top: 0;
+  margin-top: 0.3rem;
+  padding-top: 0.3rem;
+}
+
+.org-coupon__rule h3 {
+  margin: 0 0 0.1rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #1a4d32;
+}
+
+/* ラジオの行 */
+.org-coupon__radios {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-coupon__radios > li {
+  overflow: hidden;
+  border-radius: 0.9rem;
+  border: 1.5px solid #dbe9e0;
+  background: #fbfdfb;
+}
+
+.org-coupon__radios > li:has(> button.is-on) {
+  border-color: #2d7a4f;
+  background: #f0f9f3;
+}
+
+.org-coupon__radios > li > button {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 3rem;
+  border: 0;
+  background: transparent;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.org-coupon__radios > li > button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.org-coupon__radios i {
+  position: relative;
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  border: 2px solid #b9cdc0;
+  background: #fff;
+}
+
+.org-coupon__radios .is-on i {
+  border-color: #2d7a4f;
+}
+
+.org-coupon__radios .is-on i::after {
+  content: "";
+  position: absolute;
+  inset: 0.17rem;
+  border-radius: 50%;
+  background: #2d7a4f;
+}
+
+.org-coupon__radios button > span {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.org-coupon__radios strong {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #163326;
+}
+
+.org-coupon__radios strong em {
+  border-radius: 999px;
+  background: #eef1ef;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 800;
+  color: #6a7568;
+}
+
+.org-coupon__radios small {
+  font-size: 0.66rem;
+  color: #6a7568;
+}
+
+.org-coupon__radios--flat {
+  gap: 0.35rem;
+}
+
+/* 選んだ条件の中に出す、数の − / ＋ */
+.org-coupon__count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 0 0.75rem 0.65rem 2.55rem;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.35rem 0.35rem 0.35rem 0.7rem;
+}
+
+.org-coupon__count > span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #3d5346;
+}
+
+.org-coupon__count > div {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.org-coupon__count button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 0.65rem;
+  border: 1px solid #cfe0d6;
+  background: #fff;
+  color: #2d7a4f;
+  cursor: pointer;
+}
+
+.org-coupon__count button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.org-coupon__count b {
+  min-width: 2.8rem;
+  font-size: 1.05rem;
+  text-align: center;
+  color: #163326;
+}
+
+.org-coupon__count b small {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #8a968e;
+}
+
+/* オン・オフのスイッチの行 */
+.org-coupon__switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 3rem;
+  border-radius: 0.9rem;
+  border: 1px solid #e3ece6;
+  background: #fbfdfb;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+}
+
+.org-coupon__switch > span {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.org-coupon__switch strong {
+  font-size: 0.8rem;
+  color: #163326;
+}
+
+.org-coupon__switch small {
+  font-size: 0.64rem;
+  color: #6a7568;
+}
+
+.org-coupon__switch input {
+  position: relative;
+  flex: none;
+  width: 2.75rem;
+  height: 1.6rem;
+  margin: 0;
+  border-radius: 999px;
+  background: #cfd8d2;
+  appearance: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.org-coupon__switch input::after {
+  content: "";
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.org-coupon__switch input:checked {
+  background: #2d7a4f;
+}
+
+.org-coupon__switch input:checked::after {
+  transform: translateX(1.15rem);
+}
+
+.org-coupon__switch input:focus-visible {
+  outline: 2px solid #2d7a4f;
+  outline-offset: 2px;
+}
+
+/* 使える期間・時間帯 */
+.org-coupon__use-period {
+  display: grid;
+  gap: 0.35rem;
+  border-radius: 0.9rem;
+  border: 1px solid #e3ece6;
+  background: #fbfdfb;
+  padding: 0.6rem 0.75rem;
+}
+
+.org-coupon__use-period > span {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #163326;
+}
+
+.org-coupon__use-period > div,
+.org-coupon__use-time {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.org-coupon__use-period input,
+.org-coupon__use-time input,
+.org-coupon__max input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.6rem;
+  border-radius: 0.7rem;
+  border: 1px solid #d5e2d8;
+  background: #fff;
+  padding: 0 0.55rem;
+  font-size: 0.85rem;
+}
+
+.org-coupon__use-period > div > span,
+.org-coupon__use-time > span {
+  color: #8a968e;
+}
+
+.org-coupon__use-period > button {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  padding: 0.15rem 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #2d7a4f;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.org-coupon__use-period > small {
+  font-size: 0.66rem;
+  color: #6a7568;
+}
+
+/* 配る枚数 */
+.org-coupon__max {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.org-coupon__max label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.org-coupon__max label > span {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #163326;
+}
+
+.org-coupon__max label > div {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 9rem;
+}
+
+.org-coupon__max label em {
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 700;
+  color: #3d5346;
+}
+
+.org-coupon__max ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-coupon__max ul button {
+  min-height: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid #d5e2d8;
+  background: #fff;
+  padding: 0 0.85rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #3d5346;
+  cursor: pointer;
+}
+
+.org-coupon__max ul button.is-on {
+  border-color: #2d7a4f;
+  background: #2d7a4f;
+  color: #fff;
+}
+
+/* ───────── 確認・公開 ───────── */
+.org-coupon__review {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.org-coupon__ready {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  border-radius: 0.95rem;
+  background: linear-gradient(135deg, #1f7a4a, #2f9a5f);
+  padding: 0.8rem 0.9rem;
+  color: #fff;
+}
+
+.org-coupon__ready > svg {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.org-coupon__ready > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.org-coupon__ready strong {
+  font-size: 0.9rem;
+}
+
+.org-coupon__ready span {
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: #d9f1e2;
+}
+
+.org-coupon__ready.is-blocked {
+  display: grid;
+  gap: 0.45rem;
+  background: #fdf1ee;
+  border: 1px solid #f0cfc7;
+  color: #8f2f1f;
+}
+
+.org-coupon__ready.is-blocked ul,
+.org-coupon__warns {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-coupon__ready.is-blocked li,
+.org-coupon__warns li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.org-coupon__ready.is-blocked li span {
+  color: #8f2f1f;
+  font-size: 0.74rem;
+}
+
+.org-coupon__ready.is-blocked button,
+.org-coupon__warns button {
+  flex: none;
+  min-height: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: #fff;
+  padding: 0 0.85rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.org-coupon__ready.is-blocked button {
+  color: #b4433a;
+}
+
+.org-coupon__warns li {
+  border-radius: 0.8rem;
+  background: #fff8ec;
+  border: 1px solid #f3dfb8;
+  padding: 0.45rem 0.5rem 0.45rem 0.75rem;
+  color: #7a5212;
+}
+
+.org-coupon__warns button {
+  color: #a5561b;
+}
+
+.org-coupon__rv-edit {
+  flex: none;
+  min-height: 2.1rem;
+  border-radius: 999px;
+  border: 1px solid #cfe0d6;
+  background: #fff;
+  padding: 0 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #2d7a4f;
+  cursor: pointer;
+}
+
+.org-coupon__rv-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  border-radius: 0.95rem;
+  border: 1px solid #e3ece6;
+  background: #fbfdfb;
+  padding: 0.6rem;
+}
+
+.org-coupon__rv-hero img {
+  flex: none;
+  width: 5.2rem;
+  height: 3.9rem;
+  border-radius: 0.65rem;
+  object-fit: cover;
+}
+
+.org-coupon__rv-hero > div {
+  display: grid;
+  flex: 1;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.org-coupon__rv-hero strong {
+  font-size: 0.9rem;
+  color: #163326;
+}
+
+.org-coupon__rv-hero span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #3d6b52;
+}
+
+.org-coupon__rv-hero p {
+  display: -webkit-box;
+  margin: 0.1rem 0 0;
+  overflow: hidden;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: #6a7568;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.org-coupon__rv {
+  border-radius: 0.95rem;
+  border: 1px solid #e3ece6;
+  background: #fbfdfb;
+  padding: 0.6rem 0.75rem 0.7rem;
+}
+
+.org-coupon__rv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.org-coupon__rv-head h3 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #1a4d32;
+}
+
+.org-coupon__rv-stores {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-coupon__rv-stores li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.3rem;
+  border-top: 1px solid #edf3ef;
+}
+
+.org-coupon__rv-stores li:first-child {
+  border-top: 0;
+}
+
+.org-coupon__rv-stores b {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.78rem;
+  color: #163326;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-coupon__rv-stores em {
+  max-width: 45%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8f6ec;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+  color: #1a5c38;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-coupon__rv-stores em.is-empty {
+  background: #fdf1e7;
+  color: #a5561b;
+}
+
+.org-coupon__rv-stores small {
+  flex: none;
+  width: 3.2rem;
+  font-size: 0.66rem;
+  color: #6a7568;
+  text-align: right;
+}
+
+.org-coupon__rv-empty {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #8a968e;
+}
+
+.org-coupon__rv-list {
+  display: grid;
+  margin: 0;
+}
+
+.org-coupon__rv-list > div {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: 0.5rem;
+  border-top: 1px solid #edf3ef;
+  padding: 0.45rem 0;
+}
+
+.org-coupon__rv-list > div:first-child {
+  border-top: 0;
+  padding-top: 0.1rem;
+}
+
+.org-coupon__rv-list dt {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #6a7568;
+}
+
+.org-coupon__rv-list dd {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #163326;
+}

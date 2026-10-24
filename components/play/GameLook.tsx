@@ -16,6 +16,7 @@ import {
   Flag,
   Gift,
   MapPin,
+  Plus,
   Sparkles,
   Stamp,
   Star,
@@ -23,6 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useMoveLayer } from "@/components/play/rally/useMoveLayer";
+import { usePlayCopy } from "@/components/play/usePlayCopy";
 import { BG_THEME_SWATCH, type StartOffset } from "@/lib/organizer/game-experience";
 import {
   DEFAULT_GAME_LOOK,
@@ -34,6 +36,9 @@ import {
   type GameLook,
   type GameLookIcon,
   type GameLookMoveKey,
+  type GameLookTextStyle,
+  type GameClearWords,
+  CLEAR_WORD_MAX,
 } from "@/lib/organizer/game-look";
 import { cn } from "@/lib/utils";
 import "@/components/play/rally/rally.css";
@@ -507,14 +512,18 @@ export function GameSceneBand({
   clearTitle,
   congrats,
   progress,
+  edit,
 }: {
   look: GameLook | null | undefined;
+  /** 作成画面のプレビュー：クリアの帯の言葉をその場で書き換え、帯やトロフィーをタップで選ぶ。 */
+  edit?: GameSceneClearEdit;
   scene: "start" | "play" | "clear";
   clearTitle?: string;
   congrats?: string;
   /** プレイ中：いくつ済んだか・全部でいくつか・クリアに必要な数。スタンプカードのように丸を並べて見せる。 */
   progress?: { done: number; total: number; needed: number };
 }) {
+  const copy = usePlayCopy();
   const custom = gameLookHasBg(look);
   if (scene === "play" && progress) {
     const left = Math.max(0, progress.needed - progress.done);
@@ -531,7 +540,7 @@ export function GameSceneBand({
         </div>
         <p className="game-scene__count">
           <b>{progress.done}</b> / {progress.needed}
-          <span>{left > 0 ? `クリアまで、あと${left}つ` : "クリア条件を達成！"}</span>
+          <span>{copy.msg(left > 0 ? `クリアまで、あと${left}つ` : "クリア条件を達成！")}</span>
         </p>
         <span className="game-scene__bar" aria-hidden>
           <span style={{ width: `${Math.min(100, (progress.done / Math.max(1, progress.needed)) * 100)}%` }} />
@@ -543,19 +552,111 @@ export function GameSceneBand({
     <div className={cn("game-scene", `game-scene--${scene}`, custom && "has-custom-bg")} aria-hidden={scene === "start"}>
       <div className="rally-burst" aria-hidden />
       {scene === "clear" ? (
-        <>
-          <p className="rally-ribbon rally-ribbon--small">{congrats ?? "おめでとう！"}</p>
-          <p className="rally-ribbon">{clearTitle ?? "クリア！"}</p>
-          <span className="game-scene__trophy" aria-hidden>
-            <Trophy />
-          </span>
-        </>
+        <ClearRibbons look={look} clearTitle={clearTitle} congrats={congrats} edit={edit} />
       ) : (
         <span className="game-scene__sparkle" aria-hidden>
           <Sparkles />
         </span>
       )}
     </div>
+  );
+}
+
+
+export type GameSceneClearEdit = {
+  selected: string | null;
+  onSelect: (key: "congrats" | "clearTitle" | "trophy") => void;
+  onWords: (key: keyof GameClearWords, value: string) => void;
+};
+
+/** 帯の文字の色・背景・効果（主催者が決めたもの）。 */
+function ribbonStyle(style: GameLookTextStyle | undefined): CSSProperties | undefined {
+  if (!style) return undefined;
+  const fine = fineIsDefault(style) ? null : fineStyle(style);
+  return {
+    ...(fine as CSSProperties | null),
+    color: style.color || undefined,
+    background: style.bg || undefined,
+  };
+}
+
+/** 入力欄の幅を、文字の数に合わせる（全角は1文字、半角は0.6文字ぶん）。 */
+function wordWidth(text: string): string {
+  let em = 0;
+  for (const ch of text) em += ch.charCodeAt(0) > 255 ? 1.02 : 0.62;
+  return `${Math.max(2.5, em) + 0.4}em`;
+}
+
+/** クリア画面の「おめでとう！」「クリア！」の帯と、真ん中の絵。 */
+function ClearRibbons({
+  look,
+  clearTitle,
+  congrats,
+  edit,
+}: {
+  look: GameLook | null | undefined;
+  clearTitle?: string;
+  congrats?: string;
+  edit?: GameSceneClearEdit;
+}) {
+  const copy = usePlayCopy();
+  const words = look?.clearWords;
+  const congratsDefault = congrats || copy.msg("おめでとう！");
+  const titleDefault = clearTitle || copy.msg("クリア！");
+  const congratsText = words?.congrats ? copy.msg(words.congrats) : congratsDefault;
+  const titleText = words?.title ? copy.msg(words.title) : titleDefault;
+  const iconId = look?.clearIcon || "trophy";
+  const Icon = iconId === "none" ? null : GAME_LOOK_ICON_COMPONENT[iconId];
+  const ribbon = (key: "congrats" | "clearTitle", wordKey: keyof GameClearWords, text: string, fallback: string, small: boolean) => {
+    const className = cn("rally-ribbon", small && "rally-ribbon--small");
+    const style = ribbonStyle(look?.texts?.[key]);
+    if (!edit) {
+      return (
+        <p className={className} style={style}>
+          {text}
+        </p>
+      );
+    }
+    const value = words?.[wordKey] ?? "";
+    return (
+      <div
+        className={cn(className, "game-scene__edit", edit.selected === key && "is-selected")}
+        style={style}
+        data-move={key}
+        onClick={() => edit.onSelect(key)}
+      >
+        <input
+          value={value}
+          placeholder={fallback}
+          maxLength={CLEAR_WORD_MAX}
+          aria-label={key === "congrats" ? "上の小さな帯の言葉" : "クリアの帯の言葉"}
+          style={{ width: wordWidth(value || fallback) }}
+          onFocus={() => edit.onSelect(key)}
+          onChange={(event) => edit.onWords(wordKey, event.target.value)}
+        />
+      </div>
+    );
+  };
+  return (
+    <>
+      {ribbon("congrats", "congrats", congratsText, congratsDefault, true)}
+      {ribbon("clearTitle", "title", titleText, titleDefault, false)}
+      {edit ? (
+        <button
+          type="button"
+          className={cn("game-scene__trophy game-scene__edit", !Icon && "is-empty", edit.selected === "trophy" && "is-selected")}
+          data-move="trophy"
+          aria-label="真ん中の絵を変える"
+          onClick={() => edit.onSelect("trophy")}
+        >
+          {Icon ? <Icon /> : <Plus />}
+        </button>
+      ) : Icon ? (
+        <span className="game-scene__trophy" aria-hidden>
+          <Icon />
+        </span>
+      ) : null}
+    </>
   );
 }
 

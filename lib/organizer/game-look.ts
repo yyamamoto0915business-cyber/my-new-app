@@ -192,13 +192,15 @@ export type GameLookMoveKey = (typeof GAME_LOOK_MOVE_KEYS)[number];
 const LOOK_OFFSET_KEY = /^(icon|kicker|title|desc|meta|form|button|(shape|img|extra):[A-Za-z0-9_-]{1,40}|blk:\d{1,2}|pblk:[A-Za-z0-9_-]{1,40}\.\d{1,2})$/;
 
 /** 色を変えられる文字の部品。 */
-export const GAME_LOOK_TEXT_KEYS = ["kicker", "title", "desc", "meta"] as const;
+export const GAME_LOOK_TEXT_KEYS = ["kicker", "title", "desc", "meta", "congrats", "clearTitle"] as const;
 export type GameLookTextKey = (typeof GAME_LOOK_TEXT_KEYS)[number];
 export const GAME_LOOK_TEXT_LABEL: Record<GameLookTextKey, string> = {
   kicker: "ゲームの種類",
   title: "タイトル",
   desc: "説明文",
   meta: "問題数など",
+  congrats: "「おめでとう！」の帯",
+  clearTitle: "「クリア！」の帯",
 };
 /** 文字の色と、文字の後ろの色。空はもとの色（後ろは色なし）。 */
 export type GameLookTextStyle = { color: string; bg: string } & GameLookFine;
@@ -245,7 +247,14 @@ export type GameLook = {
   blocks: Record<string, GameLookTextStyle>;
   /** 足したものを出す画面。書いていないものは「参加」の画面（shape:<id> / img:<id> / extra:<id>）。 */
   screens: Record<string, "play" | "clear">;
+  /** クリア画面の上の帯の言葉。空は「おめでとう！」「クリア！」のまま。 */
+  clearWords: GameClearWords;
+  /** クリア画面の真ん中の絵。空はトロフィー、none は出さない。 */
+  clearIcon: GameLookIcon | "none" | "";
 };
+
+export type GameClearWords = { congrats: string; title: string };
+export const CLEAR_WORD_MAX = 20;
 
 /** 見た目を編集できる画面。 */
 export type GameLookScreen = "start" | "play" | "clear";
@@ -263,6 +272,8 @@ export const DEFAULT_GAME_LOOK: GameLook = {
   extraTexts: [],
   screens: {},
   blocks: {},
+  clearWords: { congrats: "", title: "" },
+  clearIcon: "",
 };
 
 /** 色は #rrggbb だけ通す（ワードのように自由に選べる）。 */
@@ -318,7 +329,15 @@ export function readGameLook(raw: unknown): GameLook {
     extraTexts: readExtraTexts(row.extraTexts),
     screens: readScreens(row.screens),
     blocks: readBlockStyles(row.blocks),
+    clearWords: readClearWords(row.clearWords),
+    clearIcon: row.clearIcon === "none" ? "none" : oneOf(row.clearIcon, GAME_LOOK_ICONS, "" as GameLookIcon),
   };
+}
+
+function readClearWords(raw: unknown): GameClearWords {
+  const row = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const word = (value: unknown) => (typeof value === "string" ? value.trim().slice(0, CLEAR_WORD_MAX) : "");
+  return { congrats: word(row.congrats), title: word(row.title) };
 }
 
 const BLOCK_KEY = /^(blk:\d{1,2}|pblk:[A-Za-z0-9_-]{1,40}\.\d{1,2})$/;

@@ -189,6 +189,10 @@ const PATTERNS: { re: RegExp; en: (match: RegExpMatchArray) => string }[] = [
     en: (match) => `A little closer. About ${match[1]} km to go.`,
   },
   {
+    re: /^クリアまで、あと(\d+)つ$/,
+    en: (match) => `${match[1]} more to clear`,
+  },
+  {
     re: /^先に「(.+)」を巡ってください$/,
     en: (match) => `Visit “${match[1]}” first`,
   },

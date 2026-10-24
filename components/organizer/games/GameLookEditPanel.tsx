@@ -25,7 +25,7 @@ import {
 } from "@/lib/organizer/game-look";
 import { cn } from "@/lib/utils";
 
-export type GameLookSelection = "icon" | "background" | "text";
+export type GameLookSelection = "icon" | "background" | "text" | "clearIcon";
 
 /** プレビューでタップしたアイコン・背景の設定。スタンプラリーの設定パネルと同じ見た目。 */
 export function GameLookEditPanel({
@@ -60,6 +60,8 @@ export function GameLookEditPanel({
   const title =
     selection === "icon"
       ? "アイコン"
+      : selection === "clearIcon"
+        ? "クリアの絵"
       : selection === "text"
         ? textKey
           ? GAME_LOOK_TEXT_LABEL[textKey]
@@ -132,6 +134,36 @@ export function GameLookEditPanel({
           </button>
           <p className="edit-panel__note edit-panel__note--show">押したままドラッグで移動</p>
           {resetButton}
+        </div>
+      ) : selection === "clearIcon" ? (
+        <div className="edit-panel__rows">
+          <Row label="絵">
+            {GAME_LOOK_ICONS.map((id) => {
+              const Icon = GAME_LOOK_ICON_COMPONENT[id];
+              const on = (look.clearIcon || "trophy") === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={cn("edit-panel__choice look-edit__choice", on && "is-on")}
+                  aria-pressed={on}
+                  aria-label={GAME_LOOK_ICON_LABEL[id]}
+                  title={GAME_LOOK_ICON_LABEL[id]}
+                  onClick={() => set({ clearIcon: id === "trophy" ? "" : id })}
+                >
+                  <Icon aria-hidden />
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              className={cn("edit-panel__choice", look.clearIcon === "none" && "is-on")}
+              aria-pressed={look.clearIcon === "none"}
+              onClick={() => set({ clearIcon: "none" })}
+            >
+              出さない
+            </button>
+          </Row>
         </div>
       ) : selection === "text" ? (
         <div className="edit-panel__rows" style={textKey ? FINE_ROWS_STYLE : undefined}>
