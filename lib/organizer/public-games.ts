@@ -55,7 +55,7 @@ export async function listPublishedOrganizerGames(
   const now = Date.now();
   const { data, error } = await supabase
     .from("organizer_games")
-    .select("id, type, name, description, starts_at, ends_at, join_token, settings, updated_at, events(title, prefecture, city)")
+    .select("id, type, name, description, starts_at, ends_at, join_token, settings, updated_at, events(title, prefecture, city, image_url)")
     .eq("status", "published")
     .order("updated_at", { ascending: false })
     .limit(capped);
@@ -111,7 +111,11 @@ export async function listPublishedOrganizerGames(
         startsAt: typeof row.starts_at === "string" ? row.starts_at : null,
         endsAt,
         joinPath: organizerGameJoinPath(joinToken),
-        imageUrl: coverFromSettings(row.settings, type) || defaultCover(type),
+        // ゲーム専用の画像 → 対象イベントの画像（参加パスにも出る画像） → 種類ごとの絵、の順。
+        imageUrl:
+          coverFromSettings(row.settings, type) ||
+          (typeof eventObj?.image_url === "string" && eventObj.image_url.trim() ? eventObj.image_url.trim() : "") ||
+          defaultCover(type),
         areaLabel,
         eventTitle,
       },
