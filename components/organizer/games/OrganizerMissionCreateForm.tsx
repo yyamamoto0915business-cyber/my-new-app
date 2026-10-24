@@ -45,6 +45,10 @@ import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
+import { GameDraftLoading } from "@/components/organizer/games/GameDraftLoading";
+import { useGameDraft } from "@/components/organizer/games/useGameDraft";
+import { readGameLook } from "@/lib/organizer/game-look";
+import { sanitizeMissionSettings } from "@/lib/organizer/mission";
 
 const KIND_ICONS: Record<MissionKindId, LucideIcon> = {
   visit: MapPin,
@@ -121,7 +125,7 @@ function toIsoFromDate(date: string): string | null {
 }
 
 export function OrganizerMissionCreateForm() {
-  const { look, lookEdit } = useGameLookEdit();
+  const { look, lookEdit, setLook } = useGameLookEdit();
   const router = useRouter();
   const [name, setName] = useState("まち巡り発見ミッション ～春のまちなかさんぽ～");
   const [eventId, setEventId] = useState("");
@@ -154,6 +158,28 @@ export function OrganizerMissionCreateForm() {
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
+  const draft = useGameDraft((saved) => {
+    setName(saved.name);
+    setDescription(saved.description);
+    setEventId(saved.eventId);
+    if (saved.startDate) setStartDate(saved.startDate);
+    if (saved.endDate) setEndDate(saved.endDate);
+    setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
+    const savedAudience = saved.settings.audience;
+    setAudience(savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    if (saved.settings.look) setLook(readGameLook(saved.settings.look));
+    const mission = sanitizeMissionSettings(saved.settings.mission);
+    if (!mission) return;
+    setFormats(mission.formats);
+    if (mission.missions.length > 0) setMissions(mission.missions.map((item) => ({ ...item, key: crypto.randomUUID() })));
+    setClearCount(mission.clearCount);
+    setCouponOn(mission.rewards.coupon);
+    setPointsOn(mission.rewards.points);
+    setStampOn(mission.rewards.stamp);
+    setPrizePlace(mission.prizePlace);
+    setRankingOn(mission.publish.ranking);
+    setHintsOn(mission.publish.hints);
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -264,10 +290,8 @@ export function OrganizerMissionCreateForm() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/organizer/games", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await draft.saveGame(
+        {
           name: name.trim(),
           type: "mission",
           eventId: eventId || null,
@@ -276,27 +300,26 @@ export function OrganizerMissionCreateForm() {
           description: description.trim(),
           startsAt: toIsoFromDate(startDate),
           endsAt: toIsoFromDate(endDate),
-          status,
           mission: settingsBody,
           look,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "作成に失敗しました");
+        },
+        status,
+      );
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
       if (status === "published") {
         setPublished(true);
         return;
       }
-      router.push("/organizer/games");
-    } catch {
-      setError("通信エラーが発生しました");
+      router.push(`/organizer/games/${result.id}`);
     } finally {
       setSaving(false);
     }
   }
+
+  if (draft.loading || draft.loadError) return <GameDraftLoading error={draft.loadError} />;
 
   if (published) {
     return (

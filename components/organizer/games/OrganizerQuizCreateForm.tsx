@@ -41,6 +41,9 @@ import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
+import { GameDraftLoading } from "@/components/organizer/games/GameDraftLoading";
+import { useGameDraft } from "@/components/organizer/games/useGameDraft";
+import { readGameLook } from "@/lib/organizer/game-look";
 
 const STEPS: GameCreateStep[] = [
   { label: "基本情報", icon: PenLine },
@@ -75,7 +78,7 @@ export function OrganizerQuizCreateForm() {
   const [questions, setQuestions] = useState<QuizQuestion[]>(() => sampleQuizQuestions());
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [clearCount, setClearCount] = useState(3);
-  const { look, lookEdit } = useGameLookEdit();
+  const { look, lookEdit, setLook } = useGameLookEdit();
   const [couponOn, setCouponOn] = useState(true);
   const [prizeOn, setPrizeOn] = useState(false);
   const [rankingOn, setRankingOn] = useState(false);
@@ -89,6 +92,51 @@ export function OrganizerQuizCreateForm() {
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
+  const draft = useGameDraft((saved) => {
+    setName(saved.name);
+    setDescription(saved.description);
+    setEventId(saved.eventId);
+    setStartDate(saved.startDate);
+    setEndDate(saved.endDate);
+    setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
+    const savedAudience = saved.settings.audience;
+    setAudience(savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    if (saved.settings.look) setLook(readGameLook(saved.settings.look));
+    const quiz = saved.settings.quiz as Record<string, unknown> | undefined;
+    if (!quiz || typeof quiz !== "object") return;
+    const savedFormats = Array.isArray(quiz.formats)
+      ? quiz.formats.filter((id): id is QuizFormatId => QUIZ_FORMATS.some((format) => format.id === id))
+      : [];
+    if (savedFormats.length > 0) setFormats(savedFormats);
+    if (Array.isArray(quiz.questions)) {
+      setQuestions(
+        quiz.questions.flatMap((raw, index) => {
+          if (!raw || typeof raw !== "object") return [];
+          const row = raw as Partial<QuizQuestion>;
+          const format = QUIZ_FORMATS.some((item) => item.id === row.format) ? (row.format as QuizFormatId) : "choice";
+          const base = createQuizQuestion(index, format);
+          return [
+            {
+              ...base,
+              ...row,
+              key: base.key,
+              format,
+              choices: Array.isArray(row.choices) ? row.choices.map(String) : base.choices,
+            },
+          ];
+        }),
+      );
+    }
+    if (typeof quiz.clearCount === "number") setClearCount(quiz.clearCount);
+    const rewards = (quiz.rewards ?? {}) as Record<string, unknown>;
+    setCouponOn(rewards.coupon === true);
+    setPrizeOn(rewards.prize === true);
+    setRankingOn(rewards.ranking === true);
+    setCouponName(typeof rewards.couponName === "string" ? rewards.couponName : "");
+    setCouponDetail(typeof rewards.couponDetail === "string" ? rewards.couponDetail : "");
+    setPrizeName(typeof rewards.prizeName === "string" ? rewards.prizeName : "");
+    setPrizePlace(typeof rewards.prizePlace === "string" ? rewards.prizePlace : "");
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -217,10 +265,8 @@ export function OrganizerQuizCreateForm() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/organizer/games", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await draft.saveGame(
+        {
           name: name.trim(),
           type: "quiz",
           eventId: eventId || null,
@@ -229,27 +275,26 @@ export function OrganizerQuizCreateForm() {
           description: description.trim(),
           startsAt: toIsoFromDate(startDate),
           endsAt: toIsoFromDate(endDate),
-          status,
           quiz: settingsBody,
           look,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "作成に失敗しました");
+        },
+        status,
+      );
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
       if (status === "published") {
         setPublished(true);
         return;
       }
-      router.push("/organizer/games");
-    } catch {
-      setError("通信エラーが発生しました");
+      router.push(`/organizer/games/${result.id}`);
     } finally {
       setSaving(false);
     }
   }
+
+  if (draft.loading || draft.loadError) return <GameDraftLoading error={draft.loadError} />;
 
   if (published) {
     return (

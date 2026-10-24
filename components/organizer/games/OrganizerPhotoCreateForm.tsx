@@ -28,6 +28,7 @@ import {
   createPhotoSpot,
   samplePhotoSpots,
   type PhotoSpot,
+  sanitizePhotoSettings,
 } from "@/lib/organizer/photo";
 import { PhotoTestPlay } from "@/components/organizer/games/PhotoTestPlay";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
@@ -41,6 +42,9 @@ import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
+import { GameDraftLoading } from "@/components/organizer/games/GameDraftLoading";
+import { useGameDraft } from "@/components/organizer/games/useGameDraft";
+import { readGameLook } from "@/lib/organizer/game-look";
 
 const STEPS = [
   { id: "basic", label: "基本設定" },
@@ -93,7 +97,7 @@ const SPOT_INPUT = {
 const SPOT_LABEL = { display: "grid", gap: "0.25rem", fontSize: "0.78rem", fontWeight: 800, color: "#3c4a40" } as const;
 
 export function OrganizerPhotoCreateForm() {
-  const { look, lookEdit } = useGameLookEdit();
+  const { look, lookEdit, setLook } = useGameLookEdit();
   const router = useRouter();
   const [step, setStep] = useState<StepId>("basic");
   const [name, setName] = useState("春のまち歩きフォトラリー");
@@ -133,6 +137,38 @@ export function OrganizerPhotoCreateForm() {
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
+  const draft = useGameDraft((saved) => {
+    setName(saved.name);
+    setDescription(saved.description);
+    setEventId(saved.eventId);
+    if (saved.startDate) setStartDate(saved.startDate);
+    if (saved.endDate) setEndDate(saved.endDate);
+    if (saved.startTime) setStartTime(saved.startTime);
+    if (saved.endTime) setEndTime(saved.endTime);
+    setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
+    const savedAudience = saved.settings.audience;
+    setAudience(savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    if (saved.settings.look) setLook(readGameLook(saved.settings.look));
+    const photo = sanitizePhotoSettings(saved.settings.photo);
+    if (!photo) return;
+    if (photo.spots.length > 0) setSpots(photo.spots.map((spot) => ({ ...spot, key: crypto.randomUUID() })));
+    setClearCount(photo.clearCount);
+    setPhotoRequired(photo.photoRequired);
+    setPointsOn(photo.rewards.points);
+    setCouponOn(photo.rewards.coupon);
+    setPrizeOn(photo.rewards.prize);
+    setCouponName(photo.rewards.couponName);
+    setCouponDetail(photo.rewards.couponDetail);
+    setPrizeName(photo.rewards.prizeName);
+    setPrizePlace(photo.rewards.prizePlace);
+    setPoints(photo.points);
+    if ((PHOTO_CATEGORIES as readonly string[]).includes(photo.category)) {
+      setCategory(photo.category as (typeof PHOTO_CATEGORIES)[number]);
+    }
+    setTags(photo.tags);
+    if (photo.mainImage) setMainImage(photo.mainImage);
+    if (photo.coverImage) setCoverImage(photo.coverImage);
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -233,12 +269,8 @@ export function OrganizerPhotoCreateForm() {
 
   /** 保存で送る設定。プレビューも同じものから描く。 */
   const settingsBody = {
-    spots: spots.map(({ name: spotName, place, prompt, imageUrl }) => ({
-      name: spotName,
-      place,
-      prompt,
-      imageUrl,
-    })),
+    // 着いたことの確かめ方（GPS・合言葉）も残す。参加画面はここから写真の受け付けを止める。
+    spots: spots.map(({ key: _key, ...spot }) => spot),
     clearCount,
     photoRequired,
     rewards: { points: pointsOn, coupon: couponOn, prize: prizeOn, couponName, couponDetail, prizeName, prizePlace },
@@ -259,10 +291,8 @@ export function OrganizerPhotoCreateForm() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/organizer/games", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await draft.saveGame(
+        {
           name: name.trim(),
           type: "photo",
           eventId: eventId || null,
@@ -271,30 +301,29 @@ export function OrganizerPhotoCreateForm() {
           description: description.trim(),
           startsAt: toIsoFromDateTime(startDate, startTime),
           endsAt: toIsoFromDateTime(endDate, endTime),
-          status,
           spots: spots
             .filter((spot) => spot.name.trim())
             .map((spot) => ({ name: spot.name.trim(), kind: "stamp" })),
           photo: settingsBody,
           look,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "作成に失敗しました");
+        },
+        status,
+      );
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
       if (status === "published") {
         setPublished(true);
         return;
       }
-      router.push("/organizer/games");
-    } catch {
-      setError("通信エラーが発生しました");
+      router.push(`/organizer/games/${result.id}`);
     } finally {
       setSaving(false);
     }
   }
+
+  if (draft.loading || draft.loadError) return <GameDraftLoading error={draft.loadError} />;
 
   if (published) {
     return (

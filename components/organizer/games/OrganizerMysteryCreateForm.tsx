@@ -17,6 +17,10 @@ import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
+import { GameDraftLoading } from "@/components/organizer/games/GameDraftLoading";
+import { useGameDraft } from "@/components/organizer/games/useGameDraft";
+import { readGameLook } from "@/lib/organizer/game-look";
+import { sanitizeMysterySettings } from "@/lib/organizer/mystery";
 import { MysteryTestPlay } from "@/components/organizer/games/MysteryTestPlay";
 import { createMysteryStep, sampleMysterySteps, type MysteryStep } from "@/lib/organizer/mystery";
 
@@ -27,7 +31,7 @@ const STEPS: GameCreateStep[] = [
 ];
 
 export function OrganizerMysteryCreateForm() {
-  const { look, lookEdit } = useGameLookEdit();
+  const { look, lookEdit, setLook } = useGameLookEdit();
   const router = useRouter();
   const [name, setName] = useState("春のまちの謎解き");
   const [description, setDescription] = useState("ヒントを順にたどって、三つの謎を解く短いさんぽです。");
@@ -72,6 +76,25 @@ export function OrganizerMysteryCreateForm() {
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
+  const draft = useGameDraft((saved) => {
+    setName(saved.name);
+    setDescription(saved.description);
+    setEventId(saved.eventId);
+    setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
+    const savedAudience = saved.settings.audience;
+    setAudience(savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    if (saved.settings.look) setLook(readGameLook(saved.settings.look));
+    const mystery = sanitizeMysterySettings(saved.settings.mystery);
+    if (!mystery) return;
+    if (mystery.steps.length > 0) setSteps(mystery.steps.map((step) => ({ ...step, key: crypto.randomUUID() })));
+    setClearCount(mystery.clearCount);
+    setCouponOn(mystery.couponOn);
+    setPrizeOn(mystery.prizeOn);
+    setCouponName(mystery.couponName);
+    setCouponDetail(mystery.couponDetail);
+    setPrizeName(mystery.prizeName);
+    setPrizePlace(mystery.prizePlace);
+  });
 
   const ready = steps.filter((step) => step.prompt.trim() && step.answer.trim());
   /** 選べるのは、答えのある謎の数まで。 */
@@ -145,37 +168,34 @@ export function OrganizerMysteryCreateForm() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/organizer/games", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await draft.saveGame(
+        {
           name: name.trim(),
           type: "mystery",
           description: description.trim(),
-          status,
           mystery: settingsBody,
           look,
           eventId: eventId || null,
           cardImage,
           audience,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "作成に失敗しました");
+        },
+        status,
+      );
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
       if (status === "published") {
         setPublished(true);
         return;
       }
-      router.push("/organizer/games");
-    } catch {
-      setError("通信エラーが発生しました");
+      router.push(`/organizer/games/${result.id}`);
     } finally {
       setSaving(false);
     }
   }
+
+  if (draft.loading || draft.loadError) return <GameDraftLoading error={draft.loadError} />;
 
   if (published) return <GamePublishSuccess
           typeLabel="謎解き街歩き"

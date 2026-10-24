@@ -9,6 +9,7 @@ import {
   updateOrganizerGameDraft,
 } from "@/lib/organizer/games";
 import { countOrganizerGamePlayers } from "@/lib/organizer/play";
+import { settingsFromBody, type GameSettingsBody } from "@/lib/organizer/game-settings-body";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -38,10 +39,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
       .maybeSingle();
     const settings =
       settingsRow?.settings && typeof settingsRow.settings === "object" && !Array.isArray(settingsRow.settings)
-        ? (settingsRow.settings as { experience?: unknown })
+        ? (settingsRow.settings as Record<string, unknown> & { experience?: unknown })
         : null;
     const experience = sanitizeGameExperience(settings?.experience);
-    return NextResponse.json({ game, spots, playerCount, experience });
+    // スタンプラリー以外の作成画面は、settings をそのまま読み直して下書きを開く。
+    return NextResponse.json({ game, spots, playerCount, experience, settings: settings ?? {} });
   } catch (e) {
     console.error("organizer game GET:", e);
     return NextResponse.json({ error: "ゲームの取得に失敗しました" }, { status: 500 });
@@ -168,5 +170,95 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     }
     console.error("organizer game PATCH:", e);
     return NextResponse.json({ error: "下書きの保存に失敗しました" }, { status: 500 });
+  }
+}
+
+/** 作成画面で直したときに保存した設定から外す項目。空にしたものも消えるように、いったん null にする。 */
+const EDITABLE_SETTING_KEYS = ["quiz", "mission", "photo", "coupon", "checkin", "mystery", "look", "audience", "cardImage"] as const;
+
+/**
+ * PUT: スタンプラリー以外のゲームを、作成画面から上書き保存する。
+ * 下書きを開き直して直すときと、2回目からの「下書き保存」で使う。スポットには触らない。
+ */
+export async function PUT(request: NextRequest, { params }: Params) {
+  const { id } = await params;
+  const auth = await requireOrganizerApi();
+  if (!auth.ok) return auth.response;
+
+  const game = await getOwnedOrganizerGame(auth.supabase, auth.organizerId, id);
+  if (!game) {
+    return NextResponse.json({ error: "ゲームが見つかりません" }, { status: 404 });
+  }
+  if (game.type === "stamp") {
+    return NextResponse.json({ error: "スタンプラリーは、スタンプラリーの作成画面から保存してください" }, { status: 400 });
+  }
+
+  let body: GameSettingsBody & {
+    name?: unknown;
+    eventId?: unknown;
+    description?: unknown;
+    startsAt?: unknown;
+    endsAt?: unknown;
+    status?: unknown;
+  };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  if (!name) return NextResponse.json({ error: "ゲーム名は必須です" }, { status: 400 });
+  if (name.length > 80) {
+    return NextResponse.json({ error: "ゲーム名は80文字以内にしてください" }, { status: 400 });
+  }
+  const description = typeof body.description === "string" ? body.description.trim() : "";
+  if (description.length > 400) {
+    return NextResponse.json({ error: "説明は400文字以内にしてください" }, { status: 400 });
+  }
+
+  const eventId = typeof body.eventId === "string" && body.eventId ? body.eventId : null;
+  if (eventId) {
+    const { data: event, error } = await auth.supabase
+      .from("events")
+      .select("id")
+      .eq("id", eventId)
+      .eq("organizer_id", auth.organizerId)
+      .maybeSingle();
+    if (error || !event) {
+      return NextResponse.json({ error: "対象イベントが見つかりません" }, { status: 400 });
+    }
+  }
+
+  const startsAt = typeof body.startsAt === "string" && body.startsAt ? body.startsAt : null;
+  const endsAt = typeof body.endsAt === "string" && body.endsAt ? body.endsAt : null;
+  if (startsAt && Number.isNaN(Date.parse(startsAt))) {
+    return NextResponse.json({ error: "開始日時が不正です" }, { status: 400 });
+  }
+  if (endsAt && Number.isNaN(Date.parse(endsAt))) {
+    return NextResponse.json({ error: "終了日時が不正です" }, { status: 400 });
+  }
+  if (startsAt && endsAt && new Date(endsAt) < new Date(startsAt)) {
+    return NextResponse.json({ error: "終了日時は開始日時より後にしてください" }, { status: 400 });
+  }
+
+  const status = body.status === "published" || body.status === "draft" ? body.status : undefined;
+  const cleared: Record<string, unknown> = Object.fromEntries(EDITABLE_SETTING_KEYS.map((key) => [key, null]));
+  const settings = { ...cleared, ...(settingsFromBody(body) ?? {}) };
+
+  try {
+    const updated = await updateOrganizerGameDraft(auth.supabase, auth.organizerId, game.id, {
+      name,
+      eventId,
+      description,
+      startsAt,
+      endsAt,
+      status,
+      settings,
+    });
+    return NextResponse.json(updated);
+  } catch (e) {
+    console.error("organizer game PUT:", e);
+    return NextResponse.json({ error: "保存に失敗しました" }, { status: 500 });
   }
 }

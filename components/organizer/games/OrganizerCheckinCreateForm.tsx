@@ -34,6 +34,7 @@ import {
   checkinSpotValue,
   createCheckinSpot,
   sampleCheckinSpots,
+  sanitizeCheckinSettings,
   type CheckinAudience,
   type CheckinCategory,
   type CheckinClearMode,
@@ -51,6 +52,9 @@ import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
+import { GameDraftLoading } from "@/components/organizer/games/GameDraftLoading";
+import { useGameDraft } from "@/components/organizer/games/useGameDraft";
+import { readGameLook } from "@/lib/organizer/game-look";
 
 const STEPS = [
   { id: "basic", label: "基本設定" },
@@ -94,7 +98,7 @@ function MethodIcon({ method }: { method: CheckinMethod }) {
 }
 
 export function OrganizerCheckinCreateForm() {
-  const { look, lookEdit } = useGameLookEdit();
+  const { look, lookEdit, setLook } = useGameLookEdit();
   const router = useRouter();
   const [step, setStep] = useState<StepId>("basic");
   const [name, setName] = useState("春のまち歩きチェックイン");
@@ -148,6 +152,41 @@ export function OrganizerCheckinCreateForm() {
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
+  const draft = useGameDraft((saved) => {
+    setName(saved.name);
+    setDescription(saved.description);
+    setEventId(saved.eventId);
+    if (saved.startDate) setStartDate(saved.startDate);
+    if (saved.endDate) setEndDate(saved.endDate);
+    if (saved.startTime) setStartTime(saved.startTime);
+    if (saved.endTime) setEndTime(saved.endTime);
+    setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
+    const savedAudience = saved.settings.audience;
+    setGameAudience(savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    if (saved.settings.look) setLook(readGameLook(saved.settings.look));
+    const checkin = sanitizeCheckinSettings(saved.settings.checkin);
+    if (!checkin) return;
+    if (checkin.spots.length > 0) setSpots(checkin.spots.map((spot) => ({ ...spot, key: crypto.randomUUID() })));
+    const savedImage = CHECKIN_SAMPLE_IMAGES.find((image) => image === checkin.mainImage);
+    if (savedImage) setMainImage(savedImage);
+    const savedCategory = CHECKIN_CATEGORIES.find((item) => item === checkin.category);
+    if (savedCategory) setCategory(savedCategory);
+    setTags(checkin.tags);
+    setDefaultMethod(checkin.defaultMethod);
+    setClearMode(checkin.clearMode);
+    setClearCount(checkin.clearCount);
+    setCouponOn(checkin.couponOn);
+    setPointsOn(checkin.pointsOn);
+    setPrizeOn(checkin.prizeOn);
+    setCouponName(checkin.couponName);
+    setCouponDetail(checkin.couponDetail);
+    setPrizeName(checkin.prizeName);
+    setPrizePlace(checkin.prizePlace);
+    setPoints(checkin.points);
+    setRankingOn(checkin.rankingOn);
+    setHintOn(checkin.hintOn);
+    setPublicToPlayers(checkin.publicToPlayers);
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -276,10 +315,8 @@ export function OrganizerCheckinCreateForm() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/organizer/games", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await draft.saveGame(
+        {
           name: name.trim(),
           type: "checkin",
           eventId: eventId || null,
@@ -288,24 +325,21 @@ export function OrganizerCheckinCreateForm() {
           description: description.trim(),
           startsAt: toIsoFromDateTime(startDate, startTime),
           endsAt: toIsoFromDateTime(endDate, endTime),
-          status,
           spots: namedSpots.map((spot) => ({ name: spot.name.trim(), kind: "stamp" })),
           checkin: settingsBody,
           look,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "作成に失敗しました");
+        },
+        status,
+      );
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
       if (status === "published") {
         setPublished(true);
         return;
       }
-      router.push("/organizer/games");
-    } catch {
-      setError("通信エラーが発生しました");
+      router.push(`/organizer/games/${result.id}`);
     } finally {
       setSaving(false);
     }
@@ -318,6 +352,8 @@ export function OrganizerCheckinCreateForm() {
     { ok: Boolean(clearMode), label: "達成条件・特典が設定されています" },
     { ok: publicToPlayers, label: "公開設定が完了しています" },
   ];
+
+  if (draft.loading || draft.loadError) return <GameDraftLoading error={draft.loadError} />;
 
   if (published) {
     return (

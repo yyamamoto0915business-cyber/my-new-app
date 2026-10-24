@@ -27,6 +27,9 @@ import {
 import type { OrganizerGame, OrganizerGameSpot } from "@/lib/organizer/games";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
+/** 作成画面を開き直して、保存した内容を直せるゲーム（スタンプラリーは別の入口）。 */
+const DRAFT_EDIT_TYPES = new Set<string>(["quiz", "mystery", "mission", "photo", "checkin"]);
+
 export function OrganizerGameEditor() {
   const params = useParams();
   const gameId = typeof params?.id === "string" ? params.id : "";
@@ -247,6 +250,10 @@ export function OrganizerGameEditor() {
             {game.type === "stamp" ? (
               <Link href={`/organizer/games/new?edit=${game.id}`} className="org-games__print-link">
                 画面と特典を直す
+              </Link>
+            ) : DRAFT_EDIT_TYPES.has(game.type) ? (
+              <Link href={`/organizer/games/new?type=${game.type}&edit=${game.id}`} className="org-games__print-link">
+                内容を直す
               </Link>
             ) : null}
             <Link href={`/organizer/games/${game.id}/analytics`} className="org-games__print-link">

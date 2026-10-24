@@ -506,7 +506,12 @@ export async function updateOrganizerGameDraft(
     ends_at: input.endsAt || null,
   };
   if (input.status === "published" || input.status === "draft") payload.status = input.status;
-  if (input.settings) payload.settings = { ...prev, ...input.settings };
+  if (input.settings) {
+    // null の項目は、前の設定からも消す（作成画面で空にしたもの）。
+    const merged: Record<string, unknown> = { ...prev, ...input.settings };
+    for (const key of Object.keys(merged)) if (merged[key] === null) delete merged[key];
+    payload.settings = merged;
+  }
 
   let { error } = await supabase
     .from("organizer_games")
