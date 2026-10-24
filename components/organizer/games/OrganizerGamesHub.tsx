@@ -11,7 +11,6 @@ import {
   BookOpen,
   Calendar,
   ChevronDown,
-  ChevronRight,
   FileText,
   Gamepad2,
   MapPin,
@@ -199,14 +198,16 @@ function GameCard({ game }: { game: OrganizerGame }) {
   );
 }
 
-/** スマホのはじめの画面で、作る・一覧の下に置く「データを見る」。 */
+/** スマホのはじめの画面で、作る・一覧・データの3枚を横に並べる。 */
 const HUB_DATA_CSS = `
-.org-hub__mobile-data { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem; border-radius: 1.1rem; border: 1px solid #d9eadf; background: linear-gradient(135deg, #ffffff 0%, #f1f8f3 100%); padding: 0.8rem 0.95rem; color: #1a4d32; text-decoration: none; box-shadow: 0 8px 20px -16px rgba(30, 90, 55, 0.6); }
-.org-hub__mobile-data:active { transform: scale(0.99); }
-.org-hub__mobile-data-icon { flex: none; display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 0.85rem; background: #2d7a4f; color: #fff; }
-.org-hub__mobile-data-text { flex: 1; min-width: 0; display: grid; gap: 0.1rem; }
-.org-hub__mobile-data-text b { font-size: 0.95rem; }
-.org-hub__mobile-data-text small { font-size: 0.75rem; color: #6a7568; }
+@media (max-width: 899px) {
+  .org-hub .org-hub__mobile-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.55rem; }
+  .org-hub .org-hub__mobile-create,
+  .org-hub .org-hub__mobile-library { min-height: 8.2rem; padding: 0.85rem 0.35rem 0.75rem; text-decoration: none; }
+  .org-hub .org-hub__mobile-create-title,
+  .org-hub .org-hub__mobile-library-title { font-size: 0.84rem; text-align: center; }
+  .org-hub .org-hub__mobile-data .org-hub__mobile-library-mark { background: #fbf1da; color: #a87412; }
+}
 `;
 
 export function OrganizerGamesHub() {
@@ -329,19 +330,17 @@ export function OrganizerGamesHub() {
             </span>
             <span className="org-hub__mobile-library-label">一覧を見る</span>
           </button>
-        </div>
 
+          <Link href={analyticsHref} className="org-hub__mobile-library org-hub__mobile-data">
+            <span className="org-hub__mobile-library-title">データ</span>
+            <span className="org-hub__mobile-library-mark" aria-hidden>
+              <BarChart3 className="h-5 w-5" strokeWidth={2} />
+            </span>
+            <span className="org-hub__mobile-library-label">効果を見る</span>
+          </Link>
+        </div>
         <style>{HUB_DATA_CSS}</style>
-        <Link href={analyticsHref} className="org-hub__mobile-data">
-          <span className="org-hub__mobile-data-icon" aria-hidden>
-            <BarChart3 className="h-5 w-5" strokeWidth={2.2} />
-          </span>
-          <span className="org-hub__mobile-data-text">
-            <b>データを見る</b>
-            <small>参加した人・クリアした人・歩いた場所を確かめる</small>
-          </span>
-          <ChevronRight className="h-4 w-4" aria-hidden />
-        </Link>
+
 
         <section
           id="mobile-templates"
