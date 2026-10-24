@@ -1,4 +1,5 @@
-import { safeImageUrl } from "@/lib/organizer/game-experience";
+import { safeImageUrl, sanitizePlace } from "@/lib/organizer/game-experience";
+import type { QuizGate } from "@/lib/organizer/quiz-play";
 
 export type PublicPhotoSpot = {
   index: number;
@@ -7,6 +8,10 @@ export type PublicPhotoSpot = {
   prompt: string;
   imageUrl: string;
   actionLabel: string;
+  /** その場所に着いたことの確かめ方。なければ確かめない。 */
+  arrival?: "gps" | "keyword";
+  /** 確かめに使う中身（合言葉・場所）。参加者には渡さない（publicPhoto で外す）。 */
+  gate?: QuizGate | null;
 };
 
 export type PublicPhotoPlay = {
@@ -38,10 +43,21 @@ export function readStoredPhoto(settings: unknown): PublicPhotoPlay | null {
         const row = item as Record<string, unknown>;
         const name = typeof row.name === "string" ? row.name.trim().slice(0, 40) : "";
         if (!name) return [];
+        const place = typeof row.place === "string" ? row.place.trim().slice(0, 40) : "";
+        let gate: QuizGate | null = null;
+        const gateKeyword = typeof row.keyword === "string" ? row.keyword.trim().slice(0, 40) : "";
+        const spot = sanitizePlace(row.lat, row.lng);
+        if (row.arrival === "keyword" && gateKeyword) gate = { arrival: "keyword", place, keyword: gateKeyword };
+        else if (row.arrival !== "keyword" && row.arrival !== "none" && spot) {
+          const radiusRaw = typeof row.radius === "number" ? Math.round(row.radius) : 50;
+          gate = { arrival: "gps", place, ...spot, radiusM: Math.min(500, Math.max(5, radiusRaw)) };
+        }
         return [
           {
             name,
-            place: typeof row.place === "string" ? row.place.trim().slice(0, 40) : "",
+            gate,
+            ...(gate ? { arrival: gate.arrival } : {}),
+            place,
             prompt: typeof row.prompt === "string" ? row.prompt.trim().slice(0, 80) : "",
             imageUrl: photoImage(row.imageUrl),
             actionLabel: "",
@@ -75,7 +91,7 @@ export function readStoredPhoto(settings: unknown): PublicPhotoPlay | null {
       : "",
   ].filter(Boolean);
   const clearRaw = typeof body.clearCount === "number" ? Math.round(body.clearCount) : spots.length;
-  const actionLabel = photoRequired ? "写真を残す" : "ここに来た";
+  const actionLabel = photoRequired ? "写真を撮って送る" : "ここに来た";
   return {
     clearCount: Math.min(spots.length, Math.max(1, clearRaw)),
     photoRequired,
@@ -106,6 +122,7 @@ export function readPublicPhoto(raw: unknown): PublicPhotoPlay | null {
             imageUrl: photoImage(row.imageUrl),
             actionLabel:
               typeof row.actionLabel === "string" && row.actionLabel.trim() ? row.actionLabel : "写真を残す",
+            ...(row.arrival === "gps" || row.arrival === "keyword" ? { arrival: row.arrival as "gps" | "keyword" } : {}),
           },
         ];
       })
@@ -134,4 +151,9 @@ export function normalizePhotoDone(value: unknown, total: number): number[] {
     set.add(item);
   }
   return [...set].sort((left, right) => left - right);
+}
+
+/** 参加者に渡すフォトラリー。確かめに使う合言葉・場所は外す。 */
+export function publicPhoto(play: PublicPhotoPlay): PublicPhotoPlay {
+  return { ...play, spots: play.spots.map(({ gate: _gate, ...spot }) => spot) };
 }

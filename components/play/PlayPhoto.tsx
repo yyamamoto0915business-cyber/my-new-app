@@ -1,6 +1,7 @@
 "use client";
 
 import { RewardLine } from "@/components/play/RewardLine";
+import { shrinkPhoto } from "@/components/play/shrinkPhoto";
 import { useState } from "react";
 import Link from "next/link";
 import type { PublicPhotoPlay, PublicPhotoSpot } from "@/lib/organizer/photo-play";
@@ -22,40 +23,113 @@ export function PlayPhoto({ token, photo, progress, onProgress }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [keyword, setKeyword] = useState("");
+  const [note, setNote] = useState<string | null>(null);
   const copy = usePlayCopy();
 
   const active = photo.spots.find((spot) => spot.index === activeIndex) ?? null;
 
-  async function shoot(spot: PublicPhotoSpot) {
+  /** GPS で確かめるスポットは、現在地を取ってから送る。 */
+  function withHere(spot: PublicPhotoSpot, next: (here: { lat: number; lng: number } | null) => void) {
+    if (spot.arrival !== "gps") {
+      next(null);
+      return;
+    }
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setError("この端末では現在地を取れません");
+      return;
+    }
+    setSaving(true);
+    setNote("現在地を確認しています…");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setNote(null);
+        next({
+          lat: Math.round(position.coords.latitude * 1e6) / 1e6,
+          lng: Math.round(position.coords.longitude * 1e6) / 1e6,
+        });
+      },
+      () => {
+        setSaving(false);
+        setNote(null);
+        setError("現在地を取得できませんでした。位置情報を許可して、もう一度押してください。");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  }
+
+  function finish(next: PlayProgress) {
+    setActiveIndex(null);
+    setKeyword("");
+    onProgress(next);
+  }
+
+  /** 写真が要らないスポット：着いたことを確かめて記録する。 */
+  function shoot(spot: PublicPhotoSpot) {
     if (saving || done.includes(spot.index)) return;
     const stored = readPlaySession(token);
     if (!stored) {
       setError("先に参加用QRから入ってください");
       return;
     }
-    setSaving(true);
     setError(null);
-    try {
-      const res = await fetch(`/api/play/${encodeURIComponent(token)}/photo`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          deviceToken: stored.deviceToken,
-          spotIndex: spot.index,
-        }),
-      });
-      const json = (await res.json()) as { progress?: PlayProgress; error?: string };
-      if (!res.ok || !json.progress) {
-        setError(json.error ?? "記録を保存できませんでした");
-        return;
+    withHere(spot, async (here) => {
+      setSaving(true);
+      try {
+        const res = await fetch(`/api/play/${encodeURIComponent(token)}/photo`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceToken: stored.deviceToken, spotIndex: spot.index, here, keyword }),
+        });
+        const json = (await res.json()) as { progress?: PlayProgress; error?: string };
+        if (!res.ok || !json.progress) {
+          setError(json.error ?? "記録を保存できませんでした");
+          return;
+        }
+        finish(json.progress);
+      } catch {
+        setError("通信エラーが発生しました");
+      } finally {
+        setSaving(false);
       }
-      setActiveIndex(null);
-      onProgress(json.progress);
-    } catch {
-      setError("通信エラーが発生しました");
-    } finally {
-      setSaving(false);
+    });
+  }
+
+  /** 写真が要るスポット：撮った写真を送る（着いたことも一緒に確かめる）。 */
+  function sendPhoto(spot: PublicPhotoSpot, file: File) {
+    const stored = readPlaySession(token);
+    if (!stored) {
+      setError("先に参加用QRから入ってください");
+      return;
     }
+    setError(null);
+    withHere(spot, async (here) => {
+      setSaving(true);
+      setNote("写真を送っています…");
+      try {
+        const body = new FormData();
+        body.set("deviceToken", stored.deviceToken);
+        body.set("spotIndex", String(spot.index));
+        body.set("keyword", keyword);
+        if (here) {
+          body.set("lat", String(here.lat));
+          body.set("lng", String(here.lng));
+        }
+        body.set("file", await shrinkPhoto(file), "photo.jpg");
+        const res = await fetch(`/api/play/${encodeURIComponent(token)}/photo-upload`, { method: "POST", body });
+        const json = (await res.json()) as { progress?: PlayProgress; error?: string };
+        if (!res.ok || !json.progress) {
+          setError(json.error ?? "写真を送れませんでした");
+          return;
+        }
+        finish(json.progress);
+      } catch {
+        setError("通信エラーが発生しました");
+      } finally {
+        setNote(null);
+        setSaving(false);
+      }
+    });
   }
 
   if (progress.completed) {
@@ -103,11 +177,53 @@ export function PlayPhoto({ token, photo, progress, onProgress }: Props) {
         <h2>{active.name}</h2>
         {active.place ? <p className="game-test__meta">{active.place}</p> : null}
         {active.prompt ? <p>{active.prompt}</p> : null}
+        {active.arrival ? (
+          <p className="game-test__meta">
+            {copy.msg(active.arrival === "gps" ? "着いたら、現在地で確かめます。" : "現地にある合言葉を入れて確かめます。")}
+          </p>
+        ) : null}
+        {active.arrival === "keyword" ? (
+          <input
+            className="game-test__field"
+            value={keyword}
+            maxLength={40}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder={copy.msg("現地の合言葉")}
+            aria-label={copy.msg("現地の合言葉")}
+          />
+        ) : null}
+        {note ? <p className="game-test__note">{copy.msg(note)}</p> : null}
         {error ? <p className="play-join__error">{copy.msg(error)}</p> : null}
         <div className="play-dock play-dock--pair">
-          <button type="button" className="play-dock__go" disabled={saving} onClick={() => void shoot(active)}>
-            {saving ? copy.recording : copy.msg(active.actionLabel)}
-          </button>
+          {photo.photoRequired ? (
+            <label
+              className="play-dock__go"
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1 }}
+            >
+              {saving ? copy.msg("送っています…") : copy.msg("写真を撮って送る")}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                capture="environment"
+                disabled={saving || (active.arrival === "keyword" && !keyword.trim())}
+                style={{ display: "none" }}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) sendPhoto(active, file);
+                }}
+              />
+            </label>
+          ) : (
+            <button
+              type="button"
+              className="play-dock__go"
+              disabled={saving || (active.arrival === "keyword" && !keyword.trim())}
+              onClick={() => shoot(active)}
+            >
+              {saving ? copy.recording : copy.msg(active.arrival === "gps" ? "現在地で確かめる" : active.actionLabel)}
+            </button>
+          )}
           <button type="button" className="play-dock__ghost" onClick={() => setActiveIndex(null)}>
             {copy.backToList}
           </button>

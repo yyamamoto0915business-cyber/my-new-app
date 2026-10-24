@@ -24,7 +24,15 @@ export type PhotoSpot = {
   place: string;
   prompt: string;
   imageUrl: string;
+  /** その場所に着いたことの確かめ方（ミッション・謎解きと同じ）。 */
+  arrival: "none" | "gps" | "keyword";
+  lat: number | null;
+  lng: number | null;
+  radius: number;
+  keyword: string;
 };
+
+const PHOTO_PLACE_DEFAULTS = { arrival: "gps" as const, lat: null, lng: null, radius: 50, keyword: "" };
 
 export type PhotoSettings = {
   spots: Omit<PhotoSpot, "key">[];
@@ -54,6 +62,7 @@ export function createPhotoSpot(): PhotoSpot {
     place: "",
     prompt: "",
     imageUrl: PHOTO_SAMPLE_IMAGES[0],
+    ...PHOTO_PLACE_DEFAULTS,
   };
 }
 
@@ -65,6 +74,7 @@ export function samplePhotoSpots(): PhotoSpot[] {
       place: "中央広場",
       prompt: "満開の桜と一緒に、記念写真を撮ろう",
       imageUrl: "/profile/album/spring/sakura.jpg",
+      ...PHOTO_PLACE_DEFAULTS,
     },
     {
       key: crypto.randomUUID(),
@@ -72,6 +82,7 @@ export function samplePhotoSpots(): PhotoSpot[] {
       place: "さくら商店街",
       prompt: "暖簾や看板など、まちの表情が伝わる一枚を",
       imageUrl: "/profile/album/spring/town.jpg",
+      ...PHOTO_PLACE_DEFAULTS,
     },
     {
       key: crypto.randomUUID(),
@@ -79,6 +90,7 @@ export function samplePhotoSpots(): PhotoSpot[] {
       place: "みどりの丘公園",
       prompt: "川と桜並木が写る場所で撮ってみよう",
       imageUrl: "/profile/album/spring/river.jpg",
+      ...PHOTO_PLACE_DEFAULTS,
     },
   ];
 }
@@ -96,6 +108,11 @@ export function sanitizePhotoSettings(raw: unknown): PhotoSettings | null {
             place: typeof row.place === "string" ? row.place.trim().slice(0, 40) : "",
             prompt: typeof row.prompt === "string" ? row.prompt.trim().slice(0, 80) : "",
             imageUrl: typeof row.imageUrl === "string" ? row.imageUrl.trim().slice(0, 300) : "",
+            arrival: (row.arrival === "keyword" || row.arrival === "none" ? row.arrival : "gps") as PhotoSpot["arrival"],
+            lat: typeof row.lat === "number" && Number.isFinite(row.lat) ? row.lat : null,
+            lng: typeof row.lng === "number" && Number.isFinite(row.lng) ? row.lng : null,
+            radius: typeof row.radius === "number" ? Math.min(500, Math.max(5, Math.round(row.radius))) : 50,
+            keyword: typeof row.keyword === "string" ? row.keyword.trim().slice(0, 40) : "",
           },
         ];
       })

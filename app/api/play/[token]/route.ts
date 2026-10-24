@@ -4,7 +4,7 @@ import { publicPlayAudience, publicPlayLimit, publicPlayStart, type GameAudience
 import { publicQuiz, readStoredQuiz } from "@/lib/organizer/quiz-play";
 import { readGameLook } from "@/lib/organizer/game-look";
 import { publicMission, readStoredMission } from "@/lib/organizer/mission-play";
-import { readStoredPhoto } from "@/lib/organizer/photo-play";
+import { publicPhoto, readStoredPhoto } from "@/lib/organizer/photo-play";
 import { readStoredCoupon } from "@/lib/organizer/coupon-play";
 import { publicCheckin, readStoredCheckin } from "@/lib/organizer/checkin-play";
 import { publicMystery, readStoredMystery } from "@/lib/organizer/mystery-play";
@@ -131,7 +131,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
         : true;
     mission = storedMission ? publicMission(storedMission, hints) : null;
   }
-  const photo = type === "photo" ? readStoredPhoto(settings) : null;
+  const storedPhoto = type === "photo" ? readStoredPhoto(settings) : null;
+  const photo = storedPhoto ? publicPhoto(storedPhoto) : null;
   const coupon = type === "coupon" ? readStoredCoupon(settings) : null;
   let checkin = null;
   if (type === "checkin") {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { completePlayPhoto, getPlayDb } from "@/lib/organizer/play";
 import { readPlayUserId } from "@/lib/organizer/play-user";
+import { readQuizArrivalProof } from "@/lib/organizer/quiz-arrival";
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "参加処理を開始できません" }, { status: 503 });
   }
 
-  let body: { deviceToken?: unknown; spotIndex?: unknown };
+  let body: { deviceToken?: unknown; spotIndex?: unknown; here?: unknown; keyword?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   const spotIndex = typeof body.spotIndex === "number" ? body.spotIndex : -1;
 
   try {
-    const result = await completePlayPhoto(db, token, deviceToken, spotIndex, await readPlayUserId());
+    const result = await completePlayPhoto(db, token, deviceToken, spotIndex, await readPlayUserId(), readQuizArrivalProof(body));
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }

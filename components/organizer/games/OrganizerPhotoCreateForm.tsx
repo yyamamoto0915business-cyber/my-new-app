@@ -31,6 +31,7 @@ import {
 } from "@/lib/organizer/photo";
 import { PhotoTestPlay } from "@/components/organizer/games/PhotoTestPlay";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { ArrivalFields } from "@/components/organizer/games/ArrivalFields";
 import { ImageUploadTile } from "@/components/organizer/games/GameImageField";
 import { RewardFields } from "@/components/organizer/games/RewardFields";
 import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/games/RewardOptions";
@@ -486,7 +487,15 @@ export function OrganizerPhotoCreateForm() {
                 <ol style={{ display: "grid", gap: "0.6rem", margin: "0.8rem 0 0", padding: 0, listStyle: "none" }}>
                   {spots.map((spot, index) => {
                     const open = spot.key === editingKey;
-                    const todo = !spot.name.trim() ? "お題が未入力" : !spot.place.trim() ? "場所が未入力" : null;
+                    const todo = !spot.name.trim()
+                      ? "お題が未入力"
+                      : !spot.place.trim()
+                        ? "場所が未入力"
+                        : spot.arrival === "gps" && (spot.lat == null || spot.lng == null)
+                          ? "地図の場所が未設定"
+                          : spot.arrival === "keyword" && !spot.keyword.trim()
+                            ? "合言葉が未入力"
+                            : null;
                     return (
                       <li
                         key={spot.key}
@@ -562,6 +571,12 @@ export function OrganizerPhotoCreateForm() {
                                 />
                               </label>
                             </div>
+                            <ArrivalFields
+                              value={spot}
+                              itemLabel="スポット"
+                              arrivalNote="その場所に着いたことを確かめてから、写真を受け付けます（記録します）。"
+                              onChange={(patch) => updateSpot(spot.key, patch)}
+                            />
                             <div style={{ display: "grid", gap: "0.25rem" }}>
                               <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#3c4a40" }}>参考画像（参加者に見せる見本）</span>
                               <ul className="org-photo__thumbs">
@@ -655,7 +670,11 @@ export function OrganizerPhotoCreateForm() {
                 <RewardCard
                   icon={Camera}
                   title="写真の投稿を求める"
-                  desc={photoRequired ? "参加者のボタンが「写真を残す」になります" : "参加者のボタンが「ここに来た」になります"}
+                  desc={
+                    photoRequired
+                      ? "写真を撮って送ると記録になります。届いた写真は、公開後の管理画面で見られます"
+                      : "写真なしで、その場所に着いたら記録になります"
+                  }
                   on={photoRequired}
                   onChange={setPhotoRequired}
                 />

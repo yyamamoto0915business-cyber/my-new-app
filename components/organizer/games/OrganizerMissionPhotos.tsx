@@ -13,7 +13,7 @@ export function OrganizerMissionPhotos({ gameId, gameType }: { gameId: string; g
   const [open, setOpen] = useState<Photo | null>(null);
 
   useEffect(() => {
-    if (gameType !== "mission" || !gameId) return;
+    if ((gameType !== "mission" && gameType !== "photo") || !gameId) return;
     let cancelled = false;
     (async () => {
       try {
@@ -32,7 +32,7 @@ export function OrganizerMissionPhotos({ gameId, gameType }: { gameId: string; g
     };
   }, [gameId, gameType]);
 
-  if (gameType !== "mission") return null;
+  if (gameType !== "mission" && gameType !== "photo") return null;
   if (!desk && !error) return null;
   if (desk && !desk.enabled) return null;
 

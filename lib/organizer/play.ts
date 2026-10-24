@@ -1389,6 +1389,72 @@ export async function pairPlayMission(
   };
 }
 
+/** フォトラリー：撮った写真を受け取り、着いたことを確かめてから、そのスポットを記録する。 */
+export async function uploadPlayPhotoSpot(
+  db: SupabaseClient,
+  joinToken: string,
+  deviceToken: string,
+  spotIndex: number,
+  file: File,
+  userId: string | null = null,
+  proof: QuizArrivalProof = { here: null, keyword: "" },
+): Promise<{ ok: true; progress: PlayProgress } | { ok: false; status: number; error: string }> {
+  if (!deviceToken || deviceToken.length < 16) {
+    return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  }
+  const type = file.type === "image/jpg" ? "image/jpeg" : file.type;
+  if (!MISSION_PHOTO_MIME.has(type)) return { ok: false, status: 400, error: "JPEG・PNG・WEBP の写真を送ってください" };
+  if (file.size <= 0 || file.size > MISSION_PHOTO_MAX_BYTES) return { ok: false, status: 400, error: "写真は 8MB までです" };
+  const game = await lookupPlayGameByJoinToken(db, joinToken);
+  if (!game) return { ok: false, status: 404, error: "ゲームが見つかりません" };
+  const { data } = await db
+    .from("organizer_game_players")
+    .select("*")
+    .eq("game_id", game.id)
+    .eq("device_token_hash", hashDeviceToken(deviceToken))
+    .maybeSingle();
+  if (!data) return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  const player = data as PlayerRow;
+  if (player.auth_epoch !== game.playEpoch) {
+    return { ok: false, status: 401, error: "合言葉がリセットされました。参加用QRから入り直してください" };
+  }
+  const { settings } = await loadRally(db, game.id, player.id, playerRound(player));
+  const stored = readStoredPhoto(settings);
+  const spot = stored?.spots.find((item) => item.index === spotIndex);
+  if (!stored || !spot) return { ok: false, status: 404, error: "撮影スポットが見つかりません" };
+  if (spot.gate) {
+    const blocked = quizGateBlock(spot.gate, proof);
+    if (blocked) return { ok: false, status: 422, error: blocked.error };
+  }
+
+  const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
+  const path = `${game.id}/${player.id}/p${spot.index}-${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
+  const upload = await db.storage
+    .from(MISSION_PHOTO_BUCKET)
+    .upload(path, new Uint8Array(await file.arrayBuffer()), { contentType: type, upsert: false });
+  if (upload.error) {
+    console.error("photo spot upload:", upload.error.message);
+    return { ok: false, status: 500, error: "写真を送れませんでした" };
+  }
+
+  const done = normalizePhotoDone(player.photo_done, stored.spots.length);
+  const nextDone = done.includes(spot.index) ? done : [...done, spot.index].sort((a, b) => a - b);
+  // 写真の記録は、ミッションと同じ欄に残す（参加者の行は1つのゲームだけのものなので、番号がぶつからない）。
+  const photos = { ...(player.mission_photos ?? {}), [String(spot.index)]: { path, at: new Date().toISOString() } };
+  let { error } = await db
+    .from("organizer_game_players")
+    .update({ photo_done: nextDone, mission_photos: photos, last_seen_at: new Date().toISOString() })
+    .eq("id", player.id);
+  if (error && /mission_photos/.test(error.message)) {
+    ({ error } = await db
+      .from("organizer_game_players")
+      .update({ photo_done: nextDone, last_seen_at: new Date().toISOString() })
+      .eq("id", player.id));
+  }
+  if (error) throw error;
+  return { ok: true, progress: await loadProgress(db, { ...player, photo_done: nextDone, mission_photos: photos }, userId) };
+}
+
 export type OrganizerMissionPhoto = { playerId: string; nickname: string; missionIndex: number; missionName: string; url: string; at: string };
 
 /** 主催者が見る、ミッションで届いた写真（新しい順）。 */
@@ -1398,9 +1464,18 @@ export async function listOrganizerMissionPhotos(
 ): Promise<{ enabled: boolean; ready: boolean; photos: OrganizerMissionPhoto[] }> {
   const { data: gameRow } = await supabase.from("organizer_games").select("type, settings").eq("id", gameId).maybeSingle();
   const row = gameRow as { type?: string; settings?: unknown } | null;
-  if (row?.type !== "mission") return { enabled: false, ready: true, photos: [] };
-  const stored = readStoredMission(row.settings);
-  if (!stored?.missions.some((mission) => mission.kind === "photo")) return { enabled: false, ready: true, photos: [] };
+  let names: Map<number, string>;
+  if (row?.type === "mission") {
+    const stored = readStoredMission(row.settings);
+    if (!stored?.missions.some((mission) => mission.kind === "photo")) return { enabled: false, ready: true, photos: [] };
+    names = new Map(stored.missions.map((mission) => [mission.index, mission.name]));
+  } else if (row?.type === "photo") {
+    const stored = readStoredPhoto(row.settings);
+    if (!stored?.photoRequired) return { enabled: false, ready: true, photos: [] };
+    names = new Map(stored.spots.map((spot) => [spot.index, spot.name]));
+  } else {
+    return { enabled: false, ready: true, photos: [] };
+  }
   const { data, error } = await supabase
     .from("organizer_game_players")
     .select("id, nickname, mission_photos")
@@ -1409,7 +1484,6 @@ export async function listOrganizerMissionPhotos(
     if (/mission_photos/.test(error.message)) return { enabled: true, ready: false, photos: [] };
     throw error;
   }
-  const names = new Map(stored.missions.map((mission) => [mission.index, mission.name]));
   const rows: (Omit<OrganizerMissionPhoto, "url"> & { path?: string; url?: string })[] = [];
   for (const player of (data ?? []) as {
     id: string;
@@ -1455,6 +1529,7 @@ export async function completePlayPhoto(
   deviceToken: string,
   spotIndex: number,
   userId: string | null = null,
+  proof: QuizArrivalProof = { here: null, keyword: "" },
 ): Promise<
   | { ok: true; done: boolean; already: boolean; progress: PlayProgress }
   | { ok: false; status: number; error: string }
@@ -1492,6 +1567,16 @@ export async function completePlayPhoto(
       already: true,
       progress: await loadProgress(db, player, userId),
     };
+  }
+
+  // 写真が必要なスポットは、写真を送ったときに記録する（uploadPlayPhotoSpot）。押すだけでは記録しない。
+  if (stored.photoRequired) {
+    return { ok: false, status: 400, error: "写真を撮って送ってください" };
+  }
+  // その場所に着いたことを確かめる（ミッション・謎解きと同じ）。
+  if (spot.gate) {
+    const blocked = quizGateBlock(spot.gate, proof);
+    if (blocked) return { ok: false, status: 422, error: blocked.error };
   }
 
   const nextDone = [...done, spot.index].sort((left, right) => left - right);
