@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ChevronDown, ChevronUp, Copy, Gift, PenLine, Plus, Search, Trash2, Trophy } from "lucide-react";
 import { GameImageField } from "@/components/organizer/games/GameImageField";
 import { RewardFields } from "@/components/organizer/games/RewardFields";
+import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import type { OrganizerGameEventOption } from "@/lib/organizer/games";
 import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/games/RewardOptions";
 import { ArrivalFields } from "@/components/organizer/games/ArrivalFields";
 import { cn } from "@/lib/utils";
@@ -36,6 +39,29 @@ export function OrganizerMysteryCreateForm() {
   const [prizeName, setPrizeName] = useState("");
   const [prizePlace, setPrizePlace] = useState("");
   const [page, setPage] = useState(0);
+  /** 対象イベントと、参加できる人（イベント参加者・参加パス保有者に絞るときは、対象イベントが必要）。 */
+  const [eventId, setEventId] = useState("");
+  const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
+  const [events, setEvents] = useState<OrganizerGameEventOption[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetchWithTimeout("/api/organizer/games?events=1&games=0", { cache: "no-store" });
+        const json = await res.json();
+        if (!res.ok || cancelled) return;
+        setEvents((json.events ?? []) as OrganizerGameEventOption[]);
+      } catch {
+        if (!cancelled) setEvents([]);
+      } finally {
+        if (!cancelled) setLoadingEvents(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   /** 開いて編集している謎（プレビューもこの謎を出す）。 */
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -104,6 +130,11 @@ export function OrganizerMysteryCreateForm() {
       setError("名前を入れてください");
       return;
     }
+    if (status === "published" && audience !== "anyone" && !eventId) {
+      setError("参加できる人を絞るときは、対象イベントを選んでください");
+      setPage(0);
+      return;
+    }
     if (status === "published" && ready.length === 0) {
       setError("答えのある謎を1つ入れてから公開できます");
       return;
@@ -121,6 +152,8 @@ export function OrganizerMysteryCreateForm() {
           status,
           mystery: settingsBody,
           look,
+          eventId: eventId || null,
+          audience,
         }),
       });
       const json = await res.json();
@@ -178,6 +211,28 @@ export function OrganizerMysteryCreateForm() {
               <span>説明</span>
               <textarea value={description} maxLength={400} rows={3} onChange={(event) => setDescription(event.target.value)} />
             </label>
+            <label className="org-quiz__field org-quiz__field--wide">
+              <span>対象イベント（任意）</span>
+              <select value={eventId} disabled={loadingEvents} onChange={(event) => setEventId(event.target.value)}>
+                <option value="">あとで選ぶ</option>
+                {events.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title}
+                    {item.date ? `（${item.date}）` : ""}
+                  </option>
+                ))}
+              </select>
+              <small>
+                {loadingEvents
+                  ? "イベントを読み込み中です"
+                  : events.length === 0
+                    ? "先にイベントを掲載すると、対象を選べます"
+                    : "選ぶと、イベントのページからこのゲームに入れます。"}
+              </small>
+            </label>
+            <div className="org-quiz__field org-quiz__field--wide">
+              <AudienceField value={audience} onChange={setAudience} eventChosen={Boolean(eventId)} />
+            </div>
           </section>
       ) : null}
       {page === 1 ? (
