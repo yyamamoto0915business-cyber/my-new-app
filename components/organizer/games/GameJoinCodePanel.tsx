@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 
-/** 参加コード：QR を読めない人が、アプリの「参加コードで参加」に入れて参加する。主催者は掲示や口頭で伝える。 */
+/**
+ * 参加コード：QR を読めない人が、アプリの「参加コードで参加」に入れて参加する。主催者は掲示や口頭で伝える。
+ * 編集画面の「参加のしかた」の中に、QR の下の小さな区切りとして置く。
+ */
 export function GameJoinCodePanel({ gameId, published }: { gameId: string; published: boolean }) {
   const [code, setCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -28,10 +31,10 @@ export function GameJoinCodePanel({ gameId, published }: { gameId: string; publi
   }
 
   return (
-    <section className="org-game-editor__panel">
-      <h2>参加コード</h2>
-      <p>
-        QRを読めない人は、アプリの「参加コードで参加」（/play/code）にこのコードを入れると参加できます。会場の看板や口頭で伝えてください。
+    <div style={{ marginTop: "0.9rem", borderTop: "1px dashed #d9eadf", paddingTop: "0.85rem" }}>
+      <h3 style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, color: "#1a4d32" }}>参加コード</h3>
+      <p style={{ margin: "0.25rem 0 0.7rem", fontSize: "0.75rem", lineHeight: 1.6, color: "#6a7568" }}>
+        参加する人は、まちの情報の「参加コードを持っている方はこちら」から、この6文字を入れます。
         {published ? "" : "（公開すると使えます）"}
       </p>
       {code ? (
@@ -56,6 +59,6 @@ export function GameJoinCodePanel({ gameId, published }: { gameId: string; publi
         </button>
       )}
       {error ? <p className="org-game-editor__note">{error}</p> : null}
-    </section>
+    </div>
   );
 }

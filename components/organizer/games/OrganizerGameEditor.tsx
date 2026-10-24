@@ -8,11 +8,14 @@ import {
   ArrowLeft,
   ArrowUp,
   BarChart3,
+  ExternalLink,
   GripVertical,
   Loader2,
   Plus,
+  PenLine,
   Printer,
   Trash2,
+  Users,
 } from "lucide-react";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
 import { GameQrCard } from "@/components/organizer/games/GameQrCard";
@@ -29,6 +32,32 @@ import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 /** 作成画面を開き直して、保存した内容を直せるゲーム（スタンプラリーは別の入口）。 */
 const DRAFT_EDIT_TYPES = new Set<string>(["quiz", "mystery", "mission", "photo", "checkin"]);
+
+/** 状態のカードと、参加している人の欄。 */
+const EDITOR_CSS = `
+.ge-status { display: grid; gap: 0.8rem; border-color: #ecdcb8; background: #fffaf0; }
+.ge-status.is-live { border-color: #bfe0cb; background: #f2faf5; }
+.ge-status__head { display: flex; align-items: flex-start; gap: 0.6rem; }
+.ge-status__badge { flex: none; border-radius: 999px; background: #b8892f; padding: 0.2rem 0.65rem; font-size: 0.75rem; font-weight: 800; color: #fff; }
+.ge-status.is-live .ge-status__badge { background: #2d7a4f; }
+.ge-status__text { margin: 0; font-size: 0.85rem; line-height: 1.55; color: #3d4a3f; }
+.ge-status__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.ge-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; min-height: 44px; border-radius: 0.8rem; border: 1px solid #cfe0d5; background: #fff; padding: 0.45rem 0.95rem; font-size: 0.85rem; font-weight: 700; color: #1a4d32; text-decoration: none; }
+.ge-btn:disabled { opacity: 0.6; }
+.ge-btn--primary { border-color: transparent; background: #2d7a4f; color: #fff; }
+.ge-btn--quiet { color: #8a3b3b; border-color: #e6cfcf; }
+.ge-muted .org-game-qr { opacity: 0.55; }
+.ge-muted .org-game-editor__panel { opacity: 0.75; }
+.ge-players { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 0.6rem; }
+.ge-players__count { display: inline-flex; align-items: baseline; gap: 0.25rem; color: #1a4d32; }
+.ge-players__count svg { align-self: center; }
+.ge-players__count b { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.ge-players__count span { font-size: 0.8rem; font-weight: 700; }
+.ge-players p { flex: 1 1 14rem; margin: 0; font-size: 0.75rem; line-height: 1.6; color: #6a7568; }
+@media (max-width: 520px) {
+  .ge-status__actions .ge-btn { flex: 1 1 auto; }
+}
+`;
 
 export function OrganizerGameEditor() {
   const params = useParams();
@@ -79,19 +108,25 @@ export function OrganizerGameEditor() {
     };
   }, [load]);
 
-  async function publish() {
-    if (!game || game.status === "published") return;
+  async function changeStatus(status: "published" | "draft") {
+    if (!game || game.status === status) return;
+    if (
+      status === "draft" &&
+      !window.confirm("非公開にすると、参加用QRと参加コードから入れなくなります。参加中の人の記録は残ります。よろしいですか？")
+    ) {
+      return;
+    }
     setPublishing(true);
     setError(null);
     try {
       const res = await fetch(`/api/organizer/games/${gameId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "published" }),
+        body: JSON.stringify({ status }),
       });
       const json = (await res.json()) as { error?: string; game?: OrganizerGame };
       if (!res.ok || !json.game) {
-        setError(json.error ?? "公開できませんでした");
+        setError(json.error ?? (status === "published" ? "公開できませんでした" : "非公開にできませんでした"));
         return;
       }
       setGame(json.game);
@@ -227,6 +262,13 @@ export function OrganizerGameEditor() {
   }
 
   const canAdd = spots.length < MAX_ORGANIZER_GAME_SPOTS;
+  const live = game.status === "published";
+  const editHref =
+    game.type === "stamp"
+      ? `/organizer/games/new?edit=${game.id}`
+      : DRAFT_EDIT_TYPES.has(game.type)
+        ? `/organizer/games/new?type=${game.type}&edit=${game.id}`
+        : null;
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4">
@@ -240,62 +282,90 @@ export function OrganizerGameEditor() {
 
       <OrganizerWorkspacePageHeader
         title={game.name}
-        subtitle={
-          game.status === "published"
-            ? `公開中です。${game.typeLabel}のスポットとQRを設定します。`
-            : `下書きです。公開すると、参加用QRから入れるようになります。`
-        }
+        subtitle={game.typeLabel}
         actions={
           <>
-            {game.type === "stamp" ? (
-              <Link href={`/organizer/games/new?edit=${game.id}`} className="org-games__print-link">
-                画面と特典を直す
-              </Link>
-            ) : DRAFT_EDIT_TYPES.has(game.type) ? (
-              <Link href={`/organizer/games/new?type=${game.type}&edit=${game.id}`} className="org-games__print-link">
-                内容を直す
-              </Link>
-            ) : null}
             <Link href={`/organizer/games/${game.id}/analytics`} className="org-games__print-link">
               <BarChart3 className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
               データを見る
             </Link>
             <Link href={`/organizer/games/${game.id}/print`} className="org-games__print-link">
               <Printer className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
-              QRをまとめて印刷
+              QRを印刷
             </Link>
           </>
         }
       />
 
-      <section className="org-game-editor__panel">
-        <h2>参加用QR</h2>
-        {game.status === "published" ? (
-          <p>会場入口やチラシに貼ります。読み込むと、ゲームの参加画面が開きます。</p>
-        ) : (
-          <p>下書きのあいだは、このQRを読み込んでも参加画面は開きません。</p>
-        )}
-        {game.status !== "published" ? (
-          <button type="button" className="org-game-editor__publish" disabled={publishing} onClick={() => void publish()}>
-            {publishing ? "公開しています…" : "公開する"}
-          </button>
-        ) : null}
+      <style>{EDITOR_CSS}</style>
+      {error ? <p className="org-store-intro__error">{error}</p> : null}
+      <section className={`org-game-editor__panel ge-status${live ? " is-live" : ""}`}>
+        <div className="ge-status__head">
+          <span className="ge-status__badge">{live ? "公開中" : "下書き"}</span>
+          <p className="ge-status__text">
+            {live
+              ? "参加用QRと参加コードから入れます。まちの情報にも載っています。"
+              : "まだ参加者には見えません。内容を確かめてから公開しましょう。"}
+          </p>
+        </div>
+        <div className="ge-status__actions">
+          {editHref ? (
+            <Link href={editHref} className="ge-btn">
+              <PenLine className="h-4 w-4" aria-hidden />
+              {game.type === "stamp" ? "画面と特典を直す" : "内容を直す"}
+            </Link>
+          ) : null}
+          {live ? (
+            <>
+              <a href={game.joinPath} target="_blank" rel="noreferrer" className="ge-btn">
+                <ExternalLink className="h-4 w-4" aria-hidden />
+                参加画面を開く
+              </a>
+              <button type="button" className="ge-btn ge-btn--quiet" disabled={publishing} onClick={() => void changeStatus("draft")}>
+                {publishing ? "切りかえています…" : "非公開に戻す"}
+              </button>
+            </>
+          ) : (
+            <button type="button" className="ge-btn ge-btn--primary" disabled={publishing} onClick={() => void changeStatus("published")}>
+              {publishing ? "公開しています…" : "公開する"}
+            </button>
+          )}
+        </div>
+      </section>
+
+      <section className={`org-game-editor__panel${live ? "" : " ge-muted"}`}>
+        <h2>参加のしかた</h2>
+        <p>
+          {live
+            ? "会場の入口やチラシにQRを貼ります。QRを読めない人には、参加コードを伝えてください。"
+            : "公開すると使えます。下書きのあいだは、読みこんでも参加画面は開きません。"}
+        </p>
         <GameQrCard
-          title="このゲームに参加する"
+          title="参加用QR"
           caption="ニックネームと合言葉で参加・再開できます。"
           path={game.joinPath}
           filename={`game-join-${game.id}.png`}
         />
-        <div className="org-game-editor__play">
-          <p>いま {playerCount} 人が参加しています。合言葉を忘れたときは、リセットすると入り直せます。スタンプは残ります。</p>
+        <GameJoinCodePanel gameId={game.id} published={live} />
+      </section>
+
+      <section className="org-game-editor__panel">
+        <h2>参加している人</h2>
+        <div className="ge-players">
+          <div className="ge-players__count">
+            <Users className="h-5 w-5" aria-hidden />
+            <b>{playerCount}</b>
+            <span>人</span>
+          </div>
+          <p>合言葉を忘れた人がいたら、リセットすると同じニックネームで入り直せます。記録は残ります。</p>
           <button
             type="button"
             className="org-game-editor__reset"
-            disabled={resetting}
+            disabled={resetting || playerCount === 0}
             onClick={() => {
               if (
                 !window.confirm(
-                  "参加中の端末と合言葉を無効にします。同じニックネームで入り直すと、スタンプは残ります。よろしいですか？"
+                  "参加中の端末と合言葉を無効にします。同じニックネームで入り直すと、記録は残ります。よろしいですか？"
                 )
               ) {
                 return;
@@ -325,10 +395,10 @@ export function OrganizerGameEditor() {
         </div>
       </section>
 
-      <GameJoinCodePanel gameId={game.id} published={game.status === "published"} />
       <OrganizerCouponUses gameId={game.id} gameType={game.type} />
       <OrganizerMissionPhotos gameId={game.id} gameType={game.type} />
 
+      {game.type === "stamp" ? (
       <section className="org-game-editor__panel">
         <div className="org-game-editor__panel-head">
           <div>
@@ -445,8 +515,8 @@ export function OrganizerGameEditor() {
         )}
         {!canAdd ? <p className="org-game-editor__note">スポットは{MAX_ORGANIZER_GAME_SPOTS}件までです。</p> : null}
       </section>
+      ) : null}
 
-      {error ? <p className="org-store-intro__error">{error}</p> : null}
     </div>
   );
 }
