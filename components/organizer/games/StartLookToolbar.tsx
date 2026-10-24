@@ -45,7 +45,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const SIZE_LABEL: Record<GameStartLook["size"], string> = { s: "小", m: "中", l: "大" };
-const SHADE_LABEL: Record<GameStartLook["shade"], string> = { none: "なし", light: "うすく", strong: "こく" };
+export const SHADE_LABEL: Record<GameStartLook["shade"], string> = { none: "なし", light: "うすく", strong: "こく" };
 const TEXT_COLOR_LABEL: Record<GameStartLook["textColor"], string> = {
   "#ffffff": "白",
   "#fff4d6": "クリーム",
@@ -324,7 +324,7 @@ export function StartEditPanel({
 }
 
 /** 背景の色のテーマを選ぶ丸。 */
-function BgThemes({ value, onPick }: { value: GameBgTheme; onPick: (theme: GameBgTheme) => void }) {
+export function BgThemes({ value, onPick }: { value: GameBgTheme; onPick: (theme: GameBgTheme) => void }) {
   return (
     <>
       {BG_THEMES.map((theme) =>
@@ -355,7 +355,7 @@ function BgThemes({ value, onPick }: { value: GameBgTheme; onPick: (theme: GameB
   );
 }
 
-function Row({ label, children }: { label: string; children: ReactNode }) {
+export function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="edit-panel__row">
       <span>{label}</span>
@@ -364,7 +364,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Choice({
+export function Choice({
   on,
   onClick,
   label,
@@ -383,7 +383,7 @@ function Choice({
   );
 }
 
-function Swatch({ color, on, label, onClick }: { color: string; on: boolean; label: string; onClick: () => void }) {
+export function Swatch({ color, on, label, onClick }: { color: string; on: boolean; label: string; onClick: () => void }) {
   return (
     <button
       type="button"

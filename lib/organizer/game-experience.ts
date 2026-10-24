@@ -153,7 +153,10 @@ export type GameStartImage = {
   round: boolean;
   /** 指やつまみで大きさを変えたときの幅（画面の幅に対する %）。あれば size より優先。 */
   width?: number;
+  /** 動画（url は動画のアドレス）。足した画像と同じように置いて、動かす・大きさを変える。 */
+  video?: boolean;
 };
+export const START_VIDEO_MAX = 2;
 export const START_IMAGE_WIDTH: Record<GameStartImage["size"], number> = { s: 22, m: 38, l: 62 };
 export const START_IMAGE_MIN_WIDTH = 8;
 export const START_IMAGE_MAX_WIDTH = 100;
@@ -715,10 +718,14 @@ function sanitizeStartLook(raw: unknown): GameStartLook {
   };
 }
 
-export function sanitizeStartOffsets(raw: unknown, pattern: RegExp = START_OFFSET_KEY): Record<string, StartOffset> {
+export function sanitizeStartOffsets(
+  raw: unknown,
+  pattern: RegExp = START_OFFSET_KEY,
+  max = 16,
+): Record<string, StartOffset> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   const out: Record<string, StartOffset> = {};
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>).slice(0, 16)) {
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>).slice(0, max)) {
     if (!pattern.test(key) || !value || typeof value !== "object") continue;
     const { x, y } = value as Record<string, unknown>;
     if (typeof x !== "number" || typeof y !== "number" || !Number.isFinite(x) || !Number.isFinite(y)) continue;
@@ -734,7 +741,8 @@ export function sanitizeStartImages(raw: unknown): GameStartImage[] {
   return raw.slice(0, START_IMAGE_MAX).flatMap((item, index) => {
     if (!item || typeof item !== "object") return [];
     const row = item as Record<string, unknown>;
-    const url = safeStartImageUrl(row.url);
+    const video = row.video === true;
+    const url = video ? safeImageUrl(row.url) : safeStartImageUrl(row.url);
     if (!url) return [];
     const id = typeof row.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(row.id) ? row.id : `i${index + 1}`;
     const width =
@@ -748,6 +756,7 @@ export function sanitizeStartImages(raw: unknown): GameStartImage[] {
         size: oneOf(row.size, START_IMAGE_SIZES, "m"),
         round: row.round === true,
         ...(width ? { width } : {}),
+        ...(video ? { video: true } : {}),
       },
     ];
   });

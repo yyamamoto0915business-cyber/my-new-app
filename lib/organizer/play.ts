@@ -49,7 +49,12 @@ import { missionAwardPoints, normalizeMissionDone, readStoredMission } from "@/l
 import { normalizePhotoDone, readStoredPhoto } from "@/lib/organizer/photo-play";
 import { normalizeCouponDone, readStoredCoupon } from "@/lib/organizer/coupon-play";
 import { normalizeCheckinDone, readStoredCheckin } from "@/lib/organizer/checkin-play";
-import { nextMysteryIndex, normalizeMysterySolved, readStoredMystery } from "@/lib/organizer/mystery-play";
+import {
+  normalizeMysterySolved,
+  publicMysteryStep,
+  readStoredMystery,
+  type PublicMysteryStep,
+} from "@/lib/organizer/mystery-play";
 
 export {
   PLAY_NICKNAME_MAX,
@@ -89,6 +94,8 @@ type PlayerRow = {
   mystery_solved?: number[] | null;
   quiz_cleared_at?: string | null;
   coupon_code?: string | null;
+  mission_photos?: Record<string, { path?: string; url?: string; at: string }> | null;
+  mission_pairs?: Record<string, { hash: string; at: string }> | null;
 };
 
 function playerRound(player: { play_round?: number | null }): number {
@@ -447,19 +454,42 @@ async function loadQuizRank(
   gameId: string,
   playerId: string,
   clearedAt: string,
+  solved: number,
 ): Promise<number> {
   const { data, error } = await db
     .from("organizer_game_players")
-    .select("id, quiz_cleared_at")
+    .select("id, quiz_cleared_at, quiz_solved")
     .eq("game_id", gameId)
     .not("quiz_cleared_at", "is", null);
   if (error || !data) return 1;
-  const rows = (data as { id: string; quiz_cleared_at: string | null }[]).flatMap((row) =>
+  const rows = (data as { id: string; quiz_cleared_at: string | null; quiz_solved: unknown }[]).flatMap((row) =>
     typeof row.quiz_cleared_at === "string" && row.quiz_cleared_at
-      ? [{ id: row.id, clearedAt: row.quiz_cleared_at }]
+      ? [{ id: row.id, clearedAt: row.quiz_cleared_at, solved: Array.isArray(row.quiz_solved) ? row.quiz_solved.length : 0 }]
       : [],
   );
-  return quizFinishRank(rows, playerId, clearedAt);
+  return quizFinishRank(rows, playerId, clearedAt, solved);
+}
+
+/** ミッションの順位：達成したミッションが多い人が上、同じ数なら先にクリアした人が上（クイズと同じ決め方）。 */
+async function loadMissionRank(
+  db: SupabaseClient,
+  gameId: string,
+  playerId: string,
+  clearedAt: string,
+  doneCount: number,
+): Promise<number> {
+  const { data, error } = await db
+    .from("organizer_game_players")
+    .select("id, quiz_cleared_at, mission_done")
+    .eq("game_id", gameId)
+    .not("quiz_cleared_at", "is", null);
+  if (error || !data) return 1;
+  const rows = (data as { id: string; quiz_cleared_at: string | null; mission_done: unknown }[]).flatMap((row) =>
+    typeof row.quiz_cleared_at === "string" && row.quiz_cleared_at
+      ? [{ id: row.id, clearedAt: row.quiz_cleared_at, solved: Array.isArray(row.mission_done) ? row.mission_done.length : 0 }]
+      : [],
+  );
+  return quizFinishRank(rows, playerId, clearedAt, doneCount);
 }
 
 function newCouponPlayCode(): string {
@@ -515,11 +545,13 @@ async function loadProgress(
     let quizRank: number | undefined;
     if (completed && storedQuiz.rankingOn) {
       if (!clearedAt) clearedAt = await markQuizCleared(db, player);
-      if (clearedAt) quizRank = await loadQuizRank(db, player.game_id, player.id, clearedAt);
+      if (clearedAt) quizRank = await loadQuizRank(db, player.game_id, player.id, clearedAt, solved.length);
     }
     const couponUsed = Boolean(player.coupon_used_at);
     let couponCode = player.coupon_code || null;
-    if (completed && storedQuiz.couponOn && !couponUsed && !couponCode) {
+    // クーポンか景品引換があれば、引き換えコードを出す（使用済みの管理も同じ）。
+    const codeOn = storedQuiz.couponOn || storedQuiz.prizeOn;
+    if (completed && codeOn && !couponUsed && !couponCode) {
       couponCode = await issueCouponPlayCode(db, player);
     }
     return {
@@ -528,8 +560,8 @@ async function loadProgress(
       spotCount: storedQuiz.questions.length,
       completed,
       quizRank,
-      rewardCode: completed && storedQuiz.couponOn && !couponUsed && couponCode ? couponCode : undefined,
-      rewardUsed: completed && storedQuiz.couponOn && couponUsed ? true : undefined,
+      rewardCode: completed && codeOn && !couponUsed && couponCode ? couponCode : undefined,
+      rewardUsed: completed && codeOn && couponUsed ? true : undefined,
       quiz: { needed, solved, rewards: storedQuiz.rewards },
       spots: [],
     };
@@ -540,6 +572,12 @@ async function loadProgress(
     const needed = storedMission.clearCount;
     const completed = done.length >= needed;
     const pointAmount = completed ? missionAwardPoints(storedMission, done) : 0;
+    // 順位は、クリアした時刻を残して数える（クリアした時刻の欄は、クイズと共通）。
+    let missionRank: number | undefined;
+    if (completed && storedMission.rankingOn) {
+      const clearedAt = await markQuizCleared(db, player);
+      if (clearedAt) missionRank = await loadMissionRank(db, player.game_id, player.id, clearedAt, done.length);
+    }
     let awardedAt = player.points_awarded_at || null;
     if (completed && pointAmount > 0 && userId && !awardedAt) {
       awardedAt = await claimPlayPoints(db, player, userId, pointAmount, "mission");
@@ -551,6 +589,7 @@ async function loadProgress(
       completed,
       rewardPoints: pointAmount > 0 ? pointAmount : undefined,
       rewardPointsAwarded: Boolean(awardedAt) && pointAmount > 0,
+      quizRank: missionRank,
       mission: { needed, done, rewards: storedMission.rewards },
       spots: [],
     };
@@ -564,6 +603,13 @@ async function loadProgress(
     if (completed && storedPhoto.pointAmount > 0 && userId && !awardedAt) {
       awardedAt = await claimPlayPoints(db, player, userId, storedPhoto.pointAmount, "photo");
     }
+    // クーポンか景品引換があれば、クイズと同じく引き換えコードを出す（使用済みの管理も同じ）。
+    const photoCodeOn = Boolean(storedPhoto.couponOn || storedPhoto.prizeOn);
+    const photoUsed = Boolean(player.coupon_used_at);
+    let photoCode = player.coupon_code || null;
+    if (completed && photoCodeOn && !photoUsed && !photoCode) {
+      photoCode = await issueCouponPlayCode(db, player);
+    }
     return {
       nickname: player.nickname,
       stampedCount: done.length,
@@ -571,6 +617,8 @@ async function loadProgress(
       completed,
       rewardPoints: completed && storedPhoto.pointAmount > 0 ? storedPhoto.pointAmount : undefined,
       rewardPointsAwarded: Boolean(awardedAt) && storedPhoto.pointAmount > 0,
+      rewardCode: completed && photoCodeOn && !photoUsed && photoCode ? photoCode : undefined,
+      rewardUsed: completed && photoCodeOn && photoUsed ? true : undefined,
       photo: { needed, done, rewards: storedPhoto.rewards },
       spots: [],
     };
@@ -625,11 +673,21 @@ async function loadProgress(
   if (storedMystery) {
     const solved = normalizeMysterySolved(player.mystery_solved, storedMystery.steps.length);
     const needed = storedMystery.needed;
+    const completed = solved.length >= needed;
+    // クーポンか景品引換があれば、クイズと同じく引き換えコードを出す（使用済みの管理も同じ）。
+    const codeOn = storedMystery.couponOn || storedMystery.prizeOn;
+    const couponUsed = Boolean(player.coupon_used_at);
+    let couponCode = player.coupon_code || null;
+    if (completed && codeOn && !couponUsed && !couponCode) {
+      couponCode = await issueCouponPlayCode(db, player);
+    }
     return {
       nickname: player.nickname,
       stampedCount: solved.length,
       spotCount: storedMystery.steps.length,
-      completed: solved.length >= needed,
+      completed,
+      rewardCode: completed && codeOn && !couponUsed && couponCode ? couponCode : undefined,
+      rewardUsed: completed && codeOn && couponUsed ? true : undefined,
       mystery: { needed, solved, rewards: storedMystery.rewards },
       spots: [],
     };
@@ -1030,6 +1088,8 @@ export async function completePlayMission(
   missionIndex: number,
   keywordRaw: string,
   userId: string | null = null,
+  proof: QuizArrivalProof = { here: null, keyword: "" },
+  choice: number | null = null,
 ): Promise<
   | { ok: true; done: boolean; already: boolean; note: string; progress: PlayProgress }
   | { ok: false; status: number; error: string }
@@ -1070,6 +1130,36 @@ export async function completePlayMission(
     };
   }
 
+  // 「友だちと参加」は、ふたりで同じ合言葉を入れたときに達成にする（pairPlayMission）。
+  if (mission.kind === "friends") {
+    return { ok: false, status: 400, error: "友だちと同じ合言葉を入れてください" };
+  }
+
+  // 「写真を投稿」は、写真を送ったときに達成にする（uploadPlayMissionPhoto）。押すだけでは達成にしない。
+  if (mission.kind === "photo") {
+    return { ok: false, status: 400, error: "写真を撮って送ってください" };
+  }
+
+  // 「スポットに行く」「チェックイン」は、その場所に着いたことを確かめる（押すだけでは達成にしない）。
+  if (mission.gate) {
+    const blocked = quizGateBlock(mission.gate, proof);
+    if (blocked) return { ok: false, status: 422, error: blocked.error };
+  }
+
+  // 「クイズに答える」は、正解したときだけ達成にする。
+  if (mission.correctIndex >= 0) {
+    if (choice == null || !Number.isInteger(choice)) return { ok: false, status: 400, error: "答えを選んでください" };
+    if (choice !== mission.correctIndex) {
+      return {
+        ok: true,
+        done: false,
+        already: false,
+        note: "ちがいます。もう一度どうぞ。",
+        progress: await loadProgress(db, player, userId),
+      };
+    }
+  }
+
   if (mission.kind === "keyword") {
     const given = keywordRaw.trim();
     if (mission.keyword && given !== mission.keyword) {
@@ -1100,6 +1190,263 @@ export async function completePlayMission(
     note: "",
     progress: await loadProgress(db, { ...player, mission_done: nextDone }, userId),
   };
+}
+
+const MISSION_PHOTO_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MISSION_PHOTO_MAX_BYTES = 8 * 1024 * 1024;
+/** 参加者がミッションで送った写真の、非公開の保存場所。 */
+const MISSION_PHOTO_BUCKET = "mission-photos";
+
+/** ミッションの「写真を投稿」：参加者が撮った写真を受け取って残し、そのミッションを達成にする。 */
+export async function uploadPlayMissionPhoto(
+  db: SupabaseClient,
+  joinToken: string,
+  deviceToken: string,
+  missionIndex: number,
+  file: File,
+  userId: string | null = null,
+): Promise<{ ok: true; progress: PlayProgress } | { ok: false; status: number; error: string }> {
+  if (!deviceToken || deviceToken.length < 16) {
+    return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  }
+  const type = file.type === "image/jpg" ? "image/jpeg" : file.type;
+  if (!MISSION_PHOTO_MIME.has(type)) return { ok: false, status: 400, error: "JPEG・PNG・WEBP の写真を送ってください" };
+  if (file.size <= 0 || file.size > MISSION_PHOTO_MAX_BYTES) {
+    return { ok: false, status: 400, error: "写真は 8MB までです" };
+  }
+  const game = await lookupPlayGameByJoinToken(db, joinToken);
+  if (!game) return { ok: false, status: 404, error: "ゲームが見つかりません" };
+  const { data } = await db
+    .from("organizer_game_players")
+    .select("*")
+    .eq("game_id", game.id)
+    .eq("device_token_hash", hashDeviceToken(deviceToken))
+    .maybeSingle();
+  if (!data) return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  const player = data as PlayerRow;
+  if (player.auth_epoch !== game.playEpoch) {
+    return { ok: false, status: 401, error: "合言葉がリセットされました。参加用QRから入り直してください" };
+  }
+  const { settings } = await loadRally(db, game.id, player.id, playerRound(player));
+  const stored = readStoredMission(settings);
+  const mission = stored?.missions.find((item) => item.index === missionIndex);
+  if (!stored || !mission || mission.kind !== "photo") {
+    return { ok: false, status: 404, error: "写真のミッションが見つかりません" };
+  }
+
+  const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
+  // 参加者の写真は非公開の保存場所に置く。主催者は管理画面から、期限つきのアドレスで見る。
+  const path = `${game.id}/${player.id}/m${mission.index}-${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const upload = await db.storage.from(MISSION_PHOTO_BUCKET).upload(path, bytes, { contentType: type, upsert: false });
+  if (upload.error) {
+    console.error("mission photo upload:", upload.error.message);
+    return {
+      ok: false,
+      status: 500,
+      error: /bucket/i.test(upload.error.message)
+        ? "写真を残す準備ができていません（保存場所の作成が必要です）"
+        : "写真を送れませんでした",
+    };
+  }
+
+  const done = normalizeMissionDone(player.mission_done, stored.missions.length);
+  const nextDone = done.includes(mission.index) ? done : [...done, mission.index].sort((a, b) => a - b);
+  const photos = { ...(player.mission_photos ?? {}), [String(mission.index)]: { path, at: new Date().toISOString() } };
+  let { error } = await db
+    .from("organizer_game_players")
+    .update({ mission_done: nextDone, mission_photos: photos, last_seen_at: new Date().toISOString() })
+    .eq("id", player.id);
+  if (error && /mission_photos/.test(error.message)) {
+    // 写真を残す列がまだないとき（マイグレーション前）は、達成だけ記録する。
+    console.error("mission_photos column missing:", error.message);
+    ({ error } = await db
+      .from("organizer_game_players")
+      .update({ mission_done: nextDone, last_seen_at: new Date().toISOString() })
+      .eq("id", player.id));
+  }
+  if (error) throw error;
+  return {
+    ok: true,
+    progress: await loadProgress(db, { ...player, mission_done: nextDone, mission_photos: photos }, userId),
+  };
+}
+
+/** ふたりが合言葉を入れる時間の差の上限。 */
+const MISSION_PAIR_WINDOW_MS = 10 * 60 * 1000;
+
+function pairWord(raw: string): string {
+  return raw.normalize("NFKC").trim().toLowerCase().replace(/\s+/g, "");
+}
+
+/**
+ * ミッションの「友だちと参加」：ふたりで決めた同じ合言葉を、10分以内にそれぞれの画面で入れると、ふたりとも達成。
+ * 先に入れた人は「待っている」になり、あとの人が入れた時点で両方を達成にする。
+ */
+export async function pairPlayMission(
+  db: SupabaseClient,
+  joinToken: string,
+  deviceToken: string,
+  missionIndex: number,
+  wordRaw: string,
+  userId: string | null = null,
+): Promise<
+  | { ok: true; done: boolean; waiting: boolean; progress: PlayProgress }
+  | { ok: false; status: number; error: string }
+> {
+  if (!deviceToken || deviceToken.length < 16) {
+    return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  }
+  const game = await lookupPlayGameByJoinToken(db, joinToken);
+  if (!game) return { ok: false, status: 404, error: "ゲームが見つかりません" };
+  const { data } = await db
+    .from("organizer_game_players")
+    .select("*")
+    .eq("game_id", game.id)
+    .eq("device_token_hash", hashDeviceToken(deviceToken))
+    .maybeSingle();
+  if (!data) return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  const player = data as PlayerRow;
+  if (player.auth_epoch !== game.playEpoch) {
+    return { ok: false, status: 401, error: "合言葉がリセットされました。参加用QRから入り直してください" };
+  }
+  const { settings } = await loadRally(db, game.id, player.id, playerRound(player));
+  const stored = readStoredMission(settings);
+  const mission = stored?.missions.find((item) => item.index === missionIndex);
+  if (!stored || !mission || mission.kind !== "friends") {
+    return { ok: false, status: 404, error: "友だちと参加のミッションが見つかりません" };
+  }
+  const done = normalizeMissionDone(player.mission_done, stored.missions.length);
+  // 相手が先に達成にしてくれていれば、そのまま達成。
+  if (done.includes(mission.index)) {
+    return { ok: true, done: true, waiting: false, progress: await loadProgress(db, player, userId) };
+  }
+  const word = pairWord(wordRaw);
+  if (word.length < 2) return { ok: false, status: 400, error: "ふたりで決めた合言葉を2文字以上で入れてください" };
+
+  const key = String(mission.index);
+  const hash = createHash("sha256").update(`${game.id}:${mission.index}:${word}`).digest("hex");
+  const now = Date.now();
+  const { data: others, error: othersError } = await db
+    .from("organizer_game_players")
+    .select("id, mission_done, mission_pairs")
+    .eq("game_id", game.id)
+    .neq("id", player.id);
+  if (othersError) {
+    if (/mission_pairs/.test(othersError.message)) {
+      return { ok: false, status: 503, error: "友だちと参加の準備ができていません（データベースの更新が必要です）" };
+    }
+    throw othersError;
+  }
+  const partner = ((others ?? []) as { id: string; mission_done?: number[] | null; mission_pairs?: PlayerRow["mission_pairs"] }[]).find(
+    (row) => {
+      const pending = row.mission_pairs?.[key];
+      return pending?.hash === hash && now - Date.parse(pending.at) <= MISSION_PAIR_WINDOW_MS;
+    },
+  );
+
+  if (!partner) {
+    // 先に入れた人：相手を待つ。
+    const pairs = { ...(player.mission_pairs ?? {}), [key]: { hash, at: new Date(now).toISOString() } };
+    const { error } = await db
+      .from("organizer_game_players")
+      .update({ mission_pairs: pairs, last_seen_at: new Date(now).toISOString() })
+      .eq("id", player.id);
+    if (error) {
+      if (/mission_pairs/.test(error.message)) {
+        return { ok: false, status: 503, error: "友だちと参加の準備ができていません（データベースの更新が必要です）" };
+      }
+      throw error;
+    }
+    return { ok: true, done: false, waiting: true, progress: await loadProgress(db, player, userId) };
+  }
+
+  // あとから入れた人：ふたりとも達成にする（待っていた記録は消す）。
+  const partnerDone = normalizeMissionDone(partner.mission_done, stored.missions.length);
+  const partnerPairs = { ...(partner.mission_pairs ?? {}) };
+  delete partnerPairs[key];
+  const { error: partnerError } = await db
+    .from("organizer_game_players")
+    .update({
+      mission_done: partnerDone.includes(mission.index) ? partnerDone : [...partnerDone, mission.index].sort((a, b) => a - b),
+      mission_pairs: partnerPairs,
+    })
+    .eq("id", partner.id);
+  if (partnerError) throw partnerError;
+  const myPairs = { ...(player.mission_pairs ?? {}) };
+  delete myPairs[key];
+  const nextDone = [...done, mission.index].sort((a, b) => a - b);
+  const { error } = await db
+    .from("organizer_game_players")
+    .update({ mission_done: nextDone, mission_pairs: myPairs, last_seen_at: new Date(now).toISOString() })
+    .eq("id", player.id);
+  if (error) throw error;
+  return {
+    ok: true,
+    done: true,
+    waiting: false,
+    progress: await loadProgress(db, { ...player, mission_done: nextDone, mission_pairs: myPairs }, userId),
+  };
+}
+
+export type OrganizerMissionPhoto = { playerId: string; nickname: string; missionIndex: number; missionName: string; url: string; at: string };
+
+/** 主催者が見る、ミッションで届いた写真（新しい順）。 */
+export async function listOrganizerMissionPhotos(
+  supabase: SupabaseClient,
+  gameId: string,
+): Promise<{ enabled: boolean; ready: boolean; photos: OrganizerMissionPhoto[] }> {
+  const { data: gameRow } = await supabase.from("organizer_games").select("type, settings").eq("id", gameId).maybeSingle();
+  const row = gameRow as { type?: string; settings?: unknown } | null;
+  if (row?.type !== "mission") return { enabled: false, ready: true, photos: [] };
+  const stored = readStoredMission(row.settings);
+  if (!stored?.missions.some((mission) => mission.kind === "photo")) return { enabled: false, ready: true, photos: [] };
+  const { data, error } = await supabase
+    .from("organizer_game_players")
+    .select("id, nickname, mission_photos")
+    .eq("game_id", gameId);
+  if (error) {
+    if (/mission_photos/.test(error.message)) return { enabled: true, ready: false, photos: [] };
+    throw error;
+  }
+  const names = new Map(stored.missions.map((mission) => [mission.index, mission.name]));
+  const rows: (Omit<OrganizerMissionPhoto, "url"> & { path?: string; url?: string })[] = [];
+  for (const player of (data ?? []) as {
+    id: string;
+    nickname: string;
+    mission_photos?: Record<string, { path?: string; url?: string; at?: string }> | null;
+  }[]) {
+    for (const [key, photo] of Object.entries(player.mission_photos ?? {})) {
+      const index = Number(key);
+      if ((!photo?.path && !photo?.url) || !Number.isInteger(index)) continue;
+      rows.push({
+        playerId: player.id,
+        nickname: player.nickname,
+        missionIndex: index,
+        missionName: names.get(index) ?? `ミッション ${index + 1}`,
+        path: photo.path,
+        url: photo.url,
+        at: photo.at ?? "",
+      });
+    }
+  }
+  // 非公開の写真は、1時間だけ開けるアドレスをその都度作る（主催者の管理画面だけに渡す）。
+  const paths = rows.flatMap((row) => (row.path ? [row.path] : []));
+  const signed = new Map<string, string>();
+  const admin = getPlayDb();
+  if (admin && paths.length > 0) {
+    const { data: urls, error: signError } = await admin.storage.from(MISSION_PHOTO_BUCKET).createSignedUrls(paths, 60 * 60);
+    if (signError) console.error("mission photo sign:", signError.message);
+    for (const item of urls ?? []) {
+      if (item.path && item.signedUrl) signed.set(item.path, item.signedUrl);
+    }
+  }
+  const photos: OrganizerMissionPhoto[] = rows.flatMap(({ path, url, ...row }) => {
+    const shown = path ? signed.get(path) : url;
+    return shown ? [{ ...row, url: shown }] : [];
+  });
+  photos.sort((a, b) => b.at.localeCompare(a.at));
+  return { enabled: true, ready: true, photos };
 }
 
 export async function completePlayPhoto(
@@ -1304,6 +1651,44 @@ export async function completePlayCheckin(
   };
 }
 
+/** 謎解きで、その場所に着いたことを確かめて、その謎の中身を渡す（クイズのチェックポイントと同じ確かめ方）。 */
+export async function openPlayMysteryCheckpoint(
+  db: SupabaseClient,
+  joinToken: string,
+  deviceToken: string,
+  stepIndex: number,
+  proof: QuizArrivalProof,
+): Promise<
+  | { ok: true; step: PublicMysteryStep }
+  | { ok: false; status: number; error: string; code?: string }
+> {
+  if (!deviceToken || deviceToken.length < 16) {
+    return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  }
+  const game = await lookupPlayGameByJoinToken(db, joinToken);
+  if (!game) return { ok: false, status: 404, error: "ゲームが見つかりません" };
+  const { data } = await db
+    .from("organizer_game_players")
+    .select("*")
+    .eq("game_id", game.id)
+    .eq("device_token_hash", hashDeviceToken(deviceToken))
+    .maybeSingle();
+  if (!data) return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  const player = data as PlayerRow;
+  if (player.auth_epoch !== game.playEpoch) {
+    return { ok: false, status: 401, error: "合言葉がリセットされました。参加用QRから入り直してください" };
+  }
+  const { settings } = await loadRally(db, game.id, player.id, playerRound(player));
+  const stored = readStoredMystery(settings);
+  const step = stored?.steps.find((item) => item.index === stepIndex);
+  if (!step) return { ok: false, status: 404, error: "謎が見つかりません" };
+  if (step.gate) {
+    const blocked = quizGateBlock(step.gate, proof);
+    if (blocked) return { ok: false, status: 422, error: blocked.error, code: blocked.code };
+  }
+  return { ok: true, step: publicMysteryStep(step, true) };
+}
+
 export async function completePlayMystery(
   db: SupabaseClient,
   joinToken: string,
@@ -1311,6 +1696,7 @@ export async function completePlayMystery(
   stepIndex: number,
   answerRaw: string,
   userId: string | null = null,
+  proof: QuizArrivalProof = { here: null, keyword: "" },
 ): Promise<
   | { ok: true; done: boolean; already: boolean; note: string; hint: string; progress: PlayProgress }
   | { ok: false; status: number; error: string }
@@ -1352,9 +1738,11 @@ export async function completePlayMystery(
     };
   }
 
-  const nextIndex = nextMysteryIndex(solved, stored.steps.length);
-  if (step.index !== nextIndex) {
-    return { ok: false, status: 400, error: "まえの謎からどうぞ。" };
+  // 謎は好きな順に解ける（順番は決めない）。
+
+  // 着いて開く謎は、答えるたびに着いたことを確かめる（謎だけ先に知っても答えられない）。
+  if (step.gate && quizGateBlock(step.gate, proof)) {
+    return { ok: false, status: 422, error: "その場所に着いてから答えてください" };
   }
 
   const given = answerRaw.trim();
@@ -1695,7 +2083,7 @@ export async function listOrganizerCouponPlayers(
   }
   if (gameRow.type === "quiz") {
     const storedQuiz = readStoredQuiz(settings);
-    if (!storedQuiz?.couponOn) return hidden;
+    if (!storedQuiz?.couponOn && !storedQuiz?.prizeOn) return hidden;
     const { data: quizRows, error: quizError } = await supabase
       .from("organizer_game_players")
       .select("id, nickname, coupon_used_at, quiz_solved, coupon_code")
@@ -1729,6 +2117,71 @@ export async function listOrganizerCouponPlayers(
       return a.nickname.localeCompare(b.nickname, "ja");
     });
     return { enabled: true, ready: true, players: clearedQuiz };
+  }
+  if (gameRow.type === "photo") {
+    const storedPhoto = readStoredPhoto(settings);
+    if (!storedPhoto?.couponOn && !storedPhoto?.prizeOn) return hidden;
+    const { data: photoRows, error: photoError } = await supabase
+      .from("organizer_game_players")
+      .select("id, nickname, coupon_used_at, photo_done, coupon_code")
+      .eq("game_id", gameId);
+    if (photoError) {
+      if (missingCouponColumn(photoError.message)) return { enabled: true, ready: false, players: [] };
+      throw photoError;
+    }
+    const clearedPhoto: OrganizerCouponPlayer[] = [];
+    for (const player of (photoRows ?? []) as {
+      id: string;
+      nickname: string;
+      coupon_used_at?: string | null;
+      photo_done?: number[] | null;
+      coupon_code?: string | null;
+    }[]) {
+      if (normalizePhotoDone(player.photo_done, storedPhoto.spots.length).length < storedPhoto.clearCount) continue;
+      clearedPhoto.push({ id: player.id, nickname: player.nickname, usedAt: player.coupon_used_at || null, code: player.coupon_code || null });
+    }
+    clearedPhoto.sort((a, b) => {
+      if (Boolean(a.usedAt) !== Boolean(b.usedAt)) return a.usedAt ? 1 : -1;
+      return a.nickname.localeCompare(b.nickname, "ja");
+    });
+    return { enabled: true, ready: true, players: clearedPhoto };
+  }
+  if (gameRow.type === "mystery") {
+    const storedMystery = readStoredMystery(settings);
+    if (!storedMystery?.couponOn && !storedMystery?.prizeOn) return hidden;
+    const { data: mysteryRows, error: mysteryError } = await supabase
+      .from("organizer_game_players")
+      .select("id, nickname, coupon_used_at, mystery_solved, coupon_code")
+      .eq("game_id", gameId);
+    if (mysteryError) {
+      if (missingCouponColumn(mysteryError.message)) {
+        return { enabled: true, ready: false, players: [] };
+      }
+      throw mysteryError;
+    }
+    const mysteryPlayers = (mysteryRows ?? []) as {
+      id: string;
+      nickname: string;
+      coupon_used_at?: string | null;
+      mystery_solved?: number[] | null;
+      coupon_code?: string | null;
+    }[];
+    const clearedMystery: OrganizerCouponPlayer[] = [];
+    for (const player of mysteryPlayers) {
+      const solved = normalizeMysterySolved(player.mystery_solved, storedMystery.steps.length);
+      if (solved.length < storedMystery.needed) continue;
+      clearedMystery.push({
+        id: player.id,
+        nickname: player.nickname,
+        usedAt: player.coupon_used_at || null,
+        code: player.coupon_code || null,
+      });
+    }
+    clearedMystery.sort((a, b) => {
+      if (Boolean(a.usedAt) !== Boolean(b.usedAt)) return a.usedAt ? 1 : -1;
+      return a.nickname.localeCompare(b.nickname, "ja");
+    });
+    return { enabled: true, ready: true, players: clearedMystery };
   }
   if (gameRow.type !== "stamp") return hidden;
   const experience =

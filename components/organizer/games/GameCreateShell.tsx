@@ -50,6 +50,19 @@ export function GameCreateShell({
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const last = step >= steps.length - 1;
+  /** 下へスクロールしているあいだは、右下のプレビューのボタンを隠す（スイッチや入力欄に重ならないように）。 */
+  const [fabHidden, setFabHidden] = useState(false);
+  useEffect(() => {
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (Math.abs(y - lastY) < 8) return;
+      setFabHidden(y > lastY && y > 120);
+      lastY = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (!previewOpen) return;
@@ -132,7 +145,17 @@ export function GameCreateShell({
       </div>
 
       {preview ? (
-        <button type="button" className={cn("wizard-preview-fab", styles.previewFab)} onClick={() => setPreviewOpen(true)}>
+        <button
+          type="button"
+          className={cn("wizard-preview-fab", styles.previewFab)}
+          onClick={() => setPreviewOpen(true)}
+          style={{
+            transition: "transform 0.2s ease, opacity 0.2s ease",
+            transform: fabHidden ? "translateY(160%)" : undefined,
+            opacity: fabHidden ? 0 : 1,
+            pointerEvents: fabHidden ? "none" : undefined,
+          }}
+        >
           <Smartphone className="h-4 w-4" aria-hidden />
           プレビュー
         </button>

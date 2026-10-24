@@ -3,6 +3,7 @@ import { getApiUser } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { sanitizeGameExperience } from "@/lib/organizer/game-experience";
+import { readGameLook } from "@/lib/organizer/game-look";
 import {
   createOrganizerGame,
   listOrganizerGameEventOptions,
@@ -30,6 +31,7 @@ function settingsFromBody(body: {
   checkin?: unknown;
   mystery?: unknown;
   experience?: unknown;
+  look?: unknown;
 }) {
   const quiz = body.quiz && typeof body.quiz === "object" ? body.quiz : null;
   const mission = sanitizeMissionSettings(body.mission);
@@ -38,7 +40,9 @@ function settingsFromBody(body: {
   const checkin = sanitizeCheckinSettings(body.checkin);
   const mystery = sanitizeMysterySettings(body.mystery);
   const experience = sanitizeGameExperience(body.experience);
-  if (!quiz && !mission && !photo && !coupon && !checkin && !mystery && !experience) return undefined;
+  // 参加画面のアイコンと背景（スタンプラリー以外）。
+  const look = body.look && typeof body.look === "object" ? readGameLook(body.look) : null;
+  if (!quiz && !mission && !photo && !coupon && !checkin && !mystery && !experience && !look) return undefined;
   return {
     ...(quiz ? { quiz } : {}),
     ...(mission ? { mission } : {}),
@@ -47,6 +51,7 @@ function settingsFromBody(body: {
     ...(checkin ? { checkin } : {}),
     ...(mystery ? { mystery } : {}),
     ...(experience ? { experience } : {}),
+    ...(look ? { look } : {}),
   };
 }
 

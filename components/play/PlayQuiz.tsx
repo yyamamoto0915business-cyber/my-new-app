@@ -1,5 +1,6 @@
 "use client";
 
+import { RewardLine } from "@/components/play/RewardLine";
 import { useState } from "react";
 import { Lightbulb, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -154,6 +155,10 @@ export function PlayQuiz({ token, quiz, progress, onProgress }: Props) {
           <p className="play-clear__used">{copy.used}</p>
         ) : progress.rewardCode ? (
           <>
+            {/* 何のコードかが分かるように。クーポンがなく景品だけのときは、景品の引き換えコード。 */}
+            <p className="game-test__kicker" style={{ margin: "0.8rem 0 0" }}>
+              {copy.msg(rewards.some((line) => line.startsWith("クーポン")) ? "クーポンのコード" : "景品の引き換えコード")}
+            </p>
             <p className="play-clear__code">{progress.rewardCode}</p>
             <p className="play-clear__code-note">{copy.showCode}</p>
           </>
@@ -165,9 +170,7 @@ export function PlayQuiz({ token, quiz, progress, onProgress }: Props) {
             return true;
           })
           .map((line) => (
-            <p key={line} className="game-test__reward">
-              {copy.msg(line)}
-            </p>
+            <RewardLine key={line} text={line}>{copy.msg(line)}</RewardLine>
           ))}
       </div>
     );

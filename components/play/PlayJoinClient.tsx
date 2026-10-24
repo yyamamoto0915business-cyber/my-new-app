@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Stamp } from "lucide-react";
 import { PlayMission } from "@/components/play/PlayMission";
 import { PlayMystery } from "@/components/play/PlayMystery";
 import { PlayCheckin } from "@/components/play/PlayCheckin";
 import { PlayCoupon } from "@/components/play/PlayCoupon";
 import { PlayPhoto } from "@/components/play/PlayPhoto";
 import { PlayQuiz } from "@/components/play/PlayQuiz";
+import { ClearLayer, GameLookBackdrop, GameSceneBand, gamePlayProgress, GameLookIconMark, GameStartHeader, PlayLookHead, gameLookClass } from "@/components/play/GameLook";
 import { PlayProgressCard } from "@/components/play/PlayProgressCard";
 import { RallyApp } from "@/components/play/rally/RallyApp";
 import { RallyStartScreen } from "@/components/play/rally/RallyStartScreen";
@@ -43,6 +43,7 @@ import { readPublicCheckin, type PublicCheckinPlay } from "@/lib/organizer/check
 import { readPublicCoupon, type PublicCouponPlay } from "@/lib/organizer/coupon-play";
 import { readPublicPhoto, type PublicPhotoPlay } from "@/lib/organizer/photo-play";
 import { readPublicQuiz, type PublicQuiz } from "@/lib/organizer/quiz-play";
+import { readGameLook, type GameLook } from "@/lib/organizer/game-look";
 import { usePlayCopy } from "@/components/play/usePlayCopy";
 
 type PlayAudience = "anyone" | "event" | "pass";
@@ -65,6 +66,8 @@ type PlayGame = {
   coupon: PublicCouponPlay | null;
   checkin: PublicCheckinPlay | null;
   mystery: PublicMysteryPlay | null;
+  /** 参加画面のアイコンと背景（スタンプラリー以外）。 */
+  look: GameLook | null;
 };
 
 function isHowtoIcon(value: string): value is GameHowtoIcon {
@@ -184,6 +187,7 @@ export function PlayJoinClient() {
             start: readStart(body.start),
             moment: readPublicPlayMoment(body.moment),
             quiz: readPublicQuiz(body.quiz),
+            look: body.look ? readGameLook(body.look) : null,
             mission: readPublicMission(body.mission),
             photo: readPublicPhoto(body.photo),
             coupon: readPublicCoupon(body.coupon),
@@ -402,15 +406,29 @@ export function PlayJoinClient() {
 
   const start = game.start;
   const showStart = game.type === "stamp" && !progress && !showJoin;
+  // アイコンと背景は、スタンプラリー以外で変えられる。
+  const look = game.type === "stamp" ? null : game.look;
 
   if (progress && game.type === "quiz" && game.quiz) {
     return (
-      <main className="play-game">
+      <main className={`play-game ${gameLookClass(look)} play-game--scene`}>
+        <GameLookBackdrop look={look} />
+        {progress.completed ? (
+          <GameSceneBand look={look} scene="clear" />
+        ) : (
+          <GameSceneBand look={look} scene="play" progress={gamePlayProgress(progress)} />
+        )}
         <div className="play-game__card">
-          <p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>
-          <h1>{game.name}</h1>
-          <p className="play-game__meta">{progress.nickname}</p>
-          <PlayQuiz token={token} quiz={game.quiz} progress={progress} onProgress={setProgress} />
+          <PlayLookHead
+            look={look}
+            screen={progress.completed ? "clear" : "play"}
+            kicker={<p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>}
+            title={<h1>{game.name}</h1>}
+            meta={<p className="play-game__meta">{progress.nickname}</p>}
+          />
+          <ClearLayer look={look} enabled screen={progress.completed ? "clear" : "play"}>
+            <PlayQuiz token={token} quiz={game.quiz} progress={progress} onProgress={setProgress} />
+          </ClearLayer>
         </div>
       </main>
     );
@@ -418,12 +436,24 @@ export function PlayJoinClient() {
 
   if (progress && game.type === "mission" && game.mission) {
     return (
-      <main className="play-game">
+      <main className={`play-game ${gameLookClass(look)} play-game--scene`}>
+        <GameLookBackdrop look={look} />
+        {progress.completed ? (
+          <GameSceneBand look={look} scene="clear" />
+        ) : (
+          <GameSceneBand look={look} scene="play" progress={gamePlayProgress(progress)} />
+        )}
         <div className="play-game__card">
-          <p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>
-          <h1>{game.name}</h1>
-          <p className="play-game__meta">{progress.nickname}</p>
-          <PlayMission token={token} mission={game.mission} progress={progress} onProgress={setProgress} />
+          <PlayLookHead
+            look={look}
+            screen={progress.completed ? "clear" : "play"}
+            kicker={<p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>}
+            title={<h1>{game.name}</h1>}
+            meta={<p className="play-game__meta">{progress.nickname}</p>}
+          />
+          <ClearLayer look={look} enabled screen={progress.completed ? "clear" : "play"}>
+            <PlayMission token={token} mission={game.mission} progress={progress} onProgress={setProgress} />
+          </ClearLayer>
         </div>
       </main>
     );
@@ -431,12 +461,24 @@ export function PlayJoinClient() {
 
   if (progress && game.type === "photo" && game.photo) {
     return (
-      <main className="play-game">
+      <main className={`play-game ${gameLookClass(look)} play-game--scene`}>
+        <GameLookBackdrop look={look} />
+        {progress.completed ? (
+          <GameSceneBand look={look} scene="clear" />
+        ) : (
+          <GameSceneBand look={look} scene="play" progress={gamePlayProgress(progress)} />
+        )}
         <div className="play-game__card">
-          <p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>
-          <h1>{game.name}</h1>
-          <p className="play-game__meta">{progress.nickname}</p>
-          <PlayPhoto token={token} photo={game.photo} progress={progress} onProgress={setProgress} />
+          <PlayLookHead
+            look={look}
+            screen={progress.completed ? "clear" : "play"}
+            kicker={<p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>}
+            title={<h1>{game.name}</h1>}
+            meta={<p className="play-game__meta">{progress.nickname}</p>}
+          />
+          <ClearLayer look={look} enabled screen={progress.completed ? "clear" : "play"}>
+            <PlayPhoto token={token} photo={game.photo} progress={progress} onProgress={setProgress} />
+          </ClearLayer>
         </div>
       </main>
     );
@@ -444,12 +486,24 @@ export function PlayJoinClient() {
 
   if (progress && game.type === "coupon" && game.coupon) {
     return (
-      <main className="play-game">
+      <main className={`play-game ${gameLookClass(look)} play-game--scene`}>
+        <GameLookBackdrop look={look} />
+        {progress.completed ? (
+          <GameSceneBand look={look} scene="clear" />
+        ) : (
+          <GameSceneBand look={look} scene="play" progress={gamePlayProgress(progress)} />
+        )}
         <div className="play-game__card">
-          <p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>
-          <h1>{game.name}</h1>
-          <p className="play-game__meta">{progress.nickname}</p>
-          <PlayCoupon token={token} coupon={game.coupon} progress={progress} onProgress={setProgress} />
+          <PlayLookHead
+            look={look}
+            screen={progress.completed ? "clear" : "play"}
+            kicker={<p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>}
+            title={<h1>{game.name}</h1>}
+            meta={<p className="play-game__meta">{progress.nickname}</p>}
+          />
+          <ClearLayer look={look} enabled screen={progress.completed ? "clear" : "play"}>
+            <PlayCoupon token={token} coupon={game.coupon} progress={progress} onProgress={setProgress} />
+          </ClearLayer>
         </div>
       </main>
     );
@@ -457,12 +511,24 @@ export function PlayJoinClient() {
 
   if (progress && game.type === "checkin" && game.checkin) {
     return (
-      <main className="play-game">
+      <main className={`play-game ${gameLookClass(look)} play-game--scene`}>
+        <GameLookBackdrop look={look} />
+        {progress.completed ? (
+          <GameSceneBand look={look} scene="clear" />
+        ) : (
+          <GameSceneBand look={look} scene="play" progress={gamePlayProgress(progress)} />
+        )}
         <div className="play-game__card">
-          <p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>
-          <h1>{game.name}</h1>
-          <p className="play-game__meta">{progress.nickname}</p>
-          <PlayCheckin token={token} checkin={game.checkin} progress={progress} onProgress={setProgress} />
+          <PlayLookHead
+            look={look}
+            screen={progress.completed ? "clear" : "play"}
+            kicker={<p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>}
+            title={<h1>{game.name}</h1>}
+            meta={<p className="play-game__meta">{progress.nickname}</p>}
+          />
+          <ClearLayer look={look} enabled screen={progress.completed ? "clear" : "play"}>
+            <PlayCheckin token={token} checkin={game.checkin} progress={progress} onProgress={setProgress} />
+          </ClearLayer>
         </div>
       </main>
     );
@@ -470,12 +536,24 @@ export function PlayJoinClient() {
 
   if (progress && game.type === "mystery" && game.mystery) {
     return (
-      <main className="play-game">
+      <main className={`play-game ${gameLookClass(look)} play-game--scene`}>
+        <GameLookBackdrop look={look} />
+        {progress.completed ? (
+          <GameSceneBand look={look} scene="clear" />
+        ) : (
+          <GameSceneBand look={look} scene="play" progress={gamePlayProgress(progress)} />
+        )}
         <div className="play-game__card">
-          <p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>
-          <h1>{game.name}</h1>
-          <p className="play-game__meta">{progress.nickname}</p>
-          <PlayMystery token={token} mystery={game.mystery} progress={progress} onProgress={setProgress} />
+          <PlayLookHead
+            look={look}
+            screen={progress.completed ? "clear" : "play"}
+            kicker={<p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>}
+            title={<h1>{game.name}</h1>}
+            meta={<p className="play-game__meta">{progress.nickname}</p>}
+          />
+          <ClearLayer look={look} enabled screen={progress.completed ? "clear" : "play"}>
+            <PlayMystery token={token} mystery={game.mystery} progress={progress} onProgress={setProgress} />
+          </ClearLayer>
         </div>
       </main>
     );
@@ -519,32 +597,126 @@ export function PlayJoinClient() {
     );
   }
 
+  // スタンプラリー以外の参加画面（スタート）にも、光の線の演出を出す。
+  const startScene = game.type !== "stamp";
   return (
-    <main className="play-game">
+    <main className={`play-game ${gameLookClass(look)}${startScene ? " play-game--scene" : ""}`}>
+      <GameLookBackdrop look={look} />
+      {startScene ? <GameSceneBand look={look} scene="start" /> : null}
       <div className="play-game__card">
-        <span className="play-game__icon" aria-hidden>
-          <Stamp className="h-7 w-7" strokeWidth={1.6} />
-        </span>
-        <p className="play-game__kicker">{game.typeLabel}</p>
-        <h1>{game.name}</h1>
-        {game.description ? <p className="play-game__desc">{game.description}</p> : null}
-        <p className="play-game__meta">
-          {game.type === "quiz" && game.quiz
-            ? copy.quizMeta(game.quiz.questions.length, game.quiz.clearCount)
-            : game.type === "mission" && game.mission
-              ? copy.missionMeta(game.mission.missions.length, game.mission.clearCount)
-              : game.type === "photo" && game.photo
-                ? copy.photoMeta(game.photo.spots.length, game.photo.clearCount)
-                : game.type === "coupon" && game.coupon
-                  ? copy.couponMeta(game.coupon.stores.length, game.coupon.needed)
-                  : game.type === "checkin" && game.checkin
-                    ? copy.checkinMeta(game.checkin.spots.length, game.checkin.needed)
-                    : game.type === "mystery" && game.mystery
-                      ? copy.mysteryMeta(game.mystery.steps.length, game.mystery.needed)
-                      : game.spotCount > 0
-                ? copy.spotMeta(game.spotCount)
-                : copy.spotsPreparing}
-        </p>
+        <GameStartHeader
+          look={look}
+          parts={{
+            icon: <GameLookIconMark look={look} />,
+            kicker: <p className="play-game__kicker">{game.typeLabel}</p>,
+            title: <h1>{game.name}</h1>,
+            desc: game.description ? <p className="play-game__desc">{game.description}</p> : null,
+            meta: (
+              <p className="play-game__meta">
+                {game.type === "quiz" && game.quiz
+                  ? copy.quizMeta(game.quiz.questions.length, game.quiz.clearCount)
+                  : game.type === "mission" && game.mission
+                    ? copy.missionMeta(game.mission.missions.length, game.mission.clearCount)
+                    : game.type === "photo" && game.photo
+                      ? copy.photoMeta(game.photo.spots.length, game.photo.clearCount)
+                      : game.type === "coupon" && game.coupon
+                        ? copy.couponMeta(game.coupon.stores.length, game.coupon.needed)
+                        : game.type === "checkin" && game.checkin
+                          ? copy.checkinMeta(game.checkin.spots.length, game.checkin.needed)
+                          : game.type === "mystery" && game.mystery
+                            ? copy.mysteryMeta(game.mystery.steps.length, game.mystery.needed)
+                            : game.spotCount > 0
+                      ? copy.spotMeta(game.spotCount)
+                      : copy.spotsPreparing}
+              </p>
+            ),
+          }}
+          renderForm={
+            progress
+              ? undefined
+              : ({ fields, dock }) => (
+                  <form className="play-join" onSubmit={(e) => void handleJoin(e)}>
+                    {fields(
+                      <>
+                        <p className="play-join__lead">{pendingSpot ? copy.joinBeforeStamp : copy.joinWithWords}</p>
+                        {game.playLimit === "once" ? (
+                          <p className="play-join__audience">
+                            {game.signedIn
+                              ? game.accountNickname
+                                ? copy.accountPlaying(game.accountNickname)
+                                : copy.signedInOnce
+                              : copy.onceNeedsLogin}
+                          </p>
+                        ) : null}
+                        {game.audience === "event" ? (
+                          <p className="play-join__audience">{game.signedIn ? copy.checkingEvent : copy.eventAccount}</p>
+                        ) : null}
+                        {game.audience === "pass" ? (
+                          <p className="play-join__audience">{game.signedIn ? copy.checkingPass : copy.passAccount}</p>
+                        ) : null}
+                        <label>
+                          {copy.nickname}
+                          <input
+                            value={nickname}
+                            onChange={(e) => setNickname(e.target.value)}
+                            maxLength={PLAY_NICKNAME_MAX}
+                            autoComplete="nickname"
+                            required
+                          />
+                        </label>
+                        <label>
+                          {copy.passphrase}
+                          <span className="play-join__secret">
+                            <input
+                              type={showPassphrase ? "text" : "password"}
+                              value={passphrase}
+                              onChange={(e) => setPassphrase(e.target.value)}
+                              minLength={PLAY_PASSPHRASE_MIN}
+                              maxLength={PLAY_PASSPHRASE_MAX}
+                              autoComplete="off"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassphrase((current) => !current)}
+                              aria-pressed={showPassphrase}
+                            >
+                              {showPassphrase ? copy.hideSecret : copy.showSecret}
+                            </button>
+                          </span>
+                        </label>
+                        {error ? <p className="play-join__error">{copy.msg(error)}</p> : null}
+                      </>,
+                    )}
+                    <div
+                      className={`${dock.className}${
+                        (needsLogin || (loginRequired && !game.signedIn)) && game.type === "stamp"
+                          ? " play-dock--trio"
+                          : needsLogin || (loginRequired && !game.signedIn) || game.type === "stamp"
+                            ? " play-dock--pair"
+                            : ""
+                      }`}
+                      style={dock.style}
+                      onPointerDown={dock.onPointerDown}
+                    >
+                      {needsLogin || (loginRequired && !game.signedIn) ? (
+                        <Link className="play-dock__link" href={loginHref}>
+                          {copy.login}
+                        </Link>
+                      ) : null}
+                      <button type="submit" className="play-dock__go" disabled={saving}>
+                        {saving ? copy.joining : copy.join}
+                      </button>
+                      {game.type === "stamp" ? (
+                        <button type="button" className="play-dock__ghost" onClick={() => setShowJoin(false)}>
+                          {copy.backToStart}
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+                )
+          }
+        />
 
         {progress ? (
           <>
@@ -566,81 +738,7 @@ export function PlayJoinClient() {
               alreadyStamped={stampMessage?.already}
             />
           </>
-        ) : (
-          <form className="play-join" onSubmit={(e) => void handleJoin(e)}>
-            <p className="play-join__lead">{pendingSpot ? copy.joinBeforeStamp : copy.joinWithWords}</p>
-            {game.playLimit === "once" ? (
-              <p className="play-join__audience">
-                {game.signedIn
-                  ? game.accountNickname
-                    ? copy.accountPlaying(game.accountNickname)
-                    : copy.signedInOnce
-                  : copy.onceNeedsLogin}
-              </p>
-            ) : null}
-            {game.audience === "event" ? (
-              <p className="play-join__audience">{game.signedIn ? copy.checkingEvent : copy.eventAccount}</p>
-            ) : null}
-            {game.audience === "pass" ? (
-              <p className="play-join__audience">{game.signedIn ? copy.checkingPass : copy.passAccount}</p>
-            ) : null}
-            <label>
-              {copy.nickname}
-              <input
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                maxLength={PLAY_NICKNAME_MAX}
-                autoComplete="nickname"
-                required
-              />
-            </label>
-            <label>
-              {copy.passphrase}
-              <span className="play-join__secret">
-                <input
-                  type={showPassphrase ? "text" : "password"}
-                  value={passphrase}
-                  onChange={(e) => setPassphrase(e.target.value)}
-                  minLength={PLAY_PASSPHRASE_MIN}
-                  maxLength={PLAY_PASSPHRASE_MAX}
-                  autoComplete="off"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassphrase((current) => !current)}
-                  aria-pressed={showPassphrase}
-                >
-                  {showPassphrase ? copy.hideSecret : copy.showSecret}
-                </button>
-              </span>
-            </label>
-            {error ? <p className="play-join__error">{copy.msg(error)}</p> : null}
-            <div
-              className={
-                (needsLogin || (loginRequired && !game.signedIn)) && game.type === "stamp"
-                  ? "play-dock play-dock--trio"
-                  : needsLogin || (loginRequired && !game.signedIn) || game.type === "stamp"
-                    ? "play-dock play-dock--pair"
-                    : "play-dock"
-              }
-            >
-              {needsLogin || (loginRequired && !game.signedIn) ? (
-                <Link className="play-dock__link" href={loginHref}>
-                  {copy.login}
-                </Link>
-              ) : null}
-              <button type="submit" className="play-dock__go" disabled={saving}>
-                {saving ? copy.joining : copy.join}
-              </button>
-              {game.type === "stamp" ? (
-                <button type="button" className="play-dock__ghost" onClick={() => setShowJoin(false)}>
-                  {copy.backToStart}
-                </button>
-              ) : null}
-            </div>
-          </form>
-        )}
+        ) : null}
       </div>
     </main>
   );

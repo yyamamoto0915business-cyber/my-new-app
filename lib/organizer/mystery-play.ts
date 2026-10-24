@@ -1,11 +1,17 @@
-import { safeImageUrl } from "@/lib/organizer/game-experience";
+import { safeImageUrl, sanitizePlace } from "@/lib/organizer/game-experience";
 import { sanitizeMysterySettings } from "@/lib/organizer/mystery";
+import type { QuizGate } from "@/lib/organizer/quiz-play";
 
 export type PublicMysteryStep = {
   index: number;
   place: string;
   prompt: string;
   imageUrl: string;
+  /** その場所に着いてから開く謎。着くまで、謎の文と写真は空で渡す。 */
+  checkpoint?: { place: string; arrival: "gps" | "keyword"; locked: boolean };
+  /** マップに出す場所。向かう先なので、着く前から渡す。 */
+  lat?: number;
+  lng?: number;
 };
 
 export type PublicMysteryPlay = {
@@ -17,10 +23,17 @@ export type PublicMysteryPlay = {
 export type StoredMysteryStep = PublicMysteryStep & {
   answer: string;
   hint: string;
+  /** 着いたことの確かめ（クイズのチェックポイントと同じ）。参加者には渡さない。 */
+  gate: QuizGate | null;
+  /** マップに出す場所。確かめ方に関係なく、場所を決めた謎はすべて出す。 */
+  pin: { lat: number; lng: number } | null;
 };
 
 export type StoredMysteryPlay = {
   needed: number;
+  /** クーポン・景品引換。どちらかがあれば、クリアした人に引き換えコードを出す。 */
+  couponOn: boolean;
+  prizeOn: boolean;
   rewards: string[];
   steps: StoredMysteryStep[];
 };
@@ -37,6 +50,13 @@ export function readStoredMystery(settings: unknown): StoredMysteryPlay | null {
   if (!mystery) return null;
   const steps = mystery.steps.flatMap((step) => {
     if (!step.published || !step.prompt || !step.answer) return [];
+    const pin = sanitizePlace(step.lat, step.lng);
+    let gate: QuizGate | null = null;
+    if (step.arrival === "keyword" && step.keyword) {
+      gate = { arrival: "keyword", place: step.place, keyword: step.keyword };
+    } else if (step.arrival === "gps" && pin) {
+      gate = { arrival: "gps", place: step.place, ...pin, radiusM: step.radius };
+    }
     return [
       {
         place: step.place,
@@ -44,26 +64,50 @@ export function readStoredMystery(settings: unknown): StoredMysteryPlay | null {
         imageUrl: mysteryImage(step.imageUrl),
         answer: step.answer,
         hint: step.hint,
+        gate,
+        pin,
       },
     ];
   });
   if (steps.length === 0) return null;
+  // 参加者のクリア画面に出す文。名前を書いていれば、その中身を出す。
   const rewards = [
-    mystery.couponOn ? "クーポンを受け取れます。" : "",
-    mystery.prizeOn ? "景品を受け取れます。" : "",
+    mystery.couponOn
+      ? mystery.couponName
+        ? `クーポン：${mystery.couponName}${mystery.couponDetail ? `（${mystery.couponDetail}）` : ""}`
+        : "クーポンを受け取れます。"
+      : "",
+    mystery.prizeOn
+      ? mystery.prizeName
+        ? `景品：${mystery.prizeName}${mystery.prizePlace ? `（受け取り場所：${mystery.prizePlace}）` : ""}`
+        : "景品を受け取れます。"
+      : "",
   ].filter(Boolean);
   return {
     needed: Math.min(steps.length, Math.max(1, mystery.clearCount)),
+    couponOn: mystery.couponOn,
+    prizeOn: mystery.prizeOn,
     rewards,
     steps: steps.map((step, index) => ({ ...step, index })),
   };
+}
+
+/** 参加者に渡す1つの謎。opened でなければ、着いて開く謎は中身を隠す。 */
+export function publicMysteryStep(step: StoredMysteryStep, opened = false): PublicMysteryStep {
+  const { index, place, prompt, imageUrl, gate } = step;
+  // 場所は向かう先なので、着く前から渡す（マップに出すため）。
+  const pin = step.pin ? { lat: step.pin.lat, lng: step.pin.lng } : {};
+  if (!gate) return { index, place, prompt, imageUrl, ...pin };
+  const checkpoint = { place: gate.place, arrival: gate.arrival, locked: !opened };
+  if (opened) return { index, place, prompt, imageUrl, checkpoint, ...pin };
+  return { index, place, prompt: "", imageUrl: "", checkpoint, ...pin };
 }
 
 export function publicMystery(play: StoredMysteryPlay): PublicMysteryPlay {
   return {
     needed: play.needed,
     rewards: play.rewards,
-    steps: play.steps.map(({ answer: _answer, hint: _hint, ...step }) => step),
+    steps: play.steps.map((step) => publicMysteryStep(step)),
   };
 }
 
@@ -76,13 +120,25 @@ export function readPublicMystery(raw: unknown): PublicMysteryPlay | null {
         const row = item as Record<string, unknown>;
         const prompt = typeof row.prompt === "string" ? row.prompt.trim() : "";
         const index = typeof row.index === "number" ? Math.round(row.index) : -1;
-        if (!prompt || index < 0) return [];
+        const cp = row.checkpoint && typeof row.checkpoint === "object" ? (row.checkpoint as Record<string, unknown>) : null;
+        const checkpoint = cp
+          ? {
+              place: typeof cp.place === "string" ? cp.place : "",
+              arrival: (cp.arrival === "keyword" ? "keyword" : "gps") as "gps" | "keyword",
+              locked: cp.locked === true,
+            }
+          : undefined;
+        if (index < 0 || (!prompt && !checkpoint?.locked)) return [];
         return [
           {
             index,
             place: typeof row.place === "string" ? row.place : "",
             prompt,
             imageUrl: mysteryImage(row.imageUrl),
+            ...(checkpoint ? { checkpoint } : {}),
+            ...(typeof row.lat === "number" && typeof row.lng === "number" && Number.isFinite(row.lat) && Number.isFinite(row.lng)
+              ? { lat: row.lat, lng: row.lng }
+              : {}),
           },
         ];
       })

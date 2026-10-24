@@ -1,5 +1,6 @@
 "use client";
 
+import { RewardLine } from "@/components/play/RewardLine";
 import { useState } from "react";
 import type { PublicCouponPlay, PublicCouponStore } from "@/lib/organizer/coupon-play";
 import type { PlayProgress } from "@/lib/organizer/play-types";
@@ -75,10 +76,10 @@ export function PlayCoupon({ token, coupon, progress, onProgress }: Props) {
           <p>{copy.msg(autoGrant ? "クーポンを受け取れます。" : "会場でクーポンを受け取れます。")}</p>
         )}
         {collected.map((store) => (
-          <p key={store.index} className="game-test__reward">
+          <RewardLine key={store.index} text={store.name}>
             {store.name}
             {store.offer ? ` · ${store.offer}` : ""}
-          </p>
+          </RewardLine>
         ))}
         {noStack ? <p className="game-test__meta">{copy.msg("クーポンの併用はできません。")}</p> : null}
       </div>

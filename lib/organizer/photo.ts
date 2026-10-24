@@ -30,7 +30,15 @@ export type PhotoSettings = {
   spots: Omit<PhotoSpot, "key">[];
   clearCount: number;
   photoRequired: boolean;
-  rewards: { points: boolean; coupon: boolean; prize: boolean };
+  rewards: {
+    points: boolean;
+    coupon: boolean;
+    prize: boolean;
+    couponName: string;
+    couponDetail: string;
+    prizeName: string;
+    prizePlace: string;
+  };
   points: number;
   category: string;
   tags: string[];
@@ -115,6 +123,10 @@ export function sanitizePhotoSettings(raw: unknown): PhotoSettings | null {
       points: rewardsRaw.points === true,
       coupon: rewardsRaw.coupon === true,
       prize: rewardsRaw.prize === true,
+      couponName: typeof rewardsRaw.couponName === "string" ? rewardsRaw.couponName.trim().slice(0, 40) : "",
+      couponDetail: typeof rewardsRaw.couponDetail === "string" ? rewardsRaw.couponDetail.trim().slice(0, 80) : "",
+      prizeName: typeof rewardsRaw.prizeName === "string" ? rewardsRaw.prizeName.trim().slice(0, 40) : "",
+      prizePlace: typeof rewardsRaw.prizePlace === "string" ? rewardsRaw.prizePlace.trim().slice(0, 60) : "",
     },
     points: Math.min(9999, Math.max(0, pointsRaw)),
     category: typeof body.category === "string" ? body.category.trim().slice(0, 24) : PHOTO_CATEGORIES[0],

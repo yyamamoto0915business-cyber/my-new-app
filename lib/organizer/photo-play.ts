@@ -16,6 +16,9 @@ export type PublicPhotoPlay = {
   pointAmount: number;
   rewards: string[];
   spots: PublicPhotoSpot[];
+  /** クーポン・景品引換。どちらかがあれば、クリアした人に引き換えコードを出す（参加者には中身の文だけ見せる）。 */
+  couponOn?: boolean;
+  prizeOn?: boolean;
 };
 
 function photoImage(value: unknown): string {
@@ -53,10 +56,23 @@ export function readStoredPhoto(settings: unknown): PublicPhotoPlay | null {
   const pointsRaw = typeof body.points === "number" ? Math.round(body.points) : 0;
   const points = Math.min(9999, Math.max(0, pointsRaw));
   const pointAmount = rewardsRaw.points === true ? points : 0;
+  const text = (value: unknown, max: number) => (typeof value === "string" ? value.trim().slice(0, max) : "");
+  const couponName = text(rewardsRaw.couponName, 40);
+  const couponDetail = text(rewardsRaw.couponDetail, 80);
+  const prizeName = text(rewardsRaw.prizeName, 40);
+  const prizePlace = text(rewardsRaw.prizePlace, 60);
   const rewards = [
     pointAmount > 0 ? `${pointAmount}ポイントが残ります。` : "",
-    rewardsRaw.coupon === true ? "クーポンを受け取れます。" : "",
-    rewardsRaw.prize === true ? "景品を受け取れます。" : "",
+    rewardsRaw.coupon === true
+      ? couponName
+        ? `クーポン：${couponName}${couponDetail ? `（${couponDetail}）` : ""}`
+        : "クーポンを受け取れます。"
+      : "",
+    rewardsRaw.prize === true
+      ? prizeName
+        ? `景品：${prizeName}${prizePlace ? `（受け取り場所：${prizePlace}）` : ""}`
+        : "景品を受け取れます。"
+      : "",
   ].filter(Boolean);
   const clearRaw = typeof body.clearCount === "number" ? Math.round(body.clearCount) : spots.length;
   const actionLabel = photoRequired ? "写真を残す" : "ここに来た";
@@ -66,6 +82,8 @@ export function readStoredPhoto(settings: unknown): PublicPhotoPlay | null {
     pointAmount,
     rewards,
     spots: spots.map((spot, index) => ({ ...spot, index, actionLabel })),
+    couponOn: rewardsRaw.coupon === true,
+    prizeOn: rewardsRaw.prize === true,
   };
 }
 

@@ -34,6 +34,7 @@ import {
 } from "@/lib/organizer/coupon";
 import { CouponTestPlay } from "@/components/organizer/games/CouponTestPlay";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
@@ -75,6 +76,7 @@ function formatPeriod(startDate: string, startTime: string, endDate: string, end
 }
 
 export function OrganizerCouponCreateForm() {
+  const { look, lookEdit } = useGameLookEdit();
   const router = useRouter();
   const [step, setStep] = useState<StepId>("basic");
   const [name, setName] = useState("まちなかグルメクーポンラリー");
@@ -243,6 +245,7 @@ export function OrganizerCouponCreateForm() {
           status,
           spots: namedStores.map((store) => ({ name: store.name.trim(), kind: "stamp" })),
           coupon: settingsBody,
+          look,
         }),
       });
       const json = await res.json();
@@ -301,6 +304,7 @@ export function OrganizerCouponCreateForm() {
           name={name}
           description={description}
           settings={settingsBody}
+          look={lookEdit}
           stepView={stepIndex === 0 ? "start" : stepIndex === STEPS.length - 1 ? "clear" : "play"}
         />
       }

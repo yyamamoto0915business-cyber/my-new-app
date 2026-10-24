@@ -33,7 +33,7 @@ export function OrganizerCouponUses({ gameId, gameType }: { gameId: string; game
   }, [gameId]);
 
   useEffect(() => {
-    if ((gameType !== "stamp" && gameType !== "coupon" && gameType !== "quiz") || !gameId) return;
+    if ((gameType !== "stamp" && gameType !== "coupon" && gameType !== "quiz" && gameType !== "mystery" && gameType !== "photo") || !gameId) return;
     let cancelled = false;
     (async () => {
       try {
@@ -47,7 +47,7 @@ export function OrganizerCouponUses({ gameId, gameType }: { gameId: string; game
     };
   }, [gameId, gameType, load]);
 
-  if (gameType !== "stamp" && gameType !== "coupon" && gameType !== "quiz") return null;
+  if (gameType !== "stamp" && gameType !== "coupon" && gameType !== "quiz" && gameType !== "mystery" && gameType !== "photo") return null;
   if (!desk && !error) return null;
   if (desk && !desk.enabled) return null;
 

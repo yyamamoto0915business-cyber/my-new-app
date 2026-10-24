@@ -1,4 +1,6 @@
-import { isMissionKindId, missionKindLabel, type MissionKindId } from "@/lib/organizer/mission";
+import { sanitizePlace } from "@/lib/organizer/game-experience";
+import { MISSION_PLACE_KINDS, isMissionKindId, missionKindLabel, type MissionKindId } from "@/lib/organizer/mission";
+import type { QuizGate } from "@/lib/organizer/quiz-play";
 
 export type PublicMission = {
   index: number;
@@ -7,6 +9,12 @@ export type PublicMission = {
   name: string;
   condition: string;
   actionLabel: string;
+  /** その場所に着いたことの確かめ方（「スポットに行く」「チェックイン」）。なければ押すだけで達成。 */
+  arrival?: "gps" | "keyword";
+  place?: string;
+  /** 「クイズに答える」の問題と選択肢（正解は渡さない）。 */
+  question?: string;
+  choices?: string[];
 };
 
 export type PublicMissionPlay = {
@@ -19,11 +27,17 @@ export type PublicMissionPlay = {
 export type StoredMission = PublicMission & {
   keyword: string;
   pointAmount: number;
+  /** 着いたことの確かめ（クイズのチェックポイントと同じ）。参加者には渡さない。 */
+  gate: QuizGate | null;
+  /** 「クイズに答える」の正解（choices の番号）。問題がなければ -1。 */
+  correctIndex: number;
 };
 
 export type StoredMissionPlay = {
   clearCount: number;
   pointsOn: boolean;
+  /** 公開設定の「ランキングを表示」。 */
+  rankingOn: boolean;
   rewards: string[];
   missions: StoredMission[];
 };
@@ -34,10 +48,10 @@ function quotedKeyword(condition: string): string {
 }
 
 function actionLabel(kind: MissionKindId): string {
-  if (kind === "photo") return "写真を残す";
+  if (kind === "photo") return "写真を撮って送る";
   if (kind === "checkin") return "チェックインする";
   if (kind === "quiz") return "答えた";
-  if (kind === "friends") return "一緒に参加した";
+  if (kind === "friends") return "合言葉を送る";
   if (kind === "keyword") return "答える";
   return "着いた";
 }
@@ -59,6 +73,25 @@ export function readStoredMission(settings: unknown): StoredMissionPlay | null {
         const amountRaw = typeof row.amount === "number" ? Math.round(row.amount) : 0;
         const pointAmount =
           row.reward === "points" ? Math.min(9999, Math.max(1, amountRaw || 50)) : 0;
+        const place = typeof row.place === "string" ? row.place.trim().slice(0, 40) : "";
+        let gate: QuizGate | null = null;
+        if ((MISSION_PLACE_KINDS as string[]).includes(kind)) {
+          const gateKeyword = typeof row.keyword === "string" ? row.keyword.trim().slice(0, 40) : "";
+          const spot = sanitizePlace(row.lat, row.lng);
+          if (row.arrival === "keyword" && gateKeyword) gate = { arrival: "keyword", place, keyword: gateKeyword };
+          else if (row.arrival !== "keyword" && row.arrival !== "none" && spot) {
+            const radiusRaw = typeof row.radius === "number" ? Math.round(row.radius) : 50;
+            gate = { arrival: "gps", place, ...spot, radiusM: Math.min(500, Math.max(5, radiusRaw)) };
+          }
+        }
+        // 「クイズに答える」：問題文と2つ以上の選択肢があれば、正解したときだけ達成にする。
+        const rawChoices = Array.isArray(row.choices)
+          ? row.choices.slice(0, 4).map((choice) => (typeof choice === "string" ? choice.trim().slice(0, 40) : ""))
+          : [];
+        const question = typeof row.question === "string" ? row.question.trim().slice(0, 120) : "";
+        const correctRaw = typeof row.correctIndex === "number" ? Math.round(row.correctIndex) : 0;
+        const filled = rawChoices.map((choice, i) => ({ choice, i })).filter((item) => item.choice);
+        const quizOn = kind === "quiz" && question && filled.length >= 2 && filled.some((item) => item.i === correctRaw);
         return [
           {
             index: 0,
@@ -66,9 +99,19 @@ export function readStoredMission(settings: unknown): StoredMissionPlay | null {
             kindLabel: missionKindLabel(kind),
             name,
             condition: kind === "keyword" ? "" : condition,
-            actionLabel: actionLabel(kind),
+            actionLabel: gate
+              ? gate.arrival === "gps"
+                ? "現在地で確かめる"
+                : "合言葉で確かめる"
+              : quizOn
+                ? "答える"
+                : actionLabel(kind),
             keyword: kind === "keyword" ? quotedKeyword(condition) : "",
             pointAmount,
+            gate,
+            ...(gate ? { arrival: gate.arrival, place } : {}),
+            correctIndex: quizOn ? filled.findIndex((item) => item.i === correctRaw) : -1,
+            ...(quizOn ? { question, choices: filled.map((item) => item.choice) } : {}),
           },
         ];
       })
@@ -87,6 +130,8 @@ export function readStoredMission(settings: unknown): StoredMissionPlay | null {
   return {
     clearCount: Math.min(missions.length, Math.max(1, clearRaw)),
     pointsOn: rewardsRaw.points === true,
+    rankingOn:
+      !!body.publish && typeof body.publish === "object" && (body.publish as Record<string, unknown>).ranking === true,
     rewards,
     missions: missions.map((item, index) => ({ ...item, index })),
   };
@@ -105,7 +150,7 @@ export function publicMission(play: StoredMissionPlay, hints: boolean): PublicMi
     clearCount: play.clearCount,
     hints,
     rewards: play.rewards,
-    missions: play.missions.map(({ keyword: _keyword, pointAmount: _pointAmount, ...item }) => ({
+    missions: play.missions.map(({ keyword: _keyword, pointAmount: _pointAmount, gate: _gate, correctIndex: _correct, ...item }) => ({
       ...item,
       condition: hints ? item.condition : "",
     })),
@@ -131,6 +176,15 @@ export function readPublicMission(raw: unknown): PublicMissionPlay | null {
             name,
             condition: typeof row.condition === "string" ? row.condition : "",
             actionLabel: typeof row.actionLabel === "string" && row.actionLabel.trim() ? row.actionLabel : actionLabel(kind),
+            ...(typeof row.question === "string" && Array.isArray(row.choices)
+              ? {
+                  question: row.question,
+                  choices: row.choices.filter((choice): choice is string => typeof choice === "string"),
+                }
+              : {}),
+            ...(row.arrival === "gps" || row.arrival === "keyword"
+              ? { arrival: row.arrival as "gps" | "keyword", place: typeof row.place === "string" ? row.place : "" }
+              : {}),
           },
         ];
       })

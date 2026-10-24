@@ -351,6 +351,21 @@ export function useMoveLayer({
     movable(
       `img:${item.id}`,
       <span className="rally-start__imgbox" style={{ width: `${imageWidthOf(item)}cqw` }}>
+        {item.video ? (
+          <video
+            className={`rally-start__img${item.round ? " is-round" : ""}`}
+            src={item.url}
+            // 編集中は音が出ないよう無音でくり返す。参加者の画面では、操作バーで再生・音を切り替えられる。
+            autoPlay
+            muted
+            loop
+            playsInline
+            controls={!edit}
+            preload="metadata"
+            style={{ width: "100%", display: "block", background: "#000" }}
+            onPointerDown={edit ? (event) => sizedPointerDown(`img:${item.id}`, imageWidthOf(item), event) : undefined}
+          />
+        ) : (
         <img
           className={`rally-start__img${item.round ? " is-round" : ""}`}
           src={item.url}
@@ -367,6 +382,7 @@ export function useMoveLayer({
               : undefined
           }
         />
+        )}
         {edit && selected ? (
           <button
             type="button"
@@ -463,6 +479,9 @@ export function useMoveLayer({
     guide,
     gestureEndRef,
     startDrag,
+    /** 部品を包まずに動かすとき（画面の下に固定したボタンなど）の、ずれの style と押したときの処理。 */
+    moveStyle,
+    pressDrag,
     movable,
     imageNode,
     shapeNode,

@@ -34,6 +34,33 @@ export type MissionItem = {
   reward: MissionReward;
   amount: number;
   published: boolean;
+  /** 「スポットに行く」「チェックイン」の場所と、着いたことの確かめ方。 */
+  place: string;
+  arrival: "none" | "gps" | "keyword";
+  lat: number | null;
+  lng: number | null;
+  radius: number;
+  /** 現地の看板などに書いた合言葉（確かめ方が合言葉のとき）。 */
+  keyword: string;
+  /** 「クイズに答える」の問題文・選択肢・正解（選択肢の番号）。 */
+  question: string;
+  choices: string[];
+  correctIndex: number;
+};
+
+/** 場所の確かめを使うミッション。 */
+export const MISSION_PLACE_KINDS: MissionKindId[] = ["visit", "checkin"];
+
+const PLACE_DEFAULTS = {
+  place: "",
+  arrival: "gps" as const,
+  lat: null,
+  lng: null,
+  radius: 50,
+  keyword: "",
+  question: "",
+  choices: ["", ""],
+  correctIndex: 0,
 };
 
 export function isMissionKindId(value: string): value is MissionKindId {
@@ -59,6 +86,7 @@ export function createMissionItem(kind: MissionKindId): MissionItem {
     reward,
     amount: reward === "points" ? 50 : 1,
     published: true,
+    ...PLACE_DEFAULTS,
   };
 }
 
@@ -72,6 +100,7 @@ export function sampleMissions(): MissionItem[] {
       reward: "stamp",
       amount: 1,
       published: true,
+      ...PLACE_DEFAULTS,
     },
     {
       key: crypto.randomUUID(),
@@ -81,6 +110,7 @@ export function sampleMissions(): MissionItem[] {
       reward: "points",
       amount: 50,
       published: true,
+      ...PLACE_DEFAULTS,
     },
     {
       key: crypto.randomUUID(),
@@ -90,6 +120,7 @@ export function sampleMissions(): MissionItem[] {
       reward: "stamp",
       amount: 1,
       published: true,
+      ...PLACE_DEFAULTS,
     },
     {
       key: crypto.randomUUID(),
@@ -99,6 +130,7 @@ export function sampleMissions(): MissionItem[] {
       reward: "points",
       amount: 100,
       published: true,
+      ...PLACE_DEFAULTS,
     },
   ];
 }
@@ -133,6 +165,20 @@ export function sanitizeMissionSettings(raw: unknown): MissionSettings | null {
             reward,
             amount: Math.min(9999, Math.max(1, Math.round(amountRaw))),
             published: row.published !== false,
+            place: typeof row.place === "string" ? row.place.trim().slice(0, 40) : "",
+            arrival: (row.arrival === "keyword" || row.arrival === "none" ? row.arrival : "gps") as MissionItem["arrival"],
+            lat: typeof row.lat === "number" && Number.isFinite(row.lat) ? row.lat : null,
+            lng: typeof row.lng === "number" && Number.isFinite(row.lng) ? row.lng : null,
+            radius: typeof row.radius === "number" ? Math.min(500, Math.max(5, Math.round(row.radius))) : 50,
+            keyword: typeof row.keyword === "string" ? row.keyword.trim().slice(0, 40) : "",
+            question: typeof row.question === "string" ? row.question.trim().slice(0, 120) : "",
+            choices: Array.isArray(row.choices)
+              ? row.choices
+                  .slice(0, 4)
+                  .map((choice) => (typeof choice === "string" ? choice.trim().slice(0, 40) : ""))
+              : ["", ""],
+            correctIndex:
+              typeof row.correctIndex === "number" ? Math.min(3, Math.max(0, Math.round(row.correctIndex))) : 0,
           },
         ];
       })

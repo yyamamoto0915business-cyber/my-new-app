@@ -1569,8 +1569,9 @@
 }
 
 .game-phone .play-dock {
-  position: sticky;
-  bottom: 0;
+  /* sticky は Safari で、縮小（scale）した枠の中だと途中に止まって中身に重なるため、ふつうに並べる。 */
+  position: relative;
+  bottom: auto;
   z-index: 30;
   width: auto;
   margin: auto -1.15rem -1.4rem;
@@ -1903,9 +1904,8 @@
 
 /* 問題ごとの操作（参加者には出ない）。 */
 .quiz-edit__bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 6;
+  /* 画面に貼り付けず、その問題のカードの一番下に、ふつうに並べる（問題の文章に重ならないように）。 */
+  position: static;
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
@@ -1956,19 +1956,24 @@
     gap: 0.4rem;
   }
 
+  /* アイコンだけだと何のボタンか分かりにくいので、下に小さく名前を出す。 */
   .wizard-preview-sheet .wizard-preview__adds .wizard-preview__add {
+    flex-direction: column;
     justify-content: center;
-    width: 2.6rem;
-    min-height: 2.6rem;
-    padding: 0;
-    font-size: 0;
-    gap: 0;
+    width: 3.1rem;
+    min-height: 3.1rem;
+    padding: 0.3rem 0 0.25rem;
+    border-radius: 0.95rem;
+    font-size: 0.58rem;
+    line-height: 1;
+    letter-spacing: 0;
+    gap: 0.2rem;
     background: rgba(29, 42, 34, 0.88);
   }
 
   .wizard-preview-sheet .wizard-preview__adds .wizard-preview__add svg {
-    width: 1.15rem;
-    height: 1.15rem;
+    width: 1.1rem;
+    height: 1.1rem;
   }
 }
 
@@ -2152,4 +2157,300 @@
 /* フォームの問題編集 */
 .org-quiz__editor .quiz-format-chips {
   margin: 0.2rem 0 0.4rem;
+}
+
+/* ───────── アイコン・背景（クイズ） ───────── */
+.game-phone .play-game-shell {
+  position: relative;
+}
+
+/* スマホ枠の中では、画面いっぱい＝枠の中いっぱい。 */
+.game-phone .play-look-bg {
+  position: absolute;
+}
+
+.game-phone .play-game.play-game--look {
+  padding: 0.9rem 0 0;
+}
+
+.game-phone .play-game--look .play-game__card {
+  background: transparent;
+}
+
+/* 白い板の中のボタンは、板の幅に合わせる。 */
+.game-phone .play-game--look .play-dock {
+  margin: auto -0.9rem -1rem;
+  border-radius: 0 0 1.1rem 1.1rem;
+  background: #fff;
+}
+
+.game-phone.has-look-edit .play-look-head .rally-shape {
+  touch-action: none;
+}
+
+.game-phone.has-look-edit .play-look-head .rally-move.is-active > .rally-shape {
+  outline: 2px solid #1f7a4a;
+  outline-offset: 5px;
+  border-radius: 6px;
+}
+
+.game-phone.has-look-edit .play-look-part {
+  cursor: pointer;
+}
+
+/* 編集中：アイコンと背景はタップで選べる（ほかの部分は押せないままのゲームでも）。 */
+.game-phone.has-look-edit .look-edit__icon,
+.game-phone.has-look-edit .play-look-bg {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.look-edit__icon {
+  align-self: center;
+  padding: 0;
+  border: 0;
+  border-radius: 1.1rem;
+  background: none;
+  cursor: pointer;
+  outline: 1.5px dashed rgba(31, 122, 74, 0.35);
+  outline-offset: 3px;
+}
+
+.look-edit__icon:hover,
+.look-edit__icon.is-on {
+  outline: 2px solid #1f7a4a;
+}
+
+.look-edit__icon .play-game__icon {
+  display: inline-flex;
+}
+
+/* 背景を変えていないときは、カードの外（上の余白）をタップしても背景を選べる。 */
+.game-phone.is-editing .play-game {
+  cursor: default;
+}
+
+.edit-panel__choice.look-edit__choice {
+  justify-content: center;
+  width: 2.6rem;
+  padding: 0;
+}
+
+.edit-panel__choice.look-edit__choice svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.look-edit__current {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.look-edit__current img {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.7rem;
+  background: #f1f4f2;
+  object-fit: contain;
+}
+
+/* ───────── 参加画面の上の部分をドラッグで動かす ───────── */
+.play-look-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.game-phone.has-look-edit .play-look-head .rally-move {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+.game-phone.has-look-edit .play-look-head.is-dragging,
+.game-phone.has-look-edit .play-look-head.is-dragging * {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.game-phone.has-look-edit .play-look-head .rally-move.is-active > :first-child:not(.rally-shape) {
+  border-radius: 0.6rem;
+  outline: 2px solid #1f7a4a;
+  outline-offset: 3px;
+}
+
+/* 編集中の入力欄は、文字の選択のためにいつものカーソルにする。 */
+.game-phone.has-look-edit .play-look-head textarea {
+  cursor: text;
+  touch-action: auto;
+}
+
+/* 中央に揃ったときの目印。 */
+.play-look-head.is-guide {
+  position: relative;
+}
+
+.play-look-head.is-guide::before {
+  content: "";
+  position: absolute;
+  top: -50vh;
+  bottom: -50vh;
+  left: 50%;
+  z-index: 7;
+  border-left: 1.5px dashed rgba(31, 122, 74, 0.7);
+  pointer-events: none;
+}
+
+/* 参加画面では、どのゲームでもカードの余白をタップして背景を選べる（入力欄は押せないまま）。 */
+.game-phone.has-look-edit .play-game:has(.play-look-head),
+.game-phone.has-look-edit .play-game:has(.play-look-head) .play-game__card {
+  pointer-events: auto;
+}
+
+.game-phone.has-look-edit .play-game .play-join {
+  pointer-events: none;
+}
+
+/* 入力欄と参加ボタンも、押したままドラッグで動かせる（入力はできないまま）。 */
+.game-phone.has-look-edit .play-join > .rally-move,
+.game-phone.has-look-edit .play-dock.is-movable {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+/* プレビューの参加フォーム：入力欄の見た目だけ（入力はできない）。 */
+.play-join__field {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1a4d32;
+}
+
+.play-join__fake {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--mg-touch-min, 44px);
+  border: 1px solid #d5e2d8;
+  border-radius: 0.8rem;
+  background: #fbfdfb;
+}
+
+.play-join__fake-show {
+  position: absolute;
+  top: 50%;
+  right: 0.85rem;
+  transform: translateY(-50%);
+  color: #2d7a4f;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.game-phone.has-look-edit .play-dock.is-movable .play-dock__go {
+  cursor: grab;
+}
+
+/* 入力欄はプレビューで縦に伸ばしているので、包んだあとも同じように。 */
+.game-phone .play-join > .rally-move {
+  flex: none;
+}
+
+.game-phone.has-look-edit .play-join > .rally-move.is-active > .play-join__fields {
+  border-radius: 0.8rem;
+  outline: 2px solid #1f7a4a;
+  outline-offset: 4px;
+}
+
+.game-phone.has-look-edit .play-dock.is-active {
+  outline: 2px solid #1f7a4a;
+  outline-offset: -3px;
+}
+
+.game-phone .play-dock.is-dragging {
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
+}
+
+/* 「挿入」：図形と画像を切り替えるタブ。 */
+.look-insert {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.look-insert__tabs {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.look-insert__tabs button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2.4rem;
+  border: 1.5px solid #e2ebe5;
+  border-radius: 999px;
+  background: #fff;
+  color: #3c4a40;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(23, 40, 30, 0.12);
+}
+
+.look-insert__tabs button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.look-insert__tabs button.is-on {
+  border-color: #1f7a4a;
+  background: #1f7a4a;
+  color: #fff;
+}
+
+.game-phone.has-look-edit .play-look-layer .rally-start__img {
+  cursor: grab;
+  touch-action: none;
+}
+
+.game-phone.has-look-edit .play-look-layer .rally-move.is-active .rally-start__img {
+  outline: 2px solid #1f7a4a;
+  outline-offset: 4px;
+}
+
+/* 参加画面に足したテキスト（作成中の編集も、参加者の画面も同じ見た目） */
+.play-look-text {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 0.3rem 0.6rem;
+  border: 0;
+  border-radius: 0.6rem;
+  background: transparent;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+textarea.play-look-text.is-edit {
+  resize: none;
+  overflow: hidden;
+  field-sizing: content;
+  border-radius: 0.5rem;
+  outline: 1.5px dashed rgba(29, 42, 34, 0.35);
+  outline-offset: 2px;
+}
+
+textarea.play-look-text.is-edit.is-selected {
+  outline: 2px solid #1f7a4a;
 }

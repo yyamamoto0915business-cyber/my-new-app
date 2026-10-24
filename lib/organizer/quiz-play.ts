@@ -51,6 +51,8 @@ function readGate(row: Record<string, unknown>): QuizGate | null {
 export type StoredQuiz = {
   clearCount: number;
   couponOn: boolean;
+  /** 景品引換。クーポンと同じく、クリアした人に引き換えコードを出す。 */
+  prizeOn: boolean;
   rankingOn: boolean;
   rewards: string[];
   questions: StoredQuizQuestion[];
@@ -101,26 +103,42 @@ export function readStoredQuiz(settings: unknown): StoredQuiz | null {
   if (questions.length === 0) return null;
   const rewardsRaw =
     body.rewards && typeof body.rewards === "object" ? (body.rewards as Record<string, unknown>) : {};
+  const line = (value: unknown, max: number) => (typeof value === "string" ? value.trim().slice(0, max) : "");
+  const couponName = line(rewardsRaw.couponName, 40);
+  const couponDetail = line(rewardsRaw.couponDetail, 80);
+  const prizeName = line(rewardsRaw.prizeName, 40);
+  const prizePlace = line(rewardsRaw.prizePlace, 60);
+  // 参加者のクリア画面に出す文。名前を書いていれば、その中身を出す。
   const rewards = [
-    rewardsRaw.coupon === true ? "クーポンを受け取れます。" : "",
-    rewardsRaw.prize === true ? "景品と引き換えできます。" : "",
+    rewardsRaw.coupon === true
+      ? couponName
+        ? `クーポン：${couponName}${couponDetail ? `（${couponDetail}）` : ""}`
+        : "クーポンを受け取れます。"
+      : "",
+    rewardsRaw.prize === true
+      ? prizeName
+        ? `景品：${prizeName}${prizePlace ? `（受け取り場所：${prizePlace}）` : ""}`
+        : "景品と引き換えできます。"
+      : "",
     rewardsRaw.ranking === true ? "順位は、結果の画面で見られます。" : "",
   ].filter(Boolean);
   const clearRaw = typeof body.clearCount === "number" ? Math.round(body.clearCount) : questions.length;
   return {
     clearCount: Math.min(questions.length, Math.max(1, clearRaw)),
     couponOn: rewardsRaw.coupon === true,
+    prizeOn: rewardsRaw.prize === true,
     rankingOn: rewardsRaw.ranking === true,
     rewards,
     questions,
   };
 }
 
-/** 先にクリアした人が上。同時なら id の順で固定する。 */
+/** 正解数が多い人が上。同じ数なら先にクリアした人、それも同じなら id の順で固定する。 */
 export function quizFinishRank(
-  rows: { id: string; clearedAt: string }[],
+  rows: { id: string; clearedAt: string; solved?: number }[],
   playerId: string,
   clearedAt: string,
+  solved = 0,
 ): number {
   const mine = Date.parse(clearedAt);
   if (Number.isNaN(mine)) return 1;
@@ -129,7 +147,9 @@ export function quizFinishRank(
     if (row.id === playerId) continue;
     const at = Date.parse(row.clearedAt);
     if (Number.isNaN(at)) continue;
-    if (at < mine || (at === mine && row.id < playerId)) ahead += 1;
+    const theirs = row.solved ?? 0;
+    if (theirs > solved) ahead += 1;
+    else if (theirs === solved && (at < mine || (at === mine && row.id < playerId))) ahead += 1;
   }
   return ahead + 1;
 }

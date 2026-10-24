@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import {
   BookOpen,
   Camera,
+  ChevronDown,
+  ChevronUp,
   CircleHelp,
   Copy,
   Gift,
   MapPin,
-  Pencil,
   PenLine,
   Plus,
   Trash2,
@@ -32,6 +33,10 @@ import {
 import { QuizTestPlay } from "@/components/organizer/games/QuizTestPlay";
 import { QuizCheckpointFields, QuizFormatChips } from "@/components/organizer/games/QuizQuestionSettings";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { GameImageField } from "@/components/organizer/games/GameImageField";
+import { RewardFields } from "@/components/organizer/games/RewardFields";
+import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/games/RewardOptions";
+import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
@@ -64,9 +69,14 @@ export function OrganizerQuizCreateForm() {
   const [questions, setQuestions] = useState<QuizQuestion[]>(() => sampleQuizQuestions());
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [clearCount, setClearCount] = useState(3);
+  const { look, lookEdit } = useGameLookEdit();
   const [couponOn, setCouponOn] = useState(true);
   const [prizeOn, setPrizeOn] = useState(false);
   const [rankingOn, setRankingOn] = useState(false);
+  const [couponName, setCouponName] = useState("");
+  const [couponDetail, setCouponDetail] = useState("");
+  const [prizeName, setPrizeName] = useState("");
+  const [prizePlace, setPrizePlace] = useState("");
   const [step, setStep] = useState(0);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -112,7 +122,7 @@ export function OrganizerQuizCreateForm() {
   }
 
   function addQuestion() {
-    const format = formats[0] ?? "choice";
+    const format = questions[questions.length - 1]?.format ?? formats[0] ?? "choice";
     const next = createQuizQuestion(questions.length, format);
     setQuestions((current) => [...current, next]);
     setEditingKey(next.key);
@@ -180,7 +190,7 @@ export function OrganizerQuizCreateForm() {
         : {}),
     })),
     clearCount,
-    rewards: { coupon: couponOn, prize: prizeOn, ranking: rankingOn },
+    rewards: { coupon: couponOn, prize: prizeOn, ranking: rankingOn, couponName, couponDetail, prizeName, prizePlace },
   };
 
   async function save(status: "draft" | "published") {
@@ -213,6 +223,7 @@ export function OrganizerQuizCreateForm() {
           endsAt: toIsoFromDate(endDate),
           status,
           quiz: settingsBody,
+          look,
         }),
       });
       const json = await res.json();
@@ -278,6 +289,7 @@ export function OrganizerQuizCreateForm() {
               formats,
             },
           }}
+          look={lookEdit}
           stepView={step === 0 ? "start" : step === STEPS.length - 1 ? "clear" : "play"}
         />
       }
@@ -379,178 +391,210 @@ export function OrganizerQuizCreateForm() {
               <p className="org-quiz__empty">まだ問題がありません。まちの魅力が伝わるクイズを追加しましょう。</p>
             ) : (
               <ol className="org-quiz__questions">
-                {questions.map((question, index) => (
-                  <li key={question.key}>
-                    <button
-                      type="button"
-                      className="org-quiz__q-index"
-                      aria-label={`${index + 1}問目をプレビュー`}
-                      onClick={() => setPreviewIndex(index)}
-                    >
-                      {index + 1}
-                    </button>
-                    {question.imageUrl ? (
-                      <span className="org-quiz__q-thumb">
-                        <Image src={question.imageUrl} alt="" width={96} height={72} unoptimized />
-                      </span>
-                    ) : (
-                      <span className="org-quiz__q-thumb is-empty" aria-hidden />
-                    )}
-                    <div className="org-quiz__q-body">
-                      <p>{question.prompt || "問題文を入力してください"}</p>
-                      <span>
-                        <em>{quizFormatLabel(question.format)}</em>
-                        <em>{question.category}</em>
-                        <em>正答 {question.choices[question.correctIndex] || "未設定"}</em>
-                      </span>
-                    </div>
-                    <div className="org-quiz__q-tools">
-                      <button type="button" onClick={() => setEditingKey(question.key)}>
-                        <Pencil className="h-3.5 w-3.5" aria-hidden />
-                        編集
+                {questions.map((question, index) => {
+                  const problem = quizQuestionProblem(question, index + 1);
+                  const open = editingKey === question.key;
+                  return (
+                    <li key={question.key} className={cn(open && "is-open")}>
+                      <button
+                        type="button"
+                        className="org-quiz__q-main"
+                        aria-expanded={open}
+                        onClick={() => {
+                          setEditingKey(open ? null : question.key);
+                          setPreviewIndex(index);
+                        }}
+                      >
+                        <span className="org-quiz__q-index">{index + 1}</span>
+                        {question.imageUrl ? (
+                          <span className="org-quiz__q-thumb">
+                            <Image src={question.imageUrl} alt="" width={96} height={72} unoptimized />
+                          </span>
+                        ) : (
+                          <span className="org-quiz__q-thumb is-empty" aria-hidden />
+                        )}
+                        <span className="org-quiz__q-body">
+                          <p>{question.prompt || "タップして問題文を入力"}</p>
+                          <span>
+                            <em>{quizFormatLabel(question.format)}</em>
+                            <em>正答 {question.choices[question.correctIndex] || "未設定"}</em>
+                            {problem ? <em className="is-warn">未入力あり</em> : null}
+                          </span>
+                        </span>
                       </button>
-                      <button type="button" onClick={() => duplicateQuestion(question.key)}>
-                        <Copy className="h-3.5 w-3.5" aria-hidden />
-                        複製
-                      </button>
-                      <button type="button" onClick={() => removeQuestion(question.key)}>
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                        削除
-                      </button>
-                    </div>
-                  </li>
-                ))}
+                      <div className="org-quiz__q-tools">
+                        <button type="button" onClick={() => moveQuestion(question.key, -1)} disabled={index === 0} aria-label="上へ">
+                          <ChevronUp className="h-4 w-4" aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveQuestion(question.key, 1)}
+                          disabled={index === questions.length - 1}
+                          aria-label="下へ"
+                        >
+                          <ChevronDown className="h-4 w-4" aria-hidden />
+                        </button>
+                        <button type="button" onClick={() => duplicateQuestion(question.key)} aria-label="複製">
+                          <Copy className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                        <button type="button" onClick={() => removeQuestion(question.key)} aria-label="削除">
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                      </div>
+                      {open ? (
+                        <div className="org-quiz__editor">
+                          <QuizFormatChips
+                            question={question}
+                            allowed={formats}
+                            onChange={(next) => updateQuestion(question.key, next)}
+                          />
+                          <QuizCheckpointFields
+                            question={question}
+                            map
+                            onChange={(patch) => updateQuestion(question.key, patch)}
+                          />
+                          <label>
+                            問題文
+                            <textarea
+                              autoFocus={!question.prompt}
+                              value={question.prompt}
+                              onChange={(e) => updateQuestion(question.key, { prompt: e.target.value })}
+                              rows={2}
+                              placeholder="例：このまちのシンボルは何でしょう？"
+                            />
+                          </label>
+                          <div className="org-quiz__editor-answers">
+                            <span>
+                              {question.format === "ox" ? "正解をタップ" : "選択肢（正解の ● をタップ）"}
+                            </span>
+                            {question.format === "ox" ? (
+                              <div className="org-quiz__ox">
+                                {question.choices.map((choice, choiceIndex) => (
+                                  <button
+                                    key={choice}
+                                    type="button"
+                                    className={cn(question.correctIndex === choiceIndex && "is-on")}
+                                    onClick={() => updateQuestion(question.key, { correctIndex: choiceIndex })}
+                                  >
+                                    {choiceIndex === 0 ? "○" : "×"}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : (
+                              <ul className="org-quiz__editor-choices">
+                                {question.choices.map((choice, choiceIndex) => (
+                                  <li key={`${question.key}-choice-${choiceIndex}`}>
+                                    <input
+                                      type="radio"
+                                      name={`correct-${question.key}`}
+                                      checked={question.correctIndex === choiceIndex}
+                                      onChange={() => updateQuestion(question.key, { correctIndex: choiceIndex })}
+                                      aria-label="正答にする"
+                                    />
+                                    <input
+                                      value={choice}
+                                      onChange={(e) => {
+                                        const next = [...question.choices];
+                                        next[choiceIndex] = e.target.value;
+                                        updateQuestion(question.key, { choices: next });
+                                      }}
+                                      placeholder={`選択肢 ${choiceIndex + 1}`}
+                                    />
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                          <details className="org-quiz__more">
+                            <summary>写真・ヒント・カテゴリ（任意）</summary>
+                            <GameImageField
+                              label="問題の写真"
+                              url={question.imageUrl}
+                              onChange={(imageUrl) => updateQuestion(question.key, { imageUrl })}
+                            />
+                            <label>
+                              ヒント
+                              <input
+                                value={question.hint}
+                                onChange={(e) => updateQuestion(question.key, { hint: e.target.value })}
+                              />
+                            </label>
+                            <label>
+                              カテゴリ
+                              <select
+                                value={question.category}
+                                onChange={(e) => updateQuestion(question.key, { category: e.target.value })}
+                              >
+                                {QUIZ_CATEGORIES.map((category) => (
+                                  <option key={category}>{category}</option>
+                                ))}
+                              </select>
+                            </label>
+                          </details>
+                          <button type="button" className="org-quiz__editor-done" onClick={() => setEditingKey(null)}>
+                            できた
+                          </button>
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ol>
             )}
-
-            {editing ? (
-              <div className="org-quiz__editor">
-                <h3>問題を編集</h3>
-                <QuizFormatChips
-                  question={editing}
-                  allowed={formats}
-                  onChange={(next) => updateQuestion(editing.key, next)}
-                />
-                <QuizCheckpointFields
-                  question={editing}
-                  map
-                  onChange={(patch) => updateQuestion(editing.key, patch)}
-                />
-                <label>
-                  問題文
-                  <textarea
-                    value={editing.prompt}
-                    onChange={(e) => updateQuestion(editing.key, { prompt: e.target.value })}
-                    rows={3}
-                  />
-                </label>
-                <div className="org-quiz__editor-row">
-                  <label>
-                    カテゴリ
-                    <select
-                      value={editing.category}
-                      onChange={(e) => updateQuestion(editing.key, { category: e.target.value })}
-                    >
-                      {QUIZ_CATEGORIES.map((category) => (
-                        <option key={category}>{category}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    画像URL
-                    <input
-                      value={editing.imageUrl}
-                      onChange={(e) => updateQuestion(editing.key, { imageUrl: e.target.value })}
-                      placeholder="/profile/album/spring/town.jpg"
-                    />
-                  </label>
-                </div>
-                <ul className="org-quiz__editor-choices">
-                  {editing.choices.map((choice, index) => (
-                    <li key={`${editing.key}-choice-${index}`}>
-                      <input
-                        type="radio"
-                        name={`correct-${editing.key}`}
-                        checked={editing.correctIndex === index}
-                        onChange={() => updateQuestion(editing.key, { correctIndex: index })}
-                        aria-label="正答にする"
-                      />
-                      <input
-                        value={choice}
-                        onChange={(e) => {
-                          const next = [...editing.choices];
-                          next[index] = e.target.value;
-                          updateQuestion(editing.key, { choices: next });
-                        }}
-                      />
-                    </li>
-                  ))}
-                </ul>
-                <label>
-                  ヒント
-                  <input
-                    value={editing.hint}
-                    onChange={(e) => updateQuestion(editing.key, { hint: e.target.value })}
-                  />
-                </label>
-                <button type="button" className="org-quiz__editor-done" onClick={() => setEditingKey(null)}>
-                  編集を閉じる
-                </button>
-              </div>
-            ) : null}
           </section>
       ) : null}
       {step === 3 ? (
           <section className="org-quiz__card" aria-labelledby="quiz-rewards">
             <h2 id="quiz-rewards">達成条件・特典</h2>
             <p>クリア条件と、参加者への特典を設定します。</p>
-            <ul className="org-quiz__rewards">
-              <li className="is-on">
-                <Trophy className="h-4 w-4" aria-hidden />
-                <div>
-                  <strong>3問以上正解でクリア</strong>
-                  <span>指定した正解数でクリアとします</span>
-                </div>
-                <select value={clearCount} onChange={(e) => setClearCount(Number(e.target.value))}>
-                  {Array.from({ length: Math.max(questions.length, 3) }, (_, index) => index + 1).map((count) => (
-                    <option key={count} value={count}>
-                      {count}問以上
-                    </option>
-                  ))}
-                </select>
-              </li>
-              <li>
-                <button type="button" className={cn("org-quiz__reward", couponOn && "is-on")} onClick={() => setCouponOn((on) => !on)}>
-                  <Gift className="h-4 w-4" aria-hidden />
-                  <div>
-                    <strong>クーポン付与</strong>
-                    <span>クリア時にクーポンをプレゼント</span>
-                  </div>
-                </button>
-              </li>
-              <li>
-                <button type="button" className={cn("org-quiz__reward", prizeOn && "is-on")} onClick={() => setPrizeOn((on) => !on)}>
-                  <Gift className="h-4 w-4" aria-hidden />
-                  <div>
-                    <strong>景品引換</strong>
-                    <span>現地での景品引換を設定します</span>
-                  </div>
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  className={cn("org-quiz__reward", rankingOn && "is-on")}
-                  onClick={() => setRankingOn((on) => !on)}
-                >
-                  <Trophy className="h-4 w-4" aria-hidden />
-                  <div>
-                    <strong>ランキング表示</strong>
-                    <span>正解数やクリア時間で順位を表示します</span>
-                  </div>
-                </button>
-              </li>
-            </ul>
+            <RewardList>
+              <ClearCountCard
+                icon={Trophy}
+                title={`${Math.min(clearCount, Math.max(questions.length, 1))}問以上正解でクリア`}
+                desc="問題の数までの中から選べます"
+                value={Math.min(clearCount, Math.max(questions.length, 1))}
+                max={questions.length}
+                unit="問以上"
+                onChange={setClearCount}
+              />
+              <RewardCard
+                icon={Gift}
+                title="クーポン付与"
+                desc="クリアした人に、1人ずつ違うコードのクーポンを出します"
+                on={couponOn}
+                onChange={setCouponOn}
+              >
+                <RewardFields
+                  fields={[
+                    { label: "クーポンの名前", value: couponName, onChange: setCouponName, max: 40, placeholder: "例：コーヒー1杯無料" },
+                    { label: "内容・使い方", value: couponDetail, onChange: setCouponDetail, max: 80, placeholder: "例：参加店でお会計のときに見せてください" },
+                  ]}
+                  note="使ったかどうかは、ゲームの管理画面で記録できます。"
+                />
+              </RewardCard>
+              <RewardCard
+                icon={Gift}
+                title="景品引換"
+                desc="クリアした人が、現地で景品と引き換えられます"
+                on={prizeOn}
+                onChange={setPrizeOn}
+              >
+                <RewardFields
+                  fields={[
+                    { label: "景品の名前", value: prizeName, onChange: setPrizeName, max: 40, placeholder: "例：オリジナル手ぬぐい" },
+                    { label: "受け取り場所", value: prizePlace, onChange: setPrizePlace, max: 60, placeholder: "例：駅前の観光案内所" },
+                  ]}
+                  note="引き換えコードを出します。渡したら、管理画面で引き換え済みにできます。"
+                />
+              </RewardCard>
+              <RewardCard
+                icon={Trophy}
+                title="ランキング表示"
+                desc="正解数の多い順に順位を出します（同じ数なら、早くクリアした人が上）"
+                on={rankingOn}
+                onChange={setRankingOn}
+              />
+            </RewardList>
           </section>
       ) : null}
       {testing ? (
@@ -566,3 +610,4 @@ export function OrganizerQuizCreateForm() {
     </GameCreateShell>
   );
 }
+

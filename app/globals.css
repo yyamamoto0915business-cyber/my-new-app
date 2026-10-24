@@ -11535,7 +11535,7 @@ a.org-games__card:hover {
 
 .org-quiz__questions > li {
   display: grid;
-  grid-template-columns: 1.6rem 4.2rem minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.65rem;
   border-radius: 0.95rem;
@@ -17801,9 +17801,15 @@ html[data-org-pos-focus="1"] .org-pos__setup-btn {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  min-width: min(100%, 16rem);
-  flex: 1 1 12rem;
-  justify-content: flex-end;
+  min-width: 0;
+  flex: 1 1 100%;
+}
+
+@media (min-width: 720px) {
+  .org-pos__event {
+    flex: 1 1 18rem;
+    justify-content: flex-end;
+  }
 }
 
 .org-pos__event-label {
@@ -17815,7 +17821,10 @@ html[data-org-pos-focus="1"] .org-pos__setup-btn {
 
 .org-pos__event-select {
   flex: 1 1 auto;
+  min-width: 0;
   max-width: 22rem;
+  min-height: 40px;
+  text-overflow: ellipsis;
   border-radius: 0.6rem;
   border: 1px solid #d5e2d9;
   background: #f8fbf9;
@@ -18352,12 +18361,44 @@ a.org-pos__setup-text-btn {
   gap: 0.25rem;
 }
 
+.org-pos__product.is-in-cart {
+  border-color: #2d7a4f;
+  box-shadow: 0 0 0 1px #2d7a4f inset;
+}
+
+.org-pos__product-img {
+  position: relative;
+}
+
+.org-pos__product-qty {
+  position: absolute;
+  left: 0.35rem;
+  top: 0.35rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: #2d7a4f;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(30, 56, 40, 0.25);
+}
+
+.org-pos__product-main:active {
+  background: #eaf4ed;
+}
+
 .org-pos__product-tools button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 999px;
   border: 1px solid #d5e2d9;
   background: rgba(255, 255, 255, 0.95);
@@ -18561,6 +18602,17 @@ a.org-pos__setup-text-btn {
   margin-bottom: 0.45rem;
 }
 
+.org-pos__cart-count {
+  margin-left: 0.45rem;
+  border-radius: 999px;
+  background: #eaf4ed;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2d7a4f;
+  vertical-align: middle;
+}
+
 .org-pos__cart-head h2 {
   margin: 0;
   font-size: 1rem;
@@ -18653,8 +18705,8 @@ a.org-pos__setup-text-btn {
 
 .org-pos__qty button {
   display: inline-flex;
-  width: 1.45rem;
-  height: 1.45rem;
+  width: 2rem;
+  height: 2rem;
   align-items: center;
   justify-content: center;
   border: 0;
@@ -18803,6 +18855,99 @@ a.org-pos__setup-text-btn {
 .org-pos__change strong {
   font-size: 1.05rem;
   color: #2d7a4f;
+}
+
+.org-pos__change.is-short {
+  background: #fdf2f2;
+  color: #9b2c2c;
+}
+
+.org-pos__change.is-short strong {
+  color: #9b2c2c;
+}
+
+.org-pos__cash-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.org-pos__quick-cash {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.org-pos__quick-cash-btn {
+  min-height: 44px;
+  border-radius: 0.65rem;
+  border: 1.5px solid #d5e2d9;
+  background: #fff;
+  padding: 0.3rem 0.2rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e3828;
+  cursor: pointer;
+}
+
+.org-pos__quick-cash-btn.is-active {
+  border-color: #2d7a4f;
+  background: #eaf4ed;
+  color: #1a4d32;
+}
+
+/* 注文内容が画面外のとき、合計と「会計へ」を下に浮かせる */
+.org-pos__float-bar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: min(calc(100% - 1.5rem), 30rem);
+  transform: translateX(-50%);
+  border: 0;
+  border-radius: 999px;
+  background: #1f4a33;
+  padding: 0.55rem 0.6rem 0.55rem 1rem;
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(20, 35, 28, 0.3);
+  cursor: pointer;
+}
+
+@media (max-width: 899px) {
+  html:not([data-org-pos-focus="1"]) .org-pos__float-bar {
+    bottom: calc(88px + 0.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.org-pos__float-count {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 0.15rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.org-pos__float-total {
+  flex: 1;
+  text-align: left;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.org-pos__float-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 40px;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 0.95rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #1f4a33;
 }
 
 .org-pos__online-hint {
@@ -37506,3 +37651,547 @@ button.mg-album-place {
 
 
 
+
+/* ───────── 参加画面のアイコン・背景（クイズなど、スタンプラリー以外） ───────── */
+.play-game__icon--image {
+  width: 4.5rem;
+  height: 4.5rem;
+  overflow: hidden;
+  background: transparent;
+}
+
+.play-game__icon--image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.play-look-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-position: center;
+  background-size: cover;
+}
+
+.play-look-bg--shade-light::after,
+.play-look-bg--shade-strong::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.play-look-bg--shade-strong::after {
+  background: rgba(0, 0, 0, 0.48);
+}
+
+/* 背景を変えたら、白いカードをなくして画面ぜんたいを背景にする。 */
+.play-game--look .play-game__card {
+  position: relative;
+  z-index: 1;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* 入力欄は、どの背景でも読めるよう白い板にのせる。 */
+.play-game--look .play-join {
+  margin-top: 1rem;
+  padding: 1rem 0.9rem;
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+  text-align: left;
+}
+
+.play-game-shell:has(.play-game--look) .play-locale-bar {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 899px) {
+  .play-game--look .play-game__card {
+    background: transparent;
+  }
+}
+
+/* 参加画面の上の部分（主催者がドラッグで動かした位置で並べる）。図形の幅はこの幅に対する %。 */
+.play-look-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  container-type: inline-size;
+}
+
+/* 文字の部品の色（主催者が選んだもの）。 */
+.play-look-part {
+  max-width: 100%;
+}
+
+.play-look-part.has-color,
+.play-look-part.has-color > *,
+.play-look-part.has-color textarea {
+  color: var(--look-color) !important;
+}
+
+/* 影・光彩・縁取り（中の文字が自分で text-shadow を持っていても、こちらを優先する）。 */
+.play-look-part.has-fx,
+.play-look-part.has-fx > *,
+.play-look-part.has-fx textarea {
+  text-shadow: var(--look-shadow) !important;
+}
+
+.play-look-part.has-ls,
+.play-look-part.has-ls > *,
+.play-look-part.has-ls textarea {
+  letter-spacing: var(--look-ls) !important;
+}
+
+.play-look-part.has-lh,
+.play-look-part.has-lh > *,
+.play-look-part.has-lh textarea {
+  line-height: var(--look-lh) !important;
+}
+
+.play-look-part.has-al,
+.play-look-part.has-al > *,
+.play-look-part.has-al textarea {
+  text-align: var(--look-al) !important;
+}
+
+.play-look-part.has-ff,
+.play-look-part.has-ff > *,
+.play-look-part.has-ff textarea {
+  font-family: var(--look-ff) !important;
+}
+
+.play-look-part.is-bold,
+.play-look-part.is-bold > *,
+.play-look-part.is-bold textarea {
+  font-weight: 900 !important;
+}
+
+.play-look-part.has-bg {
+  padding: 0.35rem 0.8rem;
+  border-radius: 0.7rem;
+}
+
+.play-look-part.has-bg > * {
+  margin: 0;
+}
+
+.play-look-head {
+  position: relative;
+}
+
+/* 足した図形・画像の重ね置き。はじめは上の部分の真ん中に置き、ドラッグでずらす。 */
+.play-look-layer {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  z-index: 5;
+  width: 100%;
+  height: 0;
+}
+
+.play-look-layer > .rally-move {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+.play-look-layer > .rally-move > * {
+  pointer-events: auto;
+}
+
+
+/* 参加の入力欄・参加ボタン（主催者が動かしたとき）。 */
+.play-join__fields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.play-join > .rally-move {
+  align-items: stretch;
+}
+
+.org-quiz__q-main {
+  display: grid;
+  grid-template-columns: 1.6rem 4.2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.org-quiz__q-index {
+  display: grid;
+  place-items: center;
+}
+
+.org-quiz__questions > li.is-open {
+  border-color: #8fc3a2;
+  background: #fff;
+}
+
+.org-quiz__questions > li > .org-quiz__editor {
+  grid-column: 1 / -1;
+  margin-top: 0.3rem;
+}
+
+.org-quiz__q-tools button {
+  min-width: 2rem;
+  min-height: 2rem;
+  justify-content: center;
+}
+
+.org-quiz__q-tools button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.org-quiz__q-body em.is-warn {
+  background: #fdebd3;
+  color: #8a4a00;
+}
+
+.org-quiz__editor-answers {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.org-quiz__editor-answers > span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #3d5346;
+}
+
+.org-quiz__ox {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.org-quiz__ox button {
+  min-height: 3rem;
+  border-radius: 0.9rem;
+  border: 2px solid #d5e2d8;
+  background: #fff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #5d6b60;
+  cursor: pointer;
+}
+
+.org-quiz__ox button.is-on {
+  border-color: #2e7d4f;
+  background: #e8f6ec;
+  color: #1a5c38;
+}
+
+.org-quiz__more {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.org-quiz__more summary {
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #3d6b52;
+}
+
+.org-quiz__more[open] summary {
+  margin-bottom: 0.5rem;
+}
+
+.org-quiz__questions > li {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+/*
+ * ゲーム作成画面（6種類）の文字の大きさをそろえる。
+ * 入力欄は 16px にして、iPhone の Safari で押したときに画面が勝手に拡大されないようにする。
+ * 右側（スマホでは全画面）の参加者プレビューの中は、縮小表示のため対象にしない。
+ */
+.org-game-create :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]), select, textarea):not(.wizard-preview *) {
+  font-size: 0.9rem !important;
+}
+
+/* 指で操作する端末（スマホ）だけ 16px。iPhone の Safari は 16px 未満の入力欄を押すと画面を拡大するため。 */
+@media (pointer: coarse) {
+  .org-game-create :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]), select, textarea):not(.wizard-preview *) {
+    font-size: 16px !important;
+  }
+}
+
+.org-game-create :is([class*="__card"] > h2, [class*="__card-head"] h2, [class*="__card-title"] h2):not(.wizard-preview *) {
+  font-size: 0.95rem;
+}
+
+.org-game-create :is([class$="__field"] > span, [class*="__field "] > span, [class$="__field"] > legend, [class*="__editor"] label):not(.wizard-preview *) {
+  font-size: 0.78rem;
+}
+
+.org-game-create :is([class*="__card"] > p, [class*="__card-head"] p, [class*="__card-title"] p, [class$="__field"] small):not(.wizard-preview *) {
+  font-size: 0.72rem;
+}
+
+
+/*
+ * スタンプラリー以外のゲームの、スタート画面・クリア画面の演出（GameSceneBand）。
+ * 画面の上に光の線（とクリアのリボン・トロフィー）を出し、その下にカードを少し重ねる。
+ */
+.play-game--scene {
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+}
+
+.play-game--scene .play-game__card {
+  position: relative;
+  z-index: 1;
+  margin-top: -1.6rem;
+}
+
+.game-scene {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  width: calc(100% + 2rem);
+  margin: -0.75rem -1rem 0;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+.game-scene--start {
+  min-height: 6.5rem;
+  background: radial-gradient(90% 120% at 50% 0%, #3f9a68 0%, #1f6b45 55%, #164e33 100%);
+}
+
+.game-scene--clear {
+  padding: 1.6rem 1rem 2.6rem;
+  background: radial-gradient(90% 90% at 50% 20%, #8a3b1d 0%, #3a170b 65%, #24100a 100%);
+}
+
+.game-scene.has-custom-bg {
+  background: none;
+}
+
+.game-scene .rally-burst {
+  z-index: 0;
+}
+
+.game-scene--start .rally-burst {
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.12) 0deg 8deg, transparent 8deg 22deg);
+}
+
+.game-scene .rally-ribbon {
+  font-size: clamp(1.4rem, 7cqw, 2rem);
+}
+
+.game-scene .rally-ribbon--small {
+  font-size: 1rem;
+}
+
+.game-scene__trophy {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 5.2rem;
+  height: 5.2rem;
+  margin-top: 0.7rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe9a8 0%, #f5b93b 45%, #c9831a 100%);
+  color: #6b3d00;
+  box-shadow: 0 0 0 6px rgba(255, 214, 120, 0.25), 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+.game-scene__trophy svg {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+.game-scene__sparkle {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.game-scene__sparkle svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-scene .rally-burst {
+    animation: none;
+  }
+}
+
+
+/* プレイ中の上の帯：スタンプカードのような丸と、クリアまでの残り。 */
+.game-scene--play {
+  gap: 0.35rem;
+  padding: 1rem 1rem 2.3rem;
+  background: radial-gradient(90% 120% at 50% 0%, #3f9a68 0%, #1f6b45 60%, #164e33 100%);
+  color: #fff;
+}
+
+.game-scene--play .rally-burst {
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.08) 0deg 8deg, transparent 8deg 22deg);
+}
+
+.game-scene__stamps {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  max-width: 20rem;
+}
+
+.game-scene__stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 2px dashed rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.game-scene__stamp svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.game-scene__stamp.is-done {
+  border: 0;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fff4d6 60%, #f2d38a 100%);
+  color: #c43a22;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  transform: rotate(-8deg);
+}
+
+.game-scene__stamp.is-goal:not(.is-done) {
+  border-color: #ffd36b;
+  color: #ffd36b;
+}
+
+.game-scene__count {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.game-scene__count b {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.game-scene__count span {
+  margin-left: 0.35rem;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 0.74rem;
+}
+
+.game-scene__bar {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(16rem, 80%);
+  height: 0.4rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  overflow: hidden;
+}
+
+.game-scene__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffe08a, #f5b93b);
+  transition: width 0.4s ease;
+}
+
+/* プレイ中のカード：写真・選択肢を、スタンプラリーのように手ざわりよく。 */
+.play-game--scene .play-quiz .game-test__photo {
+  border-radius: 1rem;
+  box-shadow: 0 8px 20px rgba(26, 34, 20, 0.18);
+}
+
+.play-game--scene .play-quiz .game-test__choice {
+  border: 1.5px solid #d7eadc;
+  background: #fff;
+  box-shadow: 0 3px 0 #d7eadc;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.play-game--scene .play-quiz .game-test__choice:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #d7eadc;
+}
+
+/* 進み具合は上の帯に出すので、カードの中の「0 / 3」は隠す（問題を切り替える編集用の欄は残す）。 */
+.play-game--scene .play-quiz:not(.quiz-edit) > .game-test__top {
+  display: none;
+}
+
+/* 一覧から選ぶゲーム（ミッション・フォト・クーポン・チェックイン）：項目をカードに。済んだものはスタンプの印。 */
+.play-game--scene .game-test__item {
+  position: relative;
+  padding-right: 2.8rem;
+  border: 1.5px solid #e2ece5;
+  background: #fff;
+  box-shadow: 0 3px 0 #e2ece5;
+}
+
+.play-game--scene .game-test__item.is-done {
+  border-color: #b7e4c4;
+  background: #f3faf5;
+  box-shadow: 0 3px 0 #cfe9d8;
+}
+
+.play-game--scene .game-test__item.is-done::after {
+  content: "済";
+  position: absolute;
+  top: 50%;
+  right: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 2px solid #c43a22;
+  border-radius: 50%;
+  color: #c43a22;
+  font-size: 0.8rem;
+  font-weight: 900;
+  transform: translateY(-50%) rotate(-12deg);
+}

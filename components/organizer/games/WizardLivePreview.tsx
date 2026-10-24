@@ -30,8 +30,9 @@ import {
   START_IMAGE_MAX,
   START_TEXT_MAX,
 } from "@/lib/organizer/game-experience";
-import { ImagePlus, Plus, Shapes, Wallpaper, X } from "lucide-react";
+import { ImagePlus, Plus, Shapes, Palette, X } from "lucide-react";
 import { ShapeEditPanel, ShapePicker } from "@/components/organizer/games/ShapeTools";
+import { FloatingPanel } from "@/components/organizer/games/FloatingPanel";
 import { StartImagePicker } from "@/components/organizer/games/StartImagePicker";
 import { MomentEditPanel, StartEditPanel } from "@/components/organizer/games/StartLookToolbar";
 import type {
@@ -356,6 +357,20 @@ export function WizardLivePreview({
   }
   // 実機（390×844）の大きさで描き、置き場所に収まるよう縮める。
   const stageRef = useRef<HTMLDivElement>(null);
+  /** ポップアップを近くに出すための、画面上の要素。 */
+  const fabAnchor = (label: string) =>
+    Array.from(stageRef.current?.querySelectorAll(".wizard-preview__add") ?? []).find((el) => el.textContent?.includes(label)) ?? null;
+  const moveAnchor = (key: string) => stageRef.current?.querySelector(`[data-move="${key}"]`) ?? null;
+  const startAnchor = (sel: StartSelection | null) => {
+    const stage = stageRef.current;
+    if (!stage || !sel) return null;
+    if (sel === "background") return fabAnchor("背景");
+    if (sel === "button") return stage.querySelector(".rally-cta--edit");
+    if (sel === "text") return stage.querySelector("textarea.rally-start__title") ?? stage.querySelector("textarea.rally-start__catch");
+    if (sel.startsWith("extra:")) return stage.querySelector("textarea.rally-start__extra.is-selected");
+    return moveAnchor(sel);
+  };
+  const momentAnchor = (sel: string | null) => (!sel ? null : sel === "background" ? fabAnchor("背景") : moveAnchor(sel));
   const [fitScale, setFitScale] = useState(0.7);
   const [actual, setActual] = useState(false);
   useEffect(() => {
@@ -522,7 +537,7 @@ export function WizardLivePreview({
                     else setSelected("background");
                   }}
                 >
-                  <Wallpaper aria-hidden />
+                  <Palette aria-hidden />
                   背景
                 </button>
               </div>
@@ -574,7 +589,7 @@ export function WizardLivePreview({
         </div>
       </div>
       {edit && view === "start" && selected && !picking && !selectedShape ? (
-        <div className="wizard-preview__toolbar" data-place={panelPlace}>
+        <FloatingPanel anchorKey={selected ?? ""} getAnchor={() => startAnchor(selected)}>
           <StartEditPanel
             selection={selected}
             look={experience.screens.start.look}
@@ -591,10 +606,10 @@ export function WizardLivePreview({
             showCharacter={experience.screens.start.showCharacter}
             onShowCharacter={edit.onShowCharacter}
           />
-        </div>
+        </FloatingPanel>
       ) : null}
       {edit && spotSeal && !picking ? (
-        <div className="wizard-preview__toolbar" data-place="bottom">
+        <FloatingPanel anchorKey={`seal:${spotSeal?.key ?? ""}`} getAnchor={() => null}>
           <div className="edit-panel" role="dialog" aria-label="スタンプの絵">
             <div className="edit-panel__head">
               <b>「{spotSeal.name.trim() || "スポット"}」のスタンプ</b>
@@ -612,10 +627,10 @@ export function WizardLivePreview({
               </p>
             </div>
           </div>
-        </div>
+        </FloatingPanel>
       ) : null}
       {edit && momentEdit && momentScreen && momentSelected && !picking && !selectedShape && !spotSeal ? (
-        <div className="wizard-preview__toolbar" data-place={momentPlace}>
+        <FloatingPanel anchorKey={`${momentScreen}:${momentSelected}`} getAnchor={() => momentAnchor(momentSelected)}>
           <MomentEditPanel
             screen={momentScreen}
             selection={momentSelected}
@@ -631,10 +646,10 @@ export function WizardLivePreview({
             bgImageField={edit.moment.bgImageField(momentScreen)}
             onClose={() => setMomentSelected(null)}
           />
-        </div>
+        </FloatingPanel>
       ) : null}
       {edit && selectedShape && !picking && !pickingShape ? (
-        <div className="wizard-preview__toolbar" data-place={momentScreen ? momentPlace : panelPlace}>
+        <FloatingPanel anchorKey={`shape:${selectedShape?.id}`} getAnchor={() => moveAnchor(`shape:${selectedShape?.id}`)}>
           <ShapeEditPanel
             key={selectedShape.id}
             shape={selectedShape}
@@ -647,22 +662,22 @@ export function WizardLivePreview({
             }}
             onClose={closeSelection}
           />
-        </div>
+        </FloatingPanel>
       ) : null}
       {edit && pickingShape ? (
-        <div className="wizard-preview__toolbar" data-place="bottom">
+        <FloatingPanel anchorKey={"pick-shape"} getAnchor={() => fabAnchor("図形")}>
           <ShapePicker onPick={addShape} onClose={() => setPickingShape(false)} />
-        </div>
+        </FloatingPanel>
       ) : null}
       {edit && picking ? (
         // 画像は画面の上のほうに入るので、選ぶ欄は下に出す。設定と同じく半透明で浮かせる。
-        <div className="wizard-preview__toolbar" data-place="bottom">
+        <FloatingPanel anchorKey={"pick-image"} getAnchor={() => fabAnchor("画像")}>
           <StartImagePicker
             onPick={addImage}
             onClose={() => setPicking(false)}
             uploadField={edit.uploadField((url) => addImage(url, "l"))}
           />
-        </div>
+        </FloatingPanel>
       ) : null}
       <p className="wizard-preview__note">
         入力した文章や画像は、すぐここに反映されます。スタンプの数は見本です。

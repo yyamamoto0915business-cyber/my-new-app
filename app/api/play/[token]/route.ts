@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { publicPlayAudience, publicPlayLimit, publicPlayStart, type GameAudience, type GamePlayLimit, type PublicPlayStart } from "@/lib/organizer/game-experience";
 import { publicQuiz, readStoredQuiz } from "@/lib/organizer/quiz-play";
+import { readGameLook } from "@/lib/organizer/game-look";
 import { publicMission, readStoredMission } from "@/lib/organizer/mission-play";
 import { readStoredPhoto } from "@/lib/organizer/photo-play";
 import { readStoredCoupon } from "@/lib/organizer/coupon-play";
@@ -107,16 +108,19 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }
   const [opening, moment] = await Promise.all([loadPublicStart(row.id), loadPlayMoment(row.id)]);
   const start = opening.start;
+  // スタンプラリー以外は、設定（問題・お題など）を一度だけ読む。
+  let settings: unknown = null;
+  if (type !== "stamp" && playDb) {
+    const { data: settingsRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
+    settings = (settingsRow as { settings?: unknown } | null)?.settings ?? null;
+  }
   let quiz = null;
-  if (type === "quiz" && playDb) {
-    const { data: quizRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
-    const stored = readStoredQuiz((quizRow as { settings?: unknown } | null)?.settings);
+  if (type === "quiz") {
+    const stored = readStoredQuiz(settings);
     quiz = stored ? publicQuiz(stored) : null;
   }
   let mission = null;
-  if (type === "mission" && playDb) {
-    const { data: missionRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
-    const settings = (missionRow as { settings?: unknown } | null)?.settings;
+  if (type === "mission") {
     const storedMission = readStoredMission(settings);
     const hints =
       !!settings &&
@@ -127,28 +131,22 @@ export async function GET(_req: NextRequest, { params }: Params) {
         : true;
     mission = storedMission ? publicMission(storedMission, hints) : null;
   }
-  let photo = null;
-  if (type === "photo" && playDb) {
-    const { data: photoRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
-    photo = readStoredPhoto((photoRow as { settings?: unknown } | null)?.settings);
-  }
-  let coupon = null;
-  if (type === "coupon" && playDb) {
-    const { data: couponRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
-    coupon = readStoredCoupon((couponRow as { settings?: unknown } | null)?.settings);
-  }
+  const photo = type === "photo" ? readStoredPhoto(settings) : null;
+  const coupon = type === "coupon" ? readStoredCoupon(settings) : null;
   let checkin = null;
-  if (type === "checkin" && playDb) {
-    const { data: checkinRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
-    const storedCheckin = readStoredCheckin((checkinRow as { settings?: unknown } | null)?.settings);
+  if (type === "checkin") {
+    const storedCheckin = readStoredCheckin(settings);
     checkin = storedCheckin ? publicCheckin(storedCheckin) : null;
   }
   let mystery = null;
-  if (type === "mystery" && playDb) {
-    const { data: mysteryRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
-    const storedMystery = readStoredMystery((mysteryRow as { settings?: unknown } | null)?.settings);
+  if (type === "mystery") {
+    const storedMystery = readStoredMystery(settings);
     mystery = storedMystery ? publicMystery(storedMystery) : null;
   }
+  const look =
+    type !== "stamp" && settings && typeof settings === "object"
+      ? readGameLook((settings as { look?: unknown }).look)
+      : null;
   return NextResponse.json({
     name: row.name,
     description: row.description ?? "",
@@ -172,6 +170,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     coupon,
     checkin,
     mystery,
+    look,
   });
 }
 

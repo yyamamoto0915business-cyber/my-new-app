@@ -30,18 +30,18 @@ function ShapeIcon({ kind }: { kind: GameShapeKind }) {
   );
 }
 
-/** 「＋ 図形」で開く、図形とボタンを選ぶ欄。 */
+/** 「＋ 図形」で開く、図形を選ぶ欄。（ボタンは新しく足せない。作成済みのものは編集できる） */
 export function ShapePicker({ onPick, onClose }: { onPick: (kind: GameShapeKind) => void; onClose: () => void }) {
   return (
     <div className="edit-panel shape-pick" role="dialog" aria-label="図形を追加">
       <div className="edit-panel__head">
-        <b>図形・ボタンを追加</b>
+        <b>図形を追加</b>
         <button type="button" onClick={onClose} aria-label="閉じる">
           <X aria-hidden />
         </button>
       </div>
       <div className="shape-pick__grid">
-        {START_SHAPE_KINDS.map((kind) => (
+        {START_SHAPE_KINDS.filter((kind) => kind !== "button").map((kind) => (
           <button key={kind} type="button" onClick={() => onPick(kind)} title={START_SHAPE_LABEL[kind]}>
             <ShapeIcon kind={kind} />
             <small>{START_SHAPE_LABEL[kind]}</small>

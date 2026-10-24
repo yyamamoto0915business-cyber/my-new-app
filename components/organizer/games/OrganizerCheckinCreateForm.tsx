@@ -41,6 +41,7 @@ import {
 } from "@/lib/organizer/checkin";
 import { CheckinTestPlay } from "@/components/organizer/games/CheckinTestPlay";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
@@ -86,6 +87,7 @@ function MethodIcon({ method }: { method: CheckinMethod }) {
 }
 
 export function OrganizerCheckinCreateForm() {
+  const { look, lookEdit } = useGameLookEdit();
   const router = useRouter();
   const [step, setStep] = useState<StepId>("basic");
   const [name, setName] = useState("春のまち歩きチェックイン");
@@ -274,6 +276,7 @@ export function OrganizerCheckinCreateForm() {
           status,
           spots: namedSpots.map((spot) => ({ name: spot.name.trim(), kind: "stamp" })),
           checkin: settingsBody,
+          look,
         }),
       });
       const json = await res.json();
@@ -332,6 +335,7 @@ export function OrganizerCheckinCreateForm() {
           name={name}
           description={description}
           settings={settingsBody}
+          look={lookEdit}
           stepView={stepIndex === 0 ? "start" : stepIndex === STEPS.length - 1 ? "clear" : "play"}
         />
       }

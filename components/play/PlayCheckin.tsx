@@ -1,5 +1,6 @@
 "use client";
 
+import { RewardLine } from "@/components/play/RewardLine";
 import { useState } from "react";
 import Link from "next/link";
 import type { PublicCheckinPlay, PublicCheckinSpot } from "@/lib/organizer/checkin-play";
@@ -92,9 +93,7 @@ export function PlayCheckin({ token, checkin, progress, onProgress }: Props) {
         {rewards
           .filter((line) => !line.includes("ポイントが残ります"))
           .map((line) => (
-            <p key={line} className="game-test__reward">
-              {copy.msg(line)}
-            </p>
+            <RewardLine key={line} text={line}>{copy.msg(line)}</RewardLine>
           ))}
       </div>
     );
