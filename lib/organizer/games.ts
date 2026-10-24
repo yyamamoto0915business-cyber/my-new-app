@@ -51,6 +51,10 @@ export type OrganizerGameEventOption = {
   title: string;
   date: string | null;
   status: string | null;
+  /** イベントの画像（参加パスにも出る）。ゲームのカードに使う。 */
+  imageUrl?: string | null;
+  /** カードに出す場所（都道府県・市区町村）。 */
+  area?: string | null;
 };
 
 type GameRow = {
@@ -162,7 +166,7 @@ export async function listOrganizerGameEventOptions(
 ): Promise<OrganizerGameEventOption[]> {
   const { data, error } = await supabase
     .from("events")
-    .select("id, title, date, status")
+    .select("id, title, date, status, image_url, prefecture, city")
     .eq("organizer_id", organizerId)
     .neq("status", "archived")
     .order("date", { ascending: false })
@@ -174,6 +178,8 @@ export async function listOrganizerGameEventOptions(
     title: (row.title as string) ?? "無題のイベント",
     date: (row.date as string | null) ?? null,
     status: (row.status as string | null) ?? null,
+    imageUrl: (row.image_url as string | null) ?? null,
+    area: ((row.prefecture as string | null) || (row.city as string | null)) ?? null,
   }));
 }
 

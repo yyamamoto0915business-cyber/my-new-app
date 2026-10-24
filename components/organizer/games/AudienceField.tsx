@@ -68,6 +68,15 @@ export function AudienceField({
           );
         })}
       </div>
+      {/* 参加パスはイベントに付くもの。パスのあるイベントがまだなければ、ここから作りに行ける。 */}
+      <a
+        href="/organizer/events/new"
+        target="_blank"
+        rel="noreferrer"
+        style={{ justifySelf: "start", fontSize: "0.74rem", fontWeight: 800, color: "#1f7a4a", textDecoration: "underline" }}
+      >
+        イベントを作る（参加パスもここで設定）→
+      </a>
       {value !== "anyone" ? (
         <small style={{ fontSize: "0.72rem", lineHeight: 1.5, color: eventChosen ? "#5d6b62" : "#c0392b", fontWeight: eventChosen ? 500 : 800 }}>
           {eventChosen

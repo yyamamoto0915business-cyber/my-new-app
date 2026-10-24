@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
+import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 import { MysteryTestPlay } from "@/components/organizer/games/MysteryTestPlay";
 import { createMysteryStep, sampleMysterySteps, type MysteryStep } from "@/lib/organizer/mystery";
@@ -41,6 +42,8 @@ export function OrganizerMysteryCreateForm() {
   const [page, setPage] = useState(0);
   /** 対象イベントと、参加できる人（イベント参加者・参加パス保有者に絞るときは、対象イベントが必要）。 */
   const [eventId, setEventId] = useState("");
+  /** まちの情報のカードに出す画像（空なら、対象イベントの画像 → 種類の絵）。 */
+  const [cardImage, setCardImage] = useState("");
   const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
   const [events, setEvents] = useState<OrganizerGameEventOption[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
@@ -153,6 +156,7 @@ export function OrganizerMysteryCreateForm() {
           mystery: settingsBody,
           look,
           eventId: eventId || null,
+          cardImage,
           audience,
         }),
       });
@@ -173,7 +177,17 @@ export function OrganizerMysteryCreateForm() {
     }
   }
 
-  if (published) return <GamePublishSuccess typeLabel="謎解き街歩き" />;
+  if (published) return <GamePublishSuccess
+          typeLabel="謎解き街歩き"
+          card={gameCardItem({
+            type: "mystery",
+            typeLabel: "謎解き街歩き",
+            name,
+            startDate: "",
+            event: events.find((item) => item.id === eventId) ?? null,
+            cardImage,
+          })}
+        />;
 
   return (
     <GameCreateShell
@@ -424,6 +438,15 @@ export function OrganizerMysteryCreateForm() {
                 />
               </RewardCard>
             </RewardList>
+            <GameCardSetup
+              type="mystery"
+              typeLabel="謎解き街歩き"
+              name={name}
+              startDate={""}
+              event={events.find((item) => item.id === eventId) ?? null}
+              cardImage={cardImage}
+              onCardImage={setCardImage}
+            />
           </section>
       ) : null}
       {testing ? (

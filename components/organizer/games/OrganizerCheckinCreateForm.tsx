@@ -49,6 +49,7 @@ import { PeriodPresets, jstDate, periodProblem } from "@/components/organizer/ga
 import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
+import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
 const STEPS = [
@@ -101,6 +102,8 @@ export function OrganizerCheckinCreateForm() {
     "まちのスポットをめぐってチェックインしながら、春のまちの魅力を発見しましょう！すべてのスポットを巡って、素敵な特典をゲットしよう！"
   );
   const [eventId, setEventId] = useState("");
+  /** まちの情報のカードに出す画像（空なら、対象イベントの画像 → 種類の絵）。 */
+  const [cardImage, setCardImage] = useState("");
   // はじめは今日から1か月（過去の日付から始めない）。
   const [startDate, setStartDate] = useState(() => jstDate());
   const [startTime, setStartTime] = useState("09:00");
@@ -280,6 +283,7 @@ export function OrganizerCheckinCreateForm() {
           name: name.trim(),
           type: "checkin",
           eventId: eventId || null,
+          cardImage,
           audience: gameAudience,
           description: description.trim(),
           startsAt: toIsoFromDateTime(startDate, startTime),
@@ -318,7 +322,17 @@ export function OrganizerCheckinCreateForm() {
   if (published) {
     return (
       <div className="org-checkin">
-        <GamePublishSuccess typeLabel="チェックイン" />
+        <GamePublishSuccess
+          typeLabel="チェックイン"
+          card={gameCardItem({
+            type: "checkin",
+            typeLabel: "チェックイン",
+            name,
+            startDate: startDate,
+            event: events.find((item) => item.id === eventId) ?? null,
+            cardImage,
+          })}
+        />
       </div>
     );
   }
@@ -913,6 +927,15 @@ export function OrganizerCheckinCreateForm() {
                 <input type="checkbox" checked={confirmOk} onChange={(e) => setConfirmOk(e.target.checked)} />
                 上記の内容で問題ありません。このゲームを参加者に公開します。
               </label>
+              <GameCardSetup
+                type="checkin"
+                typeLabel="チェックイン"
+                name={name}
+                startDate={startDate}
+                event={events.find((item) => item.id === eventId) ?? null}
+                cardImage={cardImage}
+                onCardImage={setCardImage}
+              />
             </section>
           ) : null}
       {testing ? (

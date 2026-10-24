@@ -33,6 +33,7 @@ function settingsFromBody(body: {
   experience?: unknown;
   look?: unknown;
   audience?: unknown;
+  cardImage?: unknown;
 }) {
   const quiz = body.quiz && typeof body.quiz === "object" ? body.quiz : null;
   const mission = sanitizeMissionSettings(body.mission);
@@ -45,6 +46,12 @@ function settingsFromBody(body: {
   const look = body.look && typeof body.look === "object" ? readGameLook(body.look) : null;
   // 参加できる人（スタンプラリー以外）。誰でも以外のときだけ残す。
   const audience = body.audience === "event" || body.audience === "pass" ? body.audience : null;
+  // まちの情報のカードに出す画像（アプリ内の絵か、https の画像）。
+  const cardRaw = typeof body.cardImage === "string" ? body.cardImage.trim() : "";
+  const cardImage =
+    (cardRaw.startsWith("/") && !cardRaw.startsWith("//") && !cardRaw.includes("..")) || /^https:\/\//.test(cardRaw)
+      ? cardRaw.slice(0, 500)
+      : null;
   if (!quiz && !mission && !photo && !coupon && !checkin && !mystery && !experience && !look) return undefined;
   return {
     ...(quiz ? { quiz } : {}),
@@ -56,6 +63,7 @@ function settingsFromBody(body: {
     ...(experience ? { experience } : {}),
     ...(look ? { look } : {}),
     ...(audience ? { audience } : {}),
+    ...(cardImage ? { cardImage } : {}),
   };
 }
 

@@ -23,6 +23,9 @@ export type PublicOrganizerGame = {
 };
 
 function coverFromSettings(settings: unknown, type: OrganizerGameTypeId): string | null {
+  // 主催者が「まちの情報に出るカード」で選んだ画像を、いちばん先に使う。
+  const cardImage = settings && typeof settings === "object" ? (settings as { cardImage?: unknown }).cardImage : null;
+  if (typeof cardImage === "string" && cardImage.trim()) return cardImage.trim();
   const startImage = publicPlayStart(settings).imageUrl;
   if (startImage) return startImage;
   if (!settings || typeof settings !== "object") return null;

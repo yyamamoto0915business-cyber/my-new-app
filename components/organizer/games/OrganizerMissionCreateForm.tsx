@@ -43,6 +43,7 @@ import { ArrivalFields } from "@/components/organizer/games/ArrivalFields";
 import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
+import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
 const KIND_ICONS: Record<MissionKindId, LucideIcon> = {
@@ -124,6 +125,8 @@ export function OrganizerMissionCreateForm() {
   const router = useRouter();
   const [name, setName] = useState("まち巡り発見ミッション ～春のまちなかさんぽ～");
   const [eventId, setEventId] = useState("");
+  /** まちの情報のカードに出す画像（空なら、対象イベントの画像 → 種類の絵）。 */
+  const [cardImage, setCardImage] = useState("");
   /** 参加できる人。イベント参加者・参加パス保有者に絞るときは、対象イベントが必要。 */
   const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
   const [description, setDescription] = useState(
@@ -268,6 +271,7 @@ export function OrganizerMissionCreateForm() {
           name: name.trim(),
           type: "mission",
           eventId: eventId || null,
+          cardImage,
           audience,
           description: description.trim(),
           startsAt: toIsoFromDate(startDate),
@@ -297,7 +301,17 @@ export function OrganizerMissionCreateForm() {
   if (published) {
     return (
       <div className="org-mission">
-        <GamePublishSuccess typeLabel="ミッション" />
+        <GamePublishSuccess
+          typeLabel="ミッション"
+          card={gameCardItem({
+            type: "mission",
+            typeLabel: "ミッション",
+            name,
+            startDate: startDate,
+            event: events.find((item) => item.id === eventId) ?? null,
+            cardImage,
+          })}
+        />
       </div>
     );
   }
@@ -864,6 +878,15 @@ export function OrganizerMissionCreateForm() {
                   </button>
                 </li>
               </ul>
+              <GameCardSetup
+                type="mission"
+                typeLabel="ミッション"
+                name={name}
+                startDate={startDate}
+                event={events.find((item) => item.id === eventId) ?? null}
+                cardImage={cardImage}
+                onCardImage={setCardImage}
+              />
             </section>
       ) : null}
       {testing ? (

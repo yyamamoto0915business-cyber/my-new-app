@@ -39,6 +39,7 @@ import { PeriodPresets, jstDate, periodProblem } from "@/components/organizer/ga
 import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
+import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
 const STEPS = [
@@ -98,6 +99,8 @@ export function OrganizerPhotoCreateForm() {
   const [name, setName] = useState("春のまち歩きフォトラリー");
   const [description, setDescription] = useState("まちのスポットを巡って写真を撮りながら地域の魅力を見つけよう！");
   const [eventId, setEventId] = useState("");
+  /** まちの情報のカードに出す画像（空なら、対象イベントの画像 → 種類の絵）。 */
+  const [cardImage, setCardImage] = useState("");
   /** 参加できる人。イベント参加者・参加パス保有者に絞るときは、対象イベントが必要。 */
   const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
   // はじめは今日から1か月（過去の日付から始めない）。
@@ -263,6 +266,7 @@ export function OrganizerPhotoCreateForm() {
           name: name.trim(),
           type: "photo",
           eventId: eventId || null,
+          cardImage,
           audience,
           description: description.trim(),
           startsAt: toIsoFromDateTime(startDate, startTime),
@@ -295,7 +299,17 @@ export function OrganizerPhotoCreateForm() {
   if (published) {
     return (
       <div className="org-photo">
-        <GamePublishSuccess typeLabel="フォトラリー" />
+        <GamePublishSuccess
+          typeLabel="フォトラリー"
+          card={gameCardItem({
+            type: "photo",
+            typeLabel: "フォトラリー",
+            name,
+            startDate: startDate,
+            event: events.find((item) => item.id === eventId) ?? null,
+            cardImage,
+          })}
+        />
       </div>
     );
   }
@@ -839,6 +853,15 @@ export function OrganizerPhotoCreateForm() {
                   </>
                 );
               })()}
+              <GameCardSetup
+                type="photo"
+                typeLabel="フォトラリー"
+                name={name}
+                startDate={startDate}
+                event={events.find((item) => item.id === eventId) ?? null}
+                cardImage={cardImage}
+                onCardImage={setCardImage}
+              />
             </section>
           ) : null}
       {testing ? (

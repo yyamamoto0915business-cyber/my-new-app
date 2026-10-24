@@ -39,6 +39,7 @@ import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/g
 import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
+import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 
 const STEPS: GameCreateStep[] = [
@@ -59,6 +60,8 @@ export function OrganizerQuizCreateForm() {
   const router = useRouter();
   const [name, setName] = useState("まちの魅力発見！春のまち歩きクイズラリー");
   const [eventId, setEventId] = useState("");
+  /** まちの情報のカードに出す画像（空なら、対象イベントの画像 → 種類の絵）。 */
+  const [cardImage, setCardImage] = useState("");
   /** 参加できる人。イベント参加者・参加パス保有者に絞るときは、対象イベントが必要。 */
   const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
   const [description, setDescription] = useState(
@@ -221,6 +224,7 @@ export function OrganizerQuizCreateForm() {
           name: name.trim(),
           type: "quiz",
           eventId: eventId || null,
+          cardImage,
           audience,
           description: description.trim(),
           startsAt: toIsoFromDate(startDate),
@@ -250,7 +254,17 @@ export function OrganizerQuizCreateForm() {
   if (published) {
     return (
       <div className="org-quiz">
-        <GamePublishSuccess typeLabel="クイズラリー" />
+        <GamePublishSuccess
+          typeLabel="クイズラリー"
+          card={gameCardItem({
+            type: "quiz",
+            typeLabel: "クイズラリー",
+            name,
+            startDate: startDate,
+            event: events.find((item) => item.id === eventId) ?? null,
+            cardImage,
+          })}
+        />
       </div>
     );
   }
@@ -602,6 +616,15 @@ export function OrganizerQuizCreateForm() {
                 onChange={setRankingOn}
               />
             </RewardList>
+            <GameCardSetup
+              type="quiz"
+              typeLabel="クイズラリー"
+              name={name}
+              startDate={startDate}
+              event={events.find((item) => item.id === eventId) ?? null}
+              cardImage={cardImage}
+              onCardImage={setCardImage}
+            />
           </section>
       ) : null}
       {testing ? (
