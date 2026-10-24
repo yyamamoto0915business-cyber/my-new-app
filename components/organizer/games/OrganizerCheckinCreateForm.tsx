@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import {
   Check,
   ChevronDown,
+  Coins,
+  Trophy,
   ChevronUp,
   Gift,
   ImagePlus,
@@ -41,6 +43,10 @@ import {
 } from "@/lib/organizer/checkin";
 import { CheckinTestPlay } from "@/components/organizer/games/CheckinTestPlay";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
+import { RewardFields } from "@/components/organizer/games/RewardFields";
+import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/games/RewardOptions";
+import { PlacePickerDialog } from "@/components/organizer/games/PlacePickerDialog";
+import { PeriodPresets, jstDate, periodProblem } from "@/components/organizer/games/PeriodPresets";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
@@ -95,9 +101,10 @@ export function OrganizerCheckinCreateForm() {
     "まちのスポットをめぐってチェックインしながら、春のまちの魅力を発見しましょう！すべてのスポットを巡って、素敵な特典をゲットしよう！"
   );
   const [eventId, setEventId] = useState("");
-  const [startDate, setStartDate] = useState("2026-04-01");
+  // はじめは今日から1か月（過去の日付から始めない）。
+  const [startDate, setStartDate] = useState(() => jstDate());
   const [startTime, setStartTime] = useState("09:00");
-  const [endDate, setEndDate] = useState("2026-04-30");
+  const [endDate, setEndDate] = useState(() => jstDate(29));
   const [endTime, setEndTime] = useState("18:00");
   const [events, setEvents] = useState<OrganizerGameEventOption[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
@@ -105,7 +112,7 @@ export function OrganizerCheckinCreateForm() {
   const [category, setCategory] = useState<CheckinCategory>("まち歩き");
   const [tags, setTags] = useState<string[]>(["まち歩き", "観光"]);
   const [tagDraft, setTagDraft] = useState("");
-  const [audience, setAudience] = useState<CheckinAudience>("anyone");
+  const audience: CheckinAudience = "anyone";
   const [defaultMethod, setDefaultMethod] = useState<CheckinMethod>("gps");
   const [spots, setSpots] = useState<CheckinSpot[]>(() => sampleCheckinSpots());
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -113,18 +120,23 @@ export function OrganizerCheckinCreateForm() {
   const [clearCount, setClearCount] = useState(3);
   const [couponOn, setCouponOn] = useState(true);
   const [pointsOn, setPointsOn] = useState(true);
-  const [stampOn, setStampOn] = useState(false);
+  // デジタルスタンプ・受け取り方法・配布上限は、参加者の画面では使っていない（保存の形だけ残す）。
+  const stampOn = false;
   const [prizeOn, setPrizeOn] = useState(false);
   const [couponName, setCouponName] = useState("まち歩き応援クーポン");
   const [couponDetail, setCouponDetail] = useState("対象店舗で使える 10%OFF クーポンです。まち歩きのあと、ぜひお立ち寄りください！");
+  const [prizeName, setPrizeName] = useState("");
+  const [prizePlace, setPrizePlace] = useState("");
+  const [placePickKey, setPlacePickKey] = useState<string | null>(null);
   const [points, setPoints] = useState(100);
-  const [receivePlace, setReceivePlace] = useState<"app" | "venue">("app");
-  const [maxCount, setMaxCount] = useState(500);
+  const receivePlace: "app" | "venue" = "app";
+  const maxCount = 500;
   const [rankingOn, setRankingOn] = useState(true);
   const [hintOn, setHintOn] = useState(true);
   const [publicToPlayers, setPublicToPlayers] = useState(true);
-  const [showOnEvent, setShowOnEvent] = useState(true);
-  const [showRanking, setShowRanking] = useState(true);
+  const showOnEvent = false;
+  // ランキングの表示は「達成条件・特典」のスイッチと同じにする。
+  const showRanking = rankingOn;
   const [confirmOk, setConfirmOk] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -194,6 +206,10 @@ export function OrganizerCheckinCreateForm() {
 
   function validateStep(id: StepId): string | null {
     if (id === "basic" && !name.trim()) return "ゲーム名を入力してください";
+    if (id === "basic") {
+      const problem = periodProblem(startDate, endDate);
+      if (problem) return problem;
+    }
     if (id === "spots" && namedSpots.length === 0) return "スポットを1つ以上追加してください";
     return null;
   }
@@ -215,18 +231,7 @@ export function OrganizerCheckinCreateForm() {
 
   /** 保存で送る設定。プレビューも同じものから描く。 */
   const settingsBody = {
-    spots: spots.map(({ name: spotName, place, method, radius, keyword, reward, published, imageUrl, pinX, pinY }) => ({
-      name: spotName,
-      place,
-      method,
-      radius,
-      keyword,
-      reward,
-      published,
-      imageUrl,
-      pinX,
-      pinY,
-    })),
+    spots: spots.map(({ key: _key, ...spot }) => spot),
     category,
     tags,
     mainImage,
@@ -240,6 +245,8 @@ export function OrganizerCheckinCreateForm() {
     prizeOn,
     couponName,
     couponDetail,
+    prizeName,
+    prizePlace,
     points,
     receivePlace,
     maxCount,
@@ -374,21 +381,24 @@ export function OrganizerCheckinCreateForm() {
                     <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                     <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
                     <span>〜</span>
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                    <input type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} />
                     <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
                   </div>
+                  <PeriodPresets startDate={startDate} endDate={endDate} onStart={setStartDate} onEnd={setEndDate} />
                 </div>
-                <div className="org-checkin__field">
-                  <span>参加対象</span>
+                {/* 参加できる人の絞りこみは、参加パスとあわせて最後に入れる。それまでは「準備中」で押せない。 */}
+                <div className="org-checkin__field" style={{ opacity: 0.6 }}>
+                  <span>参加対象（準備中）</span>
                   <ul className="org-checkin__audience">
                     {CHECKIN_AUDIENCES.map((item) => (
                       <li key={item.id}>
-                        <button type="button" className={cn(audience === item.id && "is-on")} onClick={() => setAudience(item.id)}>
+                        <button type="button" disabled className={cn(item.id === "anyone" && "is-on")} style={{ cursor: "not-allowed" }}>
                           {item.label}
                         </button>
                       </li>
                     ))}
                   </ul>
+                  <small>いまは誰でも参加できます。絞りこみは、このあと追加します。</small>
                 </div>
                 <label className="org-checkin__field org-checkin__field--wide">
                   <span>説明文</span>
@@ -575,16 +585,56 @@ export function OrganizerCheckinCreateForm() {
                         </select>
                       </label>
                       {editing.method === "gps" ? (
-                        <label>
-                          半径（m）
-                          <input
-                            type="number"
-                            min={10}
-                            max={500}
-                            value={editing.radius}
-                            onChange={(e) => updateSpot(editing.key, { radius: Number(e.target.value) || 50 })}
-                          />
-                        </label>
+                        <>
+                          {/* 位置情報スタンプラリーと同じ。地図で場所を選ぶと、その半径の中にいるときだけ記録できる。 */}
+                          <button
+                            type="button"
+                            onClick={() => setPlacePickKey(editing.key)}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "0.35rem",
+                              minHeight: "2.6rem",
+                              padding: "0 1rem",
+                              border: editing.lat != null ? "1.5px solid #b7e4c4" : "1.5px dashed #e6a23c",
+                              borderRadius: 999,
+                              background: editing.lat != null ? "#eef7f1" : "#fff8e8",
+                              color: editing.lat != null ? "#1f7a4a" : "#8a5a00",
+                              fontWeight: 800,
+                              cursor: "pointer",
+                            }}
+                          >
+                            <MapPin className="h-4 w-4" aria-hidden />
+                            {editing.lat != null ? "地図の場所OK・変更" : "地図で場所を選ぶ"}
+                          </button>
+                          {editing.lat == null ? (
+                            <small style={{ color: "#c0392b" }}>場所を選ぶまでは、押すだけで記録されます。</small>
+                          ) : null}
+                          <label>
+                            半径（m）
+                            <input
+                              type="number"
+                              min={10}
+                              max={500}
+                              value={editing.radius}
+                              onChange={(e) => updateSpot(editing.key, { radius: Number(e.target.value) || 50 })}
+                            />
+                          </label>
+                          {placePickKey === editing.key ? (
+                            <PlacePickerDialog
+                              title={`「${editing.name.trim() || "このスポット"}」の場所`}
+                              value={editing.lat != null && editing.lng != null ? { lat: editing.lat, lng: editing.lng } : null}
+                              onPick={(place) => updateSpot(editing.key, { lat: place?.lat ?? null, lng: place?.lng ?? null })}
+                              onClose={() => setPlacePickKey(null)}
+                            />
+                          ) : null}
+                        </>
+                      ) : null}
+                      {editing.method === "qr" ? (
+                        <small style={{ color: "#8a5a00", background: "#fff4dc", padding: "0.5rem 0.65rem", borderRadius: "0.6rem" }}>
+                          QRの読み取りは準備中です。いまは押すだけで記録されます。確かめたい場合は「キーワード」か「GPS」を選んでください。
+                        </small>
                       ) : null}
                       {editing.method === "keyword" ? (
                         <label>
@@ -656,9 +706,9 @@ export function OrganizerCheckinCreateForm() {
             <section className="org-checkin__card">
               <h2>
                 <span>3</span>
-                達成条件
+                達成条件・特典
               </h2>
-              <p>どのくらいチェックインすると、ゲームクリアになるかを設定しましょう。</p>
+              <p>どのくらいチェックインするとクリアか、クリアした人への特典を決めます。</p>
               <ul className="org-checkin__clears">
                 {CHECKIN_CLEAR_MODES.map((mode) => (
                   <li key={mode.id}>
@@ -675,91 +725,82 @@ export function OrganizerCheckinCreateForm() {
                   </li>
                 ))}
               </ul>
-              {clearMode !== "all" ? (
-                <label className="org-checkin__field">
-                  <span>必要なスポット数</span>
-                  <select value={clearCount} onChange={(e) => setClearCount(Number(e.target.value))}>
-                    {Array.from({ length: Math.max(namedSpots.length, 1) }, (_, index) => index + 1).map((count) => (
-                      <option key={count} value={count}>
-                        {count}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-
-              <h2 className="org-checkin__subhead">
-                <span>2</span>
-                特典設定
-              </h2>
-              <p>ゲームクリア時にもらえる特典を設定します。複数の特典を組み合わせることもできます。</p>
-              <ul className="org-checkin__rewards">
-                <li>
-                  <Gift className="h-4 w-4" aria-hidden />
-                  クーポン付与
-                  <button type="button" className={cn("org-checkin__switch", couponOn && "is-on")} onClick={() => setCouponOn((v) => !v)}>
-                    {couponOn ? "ON" : "OFF"}
-                  </button>
-                </li>
-                <li>
-                  <Users className="h-4 w-4" aria-hidden />
-                  ポイント付与
-                  <button type="button" className={cn("org-checkin__switch", pointsOn && "is-on")} onClick={() => setPointsOn((v) => !v)}>
-                    {pointsOn ? "ON" : "OFF"}
-                  </button>
-                </li>
-                <li>
-                  デジタルスタンプ
-                  <button type="button" className={cn("org-checkin__switch", stampOn && "is-on")} onClick={() => setStampOn((v) => !v)}>
-                    {stampOn ? "ON" : "OFF"}
-                  </button>
-                </li>
-                <li>
-                  景品引換
-                  <button type="button" className={cn("org-checkin__switch", prizeOn && "is-on")} onClick={() => setPrizeOn((v) => !v)}>
-                    {prizeOn ? "ON" : "OFF"}
-                  </button>
-                </li>
-              </ul>
-              {couponOn ? (
-                <div className="org-checkin__grid">
-                  <label className="org-checkin__field">
-                    <span>クーポンの名称</span>
-                    <input value={couponName} onChange={(e) => setCouponName(e.target.value)} maxLength={40} />
+              <RewardList>
+                {clearMode !== "all" ? (
+                  <ClearCountCard
+                    icon={Trophy}
+                    title={`${Math.min(clearCount, Math.max(namedSpots.length, 1))}スポットでクリア`}
+                    desc="スポットの数までの中から選べます"
+                    value={Math.min(clearCount, Math.max(namedSpots.length, 1))}
+                    max={namedSpots.length}
+                    unit="スポット"
+                    onChange={setClearCount}
+                  />
+                ) : null}
+                <p style={{ margin: "0.5rem 0 0", fontSize: "0.78rem", fontWeight: 800, color: "#3c4a40" }}>クリアした人への特典</p>
+                <RewardCard icon={Coins} title="ポイント" desc="クリアした人のアカウントに、ポイントを加えます" on={pointsOn} onChange={setPointsOn}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.78rem", fontWeight: 800, color: "#3c4a40" }}>
+                    もらえるポイント
+                    <input
+                      type="number"
+                      min={1}
+                      max={9999}
+                      value={points}
+                      onChange={(e) => setPoints(Number(e.target.value) || 0)}
+                      style={{ width: "5.5rem", minHeight: "2.1rem", padding: "0 0.6rem", border: "1.5px solid #dfe7e1", borderRadius: "0.6rem", background: "#fff" }}
+                    />
+                    pt
                   </label>
-                  <label className="org-checkin__field org-checkin__field--wide">
-                    <span>クーポン内容</span>
-                    <textarea value={couponDetail} onChange={(e) => setCouponDetail(e.target.value)} maxLength={80} rows={2} />
-                  </label>
+                </RewardCard>
+                <RewardCard
+                  icon={Gift}
+                  title="クーポン"
+                  desc="クリアした人に、1人ずつ違うコードのクーポンを出します"
+                  on={couponOn}
+                  onChange={setCouponOn}
+                >
+                  <RewardFields
+                    fields={[
+                      { label: "クーポンの名前", value: couponName, onChange: setCouponName, max: 40, placeholder: "例：まち歩き応援クーポン" },
+                      { label: "内容・使い方", value: couponDetail, onChange: setCouponDetail, max: 80, placeholder: "例：対象店舗で 10%OFF" },
+                    ]}
+                    note="使ったかどうかは、ゲームの管理画面で記録できます。"
+                  />
+                </RewardCard>
+                <RewardCard icon={Gift} title="景品引換" desc="クリアした人が、現地で景品と引き換えられます" on={prizeOn} onChange={setPrizeOn}>
+                  <RewardFields
+                    fields={[
+                      { label: "景品の名前", value: prizeName, onChange: setPrizeName, max: 40, placeholder: "例：オリジナル手ぬぐい" },
+                      { label: "受け取り場所", value: prizePlace, onChange: setPrizePlace, max: 60, placeholder: "例：駅前の観光案内所" },
+                    ]}
+                    note="引き換えコードを出します。渡したら、管理画面で引き換え済みにできます。"
+                  />
+                </RewardCard>
+                <p style={{ margin: "0.5rem 0 0", fontSize: "0.78rem", fontWeight: 800, color: "#3c4a40" }}>表示</p>
+                <RewardCard
+                  icon={Trophy}
+                  title="ランキング表示"
+                  desc="クリアした人に順位を見せます（記録した数が多い順、同じなら早くクリアした人が上）"
+                  on={rankingOn}
+                  onChange={setRankingOn}
+                />
+                <RewardCard
+                  icon={MapPin}
+                  title="場所のヒントを出す"
+                  desc="参加者の画面に、スポットの場所・住所を出します"
+                  on={hintOn}
+                  onChange={setHintOn}
+                />
+                <div style={{ opacity: 0.6 }}>
+                  <RewardCard
+                    icon={Users}
+                    title="配布の上限（準備中）"
+                    desc="いまは上限なく配られます。上限の設定は、このあと追加します。"
+                    on={false}
+                    onChange={() => undefined}
+                  />
                 </div>
-              ) : null}
-              {pointsOn ? (
-                <label className="org-checkin__field">
-                  <span>付与ポイント</span>
-                  <input type="number" min={0} max={9999} value={points} onChange={(e) => setPoints(Number(e.target.value) || 0)} />
-                </label>
-              ) : null}
-              <div className="org-checkin__grid">
-                <label className="org-checkin__field">
-                  <span>受け取り方法・場所</span>
-                  <select value={receivePlace} onChange={(e) => setReceivePlace(e.target.value === "venue" ? "venue" : "app")}>
-                    <option value="app">参加者のマイページで受け取り</option>
-                    <option value="venue">会場で受け取り</option>
-                  </select>
-                </label>
-                <label className="org-checkin__field">
-                  <span>配布上限数</span>
-                  <input type="number" min={0} max={99999} value={maxCount} onChange={(e) => setMaxCount(Number(e.target.value) || 0)} />
-                </label>
-              </div>
-              <label className="org-checkin__check">
-                <input type="checkbox" checked={rankingOn} onChange={(e) => setRankingOn(e.target.checked)} />
-                ランキング表示
-              </label>
-              <label className="org-checkin__check">
-                <input type="checkbox" checked={hintOn} onChange={(e) => setHintOn(e.target.checked)} />
-                ヒントの表示
-              </label>
+              </RewardList>
             </section>
           ) : null}
 
@@ -860,14 +901,11 @@ export function OrganizerCheckinCreateForm() {
                     <input type="checkbox" checked={publicToPlayers} onChange={(e) => setPublicToPlayers(e.target.checked)} />
                     参加者に公開する
                   </label>
-                  <label className="org-checkin__check">
-                    <input type="checkbox" checked={showOnEvent} onChange={(e) => setShowOnEvent(e.target.checked)} />
-                    イベントページに表示する
+                  <label className="org-checkin__check" style={{ opacity: 0.6 }}>
+                    <input type="checkbox" checked={false} disabled readOnly />
+                    イベントページに表示する（準備中）
                   </label>
-                  <label className="org-checkin__check">
-                    <input type="checkbox" checked={showRanking} onChange={(e) => setShowRanking(e.target.checked)} />
-                    ランキングを表示する
-                  </label>
+                  <p style={{ margin: 0, fontSize: "0.72rem", color: "#6a7568" }}>ランキングの表示は、「達成条件・特典」で切り替えられます。</p>
                 </article>
               </div>
               <ul className="org-checkin__checks">

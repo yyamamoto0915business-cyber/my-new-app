@@ -470,6 +470,29 @@ async function loadQuizRank(
   return quizFinishRank(rows, playerId, clearedAt, solved);
 }
 
+/** 記録の数で数える順位（チェックインなど）。column はその記録の欄。 */
+async function loadDoneRank(
+  db: SupabaseClient,
+  gameId: string,
+  playerId: string,
+  clearedAt: string,
+  doneCount: number,
+  column: "checkin_done" | "coupon_done" | "photo_done",
+): Promise<number> {
+  const { data, error } = await db
+    .from("organizer_game_players")
+    .select(`id, quiz_cleared_at, ${column}`)
+    .eq("game_id", gameId)
+    .not("quiz_cleared_at", "is", null);
+  if (error || !data) return 1;
+  const rows = (data as unknown as Record<string, unknown>[]).flatMap((row) =>
+    typeof row.quiz_cleared_at === "string" && row.quiz_cleared_at
+      ? [{ id: String(row.id), clearedAt: row.quiz_cleared_at, solved: Array.isArray(row[column]) ? (row[column] as unknown[]).length : 0 }]
+      : [],
+  );
+  return quizFinishRank(rows, playerId, clearedAt, doneCount);
+}
+
 /** ミッションの順位：達成したミッションが多い人が上、同じ数なら先にクリアした人が上（クイズと同じ決め方）。 */
 async function loadMissionRank(
   db: SupabaseClient,
@@ -658,6 +681,19 @@ async function loadProgress(
     if (completed && storedCheckin.pointAmount > 0 && userId && !awardedAt) {
       awardedAt = await claimPlayPoints(db, player, userId, storedCheckin.pointAmount, "checkin");
     }
+    // クーポンか景品引換があれば、引き換えコードを出す（使用済みの管理も同じ）。
+    const checkinCodeOn = storedCheckin.couponOn || storedCheckin.prizeOn;
+    const checkinUsed = Boolean(player.coupon_used_at);
+    let checkinCode = player.coupon_code || null;
+    if (completed && checkinCodeOn && !checkinUsed && !checkinCode) {
+      checkinCode = await issueCouponPlayCode(db, player);
+    }
+    // 順位：記録した場所が多い人が上、同じ数なら先にクリアした人が上（ミッションと同じ）。
+    let checkinRank: number | undefined;
+    if (completed && storedCheckin.rankingOn) {
+      const clearedAt = await markQuizCleared(db, player);
+      if (clearedAt) checkinRank = await loadDoneRank(db, player.game_id, player.id, clearedAt, done.length, "checkin_done");
+    }
     return {
       nickname: player.nickname,
       stampedCount: done.length,
@@ -665,6 +701,9 @@ async function loadProgress(
       completed,
       rewardPoints: completed && storedCheckin.pointAmount > 0 ? storedCheckin.pointAmount : undefined,
       rewardPointsAwarded: Boolean(awardedAt) && storedCheckin.pointAmount > 0,
+      rewardCode: completed && checkinCodeOn && !checkinUsed && checkinCode ? checkinCode : undefined,
+      rewardUsed: completed && checkinCodeOn && checkinUsed ? true : undefined,
+      quizRank: checkinRank,
       checkin: { needed, done, rewards: storedCheckin.rewards },
       spots: [],
     };
@@ -1661,6 +1700,7 @@ export async function completePlayCheckin(
   spotIndex: number,
   keywordRaw: string,
   userId: string | null = null,
+  proof: QuizArrivalProof = { here: null, keyword: "" },
 ): Promise<
   | { ok: true; done: boolean; already: boolean; note: string; progress: PlayProgress }
   | { ok: false; status: number; error: string }
@@ -1699,6 +1739,12 @@ export async function completePlayCheckin(
       note: "",
       progress: await loadProgress(db, player, userId),
     };
+  }
+
+  // GPS は、地図で場所を選んであれば、その範囲にいるかを確かめる（押すだけでは記録しない）。
+  if (spot.gate) {
+    const blocked = quizGateBlock(spot.gate, proof);
+    if (blocked) return { ok: false, status: 422, error: blocked.error };
   }
 
   if (spot.method === "keyword") {
@@ -2202,6 +2248,34 @@ export async function listOrganizerCouponPlayers(
       return a.nickname.localeCompare(b.nickname, "ja");
     });
     return { enabled: true, ready: true, players: clearedQuiz };
+  }
+  if (gameRow.type === "checkin") {
+    const storedCheckin = readStoredCheckin(settings);
+    if (!storedCheckin?.couponOn && !storedCheckin?.prizeOn) return hidden;
+    const { data: checkinRows, error: checkinError } = await supabase
+      .from("organizer_game_players")
+      .select("id, nickname, coupon_used_at, checkin_done, coupon_code")
+      .eq("game_id", gameId);
+    if (checkinError) {
+      if (missingCouponColumn(checkinError.message)) return { enabled: true, ready: false, players: [] };
+      throw checkinError;
+    }
+    const clearedCheckin: OrganizerCouponPlayer[] = [];
+    for (const player of (checkinRows ?? []) as {
+      id: string;
+      nickname: string;
+      coupon_used_at?: string | null;
+      checkin_done?: number[] | null;
+      coupon_code?: string | null;
+    }[]) {
+      if (normalizeCheckinDone(player.checkin_done, storedCheckin.spots.length).length < storedCheckin.needed) continue;
+      clearedCheckin.push({ id: player.id, nickname: player.nickname, usedAt: player.coupon_used_at || null, code: player.coupon_code || null });
+    }
+    clearedCheckin.sort((a, b) => {
+      if (Boolean(a.usedAt) !== Boolean(b.usedAt)) return a.usedAt ? 1 : -1;
+      return a.nickname.localeCompare(b.nickname, "ja");
+    });
+    return { enabled: true, ready: true, players: clearedCheckin };
   }
   if (gameRow.type === "photo") {
     const storedPhoto = readStoredPhoto(settings);

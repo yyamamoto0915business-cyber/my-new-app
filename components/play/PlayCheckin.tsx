@@ -28,7 +28,34 @@ export function PlayCheckin({ token, checkin, progress, onProgress }: Props) {
 
   const active = checkin.spots.find((spot) => spot.index === activeIndex) ?? null;
 
-  async function record(spot: PublicCheckinSpot) {
+  /** GPS のスポットは、現在地を取ってから記録する（地図で場所が決まっていれば、範囲にいるかをサーバーで確かめる）。 */
+  function recordHere(spot: PublicCheckinSpot) {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setError("この端末では現在地を取れません");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setNote("現在地を確認しています…");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setSaving(false);
+        setNote(null);
+        void record(spot, {
+          lat: Math.round(position.coords.latitude * 1e6) / 1e6,
+          lng: Math.round(position.coords.longitude * 1e6) / 1e6,
+        });
+      },
+      () => {
+        setSaving(false);
+        setNote(null);
+        setError("現在地を取得できませんでした。位置情報を許可して、もう一度押してください。");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  }
+
+  async function record(spot: PublicCheckinSpot, here: { lat: number; lng: number } | null = null) {
     if (saving || done.includes(spot.index)) return;
     const stored = readPlaySession(token);
     if (!stored) {
@@ -45,6 +72,7 @@ export function PlayCheckin({ token, checkin, progress, onProgress }: Props) {
           deviceToken: stored.deviceToken,
           spotIndex: spot.index,
           keyword,
+          here,
         }),
       });
       const json = (await res.json()) as {
@@ -78,6 +106,18 @@ export function PlayCheckin({ token, checkin, progress, onProgress }: Props) {
         <p className="game-test__kicker">{copy.cleared}</p>
         <h2>{copy.checkinDone}</h2>
         <p>{copy.checkinScore(checkin.spots.length, done.length)}</p>
+        {progress.quizRank ? <p className="play-clear__points">{copy.rankLine(progress.quizRank)}</p> : null}
+        {progress.rewardUsed ? (
+          <p className="play-clear__used">{copy.used}</p>
+        ) : progress.rewardCode ? (
+          <>
+            <p className="game-test__kicker" style={{ margin: "0.8rem 0 0" }}>
+              {copy.msg(rewards.some((line) => line.startsWith("クーポン")) ? "クーポンのコード" : "景品の引き換えコード")}
+            </p>
+            <p className="play-clear__code">{progress.rewardCode}</p>
+            <p className="play-clear__code-note">{copy.showCode}</p>
+          </>
+        ) : null}
         {progress.rewardPoints ? (
           progress.rewardPointsAwarded ? (
             <>
@@ -107,6 +147,7 @@ export function PlayCheckin({ token, checkin, progress, onProgress }: Props) {
         <h2>{active.name}</h2>
         {active.place ? <p>{active.place}</p> : null}
         {active.method === "gps" ? <p className="game-test__meta">{copy.nearRadius(active.radius)}</p> : null}
+        {active.method === "gps" && note ? <p className="game-test__note">{copy.msg(note)}</p> : null}
         {active.method === "keyword" ? (
           <>
             <input
@@ -121,7 +162,12 @@ export function PlayCheckin({ token, checkin, progress, onProgress }: Props) {
         ) : null}
         {error ? <p className="play-join__error">{copy.msg(error)}</p> : null}
         <div className="play-dock play-dock--pair">
-          <button type="button" className="play-dock__go" disabled={saving} onClick={() => void record(active)}>
+          <button
+            type="button"
+            className="play-dock__go"
+            disabled={saving}
+            onClick={() => (active.method === "gps" ? recordHere(active) : void record(active))}
+          >
             {saving ? copy.recording : active.method === "keyword" ? copy.msg("答える") : copy.msg(active.actionLabel)}
           </button>
           <button type="button" className="play-dock__ghost" onClick={() => setActiveIndex(null)}>

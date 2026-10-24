@@ -70,6 +70,9 @@ export type CheckinSpot = {
   imageUrl: string;
   pinX: number;
   pinY: number;
+  /** GPS で確かめる場所（地図で選ぶ）。 */
+  lat: number | null;
+  lng: number | null;
 };
 
 export type CheckinSettings = {
@@ -87,6 +90,8 @@ export type CheckinSettings = {
   prizeOn: boolean;
   couponName: string;
   couponDetail: string;
+  prizeName: string;
+  prizePlace: string;
   points: number;
   receivePlace: "app" | "venue";
   maxCount: number;
@@ -110,6 +115,8 @@ export function createCheckinSpot(method: CheckinMethod = "gps"): CheckinSpot {
     imageUrl: CHECKIN_SAMPLE_IMAGES[0],
     pinX: 50,
     pinY: 50,
+    lat: null,
+    lng: null,
   };
 }
 
@@ -127,6 +134,8 @@ export function sampleCheckinSpots(): CheckinSpot[] {
       imageUrl: "/profile/album/spring/sakura.jpg",
       pinX: 28,
       pinY: 30,
+      lat: null,
+      lng: null,
     },
     {
       key: crypto.randomUUID(),
@@ -140,6 +149,8 @@ export function sampleCheckinSpots(): CheckinSpot[] {
       imageUrl: "/profile/album/spring/town.jpg",
       pinX: 62,
       pinY: 26,
+      lat: null,
+      lng: null,
     },
     {
       key: crypto.randomUUID(),
@@ -153,6 +164,8 @@ export function sampleCheckinSpots(): CheckinSpot[] {
       imageUrl: "/profile/album/spring/walk.jpg",
       pinX: 46,
       pinY: 52,
+      lat: null,
+      lng: null,
     },
     {
       key: crypto.randomUUID(),
@@ -166,6 +179,8 @@ export function sampleCheckinSpots(): CheckinSpot[] {
       imageUrl: "/profile/album/spring/river.jpg",
       pinX: 30,
       pinY: 70,
+      lat: null,
+      lng: null,
     },
     {
       key: crypto.randomUUID(),
@@ -179,6 +194,8 @@ export function sampleCheckinSpots(): CheckinSpot[] {
       imageUrl: "/profile/album/spring/cafe.jpg",
       pinX: 72,
       pinY: 64,
+      lat: null,
+      lng: null,
     },
   ];
 }
@@ -234,6 +251,8 @@ export function sanitizeCheckinSettings(raw: unknown): CheckinSettings | null {
             imageUrl: typeof row.imageUrl === "string" ? row.imageUrl.trim().slice(0, 300) : "",
             pinX: Math.min(92, Math.max(8, Math.round(pinXRaw))),
             pinY: Math.min(92, Math.max(8, Math.round(pinYRaw))),
+            lat: typeof row.lat === "number" && Number.isFinite(row.lat) ? row.lat : null,
+            lng: typeof row.lng === "number" && Number.isFinite(row.lng) ? row.lng : null,
           },
         ];
       })
@@ -266,6 +285,8 @@ export function sanitizeCheckinSettings(raw: unknown): CheckinSettings | null {
     prizeOn: body.prizeOn === true,
     couponName: typeof body.couponName === "string" ? body.couponName.trim().slice(0, 40) : "",
     couponDetail: typeof body.couponDetail === "string" ? body.couponDetail.trim().slice(0, 80) : "",
+    prizeName: typeof body.prizeName === "string" ? body.prizeName.trim().slice(0, 40) : "",
+    prizePlace: typeof body.prizePlace === "string" ? body.prizePlace.trim().slice(0, 60) : "",
     points: Math.min(9999, Math.max(0, pointsRaw)),
     receivePlace: body.receivePlace === "venue" ? "venue" : "app",
     maxCount: Math.min(99999, Math.max(0, maxRaw)),

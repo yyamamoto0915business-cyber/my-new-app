@@ -1,4 +1,5 @@
-import { safeImageUrl } from "@/lib/organizer/game-experience";
+import { safeImageUrl, sanitizePlace } from "@/lib/organizer/game-experience";
+import type { QuizGate } from "@/lib/organizer/quiz-play";
 import {
   checkinMethodLabel,
   sanitizeCheckinSettings,
@@ -25,6 +26,8 @@ export type PublicCheckinPlay = {
 
 export type StoredCheckinSpot = PublicCheckinSpot & {
   keyword: string;
+  /** GPS の確かめ（地図で場所を選んだときだけ）。参加者には渡さない。 */
+  gate: QuizGate | null;
 };
 
 export type StoredCheckinPlay = {
@@ -33,6 +36,10 @@ export type StoredCheckinPlay = {
   pointAmount: number;
   rewards: string[];
   spots: StoredCheckinSpot[];
+  /** クーポン・景品引換（どちらかがあれば、クリアした人に引き換えコードを出す）とランキング。 */
+  couponOn: boolean;
+  prizeOn: boolean;
+  rankingOn: boolean;
 };
 
 function checkinImage(value: unknown): string {
@@ -43,6 +50,7 @@ function checkinImage(value: unknown): string {
 
 function actionLabel(method: CheckinMethod): string {
   if (method === "qr") return "QRを読み取った";
+  if (method === "gps") return "現在地で確かめる";
   if (method === "keyword") return "答える";
   return "この場所にいる";
 }
@@ -69,26 +77,35 @@ export function readStoredCheckin(settings: unknown): StoredCheckinPlay | null {
         imageUrl: checkinImage(spot.imageUrl),
         actionLabel: actionLabel(spot.method),
         keyword: spot.method === "keyword" ? spot.keyword : "",
+        gate: (() => {
+          const pin = spot.method === "gps" ? sanitizePlace(spot.lat, spot.lng) : null;
+          return pin ? ({ arrival: "gps", place: spot.place, ...pin, radiusM: spot.radius } as QuizGate) : null;
+        })(),
       },
     ];
   });
   if (spots.length === 0) return null;
   const pointAmount = checkin.pointsOn ? checkin.points : 0;
   const rewards = [
-    checkin.couponOn && checkin.couponName
+    checkin.couponOn
       ? checkin.couponName
-      : checkin.couponOn
-        ? "クーポンを受け取れます。"
-        : "",
+        ? `クーポン：${checkin.couponName}${checkin.couponDetail ? `（${checkin.couponDetail}）` : ""}`
+        : "クーポンを受け取れます。"
+      : "",
     pointAmount > 0 ? `${pointAmount}ポイントが残ります。` : "",
-    checkin.stampOn ? "スタンプが残ります。" : "",
-    checkin.prizeOn ? "景品を受け取れます。" : "",
-    checkin.receivePlace === "venue" ? "会場で受け取れます。" : "",
+    checkin.prizeOn
+      ? checkin.prizeName
+        ? `景品：${checkin.prizeName}${checkin.prizePlace ? `（受け取り場所：${checkin.prizePlace}）` : ""}`
+        : "景品を受け取れます。"
+      : "",
   ].filter(Boolean);
   return {
     needed: neededCount(checkin.clearMode, checkin.clearCount, spots.length),
     pointAmount,
     rewards,
+    couponOn: checkin.couponOn,
+    prizeOn: checkin.prizeOn,
+    rankingOn: checkin.rankingOn,
     spots: spots.map((spot, index) => ({ ...spot, index })),
   };
 }
@@ -97,7 +114,7 @@ export function publicCheckin(play: StoredCheckinPlay): PublicCheckinPlay {
   return {
     needed: play.needed,
     rewards: play.rewards,
-    spots: play.spots.map(({ keyword: _keyword, ...spot }) => spot),
+    spots: play.spots.map(({ keyword: _keyword, gate: _gate, ...spot }) => spot),
   };
 }
 

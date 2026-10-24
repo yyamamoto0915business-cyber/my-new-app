@@ -307,6 +307,8 @@ export function GamePhonePreview({
           ...base(total, done),
           completed,
           rewardPoints: completed && stored.pointAmount > 0 ? stored.pointAmount : undefined,
+          rewardCode: completed && (stored.couponOn || stored.prizeOn) ? "MG-0000" : undefined,
+          quizRank: completed && stored.rankingOn ? 1 : undefined,
           checkin: { needed: stored.needed, done, rewards: stored.rewards },
         },
         screen: (progress) =>
