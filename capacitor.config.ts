@@ -20,7 +20,8 @@ const config: CapacitorConfig = {
     allowNavigation: ["www.machiglyph.jp", "machiglyph.jp", "*.supabase.co"],
   },
   ios: {
-    contentInset: "automatic",
+    // 上の余白は Web 側の env(safe-area-inset-top) で取るので、アプリ側では足さない
+    contentInset: "never",
     appendUserAgent: "MachiGlyphApp",
   },
   plugins: {
