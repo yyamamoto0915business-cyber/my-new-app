@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ImageIcon, Play } from "lucide-react";
+import { ImageIcon, Play, Plus } from "lucide-react";
 import type { MyPostItem } from "@/app/api/me/posts/route";
 import { formatMyPostDotDate } from "@/lib/posts/visited-range";
 import type { PostMutation } from "./PostCardMenu";
@@ -14,14 +14,29 @@ export function MyAlbumMediaGrid({
   onMutated,
   showMenu = true,
   addedBy,
+  addHref,
 }: {
   posts: MyPostItem[];
   onMutated?: (id: string, change: PostMutation) => void;
   showMenu?: boolean;
   addedBy?: Record<string, { displayName: string; avatarUrl: string | null }>;
+  /** 指定すると、グリッドの先頭に「写真を追加」のタイルを出す */
+  addHref?: string;
 }) {
   return (
     <div className="mg-album-grid">
+      {addHref ? (
+        <div className="mg-album-tile mg-album-tile--add">
+          <Link href={addHref} className="mg-album-tile__hit">
+            <div className="mg-album-tile__photo mg-album-tile__add">
+              <span className="mg-album-tile__add-badge" aria-hidden>
+                <Plus className="h-5 w-5" strokeWidth={2.5} />
+              </span>
+              <span className="mg-album-tile__add-label">写真を追加</span>
+            </div>
+          </Link>
+        </div>
+      ) : null}
       {posts.map((post) => {
         const isDraft = post.status === "draft";
         const href = `/posts/${post.id}`;

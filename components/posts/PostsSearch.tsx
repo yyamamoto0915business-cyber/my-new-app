@@ -6,25 +6,40 @@ import { Search } from "lucide-react";
 import { CommonAvatar } from "@/components/profile/common-avatar";
 import { AuthorFollowButton } from "@/components/posts/AuthorFollowButton";
 import type { UserSearchHit } from "@/lib/db/user-search";
+import styles from "./PostsExplore.module.css";
 
-export function PostsUserSearch() {
+type Props = {
+  /** 外から入れる検索語（タグをタップしたときなど） */
+  value?: string;
+  /** 投稿の絞り込みに使う文字列（変換確定後のみ反映） */
+  onQueryChange: (query: string) => void;
+};
+
+/** 場所・キーワード・#タグで投稿を探す。一致するユーザーは候補として下に出す */
+export function PostsSearch({ value, onQueryChange }: Props) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const [composing, setComposing] = useState(false);
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (value !== undefined) setQuery(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (!composing) onQueryChange(query);
+  }, [query, composing, onQueryChange]);
+
   const [users, setUsers] = useState<UserSearchHit[]>([]);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const trimmed = query.trim();
     if (composing) return;
     if (!trimmed) {
       setUsers([]);
-      setLoading(false);
       return;
     }
-    setLoading(true);
     let cancelled = false;
     const timer = window.setTimeout(() => {
       fetch(`/api/users/search?q=${encodeURIComponent(trimmed)}`)
@@ -39,9 +54,6 @@ export function PostsUserSearch() {
         })
         .catch(() => {
           if (!cancelled) setUsers([]);
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
         });
     }, 280);
     return () => {
@@ -58,7 +70,8 @@ export function PostsUserSearch() {
     return () => document.removeEventListener("pointerdown", onPointer);
   }, []);
 
-  const showPanel = open && query.trim().length > 0;
+  // ユーザーが見つかったときだけ候補を出す（投稿はグリッド側で絞り込まれる）
+  const showPanel = open && query.trim().length > 0 && users.length > 0;
 
   return (
     <div className="posts-user-search" ref={rootRef}>
@@ -67,8 +80,8 @@ export function PostsUserSearch() {
         <input
           type="search"
           value={query}
-          placeholder="ユーザーを検索"
-          aria-label="ユーザーを検索"
+          placeholder="場所・キーワード・#タグで探す"
+          aria-label="投稿を検索"
           aria-expanded={showPanel}
           aria-controls={listId}
           autoComplete="off"
@@ -92,12 +105,8 @@ export function PostsUserSearch() {
       </label>
       {showPanel ? (
         <div className="posts-user-search__panel" id={listId} role="listbox">
-          {loading && users.length === 0 ? (
-            <p className="posts-user-search__empty">検索しています…</p>
-          ) : users.length === 0 ? (
-            <p className="posts-user-search__empty">一致するユーザーはいません</p>
-          ) : (
-            <ul>
+          <p className={styles.searchSection}>ユーザー</p>
+          <ul>
               {users.map((user) => (
                 <li key={user.id} className="posts-user-search__row" role="option">
                   <Link
@@ -131,8 +140,7 @@ export function PostsUserSearch() {
                   )}
                 </li>
               ))}
-            </ul>
-          )}
+          </ul>
         </div>
       ) : null}
     </div>

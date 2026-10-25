@@ -9,6 +9,7 @@ import {
   POST_CARD_FALLBACK_IMAGE,
   type CommunityPost,
 } from "@/lib/posts/mock-feed";
+import { collectPopularTags } from "@/lib/posts/area-label";
 
 const CROWN_COLORS = ["#d4a017", "#a8b0b8", "#c47a3a"] as const;
 const CTA_SHARE_ILLUST = "/posts/cta-share-illust.png";
@@ -32,20 +33,6 @@ function SidebarPostThumb({ src, alt }: { src: string; alt: string }) {
       />
     </div>
   );
-}
-
-function collectPopularTags(posts: CommunityPost[], limit = 6): string[] {
-  const counts = new Map<string, number>();
-  for (const post of posts) {
-    for (const tag of post.tags) {
-      const key = tag.startsWith("#") ? tag : `#${tag}`;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-  }
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ja"))
-    .slice(0, limit)
-    .map(([tag]) => tag);
 }
 
 type Props = {

@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   applyPostFilters,
   collectPostAreas,
-  filterCommunityPosts,
   POST_CATEGORY_TABS,
   POST_DATE_OPTIONS,
   POST_SORT_OPTIONS,
@@ -17,12 +16,20 @@ import {
   type PostSortKey,
 } from "@/lib/posts/mock-feed";
 import { fetchJsonArray } from "@/lib/fetch-json-array";
-import { POSTS_HERO_DESC_LINES, PostsHero } from "@/components/posts/PostsHero";
-import { PostsFeedCard } from "@/components/posts/PostsFeedCard";
+import { PostsHero } from "@/components/posts/PostsHero";
+import { PostsGrid } from "@/components/posts/PostsGrid";
 import { PostsSidebar } from "@/components/posts/PostsSidebar";
-import { PostsUserSearch } from "@/components/posts/PostsUserSearch";
+import { PostsSearch } from "@/components/posts/PostsSearch";
+import { PostsViewer } from "@/components/posts/PostsViewer";
+import {
+  PostsDiscoverFooter,
+  PostsFollowingStories,
+} from "@/components/posts/PostsDiscover";
+import { collectPopularTags, postMatchesArea } from "@/lib/posts/area-label";
+import styles from "./PostsExplore.module.css";
 
-const FEATURED_POST_LIMIT = 8;
+/** グリッドに一度に足す件数（3 列 × 8 行） */
+const GRID_PAGE_SIZE = 24;
 
 type FilterOption = { key: string; label: string };
 
@@ -129,78 +136,31 @@ function PostsCategoryTabs({
   );
 }
 
-function PostsFeaturedSection({
-  posts,
-  mobile,
-  loading,
-  loadError,
-  onRetry,
-  mobileVisibleCount = FEATURED_POST_LIMIT,
-  onMobileLoadMore,
+function PostsCategoryChips({
+  category,
+  onCategoryChange,
 }: {
-  posts: ReturnType<typeof filterCommunityPosts>;
-  mobile?: boolean;
-  loading?: boolean;
-  loadError?: boolean;
-  onRetry?: () => void;
-  mobileVisibleCount?: number;
-  onMobileLoadMore?: () => void;
+  category: PostCategoryTab;
+  onCategoryChange: (c: PostCategoryTab) => void;
 }) {
-  const visibleCount = mobile ? mobileVisibleCount : FEATURED_POST_LIMIT;
-  const featured = posts.slice(0, visibleCount);
-  const hasMore = posts.length > featured.length;
-
   return (
-    <section aria-label="注目の投稿" className={mobile ? "space-y-2.5" : "space-y-3"}>
-      <div className="flex items-end justify-between px-0.5">
-        <h2 className="posts-section-title">注目の投稿</h2>
-        <Link href="/posts" className="posts-section-more">
-          もっと見る →
-        </Link>
-      </div>
-      {loading ? (
-        <p className="posts-empty">投稿を読み込んでいます…</p>
-      ) : loadError && featured.length === 0 ? (
-        <div className="posts-empty space-y-3">
-          <p>投稿を読み込めませんでした</p>
-          {onRetry ? (
-            <button type="button" className="posts-load-more__btn" onClick={onRetry}>
-              再読み込み
-            </button>
-          ) : null}
-        </div>
-      ) : featured.length === 0 ? (
-        <p className="posts-empty">条件に合う投稿はまだありません</p>
-      ) : (
-        <>
-          <div className={cn("posts-grid", mobile && "posts-grid--mobile")}>
-            {featured.map((post, i) => (
-              <PostsFeedCard key={post.id} post={post} index={i} />
-            ))}
-          </div>
-          {!mobile && posts.length > 0 ? (
-            <div className="posts-load-more">
-              <button type="button" className="posts-load-more__btn">
-                もっと見る
-                <ChevronDown className="h-4 w-4" aria-hidden />
-              </button>
-            </div>
-          ) : null}
-          {mobile && hasMore ? (
-            <div className="posts-load-more">
-              <button
-                type="button"
-                className="posts-load-more__btn"
-                onClick={onMobileLoadMore}
-              >
-                もっと見る
-                <ChevronDown className="h-4 w-4" aria-hidden />
-              </button>
-            </div>
-          ) : null}
-        </>
-      )}
-    </section>
+    <div className={styles.chips} role="tablist" aria-label="投稿カテゴリ">
+      {POST_CATEGORY_TABS.map((tab) => {
+        const active = category === tab.key;
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onCategoryChange(tab.key)}
+            className={cn(styles.chip, active && styles.chipActive)}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -214,8 +174,13 @@ export function PostsHubClient() {
   const [apiPosts, setApiPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [mobileVisibleCount, setMobileVisibleCount] =
-    useState(FEATURED_POST_LIMIT);
+  const [query, setQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(GRID_PAGE_SIZE);
+  /** 全画面ビューア：一覧から開くときは null（絞り込み結果を使う） */
+  const [viewer, setViewer] = useState<{
+    posts: CommunityPost[] | null;
+    index: number;
+  } | null>(null);
   const filterBarRef = useRef<HTMLDivElement>(null);
 
   const loadPosts = useCallback(async (cat: PostCategoryTab) => {
@@ -261,13 +226,43 @@ export function PostsHubClient() {
   );
 
   const posts = useMemo(
-    () => applyPostFilters(apiPosts, { category, area, sort, date: dateKey }),
-    [apiPosts, category, area, sort, dateKey],
+    () =>
+      applyPostFilters(apiPosts, {
+        category,
+        sort,
+        date: dateKey,
+        // 「#カフェ」でもタグに当たるよう先頭の # は外す
+        query: query.trim().replace(/^[#＃]/, ""),
+      }).filter((post) => postMatchesArea(post, area)),
+    [apiPosts, category, area, sort, dateKey, query],
   );
 
   useEffect(() => {
-    setMobileVisibleCount(FEATURED_POST_LIMIT);
-  }, [category, area, sort, dateKey]);
+    setVisibleCount(GRID_PAGE_SIZE);
+  }, [category, area, sort, dateKey, query]);
+
+  const loadMore = useCallback(
+    () => setVisibleCount((c) => c + GRID_PAGE_SIZE),
+    [],
+  );
+  const closeViewer = useCallback(() => setViewer(null), []);
+  const openFromGrid = useCallback(
+    (index: number) => setViewer({ posts: null, index }),
+    [],
+  );
+  const popularTags = useMemo(() => collectPopularTags(apiPosts, 8), [apiPosts]);
+
+  const renderGrid = () => (
+    <PostsGrid
+      posts={posts}
+      loading={loading}
+      loadError={loadError}
+      onRetry={() => void loadPosts(category)}
+      onOpen={openFromGrid}
+      visibleCount={visibleCount}
+      onLoadMore={loadMore}
+    />
+  );
 
   const toggleFilter = useCallback((key: string) => {
     setOpenFilter((prev) => (prev === key ? null : key));
@@ -347,7 +342,7 @@ export function PostsHubClient() {
     <div className="posts-board-page">
       {/* PC */}
       <main className="posts-board-main posts-board-main--pc">
-        <PostsUserSearch />
+        <PostsSearch value={query} onQueryChange={setQuery} />
         <div className="posts-hero-stack">
           <PostsHero />
           <PostsCategoryTabs
@@ -359,48 +354,50 @@ export function PostsHubClient() {
         {renderFilterBar()}
 
         <div className="posts-board-layout">
-          <PostsFeaturedSection
-            posts={posts}
-            loading={loading}
-            loadError={loadError}
-            onRetry={() => void loadPosts(category)}
-          />
+          <section aria-label="投稿一覧">{renderGrid()}</section>
           <PostsSidebar posts={apiPosts} />
         </div>
       </main>
 
       {/* Mobile */}
-      <main className="posts-board-main posts-board-main--mobile">
-        <PostsUserSearch />
-        <div className="posts-hero-stack posts-hero-stack--mobile">
-          <PostsHero compact />
-          <PostsCategoryTabs
-            category={category}
-            onCategoryChange={setCategory}
-            mobile
+      <main className={cn("posts-board-main posts-board-main--mobile", styles.mobileMain)}>
+        <div className={styles.mobileTop}>
+          <div className={styles.mobileTitleRow}>
+            <h1 className={styles.mobileTitle}>みんなの投稿</h1>
+            <span className={styles.mobileLead}>みんなで見つける、まちの魅力</span>
+          </div>
+          <PostsSearch value={query} onQueryChange={setQuery} />
+          <PostsFollowingStories
+            onOpen={(story) => setViewer({ posts: story.posts, index: 0 })}
           />
+          <PostsCategoryChips category={category} onCategoryChange={setCategory} />
         </div>
 
-        <p className="posts-mobile-lead">
-          {POSTS_HERO_DESC_LINES.map((line) => (
-            <span key={line} className="posts-mobile-lead__line">
-              {line}
-            </span>
-          ))}
-        </p>
+        <section aria-label="投稿一覧">{renderGrid()}</section>
 
-        <PostsFeaturedSection
-          posts={posts}
-          mobile
-          loading={loading}
-          loadError={loadError}
-          onRetry={() => void loadPosts(category)}
-          mobileVisibleCount={mobileVisibleCount}
-          onMobileLoadMore={() =>
-            setMobileVisibleCount((c) => c + FEATURED_POST_LIMIT)
-          }
-        />
+        {!loading ? (
+          <PostsDiscoverFooter
+            tags={popularTags}
+            onTagSelect={(tag) => {
+              setQuery(tag);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
+        ) : null}
+
+        <Link href="/posts/new" className={styles.fab}>
+          <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+          投稿する
+        </Link>
       </main>
+
+      {viewer ? (
+        <PostsViewer
+          posts={viewer.posts ?? posts}
+          startIndex={viewer.index}
+          onClose={closeViewer}
+        />
+      ) : null}
     </div>
   );
 }

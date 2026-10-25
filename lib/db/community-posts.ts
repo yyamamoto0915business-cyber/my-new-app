@@ -139,6 +139,53 @@ export async function listMyCommunityPosts(
   return merged.slice(0, limit);
 }
 
+/**
+ * フォロー中の人たちの最近の投稿（「みんなの投稿」上部の丸アイコン用）
+ * 閲覧者は承認済みフォロワーなので、下書き以外は見せてよい
+ */
+export async function listRecentPostsByAuthors(
+  authorIds: string[],
+  viewerId: string,
+  options: { sinceIso: string; limit?: number },
+): Promise<DbCommunityPost[]> {
+  const limit = options.limit ?? 100;
+  const ids = authorIds.filter(Boolean);
+  if (ids.length === 0) return [];
+  const since = new Date(options.sinceIso).getTime();
+  const idSet = new Set(ids);
+  const memory = listMemoryCommunityPosts().filter(
+    (row) =>
+      row.author_id != null &&
+      idSet.has(row.author_id) &&
+      new Date(row.created_at).getTime() >= since,
+  );
+  const visible = (rows: DbCommunityPost[]) =>
+    rows.filter((row) => canViewerSeePost(row, viewerId, true)).slice(0, limit);
+
+  const supabase = await createClient();
+  const uuidIds = ids.filter(isUuid);
+  if (!supabase || uuidIds.length === 0) {
+    return withAuthorAvatars(visible(mergePosts([], memory)));
+  }
+
+  const { data, error } = await supabase
+    .from("community_posts")
+    .select("*")
+    .in("author_id", uuidIds)
+    .neq("status", "draft")
+    .gte("created_at", options.sinceIso)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("listRecentPostsByAuthors:", error.message);
+    return withAuthorAvatars(visible(mergePosts([], memory)));
+  }
+
+  const dbRows = ((data ?? []) as DbCommunityPost[]).map(withRelatedLinkDefaults);
+  return withAuthorAvatars(visible(mergePosts(dbRows, memory)));
+}
+
 /** 作者のアルバム用。下書きは本人のみ、非公開は本人と承認フォロワー */
 export async function listAuthorAlbumPosts(
   authorId: string,

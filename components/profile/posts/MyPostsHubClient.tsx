@@ -281,6 +281,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
         posts={posts}
         onMutated={isForeign ? undefined : handleMutated}
         showMenu={!isForeign}
+        addHref={isForeign || status === "draft" ? undefined : "/posts/new"}
       />
     );
   };
@@ -384,14 +385,6 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
             <MyAlbumViewTabs value={tab} onChange={handleTab} />
           )}
 
-          {showPostTools && !isForeign && !showSkeleton ? (
-            <div className="mg-album-compose">
-              <Link href="/posts/new" className="mg-share-btn mg-share-btn--solid mg-album-compose__add">
-                <Camera className="h-4 w-4" aria-hidden />
-                写真を追加する
-              </Link>
-            </div>
-          ) : null}
         </div>
 
         <div className="mg-album-main">
