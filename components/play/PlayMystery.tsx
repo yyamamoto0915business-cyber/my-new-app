@@ -29,9 +29,12 @@ type Props = {
   mystery: PublicMysteryPlay;
   progress: PlayProgress;
   onProgress: (progress: PlayProgress) => void;
+  /** 主催者のプレビュー：この謎を開いたところ、またはマップから見せる。 */
+  previewOpen?: number;
+  previewMap?: boolean;
 };
 
-export function PlayMystery({ token, mystery, progress, onProgress }: Props) {
+export function PlayMystery({ token, mystery, progress, onProgress, previewOpen, previewMap }: Props) {
   const solved = progress.mystery?.solved ?? [];
   const needed = progress.mystery?.needed ?? mystery.needed;
   const rewards = progress.mystery?.rewards ?? mystery.rewards;
@@ -50,9 +53,9 @@ export function PlayMystery({ token, mystery, progress, onProgress }: Props) {
   const [gateBusy, setGateBusy] = useState(false);
   const [gateNote, setGateNote] = useState<string | null>(null);
   /** 謎とマップの切り替え（スタンプラリーのマップと同じ地図）。 */
-  const [view, setView] = useState<"puzzle" | "map">("puzzle");
+  const [view, setView] = useState<"puzzle" | "map">(previewMap ? "map" : "puzzle");
   /** 開いている謎（好きな順に解ける）。null なら一覧。 */
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(previewOpen ?? null);
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
   const [recenter, setRecenter] = useState(0);
   const [pinId, setPinId] = useState<string | null>(null);

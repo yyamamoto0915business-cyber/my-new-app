@@ -7,16 +7,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
+  ArrowUpRight,
   BarChart3,
-  BookOpen,
   Calendar,
-  ChevronDown,
   FileText,
   Gamepad2,
   MapPin,
+  MoreHorizontal,
   Plus,
   Sparkles,
-  Users,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -148,23 +147,6 @@ function formatPeriod(startsAt: string | null, endsAt: string | null) {
   return start || end;
 }
 
-function TemplateCard({ type }: { type: (typeof HUB_TYPES)[number] }) {
-  return (
-    <Link href={`/organizer/games/new?type=${type.id}`} className={cn("org-hub__template", `is-${type.theme}`)}>
-      <span className="org-hub__template-illust" aria-hidden>
-        <Image src={type.icon} alt="" width={128} height={128} unoptimized />
-      </span>
-      <span className="org-hub__template-copy">
-        <span className="org-hub__template-label">{type.label}</span>
-        <span className="org-hub__template-blurb">{type.blurb}</span>
-      </span>
-      <span className="org-hub__template-go" aria-hidden>
-        <ArrowRight className="h-2.5 w-2.5" strokeWidth={2.6} />
-      </span>
-    </Link>
-  );
-}
-
 function GameCard({ game }: { game: OrganizerGame }) {
   const hubType = HUB_TYPE_BY_ID[game.type] ?? HUB_TYPES[0];
   const cover = COVER_BY_THEME[hubType.theme] ?? hubType.cover;
@@ -198,6 +180,90 @@ function GameCard({ game }: { game: OrganizerGame }) {
   );
 }
 
+/** PCのテンプレート一覧。写真の上に、種類ごとのキャラクターを丸く重ねる。 */
+const PC_TEMPLATES: {
+  id: OrganizerGameTypeId;
+  label: string;
+  photo: string;
+  mascot: string;
+  extra?: boolean;
+}[] = [
+  { id: "stamp", label: "スタンプラリー", photo: "/profile/album/spring/town.jpg", mascot: "/organizer/games/hub-mascot-stamp.png" },
+  { id: "quiz", label: "クイズラリー", photo: "/profile/album/spring/flower.jpg", mascot: "/organizer/games/hub-mascot-quiz.png" },
+  { id: "mystery", label: "謎解き街歩き", photo: "/profile/album/spring/walk.jpg", mascot: "/organizer/games/hub-mascot-mystery.png" },
+  { id: "mission", label: "ミッション", photo: "/profile/album/spring/river.jpg", mascot: "/organizer/games/hub-mascot-mission.png" },
+  { id: "photo", label: "フォトラリー", photo: "/profile/album/spring/nanohana.jpg", mascot: "/organizer/games/hub-mascot-photo.png" },
+  { id: "coupon", label: "クーポンラリー", photo: "/profile/album/spring/cafe.jpg", mascot: "/organizer/games/hub-mascot-coupon.png" },
+  {
+    id: "checkin",
+    label: "チェックイン",
+    photo: "/profile/album/spring/sunset.jpg",
+    mascot: "/organizer/games/game-type-checkin.png?v=hub4",
+    extra: true,
+  },
+];
+
+const PC_FILTERS: { id: "all" | GameFilter; label: string }[] = [
+  { id: "all", label: "すべて" },
+  ...FILTERS,
+];
+
+const PC_RECENT_LIMIT = 3;
+
+function PcGameCard({ game }: { game: OrganizerGame }) {
+  const router = useRouter();
+  const hubType = HUB_TYPE_BY_ID[game.type] ?? HUB_TYPES[0];
+  const cover = COVER_BY_THEME[hubType.theme] ?? hubType.cover;
+  const period = formatPeriod(game.startsAt, game.endsAt);
+
+  return (
+    <div className="org-hub-pc__game">
+      <Link href={`/organizer/games/${game.id}`} className="org-hub-pc__game-link">
+        <span className="org-hub-pc__game-thumb">
+          <Image src={cover} alt="" fill sizes="190px" unoptimized />
+        </span>
+        <span className="org-hub-pc__game-body">
+          <span className="org-hub-pc__game-name">{game.name}</span>
+          <span className="org-hub-pc__game-period">
+            <Calendar className="h-3.5 w-3.5" aria-hidden />
+            {period || hubType.label}
+          </span>
+          <span className={cn("org-hub-pc__game-status", `is-${game.status}`)}>
+            {STATUS_LABEL[game.status]}
+          </span>
+        </span>
+      </Link>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <button type="button" className="org-hub-pc__game-more" aria-label={`${game.name}のメニュー`}>
+              <MoreHorizontal className="h-4 w-4" aria-hidden />
+            </button>
+          }
+        />
+        <DropdownMenuContent
+          align="end"
+          sideOffset={6}
+          className="z-[70] w-40 rounded-xl border-0 bg-[#faf9f6] p-1 shadow-[0_12px_28px_rgba(26,34,20,0.14)] ring-0"
+        >
+          <DropdownMenuItem
+            className="cursor-pointer rounded-lg px-2.5 py-2 text-[0.8rem] font-bold text-[#163524] focus:bg-[#e7f3ea]"
+            onClick={() => router.push(`/organizer/games/${game.id}`)}
+          >
+            開いて編集する
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer rounded-lg px-2.5 py-2 text-[0.8rem] font-bold text-[#163524] focus:bg-[#e7f3ea]"
+            onClick={() => router.push(`/organizer/games/${game.id}/analytics`)}
+          >
+            データを見る
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 /** スマホのはじめの画面で、作る・一覧・データの3枚を横に並べる。 */
 const HUB_DATA_CSS = `
 @media (max-width: 899px) {
@@ -223,7 +289,10 @@ export function OrganizerGamesHub() {
   const [loadError, setLoadError] = useState(false);
   const [filter, setFilter] = useState<GameFilter>("draft");
   const [filterReady, setFilterReady] = useState(false);
-  const [aboutTemplates, setAboutTemplates] = useState(false);
+  const pcListRef = useRef<HTMLElement>(null);
+  const [pcFilter, setPcFilter] = useState<"all" | GameFilter>("all");
+  const [pcShowAllGames, setPcShowAllGames] = useState(false);
+  const [pcShowAllTemplates, setPcShowAllTemplates] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -274,17 +343,16 @@ export function OrganizerGamesHub() {
     ? `/organizer/games/${analyticsGame.id}/analytics`
     : "/organizer/games/analytics";
 
-  const benefits: {
-    title: string;
-    text: string;
-    tone: "green" | "amber";
-    icon: typeof BookOpen;
-    href?: string;
-  }[] = [
-    { title: "まちの回遊", text: "地域の魅力を再発見", tone: "green", icon: BookOpen },
-    { title: "参加者の増加", text: "イベントをもっと楽しく", tone: "amber", icon: Users },
-    { title: "効果を見える化", text: "データで振り返り", tone: "green", icon: BarChart3, href: analyticsHref },
-  ];
+  const pcRecentGames = useMemo(() => {
+    const sorted = [...games].sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    return pcFilter === "all" ? sorted : sorted.filter((game) => game.status === pcFilter);
+  }, [games, pcFilter]);
+  const pcShownGames = pcShowAllGames ? pcRecentGames : pcRecentGames.slice(0, PC_RECENT_LIMIT);
+  const pcTemplates = pcShowAllTemplates ? PC_TEMPLATES : PC_TEMPLATES.filter((item) => !item.extra);
+
+  const scrollToPcList = () => {
+    pcListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const mobileTemplates = showAllTemplates ? HUB_TYPES : HUB_TYPES.filter((type) => type.id !== "checkin");
 
@@ -407,98 +475,185 @@ export function OrganizerGamesHub() {
         </section>
       </div>
 
-      <header className="org-hub__hero">
-        <Image
-          className="org-hub__hero-photo"
-          src="/organizer/games/hub-town.jpg"
-          alt=""
-          fill
-          priority
-          sizes="(min-width: 900px) 1120px, 100vw"
-        />
-        <div className="org-hub__hero-copy">
-          <h1>
-            ゲーム機能で
-            <span>まちをもっと盛り上げよう！</span>
-          </h1>
-          <p>スタンプラリーやクイズなど、参加者が楽しめる体験をかんたんに作成できます。</p>
-          <DropdownMenu open={pcCreateOpen} onOpenChange={setPcCreateOpen}>
-            <DropdownMenuTrigger
-              render={
-                <button
-                  type="button"
-                  className={cn("org-hub__create", pcCreateOpen && "is-open")}
-                  aria-label="新しいゲームを作成する"
-                >
-                  新しいゲームを作成する
-                  <span className="org-hub__create-plus" aria-hidden>
-                    <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.4} />
-                  </span>
-                </button>
-              }
-            />
-            <DropdownMenuContent
-              align="start"
-              sideOffset={8}
-              className="org-hub__create-menu z-[70] w-[16.75rem] max-w-[calc(100vw-1.5rem)] rounded-2xl border-0 bg-[#faf9f6] p-1.5 shadow-[0_12px_28px_rgba(26,34,20,0.14)] ring-0"
+      <div className="org-hub-pc">
+        <header className="org-hub-pc__intro">
+          <div>
+            <p className="org-hub-pc__eyebrow">PLAY YOUR TOWN</p>
+            <h1 className="org-hub-pc__title">まちを、遊び場に。</h1>
+            <p className="org-hub-pc__lead">ゲームをつくって、地域の魅力を届けよう。</p>
+          </div>
+          <div className="org-hub-pc__intro-actions">
+            <Link href={analyticsHref} className="org-hub-pc__ghost">
+              <BarChart3 className="h-4 w-4" aria-hidden />
+              データを見る
+            </Link>
+            <button type="button" className="org-hub-pc__count" onClick={scrollToPcList}>
+              作成したゲーム
+              <strong>{loading ? "–" : games.length}</strong>
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+        </header>
+
+        <section className="org-hub-pc__hero" aria-labelledby="org-hub-pc-hero-heading">
+          <Image
+            className="org-hub-pc__hero-photo"
+            src="/organizer/games/hub-pc-street.jpg"
+            alt=""
+            fill
+            priority
+            sizes="(min-width: 900px) 1200px, 100vw"
+          />
+          <div className="org-hub-pc__hero-copy">
+            <h2 id="org-hub-pc-hero-heading">次の「楽しい」を、つくろう。</h2>
+            <p>テンプレートから、かんたんに。</p>
+            <DropdownMenu open={pcCreateOpen} onOpenChange={setPcCreateOpen}>
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    className={cn("org-hub-pc__create", pcCreateOpen && "is-open")}
+                    aria-label="ゲームを作る"
+                  >
+                    <Plus className="h-5 w-5" strokeWidth={2.2} aria-hidden />
+                    ゲームを作る
+                    <ArrowRight className="org-hub-pc__create-arrow h-4 w-4" aria-hidden />
+                  </button>
+                }
+              />
+              <DropdownMenuContent
+                align="start"
+                sideOffset={8}
+                className="org-hub__create-menu z-[70] w-[16.75rem] max-w-[calc(100vw-1.5rem)] rounded-2xl border-0 bg-[#faf9f6] p-1.5 shadow-[0_12px_28px_rgba(26,34,20,0.14)] ring-0"
+              >
+                {HUB_TYPES.map((type) => (
+                  <DropdownMenuItem
+                    key={type.id}
+                    className="org-hub__create-option min-h-11 cursor-pointer flex-col items-start gap-0.5 rounded-xl px-2.5 py-1.5 focus:bg-[#e7f3ea] focus:text-inherit data-highlighted:bg-[#e7f3ea]"
+                    onClick={() => {
+                      setPcCreateOpen(false);
+                      router.push(`/organizer/games/new?type=${type.id}`);
+                    }}
+                  >
+                    <span className="org-hub__create-option-label">{type.label}</span>
+                    <span className="org-hub__create-option-blurb">{type.blurb}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <span className="org-hub-pc__script" aria-hidden>
+            Play
+            <br />
+            Your Town
+          </span>
+          <p className="org-hub-pc__caption">いつものまちに、新しい発見を。</p>
+          <Image
+            className="org-hub-pc__hero-mascot"
+            src="/organizer/games/hub-mascot-stamp.png"
+            alt=""
+            width={160}
+            height={160}
+            priority
+          />
+        </section>
+
+        <section className="org-hub-pc__section" aria-labelledby="org-hub-pc-templates-heading">
+          <div className="org-hub-pc__head">
+            <p className="org-hub-pc__kicker">TEMPLATES</p>
+            <h2 id="org-hub-pc-templates-heading">ゲームテンプレート</h2>
+            <button
+              type="button"
+              className="org-hub-pc__more"
+              aria-expanded={pcShowAllTemplates}
+              onClick={() => setPcShowAllTemplates((open) => !open)}
             >
-              {HUB_TYPES.map((type) => (
-                <DropdownMenuItem
-                  key={type.id}
-                  className="org-hub__create-option min-h-11 cursor-pointer flex-col items-start gap-0.5 rounded-xl px-2.5 py-1.5 focus:bg-[#e7f3ea] focus:text-inherit data-highlighted:bg-[#e7f3ea]"
+              {pcShowAllTemplates ? "閉じる" : "すべて見る"}
+              <ArrowUpRight className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+          <ul className="org-hub-pc__templates">
+            {pcTemplates.map((item, index) => (
+              <li key={item.id}>
+                <Link href={`/organizer/games/new?type=${item.id}`} className="org-hub-pc__template">
+                  <span className="org-hub-pc__template-photo">
+                    <Image src={item.photo} alt="" fill sizes="220px" unoptimized />
+                    <span className="org-hub-pc__template-no">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="org-hub-pc__template-mascot" aria-hidden>
+                      <Image src={item.mascot} alt="" width={96} height={96} unoptimized />
+                    </span>
+                  </span>
+                  <span className="org-hub-pc__template-label">{item.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section
+          ref={pcListRef}
+          className="org-hub-pc__section org-hub-pc__recent"
+          aria-labelledby="org-hub-pc-recent-heading"
+        >
+          <div className="org-hub-pc__head">
+            <h2 id="org-hub-pc-recent-heading">最近作成したゲーム</h2>
+            <span className="org-hub-pc__rule" aria-hidden />
+            <div className="org-hub-pc__filters" role="tablist" aria-label="ゲームの状態">
+              {PC_FILTERS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={pcFilter === item.id}
+                  className={cn("org-hub-pc__filter", pcFilter === item.id && "is-on")}
                   onClick={() => {
-                    setPcCreateOpen(false);
-                    router.push(`/organizer/games/new?type=${type.id}`);
+                    setPcFilter(item.id);
+                    setPcShowAllGames(false);
                   }}
                 >
-                  <span className="org-hub__create-option-label">{type.label}</span>
-                  <span className="org-hub__create-option-blurb">{type.blurb}</span>
-                </DropdownMenuItem>
+                  {item.label}
+                </button>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <p className="org-hub__bubble">
-          まちの魅力を
-          <br />
-          ゲームでつなごう！
-        </p>
-        <Image
-          className="org-hub__mascot"
-          src="/organizer/games/hub-mascot.png"
-          alt=""
-          width={224}
-          height={272}
-          priority
-        />
-      </header>
+            </div>
+          </div>
 
-      <ul className="org-hub__benefits">
-        {benefits.map((item) => {
-          const Icon = item.icon;
-          const inner = (
+          {loading ? (
+            <p className="org-hub-pc__note" aria-busy>
+              読み込み中です…
+            </p>
+          ) : loadError ? (
+            <div className="org-hub-pc__note">
+              <p>一覧を取得できませんでした。もう一度試してみてください。</p>
+              <button type="button" className="org-hub__retry" onClick={() => window.location.reload()}>
+                再読み込み
+              </button>
+            </div>
+          ) : games.length === 0 ? (
+            <p className="org-hub-pc__note">まだゲームがありません。上の「ゲームを作る」から始められます。</p>
+          ) : pcRecentGames.length === 0 ? (
+            <p className="org-hub-pc__note">この状態のゲームはまだありません。</p>
+          ) : (
             <>
-              <span className={cn("org-hub__benefit-icon", `is-${item.tone}`)} aria-hidden>
-                <Icon className="h-4 w-4" strokeWidth={1.8} />
-              </span>
-              <span className="org-hub__benefit-title">{item.title}</span>
-              <span className="org-hub__benefit-text">{item.text}</span>
+              <ul className="org-hub-pc__games">
+                {pcShownGames.map((game) => (
+                  <li key={game.id}>
+                    <PcGameCard game={game} />
+                  </li>
+                ))}
+              </ul>
+              {pcRecentGames.length > PC_RECENT_LIMIT ? (
+                <button
+                  type="button"
+                  className="org-hub-pc__show-more"
+                  onClick={() => setPcShowAllGames((open) => !open)}
+                >
+                  {pcShowAllGames ? "少なく表示" : `ほかの${pcRecentGames.length - PC_RECENT_LIMIT}件も見る`}
+                </button>
+              ) : null}
             </>
-          );
-          return (
-            <li key={item.title}>
-              {item.href ? (
-                <Link href={item.href} className="org-hub__benefit">
-                  {inner}
-                </Link>
-              ) : (
-                <div className="org-hub__benefit">{inner}</div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-
+          )}
+        </section>
+      </div>
       <section
         ref={listRef}
         className={cn("org-hub__section", showGameList && "is-list-open")}
@@ -555,33 +710,6 @@ export function OrganizerGamesHub() {
         )}
       </section>
 
-      <section className="org-hub__section" id="game-templates" aria-labelledby="game-templates-heading">
-        <div className="org-hub__head">
-          <h2 id="game-templates-heading">
-            <Sparkles className="h-4 w-4" aria-hidden />
-            ゲームテンプレート
-          </h2>
-          <button
-            type="button"
-            className="org-hub__about"
-            aria-expanded={aboutTemplates}
-            onClick={() => setAboutTemplates((open) => !open)}
-          >
-            テンプレートとは
-            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-          </button>
-        </div>
-        {aboutTemplates ? (
-          <p className="org-hub__about-copy">種類を選ぶと、その遊びに合った作成画面が開きます。</p>
-        ) : null}
-        <ul className="org-hub__templates">
-          {HUB_TYPES.map((type) => (
-            <li key={type.id}>
-              <TemplateCard type={type} />
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
   );
 }

@@ -145,8 +145,14 @@ export function isPurchaseCtaDisabled(state: PurchaseCtaState): boolean {
 }
 
 /** マイ参加パス画面（Stripe連携後にQR表示へ拡張予定） */
+/** ゲームに申し込んだあとに開く参加パス。そのゲームのパスを選んだ状態で開く。 */
+export function getGamePassHref(gameId: string): string {
+  return `/pass?game=${encodeURIComponent(gameId)}`;
+}
+
+/** 申し込んだあとに開く参加パス。そのイベントのパスを選んだ状態で開く。 */
 export function getEventPassHref(eventId: string): string {
-  return `/events/${eventId}/pass`;
+  return `/pass?event=${encodeURIComponent(eventId)}`;
 }
 
 const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"] as const;

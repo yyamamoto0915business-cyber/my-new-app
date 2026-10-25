@@ -6,6 +6,7 @@ import {
   updateOrganizerGameSpot,
 } from "@/lib/organizer/games";
 import { isOrganizerGameSpotKind } from "@/lib/organizer/game-tokens";
+import { requireOrganizerFeature } from "@/lib/organizer/require-organizer-feature";
 
 type Params = { params: Promise<{ id: string; spotId: string }> };
 
@@ -14,6 +15,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const { id, spotId } = await params;
   const auth = await requireOrganizerApi();
   if (!auth.ok) return auth.response;
+  const planBlocked = await requireOrganizerFeature(auth.supabase, auth.organizerId, "games");
+  if (planBlocked) return planBlocked;
 
   const game = await getOwnedOrganizerGame(auth.supabase, auth.organizerId, id);
   if (!game) {
@@ -59,6 +62,8 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const { id, spotId } = await params;
   const auth = await requireOrganizerApi();
   if (!auth.ok) return auth.response;
+  const planBlocked = await requireOrganizerFeature(auth.supabase, auth.organizerId, "games");
+  if (planBlocked) return planBlocked;
 
   const game = await getOwnedOrganizerGame(auth.supabase, auth.organizerId, id);
   if (!game) {

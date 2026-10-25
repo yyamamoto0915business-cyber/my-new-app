@@ -1,5 +1,6 @@
 "use client";
 
+import { PreviewZoom, usePreviewZoom } from "@/components/organizer/games/PreviewZoom";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { RallyApp, type RallySpotEdit } from "@/components/play/rally/RallyApp";
 import {
@@ -29,8 +30,9 @@ import {
   type StartOffset,
   START_IMAGE_MAX,
   START_TEXT_MAX,
+  START_VIDEO_MAX,
 } from "@/lib/organizer/game-experience";
-import { ImagePlus, Plus, Shapes, Palette, X } from "lucide-react";
+import { ImagePlus, Plus, Shapes, Palette, Video, X } from "lucide-react";
 import { ShapeEditPanel, ShapePicker } from "@/components/organizer/games/ShapeTools";
 import { FloatingPanel } from "@/components/organizer/games/FloatingPanel";
 import { StartImagePicker } from "@/components/organizer/games/StartImagePicker";
@@ -88,7 +90,10 @@ export function WizardLivePreview({
   onView,
   edit,
   className,
+  pass,
 }: {
+  /** 作成画面で「参加パス」のタブを足すとき。選ぶと、届く参加パスの見本を出す。 */
+  pass?: { active: boolean; onChange: (active: boolean) => void; node: ReactNode };
   /** 渡すと、スタート画面の文字をプレビューの上で書き換えられる。 */
   edit?: Omit<StartEdit, "selected" | "onSelect" | "onMove" | "onResize" | "onShapeLabel" | "onDelete"> & {
     /** スタンプGET・特典の画面の書き換え。 */
@@ -118,6 +123,8 @@ export function WizardLivePreview({
     onClearStartMedia: () => void;
     /** 写真のアップロード欄（ウィザード側で作る。gameId が要るため）。 */
     uploadField: (onUploaded: (url: string) => void) => ReactNode;
+    /** 動画のアップロード欄。 */
+    videoField: (onUploaded: (url: string) => void) => ReactNode;
   };
   name: string;
   periodLabel: string | null;
@@ -267,12 +274,23 @@ export function WizardLivePreview({
     if (momentScreen) edit.moment.onLayout(momentScreen, { ...momentLayout, images: next });
     else edit.onImagesChange(next);
   }
-  const [picking, setPicking] = useState(false);
+  /** 「挿入」で開く欄（図形・画像・動画）。 */
+  const [inserting, setInserting] = useState<"shape" | "image" | "video" | null>(null);
   function addImage(url: string, size: GameStartImage["size"] = "m") {
     if (!edit || !url || images.length >= START_IMAGE_MAX) return;
     const id = `i${Date.now().toString(36)}`;
     setImages([...images, { id, url, size, round: false }]);
-    setPicking(false);
+    setInserting(null);
+    if (momentScreen) setMomentSelected(`img:${id}`);
+    else setSelected(`img:${id}`);
+  }
+
+  function addVideo(url: string) {
+    if (!edit || !url || images.length >= START_IMAGE_MAX) return;
+    if (images.filter((item) => item.video).length >= START_VIDEO_MAX) return;
+    const id = `v${Date.now().toString(36)}`;
+    setImages([...images, { id, url, size: "l", round: false, video: true }]);
+    setInserting(null);
     if (momentScreen) setMomentSelected(`img:${id}`);
     else setSelected(`img:${id}`);
   }
@@ -283,7 +301,6 @@ export function WizardLivePreview({
     if (momentScreen) edit.moment.onLayout(momentScreen, { ...momentLayout, shapes: next });
     else edit.onShapesChange(next);
   }
-  const [pickingShape, setPickingShape] = useState(false);
   function addShape(kind: GameShapeKind) {
     if (!edit || shapes.length >= START_SHAPE_MAX) return;
     const id = `s${Date.now().toString(36)}`;
@@ -299,7 +316,7 @@ export function WizardLivePreview({
         href: "",
       },
     ]);
-    setPickingShape(false);
+    setInserting(null);
     if (momentScreen) setMomentSelected(`shape:${id}`);
     else setSelected(`shape:${id}`);
   }
@@ -371,22 +388,7 @@ export function WizardLivePreview({
     return moveAnchor(sel);
   };
   const momentAnchor = (sel: string | null) => (!sel ? null : sel === "background" ? fabAnchor("背景") : moveAnchor(sel));
-  const [fitScale, setFitScale] = useState(0.7);
-  const [actual, setActual] = useState(false);
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    const measure = () => {
-      const { width, height } = stage.getBoundingClientRect();
-      const next = Math.min(1, (width - 4) / PHONE_W, (height - 4) / PHONE_H);
-      if (next > 0) setFitScale(Math.round(next * 100) / 100);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(stage);
-    return () => observer.disconnect();
-  }, []);
-  const scale = actual ? 1 : fitScale;
+  const { scale, zoomed, setZoom } = usePreviewZoom(stageRef, PHONE_W, PHONE_H);
   const settings = useMemo(() => ({ experience: { ...experience, spots } }), [experience, spots]);
   const start: PlayStart = useMemo(() => {
     const base = publicPlayStart(settings);
@@ -453,8 +455,9 @@ export function WizardLivePreview({
             key={item.id}
             type="button"
             role="tab"
-            aria-selected={view === item.id}
+            aria-selected={!pass?.active && view === item.id}
             onClick={() => {
+              pass?.onChange(false);
               onView(item.id);
               setNonce((count) => count + 1);
             }}
@@ -462,20 +465,24 @@ export function WizardLivePreview({
             {item.label}
           </button>
         ))}
+        {pass ? (
+          <button type="button" role="tab" aria-selected={pass.active} onClick={() => pass.onChange(true)}>
+            参加パス
+          </button>
+        ) : null}
       </div>
+      {pass?.active ? (
+        <div className="wizard-preview__pass">{pass.node}</div>
+      ) : (
+        <>
       {edit && (view === "stamp" || view === "reward" || view === "home") ? (
         <p className="wizard-preview__edit-hint">タップで編集、押したままドラッグで移動</p>
       ) : null}
       {edit && view === "start" ? (
         <p className="wizard-preview__edit-hint">タップで編集、押したままドラッグで移動</p>
       ) : null}
-      <div className="wizard-preview__zoom">
-        <span>{actual ? "実寸（100%）" : `実寸の${Math.round(scale * 100)}%`}</span>
-        <button type="button" onClick={() => setActual((current) => !current)}>
-          {actual ? "画面に合わせる" : "実寸で見る"}
-        </button>
-      </div>
-      <div ref={stageRef} className={cn("wizard-preview__stage", actual && "is-actual")}>
+      <PreviewZoom scale={scale} zoomed={zoomed} setZoom={setZoom} />
+      <div ref={stageRef} className={cn("wizard-preview__stage", zoomed && "is-actual")}>
         <div className="wizard-preview__fit" style={{ width: PHONE_W * scale, height: PHONE_H * scale }}>
             {edit && bgSelected && hasCustomBg ? (
               <button
@@ -504,35 +511,19 @@ export function WizardLivePreview({
                   type="button"
                   className="wizard-preview__add"
                   onClick={() => {
-                    setSelected(null);
-                    setMomentSelected(null);
-                    setPickingShape(false);
-                    setPicking(true);
-                  }}
-                  disabled={images.length >= START_IMAGE_MAX}
-                >
-                  <ImagePlus aria-hidden />
-                  画像
-                </button>
-                <button
-                  type="button"
-                  className="wizard-preview__add"
-                  onClick={() => {
                     closeSelection();
-                    setPicking(false);
-                    setPickingShape(true);
+                    setInserting(shapes.length >= START_SHAPE_MAX ? "image" : "shape");
                   }}
-                  disabled={shapes.length >= START_SHAPE_MAX}
+                  disabled={images.length >= START_IMAGE_MAX && shapes.length >= START_SHAPE_MAX}
                 >
-                  <Shapes aria-hidden />
-                  図形
+                  <Plus aria-hidden />
+                  挿入
                 </button>
                 <button
                   type="button"
                   className="wizard-preview__add"
                   onClick={() => {
-                    setPicking(false);
-                    setPickingShape(false);
+                    setInserting(null);
                     if (momentScreen) setMomentSelected("background");
                     else setSelected("background");
                   }}
@@ -588,7 +579,7 @@ export function WizardLivePreview({
           </div>
         </div>
       </div>
-      {edit && view === "start" && selected && !picking && !selectedShape ? (
+      {edit && view === "start" && selected && !inserting && !selectedShape ? (
         <FloatingPanel anchorKey={selected ?? ""} getAnchor={() => startAnchor(selected)}>
           <StartEditPanel
             selection={selected}
@@ -608,7 +599,7 @@ export function WizardLivePreview({
           />
         </FloatingPanel>
       ) : null}
-      {edit && spotSeal && !picking ? (
+      {edit && spotSeal && !inserting ? (
         <FloatingPanel anchorKey={`seal:${spotSeal?.key ?? ""}`} getAnchor={() => null}>
           <div className="edit-panel" role="dialog" aria-label="スタンプの絵">
             <div className="edit-panel__head">
@@ -629,7 +620,7 @@ export function WizardLivePreview({
           </div>
         </FloatingPanel>
       ) : null}
-      {edit && momentEdit && momentScreen && momentSelected && !picking && !selectedShape && !spotSeal ? (
+      {edit && momentEdit && momentScreen && momentSelected && !inserting && !selectedShape && !spotSeal ? (
         <FloatingPanel anchorKey={`${momentScreen}:${momentSelected}`} getAnchor={() => momentAnchor(momentSelected)}>
           <MomentEditPanel
             screen={momentScreen}
@@ -648,7 +639,7 @@ export function WizardLivePreview({
           />
         </FloatingPanel>
       ) : null}
-      {edit && selectedShape && !picking && !pickingShape ? (
+      {edit && selectedShape && !inserting ? (
         <FloatingPanel anchorKey={`shape:${selectedShape?.id}`} getAnchor={() => moveAnchor(`shape:${selectedShape?.id}`)}>
           <ShapeEditPanel
             key={selectedShape.id}
@@ -664,24 +655,56 @@ export function WizardLivePreview({
           />
         </FloatingPanel>
       ) : null}
-      {edit && pickingShape ? (
-        <FloatingPanel anchorKey={"pick-shape"} getAnchor={() => fabAnchor("図形")}>
-          <ShapePicker onPick={addShape} onClose={() => setPickingShape(false)} />
-        </FloatingPanel>
-      ) : null}
-      {edit && picking ? (
-        // 画像は画面の上のほうに入るので、選ぶ欄は下に出す。設定と同じく半透明で浮かせる。
-        <FloatingPanel anchorKey={"pick-image"} getAnchor={() => fabAnchor("画像")}>
-          <StartImagePicker
-            onPick={addImage}
-            onClose={() => setPicking(false)}
-            uploadField={edit.uploadField((url) => addImage(url, "l"))}
-          />
+      {edit && inserting ? (
+        <FloatingPanel anchorKey="insert" getAnchor={() => fabAnchor("挿入")}>
+          <div className="look-insert" style={{ padding: "0 0.5rem 0.5rem" }}>
+            <div className="look-insert__tabs" role="tablist" aria-label="挿入するもの">
+              {(
+                [
+                  ["shape", "図形", Shapes],
+                  ["image", "画像", ImagePlus],
+                  ["video", "動画", Video],
+                ] as const
+              ).map(([id, label, Icon]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={inserting === id}
+                  className={cn(inserting === id && "is-on")}
+                  onClick={() => setInserting(id)}
+                >
+                  <Icon aria-hidden />
+                  {label}
+                </button>
+              ))}
+            </div>
+            {inserting === "shape" ? (
+              <ShapePicker onPick={addShape} onClose={() => setInserting(null)} />
+            ) : inserting === "video" ? (
+              <div className="edit-panel" style={{ display: "grid", gap: "0.4rem" }}>
+                {edit.videoField(addVideo)}
+                <p className="edit-panel__note edit-panel__note--show">
+                  {images.filter((item) => item.video).length >= START_VIDEO_MAX
+                    ? `動画は${START_VIDEO_MAX}つまで入れられます`
+                    : "MP4・WEBM・MOV、20MBまで。入れると、くり返し再生されます"}
+                </p>
+              </div>
+            ) : (
+              <StartImagePicker
+                onPick={addImage}
+                onClose={() => setInserting(null)}
+                uploadField={edit.uploadField((url) => addImage(url, "l"))}
+              />
+            )}
+          </div>
         </FloatingPanel>
       ) : null}
       <p className="wizard-preview__note">
         入力した文章や画像は、すぐここに反映されます。スタンプの数は見本です。
       </p>
+        </>
+      )}
     </div>
   );
 }

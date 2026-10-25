@@ -14,13 +14,15 @@ type Props = {
   mission: PublicMissionPlay;
   progress: PlayProgress;
   onProgress: (progress: PlayProgress) => void;
+  /** 主催者のプレビュー：この項目を開いたところから見せる。 */
+  previewOpen?: number;
 };
 
-export function PlayMission({ token, mission, progress, onProgress }: Props) {
+export function PlayMission({ token, mission, progress, onProgress, previewOpen }: Props) {
   const done = progress.mission?.done ?? [];
   const needed = progress.mission?.needed ?? mission.clearCount;
   const rewards = progress.mission?.rewards ?? mission.rewards;
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(previewOpen ?? null);
   const [keyword, setKeyword] = useState("");
   /** 「友だちと参加」：相手が同じ合言葉を入れるのを待っている言葉。 */
   const [pairWaiting, setPairWaiting] = useState<string | null>(null);

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
+  Ticket,
   Check,
   ChevronDown,
   Coins,
@@ -47,7 +48,18 @@ import { RewardFields } from "@/components/organizer/games/RewardFields";
 import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/games/RewardOptions";
 import { PlacePickerDialog } from "@/components/organizer/games/PlacePickerDialog";
 import { PeriodPresets, jstDate, periodProblem } from "@/components/organizer/games/PeriodPresets";
-import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameParticipationChoice } from "@/components/organizer/games/ParticipationField";
+import {
+  EMPTY_GAME_PASS_DRAFT,
+  GamePassPreview,
+  GamePassStep,
+  type GamePlayLimitChoice,
+  gamePassBody,
+  gamePassDraftFromSettings,
+  type GamePassDraft,
+} from "@/components/organizer/games/GamePassStep";
+import { gameTypeCover } from "@/components/organizer/games/GameCardSetup";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
@@ -58,6 +70,7 @@ import { readGameLook } from "@/lib/organizer/game-look";
 
 const STEPS = [
   { id: "basic", label: "基本設定" },
+  { id: "pass", label: "参加パス" },
   { id: "spots", label: "スポット設定" },
   { id: "rewards", label: "達成条件・特典" },
   { id: "publish", label: "確認・公開" },
@@ -67,9 +80,10 @@ type StepId = (typeof STEPS)[number]["id"];
 
 const SHELL_STEPS: GameCreateStep[] = [
   { label: STEPS[0].label, icon: PenLine },
-  { label: STEPS[1].label, icon: MapPin },
-  { label: STEPS[2].label, icon: Gift },
-  { label: STEPS[3].label, icon: Rocket },
+  { label: STEPS[1].label, icon: Ticket },
+  { label: STEPS[2].label, icon: MapPin },
+  { label: STEPS[3].label, icon: Gift },
+  { label: STEPS[4].label, icon: Rocket },
 ];
 
 
@@ -101,6 +115,9 @@ export function OrganizerCheckinCreateForm() {
   const { look, lookEdit, setLook } = useGameLookEdit();
   const router = useRouter();
   const [step, setStep] = useState<StepId>("basic");
+  useEffect(() => {
+    setPassPreview(step === "pass");
+  }, [step]);
   const [name, setName] = useState("春のまち歩きチェックイン");
   const [description, setDescription] = useState(
     "まちのスポットをめぐってチェックインしながら、春のまちの魅力を発見しましょう！すべてのスポットを巡って、素敵な特典をゲットしよう！"
@@ -121,6 +138,12 @@ export function OrganizerCheckinCreateForm() {
   const [tagDraft, setTagDraft] = useState("");
   /** 参加できる人（ゲーム共通の設定。参加者の画面での確かめに使う）。 */
   const [gameAudience, setGameAudience] = useState<GameAudienceChoice>("anyone");
+  const [participation, setParticipation] = useState<GameParticipationChoice>("onsite");
+  // 新しく作るゲームは、登録なしで遊べる「何度でも」から始める。保存済みのゲームは読み込んだ値になる。
+  const [playLimit, setPlayLimit] = useState<GamePlayLimitChoice>("repeat");
+  const [passDraft, setPassDraft] = useState<GamePassDraft>(EMPTY_GAME_PASS_DRAFT);
+  /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
+  const [passPreview, setPassPreview] = useState(false);
   // チェックイン独自の参加対象は使っていない（保存の形だけ残す）。
   const audience: CheckinAudience = "anyone";
   const [defaultMethod, setDefaultMethod] = useState<CheckinMethod>("gps");
@@ -162,7 +185,10 @@ export function OrganizerCheckinCreateForm() {
     if (saved.endTime) setEndTime(saved.endTime);
     setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
     const savedAudience = saved.settings.audience;
-    setGameAudience(savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    setGameAudience(savedAudience === "entry" || savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    setParticipation(saved.settings.participation === "remote" ? "remote" : "onsite");
+    setPlayLimit(saved.settings.playLimit === "repeat" ? "repeat" : "once");
+    setPassDraft(gamePassDraftFromSettings(saved.settings.pass));
     if (saved.settings.look) setLook(readGameLook(saved.settings.look));
     const checkin = sanitizeCheckinSettings(saved.settings.checkin);
     if (!checkin) return;
@@ -322,6 +348,9 @@ export function OrganizerCheckinCreateForm() {
           eventId: eventId || null,
           cardImage,
           audience: gameAudience,
+          participation,
+          playLimit,
+          pass: gamePassBody(passDraft),
           description: description.trim(),
           startsAt: toIsoFromDateTime(startDate, startTime),
           endsAt: toIsoFromDateTime(endDate, endTime),
@@ -376,7 +405,6 @@ export function OrganizerCheckinCreateForm() {
   return (
     <GameCreateShell
       title="チェックイン作成"
-      subtitle="スポットに来てチェックインする、回遊型の体験をかんたん作成しましょう。"
       steps={SHELL_STEPS}
       step={stepIndex}
       onStep={(index) => {
@@ -391,14 +419,31 @@ export function OrganizerCheckinCreateForm() {
       onPublish={() => void save("published")}
       preview={
         <GamePhonePreview
-          kind="checkin"
-          typeLabel="チェックイン"
-          name={name}
-          description={description}
-          settings={settingsBody}
-          look={lookEdit}
-          stepView={stepIndex === 0 ? "start" : stepIndex === STEPS.length - 1 ? "clear" : "play"}
-        />
+            kind="checkin"
+            typeLabel="チェックイン"
+            name={name}
+            description={description}
+            settings={settingsBody}
+            look={lookEdit}
+            stepView={stepIndex === 0 ? "start" : stepIndex === STEPS.length - 1 ? "clear" : "play"}
+            pass={{
+              active: passPreview,
+              onChange: setPassPreview,
+              node: (
+                <GamePassPreview
+                image={cardImage}
+                fallbackImage={gameTypeCover("checkin")}
+                name={name}
+                typeLabel="チェックイン"
+                startAt={startDate ? `${startDate}T00:00:00+09:00` : null}
+                  endAt={endDate ? `${endDate}T23:59:00+09:00` : null}
+                participation={participation}
+                entry={gameAudience === "entry"}
+                note={passDraft.note}
+              />
+              ),
+            }}
+          />
       }
     >
           {step === "basic" ? (
@@ -439,9 +484,6 @@ export function OrganizerCheckinCreateForm() {
                     <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
                   </div>
                   <PeriodPresets startDate={startDate} endDate={endDate} onStart={setStartDate} onEnd={setEndDate} />
-                </div>
-                <div className="org-checkin__field org-checkin__field--wide">
-                  <AudienceField value={gameAudience} onChange={setGameAudience} eventChosen={Boolean(eventId)} />
                 </div>
                 <label className="org-checkin__field org-checkin__field--wide">
                   <span>説明文</span>
@@ -846,6 +888,49 @@ export function OrganizerCheckinCreateForm() {
               </RewardList>
             </section>
           ) : null}
+
+          {step === "pass" ? (
+
+            <section className="org-quiz__card" aria-labelledby="checkin-pass">
+
+                    <h2 id="checkin-pass">参加パス</h2>
+
+                    <GamePassStep
+
+                      audience={gameAudience}
+
+                      onAudience={setGameAudience}
+
+                      eventChosen={Boolean(eventId)}
+
+                      participation={participation}
+
+                      onParticipation={setParticipation}
+
+                      playLimit={playLimit}
+
+                      onPlayLimit={setPlayLimit}
+
+                      pass={passDraft}
+
+                      onPass={setPassDraft}
+
+                      image={cardImage}
+
+
+                      onImage={setCardImage}
+
+                      gameId={draft.editId}
+
+
+
+
+                    />
+
+                  </section>
+
+          ) : null}
+
 
           {step === "publish" ? (
             <section className="org-checkin__card">

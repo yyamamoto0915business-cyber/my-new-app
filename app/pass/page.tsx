@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 type Props = {
-  searchParams: Promise<{ preview?: string }>;
+  searchParams: Promise<{ preview?: string; event?: string; game?: string }>;
 };
 
 export default async function PassPage({ searchParams }: Props) {
@@ -26,7 +26,15 @@ export default async function PassPage({ searchParams }: Props) {
 
   // プレビュー以外はログイン必須
   if (!user && !previewMode) {
-    redirect(getLoginUrl("/pass"));
+    redirect(
+      getLoginUrl(
+        params.game
+          ? `/pass?game=${encodeURIComponent(params.game)}`
+          : params.event
+            ? `/pass?event=${encodeURIComponent(params.event)}`
+            : "/pass"
+      )
+    );
   }
 
   const supabase = user ? await createClient() : null;
@@ -53,6 +61,7 @@ export default async function PassPage({ searchParams }: Props) {
         passes={passes}
         demoAccessByPassId={demoAccessByPassId}
         previewBanner={preview?.bannerLabel ?? null}
+        focusEventId={preview ? null : (params.game ?? params.event ?? null)}
       />
     </div>
   );

@@ -15,7 +15,7 @@ export const GAME_EXPERIENCE_CATEGORIES = [
   "子ども向け",
 ] as const;
 
-export const GAME_AUDIENCES = ["anyone", "event", "pass"] as const;
+export const GAME_AUDIENCES = ["anyone", "entry", "event", "pass"] as const;
 export const GAME_PLAY_LIMITS = ["once", "repeat"] as const;
 export const GAME_ROUTES = ["free", "ordered", "any-start"] as const;
 export const GAME_CHECKIN_METHODS = ["qr", "gps", "keyword"] as const;
@@ -511,13 +511,14 @@ export type GameExperience = {
 
 export const GAME_AUDIENCE_LABEL: Record<GameAudience, string> = {
   anyone: "誰でも参加",
+  entry: "申し込んだ人のみ",
   event: "イベント参加者のみ",
   pass: "参加パス購入者のみ",
 };
 
 export const GAME_PLAY_LIMIT_LABEL: Record<GamePlayLimit, string> = {
   once: "1人1回",
-  repeat: "何度でも参加可能",
+  repeat: "何度でも（登録なしでも遊べる）",
 };
 
 export const GAME_ROUTE_LABEL: Record<GameRoute, string> = {
@@ -597,6 +598,15 @@ export function createExperienceSpot(): GameExperienceSpot {
     mapImageUrl: "",
     stampImageUrl: "",
   };
+}
+
+/**
+ * これから作るゲームの最初の設定。誰でも・何度でも（登録なしで遊べる）から始める。
+ * createDefaultExperience は保存済みの設定を読むときの補いにも使うので、そちらは1人1回のまま。
+ */
+export function createNewGameExperience(): GameExperience {
+  const base = createDefaultExperience();
+  return { ...base, basics: { ...base.basics, playLimit: "repeat" } };
 }
 
 export function createDefaultExperience(): GameExperience {
@@ -1192,7 +1202,17 @@ export function publicPlayAudience(settings: unknown): GameAudience {
   if (experience) return experience.basics.audience;
   // スタンプラリー以外のゲームは、設定の一番上の audience（イベント参加者・参加パス保有者）を見る。
   const audience = (settings as { audience?: unknown }).audience;
-  return audience === "event" || audience === "pass" ? audience : "anyone";
+  return audience === "entry" || audience === "event" || audience === "pass" ? audience : "anyone";
+}
+
+/** 参加のしかた。現地＝スポットのQRを読んで始める、どこからでも＝参加コードで始める。 */
+export type GameParticipation = "onsite" | "remote";
+
+/** スタンプラリーはスポットを回るので、いつも現地。それ以外は設定の participation を見る。 */
+export function publicPlayParticipation(settings: unknown, type: string): GameParticipation {
+  if (type === "stamp") return "onsite";
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) return "onsite";
+  return (settings as { participation?: unknown }).participation === "remote" ? "remote" : "onsite";
 }
 
 const EVENT_MEMBER_STATUSES = new Set(["applied", "confirmed", "change_requested", "checked_in", "completed"]);
@@ -1228,9 +1248,20 @@ export function rallyAudienceDecision(input: {
   eventLinked: boolean;
   participant: boolean;
   passHeld: boolean;
-}): { ok: true } | { ok: false; code: "audience_login" | "audience_closed"; error: string } {
+  /** ゲームに申し込んでいるか（申し込んだ人だけのとき）。 */
+  entryHeld?: boolean;
+}): { ok: true } | { ok: false; code: "audience_login" | "audience_closed" | "entry_required"; error: string } {
   const audience = input.audience ?? "anyone";
   if (audience === "anyone") return { ok: true };
+  if (audience === "entry") {
+    if (!input.signedIn) {
+      return { ok: false, code: "audience_login", error: "申し込んだアカウントでログインしてください" };
+    }
+    if (!input.entryHeld) {
+      return { ok: false, code: "entry_required", error: "このゲームは、申し込んだ人だけが参加できます" };
+    }
+    return { ok: true };
+  }
   if (!input.signedIn) {
     return {
       ok: false,
@@ -1317,7 +1348,9 @@ export function rallyAccountJoinDecision(input: {
 export function publicPlayLimit(settings: unknown): GamePlayLimit {
   if (!settings || typeof settings !== "object" || Array.isArray(settings)) return "once";
   const experience = sanitizeGameExperience((settings as { experience?: unknown }).experience);
-  return experience?.basics.playLimit ?? "once";
+  if (experience) return experience.basics.playLimit;
+  // スタンプラリー以外のゲームは、設定の一番上の playLimit を見る。
+  return (settings as { playLimit?: unknown }).playLimit === "repeat" ? "repeat" : "once";
 }
 
 /** 指定順と、どこからでもスタートのとき、次のスポット以外を押そうとした理由。押してよいときは null。 */

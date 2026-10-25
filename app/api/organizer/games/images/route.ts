@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getApiUser } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOrganizerApi } from "@/lib/organizer/require-organizer-api";
+import { requireOrganizerFeature } from "@/lib/organizer/require-organizer-feature";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -33,6 +34,8 @@ export async function POST(request: NextRequest) {
   }
   const auth = await requireOrganizerApi();
   if (!auth.ok) return auth.response;
+  const planBlocked = await requireOrganizerFeature(auth.supabase, auth.organizerId, "games");
+  if (planBlocked) return planBlocked;
 
   let form: FormData;
   try {

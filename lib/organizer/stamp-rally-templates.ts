@@ -1,5 +1,5 @@
 import {
-  createDefaultExperience,
+  createNewGameExperience,
   sanitizeGameExperience,
   type GameExperience,
   type GameExperienceSpot,
@@ -60,7 +60,7 @@ function rallyTemplate(input: {
   rewardLabel: string;
   spots: StampRallyTemplateSpot[];
 }): StampRallyTemplate {
-  const base = createDefaultExperience();
+  const base = createNewGameExperience();
   const experience = sanitizeGameExperience({
     ...base,
     basics: { ...base.basics, category: input.category },

@@ -21,6 +21,7 @@ import {
   type ParticipationPass,
 } from "@/lib/participation-pass";
 import { PassOnlineJoinSection } from "@/components/pass/PassOnlineJoinSection";
+import { GamePassTicket, PassGamesNotice, PassGamesSection } from "@/components/pass/PassGamesSection";
 import type { EventOnlineAccessResponse } from "@/lib/event-online";
 
 type Props = {
@@ -33,6 +34,22 @@ const TICKET_BG = "/assets/machiglyph/pass/pass-ticket-bg.png";
 
 /** モバイル用参加パスタイケット — 1画面に収まるコンパクト構成 */
 export function PassMobileTicket({ pass, onClose, demoAccess }: Props) {
+  // ゲームの参加パスは、受付のQRではなくゲームの始め方を出す。
+  if (pass.kind === "game") {
+    return (
+      <div className="flex max-h-full min-h-0 w-full flex-col overflow-y-auto">
+        <GamePassTicket pass={pass} />
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-3 inline-flex h-11 w-full shrink-0 items-center justify-center rounded-xl border-[1.5px] border-[#2d7a4f] bg-white text-[13px] font-semibold text-[#2d7a4f]"
+        >
+          閉じる
+        </button>
+      </div>
+    );
+  }
+
   const qrValue = pass.qrValue ?? pass.receptionNumber;
   const onlineOnly = isOnlineOnlyPass(pass);
   const hybrid = isHybridPass(pass);
@@ -40,6 +57,7 @@ export function PassMobileTicket({ pass, onClose, demoAccess }: Props) {
 
   return (
     <div className="flex max-h-full min-h-0 w-full flex-col">
+      {demoAccess === undefined ? <PassGamesNotice eventId={pass.eventId} /> : null}
       <article
         className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_12px_40px_rgba(40,60,48,0.18)]"
         style={{
@@ -256,6 +274,8 @@ export function PassMobileTicket({ pass, onClose, demoAccess }: Props) {
           />
         </div>
       ) : null}
+
+      {demoAccess === undefined ? <PassGamesSection eventId={pass.eventId} /> : null}
 
       <div className="mt-3 flex shrink-0 gap-2">
         <Link

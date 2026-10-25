@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sanitizeGameExperience } from "@/lib/organizer/game-experience";
+import { publicPlayAudience, sanitizeGameExperience } from "@/lib/organizer/game-experience";
 import { MAX_ORGANIZER_GAME_SPOTS } from "@/lib/organizer/game-tokens";
 import { requireOrganizerApi } from "@/lib/organizer/require-organizer-api";
 import {
@@ -8,10 +8,36 @@ import {
   parseOrganizerGameSpotDrafts,
   updateOrganizerGameDraft,
 } from "@/lib/organizer/games";
-import { countOrganizerGamePlayers } from "@/lib/organizer/play";
+import { countOrganizerGamePlayers, getPlayDb } from "@/lib/organizer/play";
+import { requireOrganizerFeature } from "@/lib/organizer/require-organizer-feature";
 import { settingsFromBody, type GameSettingsBody } from "@/lib/organizer/game-settings-body";
+import { coverFromSettings } from "@/lib/organizer/public-games";
+import { readGamePassSettings } from "@/lib/organizer/game-pass";
+import { isOrganizerGameTypeId } from "@/lib/organizer/game-types";
 
 type Params = { params: Promise<{ id: string }> };
+
+/** ゲームに申し込んだ人（新しい順）。名前はプロフィールの表示名。 */
+async function listGameEntries(gameId: string): Promise<{ name: string; appliedAt: string }[]> {
+  const db = getPlayDb();
+  if (!db) return [];
+  const { data, error } = await db
+    .from("organizer_game_entries")
+    .select("user_id, created_at")
+    .eq("game_id", gameId)
+    .eq("status", "applied")
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+  const rows = data as { user_id: string; created_at: string }[];
+  const { data: profiles } = await db
+    .from("profiles")
+    .select("id, display_name")
+    .in("id", rows.map((row) => row.user_id));
+  const names = new Map(
+    ((profiles ?? []) as { id: string; display_name: string | null }[]).map((p) => [p.id, p.display_name?.trim() || ""])
+  );
+  return rows.map((row) => ({ name: names.get(row.user_id) || "参加者", appliedAt: row.created_at }));
+}
 
 /** GET: ゲーム詳細とスポット */
 export async function GET(_req: NextRequest, { params }: Params) {
@@ -43,7 +69,16 @@ export async function GET(_req: NextRequest, { params }: Params) {
         : null;
     const experience = sanitizeGameExperience(settings?.experience);
     // スタンプラリー以外の作成画面は、settings をそのまま読み直して下書きを開く。
-    return NextResponse.json({ game, spots, playerCount, experience, settings: settings ?? {} });
+    // 編集画面の上に出す絵。設定した画像（カード・スタート画面など）→ 対象イベントの画像の順。
+    let coverImage = coverFromSettings(settings, isOrganizerGameTypeId(game.type) ? game.type : "stamp");
+    if (!coverImage && game.eventId) {
+      const { data: eventRow } = await auth.supabase.from("events").select("image_url").eq("id", game.eventId).maybeSingle();
+      const eventImage = (eventRow as { image_url?: unknown } | null)?.image_url;
+      if (typeof eventImage === "string" && eventImage.trim()) coverImage = eventImage.trim();
+    }
+    // 申し込んだ人だけのゲームは、申し込んだ人の一覧も返す。
+    const entries = publicPlayAudience(settings) === "entry" ? await listGameEntries(game.id) : null;
+    return NextResponse.json({ game, spots, playerCount, experience, settings: settings ?? {}, coverImage, entries });
   } catch (e) {
     console.error("organizer game GET:", e);
     return NextResponse.json({ error: "ゲームの取得に失敗しました" }, { status: 500 });
@@ -79,6 +114,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   const status = body.status === "published" || body.status === "draft" ? body.status : undefined;
   const name = typeof body.name === "string" ? body.name.trim() : "";
+  // プラン外になっても、公開中のゲームを非公開に戻すことはできるようにする
+  if (name || status !== "draft") {
+    const planBlocked = await requireOrganizerFeature(auth.supabase, auth.organizerId, "games");
+    if (planBlocked) return planBlocked;
+  }
   if (!name && status) {
     const { error } = await auth.supabase
       .from("organizer_games")
@@ -148,6 +188,16 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const experience = sanitizeGameExperience(body.experience);
+  // スタンプラリーの参加パス（定員・締め切り・注意書き）と、パス・カードの画像。送られてきたときだけ上書きする。
+  const extra: Record<string, unknown> = {};
+  if ("pass" in body) {
+    extra.pass = experience?.basics.audience === "entry" ? readGamePassSettings((body as { pass?: unknown }).pass) : null;
+  }
+  if ("cardImage" in body) {
+    const raw = typeof (body as { cardImage?: unknown }).cardImage === "string" ? ((body as { cardImage: string }).cardImage).trim() : "";
+    extra.cardImage =
+      (raw.startsWith("/") && !raw.startsWith("//") && !raw.includes("..")) || /^https:\/\//.test(raw) ? raw.slice(0, 500) : null;
+  }
 
   try {
     const updated = await updateOrganizerGameDraft(auth.supabase, auth.organizerId, game.id, {
@@ -157,7 +207,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       startsAt,
       endsAt,
       status,
-      settings: experience ? { experience } : undefined,
+      settings: experience || Object.keys(extra).length > 0 ? { ...(experience ? { experience } : {}), ...extra } : undefined,
       spots: parsedSpots.spots,
     });
     return NextResponse.json(updated);
@@ -174,7 +224,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 }
 
 /** 作成画面で直したときに保存した設定から外す項目。空にしたものも消えるように、いったん null にする。 */
-const EDITABLE_SETTING_KEYS = ["quiz", "mission", "photo", "coupon", "checkin", "mystery", "look", "audience", "cardImage"] as const;
+const EDITABLE_SETTING_KEYS = ["quiz", "mission", "photo", "coupon", "checkin", "mystery", "look", "audience", "participation", "playLimit", "pass", "cardImage"] as const;
 
 /**
  * PUT: スタンプラリー以外のゲームを、作成画面から上書き保存する。
@@ -192,6 +242,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
   if (game.type === "stamp") {
     return NextResponse.json({ error: "スタンプラリーは、スタンプラリーの作成画面から保存してください" }, { status: 400 });
   }
+
+  const planBlocked = await requireOrganizerFeature(auth.supabase, auth.organizerId, "games");
+  if (planBlocked) return planBlocked;
 
   let body: GameSettingsBody & {
     name?: unknown;

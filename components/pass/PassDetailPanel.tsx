@@ -19,6 +19,7 @@ import {
   PassReceptionBadge,
 } from "@/components/pass/PassBadges";
 import { PassOnlineJoinSection } from "@/components/pass/PassOnlineJoinSection";
+import { GamePassTicket, PassGamesNotice, PassGamesSection } from "@/components/pass/PassGamesSection";
 import type { EventOnlineAccessResponse } from "@/lib/event-online";
 
 type Props = {
@@ -167,6 +168,21 @@ export function PassDetailPanel({
     );
   }
 
+  // ゲームの参加パスは、受付のQRではなくゲームの始め方を出す。
+  if (pass.kind === "game") {
+    return (
+      <div className="flex min-h-0 flex-col">
+        {!compact && (
+          <div className="mb-1 shrink-0">
+            <h2 className="text-[13px] font-semibold text-[#1a2818]">選択中の参加パス</h2>
+            <p className="mt-0.5 text-[10.5px] leading-snug text-[#6a7468]">ゲームの参加パスです。ここからゲームを始められます</p>
+          </div>
+        )}
+        <GamePassTicket pass={pass} />
+      </div>
+    );
+  }
+
   const onlineOnly = isOnlineOnlyPass(pass);
   const hybrid = isHybridPass(pass);
   const denseLayout = onlineOnly || hybrid;
@@ -185,6 +201,8 @@ export function PassDetailPanel({
           </p>
         </div>
       )}
+
+      {demoAccess === undefined ? <PassGamesNotice eventId={pass.eventId} /> : null}
 
       <div className="relative flex flex-col overflow-hidden rounded-2xl border border-[#dce8de] bg-white shadow-[0_6px_20px_rgba(40,60,48,0.07)]">
         <DetailNotches />
@@ -334,6 +352,8 @@ export function PassDetailPanel({
           />
         </div>
       ) : null}
+
+      {demoAccess === undefined ? <PassGamesSection eventId={pass.eventId} /> : null}
 
       <div className={`flex shrink-0 gap-2 ${denseLayout ? "mt-1.5" : "mt-2"}`}>
         <Link

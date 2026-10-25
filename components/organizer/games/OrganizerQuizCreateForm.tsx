@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
+  Ticket,
   BookOpen,
   Camera,
   ChevronDown,
@@ -36,7 +37,18 @@ import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview"
 import { GameImageField } from "@/components/organizer/games/GameImageField";
 import { RewardFields } from "@/components/organizer/games/RewardFields";
 import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/games/RewardOptions";
-import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameParticipationChoice } from "@/components/organizer/games/ParticipationField";
+import {
+  EMPTY_GAME_PASS_DRAFT,
+  GamePassPreview,
+  GamePassStep,
+  type GamePlayLimitChoice,
+  gamePassBody,
+  gamePassDraftFromSettings,
+  type GamePassDraft,
+} from "@/components/organizer/games/GamePassStep";
+import { gameTypeCover } from "@/components/organizer/games/GameCardSetup";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
@@ -45,11 +57,15 @@ import { GameDraftLoading } from "@/components/organizer/games/GameDraftLoading"
 import { useGameDraft } from "@/components/organizer/games/useGameDraft";
 import { readGameLook } from "@/lib/organizer/game-look";
 
+/** 画面に並べる順番（参加パスは基本情報のすぐあと）。中身は STEPS の番号で持つ。 */
+const ORDER = [0, 4, 1, 2, 3];
+
 const STEPS: GameCreateStep[] = [
   { label: "基本情報", icon: PenLine },
   { label: "出題形式", icon: CircleHelp },
   { label: "問題", icon: BookOpen },
   { label: "達成条件・特典", icon: Gift },
+  { label: "参加パス", icon: Ticket },
 ];
 
 function toIsoFromDate(date: string): string | null {
@@ -67,6 +83,12 @@ export function OrganizerQuizCreateForm() {
   const [cardImage, setCardImage] = useState("");
   /** 参加できる人。イベント参加者・参加パス保有者に絞るときは、対象イベントが必要。 */
   const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
+  const [participation, setParticipation] = useState<GameParticipationChoice>("onsite");
+  // 新しく作るゲームは、登録なしで遊べる「何度でも」から始める。保存済みのゲームは読み込んだ値になる。
+  const [playLimit, setPlayLimit] = useState<GamePlayLimitChoice>("repeat");
+  const [passDraft, setPassDraft] = useState<GamePassDraft>(EMPTY_GAME_PASS_DRAFT);
+  /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
+  const [passPreview, setPassPreview] = useState(false);
   const [description, setDescription] = useState(
     "まち歩きながらクイズに挑戦して、地域の歴史やスポットの魅力を発見しよう！すべての問題に正解すると、素敵な特典がもらえます。"
   );
@@ -86,7 +108,10 @@ export function OrganizerQuizCreateForm() {
   const [couponDetail, setCouponDetail] = useState("");
   const [prizeName, setPrizeName] = useState("");
   const [prizePlace, setPrizePlace] = useState("");
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(ORDER[0]);
+  useEffect(() => {
+    setPassPreview(step === 4);
+  }, [step]);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -100,7 +125,10 @@ export function OrganizerQuizCreateForm() {
     setEndDate(saved.endDate);
     setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
     const savedAudience = saved.settings.audience;
-    setAudience(savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    setAudience(savedAudience === "entry" || savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    setParticipation(saved.settings.participation === "remote" ? "remote" : "onsite");
+    setPlayLimit(saved.settings.playLimit === "repeat" ? "repeat" : "once");
+    setPassDraft(gamePassDraftFromSettings(saved.settings.pass));
     if (saved.settings.look) setLook(readGameLook(saved.settings.look));
     const quiz = saved.settings.quiz as Record<string, unknown> | undefined;
     if (!quiz || typeof quiz !== "object") return;
@@ -272,6 +300,9 @@ export function OrganizerQuizCreateForm() {
           eventId: eventId || null,
           cardImage,
           audience,
+          participation,
+          playLimit,
+          pass: gamePassBody(passDraft),
           description: description.trim(),
           startsAt: toIsoFromDate(startDate),
           endsAt: toIsoFromDate(endDate),
@@ -317,11 +348,10 @@ export function OrganizerQuizCreateForm() {
   return (
     <GameCreateShell
       title="クイズラリー作成"
-      subtitle="まちの魅力を知ってもらえるクイズ体験を作成しましょう。"
-      steps={STEPS}
-      step={step}
+      steps={ORDER.map((index) => STEPS[index])}
+      step={ORDER.indexOf(step)}
       onStep={(next) => {
-        setStep(next);
+        setStep(ORDER[next] ?? 0);
       }}
       saving={saving}
       error={error}
@@ -330,31 +360,48 @@ export function OrganizerQuizCreateForm() {
       onPublish={() => void save("published")}
       preview={
         <GamePhonePreview
-          kind="quiz"
-          typeLabel="クイズラリー"
-          name={name}
-          description={description}
-          settings={settingsBody}
-          focus={previewIndex}
-          edit={{
-            onName: setName,
-            onDescription: setDescription,
-            quiz: {
-              questions,
-              index: previewIndex,
-              onIndex: setPreviewIndex,
-              onChange: updateQuestion,
-              onAdd: addQuestion,
-              onDuplicate: duplicateQuestion,
-              onRemove: removeQuestion,
-              onMove: moveQuestion,
-              needed: Math.min(clearCount, Math.max(questions.length, 1)),
-              formats,
-            },
-          }}
-          look={lookEdit}
-          stepView={step === 0 ? "start" : step === STEPS.length - 1 ? "clear" : "play"}
-        />
+            kind="quiz"
+            typeLabel="クイズラリー"
+            name={name}
+            description={description}
+            settings={settingsBody}
+            focus={previewIndex}
+            edit={{
+              onName: setName,
+              onDescription: setDescription,
+              quiz: {
+                questions,
+                index: previewIndex,
+                onIndex: setPreviewIndex,
+                onChange: updateQuestion,
+                onAdd: addQuestion,
+                onDuplicate: duplicateQuestion,
+                onRemove: removeQuestion,
+                onMove: moveQuestion,
+                needed: Math.min(clearCount, Math.max(questions.length, 1)),
+                formats,
+              },
+            }}
+            look={lookEdit}
+            stepView={step === 0 || step === 4 ? "start" : step === 3 ? "clear" : "play"}
+            pass={{
+              active: passPreview,
+              onChange: setPassPreview,
+              node: (
+                <GamePassPreview
+                image={cardImage}
+                fallbackImage={gameTypeCover("quiz")}
+                name={name}
+                typeLabel="クイズラリー"
+                startAt={startDate ? `${startDate}T00:00:00+09:00` : null}
+                  endAt={endDate ? `${endDate}T23:59:00+09:00` : null}
+                participation={participation}
+                entry={audience === "entry"}
+                note={passDraft.note}
+              />
+              ),
+            }}
+          />
       }
     >
       {step === 0 ? (
@@ -386,9 +433,6 @@ export function OrganizerQuizCreateForm() {
                 </select>
                 {eventHint ? <small>{eventHint}</small> : null}
               </label>
-              <div className="org-quiz__field org-quiz__field--wide">
-                <AudienceField value={audience} onChange={setAudience} eventChosen={Boolean(eventId)} />
-              </div>
               <label className="org-quiz__field">
                 <span>開始日</span>
                 <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -681,6 +725,25 @@ export function OrganizerQuizCreateForm() {
           rewards={{ coupon: couponOn, prize: prizeOn, ranking: rankingOn }}
           onClose={() => setTesting(false)}
         />
+      ) : null}
+      {step === 4 ? (
+        <section className="org-quiz__card" aria-labelledby="quiz-pass">
+          <h2 id="quiz-pass">参加パス</h2>
+          <GamePassStep
+            audience={audience}
+            onAudience={setAudience}
+            eventChosen={Boolean(eventId)}
+            participation={participation}
+            onParticipation={setParticipation}
+            playLimit={playLimit}
+            onPlayLimit={setPlayLimit}
+            pass={passDraft}
+            onPass={setPassDraft}
+            image={cardImage}
+            onImage={setCardImage}
+            gameId={draft.editId}
+          />
+        </section>
       ) : null}
     </GameCreateShell>
   );

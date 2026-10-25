@@ -65,9 +65,12 @@
   gap: 1rem;
 }
 
+/*
+ * PC：左に見出し・ステップ・入力・操作バー、右の半分ほどをプレビューに使う。
+ */
 @media (min-width: 1080px) {
   .layout {
-    grid-template-columns: minmax(0, 1fr) 20.5rem;
+    grid-template-columns: minmax(0, 1fr) max(23rem, 44%);
     align-items: start;
     gap: 1.25rem;
   }
@@ -548,6 +551,31 @@
   gap: 0.45rem;
 }
 
+/* 下の操作の左に、いまの手順と次の手順を出す（上のステップが見えないところでも位置がわかる）。 */
+.footerStep {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.55rem;
+  min-width: 0;
+  margin: 0 auto 0 0.35rem;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #1a2214;
+}
+
+.footerStep b {
+  color: #1f7a4a;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+}
+
+.footerStep span {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #6a7568;
+}
+
 .layout :global(#game-create-preview) {
   display: none;
 }
@@ -891,6 +919,10 @@
   .footerQuiet {
     justify-content: center;
     gap: 0.15rem 1rem;
+  }
+
+  .footerStep {
+    display: none;
   }
 
   .textAction {
@@ -2060,7 +2092,9 @@
 
 .stepperTrack {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  /* ステップの数（スタンプラリーは7、ほかは4〜6）に合わせて1列に並べる。 */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2208,6 +2242,75 @@
   }
 }
 
+/*
+ * PC：横に長く・縦に高くならないよう、1段にまとめる。
+ * 左に「STEP 2/6 基本設定」、右に丸と線（幅は抑える）。「次：」は丸の並びで分かるので出さない。
+ */
+@media (min-width: 900px) {
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.6rem 1.1rem 0.55rem;
+    border-radius: 1rem;
+  }
+
+  .stepperHead {
+    flex: none;
+    flex-wrap: nowrap;
+    align-items: center;
+    margin-bottom: 0;
+  }
+
+  .stepperTitle {
+    font-size: 1.05rem;
+    white-space: nowrap;
+  }
+
+  .stepperNext {
+    display: none;
+  }
+
+  .stepperTrack {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 22rem;
+    margin-left: auto;
+  }
+
+  .stepperItem button {
+    gap: 0.25rem;
+  }
+
+  .stepperDot {
+    width: 1.85rem;
+    height: 1.85rem;
+  }
+
+  .stepperDot :global(svg) {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+
+  .is-current .stepperDot {
+    box-shadow:
+      0 0 0 4px rgba(31, 122, 74, 0.14),
+      0 4px 10px rgba(31, 122, 74, 0.22);
+    transform: none;
+  }
+
+  .stepperItem + .stepperItem::before {
+    top: 0.925rem;
+    right: calc(50% + 1.1rem);
+    left: calc(-50% + 1.1rem);
+  }
+
+  /* 左の列に収めるため、名前は出さず丸と線だけ（いまの名前は左に出る。丸に合わせると名前が出る）。 */
+  .stepperLabel {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .stepperDot {
     transition: none;
@@ -2247,8 +2350,16 @@
   display: none;
 }
 
-.livePreviewTitle {
+.livePreviewHead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
   margin: 0 0 0.5rem;
+}
+
+.livePreviewTitle {
+  margin: 0;
   color: #163d28;
   font-size: 0.85rem;
   font-weight: 800;
@@ -2268,10 +2379,86 @@
   }
 }
 
-/* PC：下の操作ボタンに隠れないよう、プレビューの高さを抑える。 */
+/*
+ * PC：下の操作ボタンに隠れないよう、プレビューの高さを抑える。
+ * 大きさは −／＋ で変えられる（大きくしたら、下へスクロールして続きを見る）。
+ * 追加ボタン（テキスト・画像など）はスマホ枠の右外に並べ、中身にかぶらないようにする。
+ */
 @media (min-width: 1080px) {
   .livePreview :global(.wizard-preview__stage) {
-    height: calc(100dvh - 19rem);
-    min-height: 360px;
+    height: calc(100dvh - 14.5rem);
+    min-height: 420px;
+    padding: 0 3.7rem;
+  }
+
+  /* 大きくしたときは枠が画面より高くなるので、上に貼り付けずにページと一緒にスクロールする。 */
+  .livePreview:has(:global(.wizard-preview__stage.is-actual)) {
+    position: static;
+  }
+
+  .livePreview :global(.wizard-preview__adds) {
+    top: 2.5rem;
+    right: -3.6rem;
+    gap: 0.4rem;
+  }
+
+  .livePreview :global(.wizard-preview__adds .wizard-preview__add) {
+    flex-direction: column;
+    justify-content: center;
+    width: 3.2rem;
+    min-height: 3.2rem;
+    padding: 0.35rem 0 0.3rem;
+    border-radius: 0.95rem;
+    font-size: 0.6rem;
+    line-height: 1;
+    gap: 0.25rem;
+  }
+}
+
+/* PC でサイドバーを閉じたとき：空いた横幅で、右の半分をプレビューに使う。 */
+@media (min-width: 1080px) {
+  :global(html[data-org-sidebar="closed"]) .layout {
+    grid-template-columns: minmax(0, 1fr) 50%;
+  }
+}
+
+/*
+ * PC：操作ボタンの帯（いまの手順・お試し・下書き・次へ）を、手順の丸のすぐ下に置き、スクロールしても上に残す。
+ * 中身（.stepper より後ろ）は帯の下に回す。スマホは今までどおり下。
+ */
+@media (min-width: 900px) {
+  .main > .stepper ~ * {
+    order: 2;
+  }
+
+  .main > .footer {
+    order: 1;
+    position: sticky;
+    top: calc(var(--mg-pc-top-nav-h, 52px) + 0.5rem);
+    bottom: auto;
+    flex-wrap: nowrap;
+    box-shadow: 0 8px 20px rgba(26, 58, 38, 0.08);
+  }
+
+  .main > .footer .footerStep {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .main > .footer .footerStep span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .main > .footer .footerQuiet {
+    flex-wrap: nowrap;
+    flex: none;
+  }
+
+  .main > .footer > button {
+    flex: none;
+    white-space: nowrap;
   }
 }

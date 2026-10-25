@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
+  Ticket,
   Check,
   ChevronDown,
   ChevronUp,
@@ -25,6 +26,7 @@ import {
   COUPON_WIN_MODES,
   createCouponStore,
   sampleCouponStores,
+  sanitizeCouponSettings,
   type CouponAudience,
   type CouponCategory,
   type CouponStore,
@@ -32,16 +34,32 @@ import {
 } from "@/lib/organizer/coupon";
 import { CouponTestPlay } from "@/components/organizer/games/CouponTestPlay";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
-import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameParticipationChoice } from "@/components/organizer/games/ParticipationField";
+import {
+  EMPTY_GAME_PASS_DRAFT,
+  GamePassPreview,
+  GamePassStep,
+  type GamePlayLimitChoice,
+  gamePassBody,
+  gamePassDraftFromSettings,
+  type GamePassDraft,
+} from "@/components/organizer/games/GamePassStep";
+import { gameTypeCover } from "@/components/organizer/games/GameCardSetup";
 import { ImageUploadTile } from "@/components/organizer/games/GameImageField";
 import { PeriodPresets, jstDate, periodProblem } from "@/components/organizer/games/PeriodPresets";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
+import { GameDraftLoading } from "@/components/organizer/games/GameDraftLoading";
+import { useGameDraft } from "@/components/organizer/games/useGameDraft";
+import { readGameLook } from "@/lib/organizer/game-look";
+import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 import "./coupon-create.css";
 
 const STEPS = [
   { id: "basic", label: "基本設定" },
+  { id: "pass", label: "参加パス" },
   { id: "stores", label: "店舗・クーポン" },
   { id: "rules", label: "取得・利用条件" },
   { id: "publish", label: "確認・公開" },
@@ -51,9 +69,10 @@ type StepId = (typeof STEPS)[number]["id"];
 
 const SHELL_STEPS: GameCreateStep[] = [
   { label: STEPS[0].label, icon: PenLine },
-  { label: STEPS[1].label, icon: Store },
-  { label: STEPS[2].label, icon: ListChecks },
-  { label: STEPS[3].label, icon: Rocket },
+  { label: STEPS[1].label, icon: Ticket },
+  { label: STEPS[2].label, icon: Store },
+  { label: STEPS[3].label, icon: ListChecks },
+  { label: STEPS[4].label, icon: Rocket },
 ];
 
 
@@ -78,9 +97,12 @@ function formatPeriod(startDate: string, startTime: string, endDate: string, end
 }
 
 export function OrganizerCouponCreateForm() {
-  const { look, lookEdit } = useGameLookEdit();
+  const { look, lookEdit, setLook } = useGameLookEdit();
   const router = useRouter();
   const [step, setStep] = useState<StepId>("basic");
+  useEffect(() => {
+    setPassPreview(step === "pass");
+  }, [step]);
   const [name, setName] = useState("まちなかグルメクーポンラリー");
   const [description, setDescription] = useState(
     "まちなかの対象店舗をめぐってクーポンを集めよう！グルメ・ショッピング・体験など、さまざまなお店で使えるお得なクーポンがもらえます。"
@@ -113,10 +135,54 @@ export function OrganizerCouponCreateForm() {
   // クーポン独自の参加対象（buyers / category）は使わず、いつも anyone。絞り込みは playAudience（全ゲーム共通）で行う。
   const [audience] = useState<CouponAudience>("anyone");
   const [playAudience, setPlayAudience] = useState<GameAudienceChoice>("anyone");
+  const [participation, setParticipation] = useState<GameParticipationChoice>("onsite");
+  // 新しく作るゲームは、登録なしで遊べる「何度でも」から始める。保存済みのゲームは読み込んだ値になる。
+  const [playLimit, setPlayLimit] = useState<GamePlayLimitChoice>("repeat");
+  const [passDraft, setPassDraft] = useState<GamePassDraft>(EMPTY_GAME_PASS_DRAFT);
+  /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
+  const [passPreview, setPassPreview] = useState(false);
+  /** まちの情報に出るカードの画像。空なら、対象イベントの画像か種類ごとの絵。 */
+  const [cardImage, setCardImage] = useState("");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
+  // ?edit=ゲームID のときは保存した内容を読みこみ、保存は同じゲームを上書きする。
+  const draft = useGameDraft((saved) => {
+    setName(saved.name);
+    setDescription(saved.description);
+    setEventId(saved.eventId);
+    if (saved.startDate) setStartDate(saved.startDate);
+    if (saved.endDate) setEndDate(saved.endDate);
+    if (saved.startTime) setStartTime(saved.startTime);
+    if (saved.endTime) setEndTime(saved.endTime);
+    setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
+    const savedAudience = saved.settings.audience;
+    setPlayAudience(savedAudience === "entry" || savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    setParticipation(saved.settings.participation === "remote" ? "remote" : "onsite");
+    setPlayLimit(saved.settings.playLimit === "repeat" ? "repeat" : "once");
+    setPassDraft(gamePassDraftFromSettings(saved.settings.pass));
+    if (saved.settings.look) setLook(readGameLook(saved.settings.look));
+    const coupon = sanitizeCouponSettings(saved.settings.coupon);
+    if (!coupon) return;
+    setStores(coupon.stores.map((store) => ({ ...store, key: crypto.randomUUID() })));
+    setEditingKey(null);
+    setCategory(coupon.category as CouponCategory);
+    setTags(coupon.tags);
+    if (coupon.mainImage) setMainImage(coupon.mainImage);
+    setWinMode(coupon.winMode);
+    setWinCount(coupon.winCount);
+    setOncePerPerson(coupon.oncePerPerson);
+    setNoStack(coupon.noStack);
+    if (coupon.useStart) setUseStart(coupon.useStart);
+    if (coupon.useEnd) setUseEnd(coupon.useEnd);
+    setTimeLimit(coupon.timeLimit);
+    if (coupon.useFrom) setUseFrom(coupon.useFrom);
+    if (coupon.useTo) setUseTo(coupon.useTo);
+    setMaxCount(coupon.maxCount);
+    setFirstCome(coupon.firstCome);
+    setAutoGrant(coupon.autoGrant);
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -191,7 +257,7 @@ export function OrganizerCouponCreateForm() {
       if (problem) return problem;
     }
     if (id === "rules" && useStart && useEnd && useEnd < useStart) return "クーポンの利用終了日は開始日より後にしてください";
-    if (id === "rules" && playAudience !== "anyone" && !eventId) return "参加できる人を絞るときは、対象イベントを選んでください";
+    if (id === "pass" && (playAudience === "event" || playAudience === "pass") && !eventId) return "参加できる人を絞るときは、対象イベントを選んでください";
     if (id === "stores" && namedStores.length === 0) return "参加店舗を1つ以上追加してください";
     return null;
   }
@@ -249,35 +315,35 @@ export function OrganizerCouponCreateForm() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/organizer/games", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await draft.saveGame(
+        {
           name: name.trim(),
           type: "coupon",
           eventId: eventId || null,
           audience: playAudience,
+          participation,
+          playLimit,
+          pass: gamePassBody(passDraft),
+          cardImage,
           description: description.trim(),
           startsAt: toIsoFromDateTime(startDate, startTime),
           endsAt: toIsoFromDateTime(endDate, endTime),
-          status,
+          // 作るとき（POST）だけ使う。上書き（PUT）ではスポットに触らない（クーポンは設定の店舗で遊ぶ）。
           spots: namedStores.map((store) => ({ name: store.name.trim(), kind: "stamp" })),
           coupon: settingsBody,
           look,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "作成に失敗しました");
+        },
+        status,
+      );
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
       if (status === "published") {
         setPublished(true);
         return;
       }
-      router.push("/organizer/games");
-    } catch {
-      setError("通信エラーが発生しました");
+      router.push(`/organizer/games/${result.id}`);
     } finally {
       setSaving(false);
     }
@@ -288,7 +354,7 @@ export function OrganizerCouponCreateForm() {
     !name.trim() ? { text: "ゲーム名が入っていません", to: "basic" as StepId } : null,
     periodProblem(startDate, endDate) ? { text: periodProblem(startDate, endDate)!, to: "basic" as StepId } : null,
     namedStores.length === 0 ? { text: "参加店舗がありません", to: "stores" as StepId } : null,
-    playAudience !== "anyone" && !eventId
+    (playAudience === "event" || playAudience === "pass") && !eventId
       ? { text: "参加できる人を絞るときは、対象イベントを選んでください", to: "basic" as StepId }
       : null,
     useStart && useEnd && useEnd < useStart ? { text: "クーポンの利用終了日が開始日より前です", to: "rules" as StepId } : null,
@@ -307,10 +373,22 @@ export function OrganizerCouponCreateForm() {
       : null,
   ].filter((item): item is { text: string; to: StepId } => Boolean(item));
 
+  if (draft.loading || draft.loadError) return <GameDraftLoading error={draft.loadError} />;
+
   if (published) {
     return (
       <div className="org-coupon">
-        <GamePublishSuccess typeLabel="クーポンラリー" />
+        <GamePublishSuccess
+          typeLabel="クーポンラリー"
+          card={gameCardItem({
+            type: "coupon",
+            typeLabel: "クーポンラリー",
+            name,
+            startDate,
+            event: events.find((item) => item.id === eventId) ?? null,
+            cardImage,
+          })}
+        />
       </div>
     );
   }
@@ -318,7 +396,6 @@ export function OrganizerCouponCreateForm() {
   return (
     <GameCreateShell
       title="クーポンラリー作成"
-      subtitle="地域のお店をめぐってクーポンを集め、まちの魅力をもっと楽しんでもらいましょう。"
       steps={SHELL_STEPS}
       step={stepIndex}
       onStep={(index) => {
@@ -333,14 +410,31 @@ export function OrganizerCouponCreateForm() {
       onPublish={() => void save("published")}
       preview={
         <GamePhonePreview
-          kind="coupon"
-          typeLabel="クーポンラリー"
-          name={name}
-          description={description}
-          settings={settingsBody}
-          look={lookEdit}
-          stepView={stepIndex === 0 ? "start" : stepIndex === STEPS.length - 1 ? "clear" : "play"}
-        />
+            kind="coupon"
+            typeLabel="クーポンラリー"
+            name={name}
+            description={description}
+            settings={settingsBody}
+            look={lookEdit}
+            stepView={stepIndex === 0 ? "start" : stepIndex === STEPS.length - 1 ? "clear" : "play"}
+            pass={{
+              active: passPreview,
+              onChange: setPassPreview,
+              node: (
+                <GamePassPreview
+                image={cardImage}
+                fallbackImage={gameTypeCover("coupon")}
+                name={name}
+                typeLabel="クーポンラリー"
+                startAt={startDate ? `${startDate}T00:00:00+09:00` : null}
+                  endAt={endDate ? `${endDate}T23:59:00+09:00` : null}
+                participation={participation}
+                entry={playAudience === "entry"}
+                note={passDraft.note}
+              />
+              ),
+            }}
+          />
       }
     >
           {step === "basic" ? (
@@ -765,11 +859,51 @@ export function OrganizerCouponCreateForm() {
                 <RuleSwitch checked={autoGrant} onChange={setAutoGrant} label="条件を満たしたら自動で渡す" />
               </div>
 
-              <div className="org-coupon__rule">
-                <AudienceField value={playAudience} onChange={setPlayAudience} eventChosen={Boolean(eventId)} />
-              </div>
             </section>
           ) : null}
+
+          {step === "pass" ? (
+
+            <section className="org-quiz__card" aria-labelledby="coupon-pass">
+
+                    <h2 id="coupon-pass">参加パス</h2>
+
+                    <GamePassStep
+
+                      audience={playAudience}
+
+                      onAudience={setPlayAudience}
+
+                      eventChosen={Boolean(eventId)}
+
+                      participation={participation}
+
+                      onParticipation={setParticipation}
+
+                      playLimit={playLimit}
+
+                      onPlayLimit={setPlayLimit}
+
+                      pass={passDraft}
+
+                      onPass={setPassDraft}
+
+                      image={cardImage}
+
+
+                      onImage={setCardImage}
+
+                      gameId={draft.editId}
+
+
+
+
+                    />
+
+                  </section>
+
+          ) : null}
+
 
           {step === "publish" ? (
             <section className="org-coupon__card org-coupon__review">
@@ -889,6 +1023,15 @@ export function OrganizerCouponCreateForm() {
                   </div>
                 </dl>
               </div>
+              <GameCardSetup
+                type="coupon"
+                typeLabel="クーポンラリー"
+                name={name}
+                startDate={startDate}
+                event={events.find((item) => item.id === eventId) ?? null}
+                cardImage={cardImage}
+                onCardImage={setCardImage}
+              />
             </section>
           ) : null}
       {testing ? (

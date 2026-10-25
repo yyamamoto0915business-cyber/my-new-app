@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Ticket,
   Camera,
+  Check,
   CircleHelp,
   Copy,
   Flag,
@@ -40,7 +42,18 @@ import {
 import { MissionTestPlay } from "@/components/organizer/games/MissionTestPlay";
 import { GamePhonePreview } from "@/components/organizer/games/GamePhonePreview";
 import { ArrivalFields } from "@/components/organizer/games/ArrivalFields";
-import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameParticipationChoice } from "@/components/organizer/games/ParticipationField";
+import {
+  EMPTY_GAME_PASS_DRAFT,
+  GamePassPreview,
+  GamePassStep,
+  type GamePlayLimitChoice,
+  gamePassBody,
+  gamePassDraftFromSettings,
+  type GamePassDraft,
+} from "@/components/organizer/games/GamePassStep";
+import { gameTypeCover } from "@/components/organizer/games/GameCardSetup";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
@@ -65,11 +78,15 @@ const REWARD_OPTIONS: { id: "coupon" | "points" | "stamp"; label: string; blurb:
   { id: "stamp", label: "スタンプラリー", blurb: "スタンプを集める達成にします" },
 ];
 
+/** 画面に並べる順番（参加パスは基本情報のすぐあと）。中身は STEPS の番号で持つ。 */
+const ORDER = [0, 4, 1, 2, 3, 5];
+
 const STEPS: GameCreateStep[] = [
   { label: "基本情報", icon: PenLine },
   { label: "ミッション形式", icon: Sparkles },
   { label: "ミッション", icon: Flag },
   { label: "達成条件・特典", icon: Gift },
+  { label: "参加パス", icon: Ticket },
   { label: "公開設定", icon: Rocket },
 ];
 
@@ -133,6 +150,12 @@ export function OrganizerMissionCreateForm() {
   const [cardImage, setCardImage] = useState("");
   /** 参加できる人。イベント参加者・参加パス保有者に絞るときは、対象イベントが必要。 */
   const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
+  const [participation, setParticipation] = useState<GameParticipationChoice>("onsite");
+  // 新しく作るゲームは、登録なしで遊べる「何度でも」から始める。保存済みのゲームは読み込んだ値になる。
+  const [playLimit, setPlayLimit] = useState<GamePlayLimitChoice>("repeat");
+  const [passDraft, setPassDraft] = useState<GamePassDraft>(EMPTY_GAME_PASS_DRAFT);
+  /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
+  const [passPreview, setPassPreview] = useState(false);
   const [description, setDescription] = useState(
     "まちなかを巡って、スポットを発見したり、写真を撮ったり、クイズに挑戦しながら、このまちの魅力を再発見できるミッションゲームです。"
   );
@@ -153,7 +176,10 @@ export function OrganizerMissionCreateForm() {
   const passOnly = audience === "pass";
   const [rankingOn, setRankingOn] = useState(true);
   const [hintsOn, setHintsOn] = useState(true);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(ORDER[0]);
+  useEffect(() => {
+    setPassPreview(step === 4);
+  }, [step]);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -166,7 +192,10 @@ export function OrganizerMissionCreateForm() {
     if (saved.endDate) setEndDate(saved.endDate);
     setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
     const savedAudience = saved.settings.audience;
-    setAudience(savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    setAudience(savedAudience === "entry" || savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    setParticipation(saved.settings.participation === "remote" ? "remote" : "onsite");
+    setPlayLimit(saved.settings.playLimit === "repeat" ? "repeat" : "once");
+    setPassDraft(gamePassDraftFromSettings(saved.settings.pass));
     if (saved.settings.look) setLook(readGameLook(saved.settings.look));
     const mission = sanitizeMissionSettings(saved.settings.mission);
     if (!mission) return;
@@ -297,6 +326,9 @@ export function OrganizerMissionCreateForm() {
           eventId: eventId || null,
           cardImage,
           audience,
+          participation,
+          playLimit,
+          pass: gamePassBody(passDraft),
           description: description.trim(),
           startsAt: toIsoFromDate(startDate),
           endsAt: toIsoFromDate(endDate),
@@ -451,10 +483,9 @@ export function OrganizerMissionCreateForm() {
   return (
     <GameCreateShell
       title="ミッション作成"
-      subtitle="まちを楽しく巡るミッションゲームを作成して、参加者に特別な体験を届けましょう。"
-      steps={STEPS}
-      step={step}
-      onStep={setStep}
+      steps={ORDER.map((index) => STEPS[index])}
+      step={ORDER.indexOf(step)}
+      onStep={(next) => setStep(ORDER[next] ?? 0)}
       saving={saving}
       error={error}
       onTry={() => setTesting(true)}
@@ -462,14 +493,31 @@ export function OrganizerMissionCreateForm() {
       onPublish={() => void save("published")}
       preview={
         <GamePhonePreview
-          kind="mission"
-          typeLabel="ミッション"
-          name={name}
-          description={description}
-          settings={settingsBody}
-          look={lookEdit}
-          stepView={step === 0 ? "start" : step === STEPS.length - 1 ? "clear" : "play"}
-        />
+            kind="mission"
+            typeLabel="ミッション"
+            name={name}
+            description={description}
+            settings={settingsBody}
+            look={lookEdit}
+            stepView={step === 0 || step === 4 ? "start" : step === STEPS.length - 1 ? "clear" : "play"}
+            pass={{
+              active: passPreview,
+              onChange: setPassPreview,
+              node: (
+                <GamePassPreview
+                image={cardImage}
+                fallbackImage={gameTypeCover("mission")}
+                name={name}
+                typeLabel="ミッション"
+                startAt={startDate ? `${startDate}T00:00:00+09:00` : null}
+                  endAt={endDate ? `${endDate}T23:59:00+09:00` : null}
+                participation={participation}
+                entry={audience === "entry"}
+                note={passDraft.note}
+              />
+              ),
+            }}
+          />
       }
     >
       {step === 0 ? (
@@ -612,33 +660,17 @@ export function OrganizerMissionCreateForm() {
                       className={cn("org-mission__format", `is-${kind.id}`, on && "is-on")}
                       aria-pressed={on}
                       onClick={() => toggleFormat(kind.id)}
-                      // 選んでいないものは薄くして、選んでいるものとの違いを分かりやすく。
-                      style={{ position: "relative", opacity: on ? 1 : 0.55, filter: on ? undefined : "saturate(0.4)" }}
                     >
-                      <span
-                        aria-hidden
-                        style={{
-                          position: "absolute",
-                          top: "0.7rem",
-                          right: "0.7rem",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          width: "1.6rem",
-                          height: "1.6rem",
-                          borderRadius: "50%",
-                          border: on ? "0" : "2px solid #b9c4bd",
-                          background: on ? "#1f7a4a" : "#fff",
-                          color: "#fff",
-                          fontSize: "0.9rem",
-                          fontWeight: 900,
-                        }}
-                      >
-                        {on ? "✓" : ""}
+                      <span className="org-mission__format-icon" aria-hidden>
+                        <Icon className="h-5 w-5" />
                       </span>
-                      <Icon className="h-5 w-5" aria-hidden />
-                      <strong>{kind.label}</strong>
-                      <span>{kind.blurb}</span>
+                      <span className="org-mission__format-text">
+                        <strong>{kind.label}</strong>
+                        <span>{kind.blurb}</span>
+                      </span>
+                      <span className="org-mission__format-check" aria-hidden>
+                        {on ? <Check className="h-4 w-4" strokeWidth={3} /> : null}
+                      </span>
                     </button>
                   </li>
                 );
@@ -856,6 +888,26 @@ export function OrganizerMissionCreateForm() {
             </section>
       ) : null}
       {step === 4 ? (
+        <section className="org-quiz__card" aria-labelledby="mission-pass">
+          <h2 id="mission-pass">参加パス</h2>
+          <GamePassStep
+            audience={audience}
+            onAudience={setAudience}
+            eventChosen={Boolean(eventId)}
+            participation={participation}
+            onParticipation={setParticipation}
+            playLimit={playLimit}
+            onPlayLimit={setPlayLimit}
+            pass={passDraft}
+            onPass={setPassDraft}
+            image={cardImage}
+            onImage={setCardImage}
+            gameId={draft.editId}
+          />
+        </section>
+      ) : null}
+
+      {step === 5 ? (
             <section className="org-mission__card" aria-labelledby="mission-publish">
               <div className="org-mission__card-title">
                 <span>5</span>
@@ -865,9 +917,6 @@ export function OrganizerMissionCreateForm() {
                 </div>
               </div>
               <ul className="org-mission__publish">
-                <li style={{ display: "block" }}>
-                  <AudienceField value={audience} onChange={setAudience} eventChosen={Boolean(eventId)} />
-                </li>
                 <li>
                   <div>
                     <strong>ランキングを表示</strong>

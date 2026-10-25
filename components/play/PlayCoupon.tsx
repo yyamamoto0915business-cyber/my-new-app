@@ -12,14 +12,16 @@ type Props = {
   coupon: PublicCouponPlay;
   progress: PlayProgress;
   onProgress: (progress: PlayProgress) => void;
+  /** 主催者のプレビュー：この項目を開いたところから見せる。 */
+  previewOpen?: number;
 };
 
-export function PlayCoupon({ token, coupon, progress, onProgress }: Props) {
+export function PlayCoupon({ token, coupon, progress, onProgress, previewOpen }: Props) {
   const done = progress.coupon?.done ?? [];
   const needed = progress.coupon?.needed ?? coupon.needed;
   const autoGrant = progress.coupon?.autoGrant ?? coupon.autoGrant;
   const noStack = progress.coupon?.noStack ?? coupon.noStack;
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(previewOpen ?? null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const copy = usePlayCopy();

@@ -13,13 +13,15 @@ type Props = {
   checkin: PublicCheckinPlay;
   progress: PlayProgress;
   onProgress: (progress: PlayProgress) => void;
+  /** 主催者のプレビュー：この項目を開いたところから見せる。 */
+  previewOpen?: number;
 };
 
-export function PlayCheckin({ token, checkin, progress, onProgress }: Props) {
+export function PlayCheckin({ token, checkin, progress, onProgress, previewOpen }: Props) {
   const done = progress.checkin?.done ?? [];
   const needed = progress.checkin?.needed ?? checkin.needed;
   const rewards = progress.checkin?.rewards ?? checkin.rewards;
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(previewOpen ?? null);
   const [keyword, setKeyword] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);

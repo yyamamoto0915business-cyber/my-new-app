@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import { OrganizerPageShell } from "@/components/organizer/OrganizerPageShell";
+import { OrganizerPlanFeatureGate } from "@/components/organizer/OrganizerPlanFeatureGate";
 import { OrganizerGameCreateSwitch } from "@/components/organizer/games/OrganizerGameCreateSwitch";
 import { isDevPreviewSuccessQuery } from "@/lib/dev-publish-success-preview";
 
@@ -14,7 +15,9 @@ function OrganizerGameCreatePageEntry() {
       variant="workspace"
       contentClassName="mx-auto w-full max-w-7xl pb-16 min-[900px]:pb-2"
     >
-      <OrganizerGameCreateSwitch />
+      <OrganizerPlanFeatureGate feature="games" mode="block">
+        <OrganizerGameCreateSwitch />
+      </OrganizerPlanFeatureGate>
     </OrganizerPageShell>
   );
   if (previewSuccess) return content;

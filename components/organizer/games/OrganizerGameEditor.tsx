@@ -10,7 +10,9 @@ import {
   BarChart3,
   CalendarDays,
   Check,
+  ChevronRight,
   ExternalLink,
+  EyeOff,
   GripVertical,
   Loader2,
   Lock,
@@ -36,7 +38,7 @@ import type { OrganizerGame, OrganizerGameSpot } from "@/lib/organizer/games";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 /** 作成画面を開き直して、保存した内容を直せるゲーム（スタンプラリーは別の入口）。 */
-const DRAFT_EDIT_TYPES = new Set<string>(["quiz", "mystery", "mission", "photo", "checkin"]);
+const DRAFT_EDIT_TYPES = new Set<string>(["quiz", "mystery", "mission", "photo", "checkin", "coupon"]);
 
 /** 期間を「5/1(木)〜5/31(土)」のように見せる。 */
 function formatPeriod(startsAt: string | null, endsAt: string | null): string {
@@ -97,6 +99,40 @@ const EDITOR_CSS = `
   .ge-hero__actions { display: flex; }
   .ge-hero__actions .ge-btn { min-width: 10rem; }
 }
+.ge-side { display: none; }
+/* PC だけ：右に操作の欄を固定して、左は状態と中身に集中させる */
+@media (min-width: 1100px) {
+  .ge-layout { display: grid; grid-template-columns: minmax(0, 1fr) 17.5rem; gap: 1.25rem; align-items: start; }
+  .ge-hero { grid-template-columns: auto minmax(0, 1fr); column-gap: 1.35rem; row-gap: 0.9rem; align-items: center; padding: 1.4rem 1.5rem; }
+  .ge-hero__top { display: contents; }
+  .ge-hero__cover { width: 120px; height: 120px; }
+  .ge-hero:not(.is-live) .ge-hero__cover { grid-row: span 2; }
+  .ge-hero__lead { font-size: 1.05rem; }
+  .ge-steps { grid-column: 2; max-width: 26rem; }
+  .ge-hero__actions, .ge-hero__tools { display: none; }
+  .ge-side { position: sticky; top: 5.5rem; display: grid; gap: 0.9rem; }
+  .ge-side__card { border-radius: 1.1rem; border: 1px solid #e3ebe5; background: #fff; padding: 1.1rem; box-shadow: 0 8px 22px -18px rgba(30, 60, 40, 0.35); }
+  .ge-side__eyebrow { margin: 0; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; color: #8a6418; }
+  .ge-side__eyebrow.is-live { color: #1f6b43; }
+  .ge-side__card h2 { margin: 0.25rem 0 0; font-size: 1rem; font-weight: 800; color: #2b3a2e; }
+  .ge-side__card > p:not(.ge-side__eyebrow) { margin: 0.3rem 0 0; font-size: 0.78rem; line-height: 1.6; color: #6a7568; }
+  .ge-side__actions { display: grid; gap: 0.5rem; margin-top: 0.95rem; }
+  .ge-side__tools { display: grid; padding: 0.4rem; }
+  .ge-side__tool { display: flex; align-items: center; gap: 0.7rem; width: 100%; border: 0; border-radius: 0.8rem; background: none; padding: 0.6rem 0.65rem; text-align: left; text-decoration: none; color: #2b3a2e; cursor: pointer; transition: background 0.12s ease; }
+  .ge-side__tool:hover { background: #f3f7f4; }
+  .ge-side__tool:disabled { opacity: 0.6; cursor: default; }
+  .ge-side__tool-icon { flex: none; display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 0.7rem; background: #eef4f0; color: #2d7a4f; }
+  .ge-side__tool-text { flex: 1; min-width: 0; }
+  .ge-side__tool b { display: block; font-size: 0.85rem; }
+  .ge-side__tool small { display: block; font-size: 0.72rem; color: #7a857b; }
+  .ge-side__tool > svg { flex: none; color: #b3bdb5; }
+  .ge-side__tool--danger { color: #8a3b3b; }
+  .ge-side__tool--danger:hover { background: #fbf2f2; }
+  .ge-side__tool--danger .ge-side__tool-icon { background: #fbeeee; color: #a14646; }
+  .ge-btn { cursor: pointer; }
+  .ge-btn:hover { box-shadow: 0 6px 14px -8px rgba(30, 80, 50, 0.45); }
+  .ge-btn--primary:hover { filter: brightness(1.05); }
+}
 `;
 
 export function OrganizerGameEditor() {
@@ -114,6 +150,10 @@ export function OrganizerGameEditor() {
   const [publishing, setPublishing] = useState(false);
   /** まちの情報のカードに出す画像（主催者が選んだもの）。なければ種類の絵。 */
   const [cardImage, setCardImage] = useState("");
+  /** 上に出す絵。カード・スタート画面などで設定した画像、なければ対象イベントの画像。 */
+  const [coverImage, setCoverImage] = useState("");
+  /** 申し込んだ人（申し込んだ人だけのゲームのとき）。それ以外は null。 */
+  const [entries, setEntries] = useState<{ name: string; appliedAt: string }[] | null>(null);
 
   const load = useCallback(async () => {
     if (!gameId) return;
@@ -124,6 +164,8 @@ export function OrganizerGameEditor() {
       spots?: OrganizerGameSpot[];
       playerCount?: number;
       settings?: { cardImage?: unknown };
+      coverImage?: unknown;
+      entries?: { name: string; appliedAt: string }[] | null;
     };
     if (!res.ok) {
       throw new Error(json.error || "読み込みに失敗しました");
@@ -132,6 +174,8 @@ export function OrganizerGameEditor() {
     setSpots((json.spots ?? []) as OrganizerGameSpot[]);
     setPlayerCount(json.playerCount ?? 0);
     setCardImage(typeof json.settings?.cardImage === "string" ? json.settings.cardImage : "");
+    setCoverImage(typeof json.coverImage === "string" ? json.coverImage : "");
+    setEntries(Array.isArray(json.entries) ? json.entries : null);
   }, [gameId]);
 
   useEffect(() => {
@@ -315,8 +359,26 @@ export function OrganizerGameEditor() {
         ? `/organizer/games/new?type=${game.type}&edit=${game.id}`
         : null;
 
+  const primaryAction = live ? (
+    <a href={game.joinPath} target="_blank" rel="noreferrer" className="ge-btn ge-btn--primary">
+      <ExternalLink className="h-4 w-4" aria-hidden />
+      参加画面を開く
+    </a>
+  ) : (
+    <button type="button" className="ge-btn ge-btn--primary" disabled={publishing} onClick={() => void changeStatus("published")}>
+      {publishing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+      {publishing ? "公開しています…" : "公開する"}
+    </button>
+  );
+  const editAction = editHref ? (
+    <Link href={editHref} className="ge-btn">
+      <PenLine className="h-4 w-4" aria-hidden />
+      {game.type === "stamp" ? "画面と特典を直す" : "内容を直す"}
+    </Link>
+  ) : null;
+
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4">
+    <div className="mx-auto w-full max-w-3xl space-y-4 min-[1100px]:max-w-none">
       <Link
         href="/organizer/games"
         className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline"
@@ -333,10 +395,13 @@ export function OrganizerGameEditor() {
       <style>{EDITOR_CSS}</style>
       {error ? <p className="org-store-intro__error">{error}</p> : null}
 
+      <div className="ge-layout">
+      <div className="min-w-0 space-y-4">
+
       <section className={`ge-hero${live ? " is-live" : ""}`}>
         <div className="ge-hero__top">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="ge-hero__cover" src={cardImage || gameTypeCover(game.type)} alt="" />
+          <img className="ge-hero__cover" src={cardImage || coverImage || gameTypeCover(game.type)} alt="" />
           <div className="ge-hero__info">
             <span className="ge-hero__badge">
               <i aria-hidden />
@@ -372,23 +437,8 @@ export function OrganizerGameEditor() {
         )}
 
         <div className="ge-hero__actions">
-          {live ? (
-            <a href={game.joinPath} target="_blank" rel="noreferrer" className="ge-btn ge-btn--primary">
-              <ExternalLink className="h-4 w-4" aria-hidden />
-              参加画面を開く
-            </a>
-          ) : (
-            <button type="button" className="ge-btn ge-btn--primary" disabled={publishing} onClick={() => void changeStatus("published")}>
-              {publishing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              {publishing ? "公開しています…" : "公開する"}
-            </button>
-          )}
-          {editHref ? (
-            <Link href={editHref} className="ge-btn">
-              <PenLine className="h-4 w-4" aria-hidden />
-              {game.type === "stamp" ? "画面と特典を直す" : "内容を直す"}
-            </Link>
-          ) : null}
+          {primaryAction}
+          {editAction}
         </div>
 
         <div className="ge-hero__tools">
@@ -432,6 +482,37 @@ export function OrganizerGameEditor() {
           </div>
         </section>
       )}
+
+      {entries ? (
+        <section className="org-game-editor__panel">
+          <h2>申し込んだ人</h2>
+          <div className="ge-players">
+            <div className="ge-players__count">
+              <Users className="h-5 w-5" aria-hidden />
+              <b>{entries.length}</b>
+              <span>人</span>
+            </div>
+            <p>申し込んだ人には参加パスが届き、そこからゲームを始められます。</p>
+          </div>
+          {entries.length > 0 ? (
+            <ul style={{ margin: "0.6rem 0 0", padding: 0, listStyle: "none", display: "grid", gap: "0.3rem" }}>
+              {entries.slice(0, 50).map((entry, index) => (
+                <li
+                  key={`${entry.appliedAt}-${index}`}
+                  style={{ display: "flex", justifyContent: "space-between", gap: "0.6rem", padding: "0.45rem 0.7rem", borderRadius: "0.6rem", background: "#f5f9f6", fontSize: "0.82rem" }}
+                >
+                  <span style={{ fontWeight: 700, color: "#1a2214" }}>{entry.name}</span>
+                  <span style={{ color: "#6a7568", fontVariantNumeric: "tabular-nums" }}>
+                    {new Date(entry.appliedAt).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: "#6a7568" }}>まだ申し込みはありません。</p>
+          )}
+        </section>
+      ) : null}
 
       {live || playerCount > 0 ? (
       <section className="org-game-editor__panel">
@@ -602,6 +683,63 @@ export function OrganizerGameEditor() {
         {!canAdd ? <p className="org-game-editor__note">スポットは{MAX_ORGANIZER_GAME_SPOTS}件までです。</p> : null}
       </section>
       ) : null}
+      </div>
+
+      <aside className="ge-side" aria-label="このゲームの操作">
+        <div className="ge-side__card">
+          <p className={`ge-side__eyebrow${live ? " is-live" : ""}`}>次にすること</p>
+          <h2>{live ? "参加者に届ける" : "内容を確かめて公開する"}</h2>
+          <p>
+            {live
+              ? "QRを会場に貼るか、参加コードを伝えてください。"
+              : "公開すると、参加用QRと参加コードが出ます。"}
+          </p>
+          <div className="ge-side__actions">
+            {primaryAction}
+            {editAction}
+          </div>
+        </div>
+
+        <nav className="ge-side__card ge-side__tools" aria-label="ほかの操作">
+          <Link href={`/organizer/games/${game.id}/analytics`} className="ge-side__tool">
+            <span className="ge-side__tool-icon">
+              <BarChart3 className="h-4 w-4" aria-hidden />
+            </span>
+            <span className="ge-side__tool-text">
+              <b>データを見る</b>
+              <small>参加した人数やクリアの数</small>
+            </span>
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </Link>
+          <Link href={`/organizer/games/${game.id}/print`} className="ge-side__tool">
+            <span className="ge-side__tool-icon">
+              <Printer className="h-4 w-4" aria-hidden />
+            </span>
+            <span className="ge-side__tool-text">
+              <b>QRを印刷</b>
+              <small>会場に貼る紙をつくる</small>
+            </span>
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </Link>
+          {live ? (
+            <button
+              type="button"
+              className="ge-side__tool ge-side__tool--danger"
+              disabled={publishing}
+              onClick={() => void changeStatus("draft")}
+            >
+              <span className="ge-side__tool-icon">
+                <EyeOff className="h-4 w-4" aria-hidden />
+              </span>
+              <span className="ge-side__tool-text">
+                <b>非公開に戻す</b>
+                <small>QRと参加コードから入れなくなります</small>
+              </span>
+            </button>
+          ) : null}
+        </nav>
+      </aside>
+      </div>
 
     </div>
   );

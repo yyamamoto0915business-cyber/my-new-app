@@ -45,6 +45,7 @@ import { readPublicPhoto, type PublicPhotoPlay } from "@/lib/organizer/photo-pla
 import { readPublicQuiz, type PublicQuiz } from "@/lib/organizer/quiz-play";
 import { readGameLook, type GameLook } from "@/lib/organizer/game-look";
 import { usePlayCopy } from "@/components/play/usePlayCopy";
+import { formatGamePassDeadline } from "@/lib/organizer/game-pass";
 
 type PlayAudience = "anyone" | "event" | "pass";
 
@@ -60,6 +61,18 @@ type PlayGame = {
   accountNickname: string | null;
   /** 対象イベントに申し込んだアカウントで、ニックネーム・合言葉なしで参加できる。 */
   eventEntry: boolean;
+  /** 参加者を絞ったゲームの対象イベント。申し込みがまだなら、先に申し込み画面へ案内する。 */
+  eventGate: { eventId: string; eventTitle: string; applied: boolean } | null;
+  /** ゲームだけで申し込みを受け付けるとき、申し込み済みかどうか。 */
+  entry: {
+    applied: boolean;
+    note: string;
+    deadline: string | null;
+    /** 残りの枠。定員がなければ null。 */
+    remaining: number | null;
+    full: boolean;
+    closed: boolean;
+  } | null;
   start: PlayStart | null;
   moment: PublicPlayMoment | null;
   quiz: PublicQuiz | null;
@@ -71,6 +84,30 @@ type PlayGame = {
   /** 参加画面のアイコンと背景（スタンプラリー以外）。 */
   look: GameLook | null;
 };
+
+function readEventGate(raw: unknown): PlayGame["eventGate"] {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as { eventId?: unknown; eventTitle?: unknown; applied?: unknown };
+  if (typeof row.eventId !== "string" || !row.eventId) return null;
+  return {
+    eventId: row.eventId,
+    eventTitle: typeof row.eventTitle === "string" ? row.eventTitle : "",
+    applied: row.applied === true,
+  };
+}
+
+function readEntry(raw: unknown): PlayGame["entry"] {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  return {
+    applied: row.applied === true,
+    note: typeof row.note === "string" ? row.note : "",
+    deadline: typeof row.deadline === "string" ? row.deadline : null,
+    remaining: typeof row.remaining === "number" ? row.remaining : null,
+    full: row.full === true,
+    closed: row.closed === true,
+  };
+}
 
 function isHowtoIcon(value: string): value is GameHowtoIcon {
   return (GAME_HOWTO_ICONS as readonly string[]).includes(value);
@@ -147,6 +184,10 @@ export function PlayJoinClient() {
   const [replaying, setReplaying] = useState(false);
   const [needsLogin, setNeedsLogin] = useState(false);
   const [showPassphrase, setShowPassphrase] = useState(false);
+  /** 申し込みが済んだ直後の画面（参加パスへの案内）。 */
+  const [appliedPassHref, setAppliedPassHref] = useState<string | null>(null);
+  const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
   const copy = usePlayCopy();
   useWatchCouponUse(token, progress, setProgress);
 
@@ -187,6 +228,8 @@ export function PlayJoinClient() {
             signedIn: body.signedIn === true,
             accountNickname: knownNickname || null,
             eventEntry: (body as { eventEntry?: unknown }).eventEntry === true,
+            eventGate: readEventGate((body as { eventGate?: unknown }).eventGate),
+            entry: readEntry((body as { entry?: unknown }).entry),
             start: readStart(body.start),
             moment: readPublicPlayMoment(body.moment),
             quiz: readPublicQuiz(body.quiz),
@@ -438,6 +481,227 @@ export function PlayJoinClient() {
   // アイコンと背景は、スタンプラリー以外で変えられる。
   const look = game.type === "stamp" ? null : game.look;
 
+  // ゲームだけで申し込みを受け付けるときは、このページで申し込む。
+  if (!progress && game.entry && (!game.entry.applied || appliedPassHref)) {
+    const entryLoginHref = `/auth?next=${encodeURIComponent(`/play/${token}`)}`;
+    const box = {
+      display: "grid",
+      gap: "0.5rem",
+      margin: "0.4rem 0 0",
+      padding: "1rem",
+      borderRadius: "1rem",
+      background: "#f3faf5",
+      border: "1px solid #d6eadc",
+      textAlign: "left" as const,
+    };
+    const primary = {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: "3.1rem",
+      width: "100%",
+      border: 0,
+      borderRadius: "999px",
+      background: "#1f7a4a",
+      color: "#fff",
+      fontSize: "0.95rem",
+      fontWeight: 800,
+      textDecoration: "none",
+      cursor: "pointer",
+    };
+    const apply = async () => {
+      setApplying(true);
+      setApplyError(null);
+      try {
+        const res = await fetch(`/api/play/${encodeURIComponent(token)}/apply`, { method: "POST" });
+        const json = (await res.json().catch(() => ({}))) as { passHref?: string; error?: string };
+        if (!res.ok) {
+          setApplyError(json.error ?? "申し込みに失敗しました");
+          return;
+        }
+        setAppliedPassHref(json.passHref ?? "/pass");
+        setGame((current) => (current && current.entry ? { ...current, entry: { ...current.entry, applied: true } } : current));
+      } catch {
+        setApplyError("通信エラーが発生しました");
+      } finally {
+        setApplying(false);
+      }
+    };
+    return (
+      <main className="play-game">
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.9rem",
+            width: "100%",
+            maxWidth: "28rem",
+            margin: "0 auto",
+            padding: "4.5rem 1.25rem 2rem",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 800, color: "#5d6b62" }}>{copy.msg(game.typeLabel)}</p>
+          <h1 style={{ margin: 0, fontSize: "1.35rem", lineHeight: 1.4, color: "#1a2214" }}>{game.name}</h1>
+          {game.description ? (
+            <p style={{ margin: 0, fontSize: "0.86rem", lineHeight: 1.7, color: "#5d6b62" }}>{game.description}</p>
+          ) : null}
+          {appliedPassHref ? (
+            <>
+              <div style={box}>
+                <b style={{ fontSize: "0.95rem", color: "#1a5c38" }}>{copy.msg("申し込みが完了しました")}</b>
+                <p style={{ margin: 0, fontSize: "0.84rem", lineHeight: 1.6, color: "#3c4a40" }}>
+                  {copy.msg("参加パスが届きました。参加パスから、いつでもゲームを始められます。")}
+                </p>
+              </div>
+              <div style={{ display: "grid", gap: "0.5rem" }}>
+                <button type="button" style={primary} onClick={() => setAppliedPassHref(null)}>
+                  {copy.msg("ゲームを始める")}
+                </button>
+                <Link
+                  href={appliedPassHref}
+                  style={{ padding: "0.5rem", fontSize: "0.85rem", fontWeight: 800, color: "#1f7a4a", textDecoration: "underline" }}
+                >
+                  {copy.msg("参加パスを見る")}
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={box}>
+                <b style={{ fontSize: "0.95rem", color: "#1a5c38" }}>{copy.msg("まずは申し込み")}</b>
+                <p style={{ margin: 0, fontSize: "0.84rem", lineHeight: 1.6, color: "#3c4a40" }}>
+                  {copy.msg("このゲームは、申し込んだ人が参加できます。申し込むと、参加パスが届きます。")}
+                </p>
+                {game.entry.deadline || game.entry.remaining != null ? (
+                  <p style={{ margin: 0, fontSize: "0.8rem", color: "#5d6b62", display: "flex", flexWrap: "wrap", gap: "0.2rem 0.8rem" }}>
+                    {game.entry.deadline ? (
+                      <span>
+                        {copy.msg("締め切り")}：<b style={{ color: "#1a2214" }}>{formatGamePassDeadline(game.entry.deadline)}</b>
+                      </span>
+                    ) : null}
+                    {game.entry.remaining != null ? (
+                      <span>
+                        {copy.msg("残り")}：<b style={{ color: "#1a2214" }}>{game.entry.remaining}</b>
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
+                {game.entry.note ? (
+                  <p style={{ margin: 0, padding: "0.6rem 0.7rem", borderRadius: "0.7rem", background: "#fff", fontSize: "0.8rem", lineHeight: 1.6, color: "#3c4a40", whiteSpace: "pre-wrap" }}>
+                    {game.entry.note}
+                  </p>
+                ) : null}
+              </div>
+              {applyError ? <p style={{ margin: 0, fontSize: "0.8rem", color: "#c0392b" }}>{copy.msg(applyError)}</p> : null}
+              <div style={{ display: "grid", gap: "0.5rem" }}>
+                {game.entry.closed || game.entry.full ? (
+                  <p style={{ margin: 0, padding: "0.8rem", borderRadius: "0.8rem", background: "#f3f1ec", fontSize: "0.86rem", fontWeight: 700, color: "#6a6a64" }}>
+                    {game.entry.closed ? copy.msg("申し込みの締め切りを過ぎました") : copy.msg("定員に達したため、申し込みを締め切りました")}
+                  </p>
+                ) : game.signedIn ? (
+                  <button type="button" style={primary} disabled={applying} onClick={() => void apply()}>
+                    {applying ? copy.msg("申し込んでいます…") : copy.msg("参加を申し込む")}
+                  </button>
+                ) : (
+                  <>
+                    <Link href={entryLoginHref} style={primary}>
+                      {copy.msg("ログインして申し込む")}
+                    </Link>
+                    <small style={{ fontSize: "0.74rem", color: "#5d6b62", lineHeight: 1.5 }}>
+                      {copy.msg("申し込みには、MachiGlyphのアカウントが必要です。")}
+                    </small>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    );
+  }
+
+  // 参加者を絞ったゲームは、イベント掲載と同じように、まず申し込みから。
+  if (!progress && game.eventGate && !game.eventGate.applied) {
+    const gate = game.eventGate;
+    const gateLoginHref = `/auth?next=${encodeURIComponent(`/play/${token}`)}`;
+    return (
+      <main className="play-game">
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.9rem",
+            width: "100%",
+            maxWidth: "28rem",
+            margin: "0 auto",
+            padding: "4.5rem 1.25rem 2rem",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 800, color: "#5d6b62" }}>{copy.msg(game.typeLabel)}</p>
+          <h1 style={{ margin: 0, fontSize: "1.35rem", lineHeight: 1.4, color: "#1a2214" }}>{game.name}</h1>
+          {game.description ? (
+            <p style={{ margin: 0, fontSize: "0.86rem", lineHeight: 1.7, color: "#5d6b62" }}>{game.description}</p>
+          ) : null}
+          <div
+            style={{
+              display: "grid",
+              gap: "0.5rem",
+              margin: "0.4rem 0 0",
+              padding: "1rem",
+              borderRadius: "1rem",
+              background: "#f3faf5",
+              border: "1px solid #d6eadc",
+              textAlign: "left",
+            }}
+          >
+            <b style={{ fontSize: "0.95rem", color: "#1a5c38" }}>{copy.msg("まずは申し込み")}</b>
+            <p style={{ margin: 0, fontSize: "0.84rem", lineHeight: 1.6, color: "#3c4a40" }}>
+              {copy.msg("このゲームは、イベントに申し込んだ人が参加できます。")}
+            </p>
+            {gate.eventTitle ? (
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#5d6b62" }}>
+                {copy.msg("対象イベント")}：<b style={{ color: "#1a2214" }}>{gate.eventTitle}</b>
+              </p>
+            ) : null}
+          </div>
+          <div style={{ display: "grid", gap: "0.5rem" }}>
+            <Link
+              href={`/events/${encodeURIComponent(gate.eventId)}`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "3.1rem",
+                borderRadius: "999px",
+                background: "#1f7a4a",
+                color: "#fff",
+                fontSize: "0.95rem",
+                fontWeight: 800,
+                textDecoration: "none",
+              }}
+            >
+              {copy.msg("申し込みへ進む")}
+            </Link>
+            {game.signedIn ? (
+              <small style={{ fontSize: "0.74rem", color: "#5d6b62", lineHeight: 1.5 }}>
+                {copy.msg("申し込みが済んだら、このページを開き直してください。")}
+              </small>
+            ) : (
+              <Link
+                href={gateLoginHref}
+                style={{ padding: "0.5rem", fontSize: "0.85rem", fontWeight: 800, color: "#1f7a4a", textDecoration: "underline" }}
+              >
+                {copy.msg("申し込み済みの方はログイン")}
+              </Link>
+            )}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (progress && game.type === "quiz" && game.quiz) {
     return (
       <main className={`play-game ${gameLookClass(look)} play-game--scene`}>
@@ -687,6 +951,10 @@ export function PlayJoinClient() {
                           </div>
                         ) : null}
                         <p className="play-join__lead">{pendingSpot ? copy.joinBeforeStamp : copy.joinWithWords}</p>
+                        {/* 誰でも・何度でものときは、アカウントを作らなくてよいことを先に伝える。 */}
+                        {game.playLimit === "repeat" && game.audience === "anyone" && !game.signedIn ? (
+                          <p className="play-join__audience">{copy.noSignup}</p>
+                        ) : null}
                         {game.playLimit === "once" ? (
                           <p className="play-join__audience">
                             {game.signedIn
@@ -732,6 +1000,7 @@ export function PlayJoinClient() {
                               {showPassphrase ? copy.hideSecret : copy.showSecret}
                             </button>
                           </span>
+                          <small className="play-join__hint">{copy.passphraseHint}</small>
                         </label>
                         {error ? <p className="play-join__error">{copy.msg(error)}</p> : null}
                       </>,

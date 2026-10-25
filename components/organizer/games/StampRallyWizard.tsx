@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
+  Ticket,
   ArrowDown,
   ArrowLeft,
   ArrowUp,
@@ -28,6 +29,15 @@ import {
 } from "lucide-react";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
 import { GameAudioField } from "@/components/organizer/games/GameAudioField";
+import {
+  EMPTY_GAME_PASS_DRAFT,
+  GamePassPreview,
+  GamePassStep,
+  gamePassBody,
+  gamePassDraftFromSettings,
+  type GamePassDraft,
+} from "@/components/organizer/games/GamePassStep";
+import { gameTypeCover } from "@/components/organizer/games/GameCardSetup";
 import { GameImageField } from "@/components/organizer/games/GameImageField";
 import { GameVideoField } from "@/components/organizer/games/GameVideoField";
 import { StampRallyTestPlay } from "@/components/organizer/games/StampRallyTestPlay";
@@ -62,6 +72,7 @@ import {
   GAME_STAMP_SOUND_LABEL,
   GAME_STAMP_SOUNDS,
   createDefaultExperience,
+  createNewGameExperience,
   createExperienceSpot,
   experienceChecklist,
   sanitizeGameExperience,
@@ -135,9 +146,14 @@ import {
 import { cn } from "@/lib/utils";
 
 const DRAFT_KEY = "mg-stamp-rally-draft-v1";
-const STEPS = ["テンプレート", "基本設定", "スポット設定", "画面・演出設定", "達成条件・特典", "確認・公開"] as const;
-type Step = 1 | 2 | 3 | 4 | 5 | 6;
-const STEP_ICONS = [LayoutTemplate, PenLine, MapPin, Palette, Gift, Rocket] as const;
+const STEPS = ["テンプレート", "基本設定", "スポット設定", "画面・演出設定", "達成条件・特典", "参加パス", "確認・公開"] as const;
+type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+const STEP_ICONS = [LayoutTemplate, PenLine, MapPin, Palette, Gift, Ticket, Rocket] as const;
+/** 画面に並べる順番。参加パス（6）は基本設定のすぐあと（名前や期間が見本に出る）。中身のステップ番号は変えない。 */
+const STEP_ORDER: readonly Step[] = [1, 2, 6, 3, 4, 5, 7];
+const stepPosition = (value: Step) => STEP_ORDER.indexOf(value);
+const nextStep = (value: Step): Step => STEP_ORDER[Math.min(stepPosition(value) + 1, STEP_ORDER.length - 1)];
+const prevStep = (value: Step): Step => STEP_ORDER[Math.max(stepPosition(value) - 1, 0)];
 
 type DraftSpot = GameExperienceSpot & {
   key: string;
@@ -207,7 +223,7 @@ function formatPeriod(startDate: string, startTime: string, endDate: string, end
 }
 
 function isStep(value: number): value is Step {
-  return value >= 1 && value <= 6;
+  return value >= 1 && value <= 7;
 }
 
 export function StampRallyWizard() {
@@ -220,17 +236,25 @@ export function StampRallyWizard() {
   const typeId = selectedMeta.available ? selectedType : DEFAULT_ORGANIZER_GAME_TYPE_ID;
 
   const [ready, setReady] = useState(false);
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(STEP_ORDER[0]);
+  /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
+  const [passPreview, setPassPreview] = useState(false);
+  useEffect(() => {
+    setPassPreview(step === 6);
+  }, [step]);
   const [screen, setScreen] = useState<GameScreenId>("start");
   const [savedGameId, setSavedGameId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [eventId, setEventId] = useState("");
+  /** 参加パスの定員・締め切り・注意書きと、パス（まちの情報のカード）の画像。 */
+  const [passDraft, setPassDraft] = useState<GamePassDraft>(EMPTY_GAME_PASS_DRAFT);
+  const [cardImage, setCardImage] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [startTime, setStartTime] = useState("09:00");
   const [endDate, setEndDate] = useState("");
   const [endTime, setEndTime] = useState("16:00");
-  const [experience, setExperience] = useState<GameExperience>(() => createDefaultExperience());
+  const [experience, setExperience] = useState<GameExperience>(() => createNewGameExperience());
   const [spots, setSpots] = useState<DraftSpot[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [events, setEvents] = useState<OrganizerGameEventOption[]>([]);
@@ -271,8 +295,12 @@ export function StampRallyWizard() {
       if (!raw) return;
       const stored = JSON.parse(raw) as Record<string, unknown>;
       // v1 はテンプレートのステップがなかったので、1つ後ろにずらす。
-      if (stored.v !== 1 && stored.v !== 2) return;
-      const stepShift = stored.v === 1 ? 1 : 0;
+      if (stored.v !== 1 && stored.v !== 2 && stored.v !== 3) return;
+      // v2 までは参加パスのステップがなかったので、確認・公開を1つ後ろにずらす。
+      const rawStep = typeof stored.step === "number" ? stored.step : 0;
+      const stepShift = (stored.v === 1 ? 1 : 0) + (stored.v !== 3 && rawStep + (stored.v === 1 ? 1 : 0) >= 6 ? 1 : 0);
+      if (stored.pass) setPassDraft(gamePassDraftFromSettings(stored.pass));
+      if (typeof stored.cardImage === "string") setCardImage(stored.cardImage);
       if (typeof stored.name === "string") setName(stored.name.slice(0, 80));
       if (typeof stored.eventId === "string") setEventId(stored.eventId);
       if (typeof stored.description === "string") setDescription(stored.description.slice(0, 300));
@@ -340,6 +368,7 @@ export function StampRallyWizard() {
           };
           spots?: { id: string; name: string; kind: string }[];
           experience?: GameExperience | null;
+          settings?: { pass?: unknown; cardImage?: unknown };
         };
         if (!res.ok || !json.game) throw new Error(json.error || "ゲームを読み込めませんでした");
         if (cancelled) return;
@@ -359,6 +388,8 @@ export function StampRallyWizard() {
         setEndTime(end.time);
         setPublished(game.status === "published");
         setExperience(nextExperience);
+        setPassDraft(gamePassDraftFromSettings(json.settings?.pass));
+        setCardImage(typeof json.settings?.cardImage === "string" ? json.settings.cardImage : "");
         setSpots(
           (json.spots ?? []).map((spot, index) => ({
             ...createExperienceSpot(),
@@ -385,7 +416,9 @@ export function StampRallyWizard() {
   useEffect(() => {
     if (!ready || leavingRef.current || editId) return;
     const payload = {
-      v: 2,
+      v: 3,
+      pass: gamePassBody(passDraft),
+      cardImage,
       templateId,
       step,
       screen,
@@ -659,6 +692,16 @@ export function StampRallyWizard() {
         }}
       />
     ),
+    videoField: (onUploaded: (url: string) => void) => (
+      <GameVideoField
+        label="動画をアップロード"
+        url=""
+        gameId={savedGameId}
+        onChange={(url) => {
+          if (url) onUploaded(url);
+        }}
+      />
+    ),
     onTextsChange: (extraTexts: GameExperience["screens"]["start"]["extraTexts"]) =>
       patchExperience((current) => ({
         ...current,
@@ -833,7 +876,11 @@ export function StampRallyWizard() {
     }
     setName(template.gameName);
     setDescription(template.description);
-    setExperience(template.experience);
+    // 参加パスの手順で先に決めた「申し込み」は、テンプレートで上書きしない。
+    setExperience((current) => ({
+      ...template.experience,
+      basics: { ...template.experience.basics, audience: current.basics.audience },
+    }));
     setSpots(
       template.spots.map((spot) => ({
         ...createDraftSpot(),
@@ -901,6 +948,8 @@ export function StampRallyWizard() {
           endsAt,
           status: mode === "publish" ? "published" : undefined,
           experience: savedExperience,
+          pass: gamePassBody(passDraft),
+          cardImage,
           spots: spots.map((spot) => ({
             id: spot.id,
             name: spot.name.trim() || "スポット",
@@ -932,7 +981,7 @@ export function StampRallyWizard() {
         router.push(`/organizer/games/${gameId}`);
         return;
       }
-      if (mode === "next") setStep((current) => (current < 6 ? ((current + 1) as Step) : current));
+      if (mode === "next") setStep((current) => nextStep(current));
       setNotice("下書きを保存しました");
     } catch {
       setError("通信エラーが発生しました");
@@ -945,73 +994,69 @@ export function StampRallyWizard() {
 
   return (
     <div className={cn("org-game-create", styles.wizard)}>
-      <Link
-        href="/organizer/games"
-        className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline"
-      >
-        <ArrowLeft className="size-3.5" strokeWidth={2.4} aria-hidden />
-        ゲーム機能に戻る
-      </Link>
-
-      <div className="hidden md:block">
-        <OrganizerWorkspacePageHeader
-          title={editId ? "スタンプラリーを直す" : "スタンプラリー作成"}
-          subtitle={
-            published
-              ? "公開中です。画面や特典を直して、変更を保存できます。"
-              : "名前を入れると、下書きまで進めます。"
-          }
-        />
-      </div>
-
-      {!selectedMeta.available ? (
-        <p className={styles.note}>{selectedMeta.label}は準備中です。いまはスタンプラリーとして作成します。</p>
-      ) : null}
-
-      <nav className={styles.stepper} aria-label="作成ステップ">
-        <div className={styles.stepperHead}>
-          <span className={styles.stepperCount}>
-            STEP <b>{step}</b>
-            <i>/ {STEPS.length}</i>
-          </span>
-          <span className={styles.stepperTitle}>{STEPS[step - 1]}</span>
-          {step < STEPS.length ? (
-            <span className={styles.stepperNext}>次：{(STEPS as readonly string[])[step]}</span>
-          ) : null}
-        </div>
-        <ol className={styles.stepperTrack}>
-          {STEPS.map((label, index) => {
-            const number = (index + 1) as Step;
-            const current = step === number;
-            const done = step > number;
-            const Icon = STEP_ICONS[index];
-            return (
-              <li
-                key={label}
-                className={cn(styles.stepperItem, current && styles["is-current"], done && styles["is-done"])}
-              >
-                <button
-                  type="button"
-                  aria-current={current ? "step" : undefined}
-                  aria-label={`${number}. ${label}${done ? "（済み）" : ""}`}
-                  onClick={() => {
-                    setStep(number);
-                    setNotice(null);
-                  }}
-                >
-                  <span className={styles.stepperDot}>
-                    {done ? <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> : <Icon className="h-4 w-4" aria-hidden />}
-                  </span>
-                  <span className={styles.stepperLabel}>{label}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
-
       <div className={styles.layout}>
         <div className={styles.main}>
+          <Link
+            href="/organizer/games"
+            className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline"
+          >
+            <ArrowLeft className="size-3.5" strokeWidth={2.4} aria-hidden />
+            ゲーム機能に戻る
+          </Link>
+
+          <div className="hidden md:block">
+            <OrganizerWorkspacePageHeader
+              title={editId ? "スタンプラリーを直す" : "スタンプラリー作成"}
+              subtitle={published ? "公開中です。画面や特典を直して、変更を保存できます。" : undefined}
+            />
+          </div>
+
+          {!selectedMeta.available ? (
+            <p className={styles.note}>{selectedMeta.label}は準備中です。いまはスタンプラリーとして作成します。</p>
+          ) : null}
+
+          <nav className={styles.stepper} aria-label="作成ステップ">
+            <div className={styles.stepperHead}>
+              <span className={styles.stepperCount}>
+                STEP <b>{stepPosition(step) + 1}</b>
+                <i>/ {STEPS.length}</i>
+              </span>
+              <span className={styles.stepperTitle}>{STEPS[step - 1]}</span>
+              {stepPosition(step) < STEPS.length - 1 ? (
+                <span className={styles.stepperNext}>次：{STEPS[nextStep(step) - 1]}</span>
+              ) : null}
+            </div>
+            <ol className={styles.stepperTrack}>
+              {STEP_ORDER.map((number, position) => {
+                const label = STEPS[number - 1];
+                const current = step === number;
+                const done = stepPosition(step) > position;
+                const Icon = STEP_ICONS[number - 1];
+                return (
+                  <li
+                    key={label}
+                    className={cn(styles.stepperItem, current && styles["is-current"], done && styles["is-done"])}
+                  >
+                    <button
+                      type="button"
+                      aria-current={current ? "step" : undefined}
+                      title={label}
+                      aria-label={`${position + 1}. ${label}${done ? "（済み）" : ""}`}
+                      onClick={() => {
+                        setStep(number);
+                        setNotice(null);
+                      }}
+                    >
+                      <span className={styles.stepperDot}>
+                        {done ? <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> : <Icon className="h-4 w-4" aria-hidden />}
+                      </span>
+                      <span className={styles.stepperLabel}>{label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
           {step === 1 ? (
             <section className={styles.card}>
               <h2>テンプレートを選ぶ</h2>
@@ -1047,7 +1092,7 @@ export function StampRallyWizard() {
                     }
                     if (templateId !== "blank" && spots.length > 0) {
                       setSpots([]);
-                      setExperience(createDefaultExperience());
+                      setExperience(createNewGameExperience());
                     }
                     setTemplateId("blank");
                     setNotice(null);
@@ -1208,37 +1253,6 @@ export function StampRallyWizard() {
                 </label>
                 </div>
 
-              <div className={styles.group} role="radiogroup" aria-label="参加対象">
-                <p className={styles.groupTitle}>
-                  {"参加対象"}
-                  <button type="button" className={styles.help} aria-expanded={help === "audience"} onClick={() => setHelp(help === "audience" ? null : "audience")}>
-                    ?
-                  </button>
-                </p>
-                <div className={styles.choices}>
-                  {GAME_AUDIENCES.map((audience) => (
-                    <button
-                      key={audience}
-                      type="button"
-                      className={cn(styles.choice, experience.basics.audience === audience && styles["is-on"])}
-                      aria-pressed={experience.basics.audience === audience}
-                      onClick={() =>
-                        patchExperience((current) => ({
-                          ...current,
-                          basics: { ...current.basics, audience },
-                        }))
-                      }
-                    >
-                      {GAME_AUDIENCE_LABEL[audience]}
-                    </button>
-                  ))}
-                </div>
-                {help === "audience" ? (
-                  <p className={styles.note}>
-                  誰でもは、ニックネームだけで入れます。イベント参加者と参加パスは、ログインしたアカウントで確認します。対象イベントが必要です。
-                  </p>
-                ) : null}
-              </div>
 
               <div className={styles.group} role="radiogroup" aria-label="参加回数">
                 <p className={styles.groupTitle}>
@@ -1267,7 +1281,7 @@ export function StampRallyWizard() {
                 </div>
                 {help === "limit" ? (
                   <p className={styles.note}>
-                  1人1回は、ログインしたアカウントで1回です。ニックネームを変えても、もう一度は参加できません。何度でもは、クリア後にもう一周できます。
+                  1人1回は、ログインしたアカウントで1回です。ニックネームを変えても、もう一度は参加できません。何度でもは、クリア後にもう一周できます。参加できる人が「誰でも」なら、machiglyphに登録していない人もニックネームと合言葉だけで遊べます。
                   </p>
                 ) : null}
               </div>
@@ -2373,6 +2387,31 @@ export function StampRallyWizard() {
 
           {step === 6 ? (
             <section className={styles.card}>
+              <h2>参加パス</h2>
+              <p className={styles.lead}>イベントとは別に、このゲームだけで申し込みを受け付けられます。申し込んだ人には参加パスが届きます。</p>
+              <GamePassStep
+                audience={experience.basics.audience}
+                onAudience={(audience) =>
+                  patchExperience((current) => ({
+                    ...current,
+                    basics: { ...current.basics, audience },
+                  }))
+                }
+                eventChosen={Boolean(eventId)}
+                participation="onsite"
+                onParticipation={() => undefined}
+                onsiteOnly
+                pass={passDraft}
+                onPass={setPassDraft}
+                image={cardImage}
+                onImage={setCardImage}
+                gameId={savedGameId}
+              />
+            </section>
+          ) : null}
+
+          {step === 7 ? (
+            <section className={styles.card}>
               <h2>確認・公開</h2>
               <p className={styles.lead}>
                 {published
@@ -2403,6 +2442,60 @@ export function StampRallyWizard() {
 
           {error ? <p className="org-store-intro__error">{error}</p> : null}
           {notice ? <p className={styles.notice}>{notice}</p> : null}
+          <div className={styles.footer}>
+            <p className={styles.footerStep}>
+              <b>
+                STEP {stepPosition(step) + 1} / {STEPS.length}
+              </b>
+              {STEPS[step - 1]}
+              {stepPosition(step) < STEPS.length - 1 ? <span>次：{STEPS[nextStep(step) - 1]}</span> : null}
+            </p>
+            <div className={styles.footerQuiet}>
+              {stepPosition(step) > 0 ? (
+                <button
+                  type="button"
+                  className={styles.textAction}
+                  disabled={saving}
+                  onClick={() => {
+                    setStep((current) => prevStep(current));
+                    setNotice(null);
+                  }}
+                >
+                  戻る
+                </button>
+              ) : null}
+              <button type="button" className={styles.textAction} disabled={saving} onClick={() => setTesting(true)}>
+                お試しで見る
+              </button>
+              <button type="button" className={styles.textAction} disabled={saving} onClick={() => void saveDraft("stay")}>
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
+                下書き保存
+              </button>
+            </div>
+            <button
+              type="button"
+              className={styles.primary}
+              disabled={saving}
+              onClick={() => {
+                if (step === 1) {
+                  setStep(nextStep(step));
+                  setNotice(null);
+                  return;
+                }
+                void saveDraft(step === 7 ? "publish" : "next");
+              }}
+            >
+              {step === 1
+                ? templateId && templateId !== "blank"
+                  ? "このテンプレートで始める"
+                  : "次へ"
+                : step === 7
+                  ? published
+                    ? "変更を保存"
+                    : "公開する"
+                  : "保存して次へ"}
+            </button>
+          </div>
           <p className={styles.types}>
             ほかの種類：
             {otherTypes.map((type) => (
@@ -2414,16 +2507,35 @@ export function StampRallyWizard() {
         </div>
 
         <aside className={styles.livePreview} aria-label="参加者画面プレビュー">
-          <p className={styles.livePreviewTitle}>参加者に見える画面</p>
+          <div className={styles.livePreviewHead}>
+            <p className={styles.livePreviewTitle}>参加者に見える画面</p>
+          </div>
           <WizardLivePreview
-            name={name}
-            periodLabel={periodLabel}
-            experience={experience}
-            spots={spots}
-            view={previewView}
-            onView={setPreviewView}
-            edit={startEdit}
-          />
+              name={name}
+              periodLabel={periodLabel}
+              experience={experience}
+              spots={spots}
+              view={previewView}
+              onView={setPreviewView}
+              edit={startEdit}
+            pass={{
+              active: passPreview,
+              onChange: setPassPreview,
+              node: (
+                <GamePassPreview
+                  image={cardImage}
+                  fallbackImage={experience.screens.start.imageUrl || gameTypeCover("stamp")}
+                  name={name}
+                  typeLabel="スタンプラリー"
+                  startAt={toIso(startDate, startTime)}
+                  endAt={toIso(endDate, endTime)}
+                  participation="onsite"
+                  entry={experience.basics.audience === "entry"}
+                  note={passDraft.note}
+                />
+              ),
+            }}
+            />
         </aside>
       </div>
 
@@ -2441,66 +2553,36 @@ export function StampRallyWizard() {
                 </button>
               </div>
               <WizardLivePreview
-                name={name}
-                periodLabel={periodLabel}
-                experience={experience}
-                spots={spots}
-                view={previewView}
-                onView={setPreviewView}
-                edit={startEdit}
-              />
+                  name={name}
+                  periodLabel={periodLabel}
+                  experience={experience}
+                  spots={spots}
+                  view={previewView}
+                  onView={setPreviewView}
+                  edit={startEdit}
+                pass={{
+                  active: passPreview,
+                  onChange: setPassPreview,
+                  node: (
+                    <GamePassPreview
+                      image={cardImage}
+                      fallbackImage={experience.screens.start.imageUrl || gameTypeCover("stamp")}
+                      name={name}
+                      typeLabel="スタンプラリー"
+                      startAt={toIso(startDate, startTime)}
+                      endAt={toIso(endDate, endTime)}
+                      participation="onsite"
+                      entry={experience.basics.audience === "entry"}
+                      note={passDraft.note}
+                    />
+                  ),
+                }}
+                />
             </div>,
             document.body,
           )
         : null}
 
-      <div className={styles.footer}>
-        <div className={styles.footerQuiet}>
-          {step > 1 ? (
-            <button
-              type="button"
-              className={styles.textAction}
-              disabled={saving}
-              onClick={() => {
-                setStep((current) => (current > 1 ? ((current - 1) as Step) : current));
-                setNotice(null);
-              }}
-            >
-              戻る
-            </button>
-          ) : null}
-          <button type="button" className={styles.textAction} disabled={saving} onClick={() => setTesting(true)}>
-            お試しで見る
-          </button>
-          <button type="button" className={styles.textAction} disabled={saving} onClick={() => void saveDraft("stay")}>
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-            下書き保存
-          </button>
-        </div>
-        <button
-          type="button"
-          className={styles.primary}
-          disabled={saving}
-          onClick={() => {
-            if (step === 1) {
-              setStep(2);
-              setNotice(null);
-              return;
-            }
-            void saveDraft(step === 6 ? "publish" : "next");
-          }}
-        >
-          {step === 1
-            ? templateId && templateId !== "blank"
-              ? "このテンプレートで始める"
-              : "次へ"
-            : step === 6
-              ? published
-                ? "変更を保存"
-                : "公開する"
-              : "保存して次へ"}
-        </button>
-      </div>
       {testing ? (
         <StampRallyTestPlay
           name={name}

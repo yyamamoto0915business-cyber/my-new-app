@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
+  Ticket,
   Camera,
   ChevronDown,
   ChevronUp,
@@ -37,7 +38,18 @@ import { ImageUploadTile } from "@/components/organizer/games/GameImageField";
 import { RewardFields } from "@/components/organizer/games/RewardFields";
 import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/games/RewardOptions";
 import { PeriodPresets, jstDate, periodProblem } from "@/components/organizer/games/PeriodPresets";
-import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameParticipationChoice } from "@/components/organizer/games/ParticipationField";
+import {
+  EMPTY_GAME_PASS_DRAFT,
+  GamePassPreview,
+  GamePassStep,
+  type GamePlayLimitChoice,
+  gamePassBody,
+  gamePassDraftFromSettings,
+  type GamePassDraft,
+} from "@/components/organizer/games/GamePassStep";
+import { gameTypeCover } from "@/components/organizer/games/GameCardSetup";
 import { useGameLookEdit } from "@/components/organizer/games/useGameLookEdit";
 import { GameCreateShell, type GameCreateStep } from "@/components/organizer/games/GameCreateShell";
 import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCardSetup";
@@ -48,6 +60,7 @@ import { readGameLook } from "@/lib/organizer/game-look";
 
 const STEPS = [
   { id: "basic", label: "基本設定" },
+  { id: "pass", label: "参加パス" },
   { id: "spots", label: "スポット設定" },
   { id: "rules", label: "ルール設定" },
   { id: "publish", label: "公開設定" },
@@ -57,9 +70,10 @@ type StepId = (typeof STEPS)[number]["id"];
 
 const SHELL_STEPS: GameCreateStep[] = [
   { label: STEPS[0].label, icon: PenLine },
-  { label: STEPS[1].label, icon: MapPin },
-  { label: STEPS[2].label, icon: ListChecks },
-  { label: STEPS[3].label, icon: Rocket },
+  { label: STEPS[1].label, icon: Ticket },
+  { label: STEPS[2].label, icon: MapPin },
+  { label: STEPS[3].label, icon: ListChecks },
+  { label: STEPS[4].label, icon: Rocket },
 ];
 
 function toIsoFromDateTime(date: string, time: string): string | null {
@@ -100,6 +114,9 @@ export function OrganizerPhotoCreateForm() {
   const { look, lookEdit, setLook } = useGameLookEdit();
   const router = useRouter();
   const [step, setStep] = useState<StepId>("basic");
+  useEffect(() => {
+    setPassPreview(step === "pass");
+  }, [step]);
   const [name, setName] = useState("春のまち歩きフォトラリー");
   const [description, setDescription] = useState("まちのスポットを巡って写真を撮りながら地域の魅力を見つけよう！");
   const [eventId, setEventId] = useState("");
@@ -107,6 +124,12 @@ export function OrganizerPhotoCreateForm() {
   const [cardImage, setCardImage] = useState("");
   /** 参加できる人。イベント参加者・参加パス保有者に絞るときは、対象イベントが必要。 */
   const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
+  const [participation, setParticipation] = useState<GameParticipationChoice>("onsite");
+  // 新しく作るゲームは、登録なしで遊べる「何度でも」から始める。保存済みのゲームは読み込んだ値になる。
+  const [playLimit, setPlayLimit] = useState<GamePlayLimitChoice>("repeat");
+  const [passDraft, setPassDraft] = useState<GamePassDraft>(EMPTY_GAME_PASS_DRAFT);
+  /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
+  const [passPreview, setPassPreview] = useState(false);
   // はじめは今日から1か月（過去の日付から始めない）。
   const [startDate, setStartDate] = useState(() => jstDate());
   const [startTime, setStartTime] = useState("09:00");
@@ -147,7 +170,10 @@ export function OrganizerPhotoCreateForm() {
     if (saved.endTime) setEndTime(saved.endTime);
     setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
     const savedAudience = saved.settings.audience;
-    setAudience(savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    setAudience(savedAudience === "entry" || savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    setParticipation(saved.settings.participation === "remote" ? "remote" : "onsite");
+    setPlayLimit(saved.settings.playLimit === "repeat" ? "repeat" : "once");
+    setPassDraft(gamePassDraftFromSettings(saved.settings.pass));
     if (saved.settings.look) setLook(readGameLook(saved.settings.look));
     const photo = sanitizePhotoSettings(saved.settings.photo);
     if (!photo) return;
@@ -298,6 +324,9 @@ export function OrganizerPhotoCreateForm() {
           eventId: eventId || null,
           cardImage,
           audience,
+          participation,
+          playLimit,
+          pass: gamePassBody(passDraft),
           description: description.trim(),
           startsAt: toIsoFromDateTime(startDate, startTime),
           endsAt: toIsoFromDateTime(endDate, endTime),
@@ -346,7 +375,6 @@ export function OrganizerPhotoCreateForm() {
   return (
     <GameCreateShell
       title="フォトラリー作成"
-      subtitle="スポットで写真を撮って、思い出を集めるゲームです。かんたんに作成できます。"
       steps={SHELL_STEPS}
       step={stepIndex}
       onStep={(index) => {
@@ -361,14 +389,31 @@ export function OrganizerPhotoCreateForm() {
       onPublish={() => void save("published")}
       preview={
         <GamePhonePreview
-          kind="photo"
-          typeLabel="フォトラリー"
-          name={name}
-          description={description}
-          settings={settingsBody}
-          look={lookEdit}
-          stepView={stepIndex === 0 ? "start" : stepIndex === STEPS.length - 1 ? "clear" : "play"}
-        />
+            kind="photo"
+            typeLabel="フォトラリー"
+            name={name}
+            description={description}
+            settings={settingsBody}
+            look={lookEdit}
+            stepView={stepIndex === 0 ? "start" : stepIndex === STEPS.length - 1 ? "clear" : "play"}
+            pass={{
+              active: passPreview,
+              onChange: setPassPreview,
+              node: (
+                <GamePassPreview
+                image={cardImage}
+                fallbackImage={gameTypeCover("photo")}
+                name={name}
+                typeLabel="フォトラリー"
+                startAt={startDate ? `${startDate}T00:00:00+09:00` : null}
+                  endAt={endDate ? `${endDate}T23:59:00+09:00` : null}
+                participation={participation}
+                entry={audience === "entry"}
+                note={passDraft.note}
+              />
+              ),
+            }}
+          />
       }
     >
           {step === "basic" ? (
@@ -475,9 +520,6 @@ export function OrganizerPhotoCreateForm() {
                   </select>
                   <small>{eventHint ?? "選ぶと、イベントのページからこのゲームに入れます。開催期間もイベントの日に合わせます。"}</small>
                 </label>
-                <div className="org-photo__field org-photo__field--wide">
-                  <AudienceField value={audience} onChange={setAudience} eventChosen={Boolean(eventId)} />
-                </div>
                 <label className="org-photo__field">
                   <span>カテゴリ</span>
                   <select
@@ -782,6 +824,49 @@ export function OrganizerPhotoCreateForm() {
               </RewardList>
             </section>
           ) : null}
+
+          {step === "pass" ? (
+
+            <section className="org-quiz__card" aria-labelledby="photo-pass">
+
+                    <h2 id="photo-pass">参加パス</h2>
+
+                    <GamePassStep
+
+                      audience={audience}
+
+                      onAudience={setAudience}
+
+                      eventChosen={Boolean(eventId)}
+
+                      participation={participation}
+
+                      onParticipation={setParticipation}
+
+                      playLimit={playLimit}
+
+                      onPlayLimit={setPlayLimit}
+
+                      pass={passDraft}
+
+                      onPass={setPassDraft}
+
+                      image={cardImage}
+
+
+                      onImage={setCardImage}
+
+                      gameId={draft.editId}
+
+
+
+
+                    />
+
+                  </section>
+
+          ) : null}
+
 
           {step === "publish" ? (
             <section className="org-photo__card">

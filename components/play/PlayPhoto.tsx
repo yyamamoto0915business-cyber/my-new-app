@@ -14,13 +14,15 @@ type Props = {
   photo: PublicPhotoPlay;
   progress: PlayProgress;
   onProgress: (progress: PlayProgress) => void;
+  /** 主催者のプレビュー：この項目を開いたところから見せる。 */
+  previewOpen?: number;
 };
 
-export function PlayPhoto({ token, photo, progress, onProgress }: Props) {
+export function PlayPhoto({ token, photo, progress, onProgress, previewOpen }: Props) {
   const done = progress.photo?.done ?? [];
   const needed = progress.photo?.needed ?? photo.clearCount;
   const rewards = progress.photo?.rewards ?? photo.rewards;
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(previewOpen ?? null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState("");

@@ -15,6 +15,9 @@ import { EventPurchasePrimaryCta } from "@/components/events/detail/purchase/Eve
 import { EventApplyConfirmPreviewOverlay } from "@/components/events/detail/EventApplyConfirmPreviewOverlay";
 import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import { Suspense } from "react";
+import { EventGamesSection } from "@/components/events/detail/EventGamesSection";
+import { listPublishedGamesForEvent } from "@/lib/organizer/public-games";
+import { getPlayDb } from "@/lib/organizer/play";
 
 const SITE_BASE =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://my-new-app-self-iota.vercel.app";
@@ -46,6 +49,10 @@ export default async function EventDetailPage({ params }: Props) {
   if (!event) {
     notFound();
   }
+
+  const playDb = getPlayDb();
+  const linkedGames = playDb ? await listPublishedGamesForEvent(playDb, id) : [];
+  const gamesSection = <EventGamesSection games={linkedGames} />;
 
   const status = getEventStatus(event);
   const isAvailable = status === "available";
@@ -223,7 +230,8 @@ export default async function EventDetailPage({ params }: Props) {
   );
 
   const overviewContent = (
-    <div className="min-[900px]:hidden">
+    <div className="space-y-3 min-[900px]:hidden">
+      {gamesSection}
       <MobileEventOverviewTab description={event.description} />
     </div>
   );
@@ -277,6 +285,7 @@ export default async function EventDetailPage({ params }: Props) {
             organizerName={event.organizerName}
             primaryActionsSlot={primaryActions}
             pcActionsSlot={pcActions}
+            pcGamesSlot={linkedGames.length > 0 ? gamesSection : null}
             overviewChildren={overviewContent}
             participationChildren={participationTabContent}
             supportBannerSlot={<EventDetailSupportBanner eventId={id} />}

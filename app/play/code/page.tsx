@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound } from "lucide-react";
 
@@ -10,6 +10,12 @@ export default function PlayCodePage() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 参加パスの「コードを入れて始める」から来たときは、コードを入れておく。
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("code");
+    if (fromUrl) setCode((current) => current || fromUrl.slice(0, 12));
+  }, []);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();

@@ -21,6 +21,8 @@ type Props = {
   participationReception: string;
   /** @deprecated 購入CTAは EventPurchaseCard に統合。互換のため残す */
   pcActionsSlot?: React.ReactNode;
+  /** このイベントで遊べるゲーム。 */
+  gamesSlot?: React.ReactNode;
 };
 
 export function EventDetailPcView({
@@ -34,6 +36,7 @@ export function EventDetailPcView({
   shareUrl,
   receptionLabel,
   participationReception,
+  gamesSlot,
 }: Props) {
   const isAvailable = getEventStatus(event) === "available";
   const { recruitment, hasRecruitment } = useEventVolunteerRecruitment(eventId);
@@ -58,6 +61,8 @@ export function EventDetailPcView({
               />
             ) : null}
           </div>
+
+          {gamesSlot ? <div className="mt-4">{gamesSlot}</div> : null}
 
           <EventDetailPcMainSections
             eventId={eventId}

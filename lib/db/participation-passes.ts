@@ -1,10 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatTimeToHm } from "@/lib/format-date";
 import { getJstTodayYmd } from "@/lib/jst-date";
-import type { ParticipationPass } from "@/lib/participation-pass";
+import { gamePassPeriodLabel, type ParticipationPass } from "@/lib/participation-pass";
 import type { EventParticipantStatus } from "@/lib/db/types";
 import type { ApplicationStatus } from "@/lib/db/recruitments-mvp";
 import { normalizeEventFormat } from "@/lib/event-online";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { coverFromSettings, defaultCover, gameImagesForEvents } from "@/lib/organizer/public-games";
+import { getOrganizerGameType, isOrganizerGameTypeId } from "@/lib/organizer/game-types";
+import { publicPlayParticipation } from "@/lib/organizer/game-experience";
+import { organizerGameJoinPath } from "@/lib/organizer/game-tokens";
+import { ensureGameJoinCode } from "@/lib/organizer/play";
+import { gamePassFromSettings } from "@/lib/organizer/game-pass";
 
 const PASS_ELIGIBLE_STATUSES: EventParticipantStatus[] = [
   "applied",
@@ -20,8 +27,8 @@ const VOLUNTEER_PASS_STATUSES: ApplicationStatus[] = [
   "completed",
 ];
 
-const FALLBACK_EVENT_IMAGE =
-  "https://placehold.co/800x600/eef2ee/6a7468?text=Event";
+/** イベントにもゲームにも画像がないときの画像（サイト内の絵なので、読み込めずに崩れることがない）。 */
+const FALLBACK_EVENT_IMAGE = "/hero-festival.jpg";
 
 type EventJoinRow = {
   id: string;
@@ -525,12 +532,113 @@ export async function fetchMyParticipationPasses(
   attendeeName: string,
   now: Date = new Date()
 ): Promise<ParticipationPass[]> {
-  const [visitorPasses, volunteerPasses] = await Promise.all([
+  const [visitorPasses, volunteerPasses, gamePasses] = await Promise.all([
     fetchVisitorPasses(supabase, userId, attendeeName, now),
     fetchVolunteerPasses(supabase, userId, attendeeName, now),
+    fetchGamePasses(userId, attendeeName, now),
   ]);
 
-  return [...visitorPasses, ...volunteerPasses].sort(
+  const passes = [...visitorPasses, ...volunteerPasses, ...gamePasses].sort(
     (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
   );
+  return withGameImages(passes);
+}
+
+type GameEntryRow = {
+  id: string;
+  created_at: string;
+  organizer_games: {
+    id: string;
+    name: string | null;
+    type: string;
+    status: string;
+    starts_at: string | null;
+    ends_at: string | null;
+    join_token: string | null;
+    settings: unknown;
+  } | null;
+};
+
+/** ゲームに申し込んだときの参加パス（イベントを使わず、ゲームだけで申し込んだもの）。 */
+async function fetchGamePasses(userId: string, attendeeName: string, now: Date): Promise<ParticipationPass[]> {
+  const db = createAdminClient();
+  if (!db) return [];
+  const { data, error } = await db
+    .from("organizer_game_entries")
+    .select("id, created_at, organizer_games(id, name, type, status, starts_at, ends_at, join_token, settings)")
+    .eq("user_id", userId)
+    .eq("status", "applied");
+  if (error) {
+    // 表がまだないときは、ゲームのパスなしで出す。
+    if (!/organizer_game_entries|schema cache|does not exist/i.test(error.message)) console.warn("fetchGamePasses:", error.message);
+    return [];
+  }
+  const passes: ParticipationPass[] = [];
+  for (const row of (data ?? []) as unknown as GameEntryRow[]) {
+    const game = Array.isArray(row.organizer_games) ? row.organizer_games[0] : row.organizer_games;
+    if (!game || game.status !== "published" || !game.join_token) continue;
+    const type = isOrganizerGameTypeId(game.type) ? game.type : "stamp";
+    const participation = publicPlayParticipation(game.settings, type);
+    let joinCode: string | null = null;
+    if (participation === "remote") {
+      const ensured = await ensureGameJoinCode(db, game.id).catch(() => null);
+      joinCode = ensured && ensured.ok ? ensured.code : null;
+    }
+    const startAt = game.starts_at ?? row.created_at;
+    const endAt = game.ends_at ?? startAt;
+    const ended = Boolean(game.ends_at) && Date.parse(game.ends_at as string) < now.getTime();
+    const started = Date.parse(startAt) <= now.getTime();
+    const image = coverFromSettings(game.settings, type) ?? defaultCover(type);
+    passes.push({
+      id: `game-${row.id}`,
+      eventId: game.id,
+      eventTitle: game.name ?? "ゲーム",
+      eventImage: isPassSafeImage(image) ? image : defaultCover(type),
+      startAt,
+      endAt,
+      venueName: participation === "remote" ? "どこからでも参加（参加コード）" : "現地で参加（QR）",
+      attendeeName,
+      receptionNumber: buildReceptionNumber(row.id),
+      paymentStatus: "free",
+      receptionType: "qr",
+      ticketLabel: "参加者",
+      quantity: 1,
+      status: ended ? "completed" : started ? "today" : "upcoming",
+      kind: "game",
+      game: {
+        gameId: game.id,
+        typeLabel: getOrganizerGameType(type).label,
+        participation,
+        joinPath: organizerGameJoinPath(game.join_token),
+        joinCode,
+        note: gamePassFromSettings(game.settings)?.note || undefined,
+        periodLabel: gamePassPeriodLabel(game.starts_at, game.ends_at),
+      },
+    });
+  }
+  return passes;
+}
+
+/** 参加パスの画像は next/image で出すので、サイト内の絵か、保存場所（Supabase）の画像だけ使う。 */
+function isPassSafeImage(url: string): boolean {
+  if (url.startsWith("/") && !url.startsWith("//")) return true;
+  return /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\//i.test(url);
+}
+
+/** イベントに画像がなければ、そのイベントのゲームの画像を参加パスに使う。 */
+async function withGameImages(passes: ParticipationPass[]): Promise<ParticipationPass[]> {
+  const missing = [...new Set(passes.filter((p) => p.eventImage === FALLBACK_EVENT_IMAGE).map((p) => p.eventId))];
+  if (missing.length === 0) return passes;
+  const db = createAdminClient();
+  if (!db) return passes;
+  try {
+    const images = await gameImagesForEvents(db, missing);
+    return passes.map((p) => {
+      const image = p.eventImage === FALLBACK_EVENT_IMAGE ? images.get(p.eventId) : undefined;
+      return image && isPassSafeImage(image) ? { ...p, eventImage: image } : p;
+    });
+  } catch (error) {
+    console.warn("pass game images:", error);
+    return passes;
+  }
 }

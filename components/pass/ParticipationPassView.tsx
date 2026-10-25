@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   filterPassesByTab,
   getNextPass,
@@ -22,18 +22,30 @@ type Props = {
   demoAccessByPassId?: Record<string, EventOnlineAccessResponse | null>;
   /** プレビューバナー文言 */
   previewBanner?: string | null;
+  /** 申し込んだ直後など、先に開いておくイベント。 */
+  focusEventId?: string | null;
 };
 
 export function ParticipationPassView({
   passes,
   demoAccessByPassId,
   previewBanner,
+  focusEventId = null,
 }: Props) {
   const [activeTab, setActiveTab] = useState<PassTabId>("upcoming");
+  const focusPass = focusEventId ? passes.find((p) => p.eventId === focusEventId) ?? null : null;
   const [selectedPassId, setSelectedPassId] = useState<string | null>(
-    () => getNextPass(passes, new Date())?.id ?? passes[0]?.id ?? null
+    () => focusPass?.id ?? getNextPass(passes, new Date())?.id ?? passes[0]?.id ?? null
   );
   const [isPassDetailOpen, setIsPassDetailOpen] = useState(false);
+
+  // 申し込んだイベントのパスは、スマホでもすぐ開いて見せる。
+  useEffect(() => {
+    if (!focusPass) return;
+    if (window.matchMedia("(max-width: 899px)").matches) setIsPassDetailOpen(true);
+    // 最初の一度だけ。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isEmpty = passes.length === 0;
 

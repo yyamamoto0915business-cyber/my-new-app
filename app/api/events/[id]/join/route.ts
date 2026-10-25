@@ -7,6 +7,9 @@ import {
   joinEvent,
   getParticipantStatus,
 } from "@/lib/db/events";
+import { createNotification } from "@/lib/db/notifications";
+import { getEventPassHref } from "@/lib/event-purchase";
+import { getPlayDb } from "@/lib/organizer/play";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -29,6 +32,36 @@ export async function GET(_request: Request, { params }: Params) {
 
   const status = await getParticipantStatus(supabase, eventId, user.id);
   return NextResponse.json({ applied: !!status });
+}
+
+/** 申し込んだ人へ「参加パスが届きました」を送る。ゲームがあれば、始め方も添える。 */
+async function notifyPassIssued(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  eventId: string,
+  eventTitle: string,
+  userId: string
+) {
+  try {
+    let hasGame = false;
+    const db = getPlayDb();
+    if (db) {
+      const { count } = await db
+        .from("organizer_games")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .eq("status", "published");
+      hasGame = (count ?? 0) > 0;
+    }
+    await createNotification(supabase, userId, "system_message", "参加パスが届きました", {
+      body: hasGame
+        ? `「${eventTitle}」の申し込みが完了しました。このイベントのゲームは、参加パスから始められます。`
+        : `「${eventTitle}」の申し込みが完了しました。参加パスは当日の受付で使います。`,
+      link: getEventPassHref(eventId),
+    });
+  } catch (error) {
+    // 通知が送れなくても、申し込みはできている。
+    console.error("pass issued notification:", error);
+  }
 }
 
 /** POST: イベントに申し込む（申込必須イベント用） */
@@ -84,6 +117,7 @@ export async function POST(_request: Request, { params }: Params) {
 
   try {
     await joinEvent(supabase, eventId, user.id);
+    await notifyPassIssued(supabase, eventId, event.title, user.id);
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error("join event:", e);

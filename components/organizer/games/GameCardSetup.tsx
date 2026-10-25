@@ -71,6 +71,7 @@ export function GameCardSetup({
         <b style={{ fontSize: "0.9rem", color: "#1a2214" }}>まちの情報に出るカード</b>
         <p style={{ margin: "0.2rem 0 0", fontSize: "0.74rem", color: "#5d6b62", lineHeight: 1.5 }}>
           公開すると、「まちの情報」のゲームの一覧に、このカードで載ります。
+          対象イベントに画像がないときは、この画像が申し込んだ人の参加パスにも出ます。
         </p>
       </div>
       <div style={{ display: "flex", gap: "0.9rem", alignItems: "flex-start", flexWrap: "wrap" }}>

@@ -56,6 +56,13 @@ export function PassKindBadge({
 }: {
   kind?: ParticipationPass["kind"];
 }) {
+  if (kind === "game") {
+    return (
+      <span className="inline-flex items-center rounded-full border border-[#b8dcc4] bg-[#eef8f1] px-1.5 py-0.5 text-[10.5px] font-medium text-[#1f7a4a]">
+        ゲーム
+      </span>
+    );
+  }
   if (kind !== "volunteer") return null;
   return (
     <span className="inline-flex items-center rounded-full border border-[#c8b8e0] bg-[#f5f0fa] px-1.5 py-0.5 text-[10.5px] font-medium text-[#6b4a9e]">

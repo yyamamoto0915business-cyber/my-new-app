@@ -19,6 +19,8 @@ type Props = {
   organizerName: string;
   primaryActionsSlot: React.ReactNode;
   pcActionsSlot: React.ReactNode;
+  /** PCで、イベントの上に出すゲームの欄。 */
+  pcGamesSlot?: React.ReactNode;
   overviewChildren: React.ReactNode;
   participationChildren: React.ReactNode;
   supportBannerSlot?: React.ReactNode;
@@ -39,6 +41,7 @@ export function EventDetailTabs({
   organizerName,
   primaryActionsSlot,
   pcActionsSlot,
+  pcGamesSlot,
   overviewChildren,
   participationChildren,
   supportBannerSlot,
@@ -82,6 +85,7 @@ export function EventDetailTabs({
         receptionLabel={receptionLabel}
         participationReception={participationReception}
         pcActionsSlot={pcActionsSlot}
+        gamesSlot={pcGamesSlot}
       />
     </EventOrganizerConsultProvider>
   );

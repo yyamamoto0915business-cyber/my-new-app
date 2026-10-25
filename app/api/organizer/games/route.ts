@@ -16,6 +16,7 @@ import {
 } from "@/lib/organizer/game-types";
 import { MAX_ORGANIZER_GAME_SPOTS } from "@/lib/organizer/game-tokens";
 import { settingsFromBody } from "@/lib/organizer/game-settings-body";
+import { requireOrganizerFeature } from "@/lib/organizer/require-organizer-feature";
 
 /** GET: ゲーム一覧。events=1 で対象イベント候補も返す */
 export async function GET(request: NextRequest) {
@@ -71,6 +72,9 @@ export async function POST(request: NextRequest) {
   if (!organizerId) {
     return NextResponse.json({ error: "主催者登録が必要です" }, { status: 403 });
   }
+
+  const planBlocked = await requireOrganizerFeature(supabase, organizerId, "games");
+  if (planBlocked) return planBlocked;
 
   let body: {
     name?: unknown;

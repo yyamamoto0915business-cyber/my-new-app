@@ -18,7 +18,6 @@ export type GameCreateStep = { label: string; icon: LucideIcon };
  */
 export function GameCreateShell({
   title,
-  subtitle,
   steps,
   step,
   onStep,
@@ -32,7 +31,6 @@ export function GameCreateShell({
   children,
 }: {
   title: string;
-  subtitle: string;
   steps: readonly GameCreateStep[];
   /** 0 から。 */
   step: number;
@@ -80,65 +78,102 @@ export function GameCreateShell({
 
   return (
     <div className={cn("org-game-create", styles.wizard)}>
-      <Link
-        href="/organizer/games"
-        className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline"
-      >
-        <ArrowLeft className="size-3.5" strokeWidth={2.4} aria-hidden />
-        ゲーム機能に戻る
-      </Link>
-
-      <div className="hidden md:block">
-        <OrganizerWorkspacePageHeader title={title} subtitle={subtitle} />
-      </div>
-
-      <nav className={styles.stepper} aria-label="作成ステップ">
-        <div className={styles.stepperHead}>
-          <span className={styles.stepperCount}>
-            STEP <b>{step + 1}</b>
-            <i>/ {steps.length}</i>
-          </span>
-          <span className={styles.stepperTitle}>{steps[step]?.label}</span>
-          {!last ? <span className={styles.stepperNext}>次：{steps[step + 1]?.label}</span> : null}
-        </div>
-        <ol
-          className={styles.stepperTrack}
-          style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
-        >
-          {steps.map((item, index) => {
-            const current = step === index;
-            const done = step > index;
-            const Icon = item.icon;
-            return (
-              <li
-                key={item.label}
-                className={cn(styles.stepperItem, current && styles["is-current"], done && styles["is-done"])}
-              >
-                <button
-                  type="button"
-                  aria-current={current ? "step" : undefined}
-                  aria-label={`${index + 1}. ${item.label}${done ? "（済み）" : ""}`}
-                  onClick={() => go(index)}
-                >
-                  <span className={styles.stepperDot}>
-                    {done ? <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> : <Icon className="h-4 w-4" aria-hidden />}
-                  </span>
-                  <span className={styles.stepperLabel}>{item.label}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
-
       <div className={styles.layout} style={preview ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}>
         <div className={styles.main}>
+          <Link
+            href="/organizer/games"
+            className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline"
+          >
+            <ArrowLeft className="size-3.5" strokeWidth={2.4} aria-hidden />
+            ゲーム機能に戻る
+          </Link>
+
+          <div className="hidden md:block">
+            <OrganizerWorkspacePageHeader title={title} />
+          </div>
+
+          <nav className={styles.stepper} aria-label="作成ステップ">
+            <div className={styles.stepperHead}>
+              <span className={styles.stepperCount}>
+                STEP <b>{step + 1}</b>
+                <i>/ {steps.length}</i>
+              </span>
+              <span className={styles.stepperTitle}>{steps[step]?.label}</span>
+              {!last ? <span className={styles.stepperNext}>次：{steps[step + 1]?.label}</span> : null}
+            </div>
+            <ol
+              className={styles.stepperTrack}
+              style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+            >
+              {steps.map((item, index) => {
+                const current = step === index;
+                const done = step > index;
+                const Icon = item.icon;
+                return (
+                  <li
+                    key={item.label}
+                    className={cn(styles.stepperItem, current && styles["is-current"], done && styles["is-done"])}
+                  >
+                    <button
+                      type="button"
+                      aria-current={current ? "step" : undefined}
+                      title={item.label}
+                      aria-label={`${index + 1}. ${item.label}${done ? "（済み）" : ""}`}
+                      onClick={() => go(index)}
+                    >
+                      <span className={styles.stepperDot}>
+                        {done ? <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> : <Icon className="h-4 w-4" aria-hidden />}
+                      </span>
+                      <span className={styles.stepperLabel}>{item.label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
           {children}
           {error ? <p className="org-quiz__error">{error}</p> : null}
+          <div className={styles.footer}>
+            <p className={styles.footerStep}>
+              <b>STEP {step + 1} / {steps.length}</b>
+              {steps[step]?.label}
+              {!last ? <span>次：{steps[step + 1]?.label}</span> : null}
+            </p>
+            <div className={styles.footerQuiet}>
+              {step > 0 ? (
+                <button type="button" className={styles.textAction} disabled={saving} onClick={() => go(step - 1)}>
+                  戻る
+                </button>
+              ) : null}
+              <button type="button" className={styles.textAction} disabled={saving} onClick={onTry}>
+                お試しで見る
+              </button>
+              <button type="button" className={styles.textAction} disabled={saving} onClick={onDraft}>
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
+                下書き保存
+              </button>
+            </div>
+            <button
+              type="button"
+              className={styles.primary}
+              disabled={saving}
+              onClick={() => {
+                if (last) onPublish();
+                else if (onNext) {
+                  onNext();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                } else go(step + 1);
+              }}
+            >
+              {last ? "公開する" : "次へ"}
+            </button>
+          </div>
         </div>
         {preview ? (
           <aside className={styles.livePreview} aria-label="参加者画面プレビュー">
-            <p className={styles.livePreviewTitle}>参加者に見える画面</p>
+            <div className={styles.livePreviewHead}>
+              <p className={styles.livePreviewTitle}>参加者に見える画面</p>
+            </div>
             {preview}
           </aside>
         ) : null}
@@ -175,36 +210,6 @@ export function GameCreateShell({
           )
         : null}
 
-      <div className={styles.footer}>
-        <div className={styles.footerQuiet}>
-          {step > 0 ? (
-            <button type="button" className={styles.textAction} disabled={saving} onClick={() => go(step - 1)}>
-              戻る
-            </button>
-          ) : null}
-          <button type="button" className={styles.textAction} disabled={saving} onClick={onTry}>
-            お試しで見る
-          </button>
-          <button type="button" className={styles.textAction} disabled={saving} onClick={onDraft}>
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-            下書き保存
-          </button>
-        </div>
-        <button
-          type="button"
-          className={styles.primary}
-          disabled={saving}
-          onClick={() => {
-            if (last) onPublish();
-            else if (onNext) {
-              onNext();
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            } else go(step + 1);
-          }}
-        >
-          {last ? "公開する" : "次へ"}
-        </button>
-      </div>
     </div>
   );
 }

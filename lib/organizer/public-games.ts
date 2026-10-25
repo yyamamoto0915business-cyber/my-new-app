@@ -6,7 +6,7 @@ import {
   type OrganizerGameTypeId,
 } from "@/lib/organizer/game-types";
 import { organizerGameJoinPath } from "@/lib/organizer/game-tokens";
-import { publicPlayStart } from "@/lib/organizer/game-experience";
+import { publicPlayParticipation, publicPlayStart, type GameParticipation } from "@/lib/organizer/game-experience";
 
 export type PublicOrganizerGame = {
   id: string;
@@ -22,7 +22,7 @@ export type PublicOrganizerGame = {
   eventTitle: string | null;
 };
 
-function coverFromSettings(settings: unknown, type: OrganizerGameTypeId): string | null {
+export function coverFromSettings(settings: unknown, type: OrganizerGameTypeId): string | null {
   // 主催者が「まちの情報に出るカード」で選んだ画像を、いちばん先に使う。
   const cardImage = settings && typeof settings === "object" ? (settings as { cardImage?: unknown }).cardImage : null;
   if (typeof cardImage === "string" && cardImage.trim()) return cardImage.trim();
@@ -46,7 +46,7 @@ function isHiddenFromPublic(settings: unknown, type: OrganizerGameTypeId): boole
   return false;
 }
 
-function defaultCover(type: OrganizerGameTypeId): string {
+export function defaultCover(type: OrganizerGameTypeId): string {
   // 謎解きだけは種類の絵がないので、テンプレートの絵を使う。
   if (type === "mystery") return "/organizer/games/template-mystery.jpg";
   return `/organizer/games/game-type-${type}.png`;
@@ -134,4 +134,80 @@ export function publicGameStartYmd(startsAt: string | null): string {
   if (Number.isNaN(value.getTime())) return "";
   const jst = new Date(value.getTime() + 9 * 60 * 60 * 1000);
   return jst.toISOString().slice(0, 10);
+}
+
+export type EventLinkedGame = {
+  id: string;
+  name: string;
+  typeLabel: string;
+  participation: GameParticipation;
+  joinPath: string;
+  imageUrl: string;
+};
+
+/** イベントの詳細ページに出す、そのイベントに結びついた公開中のゲーム。 */
+export async function listPublishedGamesForEvent(
+  supabase: SupabaseClient,
+  eventId: string
+): Promise<EventLinkedGame[]> {
+  const { data, error } = await supabase
+    .from("organizer_games")
+    .select("id, type, name, ends_at, join_token, settings")
+    .eq("event_id", eventId)
+    .eq("status", "published")
+    .order("created_at", { ascending: true });
+  if (error) {
+    console.warn("listPublishedGamesForEvent:", error.message);
+    return [];
+  }
+  const now = Date.now();
+  return ((data ?? []) as Record<string, unknown>[]).flatMap((row) => {
+    const type = isOrganizerGameTypeId(String(row.type ?? ""))
+      ? (row.type as OrganizerGameTypeId)
+      : DEFAULT_ORGANIZER_GAME_TYPE_ID;
+    if (isHiddenFromPublic(row.settings, type)) return [];
+    const endsAt = typeof row.ends_at === "string" ? row.ends_at : null;
+    if (endsAt && !Number.isNaN(Date.parse(endsAt)) && Date.parse(endsAt) < now) return [];
+    const joinToken = typeof row.join_token === "string" ? row.join_token.trim() : "";
+    if (!joinToken) return [];
+    const startTitle = publicPlayStart(row.settings).title.trim();
+    return [
+      {
+        id: String(row.id),
+        name: startTitle || (typeof row.name === "string" ? row.name : "ゲーム"),
+        typeLabel: getOrganizerGameType(type).label,
+        participation: publicPlayParticipation(row.settings, type),
+        joinPath: organizerGameJoinPath(joinToken),
+        imageUrl: coverFromSettings(row.settings, type) ?? defaultCover(type),
+      },
+    ];
+  });
+}
+
+/**
+ * イベントに画像がないとき、参加パスに出すゲームの画像。イベントごとに、いちばん先に作ったゲームの画像を使う。
+ * カードの画像 → スタート画面の画像 → 種類ごとの画像の順。
+ */
+export async function gameImagesForEvents(
+  supabase: SupabaseClient,
+  eventIds: string[]
+): Promise<Map<string, string>> {
+  const images = new Map<string, string>();
+  if (eventIds.length === 0) return images;
+  const { data, error } = await supabase
+    .from("organizer_games")
+    .select("event_id, type, settings, created_at")
+    .in("event_id", eventIds)
+    .eq("status", "published")
+    .order("created_at", { ascending: true });
+  if (error) {
+    console.warn("gameImagesForEvents:", error.message);
+    return images;
+  }
+  for (const row of (data ?? []) as { event_id: string | null; type: string; settings: unknown }[]) {
+    if (!row.event_id || images.has(row.event_id)) continue;
+    const type = isOrganizerGameTypeId(row.type) ? row.type : DEFAULT_ORGANIZER_GAME_TYPE_ID;
+    images.set(row.event_id, coverFromSettings(row.settings, type) ?? defaultCover(type));
+  }
+  return images;
 }

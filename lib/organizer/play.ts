@@ -1,6 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { gamePassFromSettings } from "@/lib/organizer/game-pass";
 import {
   ORGANIZER_GAME_SPOT_KIND_LABEL,
   isOrganizerGameSpotKind,
@@ -102,7 +103,7 @@ function playerRound(player: { play_round?: number | null }): number {
   return typeof player.play_round === "number" && player.play_round > 0 ? Math.floor(player.play_round) : 1;
 }
 
-type AudienceBlock = { status: number; error: string; code: "audience_login" | "audience_closed" };
+type AudienceBlock = { status: number; error: string; code: "audience_login" | "audience_closed" | "entry_required" };
 
 async function playAudienceBlock(
   db: SupabaseClient,
@@ -170,6 +171,7 @@ async function playAudienceBlock(
     eventLinked: Boolean(eventId),
     participant,
     passHeld,
+    entryHeld: audience === "entry" ? await playGameEntryHeld(db, gameId, userId) : false,
   });
   if (decision.ok) return null;
   return {
@@ -875,6 +877,100 @@ export async function playEventEntryHeld(db: SupabaseClient, gameId: string, use
     .eq("user_id", userId)
     .maybeSingle();
   return isEventMemberStatus(typeof member?.status === "string" ? member.status : null);
+}
+
+/** ゲームに申し込んでいるか（イベントを使わず、ゲームだけで申し込みを受け付けるとき）。 */
+export async function playGameEntryHeld(db: SupabaseClient, gameId: string, userId: string | null): Promise<boolean> {
+  if (!userId) return false;
+  const { data, error } = await db
+    .from("organizer_game_entries")
+    .select("status")
+    .eq("game_id", gameId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    if (!/organizer_game_entries|schema cache|does not exist/i.test(error.message)) console.error("game entry held:", error);
+    return false;
+  }
+  return (data as { status?: string } | null)?.status === "applied";
+}
+
+/** 申し込みの受付状況（定員・締め切り）。 */
+export async function playGameEntryStatus(
+  db: SupabaseClient,
+  gameId: string,
+  settings: unknown,
+): Promise<{ capacity: number | null; count: number; deadline: string | null; note: string; full: boolean; closed: boolean }> {
+  const pass = gamePassFromSettings(settings);
+  let count = 0;
+  if (pass?.capacity != null) {
+    const { count: applied } = await db
+      .from("organizer_game_entries")
+      .select("id", { count: "exact", head: true })
+      .eq("game_id", gameId)
+      .eq("status", "applied");
+    count = applied ?? 0;
+  }
+  return {
+    capacity: pass?.capacity ?? null,
+    count,
+    deadline: pass?.deadline ?? null,
+    note: pass?.note ?? "",
+    full: pass?.capacity != null && count >= pass.capacity,
+    closed: pass?.deadline != null && Date.parse(pass.deadline) < Date.now(),
+  };
+}
+
+/** ゲームに申し込む。申し込み済みなら、そのまま成功にする。 */
+export async function applyPlayGameEntry(
+  db: SupabaseClient,
+  joinToken: string,
+  userId: string | null,
+): Promise<
+  | { ok: true; gameId: string; gameName: string; already: boolean }
+  | { ok: false; status: number; error: string; code?: string }
+> {
+  if (!userId) return { ok: false, status: 401, error: "ログインしてから申し込んでください", code: "audience_login" };
+  const game = await lookupPlayGameByJoinToken(db, joinToken);
+  if (!game) return { ok: false, status: 404, error: "ゲームが見つかりません" };
+  const { data: settingsRow } = await db.from("organizer_games").select("settings, ends_at").eq("id", game.id).maybeSingle();
+  if (publicPlayAudience((settingsRow as { settings?: unknown } | null)?.settings) !== "entry") {
+    return { ok: false, status: 400, error: "このゲームは申し込みを受け付けていません" };
+  }
+  const endsAt = (settingsRow as { ends_at?: unknown } | null)?.ends_at;
+  if (typeof endsAt === "string" && Date.parse(endsAt) < Date.now()) {
+    return { ok: false, status: 400, error: "このゲームは終了しました" };
+  }
+  if (await playGameEntryHeld(db, game.id, userId)) {
+    return { ok: true, gameId: game.id, gameName: game.name, already: true };
+  }
+  const status = await playGameEntryStatus(db, game.id, (settingsRow as { settings?: unknown } | null)?.settings);
+  if (status.closed) return { ok: false, status: 400, error: "申し込みの締め切りを過ぎました", code: "entry_closed" };
+  if (status.full) return { ok: false, status: 400, error: "定員に達したため、申し込みを締め切りました", code: "entry_full" };
+  const { error } = await db
+    .from("organizer_game_entries")
+    .upsert({ game_id: game.id, user_id: userId, status: "applied" }, { onConflict: "game_id,user_id" });
+  if (error) {
+    if (/organizer_game_entries|schema cache|does not exist/i.test(error.message)) {
+      return { ok: false, status: 503, error: "申し込みの準備ができていません（データベースの更新が必要です）" };
+    }
+    throw error;
+  }
+  return { ok: true, gameId: game.id, gameName: game.name, already: false };
+}
+
+/** 申し込みが要るゲームの、対象イベントと申し込み済みかどうか。イベントが無いときは null。 */
+export async function playEventGate(
+  db: SupabaseClient,
+  gameId: string,
+  userId: string | null,
+): Promise<{ eventId: string; eventTitle: string; applied: boolean } | null> {
+  const { data: gameRow } = await db.from("organizer_games").select("event_id").eq("id", gameId).maybeSingle();
+  const eventId = typeof (gameRow as { event_id?: unknown } | null)?.event_id === "string" ? (gameRow as { event_id: string }).event_id : "";
+  if (!eventId) return null;
+  const { data: event } = await db.from("events").select("title").eq("id", eventId).maybeSingle();
+  const eventTitle = typeof (event as { title?: unknown } | null)?.title === "string" ? (event as { title: string }).title : "";
+  return { eventId, eventTitle, applied: await playEventEntryHeld(db, gameId, userId) };
 }
 
 /**
@@ -2060,7 +2156,7 @@ export async function replayPlayGame(
   userId: string | null = null,
 ): Promise<
   | { ok: true; session: PlaySession }
-  | { ok: false; status: number; error: string; code?: "audience_login" | "audience_closed" }
+  | { ok: false; status: number; error: string; code?: "audience_login" | "audience_closed" | "entry_required" }
 > {
   if (!deviceToken || deviceToken.length < 16) {
     return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
@@ -2155,7 +2251,8 @@ export async function stampPlaySpot(
         | "gps_required"
         | "gps_far"
         | "audience_login"
-        | "audience_closed";
+        | "audience_closed"
+        | "entry_required";
       progress?: PlayProgress;
     }
 > {

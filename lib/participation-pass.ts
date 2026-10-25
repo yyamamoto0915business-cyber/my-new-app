@@ -1,4 +1,18 @@
-export type ParticipationPassKind = "visitor" | "volunteer";
+export type ParticipationPassKind = "visitor" | "volunteer" | "game";
+
+/** ゲームに申し込んだときの参加パスの中身。 */
+export type ParticipationPassGame = {
+  gameId: string;
+  typeLabel: string;
+  /** 現地で参加（QR）か、どこからでも参加（参加コード）か。 */
+  participation: "onsite" | "remote";
+  joinPath: string;
+  joinCode: string | null;
+  /** 申し込みの注意書き。 */
+  note?: string;
+  /** 期間がない・片方だけのときの日付の出し方（「いつでも参加できます」など）。両方あるときは undefined。 */
+  periodLabel?: string;
+};
 
 export type ParticipationPass = {
   id: string;
@@ -28,6 +42,8 @@ export type ParticipationPass = {
   eventFormat?: "onsite" | "online" | "hybrid";
   /** 主催者連絡先（問い合わせ用・任意） */
   organizerContact?: string | null;
+  /** ゲームの参加パス（kind が game のとき）。eventId にはゲームの id が入る。 */
+  game?: ParticipationPassGame;
 };
 
 export type PassTabId = "upcoming" | "today" | "history";
@@ -230,4 +246,14 @@ export function getOtherPasses(
   nextId: string | null
 ): ParticipationPass[] {
   return filterPassesByTab(passes, "upcoming").filter((p) => p.id !== nextId);
+}
+
+/** ゲームの期間が片方だけ・ないときの表示。両方あるときは undefined（いつもの「〜」の形で出す）。 */
+export function gamePassPeriodLabel(startAt: string | null, endAt: string | null): string | undefined {
+  if (startAt && endAt) return undefined;
+  const fmt = (iso: string) =>
+    new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", month: "long", day: "numeric", weekday: "short" }).format(new Date(iso));
+  if (startAt) return `${fmt(startAt)}から参加できます`;
+  if (endAt) return `${fmt(endAt)}まで参加できます`;
+  return "いつでも参加できます";
 }

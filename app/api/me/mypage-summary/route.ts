@@ -138,8 +138,9 @@ export async function GET() {
     fetchMyVolunteerApplications(supabase, user.id, 20).catch(() => []),
   ]);
 
+  // マイページの「次のイベント」はイベントのページへつなぐので、ゲームのパスは入れない。
   const activePasses = passes.filter(
-    (p) => p.status === "upcoming" || p.status === "today"
+    (p) => p.kind !== "game" && (p.status === "upcoming" || p.status === "today")
   );
   const completedPasses = passes.filter((p) => p.status === "completed");
 

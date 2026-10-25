@@ -14,15 +14,17 @@ type Props = {
   quiz: PublicQuiz;
   progress: PlayProgress;
   onProgress: (progress: PlayProgress) => void;
+  /** 主催者のプレビュー：この選択肢で正解したところから見せる。 */
+  previewCorrect?: number;
 };
 
-export function PlayQuiz({ token, quiz, progress, onProgress }: Props) {
+export function PlayQuiz({ token, quiz, progress, onProgress, previewCorrect }: Props) {
   const solved = progress.quiz?.solved ?? [];
   const needed = progress.quiz?.needed ?? quiz.clearCount;
   const rewards = progress.quiz?.rewards ?? quiz.rewards;
   const current = quiz.questions.find((question) => !solved.includes(question.index)) ?? null;
-  const [picked, setPicked] = useState<number | null>(null);
-  const [verdict, setVerdict] = useState<"correct" | "wrong" | null>(null);
+  const [picked, setPicked] = useState<number | null>(previewCorrect ?? null);
+  const [verdict, setVerdict] = useState<"correct" | "wrong" | null>(previewCorrect != null ? "correct" : null);
   const [hint, setHint] = useState("");
   const [held, setHeld] = useState<PlayProgress | null>(null);
   const [saving, setSaving] = useState(false);

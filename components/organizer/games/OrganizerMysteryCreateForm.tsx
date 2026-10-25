@@ -3,10 +3,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ChevronDown, ChevronUp, Copy, Gift, PenLine, Plus, Search, Trash2, Trophy } from "lucide-react";
+import { Ticket, ChevronDown, ChevronUp, Copy, Gift, PenLine, Plus, Search, Trash2, Trophy } from "lucide-react";
 import { GameImageField } from "@/components/organizer/games/GameImageField";
 import { RewardFields } from "@/components/organizer/games/RewardFields";
-import { AudienceField, type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
+import { type GameParticipationChoice } from "@/components/organizer/games/ParticipationField";
+import {
+  EMPTY_GAME_PASS_DRAFT,
+  GamePassPreview,
+  GamePassStep,
+  type GamePlayLimitChoice,
+  gamePassBody,
+  gamePassDraftFromSettings,
+  type GamePassDraft,
+} from "@/components/organizer/games/GamePassStep";
+import { gameTypeCover } from "@/components/organizer/games/GameCardSetup";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { OrganizerGameEventOption } from "@/lib/organizer/games";
 import { ClearCountCard, RewardCard, RewardList } from "@/components/organizer/games/RewardOptions";
@@ -24,10 +35,14 @@ import { sanitizeMysterySettings } from "@/lib/organizer/mystery";
 import { MysteryTestPlay } from "@/components/organizer/games/MysteryTestPlay";
 import { createMysteryStep, sampleMysterySteps, type MysteryStep } from "@/lib/organizer/mystery";
 
+/** 画面に並べる順番（参加パスは基本情報のすぐあと）。中身は STEPS の番号で持つ。 */
+const ORDER = [0, 3, 1, 2];
+
 const STEPS: GameCreateStep[] = [
   { label: "基本情報", icon: PenLine },
   { label: "謎", icon: Search },
   { label: "クリア", icon: Trophy },
+  { label: "参加パス", icon: Ticket },
 ];
 
 export function OrganizerMysteryCreateForm() {
@@ -43,12 +58,21 @@ export function OrganizerMysteryCreateForm() {
   const [couponDetail, setCouponDetail] = useState("");
   const [prizeName, setPrizeName] = useState("");
   const [prizePlace, setPrizePlace] = useState("");
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(ORDER[0]);
+  useEffect(() => {
+    setPassPreview(page === 3);
+  }, [page]);
   /** 対象イベントと、参加できる人（イベント参加者・参加パス保有者に絞るときは、対象イベントが必要）。 */
   const [eventId, setEventId] = useState("");
   /** まちの情報のカードに出す画像（空なら、対象イベントの画像 → 種類の絵）。 */
   const [cardImage, setCardImage] = useState("");
   const [audience, setAudience] = useState<GameAudienceChoice>("anyone");
+  const [participation, setParticipation] = useState<GameParticipationChoice>("onsite");
+  // 新しく作るゲームは、登録なしで遊べる「何度でも」から始める。保存済みのゲームは読み込んだ値になる。
+  const [playLimit, setPlayLimit] = useState<GamePlayLimitChoice>("repeat");
+  const [passDraft, setPassDraft] = useState<GamePassDraft>(EMPTY_GAME_PASS_DRAFT);
+  /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
+  const [passPreview, setPassPreview] = useState(false);
   const [events, setEvents] = useState<OrganizerGameEventOption[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   useEffect(() => {
@@ -82,7 +106,10 @@ export function OrganizerMysteryCreateForm() {
     setEventId(saved.eventId);
     setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
     const savedAudience = saved.settings.audience;
-    setAudience(savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    setAudience(savedAudience === "entry" || savedAudience === "event" || savedAudience === "pass" ? savedAudience : "anyone");
+    setParticipation(saved.settings.participation === "remote" ? "remote" : "onsite");
+    setPlayLimit(saved.settings.playLimit === "repeat" ? "repeat" : "once");
+    setPassDraft(gamePassDraftFromSettings(saved.settings.pass));
     if (saved.settings.look) setLook(readGameLook(saved.settings.look));
     const mystery = sanitizeMysterySettings(saved.settings.mystery);
     if (!mystery) return;
@@ -156,7 +183,7 @@ export function OrganizerMysteryCreateForm() {
       setError("名前を入れてください");
       return;
     }
-    if (status === "published" && audience !== "anyone" && !eventId) {
+    if (status === "published" && (audience === "event" || audience === "pass") && !eventId) {
       setError("参加できる人を絞るときは、対象イベントを選んでください");
       setPage(0);
       return;
@@ -178,6 +205,9 @@ export function OrganizerMysteryCreateForm() {
           eventId: eventId || null,
           cardImage,
           audience,
+          participation,
+          playLimit,
+          pass: gamePassBody(passDraft),
         },
         status,
       );
@@ -212,10 +242,9 @@ export function OrganizerMysteryCreateForm() {
   return (
     <GameCreateShell
       title="謎解き街歩き作成"
-      subtitle="ヒントを順にたどって、まちを歩きます。答えは、参加する人の画面には出しません。"
-      steps={STEPS}
-      step={page}
-      onStep={setPage}
+      steps={ORDER.map((index) => STEPS[index])}
+      step={ORDER.indexOf(page)}
+      onStep={(next) => setPage(ORDER[next] ?? 0)}
       saving={saving}
       error={error}
       onTry={() => setTesting(true)}
@@ -223,15 +252,32 @@ export function OrganizerMysteryCreateForm() {
       onPublish={() => void save("published")}
       preview={
         <GamePhonePreview
-          kind="mystery"
-          typeLabel="謎解き街歩き"
-          name={name}
-          description={description}
-          settings={settingsBody}
-          look={lookEdit}
-          focus={previewIndex}
-          stepView={page === 0 ? "start" : page === STEPS.length - 1 ? "clear" : "play"}
-        />
+            kind="mystery"
+            typeLabel="謎解き街歩き"
+            name={name}
+            description={description}
+            settings={settingsBody}
+            look={lookEdit}
+            focus={previewIndex}
+            stepView={page === 0 || page === 3 ? "start" : page === 2 ? "clear" : "play"}
+            pass={{
+              active: passPreview,
+              onChange: setPassPreview,
+              node: (
+                <GamePassPreview
+                image={cardImage}
+                fallbackImage={gameTypeCover("mystery")}
+                name={name}
+                typeLabel="謎解き街歩き"
+                startAt={null}
+                  endAt={null}
+                participation={participation}
+                entry={audience === "entry"}
+                note={passDraft.note}
+              />
+              ),
+            }}
+          />
       }
     >
       {page === 0 ? (
@@ -264,9 +310,6 @@ export function OrganizerMysteryCreateForm() {
                     : "選ぶと、イベントのページからこのゲームに入れます。"}
               </small>
             </label>
-            <div className="org-quiz__field org-quiz__field--wide">
-              <AudienceField value={audience} onChange={setAudience} eventChosen={Boolean(eventId)} />
-            </div>
           </section>
       ) : null}
       {page === 1 ? (
@@ -479,6 +522,25 @@ export function OrganizerMysteryCreateForm() {
           prizeOn={prizeOn}
           onClose={() => setTesting(false)}
         />
+      ) : null}
+      {page === 3 ? (
+        <section className="org-quiz__card" aria-labelledby="mystery-pass">
+          <h2 id="mystery-pass">参加パス</h2>
+          <GamePassStep
+            audience={audience}
+            onAudience={setAudience}
+            eventChosen={Boolean(eventId)}
+            participation={participation}
+            onParticipation={setParticipation}
+            playLimit={playLimit}
+            onPlayLimit={setPlayLimit}
+            pass={passDraft}
+            onPass={setPassDraft}
+            image={cardImage}
+            onImage={setCardImage}
+            gameId={draft.editId}
+          />
+        </section>
       ) : null}
     </GameCreateShell>
   );

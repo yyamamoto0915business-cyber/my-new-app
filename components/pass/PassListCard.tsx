@@ -141,7 +141,7 @@ export function PassListCard({
             }`}
           >
             <CalendarDays className="h-3 w-3 shrink-0 text-[#6a8a72]" aria-hidden />
-            <span className="truncate">{formatPassDateRange(pass.startAt, pass.endAt)}</span>
+            <span className="truncate">{pass.game?.periodLabel ?? formatPassDateRange(pass.startAt, pass.endAt)}</span>
           </p>
           <p
             className={`mt-0.5 flex items-center gap-1 text-[#5a665c] ${
@@ -154,19 +154,21 @@ export function PassListCard({
 
           <div className="mt-1.5 flex flex-wrap items-center gap-1">
             <PassKindBadge kind={pass.kind} />
-            {pass.kind === "volunteer" ? null : (
+            {pass.kind === "volunteer" || pass.kind === "game" ? null : (
               <PassPaymentBadge status={pass.paymentStatus} />
             )}
-            {isOnlineOnlyPass(pass) ? (
+            {pass.kind === "game" ? null : isOnlineOnlyPass(pass) ? (
               <span className="inline-flex shrink-0 items-center rounded-full border border-[#c8d0e0] bg-[#f0f2f8] px-1.5 py-0.5 text-[10.5px] font-medium text-[#3a4a68]">
                 オンライン参加
               </span>
             ) : (
               <PassReceptionBadge type={pass.receptionType} />
             )}
-            <span className="hidden min-[900px]:inline-flex">
-              <PassQuantityBadge label={formatTicketQuantity(pass)} />
-            </span>
+            {pass.kind === "game" ? null : (
+              <span className="hidden min-[900px]:inline-flex">
+                <PassQuantityBadge label={formatTicketQuantity(pass)} />
+              </span>
+            )}
             {formatLabel ? (
               <span className="inline-flex shrink-0 items-center rounded-full bg-[#eef8e8] px-1.5 py-0.5 text-[10.5px] font-semibold text-[#3a7a10]">
                 <span className="min-[900px]:hidden">{formatLabel}</span>
@@ -211,11 +213,11 @@ export function PassListCard({
             <ArrowRight className="h-3 w-3" aria-hidden />
           </button>
           <Link
-            href={`/events/${pass.eventId}`}
+            href={pass.game ? pass.game.joinPath : `/events/${pass.eventId}`}
             onClick={(e) => e.stopPropagation()}
             className="hidden items-center gap-0.5 text-[10.5px] font-medium text-[#2d7a4f] transition hover:underline min-[900px]:inline-flex"
           >
-            イベント詳細
+            {pass.game ? "ゲームのページ" : "イベント詳細"}
             <ArrowRight className="h-2.5 w-2.5" aria-hidden />
           </Link>
         </div>

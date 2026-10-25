@@ -1,5 +1,6 @@
 "use client";
 
+import { PreviewZoom, usePreviewZoom } from "@/components/organizer/games/PreviewZoom";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Award, ImagePlus, Palette, Plus, Shapes, Type, Video } from "lucide-react";
 import { PlayLocaleSwitch } from "@/components/play/PlayLocaleSwitch";
@@ -65,7 +66,7 @@ import { publicMystery, readStoredMystery } from "@/lib/organizer/mystery-play";
 import { sanitizeMysterySettings } from "@/lib/organizer/mystery";
 import { readStoredPhoto } from "@/lib/organizer/photo-play";
 import { sanitizePhotoSettings } from "@/lib/organizer/photo";
-import { publicQuiz, readStoredQuiz } from "@/lib/organizer/quiz-play";
+import { publicQuiz, publicQuizQuestion, readStoredQuiz } from "@/lib/organizer/quiz-play";
 import type { PlayProgress } from "@/lib/organizer/play-types";
 import { cn } from "@/lib/utils";
 import "./wizard-preview.css";
@@ -93,11 +94,60 @@ export type GameLookEdit = {
 export type GamePreviewKind = "quiz" | "mission" | "photo" | "coupon" | "checkin" | "mystery";
 export type GamePreviewView = "start" | "play" | "clear";
 
-const VIEWS: { id: GamePreviewView; label: string }[] = [
-  { id: "start", label: "参加" },
-  { id: "play", label: "プレイ中" },
-  { id: "clear", label: "クリア" },
-];
+/**
+ * プレビューで見せる画面。スタンプラリーと同じく、ゲームの特徴ごとに分ける。
+ * screen は参加・プレイ中・クリアのどれの見た目か。open は1つを開いたところ、map は地図、correct は正解したところ。
+ */
+type PreviewTab = { id: string; label: string; screen: GamePreviewView; detail?: "open" | "map" | "correct" };
+
+const START_TAB: PreviewTab = { id: "start", label: "スタート", screen: "start" };
+const REWARD_TAB: PreviewTab = { id: "clear", label: "特典", screen: "clear" };
+
+const TABS: Record<GamePreviewKind, PreviewTab[]> = {
+  quiz: [
+    START_TAB,
+    { id: "play", label: "問題", screen: "play" },
+    { id: "correct", label: "正解！", screen: "play", detail: "correct" },
+    REWARD_TAB,
+  ],
+  mystery: [
+    START_TAB,
+    { id: "play", label: "謎の一覧", screen: "play" },
+    { id: "map", label: "マップ", screen: "play", detail: "map" },
+    { id: "open", label: "謎", screen: "play", detail: "open" },
+    REWARD_TAB,
+  ],
+  mission: [
+    START_TAB,
+    { id: "play", label: "ミッション一覧", screen: "play" },
+    { id: "open", label: "挑戦", screen: "play", detail: "open" },
+    REWARD_TAB,
+  ],
+  photo: [
+    START_TAB,
+    { id: "play", label: "スポット", screen: "play" },
+    { id: "open", label: "撮影", screen: "play", detail: "open" },
+    REWARD_TAB,
+  ],
+  coupon: [
+    START_TAB,
+    { id: "play", label: "お店", screen: "play" },
+    { id: "open", label: "クーポン", screen: "play", detail: "open" },
+    REWARD_TAB,
+  ],
+  checkin: [
+    START_TAB,
+    { id: "play", label: "スポット", screen: "play" },
+    { id: "open", label: "チェックイン", screen: "play", detail: "open" },
+    REWARD_TAB,
+  ],
+};
+
+/** 開いたところを見せる項目：選んでいる項目（なければ最初）。 */
+function pickOpen<T extends { index: number }>(items: T[], focus?: number): number | undefined {
+  if (items.length === 0) return undefined;
+  return items[Math.min(Math.max(focus ?? 0, 0), items.length - 1)].index;
+}
 
 /**
  * 見本の進み具合。プレイ中は focus の手前まで（なければ半分）済み、クリアは全部済み。
@@ -165,7 +215,10 @@ export function GamePhonePreview({
   stepView,
   edit,
   look: lookEdit,
+  pass,
 }: {
+  /** 作成画面で「参加パス」のタブを足すとき。選ぶと、届く参加パスの見本を出す。 */
+  pass?: { active: boolean; onChange: (active: boolean) => void; node: ReactNode };
   /** 渡すと、プレビューの上で直接書き換えられる（いまはクイズ）。 */
   edit?: {
     onName: (value: string) => void;
@@ -186,17 +239,21 @@ export function GamePhonePreview({
   stepView?: GamePreviewView;
 }) {
   const copy = usePlayCopy();
-  const [view, setView] = useState<GamePreviewView>(stepView ?? "start");
+  const tabs = TABS[kind];
+  const [tabId, setTabId] = useState<string>(stepView ?? "start");
+  const tab = tabs.find((item) => item.id === tabId) ?? tabs[0];
+  /** 見た目（アイコン・背景・足した部品）の画面。 */
+  const view = tab.screen;
   useEffect(() => {
-    if (stepView) setView(stepView);
+    if (stepView) setTabId(stepView);
   }, [stepView]);
-  // 問題を選び直したら、その問題を見せる（最初の表示では変えない）。
+  // 問題・項目を選び直したら、それを見せる（最初の表示では変えない）。クイズは問題の編集、ほかは開いたところ。
   const lastFocus = useRef(focus);
   useEffect(() => {
     if (focus == null || focus === lastFocus.current) return;
     lastFocus.current = focus;
-    setView("play");
-  }, [focus]);
+    setTabId(kind !== "quiz" && TABS[kind].some((item) => item.id === "open") ? "open" : "play");
+  }, [focus, kind]);
 
   const built: Built | null = useMemo(() => {
     const base = (total: number, done: number[]): PlayProgress => ({
@@ -209,10 +266,14 @@ export function GamePhonePreview({
     if (kind === "quiz") {
       const stored = readStoredQuiz({ quiz: settings });
       if (!stored) return null;
-      const quiz = publicQuiz(stored);
       const total = stored.questions.length;
       const done = sampleDone(total, view, stored.clearCount, focus);
       const completed = done.length >= stored.clearCount;
+      // 正解したところは、チェックポイントの問題も着いたあとの中身で見せる。
+      const correct = tab.detail === "correct" ? stored.questions.find((item) => !done.includes(item.index)) : undefined;
+      const quiz = correct
+        ? { ...publicQuiz(stored), questions: stored.questions.map((item) => publicQuizQuestion(item, true)) }
+        : publicQuiz(stored);
       return {
         total,
         meta: copy.quizMeta(total, stored.clearCount),
@@ -224,7 +285,7 @@ export function GamePhonePreview({
           quiz: { needed: stored.clearCount, solved: done, rewards: stored.rewards },
         },
         screen: (progress) =>
-          progress ? <PlayQuiz key={view} token={TOKEN} quiz={quiz} progress={progress} onProgress={noop} /> : null,
+          progress ? <PlayQuiz key={tab.id} token={TOKEN} quiz={quiz} progress={progress} onProgress={noop} previewCorrect={correct?.correctIndex} /> : null,
       };
     }
     if (kind === "mission") {
@@ -248,7 +309,7 @@ export function GamePhonePreview({
           mission: { needed: stored.clearCount, done, rewards: stored.rewards },
         },
         screen: (progress) =>
-          progress ? <PlayMission key={view} token={TOKEN} mission={mission} progress={progress} onProgress={noop} /> : null,
+          progress ? <PlayMission key={tab.id} token={TOKEN} mission={mission} progress={progress} onProgress={noop} previewOpen={tab.detail === "open" ? pickOpen(stored.missions, focus) : undefined} /> : null,
       };
     }
     if (kind === "photo") {
@@ -269,7 +330,7 @@ export function GamePhonePreview({
           photo: { needed: photo.clearCount, done, rewards: photo.rewards },
         },
         screen: (progress) =>
-          progress ? <PlayPhoto key={view} token={TOKEN} photo={photo} progress={progress} onProgress={noop} /> : null,
+          progress ? <PlayPhoto key={tab.id} token={TOKEN} photo={photo} progress={progress} onProgress={noop} previewOpen={tab.detail === "open" ? pickOpen(photo.spots, focus) : undefined} /> : null,
       };
     }
     if (kind === "coupon") {
@@ -289,7 +350,7 @@ export function GamePhonePreview({
           coupon: { needed: coupon.needed, done, autoGrant: coupon.autoGrant, noStack: coupon.noStack },
         },
         screen: (progress) =>
-          progress ? <PlayCoupon key={view} token={TOKEN} coupon={coupon} progress={progress} onProgress={noop} /> : null,
+          progress ? <PlayCoupon key={tab.id} token={TOKEN} coupon={coupon} progress={progress} onProgress={noop} previewOpen={tab.detail === "open" ? pickOpen(coupon.stores, focus) : undefined} /> : null,
       };
     }
     if (kind === "checkin") {
@@ -312,7 +373,7 @@ export function GamePhonePreview({
           checkin: { needed: stored.needed, done, rewards: stored.rewards },
         },
         screen: (progress) =>
-          progress ? <PlayCheckin key={view} token={TOKEN} checkin={checkin} progress={progress} onProgress={noop} /> : null,
+          progress ? <PlayCheckin key={tab.id} token={TOKEN} checkin={checkin} progress={progress} onProgress={noop} previewOpen={tab.detail === "open" ? pickOpen(stored.spots, focus) : undefined} /> : null,
       };
     }
     const clean = sanitizeMysterySettings(settings);
@@ -321,6 +382,8 @@ export function GamePhonePreview({
     const mystery = publicMystery(stored);
     const total = stored.steps.length;
     const done = sampleDone(total, view, stored.needed, focus);
+    // 開いたところは、まだ解いていない謎（選んでいる謎があれば、それ）。
+    const openStep = tab.detail === "open" ? stored.steps.find((item) => !done.includes(item.index))?.index : undefined;
     return {
       total,
       meta: copy.mysteryMeta(total, stored.needed),
@@ -331,28 +394,21 @@ export function GamePhonePreview({
         mystery: { needed: stored.needed, solved: done, rewards: stored.rewards },
       },
       screen: (progress) =>
-        progress ? <PlayMystery key={view} token={TOKEN} mystery={mystery} progress={progress} onProgress={noop} /> : null,
+        progress ? <PlayMystery
+            key={tab.id}
+            token={TOKEN}
+            mystery={mystery}
+            progress={progress}
+            onProgress={noop}
+            previewOpen={openStep}
+            previewMap={tab.detail === "map"}
+          /> : null,
     };
-  }, [kind, settings, view, focus, copy]);
+  }, [kind, settings, view, tab, focus, copy]);
 
   // 実機（390×844）の大きさで描き、置き場所に収まるよう縮める。
   const stageRef = useRef<HTMLDivElement>(null);
-  const [fitScale, setFitScale] = useState(0.7);
-  const [actual, setActual] = useState(false);
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    const measure = () => {
-      const { width, height } = stage.getBoundingClientRect();
-      const next = Math.min(1, (width - 4) / PHONE_W, (height - 4) / PHONE_H);
-      if (next > 0) setFitScale(Math.round(next * 100) / 100);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(stage);
-    return () => observer.disconnect();
-  }, []);
-  const scale = actual ? 1 : fitScale;
+  const { scale, zoomed, setZoom } = usePreviewZoom(stageRef, PHONE_W, PHONE_H);
   const title = name.trim() || typeLabel;
 
   const look = {
@@ -545,21 +601,31 @@ export function GamePhonePreview({
   return (
     <div className={cn("wizard-preview game-phone", edit && "is-editing", lookEdit && "has-look-edit")}>
       <div className="wizard-preview__views" role="tablist" aria-label="プレビューする画面">
-        {VIEWS.map((item) => (
+        {tabs.map((item) => (
           <button
             key={item.id}
             type="button"
             role="tab"
-            aria-selected={view === item.id}
+            aria-selected={!pass?.active && tab.id === item.id}
             onClick={() => {
+              pass?.onChange(false);
               selectLook(null);
-              setView(item.id);
+              setTabId(item.id);
             }}
           >
             {item.label}
           </button>
         ))}
+        {pass ? (
+          <button type="button" role="tab" aria-selected={pass.active} onClick={() => pass.onChange(true)}>
+            参加パス
+          </button>
+        ) : null}
       </div>
+      {pass?.active ? (
+        <div className="wizard-preview__pass">{pass.node}</div>
+      ) : (
+        <>
       {edit && view !== "clear" ? (
         <p className="wizard-preview__edit-hint">文字はタップして、そのまま書き換えられます</p>
       ) : lookEdit ? (
@@ -571,13 +637,8 @@ export function GamePhonePreview({
               : "部品はタップで選び、押したままドラッグで動かせます"}
         </p>
       ) : null}
-      <div className="wizard-preview__zoom">
-        <span>{actual ? "実寸（100%）" : `実寸の${Math.round(scale * 100)}%`}</span>
-        <button type="button" onClick={() => setActual((current) => !current)}>
-          {actual ? "画面に合わせる" : "実寸で見る"}
-        </button>
-      </div>
-      <div ref={stageRef} className={cn("wizard-preview__stage", actual && "is-actual")}>
+      <PreviewZoom scale={scale} zoomed={zoomed} setZoom={setZoom} />
+      <div ref={stageRef} className={cn("wizard-preview__stage", zoomed && "is-actual")}>
         <div className="wizard-preview__fit" style={{ width: PHONE_W * scale, height: PHONE_H * scale }}>
           {lookEdit ? (
             <div className="wizard-preview__adds">
@@ -623,7 +684,7 @@ export function GamePhonePreview({
                 }}
               >
                 <PlayLocaleSwitch />
-                {view === "play" && edit?.quiz ? (
+                {tab.id === "play" && edit?.quiz ? (
                   <main className={cn(mainClass, "play-game--scene")}>
                     <GameLookBackdrop look={look} />
                     {built ? <GameSceneBand look={look} scene="play" progress={gamePlayProgress(built.progress)} /> : null}
@@ -927,7 +988,9 @@ export function GamePhonePreview({
           />
         </div>
       ) : null}
-      {!built && !edit?.quiz ? <p className="wizard-preview__note">内容を入れると、プレイ中とクリアの画面も見られます。</p> : null}
+      {!built && !edit?.quiz ? <p className="wizard-preview__note">内容を入れると、ほかの画面も見られます。</p> : null}
+        </>
+      )}
     </div>
   );
 }

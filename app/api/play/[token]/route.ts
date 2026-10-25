@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { publicPlayAudience, publicPlayLimit, publicPlayStart, type GameAudience, type GamePlayLimit, type PublicPlayStart } from "@/lib/organizer/game-experience";
+import { publicPlayAudience, publicPlayLimit, publicPlayParticipation, publicPlayStart, type GameAudience, type GameParticipation, type GamePlayLimit, type PublicPlayStart } from "@/lib/organizer/game-experience";
 import { publicQuiz, readStoredQuiz } from "@/lib/organizer/quiz-play";
 import { readGameLook } from "@/lib/organizer/game-look";
 import { publicMission, readStoredMission } from "@/lib/organizer/mission-play";
@@ -9,7 +9,7 @@ import { readStoredCoupon } from "@/lib/organizer/coupon-play";
 import { publicCheckin, readStoredCheckin } from "@/lib/organizer/checkin-play";
 import { publicMystery, readStoredMystery } from "@/lib/organizer/mystery-play";
 import { getOrganizerGameType, isOrganizerGameTypeId } from "@/lib/organizer/game-types";
-import { playEventEntryHeld, getPlayDb, joinPlayGame, playGamePublished } from "@/lib/organizer/play";
+import { playEventEntryHeld, playEventGate, playGameEntryHeld, playGameEntryStatus, getPlayDb, joinPlayGame, playGamePublished } from "@/lib/organizer/play";
 import { readPlayUserId } from "@/lib/organizer/play-user";
 import { loadPlayMoment } from "@/lib/organizer/play-moment";
 
@@ -46,8 +46,11 @@ function formatPlayPeriod(startsAt: string | null, endsAt: string | null): strin
   return null;
 }
 
-async function loadPublicStart(gameId: string): Promise<{ start: PublicPlayStart; audience: GameAudience; playLimit: GamePlayLimit }> {
-  const blank = { start: publicPlayStart(null), audience: "anyone" as const, playLimit: "once" as const };
+async function loadPublicStart(
+  gameId: string,
+  type: string,
+): Promise<{ start: PublicPlayStart; audience: GameAudience; playLimit: GamePlayLimit; participation: GameParticipation }> {
+  const blank = { start: publicPlayStart(null), audience: "anyone" as const, playLimit: "once" as const, participation: "onsite" as const };
   const db = getPlayDb();
   if (!db) return blank;
   const { data, error } = await db.from("organizer_games").select("settings").eq("id", gameId).maybeSingle();
@@ -60,6 +63,7 @@ async function loadPublicStart(gameId: string): Promise<{ start: PublicPlayStart
     start: publicPlayStart(settings),
     audience: publicPlayAudience(settings),
     playLimit: publicPlayLimit(settings),
+    participation: publicPlayParticipation(settings, type),
   };
 }
 
@@ -106,7 +110,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
       accountNickname = owned.nickname;
     }
   }
-  const [opening, moment] = await Promise.all([loadPublicStart(row.id), loadPlayMoment(row.id)]);
+  const [opening, moment, eventGate] = await Promise.all([
+    loadPublicStart(row.id, type),
+    loadPlayMoment(row.id),
+    // 参加者を絞ったゲームは、対象イベントへの申し込みが先。
+    playDb ? playEventGate(playDb, row.id, userId) : Promise.resolve(null),
+  ]);
   const start = opening.start;
   // スタンプラリー以外は、設定（問題・お題など）を一度だけ読む。
   let settings: unknown = null;
@@ -158,6 +167,24 @@ export async function GET(_req: NextRequest, { params }: Params) {
     spotCount: row.spot_count ?? 0,
     audience: opening.audience,
     playLimit: opening.playLimit,
+    participation: opening.participation,
+    eventGate: opening.audience === "event" || opening.audience === "pass" ? eventGate : null,
+    // ゲームだけで申し込みを受け付けるとき、申し込み済みかどうか。
+    entry:
+      opening.audience === "entry" && playDb
+        ? await (async () => {
+            const { data: entryRow } = await playDb.from("organizer_games").select("settings").eq("id", row.id).maybeSingle();
+            const status = await playGameEntryStatus(playDb, row.id, (entryRow as { settings?: unknown } | null)?.settings);
+            return {
+              applied: await playGameEntryHeld(playDb, row.id, userId),
+              note: status.note,
+              deadline: status.deadline,
+              remaining: status.capacity != null ? Math.max(status.capacity - status.count, 0) : null,
+              full: status.full,
+              closed: status.closed,
+            };
+          })()
+        : null,
     signedIn: Boolean(userId),
     accountNickname,
     // 対象イベントに申し込んだアカウントは、ニックネーム・合言葉なしで参加できる（スタンプラリー以外）。

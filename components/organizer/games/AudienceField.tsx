@@ -1,15 +1,17 @@
 "use client";
 
-export type GameAudienceChoice = "anyone" | "event" | "pass";
+export type GameAudienceChoice = "anyone" | "entry" | "event" | "pass";
 
 const OPTIONS: { id: GameAudienceChoice; label: string; blurb: string }[] = [
   { id: "anyone", label: "誰でも", blurb: "参加用QRから、誰でも入れます" },
+  { id: "entry", label: "申し込んだ人だけ", blurb: "このゲームのページで申し込んだアカウントだけが入れます。イベントは要りません" },
   { id: "event", label: "イベントの参加者だけ", blurb: "対象イベントに申し込んだアカウントだけが入れます" },
   { id: "pass", label: "参加パスを持っている人だけ", blurb: "対象イベントの参加パス（支払い済み・スタッフ）を持つアカウントだけが入れます" },
 ];
 
 /**
- * ゲームに参加できる人。イベント参加者・参加パス保有者に絞るときは、対象イベントが必要。
+ * ゲームに参加できる人。申し込んだ人だけにするときは、ゲームのページで申し込みを受け付ける（イベントは要らない）。
+ * イベント参加者・参加パス保有者に絞るときは、対象イベントが必要。
  * 絞った場合、参加者はログインしてから入る（スタンプラリーと同じ確かめ方）。
  */
 export function AudienceField({
@@ -68,16 +70,23 @@ export function AudienceField({
           );
         })}
       </div>
-      {/* 参加パスはイベントに付くもの。パスのあるイベントがまだなければ、ここから作りに行ける。 */}
+      {/* イベントの参加者・参加パスで絞るときだけ、イベントを作りに行けるようにする。 */}
+      {value === "event" || value === "pass" ? (
       <a
         href="/organizer/events/new"
         target="_blank"
         rel="noreferrer"
         style={{ justifySelf: "start", fontSize: "0.74rem", fontWeight: 800, color: "#1f7a4a", textDecoration: "underline" }}
       >
-        イベントを作る（参加パスもここで設定）→
+        イベントを作る →
       </a>
-      {value !== "anyone" ? (
+      ) : null}
+      {value === "entry" ? (
+        <small style={{ fontSize: "0.72rem", lineHeight: 1.5, color: "#5d6b62" }}>
+          参加者はログインして申し込みます。申し込んだ人には参加パスが届き、そこからゲームを始められます。
+        </small>
+      ) : null}
+      {value === "event" || value === "pass" ? (
         <small style={{ fontSize: "0.72rem", lineHeight: 1.5, color: eventChosen ? "#5d6b62" : "#c0392b", fontWeight: eventChosen ? 500 : 800 }}>
           {eventChosen
             ? "参加者はログインしてから入ります。条件に合わないアカウントは入れません。"

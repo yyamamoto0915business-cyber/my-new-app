@@ -720,3 +720,671 @@
     bottom: 0.32rem;
   }
 }
+
+/* ---------- PC: まちを、遊び場に。 ---------- */
+
+.org-hub-pc {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .org-hub #created-games {
+    display: none;
+  }
+
+  .org-hub-pc {
+    --hub-ink: #183a2a;
+    --hub-green: #1d4a33;
+    --hub-muted: #5f6b60;
+    --hub-line: rgba(24, 58, 42, 0.16);
+    --hub-cream: #f7f1e3;
+    --hub-serif: var(--font-shippori-mincho), var(--font-serif-display), var(--font-heading), serif;
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+    border-radius: 1.5rem;
+    background:
+      linear-gradient(180deg, rgba(246, 242, 230, 0.55) 0%, rgba(246, 242, 230, 0.7) 50%, rgba(246, 242, 230, 0.8) 100%),
+      url("/organizer/games/hub-pc-paper.jpg") center bottom / 100% auto no-repeat,
+      #f6f2e6;
+    padding: 1.4rem 1.8rem 1.8rem;
+    color: var(--hub-ink);
+  }
+
+  /* 見出し */
+  .org-hub-pc__intro {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .org-hub-pc__eyebrow,
+  .org-hub-pc__kicker {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin: 0;
+    font-family: var(--hub-serif);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    color: #4b5a4f;
+  }
+
+  .org-hub-pc__eyebrow::after,
+  .org-hub-pc__kicker::after {
+    content: "";
+    width: 4.5rem;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.55;
+  }
+
+  .org-hub-pc__title {
+    margin: 0.3rem 0 0;
+    font-family: var(--hub-serif);
+    font-size: clamp(1.8rem, 2.8vw, 2.4rem);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+    color: var(--hub-green);
+  }
+
+  .org-hub-pc__lead {
+    margin: 0.35rem 0 0;
+    font-family: var(--hub-serif);
+    font-size: 0.88rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: #2f4436;
+  }
+
+  .org-hub-pc__intro-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding-bottom: 0.15rem;
+  }
+
+  .org-hub-pc__ghost,
+  .org-hub-pc__count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.7rem;
+    border: 1.5px solid var(--hub-green);
+    border-radius: 0.8rem;
+    background: rgba(255, 255, 255, 0.55);
+    padding: 0 1.3rem;
+    font-family: var(--hub-serif);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--hub-green);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.16s ease, transform 0.16s ease;
+  }
+
+  .org-hub-pc__ghost {
+    border-color: var(--hub-line);
+    font-size: 0.85rem;
+    color: #3c5545;
+  }
+
+  .org-hub-pc__count strong {
+    font-family: var(--hub-serif);
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .org-hub-pc__ghost:hover,
+  .org-hub-pc__count:hover {
+    background: #fff;
+  }
+
+  .org-hub-pc__count:hover svg {
+    transform: translateX(2px);
+  }
+
+  .org-hub-pc__count svg {
+    transition: transform 0.16s ease;
+  }
+
+  /* 緑のバナー */
+  .org-hub-pc__hero {
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 1.1rem;
+    background: #1d4a33;
+    box-shadow: 0 18px 36px rgba(29, 74, 51, 0.16);
+  }
+
+  .org-hub-pc__hero-photo {
+    position: absolute;
+    inset: 0 0 0 auto;
+    left: auto !important;
+    width: 72% !important;
+    height: 100%;
+    object-fit: cover;
+    object-position: 70% 50%;
+  }
+
+  .org-hub-pc__hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, 0.05), transparent 60%),
+      linear-gradient(
+        90deg,
+        #1d4a33 0%,
+        #1d4a33 30%,
+        rgba(29, 74, 51, 0.88) 40%,
+        rgba(29, 74, 51, 0.45) 50%,
+        rgba(29, 74, 51, 0) 62%
+      );
+    pointer-events: none;
+  }
+
+  .org-hub-pc__hero-copy {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.5rem 2rem 1.5rem;
+    color: #fbf6ea;
+  }
+
+  .org-hub-pc__hero-copy h2 {
+    margin: 0;
+    font-family: var(--hub-serif);
+    font-size: clamp(1.35rem, 2vw, 1.7rem);
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: 0.02em;
+  }
+
+  .org-hub-pc__hero-copy p {
+    margin: 0.35rem 0 0;
+    font-family: var(--hub-serif);
+    font-size: 0.88rem;
+    letter-spacing: 0.08em;
+    opacity: 0.92;
+  }
+
+  .org-hub-pc__create {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.9rem;
+    margin-top: 1rem;
+    border: 0;
+    border-radius: 0.85rem;
+    background: var(--hub-cream);
+    padding: 0 1.3rem;
+    font-family: var(--hub-serif);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--hub-ink);
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+  }
+
+  .org-hub-pc__create:hover,
+  .org-hub-pc__create.is-open {
+    background: #fffaf0;
+    transform: translateY(-1px);
+    box-shadow: 0 12px 22px rgba(0, 0, 0, 0.2);
+  }
+
+  .org-hub-pc__create-arrow {
+    margin-left: 0.3rem;
+    transition: transform 0.16s ease;
+  }
+
+  .org-hub-pc__create:hover .org-hub-pc__create-arrow {
+    transform: translateX(3px);
+  }
+
+  .org-hub-pc__script {
+    position: absolute;
+    z-index: 2;
+    left: 33%;
+    bottom: 1.3rem;
+    font-family: "Snell Roundhand", "Segoe Script", "Brush Script MT", cursive;
+    font-size: 1.55rem;
+    line-height: 1.05;
+    color: rgba(236, 214, 160, 0.82);
+    transform: rotate(-12deg);
+    pointer-events: none;
+  }
+
+  .org-hub-pc__script::after {
+    content: "";
+    display: block;
+    width: 5.5rem;
+    height: 1px;
+    margin: 0.4rem 0 0 3.4rem;
+    background: currentColor;
+  }
+
+  .org-hub-pc__caption {
+    position: absolute;
+    z-index: 2;
+    right: 5.6rem;
+    bottom: 1rem;
+    margin: 0;
+    border-radius: 0.35rem;
+    background: rgba(255, 252, 244, 0.95);
+    padding: 0.45rem 0.9rem;
+    font-family: var(--hub-serif);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--hub-ink);
+    transform: rotate(-4deg);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+  }
+
+  .org-hub-pc__hero-mascot {
+    position: absolute;
+    z-index: 2;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    width: 5.6rem;
+    height: auto;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25));
+  }
+
+  /* セクション共通 */
+  .org-hub-pc__section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .org-hub-pc__head {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+  }
+
+  .org-hub-pc__head h2 {
+    margin: 0;
+    font-family: var(--hub-serif);
+    font-size: 1.3rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--hub-ink);
+    white-space: nowrap;
+  }
+
+  .org-hub-pc__more {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: auto;
+    border: 0;
+    background: transparent;
+    padding: 0.3rem 0;
+    font-family: var(--hub-serif);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--hub-ink);
+    cursor: pointer;
+  }
+
+  .org-hub-pc__more:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  /* テンプレート */
+  .org-hub-pc__templates {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 1rem 0.85rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .org-hub-pc__template {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    color: var(--hub-ink);
+    text-decoration: none;
+  }
+
+  .org-hub-pc__template-photo {
+    position: relative;
+    display: block;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: 0.55rem;
+    background: #e7e2d2;
+    box-shadow: 0 6px 16px rgba(26, 34, 20, 0.1);
+  }
+
+  .org-hub-pc__template-photo > img {
+    object-fit: cover;
+    transition: transform 0.35s ease;
+  }
+
+  .org-hub-pc__template-no {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 0 0 0.7rem 0;
+    background: #f6f2e6;
+    padding: 0.15rem 0.6rem 0.2rem 0.45rem;
+    font-family: var(--hub-serif);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #a8862f;
+  }
+
+  .org-hub-pc__template-mascot {
+    position: absolute;
+    right: 0.55rem;
+    bottom: 0.55rem;
+    display: grid;
+    width: 38%;
+    max-width: 4.6rem;
+    aspect-ratio: 1;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 6px 14px rgba(26, 34, 20, 0.2);
+    outline: 3px solid rgba(255, 255, 255, 0.85);
+    transition: transform 0.25s ease;
+  }
+
+  .org-hub-pc__template-mascot img {
+    width: 92%;
+    height: 92%;
+    object-fit: contain;
+  }
+
+  .org-hub-pc__template-label {
+    font-family: var(--hub-serif);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .org-hub-pc__template:hover .org-hub-pc__template-photo > img {
+    transform: scale(1.05);
+  }
+
+  .org-hub-pc__template:hover .org-hub-pc__template-mascot {
+    transform: translateY(-3px) rotate(-4deg);
+  }
+
+  .org-hub-pc__template:focus-visible {
+    outline: 2px solid var(--hub-green);
+    outline-offset: 4px;
+    border-radius: 0.6rem;
+  }
+
+  /* 最近作成したゲーム */
+  .org-hub-pc__recent {
+    scroll-margin-top: 5rem;
+    border-top: 1px solid var(--hub-line);
+    padding-top: 1.1rem;
+  }
+
+  .org-hub-pc__recent .org-hub-pc__head h2 {
+    font-size: 1.2rem;
+  }
+
+  .org-hub-pc__rule {
+    flex: 1;
+    height: 1px;
+    background: var(--hub-line);
+  }
+
+  .org-hub-pc__filters {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .org-hub-pc__filter {
+    min-width: 4.6rem;
+    min-height: 2.1rem;
+    border: 1px solid var(--hub-line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.65);
+    padding: 0 1.1rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--hub-ink);
+    cursor: pointer;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+
+  .org-hub-pc__filter:hover {
+    background: #fff;
+  }
+
+  .org-hub-pc__filter.is-on {
+    border-color: var(--hub-green);
+    background: var(--hub-green);
+    color: #fff;
+  }
+
+  .org-hub-pc__games {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .org-hub-pc__game {
+    position: relative;
+    height: 100%;
+  }
+
+  .org-hub-pc__game-link {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--hub-ink);
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(26, 34, 20, 0.07);
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+  }
+
+  .org-hub-pc__game-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(26, 34, 20, 0.1);
+  }
+
+  .org-hub-pc__game-thumb {
+    position: relative;
+    width: 34%;
+    min-height: 5.6rem;
+    flex-shrink: 0;
+    background: #e7e2d2;
+  }
+
+  .org-hub-pc__game-thumb img {
+    object-fit: cover;
+  }
+
+  .org-hub-pc__game-body {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    padding: 0.65rem 0.85rem;
+  }
+
+  .org-hub-pc__game-name {
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .org-hub-pc__game-period {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.74rem;
+    white-space: nowrap;
+    color: var(--hub-muted);
+  }
+
+  .org-hub-pc__game-status {
+    margin-top: auto;
+    border-radius: 999px;
+    padding: 0.16rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .org-hub-pc__game-status.is-draft {
+    background: #fbefc2;
+    color: #6d5410;
+  }
+
+  .org-hub-pc__game-status.is-published {
+    background: #dcf1e2;
+    color: #1d6a3e;
+  }
+
+  .org-hub-pc__game-status.is-archived {
+    background: #ebe9e3;
+    color: #5f625c;
+  }
+
+  .org-hub-pc__game-more {
+    position: absolute;
+    right: 0.45rem;
+    bottom: 0.45rem;
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #4b5a4f;
+    cursor: pointer;
+  }
+
+  .org-hub-pc__game-more:hover {
+    background: #eef0e8;
+  }
+
+  .org-hub-pc__note {
+    margin: 0;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 1.2rem 1.3rem;
+    font-size: 0.88rem;
+    color: var(--hub-muted);
+  }
+
+  .org-hub-pc__show-more {
+    align-self: center;
+    border: 1px solid var(--hub-line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.75);
+    padding: 0.55rem 1.4rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--hub-ink);
+    cursor: pointer;
+  }
+
+  .org-hub-pc__show-more:hover {
+    background: #fff;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1199px) {
+  .org-hub-pc {
+    padding: 1.8rem 1.6rem 2.2rem;
+  }
+
+  .org-hub-pc__templates {
+    gap: 0.8rem 0.6rem;
+  }
+
+  .org-hub-pc__template-label {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .org-hub-pc__template-mascot {
+    right: 0.35rem;
+    bottom: 0.35rem;
+  }
+
+  .org-hub-pc__game-link {
+    flex-direction: column;
+  }
+
+  .org-hub-pc__game-thumb {
+    width: 100%;
+    min-height: 0;
+    aspect-ratio: 16 / 5;
+  }
+
+  .org-hub-pc__game-period {
+    white-space: normal;
+  }
+
+  .org-hub-pc__script {
+    display: none;
+  }
+
+  .org-hub-pc__hero-photo {
+    width: 62% !important;
+  }
+
+  .org-hub-pc__hero::before {
+    background: linear-gradient(
+      90deg,
+      #1d4a33 0%,
+      #1d4a33 40%,
+      rgba(29, 74, 51, 0.75) 52%,
+      rgba(29, 74, 51, 0) 70%
+    );
+  }
+
+  .org-hub-pc__intro {
+    flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+  .org-hub-pc__template-photo > img,
+  .org-hub-pc__template-mascot,
+  .org-hub-pc__game-link,
+  .org-hub-pc__create {
+    transition: none;
+  }
+}
