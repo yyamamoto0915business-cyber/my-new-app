@@ -2,7 +2,7 @@
  * 主催者向け「料金プラン・公開枠」表示用の共通型・ヘルパー
  */
 import { FREE_PLAN_NORMAL_SLOTS, FOUNDER_BONUS_SLOTS } from "@/lib/billing";
-import { isPaidOrganizer } from "@/lib/billing";
+import { getOrganizerPlanTier, isPaidOrganizer } from "@/lib/billing";
 import { getOrganizerCatalogPlanName } from "@/lib/organizer-plans";
 
 export type PlanSummary = {
@@ -19,10 +19,12 @@ export type PlanSummary = {
 };
 
 type OrganizerLike = {
+  plan?: string | null;
   subscription_status?: string | null;
   stripe_status?: string | null;
   founder30_end_at?: string | null;
   manual_grant_active?: boolean | null;
+  manual_grant_plan?: string | null;
   manual_grant_expires_at?: string | null;
 };
 
@@ -41,7 +43,7 @@ export function buildPlanSummary(
   monthlyPublished: number
 ): PlanSummary {
   const isPaid = isPaidOrganizer(organizer);
-  const planLabel = getOrganizerCatalogPlanName(isPaid);
+  const planLabel = getOrganizerCatalogPlanName(getOrganizerPlanTier(organizer));
   const publishLimit = computePublishLimit(organizer);
   const slotsDisplay =
     publishLimit === null ? "無制限" : `${monthlyPublished}/${publishLimit}`;

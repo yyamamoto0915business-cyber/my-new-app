@@ -1,4 +1,8 @@
+import type { OrganizerPlanTier } from "@/lib/billing";
+
 export type OrganizerBillingData = {
+  /** いまのプラン（FREE / STANDARD / GAME） */
+  planTier: OrganizerPlanTier;
   /** サーバーに STRIPE_SECRET_KEY があるか（Connect / Checkout API が動くか） */
   stripeConnectConfigured: boolean;
   /** Stripe Terminal の日本 Location が設定済みか（iPhoneカードタッチ） */
@@ -13,6 +17,7 @@ export type OrganizerBillingData = {
     stripe_status?: string | null;
     current_period_end?: string | null;
     manual_grant_active?: boolean | null;
+    manual_grant_plan?: string | null;
     manual_grant_expires_at?: string | null;
     stripe_account_charges_enabled?: boolean;
     stripe_account_details_submitted?: boolean;

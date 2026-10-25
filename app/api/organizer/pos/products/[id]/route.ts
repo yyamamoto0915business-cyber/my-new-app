@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { deletePosProduct, updatePosProduct } from "@/lib/db/pos";
 import type { PosCategoryId } from "@/lib/pos/types";
+import { requireOrganizerFeature } from "@/lib/organizer/require-organizer-feature";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -26,6 +27,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (!organizerId) {
     return NextResponse.json({ error: "主催者登録が必要です" }, { status: 403 });
   }
+  const planBlocked = await requireOrganizerFeature(supabase, organizerId, "pos");
+  if (planBlocked) return planBlocked;
 
   let body: {
     name?: string;

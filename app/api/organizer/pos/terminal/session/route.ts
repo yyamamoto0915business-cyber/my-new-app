@@ -7,6 +7,7 @@ import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getPosSaleById } from "@/lib/db/pos";
 import { getStripeSecretKey } from "@/lib/stripe";
 import { getStripeTerminalLocationId } from "@/lib/pos/tap-app";
+import { requireOrganizerFeature } from "@/lib/organizer/require-organizer-feature";
 
 /** GET: iPhoneタッチアプリが会計1件の PaymentIntent を取る */
 export async function GET(request: NextRequest) {
@@ -24,6 +25,8 @@ export async function GET(request: NextRequest) {
   if (!organizerId) {
     return NextResponse.json({ error: "主催者登録が必要です" }, { status: 403 });
   }
+  const planBlocked = await requireOrganizerFeature(supabase, organizerId, "pos");
+  if (planBlocked) return planBlocked;
 
   const saleId = request.nextUrl.searchParams.get("saleId")?.trim();
   if (!saleId) {

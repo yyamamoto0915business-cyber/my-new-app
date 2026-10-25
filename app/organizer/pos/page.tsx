@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import { OrganizerPageShell } from "@/components/organizer/OrganizerPageShell";
+import { OrganizerPlanFeatureGate } from "@/components/organizer/OrganizerPlanFeatureGate";
 import { OrganizerPosPage } from "@/components/organizer/pos/OrganizerPosPage";
 
 export default function OrganizerPosRoutePage() {
@@ -17,7 +18,9 @@ export default function OrganizerPosRoutePage() {
             </div>
           }
         >
-          <OrganizerPosPage />
+          <OrganizerPlanFeatureGate feature="pos">
+            <OrganizerPosPage />
+          </OrganizerPlanFeatureGate>
         </Suspense>
       </OrganizerPageShell>
     </OrganizerRegistrationGate>

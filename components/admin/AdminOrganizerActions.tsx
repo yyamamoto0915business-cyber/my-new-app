@@ -12,6 +12,7 @@ export function AdminOrganizerActions({
   currentReason: string;
 }) {
   const [reason, setReason] = useState(currentReason);
+  const [grantPlan, setGrantPlan] = useState<"standard" | "game">("standard");
   const [submitting, setSubmitting] = useState<null | string>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +32,7 @@ export function AdminOrganizerActions({
     const confirmText =
       action === "cancel" || action === "free"
         ? `本当にこの主催者の ${label} を実行しますか？`
-        : `この主催者に ${label} を実行します。よろしいですか？`;
+        : `この主催者に ${grantPlan === "game" ? "GAME" : "STANDARD"} プランの ${label} を実行します。よろしいですか？`;
 
     if (!window.confirm(confirmText)) return;
 
@@ -48,6 +49,7 @@ export function AdminOrganizerActions({
         : {
             grantType:
               action === "30d" ? "30_days" : action === "90d" ? "90_days" : "unlimited",
+            plan: grantPlan,
             reason,
           };
       const res = await fetch(url, {
@@ -90,6 +92,21 @@ export function AdminOrganizerActions({
           rows={3}
         />
       </label>
+
+      <fieldset className="flex flex-wrap items-center gap-3 text-xs text-slate-700">
+        <legend className="mb-1 text-xs text-slate-500">付与するプラン</legend>
+        {(["standard", "game"] as const).map((p) => (
+          <label key={p} className="flex items-center gap-1">
+            <input
+              type="radio"
+              name="grant-plan"
+              checked={grantPlan === p}
+              onChange={() => setGrantPlan(p)}
+            />
+            {p === "game" ? "GAME（ゲーム機能つき）" : "STANDARD"}
+          </label>
+        ))}
+      </fieldset>
 
       <div className="flex flex-wrap gap-2">
         <button

@@ -3,6 +3,7 @@ import { getApiUser } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
+import { requireOrganizerFeature } from "@/lib/organizer/require-organizer-feature";
 
 const ALLOWED_MIME = new Set([
   "image/jpeg",
@@ -81,6 +82,8 @@ export async function POST(request: NextRequest) {
   if (!organizerId) {
     return NextResponse.json({ error: "主催者登録が必要です" }, { status: 403 });
   }
+  const planBlocked = await requireOrganizerFeature(supabase, organizerId, "pos");
+  if (planBlocked) return planBlocked;
 
   try {
     const ext = extForContentType(contentType);

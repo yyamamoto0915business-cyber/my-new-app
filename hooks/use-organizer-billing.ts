@@ -81,11 +81,18 @@ export function useOrganizerBilling() {
     }
   }, [fetchBilling]);
 
-  const handleCheckout = async () => {
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  const handleCheckout = async (plan: "standard" | "game" = "standard") => {
     setCheckoutLoading(true);
     setActionError(null);
+    setActionMessage(null);
     try {
-      const res = await fetch("/api/billing/checkout", { method: "POST" });
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
       const json = await parseApiJson(res);
       if (!res.ok) {
         throw new Error(
@@ -94,6 +101,13 @@ export function useOrganizerBilling() {
             `決済ページの準備に失敗しました（${res.status}）`
           )
         );
+      }
+      if (json.updated === true) {
+        setActionMessage(
+          `${plan === "game" ? "GAME" : "STANDARD"}プランに変更しました。差額は次回の請求で日割り精算されます。`
+        );
+        await fetchBilling();
+        return;
       }
       const url = json.url as string | undefined;
       if (url) window.location.href = url;
@@ -200,6 +214,7 @@ export function useOrganizerBilling() {
     loading,
     error,
     actionError,
+    actionMessage,
     setError,
     setActionError,
     refetch: fetchBilling,

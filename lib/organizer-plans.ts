@@ -1,8 +1,9 @@
 /**
  * 主催者プラン画面の表示用カタログ。
- * 課金が実際に動くのは STANDARD（既存の月額980円 Stripe）のみ。
- * GAME / TEAM の金額は表示用。Stripe Price は追加しない。
+ * 課金が動くのは STANDARD（月額980円）と GAME（月額2,980円）。TEAM は準備中で表示のみ。
+ * 機能の出し分けは lib/billing.ts の canUseOrganizerFeature。
  */
+import type { OrganizerPlanTier } from "@/lib/billing";
 
 export const ORGANIZER_CATALOG_PLAN_IDS = ["free", "standard", "game", "team"] as const;
 
@@ -24,7 +25,7 @@ export type OrganizerCatalogPlan = {
   features: readonly string[];
   ctaLabel: string;
   recommended: boolean;
-  /** true のとき Checkout 可能（既存 STRIPE_PRICE_ORGANIZER_980） */
+  /** true のとき Checkout 可能（STRIPE_PRICE_ORGANIZER_980 / STRIPE_PRICE_ORGANIZER_GAME_2980） */
   checkoutEnabled: boolean;
   tone: OrganizerCatalogPlanTone;
 };
@@ -80,7 +81,7 @@ export const ORGANIZER_CATALOG_PLANS: readonly OrganizerCatalogPlan[] = [
     priceLabel: "¥2,980 / 月",
     monthlyPriceLabel: "月額2,980円",
     tagline: "イベントを盛り上げる",
-    description: "スタンプラリーやクイズなど、参加型の遊びを足せるプラン（準備中）。",
+    description: "スタンプラリーやクイズ、謎解きなど、参加型のゲームを作れるプラン。",
     includesLabel: "STANDARDの機能に加えて",
     highlights: ["スタンプラリー", "クイズ", "チェックポイント"],
     extraFeatures: ["景品管理", "ゲーム参加者管理"],
@@ -93,7 +94,7 @@ export const ORGANIZER_CATALOG_PLANS: readonly OrganizerCatalogPlan[] = [
     ],
     ctaLabel: "GAMEをはじめる",
     recommended: false,
-    checkoutEnabled: false,
+    checkoutEnabled: true,
     tone: "game",
   },
   {
@@ -128,13 +129,13 @@ export function getOrganizerCatalogPlan(
   return plan;
 }
 
-/** 既存課金は無料 / 有料（980円）のみ。有料は STANDARD として扱う。 */
+/** プランの段階とカタログの ID は同じ値 */
 export function getCurrentOrganizerCatalogPlanId(
-  isPaid: boolean
+  tier: OrganizerPlanTier
 ): OrganizerCatalogPlanId {
-  return isPaid ? "standard" : "free";
+  return tier;
 }
 
-export function getOrganizerCatalogPlanName(isPaid: boolean): string {
-  return getOrganizerCatalogPlan(getCurrentOrganizerCatalogPlanId(isPaid)).name;
+export function getOrganizerCatalogPlanName(tier: OrganizerPlanTier): string {
+  return getOrganizerCatalogPlan(getCurrentOrganizerCatalogPlanId(tier)).name;
 }

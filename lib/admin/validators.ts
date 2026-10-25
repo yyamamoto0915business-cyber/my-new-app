@@ -19,6 +19,7 @@ export const organizerListQuerySchema = z.object({
 
 export const grantActionBodySchema = z.object({
   grantType: z.enum(["30_days", "90_days", "unlimited"]),
+  plan: z.enum(["standard", "game"]).optional().default("standard"),
   reason: z.string().max(1000).optional().default(""),
 });
 

@@ -23,7 +23,7 @@ export type Profile = {
 export type Organizer = {
   id: string;
   profile_id: string;
-  plan: "free" | "light" | "standard" | "trial" | "starter";
+  plan: "free" | "light" | "standard" | "trial" | "starter" | "game";
   organization_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;

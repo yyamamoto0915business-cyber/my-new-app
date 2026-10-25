@@ -148,6 +148,7 @@ async function buildSupabaseDashboard(
   type SbResult<T> = { data: T | null; error: unknown };
   type OrgRow = {
     stripe_account_charges_enabled?: boolean | null;
+    plan?: string | null;
     subscription_status?: string | null;
     founder30_end_at?: string | null;
     organization_name?: string | null;
@@ -155,6 +156,7 @@ async function buildSupabaseDashboard(
   type PlanStateRow = {
     stripe_status?: string | null;
     manual_grant_active?: boolean | null;
+    manual_grant_plan?: string | null;
     manual_grant_expires_at?: string | null;
   };
 
@@ -171,12 +173,12 @@ async function buildSupabaseDashboard(
     Promise.all([
       supabase
         .from("organizers")
-        .select("stripe_account_charges_enabled, subscription_status, founder30_end_at, organization_name")
+        .select("stripe_account_charges_enabled, plan, subscription_status, founder30_end_at, organization_name")
         .eq("id", organizerId)
         .single(),
       supabase
         .from("organizer_plan_state")
-        .select("stripe_status, manual_grant_active, manual_grant_expires_at")
+        .select("stripe_status, manual_grant_active, manual_grant_plan, manual_grant_expires_at")
         .eq("organizer_id", organizerId)
         .maybeSingle(),
     ]),
@@ -327,10 +329,12 @@ async function buildSupabaseDashboard(
   const monthlyPublished = await getMonthlyPublishedCount(supabase, organizerId);
   const planSummary = buildPlanSummary(
     {
+      plan: orgRow?.plan ?? null,
       subscription_status: orgRow?.subscription_status ?? null,
       stripe_status: planRow?.stripe_status ?? null,
       founder30_end_at: orgRow?.founder30_end_at ?? null,
       manual_grant_active: planRow?.manual_grant_active ?? false,
+      manual_grant_plan: planRow?.manual_grant_plan ?? null,
       manual_grant_expires_at: planRow?.manual_grant_expires_at ?? null,
     },
     monthlyPublished

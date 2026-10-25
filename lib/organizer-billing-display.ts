@@ -7,7 +7,7 @@ export const NORMAL_SLOTS = FREE_PLAN_NORMAL_SLOTS;
 export const FOUNDER_BONUS_SLOTS_UI = FOUNDER_BONUS_SLOTS;
 
 export function getPlanLabel(data: OrganizerBillingData): string {
-  return getOrganizerCatalogPlanName(isPaidOrganizer(data.organizer));
+  return getOrganizerCatalogPlanName(data.planTier);
 }
 
 export function isPaidPlan(data: OrganizerBillingData): boolean {

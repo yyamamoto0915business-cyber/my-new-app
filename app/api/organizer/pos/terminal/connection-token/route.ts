@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getStripeSecretKey } from "@/lib/stripe";
+import { requireOrganizerFeature } from "@/lib/organizer/require-organizer-feature";
 
 /** POST: Stripe Terminal 用 Connection Token（iPhoneタッチアプリから呼ぶ） */
 export async function POST() {
@@ -22,6 +23,8 @@ export async function POST() {
   if (!organizerId) {
     return NextResponse.json({ error: "主催者登録が必要です" }, { status: 403 });
   }
+  const planBlocked = await requireOrganizerFeature(supabase, organizerId, "pos");
+  if (planBlocked) return planBlocked;
 
   const stripeKey = getStripeSecretKey();
   if (!stripeKey) {

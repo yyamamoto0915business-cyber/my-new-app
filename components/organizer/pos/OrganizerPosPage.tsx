@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import {
   Banknote,
   CreditCard,
+  ChevronDown,
   ExternalLink,
   Maximize2,
   Minimize2,
@@ -60,6 +61,16 @@ const PAYOUTS_HREF = "/organizer/settings/payouts";
 /** 画面上の支払い選択。カードタッチは iOS アプリが必要なため、会計APIには送らない */
 type PosPayChoice = PosPaymentMethod | "tap";
 
+/** 合計より大きい、よく受け取るお札の金額（最大3つ） */
+function quickCashAmounts(totalYen: number): number[] {
+  const candidates = [
+    Math.ceil(totalYen / 1000) * 1000,
+    Math.ceil(totalYen / 5000) * 5000,
+    Math.ceil(totalYen / 10000) * 10000,
+  ];
+  return [...new Set(candidates)].filter((v) => v > totalYen).slice(0, 3);
+}
+
 function emptySummary(): PosSalesSummary {
   return {
     totalYen: 0,
@@ -108,6 +119,14 @@ export function OrganizerPosPage() {
   const [stripeStatusReady, setStripeStatusReady] = useState(false);
   const [posTapConfigured, setPosTapConfigured] = useState(false);
   const [refundingSaleId, setRefundingSaleId] = useState<string | null>(null);
+  const cartRef = useRef<HTMLElement | null>(null);
+  const [cartInView, setCartInView] = useState(false);
+
+  useEffect(() => {
+    if (!message || error) return;
+    const timer = window.setTimeout(() => setMessage(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [message, error]);
 
   const loadSales = useCallback(async (eid: string) => {
     const qs = eid ? `?eventId=${encodeURIComponent(eid)}` : "";
@@ -263,9 +282,34 @@ export function OrganizerPosPage() {
     () => cart.reduce((sum, line) => sum + line.unitPriceYen * line.quantity, 0),
     [cart]
   );
+  const itemCount = useMemo(() => cart.reduce((sum, line) => sum + line.quantity, 0), [cart]);
+  const qtyByProduct = useMemo(
+    () => new Map(cart.map((line) => [line.productId, line.quantity])),
+    [cart]
+  );
 
-  const cashReceivedNum = Number(cashReceived.replace(/[^\d]/g, "") || "0");
+  // 空欄は「ちょうど」として扱い、毎回入力しなくても会計できるようにする
+  const cashEntered = cashReceived !== "";
+  const cashReceivedNum = cashEntered ? Number(cashReceived) : subtotal;
   const changeYen = Math.max(0, cashReceivedNum - subtotal);
+  const cashShortYen = Math.max(0, subtotal - cashReceivedNum);
+  const quickCash = useMemo(() => quickCashAmounts(subtotal), [subtotal]);
+
+  const hasCart = cart.length > 0;
+  useEffect(() => {
+    const el = cartRef.current;
+    if (!el || !hasCart) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setCartInView(entry.isIntersecting),
+      { threshold: 0.35 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasCart]);
+
+  function scrollToCart() {
+    cartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   function addToCart(product: PosProduct) {
     setCart((prev) => {
@@ -516,12 +560,12 @@ export function OrganizerPosPage() {
             ) : (
               <Maximize2 className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
             )}
-            {focus ? "メニューを表示" : "全体表示"}
+            {focus ? "全画面を終了" : "全画面"}
           </button>
         </div>
         <div className="org-pos__event">
           <label htmlFor="pos-event" className="org-pos__event-label">
-            記録するイベント
+            売上を記録するイベント
           </label>
           <select
             id="pos-event"
@@ -809,13 +853,23 @@ export function OrganizerPosPage() {
             <ul className="org-pos__grid">
               {filteredProducts.map((product) => (
                 <li key={product.id}>
-                  <div className="org-pos__product">
+                  <div
+                    className={cn(
+                      "org-pos__product",
+                      qtyByProduct.has(product.id) && "is-in-cart"
+                    )}
+                  >
                     <button
                       type="button"
                       className="org-pos__product-main"
                       onClick={() => addToCart(product)}
                     >
                       <div className="org-pos__product-img">
+                        {qtyByProduct.has(product.id) && (
+                          <span className="org-pos__product-qty" aria-label="注文数">
+                            {qtyByProduct.get(product.id)}
+                          </span>
+                        )}
                         {product.imageUrl ? (
                           <Image
                             src={product.imageUrl}
@@ -855,12 +909,17 @@ export function OrganizerPosPage() {
           )}
         </section>
 
+        {products.length > 0 && (
         <aside
+          ref={cartRef}
           className={cn("org-pos__cart", cart.length === 0 && "is-empty")}
           aria-labelledby="pos-cart-heading"
         >
           <div className="org-pos__cart-head">
-            <h2 id="pos-cart-heading">ご注文内容</h2>
+            <h2 id="pos-cart-heading">
+              ご注文内容
+              {itemCount > 0 && <span className="org-pos__cart-count">{itemCount}点</span>}
+            </h2>
             {cart.length > 0 && (
               <button
                 type="button"
@@ -874,11 +933,7 @@ export function OrganizerPosPage() {
           </div>
 
           {cart.length === 0 ? (
-            <p className="org-pos__cart-empty">
-              {products.length === 0
-                ? "商品を登録すると、ここに注文が入ります"
-                : "商品をタップして追加してください"}
-            </p>
+            <p className="org-pos__cart-empty">商品をタップすると、ここに入ります</p>
           ) : (
             <>
               <ul className="org-pos__cart-list">
@@ -919,10 +974,6 @@ export function OrganizerPosPage() {
               </ul>
 
               <div className="org-pos__cart-footer">
-                <div className="org-pos__subtotal">
-                  <span>小計</span>
-                  <span>{formatYen(subtotal)}</span>
-                </div>
                 <div className="org-pos__total">
                   <span>合計</span>
                   <strong>{formatYen(subtotal)}</strong>
@@ -961,19 +1012,43 @@ export function OrganizerPosPage() {
                 </fieldset>
 
                 {paymentMethod === "cash" && (
-                  <div className="org-pos__cash">
-                    <label>
-                      お預かり
-                      <input
-                        inputMode="numeric"
-                        value={cashReceived}
-                        onChange={(e) => setCashReceived(e.target.value.replace(/[^\d]/g, ""))}
-                        placeholder="0"
-                      />
-                    </label>
-                    <div className="org-pos__change">
-                      <span>おつり</span>
-                      <strong>{formatYen(changeYen)}</strong>
+                  <div className="org-pos__cash-block">
+                    <div className="org-pos__quick-cash" role="group" aria-label="お預かり金額">
+                      <button
+                        type="button"
+                        className={cn("org-pos__quick-cash-btn", !cashEntered && "is-active")}
+                        onClick={() => setCashReceived("")}
+                      >
+                        ちょうど
+                      </button>
+                      {quickCash.map((amount) => (
+                        <button
+                          key={amount}
+                          type="button"
+                          className={cn(
+                            "org-pos__quick-cash-btn",
+                            cashEntered && cashReceivedNum === amount && "is-active"
+                          )}
+                          onClick={() => setCashReceived(String(amount))}
+                        >
+                          {formatYen(amount)}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="org-pos__cash">
+                      <label>
+                        お預かり
+                        <input
+                          inputMode="numeric"
+                          value={cashReceived}
+                          onChange={(e) => setCashReceived(e.target.value.replace(/[^\d]/g, ""))}
+                          placeholder={`${subtotal}（ちょうど）`}
+                        />
+                      </label>
+                      <div className={cn("org-pos__change", cashShortYen > 0 && "is-short")}>
+                        <span>{cashShortYen > 0 ? "不足" : "おつり"}</span>
+                        <strong>{formatYen(cashShortYen > 0 ? cashShortYen : changeYen)}</strong>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1057,7 +1132,19 @@ export function OrganizerPosPage() {
             </>
           )}
         </aside>
+        )}
       </div>
+
+      {hasCart && !cartInView && (
+        <button type="button" className="org-pos__float-bar" onClick={scrollToCart}>
+          <span className="org-pos__float-count">{itemCount}点</span>
+          <span className="org-pos__float-total">{formatYen(subtotal)}</span>
+          <span className="org-pos__float-cta">
+            会計へ
+            <ChevronDown className="h-4 w-4" aria-hidden />
+          </span>
+        </button>
+      )}
 
       {productModal !== "closed" && productModalHostReady
         ? createPortal(
@@ -1081,7 +1168,14 @@ export function OrganizerPosPage() {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="org-pos__modal-body">
+            <form
+              id="pos-product-form"
+              className="org-pos__modal-body"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void saveProduct();
+              }}
+            >
               <p className="org-pos__modal-lead">
                 登録した商品は、どのイベントでも使い回せます。
               </p>
@@ -1091,6 +1185,7 @@ export function OrganizerPosPage() {
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="例）揚げパン プレーン"
+                  autoFocus
                 />
               </label>
               <label className="org-pos__field">
@@ -1149,7 +1244,7 @@ export function OrganizerPosPage() {
                   </label>
                 </div>
               </div>
-            </div>
+            </form>
             <div className="org-pos__modal-foot">
               <button
                 type="button"
@@ -1159,10 +1254,10 @@ export function OrganizerPosPage() {
                 キャンセル
               </button>
               <button
-                type="button"
+                type="submit"
+                form="pos-product-form"
                 className="org-pos__checkout"
                 disabled={savingProduct}
-                onClick={() => void saveProduct()}
               >
                 {savingProduct ? "保存中…" : "保存する"}
               </button>

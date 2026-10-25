@@ -125,51 +125,96 @@ export async function canPublishEvent(
   };
 }
 
-export function isPaidOrganizer(organizer: {
+type PaidSource = {
   subscription_status?: string | null;
   stripe_status?: string | null;
   manual_grant_active?: boolean | null;
   manual_grant_expires_at?: string | null;
-}): boolean {
-  const statusA = organizer.subscription_status ?? null;
-  const statusB = organizer.stripe_status ?? null;
-  if (
-    statusA === "active" ||
-    statusA === "trialing" ||
-    statusA === "past_due" ||
-    statusB === "active" ||
-    statusB === "trialing" ||
-    statusB === "past_due"
-  ) {
-    return true;
-  }
+};
 
+const PAID_STRIPE_STATUSES = ["active", "trialing", "past_due"];
+
+function hasPaidStripeStatus(organizer: PaidSource): boolean {
+  return (
+    PAID_STRIPE_STATUSES.includes(organizer.subscription_status ?? "") ||
+    PAID_STRIPE_STATUSES.includes(organizer.stripe_status ?? "")
+  );
+}
+
+function isManualGrantActive(organizer: PaidSource): boolean {
   if (!organizer.manual_grant_active) return false;
   const exp = organizer.manual_grant_expires_at;
   if (!exp) return true; // 無期限付与
   return new Date(exp) > new Date();
 }
 
-/** organizers 行と organizer_plan_state を billing API と同じ優先度でマージして有料判定 */
-export function isPaidOrganizerWithPlanState(
-  organizer: {
-    subscription_status?: string | null;
-    stripe_status?: string | null;
-    manual_grant_active?: boolean | null;
-    manual_grant_expires_at?: string | null;
-  },
-  planState?: {
-    stripe_status?: string | null;
-    manual_grant_active?: boolean | null;
-    manual_grant_expires_at?: string | null;
-  } | null
+export function isPaidOrganizer(organizer: PaidSource): boolean {
+  return hasPaidStripeStatus(organizer) || isManualGrantActive(organizer);
+}
+
+/** 主催者プランの段階。DB 上は organizers.plan / manual_grant_plan が "game" のとき GAME */
+export type OrganizerPlanTier = "free" | "standard" | "game";
+
+type PlanTierSource = PaidSource & {
+  plan?: string | null;
+  manual_grant_plan?: string | null;
+};
+
+export function getOrganizerPlanTier(organizer: PlanTierSource): OrganizerPlanTier {
+  if (isManualGrantActive(organizer) && organizer.manual_grant_plan === "game") return "game";
+  if (hasPaidStripeStatus(organizer) && organizer.plan === "game") return "game";
+  return isPaidOrganizer(organizer) ? "standard" : "free";
+}
+
+/** プランで使える範囲を分ける機能 */
+export type OrganizerPlanFeature = "pos" | "games";
+
+const PLAN_TIER_RANK: Record<OrganizerPlanTier, number> = { free: 0, standard: 1, game: 2 };
+
+export const ORGANIZER_FEATURE_REQUIRED_TIER: Record<OrganizerPlanFeature, OrganizerPlanTier> = {
+  pos: "standard",
+  games: "game",
+};
+
+export function canUseOrganizerFeature(
+  tier: OrganizerPlanTier,
+  feature: OrganizerPlanFeature
 ): boolean {
-  return isPaidOrganizer({
+  return PLAN_TIER_RANK[tier] >= PLAN_TIER_RANK[ORGANIZER_FEATURE_REQUIRED_TIER[feature]];
+}
+
+type PlanStateRow = {
+  stripe_status?: string | null;
+  manual_grant_active?: boolean | null;
+  manual_grant_plan?: string | null;
+  manual_grant_expires_at?: string | null;
+};
+
+/** organizers 行と organizer_plan_state を billing API と同じ優先度でマージ */
+function mergePlanState(organizer: PlanTierSource, planState?: PlanStateRow | null): PlanTierSource {
+  return {
     subscription_status: organizer.subscription_status ?? null,
     stripe_status: planState?.stripe_status ?? organizer.stripe_status ?? null,
+    plan: organizer.plan ?? null,
     manual_grant_active:
       planState?.manual_grant_active ?? organizer.manual_grant_active ?? false,
+    manual_grant_plan: planState?.manual_grant_plan ?? organizer.manual_grant_plan ?? null,
     manual_grant_expires_at:
       planState?.manual_grant_expires_at ?? organizer.manual_grant_expires_at ?? null,
-  });
+  };
+}
+
+/** organizers 行と organizer_plan_state を billing API と同じ優先度でマージして有料判定 */
+export function isPaidOrganizerWithPlanState(
+  organizer: PlanTierSource,
+  planState?: PlanStateRow | null
+): boolean {
+  return isPaidOrganizer(mergePlanState(organizer, planState));
+}
+
+export function getOrganizerPlanTierWithPlanState(
+  organizer: PlanTierSource,
+  planState?: PlanStateRow | null
+): OrganizerPlanTier {
+  return getOrganizerPlanTier(mergePlanState(organizer, planState));
 }

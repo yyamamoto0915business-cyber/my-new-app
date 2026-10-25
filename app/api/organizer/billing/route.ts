@@ -7,6 +7,7 @@ import {
   FREE_PLAN_NORMAL_SLOTS,
   FOUNDER_BONUS_SLOTS,
   isPaidOrganizerWithPlanState,
+  getOrganizerPlanTierWithPlanState,
 } from "@/lib/billing";
 import { isStripeServerConfigured } from "@/lib/stripe";
 import { getStripeTerminalLocationId } from "@/lib/pos/tap-app";
@@ -43,7 +44,7 @@ export async function GET() {
 
     const { data: planState } = await supabase
       .from("organizer_plan_state")
-      .select("stripe_status, manual_grant_active, manual_grant_expires_at")
+      .select("stripe_status, manual_grant_active, manual_grant_plan, manual_grant_expires_at")
       .eq("organizer_id", organizerId)
       .maybeSingle();
 
@@ -59,7 +60,10 @@ export async function GET() {
         ? FREE_PLAN_NORMAL_SLOTS + FOUNDER_BONUS_SLOTS // 4
         : FREE_PLAN_NORMAL_SLOTS; // 1
 
+    const planTier = getOrganizerPlanTierWithPlanState(organizer, planState);
+
     return NextResponse.json({
+      planTier,
       stripeConnectConfigured: isStripeServerConfigured(),
       posTapConfigured: Boolean(getStripeTerminalLocationId()),
       organizer: {
@@ -74,6 +78,7 @@ export async function GET() {
         current_period_end: organizer.current_period_end,
         manual_grant_active:
           planState?.manual_grant_active ?? organizer.manual_grant_active ?? false,
+        manual_grant_plan: planState?.manual_grant_plan ?? organizer.manual_grant_plan ?? null,
         manual_grant_expires_at:
           planState?.manual_grant_expires_at ?? organizer.manual_grant_expires_at,
         stripe_account_charges_enabled: organizer.stripe_account_charges_enabled,

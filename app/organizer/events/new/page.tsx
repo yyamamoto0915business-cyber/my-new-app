@@ -286,10 +286,12 @@ function NewEventPageContent() {
         if (!res.ok || cancelled) return;
         setPlanSummary(buildPlanSummary(
           {
+            plan: d.organizer?.plan ?? null,
             subscription_status: d.organizer?.subscription_status ?? null,
             stripe_status: d.organizer?.stripe_status ?? null,
             founder30_end_at: d.organizer?.founder30_end_at ?? null,
             manual_grant_active: d.organizer?.manual_grant_active ?? false,
+            manual_grant_plan: d.organizer?.manual_grant_plan ?? null,
             manual_grant_expires_at: d.organizer?.manual_grant_expires_at ?? null,
           },
           typeof d.monthlyPublished === "number" ? d.monthlyPublished : 0

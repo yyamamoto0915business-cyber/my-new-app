@@ -5,15 +5,15 @@ import { OrganizerAccountMenu } from "@/components/organizer/OrganizerAccountMen
 import { OrganizerProSyncer } from "@/components/organizer/OrganizerProSyncer";
 import { getOrganizerNavState } from "@/lib/organizer/get-organizer-nav-state";
 import { getDeveloperAdminContext } from "@/lib/admin-auth";
-import { isPaidOrganizerWithPlanState } from "@/lib/billing";
+import { getOrganizerPlanTierWithPlanState, type OrganizerPlanTier } from "@/lib/billing";
 import type { OrganizerCatalogPlanId } from "@/lib/organizer-plans";
 
 function organizerNavPlan(
   organizerRegistered: boolean,
-  isPro: boolean
+  tier: OrganizerPlanTier
 ): OrganizerCatalogPlanId | null {
   if (!organizerRegistered) return null;
-  return isPro ? "standard" : "free";
+  return tier;
 }
 
 export default async function OrganizerLayout({
@@ -26,29 +26,29 @@ export default async function OrganizerLayout({
   const admin = await getDeveloperAdminContext();
   const showAdminLink = Boolean(admin);
 
-  let isPro = false;
+  let planTier: OrganizerPlanTier = "free";
 
   if (organizerRegistered && supabase && user && organizerId) {
     const [{ data }, { data: planState }] = await Promise.all([
       supabase
         .from("organizers")
         .select(
-          "subscription_status, stripe_status, manual_grant_active, manual_grant_expires_at"
+          "plan, subscription_status, manual_grant_active, manual_grant_plan, manual_grant_expires_at"
         )
         .eq("id", organizerId)
         .maybeSingle(),
       supabase
         .from("organizer_plan_state")
-        .select("stripe_status, manual_grant_active, manual_grant_expires_at")
+        .select("stripe_status, manual_grant_active, manual_grant_plan, manual_grant_expires_at")
         .eq("organizer_id", organizerId)
         .maybeSingle(),
     ]);
-    isPro = isPaidOrganizerWithPlanState(data ?? {}, planState);
+    planTier = getOrganizerPlanTierWithPlanState(data ?? {}, planState);
   }
 
   return (
     <div className="org-workspace-shell flex min-h-0 flex-col bg-[#f9f9f7] [--mg-organizer-subheader-h:44px] min-[900px]:mt-[var(--mg-pc-top-nav-h)] min-[900px]:min-h-[calc(100dvh-var(--mg-pc-top-nav-h))]">
-      <OrganizerProSyncer plan={organizerNavPlan(organizerRegistered, isPro)} />
+      <OrganizerProSyncer plan={organizerNavPlan(organizerRegistered, planTier)} />
       {/* モバイルサブヘッダー（モードタブの下に sticky） */}
       <header className="org-workspace-mobile-bar sticky top-[calc(var(--mg-mobile-top-header-h,46px)+env(safe-area-inset-top,0px))] z-30 min-[900px]:hidden border-b border-[#e8e6e0] bg-white">
         <div className="flex items-stretch">

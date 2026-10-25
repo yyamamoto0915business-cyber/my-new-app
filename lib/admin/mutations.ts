@@ -14,11 +14,15 @@ export async function grantOrganizerPlan(
   params: {
     organizerId: string;
     grantType: "30_days" | "90_days" | "unlimited";
+    plan?: "standard" | "game";
     reason?: string;
     adminUserId: string;
   }
 ): Promise<GrantResult> {
   const { organizerId, grantType, reason, adminUserId } = params;
+  const plan = params.plan ?? "standard";
+  /** DB では STANDARD を 'organizer' と保存している */
+  const dbPlan = plan === "game" ? "game" : "organizer";
 
   try {
     if (grantType === "unlimited") {
@@ -26,6 +30,7 @@ export async function grantOrganizerPlan(
         p_target_organizer_id: organizerId,
         p_reason: reason ?? null,
         p_admin_user_id: adminUserId,
+        p_plan: dbPlan,
       });
       if (error) {
         return {
@@ -40,6 +45,7 @@ export async function grantOrganizerPlan(
         p_grant_days: days,
         p_reason: reason ?? null,
         p_admin_user_id: adminUserId,
+        p_plan: dbPlan,
       });
       if (error) {
         return {
@@ -57,7 +63,7 @@ export async function grantOrganizerPlan(
         : "無期限";
     return {
       success: true,
-      message: `${label}の有料プランを付与しました`,
+      message: `${label}の${plan === "game" ? "GAME" : "STANDARD"}プランを付与しました`,
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "付与に失敗しました";

@@ -15,6 +15,7 @@ import {
   POS_TAP_PAYMENT_TYPE,
   posTapAppLink,
 } from "@/lib/pos/tap-app";
+import { requireOrganizerFeature } from "@/lib/organizer/require-organizer-feature";
 
 type LineBody = { productId?: string; quantity?: number };
 
@@ -34,6 +35,8 @@ export async function POST(request: NextRequest) {
   if (!organizerId) {
     return NextResponse.json({ error: "主催者登録が必要です" }, { status: 403 });
   }
+  const planBlocked = await requireOrganizerFeature(supabase, organizerId, "pos");
+  if (planBlocked) return planBlocked;
 
   let body: {
     paymentMethod?: "cash" | "online" | "tap";

@@ -52,6 +52,7 @@ export async function POST(
   const result = await grantOrganizerPlan(supabase, {
     organizerId: paramParsed.data.id,
     grantType: bodyParsed.data.grantType,
+    plan: bodyParsed.data.plan,
     reason: bodyParsed.data.reason,
     adminUserId: auth.profile.id,
   });

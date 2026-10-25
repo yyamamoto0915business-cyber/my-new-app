@@ -3,16 +3,19 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
-import { isPaidOrganizer } from "@/lib/billing";
+import { getOrganizerPlanTier, type OrganizerPlanTier } from "@/lib/billing";
 import { getCurrentOrganizerCatalogPlanId } from "@/lib/organizer-plans";
 import { setOrganizerNavPlan } from "@/lib/organizer-pro-store";
 import { isAuthRoute } from "@/lib/is-auth-route";
 
 type BillingJson = {
+  planTier?: OrganizerPlanTier;
   organizer?: {
+    plan?: string | null;
     subscription_status?: string | null;
     stripe_status?: string | null;
     manual_grant_active?: boolean | null;
+    manual_grant_plan?: string | null;
     manual_grant_expires_at?: string | null;
   };
 };
@@ -69,7 +72,9 @@ function OrganizerProGlobalSyncerInner({ pathname }: { pathname: string }) {
           setOrganizerNavPlan(null);
           return;
         }
-        setOrganizerNavPlan(getCurrentOrganizerCatalogPlanId(isPaidOrganizer(o)));
+        setOrganizerNavPlan(
+          getCurrentOrganizerCatalogPlanId(data.planTier ?? getOrganizerPlanTier(o))
+        );
       } catch {
         /* network等: 上書きしない */
       }

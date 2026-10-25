@@ -48,6 +48,15 @@ export default function OrganizerSidebar({
     if (localStorage.getItem(SIDEBAR_OPEN_KEY) === "0") setOpen(false);
   }, []);
 
+  // 閉じているときに本文側の見た目（ゲーム作成のプレビューを大きくする など）を変えられるよう、html に印を付ける。
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.orgSidebar = open ? "open" : "closed";
+    return () => {
+      delete root.dataset.orgSidebar;
+    };
+  }, [open]);
+
   function setSidebarOpen(next: boolean) {
     setOpen(next);
     localStorage.setItem(SIDEBAR_OPEN_KEY, next ? "1" : "0");

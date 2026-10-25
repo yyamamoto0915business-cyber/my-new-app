@@ -18,7 +18,7 @@ export async function GET() {
         email: supabaseUser.email ?? null,
         name,
       },
-      isDeveloperAdmin: isDeveloperAdminFromSupabaseUser(supabaseUser),
+      isDeveloperAdmin: await isDeveloperAdminFromSupabaseUser(supabaseUser),
     });
   }
 

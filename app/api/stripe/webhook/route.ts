@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, getStripeSecretKey } from "@/lib/stripe";
 import { markPosSalePaidByPaymentIntent, markPosSalePaidBySession, markPosSaleRefundedByPaymentIntent } from "@/lib/db/pos";
 import { POS_TAP_PAYMENT_TYPE } from "@/lib/pos/tap-app";
+import { organizerPlanColumnForPrice } from "@/lib/organizer-plan-prices";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -52,7 +53,10 @@ async function updateOrganizerSubscription(
       stripe_subscription_id: subscription.id,
       stripe_customer_id: subscription.customer as string,
       current_period_end: periodEnd,
-      plan: status === "active" ? "starter" : "free",
+      plan:
+        status === "active" || status === "trialing" || status === "past_due"
+          ? organizerPlanColumnForPrice(priceId)
+          : "free",
       updated_at: now,
     })
     .eq("id", organizerId);

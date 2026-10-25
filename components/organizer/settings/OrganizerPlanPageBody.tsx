@@ -277,6 +277,7 @@ export function OrganizerPlanPageBody() {
     loading,
     error,
     actionError,
+    actionMessage,
     checkoutLoading,
     portalLoading,
     handleCheckout,
@@ -306,7 +307,9 @@ export function OrganizerPlanPageBody() {
 
   const paid = data ? isPaidPlan(data) : false;
   const founder = data ? isFounderActive(data) : false;
-  const currentId = getCurrentOrganizerCatalogPlanId(paid);
+  const currentId = getCurrentOrganizerCatalogPlanId(
+    data?.planTier ?? (paid ? "standard" : "free")
+  );
   const currentPlan = getOrganizerCatalogPlan(currentId);
   const pastDue = data?.organizer.subscription_status === "past_due";
 
@@ -339,6 +342,11 @@ export function OrganizerPlanPageBody() {
           <p className="text-[12px] text-red-600 sm:text-sm">{error}</p>
         ) : data ? (
           <>
+            {actionMessage && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-800 sm:rounded-xl sm:px-4 sm:py-3 sm:text-sm">
+                {actionMessage}
+              </div>
+            )}
             {actionError && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700 sm:rounded-xl sm:px-4 sm:py-3 sm:text-sm">
                 {actionError}
@@ -431,7 +439,7 @@ export function OrganizerPlanPageBody() {
                   pastDue={pastDue}
                   billingAgreed={billingAgreed}
                   setBillingAgreed={setBillingAgreed}
-                  onCheckout={handleCheckout}
+                  onCheckout={() => handleCheckout(plan.id === "game" ? "game" : "standard")}
                   onPortal={handlePortal}
                   iosApp={iosApp}
                 />
