@@ -6,6 +6,7 @@ import {
   listCommentsByPostId,
 } from "@/lib/db/community-post-comments";
 import { mapDbCommentToView } from "@/lib/posts/map-community-post";
+import { filterModerated, isBlockedBetween } from "@/lib/db/moderation";
 
 const COMMENT_MAX_LENGTH = 500;
 
@@ -24,7 +25,11 @@ export async function GET(_request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "投稿が見つかりません" }, { status: 404 });
   }
 
-  const rows = await listCommentsByPostId(postId);
+  const rows = await filterModerated(
+    await listCommentsByPostId(postId),
+    viewer?.id ?? null,
+    "comment",
+  );
   const comments = rows.map(mapDbCommentToView);
 
   return NextResponse.json(
@@ -47,6 +52,9 @@ export async function POST(request: NextRequest, { params }: Params) {
   const access = await getCommunityPostAccess(postId, user.id);
   if (access.kind !== "ok") {
     return NextResponse.json({ error: "投稿が見つかりません" }, { status: 404 });
+  }
+  if (await isBlockedBetween(user.id, access.post.author_id)) {
+    return NextResponse.json({ error: "この投稿にはコメントできません" }, { status: 403 });
   }
 
   let body: unknown;

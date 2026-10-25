@@ -6,8 +6,9 @@ import { Heart, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PostCommentView } from "@/lib/db/community-post-comments-types";
 import { AuthorAvatar } from "@/components/posts/AuthorAvatar";
+import { ModerationMenu } from "@/components/moderation/ModerationMenu";
 
-type Viewer = { name: string } | null;
+type Viewer = { name: string; id?: string } | null;
 
 type Props = {
   postId: string;
@@ -176,6 +177,22 @@ export function PostDetailComments({
                 />
                 {c.likeCount + (liked[c.id] ? 1 : 0)}
               </button>
+              <ModerationMenu
+                targetType="comment"
+                targetId={c.id}
+                authorId={c.authorId}
+                authorName={c.authorName}
+                viewerId={viewer?.id}
+                className="self-start text-[#8a8076]"
+                onReported={() =>
+                  setComments((prev) => prev.filter((x) => x.id !== c.id))
+                }
+                onBlockChange={(blocked) => {
+                  if (blocked) {
+                    setComments((prev) => prev.filter((x) => x.authorId !== c.authorId));
+                  }
+                }}
+              />
             </li>
           ))}
         </ul>

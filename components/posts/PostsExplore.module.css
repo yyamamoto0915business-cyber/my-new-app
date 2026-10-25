@@ -468,34 +468,73 @@
 .mobileTop {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 
 .mobileTitleRow {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0 0.15rem;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.1rem 0.15rem 0;
 }
 
 .mobileTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   color: #2a2218;
   font-family: var(--font-serif-display), "Shippori Mincho", "Noto Serif JP", serif;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* タイトルの右に細い飾り線 */
+.mobileTitle::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(42, 85, 64, 0.28), rgba(42, 85, 64, 0));
 }
 
 .mobileLead {
-  color: #8a8076;
-  font-size: 11px;
+  color: #9a8b78;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+}
+
+/* 検索欄は幅いっぱい・枠なしで少し浮かせる */
+.mobileTop :global(.posts-user-search) {
+  width: 100%;
+}
+
+.mobileTop :global(.posts-user-search__field) {
+  gap: 0.55rem;
+  border: 1px solid rgba(42, 85, 64, 0.08);
+  border-radius: 14px;
+  background: #fff;
+  padding: 0.3rem 0.95rem;
+  box-shadow: 0 6px 18px rgba(90, 70, 40, 0.08);
+}
+
+.mobileTop :global(.posts-user-search__field:focus-within) {
+  border-color: rgba(42, 85, 64, 0.45);
+}
+
+.mobileTop :global(.posts-user-search__icon) {
+  color: #2a5540;
+}
+
+.mobileTop :global(.posts-user-search__field input) {
+  min-height: 34px;
+  font-size: 14px;
 }
 
 .chips {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.45rem;
   margin: 0 -0.75rem;
-  padding: 0 0.75rem 0.1rem;
+  padding: 0.1rem 0.75rem 0.35rem;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -505,20 +544,39 @@
 }
 
 .chip {
+  display: inline-flex;
   flex-shrink: 0;
-  padding: 0.4rem 0.95rem;
-  border: 1px solid #e3d6c0;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.9rem 0.45rem 0.75rem;
+  border: 1px solid rgba(42, 85, 64, 0.12);
   border-radius: 999px;
-  background: #fffdf8;
-  color: #5a4a38;
-  font-size: 13px;
+  background: rgba(255, 255, 255, 0.75);
+  color: #4c5a50;
+  font-size: 12.5px;
   font-weight: 600;
+  letter-spacing: 0.03em;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.chipIcon {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: #6f8a78;
 }
 
 .chipActive {
   border-color: #2a5540;
   background: #2a5540;
   color: #fff;
+  box-shadow: 0 4px 12px rgba(42, 85, 64, 0.25);
+}
+
+.chipActive .chipIcon {
+  color: #cfe3d6;
 }
 
 .searchSection {
@@ -714,67 +772,6 @@
 
 .tag:active {
   background: #d6e6dc;
-}
-
-.invite {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  overflow: hidden;
-  padding: 1.1rem 1rem;
-  border: 1px solid #ecdfc8;
-  border-radius: 18px;
-  background:
-    linear-gradient(135deg, rgba(255, 253, 248, 0.96), rgba(247, 239, 225, 0.96));
-  box-shadow: 0 6px 18px rgba(90, 74, 56, 0.08);
-}
-
-.inviteBody {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  min-width: 0;
-}
-
-.inviteEyebrow {
-  color: #8a6a48;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.inviteTitle {
-  margin-top: 0.2rem;
-  color: #2a2218;
-  font-family: var(--font-serif-display), "Shippori Mincho", "Noto Serif JP", serif;
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.inviteDesc {
-  margin-top: 0.2rem;
-  color: #6a6258;
-  font-size: 12px;
-}
-
-.inviteCta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-top: 0.75rem;
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  background: #2a5540;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.inviteIllust {
-  position: relative;
-  flex-shrink: 0;
-  width: 96px;
-  height: 96px;
 }
 
 /* ===== コメント欄（下からせり上がるシート） ===== */

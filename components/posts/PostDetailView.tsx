@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Bookmark,
   MapPin,
@@ -20,6 +21,7 @@ import { AuthorFollowButton } from "@/components/posts/AuthorFollowButton";
 import { AuthorAvatar } from "@/components/posts/AuthorAvatar";
 import { PostLikeButton } from "@/components/posts/PostLikeButton";
 import { MobilePostDetailView } from "@/components/posts/detail/MobilePostDetailView";
+import { ModerationMenu } from "@/components/moderation/ModerationMenu";
 
 type Viewer = { name: string; id?: string } | null;
 
@@ -61,6 +63,7 @@ function PostDetailBreadcrumb({
 }
 
 function DesktopPostDetailView({ post, viewer }: Props) {
+  const router = useRouter();
   const [saved, setSaved] = useState(false);
   const badgeColor = POST_CATEGORY_COLORS[post.category];
   const albumHref = post.authorId ? `/users/${post.authorId}/album` : null;
@@ -159,6 +162,18 @@ function DesktopPostDetailView({ post, viewer }: Props) {
                     </p>
                   </div>
                   <AuthorFollowButton authorId={post.authorId} />
+                  <ModerationMenu
+                    targetType="post"
+                    targetId={post.id}
+                    authorId={post.authorId}
+                    authorName={post.authorName}
+                    viewerId={viewer?.id}
+                    className="text-[#6a6258]"
+                    onReported={() => router.replace("/posts")}
+                    onBlockChange={(blocked) => {
+                      if (blocked) router.replace("/posts");
+                    }}
+                  />
                 </div>
 
                 <header className="posts-detail-body__head">

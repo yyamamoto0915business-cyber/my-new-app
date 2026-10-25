@@ -19,6 +19,7 @@ import {
 } from "@/lib/posts/mock-feed";
 import { isProfilePrivate } from "@/lib/db/account-privacy";
 import { isAcceptedFollower } from "@/lib/db/user-follows";
+import { isBlockedBetween } from "@/lib/db/moderation";
 import {
   canViewerSeePost,
   type PostAccess,
@@ -234,6 +235,9 @@ export async function getCommunityPostAccess(
 
   const isOwner = Boolean(viewerId && row.author_id === viewerId);
   if (row.status === "draft" && !isOwner) return { kind: "missing" };
+  if (!isOwner && (await isBlockedBetween(viewerId, row.author_id))) {
+    return { kind: "missing" };
+  }
 
   const follower = isOwner
     ? true

@@ -68,6 +68,8 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
   );
   const [albumDetailOpen, setAlbumDetailOpen] = useState(false);
   const [locked, setLocked] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [blockedByMe, setBlockedByMe] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -86,6 +88,8 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
           return (await res.json()) as {
             isSelf: boolean;
             locked?: boolean;
+            blocked?: boolean;
+            blockedByMe?: boolean;
             profile: {
               displayName: string;
               avatarUrl: string | null;
@@ -103,6 +107,8 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
             return;
           }
           setLocked(Boolean(payload.locked));
+          setBlocked(Boolean(payload.blocked));
+          setBlockedByMe(Boolean(payload.blockedByMe));
           setHost({
             displayName: payload.profile.displayName,
             avatarUrl: payload.profile.avatarUrl,
@@ -353,13 +359,28 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
                 setReloadKey((n) => n + 1);
               }
             }}
+            blockedByMe={blockedByMe}
+            onBlockChange={() => setReloadKey((n) => n + 1)}
           />
         )}
 
         {isForeign && locked && !showSkeleton ? (
           <div className="mg-album-empty mg-album-locked">
-            <p className="mg-album-locked__title">このアカウントは非公開です</p>
-            <p>フォローが承認されると、アルバムを見られます。</p>
+            {blocked ? (
+              <>
+                <p className="mg-album-locked__title">
+                  {blockedByMe ? "このユーザーをブロックしています" : "このアルバムは表示できません"}
+                </p>
+                {blockedByMe ? (
+                  <p>名前の横の「…」からブロックを解除できます。</p>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <p className="mg-album-locked__title">このアカウントは非公開です</p>
+                <p>フォローが承認されると、アルバムを見られます。</p>
+              </>
+            )}
           </div>
         ) : null}
 

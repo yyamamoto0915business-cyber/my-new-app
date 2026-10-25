@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Plus } from "lucide-react";
+import {
+  ChevronDown,
+  LayoutGrid,
+  Luggage,
+  MapPin,
+  Mountain,
+  PartyPopper,
+  Plus,
+  UtensilsCrossed,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   applyPostFilters,
@@ -20,7 +30,7 @@ import { PostsHero } from "@/components/posts/PostsHero";
 import { PostsGrid } from "@/components/posts/PostsGrid";
 import { PostsSidebar } from "@/components/posts/PostsSidebar";
 import { PostsSearch } from "@/components/posts/PostsSearch";
-import { PostsViewer } from "@/components/posts/PostsViewer";
+import { PostsViewer, type ViewerModeration } from "@/components/posts/PostsViewer";
 import {
   PostsDiscoverFooter,
   PostsFollowingStories,
@@ -136,6 +146,15 @@ function PostsCategoryTabs({
   );
 }
 
+const CATEGORY_CHIP_ICONS: Record<PostCategoryTab, LucideIcon> = {
+  all: LayoutGrid,
+  spot: MapPin,
+  kitchen: UtensilsCrossed,
+  scenery: Mountain,
+  event: PartyPopper,
+  trip: Luggage,
+};
+
 function PostsCategoryChips({
   category,
   onCategoryChange,
@@ -147,6 +166,7 @@ function PostsCategoryChips({
     <div className={styles.chips} role="tablist" aria-label="投稿カテゴリ">
       {POST_CATEGORY_TABS.map((tab) => {
         const active = category === tab.key;
+        const Icon = CATEGORY_CHIP_ICONS[tab.key];
         return (
           <button
             key={tab.key}
@@ -156,6 +176,7 @@ function PostsCategoryChips({
             onClick={() => onCategoryChange(tab.key)}
             className={cn(styles.chip, active && styles.chipActive)}
           >
+            <Icon className={styles.chipIcon} strokeWidth={2} aria-hidden />
             {tab.label}
           </button>
         );
@@ -245,7 +266,23 @@ export function PostsHubClient() {
     () => setVisibleCount((c) => c + GRID_PAGE_SIZE),
     [],
   );
-  const closeViewer = useCallback(() => setViewer(null), []);
+  /** ビューアで通報・ブロックしたもの。閉じたときに一覧から外す */
+  const moderatedRef = useRef<ViewerModeration[]>([]);
+  const closeViewer = useCallback(() => {
+    const moderated = moderatedRef.current;
+    moderatedRef.current = [];
+    if (moderated.length > 0) {
+      setApiPosts((prev) =>
+        prev.filter(
+          (p) =>
+            !moderated.some((m) =>
+              "postId" in m ? m.postId === p.id : m.authorId === p.authorId,
+            ),
+        ),
+      );
+    }
+    setViewer(null);
+  }, []);
   const openFromGrid = useCallback(
     (index: number) => setViewer({ posts: null, index }),
     [],
@@ -396,6 +433,7 @@ export function PostsHubClient() {
           posts={viewer.posts ?? posts}
           startIndex={viewer.index}
           onClose={closeViewer}
+          onModerated={(m) => moderatedRef.current.push(m)}
         />
       ) : null}
     </div>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/api-auth";
 import { listRecentPostsByAuthors } from "@/lib/db/community-posts";
 import { listLikedPostIds } from "@/lib/db/community-post-likes";
+import { filterModerated } from "@/lib/db/moderation";
 import { listAcceptedFollowing } from "@/lib/db/user-follows";
 import {
   applyLikedByMe,
@@ -29,7 +30,11 @@ export async function GET() {
     }
 
     const since = new Date(Date.now() - STORY_WINDOW_DAYS * 86_400_000).toISOString();
-    const rows = await listRecentPostsByAuthors(authorIds, user.id, { sinceIso: since });
+    const rows = await filterModerated(
+      await listRecentPostsByAuthors(authorIds, user.id, { sinceIso: since }),
+      user.id,
+      "post",
+    );
     const views = rows.map(mapDbCommunityPostToView);
     const likedIds = await listLikedPostIds(
       user.id,

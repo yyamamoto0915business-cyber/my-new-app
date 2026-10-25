@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isProfilePrivate } from "@/lib/db/account-privacy";
 import { listAuthorAlbumPosts } from "@/lib/db/community-posts";
+import { isBlockedBetween, isBlockedByMe } from "@/lib/db/moderation";
 import {
   countAcceptedFollowers,
   countAcceptedFollowing,
@@ -83,12 +84,15 @@ export async function GET(_request: Request, { params }: Params) {
   }
 
   const isSelf = viewer?.id === authorId;
+  const blocked = !isSelf && (await isBlockedBetween(viewer?.id ?? null, authorId));
+  const blockedByMe = blocked && viewer ? await isBlockedByMe(viewer.id, authorId) : false;
   const followRow =
     viewer && !isSelf ? await getFollowByPair(viewer.id, authorId) : null;
   const locked =
-    !isSelf &&
-    followRow?.status !== "accepted" &&
-    (await isProfilePrivate(authorId));
+    blocked ||
+    (!isSelf &&
+      followRow?.status !== "accepted" &&
+      (await isProfilePrivate(authorId)));
 
   const [rows, followers, following, lockedPostCount] = await Promise.all([
     locked
@@ -96,7 +100,7 @@ export async function GET(_request: Request, { params }: Params) {
       : listAuthorAlbumPosts(authorId, viewer?.id ?? null, { limit: 80 }),
     countAcceptedFollowers(authorId),
     countAcceptedFollowing(authorId),
-    locked ? countAuthorAlbumPosts(authorId) : Promise.resolve(0),
+    locked && !blocked ? countAuthorAlbumPosts(authorId) : Promise.resolve(0),
   ]);
 
   const items: MyPostItem[] = rows.map((row) => {
@@ -132,6 +136,8 @@ export async function GET(_request: Request, { params }: Params) {
     },
     isSelf,
     locked,
+    blocked,
+    blockedByMe,
     follow: {
       status: isSelf ? "self" : (followRow?.status ?? "none"),
       id: followRow?.id ?? null,

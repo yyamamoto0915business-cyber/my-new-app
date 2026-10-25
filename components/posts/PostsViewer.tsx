@@ -12,6 +12,8 @@ import {
 import { AuthorAvatar } from "@/components/posts/AuthorAvatar";
 import { usePostLike } from "@/components/posts/PostLikeButton";
 import { PostCommentsSheet } from "@/components/posts/PostCommentsSheet";
+import { ModerationMenu } from "@/components/moderation/ModerationMenu";
+import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { shortAreaLabel } from "@/lib/posts/area-label";
 import styles from "./PostsExplore.module.css";
 
@@ -27,16 +29,36 @@ function clampRatio(w: number, h: number): number | null {
 
 type CommentsTarget = { postId: string; onAdded: () => void };
 
+/** 通報した投稿、ブロックした人 */
+export type ViewerModeration = { postId: string } | { authorId: string };
+
+function HiddenSlide() {
+  return (
+    <article className={styles.slide} aria-label="非表示にした投稿">
+      <div className={styles.slideInner}>
+        <p className="flex flex-col items-center gap-1 px-4 text-center text-[13px] text-white/60">
+          <strong className="text-base text-white/90">この投稿は表示されません</strong>
+          <span>通報またはブロックした投稿です。</span>
+        </p>
+      </div>
+    </article>
+  );
+}
+
 function ViewerSlide({
   post,
   active,
+  viewerId,
   onToast,
   onOpenComments,
+  onModerated,
 }: {
   post: CommunityPost;
   active: boolean;
+  viewerId: string | null;
   onToast: (message: string) => void;
   onOpenComments: (target: CommentsTarget) => void;
+  onModerated: (m: ViewerModeration) => void;
 }) {
   const { liked, count, busy, setLike, toggle } = usePostLike(
     post.id,
@@ -139,12 +161,26 @@ function ViewerSlide({
           ) : (
             <span className={styles.viewerAuthor}>{author}</span>
           )}
-          {post.areaLabel ? (
-            <span className={styles.slidePlace}>
-              <MapPin className="h-3 w-3" aria-hidden />
-              {shortAreaLabel(post.areaLabel)}
-            </span>
-          ) : null}
+          <span className="inline-flex min-w-0 items-center gap-1">
+            {post.areaLabel ? (
+              <span className={styles.slidePlace}>
+                <MapPin className="h-3 w-3" aria-hidden />
+                {shortAreaLabel(post.areaLabel)}
+              </span>
+            ) : null}
+            <ModerationMenu
+              targetType="post"
+              targetId={post.id}
+              authorId={post.authorId}
+              authorName={post.authorName}
+              viewerId={viewerId}
+              iconClassName="h-5 w-5"
+              onReported={() => onModerated({ postId: post.id })}
+              onBlockChange={(blocked) => {
+                if (blocked && post.authorId) onModerated({ authorId: post.authorId });
+              }}
+            />
+          </span>
         </div>
 
         <div
@@ -294,10 +330,16 @@ type Props = {
   posts: CommunityPost[];
   startIndex: number;
   onClose: () => void;
+  /** 通報・ブロックしたとき（一覧からも外す用） */
+  onModerated?: (m: ViewerModeration) => void;
 };
 
 /** 投稿を全画面で、上下スワイプで次々に見るビューア */
-export function PostsViewer({ posts, startIndex, onClose }: Props) {
+export function PostsViewer({ posts, startIndex, onClose, onModerated }: Props) {
+  const { user } = useSupabaseUser();
+  const viewerId = user?.id ?? null;
+  const [hiddenPostIds, setHiddenPostIds] = useState<Set<string>>(() => new Set());
+  const [hiddenAuthorIds, setHiddenAuthorIds] = useState<Set<string>>(() => new Set());
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(startIndex);
   const [toast, setToast] = useState<string | null>(null);
@@ -372,20 +414,33 @@ export function PostsViewer({ posts, startIndex, onClose }: Props) {
           if (i !== activeIndex) setActiveIndex(i);
         }}
       >
-        {posts.map((post, i) => (
-          <ViewerSlide
-            key={post.id}
-            post={post}
-            active={i === activeIndex}
-            onToast={setToast}
-            onOpenComments={setComments}
-          />
-        ))}
+        {posts.map((post, i) =>
+          hiddenPostIds.has(post.id) ||
+          (post.authorId && hiddenAuthorIds.has(post.authorId)) ? (
+            <HiddenSlide key={post.id} />
+          ) : (
+            <ViewerSlide
+              key={post.id}
+              post={post}
+              active={i === activeIndex}
+              viewerId={viewerId}
+              onToast={setToast}
+              onOpenComments={setComments}
+              onModerated={(m) => {
+                // スライドの位置がずれないよう、ここでは消さずに差し替える
+                if ("postId" in m) setHiddenPostIds((prev) => new Set(prev).add(m.postId));
+                else setHiddenAuthorIds((prev) => new Set(prev).add(m.authorId));
+                onModerated?.(m);
+              }}
+            />
+          ),
+        )}
       </div>
       {comments ? (
         <PostCommentsSheet
           key={comments.postId}
           postId={comments.postId}
+          viewerId={viewerId}
           onAdded={comments.onAdded}
           onClose={() => setComments(null)}
         />

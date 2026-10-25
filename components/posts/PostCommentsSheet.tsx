@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUp, X } from "lucide-react";
 import type { PostCommentView } from "@/lib/db/community-post-comments-types";
 import { AuthorAvatar } from "@/components/posts/AuthorAvatar";
+import { ModerationMenu } from "@/components/moderation/ModerationMenu";
 import styles from "./PostsExplore.module.css";
 
 /** 下に引いてこれ以上動いたら閉じる */
@@ -12,13 +13,15 @@ const DRAG_CLOSE_PX = 90;
 
 type Props = {
   postId: string;
+  /** 自分のコメントには通報メニューを出さない */
+  viewerId?: string | null;
   onClose: () => void;
   /** コメントを書き込めたとき（件数の表示を増やす用） */
   onAdded: () => void;
 };
 
 /** 全画面ビューアの上に、下からせり上がるコメント欄（インスタ風） */
-export function PostCommentsSheet({ postId, onClose, onAdded }: Props) {
+export function PostCommentsSheet({ postId, viewerId = null, onClose, onAdded }: Props) {
   const [comments, setComments] = useState<PostCommentView[]>([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
@@ -143,6 +146,22 @@ export function PostCommentsSheet({ postId, onClose, onAdded }: Props) {
                   </p>
                   <p className={styles.commentBody}>{c.body}</p>
                 </div>
+                <ModerationMenu
+                  targetType="comment"
+                  targetId={c.id}
+                  authorId={c.authorId}
+                  authorName={c.authorName}
+                  viewerId={viewerId}
+                  className="self-start text-[#8a8076]"
+                  onReported={() =>
+                    setComments((prev) => prev.filter((x) => x.id !== c.id))
+                  }
+                  onBlockChange={(blocked) => {
+                    if (blocked) {
+                      setComments((prev) => prev.filter((x) => x.authorId !== c.authorId));
+                    }
+                  }}
+                />
               </li>
             ))
           )}

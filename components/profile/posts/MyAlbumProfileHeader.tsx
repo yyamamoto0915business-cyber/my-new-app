@@ -7,6 +7,7 @@ import { Camera, Pencil, Plus, Share, User } from "lucide-react";
 import { AccountVisibilityChip } from "@/components/profile/account-visibility-chip";
 import { ProfileBannerAvatar } from "@/components/profile/profile-banner-avatar";
 import { AuthorFollowButton } from "@/components/posts/AuthorFollowButton";
+import { ModerationMenu } from "@/components/moderation/ModerationMenu";
 import { MyAlbumProfileShareSheet } from "./MyAlbumProfileShareSheet";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,8 @@ export function MyAlbumProfileHeader({
   shareUserId,
   onSelectPosts,
   onFollowChange,
+  blockedByMe = false,
+  onBlockChange,
 }: {
   profile: AlbumProfile | null;
   eyebrow: string;
@@ -45,6 +48,9 @@ export function MyAlbumProfileHeader({
   shareUserId?: string;
   onSelectPosts?: () => void;
   onFollowChange?: (status: "none" | "pending" | "accepted" | "self" | "rejected") => void;
+  /** 自分がこの人をブロックしているか */
+  blockedByMe?: boolean;
+  onBlockChange?: (blocked: boolean) => void;
 }) {
   const [shareOpen, setShareOpen] = useState(false);
   const name = profile?.displayName ?? (isOwn ? "あなた" : "ユーザー");
@@ -181,8 +187,20 @@ export function MyAlbumProfileHeader({
             </li>
           </ul>
           {!isOwn && authorId ? (
-            <div className="mg-album-identity__follow">
-              <AuthorFollowButton authorId={authorId} onStatusChange={onFollowChange} />
+            <div className="mg-album-identity__follow flex items-center gap-1">
+              {blockedByMe ? null : (
+                <AuthorFollowButton authorId={authorId} onStatusChange={onFollowChange} />
+              )}
+              <ModerationMenu
+                targetType="user"
+                targetId={authorId}
+                authorId={authorId}
+                authorName={profile?.displayName}
+                initialBlocked={blockedByMe}
+                onBlockChange={onBlockChange}
+                className="text-[#6a6258]"
+                iconClassName="h-5 w-5"
+              />
             </div>
           ) : null}
         </div>

@@ -22,6 +22,8 @@ export type CreateCommunityPostCommentInput = {
 /** 画面表示用に整形したコメント */
 export type PostCommentView = {
   id: string;
+  /** 通報・ブロック用。デモのコメントでは null */
+  authorId: string | null;
   authorName: string;
   authorAvatarUrl: string | null;
   body: string;

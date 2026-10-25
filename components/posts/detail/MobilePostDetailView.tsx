@@ -21,8 +21,9 @@ import {
 import { PostDetailMedia } from "@/components/posts/detail/PostDetailMedia";
 import { PostDetailComments } from "@/components/posts/detail/PostDetailComments";
 import { PostDetailSidebar } from "@/components/posts/detail/PostDetailSidebar";
+import { ModerationMenu } from "@/components/moderation/ModerationMenu";
 
-type Viewer = { name: string } | null;
+type Viewer = { name: string; id?: string } | null;
 
 type Props = {
   post: CommunityPost;
@@ -165,6 +166,19 @@ export function MobilePostDetailView({ post, viewer }: Props) {
                 ) : null}
               </div>
               <AuthorFollowButton authorId={post.authorId} ghost />
+              <ModerationMenu
+                targetType="post"
+                targetId={post.id}
+                authorId={post.authorId}
+                authorName={post.authorName}
+                viewerId={viewer?.id}
+                className="text-[#6a6258]"
+                iconClassName="h-5 w-5"
+                onReported={() => router.replace("/posts")}
+                onBlockChange={(blocked) => {
+                  if (blocked) router.replace("/posts");
+                }}
+              />
             </div>
 
             <h1 className="posts-detail-title">{post.title}</h1>

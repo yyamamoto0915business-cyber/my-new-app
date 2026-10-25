@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getStripe, getAppUrl } from "@/lib/stripe";
+import { isIosAppUserAgent } from "@/lib/native/app-shell";
 
 const SUPPORT_AMOUNTS = [500, 1000, 3000] as const;
 
 /** POST: 応援決済 Checkout Session を生成（500/1000/3000円） */
 export async function POST(request: NextRequest) {
+  if (isIosAppUserAgent(request.headers.get("user-agent"))) {
+    return NextResponse.json({ error: "アプリ内では応援できません。" }, { status: 403 });
+  }
+
   const user = await getApiUser();
   if (!user) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });

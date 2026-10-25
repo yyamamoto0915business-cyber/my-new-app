@@ -109,6 +109,7 @@ export function mapDbCommentToView(
 ): PostCommentView {
   return {
     id: row.id,
+    authorId: row.author_id,
     authorName: row.author_display_name,
     authorAvatarUrl: row.author_avatar_url ?? null,
     body: row.body,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiUser } from "@/lib/api-auth";
 import { filterPostsVisibleDespitePrivateAccounts } from "@/lib/db/account-privacy";
+import { filterModerated } from "@/lib/db/moderation";
 import {
   createCommunityPost,
   listPublicCommunityPosts,
@@ -63,9 +64,10 @@ export async function GET(request: NextRequest) {
       }),
       getApiUser(),
     ]);
-    const visible = await filterPostsVisibleDespitePrivateAccounts(
-      rows,
+    const visible = await filterModerated(
+      await filterPostsVisibleDespitePrivateAccounts(rows, user?.id ?? null),
       user?.id ?? null,
+      "post",
     );
 
     const views = visible.map(mapDbCommunityPostToView);

@@ -1,9 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AuthorAvatar } from "@/components/posts/AuthorAvatar";
 import {
@@ -12,8 +9,6 @@ import {
   type FollowingStory,
 } from "@/lib/posts/following-stories";
 import styles from "./PostsExplore.module.css";
-
-const CTA_SHARE_ILLUST = "/posts/cta-share-illust.png";
 
 /**
  * フォロー中の人の最近の投稿を丸アイコンで並べる（ストーリーズ風）
@@ -84,7 +79,7 @@ export function PostsFollowingStories({
   );
 }
 
-/** グリッドの下：人気タグと投稿のおさそい */
+/** グリッドの下：人気タグ */
 export function PostsDiscoverFooter({
   tags,
   onTagSelect,
@@ -92,38 +87,23 @@ export function PostsDiscoverFooter({
   tags: string[];
   onTagSelect: (tag: string) => void;
 }) {
+  if (tags.length === 0) return null;
+
   return (
     <div className={styles.discoverFooter}>
-      {tags.length > 0 ? (
-        <section aria-label="人気のタグ">
-          <h2 className={styles.footerTitle}>人気のタグ</h2>
-          <div className={styles.tagList}>
-            {tags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                className={styles.tag}
-                onClick={() => onTagSelect(tag)}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section className={styles.invite}>
-        <div className={styles.inviteBody}>
-          <p className={styles.inviteEyebrow}>あなたの「好き」が、まちの魅力に</p>
-          <h2 className={styles.inviteTitle}>見つけた景色を、みんなに</h2>
-          <p className={styles.inviteDesc}>写真1枚、ひとことでも大丈夫です。</p>
-          <Link href="/posts/new" className={styles.inviteCta}>
-            <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
-            投稿してみる
-          </Link>
-        </div>
-        <div className={styles.inviteIllust} aria-hidden>
-          <Image src={CTA_SHARE_ILLUST} alt="" fill sizes="110px" className="object-contain" />
+      <section aria-label="人気のタグ">
+        <h2 className={styles.footerTitle}>人気のタグ</h2>
+        <div className={styles.tagList}>
+          {tags.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              className={styles.tag}
+              onClick={() => onTagSelect(tag)}
+            >
+              {tag}
+            </button>
+          ))}
         </div>
       </section>
     </div>

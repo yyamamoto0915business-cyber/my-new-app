@@ -73,6 +73,7 @@ export function getSeedComments(postId: string): PostCommentView[] {
   const seeds = SEED_COMMENTS[postId] ?? DEFAULT_SEED_COMMENTS;
   return seeds.map((seed, i) => ({
     id: `seed-${postId}-${i}`,
+    authorId: null,
     authorName: seed.authorName,
     authorAvatarUrl: null,
     body: seed.body,
