@@ -99,6 +99,111 @@ type Petal = {
   sway: number; ss: number; alpha: number;
 };
 
+/** 画面の下に置く、淡い色のまち並み（家・木・塔・提灯） */
+function SplashTownscape() {
+  return (
+    <div
+      className="sp-town"
+      aria-hidden
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1,
+        height: "min(26vh, 220px)",
+        pointerEvents: "none",
+      }}
+    >
+      <svg
+        viewBox="0 0 400 140"
+        preserveAspectRatio="xMidYMax slice"
+        width="100%"
+        height="100%"
+      >
+        <defs>
+          <linearGradient id="spTownFade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0.7" stopColor="#ffffff" stopOpacity="0" />
+            <stop offset="1" stopColor="#ffffff" stopOpacity="0.55" />
+          </linearGradient>
+        </defs>
+
+        {/* 遠くの山 */}
+        <path
+          d="M0 92 Q60 58 120 80 T240 70 T400 78 V140 H0 Z"
+          fill="#d6dee9"
+          opacity="0.9"
+        />
+
+        {/* まち並み */}
+        <g fill="#b9c7d6">
+          <rect x="22" y="88" width="26" height="40" />
+          <path d="M18 90 L35 74 L52 90 Z" />
+          <circle cx="66" cy="98" r="12" />
+          <rect x="64" y="104" width="3" height="20" />
+          <rect x="84" y="80" width="18" height="48" />
+          <path d="M81 82 L93 66 L105 82 Z" />
+          <rect x="112" y="94" width="34" height="34" />
+          <path d="M108 96 L129 80 L150 96 Z" />
+          {/* 塔 */}
+          <rect x="176" y="62" width="14" height="66" />
+          <path d="M172 64 L183 46 L194 64 Z" />
+          <rect x="181" y="38" width="4" height="10" />
+          <rect x="198" y="90" width="30" height="38" />
+          <path d="M194 92 L213 76 L232 92 Z" />
+          <circle cx="248" cy="96" r="14" />
+          <rect x="246" y="104" width="3" height="22" />
+          <rect x="268" y="84" width="22" height="44" />
+          <path d="M264 86 L279 70 L294 86 Z" />
+          <rect x="302" y="96" width="36" height="32" />
+          <path d="M298 98 L320 82 L342 98 Z" />
+          <circle cx="358" cy="100" r="11" />
+          <rect x="356" y="106" width="3" height="20" />
+          <rect x="372" y="88" width="24" height="40" />
+          <path d="M368 90 L384 76 L400 90 Z" />
+        </g>
+
+        {/* 窓のあかり */}
+        <g fill="#f1cc72">
+          <rect x="30" y="98" width="5" height="6" rx="1" />
+          <rect x="90" y="92" width="5" height="6" rx="1" />
+          <rect x="121" y="104" width="5" height="6" rx="1" />
+          <rect x="133" y="104" width="5" height="6" rx="1" />
+          <rect x="181" y="76" width="4" height="6" rx="1" />
+          <rect x="206" y="100" width="5" height="6" rx="1" />
+          <rect x="275" y="96" width="5" height="6" rx="1" />
+          <rect x="314" y="106" width="5" height="6" rx="1" />
+          <rect x="380" y="98" width="5" height="6" rx="1" />
+        </g>
+
+        {/* 提灯のひも */}
+        <path
+          d="M48 70 Q120 86 176 72 M190 72 Q260 88 330 74"
+          fill="none"
+          stroke="#b89d6a"
+          strokeWidth="0.8"
+          opacity="0.7"
+        />
+        <g fill="#ec9f86">
+          <ellipse cx="78" cy="78" rx="3" ry="4" />
+          <ellipse cx="112" cy="81" rx="3" ry="4" />
+          <ellipse cx="146" cy="79" rx="3" ry="4" />
+          <ellipse cx="226" cy="80" rx="3" ry="4" />
+          <ellipse cx="262" cy="82" rx="3" ry="4" />
+          <ellipse cx="298" cy="79" rx="3" ry="4" />
+        </g>
+
+        {/* 手前の丘 */}
+        <path
+          d="M0 122 Q100 108 200 118 T400 116 V140 H0 Z"
+          fill="#e4eaf1"
+        />
+        <rect x="0" y="0" width="400" height="140" fill="url(#spTownFade)" />
+      </svg>
+    </div>
+  );
+}
+
 function drawBackground(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -265,11 +370,23 @@ export function SplashScreen() {
     };
   }, [applyVisibility]);
 
+  // アプリでは表示のあとに画面の高さが変わるので、背景を描き直して下まで埋める
   useEffect(() => {
     if (!ready || gone) return;
-
     const bg = bgRef.current;
-    if (bg) drawBackground(bg);
+    if (!bg) return;
+    const redrawBg = () => drawBackground(bg);
+    redrawBg();
+    window.addEventListener("resize", redrawBg);
+    window.visualViewport?.addEventListener("resize", redrawBg);
+    return () => {
+      window.removeEventListener("resize", redrawBg);
+      window.visualViewport?.removeEventListener("resize", redrawBg);
+    };
+  }, [ready, gone]);
+
+  useEffect(() => {
+    if (!ready || gone) return;
 
     const canvas = petalRef.current;
     if (!canvas) return;
@@ -401,6 +518,11 @@ export function SplashScreen() {
         .sp-cards   { animation: fadeUp 0.8s ease-out 1.1s both; }
         .sp-links   { animation: fadeIn 0.6s ease-out 1.8s both; }
         .sp-trust   { animation: fadeIn 0.65s ease-out 2.05s both; }
+        .sp-town    { animation: spTownRise 1.2s ease-out 0.4s both; }
+        @keyframes spTownRise {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
         .sp-trust-text {
           min-width: 0;
           flex: 1;
@@ -635,6 +757,9 @@ export function SplashScreen() {
       <div
         style={{
           position: "fixed", inset: 0, zIndex: 9999,
+          // canvas が描かれる前や高さが変わった直後も、下のページが透けないように
+          background:
+            "linear-gradient(135deg, #F0F2F5 0%, #E8ECF2 20%, #F5F5F8 45%, #E0E4EC 65%, #EEF0F5 85%, #E8EAF0 100%)",
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
           overflow: "hidden",
@@ -646,13 +771,16 @@ export function SplashScreen() {
         {/* Layer 1: background canvas */}
         <canvas
           ref={bgRef}
-          style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none" }}
+          style={{ position: "absolute", inset: 0, zIndex: 1, width: "100%", height: "100%", pointerEvents: "none" }}
         />
+
+        {/* Layer 1.5: 下に淡いまち並み（空いた所をやわらかく埋める） */}
+        <SplashTownscape />
 
         {/* Layer 2: sakura petal canvas */}
         <canvas
           ref={petalRef}
-          style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none" }}
+          style={{ position: "absolute", inset: 0, zIndex: 2, width: "100%", height: "100%", pointerEvents: "none" }}
         />
 
         {/* Top-right: 使い方ガイド + ログイン */}
