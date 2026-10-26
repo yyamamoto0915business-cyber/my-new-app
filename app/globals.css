@@ -29744,7 +29744,8 @@ button.posts-tab--active:not([disabled]):active {
 
 .posts-comment-form--sticky {
   position: sticky;
-  bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+  /* 下のナビ（約52px + セーフエリア）のすぐ上に付ける */
+  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
   z-index: 5;
   margin-top: 0.85rem;
   padding: 0.75rem 0 0.25rem;
