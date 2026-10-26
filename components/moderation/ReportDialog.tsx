@@ -81,7 +81,7 @@ export function ReportDialog({ targetType, targetId, onClose, onReported }: Prop
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/45 min-[600px]:items-center"
+      className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/45 min-[600px]:items-center"
       onClick={onClose}
       data-no-swipe
     >

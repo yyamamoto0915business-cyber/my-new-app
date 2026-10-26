@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Ban, Flag, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,10 +24,12 @@ type Props = {
   onBlockChange?: (blocked: boolean) => void;
   className?: string;
   iconClassName?: string;
-  /** メニューを開く向き */
-  align?: "left" | "right";
-  direction?: "down" | "up";
 };
+
+/** メニューのおおよその高さ。下に入らないときは上に開く */
+const MENU_HEIGHT_PX = 110;
+
+type MenuPosition = { right: number; top?: number; bottom?: number };
 
 /** 「…」から通報・ブロックをするメニュー */
 export function ModerationMenu({
@@ -40,15 +43,15 @@ export function ModerationMenu({
   onBlockChange,
   className,
   iconClassName = "h-4 w-4",
-  align = "right",
-  direction = "down",
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<MenuPosition | null>(null);
   const [reporting, setReporting] = useState(false);
   const [blocked, setBlocked] = useState(initialBlocked);
   const [busy, setBusy] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   // 「受け付けました」を見せてから一覧から消すため、閉じたときに知らせる
   const reportedRef = useRef(false);
 
@@ -57,16 +60,27 @@ export function ModerationMenu({
   useEffect(() => {
     if (!open) return;
     function handlePointer(e: PointerEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (!wrapRef.current?.contains(target) && !menuRef.current?.contains(target)) {
+        setOpen(false);
+      }
     }
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
+    // 画面に固定して出すので、スクロールしたら閉じる
+    function close() {
+      setOpen(false);
+    }
     document.addEventListener("pointerdown", handlePointer);
     document.addEventListener("keydown", handleKey);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
     return () => {
       document.removeEventListener("pointerdown", handlePointer);
       document.removeEventListener("keydown", handleKey);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
     };
   }, [open]);
 
@@ -123,20 +137,31 @@ export function ModerationMenu({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setOpen((v) => !v);
+          if (open) {
+            setOpen(false);
+            return;
+          }
+          // 親の枠（overflow: hidden）で切れないよう、画面基準の位置で開く
+          const rect = e.currentTarget.getBoundingClientRect();
+          const right = Math.max(8, window.innerWidth - rect.right);
+          setPosition(
+            rect.bottom + MENU_HEIGHT_PX > window.innerHeight
+              ? { right, bottom: window.innerHeight - rect.top + 4 }
+              : { right, top: rect.bottom + 4 },
+          );
+          setOpen(true);
         }}
       >
         <MoreHorizontal className={iconClassName} aria-hidden />
       </button>
 
-      {open ? (
+      {open && position ? createPortal(
         <div
+          ref={menuRef}
           role="menu"
-          className={cn(
-            "absolute z-50 min-w-[190px] overflow-hidden rounded-xl border border-[#e6ddd0] bg-white py-1 text-sm text-[#2a2218] shadow-lg",
-            align === "right" ? "right-0" : "left-0",
-            direction === "down" ? "top-full mt-1" : "bottom-full mb-1",
-          )}
+          data-no-swipe
+          style={position}
+          className="fixed z-[1100] min-w-[190px] overflow-hidden rounded-xl border border-[#e6ddd0] bg-white py-1 text-sm text-[#2a2218] shadow-lg"
         >
           <button
             type="button"
@@ -166,7 +191,8 @@ export function ModerationMenu({
               {blocked ? `${who}のブロックを解除` : `${who}をブロック`}
             </button>
           ) : null}
-        </div>
+        </div>,
+        document.body,
       ) : null}
 
       {reporting ? (
