@@ -185,7 +185,7 @@ export function MobilePostDetailView({ post, viewer }: Props) {
   }
 
   const avatar = (
-    <span className="block h-9 w-9 overflow-hidden rounded-full">
+    <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[#efe6d2] text-[14px] font-[700] text-[#8a6a2a] [&>img]:h-full [&>img]:w-full [&>img]:object-cover">
       <AuthorAvatar name={post.authorName} src={post.authorAvatarUrl} />
     </span>
   );
