@@ -169,6 +169,10 @@ function DesktopPostDetailView({ post, viewer }: Props) {
                     authorName={post.authorName}
                     viewerId={viewer?.id}
                     className="text-[#6a6258]"
+                    ownerActions={{
+                      editHref: `/posts/${post.id}/edit`,
+                      onDeleted: () => router.replace("/posts"),
+                    }}
                     onReported={() => router.replace("/posts")}
                     onBlockChange={(blocked) => {
                       if (blocked) router.replace("/posts");

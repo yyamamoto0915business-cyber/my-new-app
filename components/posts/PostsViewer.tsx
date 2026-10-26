@@ -161,7 +161,7 @@ function ViewerSlide({
           ) : (
             <span className={styles.viewerAuthor}>{author}</span>
           )}
-          <span className="inline-flex min-w-0 items-center gap-1">
+          <span className="inline-flex min-w-0 max-w-[65%] shrink items-center justify-end gap-1">
             {post.areaLabel ? (
               <span className={styles.slidePlace}>
                 <MapPin className="h-3 w-3" aria-hidden />
@@ -175,6 +175,10 @@ function ViewerSlide({
               authorName={post.authorName}
               viewerId={viewerId}
               iconClassName="h-5 w-5"
+              ownerActions={{
+                editHref: `/posts/${post.id}/edit`,
+                onDeleted: () => onModerated({ postId: post.id }),
+              }}
               onReported={() => onModerated({ postId: post.id })}
               onBlockChange={(blocked) => {
                 if (blocked && post.authorId) onModerated({ authorId: post.authorId });
