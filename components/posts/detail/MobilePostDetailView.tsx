@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -30,13 +30,31 @@ type Props = {
   viewer: Viewer;
 };
 
-/** 下部固定アクションバー + ボトムナビ分 */
-const MOBILE_ACTION_BAR_PX = 52;
-const MOBILE_BOTTOM_NAV_PX = 72;
+/** 下部固定アクションバーの高さ（ボトムナビ分はページ全体の余白で取っている） */
+const MOBILE_ACTION_BAR_PX = 60;
+
+/** いいね等の帯をボトムナビのすぐ上に付けるため、ナビの実際の高さを測る */
+function useBottomNavHeight(): number | null {
+  const [height, setHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const nav = document.querySelector<HTMLElement>('[data-mg-chrome="mobile-bottom"]');
+    if (!nav) {
+      setHeight(0);
+      return;
+    }
+    const sync = () => setHeight(nav.getBoundingClientRect().height);
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(nav);
+    return () => ro.disconnect();
+  }, []);
+  return height;
+}
 
 export function MobilePostDetailView({ post, viewer }: Props) {
   const router = useRouter();
   const [saved, setSaved] = useState(false);
+  const bottomNavH = useBottomNavHeight();
   const badgeColor = POST_CATEGORY_COLORS[post.category];
   const albumHref = post.authorId ? `/users/${post.authorId}/album` : null;
 
@@ -76,7 +94,7 @@ export function MobilePostDetailView({ post, viewer }: Props) {
       style={
         {
           "--post-category-color": badgeColor,
-          paddingBottom: `calc(${MOBILE_ACTION_BAR_PX + MOBILE_BOTTOM_NAV_PX + 16}px + env(safe-area-inset-bottom, 0px))`,
+          paddingBottom: `${MOBILE_ACTION_BAR_PX + 16}px`,
         } as React.CSSProperties
       }
     >
@@ -232,7 +250,11 @@ export function MobilePostDetailView({ post, viewer }: Props) {
         <PostDetailSidebar post={post} variant="mobile" />
       </main>
 
-      <footer className="posts-detail-mobile__bar" aria-label="投稿アクション">
+      <footer
+        className="posts-detail-mobile__bar"
+        aria-label="投稿アクション"
+        style={bottomNavH != null ? { bottom: bottomNavH } : undefined}
+      >
         <div className="posts-detail-mobile__bar-pill">
           <PostLikeButton
             postId={post.id}

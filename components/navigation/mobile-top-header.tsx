@@ -15,6 +15,7 @@ import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 import { isPlayRoute } from "@/lib/is-play-route";
+import { isPostDetailRoute } from "@/lib/is-post-detail-route";
 
 /** 通常時（イベント・まち情報中心）のモバイル上部の目安高さ（safe-area 除く） */
 export const MOBILE_TOP_HEADER_HEIGHT_PX = 98;
@@ -76,7 +77,9 @@ export function MobileTopHeader({ className }: Props) {
     isEventDetailRoute(pathname ?? "") ||
     isMessagesConversationRoute(pathname ?? "") ||
     isProfileEditRoute(pathname ?? "") ||
-    isPlayRoute(pathname)
+    isPlayRoute(pathname) ||
+    // 投稿の詳細は画面専用の「← みんなの投稿」帯があるので、上の帯を2段にしない
+    isPostDetailRoute(pathname)
   ) {
     return null;
   }
