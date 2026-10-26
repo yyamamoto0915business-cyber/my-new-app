@@ -7,11 +7,13 @@ import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 
 type ProfileTab = "participant" | "organizer";
-type PStep = 1 | 2 | 3 | 4;
-type OStep = 1 | 2 | 3 | 4;
 
-const INP =
-  "w-full px-[13px] py-[10px] rounded-[10px] border border-[#DEDAD2] bg-[#F5F4EF] text-[13px] text-[#18181a] outline-none placeholder:text-[#c0bdb8] disabled:text-[#8c8a84] disabled:cursor-not-allowed focus:border-[#2B3A6B] focus:bg-white transition-[border-color,background]";
+/** スマホ用の入力欄。16px 未満だと iPhone がタップ時に拡大してしまう */
+const M_INP =
+  "w-full px-[14px] py-[12px] rounded-[12px] border border-[#DEDAD2] bg-[#F5F4EF] text-[16px] text-[#18181a] outline-none placeholder:text-[#b5b2ac] disabled:text-[#8c8a84] disabled:cursor-not-allowed focus:border-[#2B3A6B] focus:bg-white transition-[border-color,background]";
+
+const M_CHIP =
+  "inline-flex items-center justify-center gap-[5px] rounded-full border border-[#DEDAD2] bg-white px-4 py-[9px] text-[13px] font-[500] text-[#18181a] active:bg-[#F5F4EF]";
 
 const INP_PC =
   "w-full rounded-[8px] border border-[#E2E8F0] bg-white px-2.5 py-1.5 text-[12px] text-[#18181a] outline-none placeholder:text-[#A0AEC0] disabled:cursor-not-allowed disabled:bg-[#F7FAFC] disabled:text-[#8c8a84] focus:border-[#2B3A6B] focus:shadow-[0_0_0_2px_rgba(43,58,107,.08)] transition-[border-color,box-shadow]";
@@ -40,20 +42,6 @@ const PC = {
   infoGreenInk: "#276749",
 } as const;
 
-function ChevR() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
-}
-function ChevL() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  );
-}
 function CheckIco({ size = 13 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -123,6 +111,23 @@ function MCardTitle({ color, children }: { color?: string; children: React.React
 function MCardSub({ children }: { children: React.ReactNode }) {
   return <div className="text-[11px] text-[#8c8a84] mb-[12px] leading-[1.5]">{children}</div>;
 }
+function MToggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className="flex items-center gap-2 text-[12px] font-[500] text-[#52504c]"
+    >
+      {checked ? "公開する" : "公開しない"}
+      <span className={["relative h-[26px] w-[44px] rounded-full transition-colors", checked ? "bg-[#4fa82a]" : "bg-[#D6D3CC]"].join(" ")}>
+        <span className={["absolute top-[3px] h-5 w-5 rounded-full bg-white shadow transition-all", checked ? "left-[21px]" : "left-[3px]"].join(" ")} />
+      </span>
+    </button>
+  );
+}
 function MField({ children }: { children: React.ReactNode }) {
   return <div className="mb-[12px] last:mb-0">{children}</div>;
 }
@@ -147,34 +152,6 @@ function AvatarImg({ url, size, rounded = "full", initials = "?" }: {
   );
 }
 
-function IconBlock({ label, url, onFile, onCamera, urlValue, onUrlChange, rounded = "full", initials = "?" }: {
-  label: string; url: string; onFile: () => void; onCamera: () => void;
-  urlValue: string; onUrlChange: (v: string) => void; rounded?: "full" | "10"; initials?: string;
-}) {
-  return (
-    <div className="bg-[#F5F4EF] rounded-[10px] border border-[#DEDAD2] p-[11px] mb-[10px] last:mb-0">
-      <div className="text-[11px] font-[600] text-[#52504c] mb-[9px]">{label}</div>
-      <div className="flex items-center gap-[11px] mb-[8px]">
-        <div className="flex-shrink-0 overflow-hidden border-[2px] border-[#DEDAD2]"
-          style={{ width: 46, height: 46, borderRadius: rounded === "full" ? "50%" : "10px" }}>
-          <AvatarImg url={url} size={46} rounded={rounded} initials={initials} />
-        </div>
-        <div className="flex flex-col gap-[6px] flex-1">
-          <button type="button" onClick={onFile}
-            className="py-[7px] rounded-[8px] border border-[#DEDAD2] bg-white text-[11px] flex items-center justify-center gap-[5px]">
-            <UploadIco /> アルバムから選択
-          </button>
-          <button type="button" onClick={onCamera}
-            className="py-[7px] rounded-[8px] border border-[#DEDAD2] bg-white text-[11px] flex items-center justify-center gap-[5px]">
-            <CamIco /> カメラで撮影
-          </button>
-        </div>
-      </div>
-      <input type="text" value={urlValue} onChange={e => onUrlChange(e.target.value)} placeholder="または URL を入力" className={INP} />
-    </div>
-  );
-}
-
 function CoverPreview({ url, height }: { url: string; height: number }) {
   const [err, setErr] = useState(false);
   if (url && !err) {
@@ -187,52 +164,6 @@ function CoverPreview({ url, height }: { url: string; height: number }) {
   return (
     <div style={{ width: "100%", height, borderRadius: 8, background: "#3a6a50", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #DEDAD2" }}>
       <ImgIco stroke="rgba(255,255,255,.5)" />
-    </div>
-  );
-}
-
-function StepInd({ steps, current, mode, onGo }: {
-  steps: string[]; current: number; mode: "p" | "o"; onGo: (s: number) => void;
-}) {
-  const activeCircle = mode === "p" ? "bg-[#2B3A6B] text-white" : "bg-[#c8a84b] text-white";
-  const activeLabel = mode === "p" ? "text-[#2B3A6B] font-[500]" : "text-[#86620a] font-[500]";
-  return (
-    <div className="flex shrink-0 items-center overflow-x-auto border-b border-[#DEDAD2] bg-white px-2 pb-[9px] pt-[7px] min-[380px]:px-3">
-      {steps.map((label, i) => {
-        const step = i + 1;
-        const done = step < current;
-        const active = step === current;
-        return (
-          <div key={step} className="flex items-center flex-1 min-w-[68px]">
-            <div className="flex flex-col items-center gap-[3px] cursor-pointer w-full" onClick={() => onGo(step)}>
-              <div className={["w-[22px] h-[22px] min-[380px]:w-[24px] min-[380px]:h-[24px] rounded-full flex items-center justify-center text-[10px] font-[700] transition-all",
-                done ? "bg-[#4fa82a] text-white" : active ? activeCircle : "bg-[#F5F4EF] text-[#8c8a84] border-[1.5px] border-[#DEDAD2]"].join(" ")}>
-                {done ? (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                ) : step === steps.length ? (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={active ? "#fff" : "#8c8a84"} strokeWidth="2.5" strokeLinecap="round"><polyline points="9 11 12 14 22 4" /></svg>
-                ) : step}
-              </div>
-              <div className={["text-[7px] min-[380px]:text-[8px] text-center leading-tight max-w-full px-0.5", done ? "text-[#4fa82a]" : active ? activeLabel : "text-[#8c8a84]"].join(" ")}>
-                {label}
-              </div>
-            </div>
-            {i < steps.length - 1 && (
-              <div className={["flex-1 h-[1.5px] mx-[2px] min-[380px]:mx-[3px] mb-[13px] min-w-[8px]", done ? "bg-[#4fa82a]" : "bg-[#DEDAD2]"].join(" ")} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function PanelHd({ icBg, icon, opt, children }: { icBg: string; icon: React.ReactNode; opt?: string; children: React.ReactNode }) {
-  return (
-    <div className="text-[10px] font-[700] text-[#8c8a84] tracking-[.1em] uppercase flex items-center gap-[6px] flex-shrink-0">
-      <div className="w-[20px] h-[20px] rounded-[5px] flex items-center justify-center flex-shrink-0" style={{ background: icBg }}>{icon}</div>
-      {children}
-      {opt && <Opt>{opt}</Opt>}
     </div>
   );
 }
@@ -510,8 +441,6 @@ function ProfileEditPageInner() {
   const [tab, setTab] = useState<ProfileTab>(
     tabParam === "organizer" ? "organizer" : "participant"
   );
-  const [pStep, setPStep] = useState<PStep>(1);
-  const [oStep, setOStep] = useState<OStep>(1);
   const [loading, setLoading] = useState(true);
   const [pSaving, setPSaving] = useState(false);
   const [oSaving, setOSaving] = useState(false);
@@ -558,6 +487,16 @@ function ProfileEditPageInner() {
   const orgAvatarRef = useRef<HTMLInputElement>(null);
   const orgCoverRef = useRef<HTMLInputElement>(null);
   const orgGalleryRef = useRef<HTMLInputElement>(null);
+
+  // 「保存しました」は少し見せてから元の「保存する」に戻す
+  useEffect(() => {
+    if (!pSuccess && !oSuccess) return;
+    const t = window.setTimeout(() => {
+      setPSuccess(false);
+      setOSuccess(false);
+    }, 2500);
+    return () => window.clearTimeout(t);
+  }, [pSuccess, oSuccess]);
 
   useEffect(() => {
     if (tabParam === "organizer" || tabParam === "participant") {
@@ -755,15 +694,6 @@ function ProfileEditPageInner() {
   };
 
   const initials = displayName.trim().slice(0, 2) || "?";
-  const pStepLabels = ["基本情報", "アイコン", "表示モード", "確認・保存"];
-  const oStepLabels = ["紹介文", "画像", "SNS/連絡先", "確認・保存"];
-  const pStepTitles = fromSignup
-    ? ["基本情報を登録", "アイコンを設定", "表示モードを設定", "確認・保存"]
-    : ["基本情報を編集", "アイコンを設定", "表示モードを設定", "確認・保存"];
-  const oStepTitles = fromSignup
-    ? ["紹介文を登録", "画像を設定", "SNS / 連絡先", "確認・保存"]
-    : ["紹介文を編集", "画像を設定", "SNS / 連絡先", "確認・保存"];
-
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center">
       <p className="text-[13px] text-[#8c8a84]">読み込み中...</p>
@@ -776,7 +706,6 @@ function ProfileEditPageInner() {
   );
 
   const mobileSaveDisabled = tab === "participant" ? pSaving : oSaving;
-  const mobileTitle = tab === "participant" ? pStepTitles[pStep - 1] : oStepTitles[oStep - 1];
 
   return (
     <div className="mg-profile-mobile-page flex min-h-0 w-full flex-1 flex-col bg-[#EDECE7] max-[899px]:h-dvh max-[899px]:max-h-dvh max-[899px]:overflow-hidden min-[900px]:mx-0 min-[900px]:mt-0 min-[900px]:h-full min-[900px]:max-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px))] min-[900px]:w-full min-[900px]:overflow-hidden">
@@ -789,327 +718,318 @@ function ProfileEditPageInner() {
       <input ref={orgCoverRef} type="file" accept="image/*" className="hidden" onChange={handleOrgCoverFile} />
       <input ref={orgGalleryRef} type="file" accept="image/*" multiple className="hidden" onChange={handleOrgGalleryFiles} />
 
-      {/* ══ MOBILE — 明示的な h-dvh 連鎖でヘッダー/フッターを常時表示、中央のみスクロール ══ */}
+      {/* ══ MOBILE — 1ページで全部編集でき、下の「保存する」1つで保存する ══ */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden min-[900px]:hidden">
         {/* Header（グローバル MobileTopHeader 非表示のため safe-area をここで確保） */}
         <div className="flex shrink-0 items-center gap-2 border-b border-[#DEDAD2] bg-white px-3 pb-2 pt-[max(8px,env(safe-area-inset-top,0px))]">
-          <button type="button"
-            onClick={() => {
-              if (tab === "participant" && pStep > 1) setPStep(s => (s - 1) as PStep);
-              else if (tab === "organizer" && oStep > 1) setOStep(s => (s - 1) as OStep);
-              else goBackOrSkip();
-            }}
-            className="w-[30px] h-[30px] rounded-full bg-[#F5F4EF] border border-[#DEDAD2] flex items-center justify-center flex-shrink-0"
-            aria-label={fromSignup ? "あとで整える" : "戻る"}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round">
+          <button
+            type="button"
+            onClick={goBackOrSkip}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-[#DEDAD2] bg-[#F5F4EF]"
+            aria-label={fromSignup ? "あとで整える" : "戻る"}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round">
               <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
             </svg>
           </button>
-          <div className="text-[14px] font-[600] flex-1 min-w-0 truncate">{mobileTitle}</div>
+          <div className="min-w-0 flex-1 truncate text-[15px] font-[600]">
+            {fromSignup ? "プロフィールを登録" : "プロフィールを編集"}
+          </div>
           {fromSignup ? (
-            <button
-              type="button"
-              onClick={goBackOrSkip}
-              className="px-2 py-[7px] text-[11px] font-[500] text-[#8c8a84] flex-shrink-0"
-            >
+            <button type="button" onClick={goBackOrSkip} className="flex-shrink-0 px-2 py-2 text-[12px] font-[500] text-[#8c8a84]">
               あとで
             </button>
           ) : null}
-          <button type="button"
-            onClick={tab === "participant" ? saveParticipant : saveOrganizer}
-            disabled={mobileSaveDisabled}
-            className={["px-3 min-[380px]:px-4 py-[7px] rounded-[9px] text-[11px] min-[380px]:text-[12px] font-[600] text-white flex-shrink-0 disabled:opacity-50",
-              tab === "participant" ? "bg-[#4fa82a]" : "bg-[#c8a84b]"].join(" ")}>
-            保存する
-          </button>
         </div>
 
-        {/* Profile tabs */}
-        <div className="flex shrink-0 border-b border-[#DEDAD2] bg-white">
-          {(["participant", "organizer"] as const).map(t => (
-            <button key={t} type="button" onClick={() => setTab(t)}
-              className={["flex-1 py-2 min-[380px]:py-[9px] text-center text-[11px] min-[380px]:text-[12px] font-[500] border-b-[2px] transition-all",
-                tab === t
-                  ? t === "participant" ? "text-[#2B3A6B] border-[#2B3A6B]" : "text-[#86620a] border-[#c8a84b]"
-                  : "text-[#8c8a84] border-transparent"].join(" ")}>
-              {t === "participant" ? (
-                <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="inline mr-1 align-middle"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg><span className="min-[380px]:hidden">参加者</span><span className="hidden min-[380px]:inline">参加者プロフィール</span></>
-              ) : (
-                <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="inline mr-1 align-middle"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 00-4 0v2M8 7V5a2 2 0 00-4 0v2" /></svg><span className="min-[380px]:hidden">主催者</span><span className="hidden min-[380px]:inline">主催者プロフィール</span></>
-              )}
-            </button>
-          ))}
-        </div>
-        {fromSignup ? (
-          <p className="shrink-0 bg-[#F5F4EF] px-3 py-2 text-center text-[11px] leading-snug text-[#52504c]">
-            はじめのプロフィール設定です。未入力の項目はあとからでも大丈夫です
-          </p>
-        ) : null}
-
-        {/* Step indicator */}
-        {tab === "participant"
-          ? <StepInd steps={pStepLabels} current={pStep} mode="p" onGo={s => setPStep(s as PStep)} />
-          : <StepInd steps={oStepLabels} current={oStep} mode="o" onGo={s => setOStep(s as OStep)} />}
-
-        {/* Step content */}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          {/* Participant steps */}
-          {tab === "participant" && pStep === 1 && (
-            <div className="px-3 pt-3 pb-2">
-              <MCard>
-                <MCardTitle><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5060b0" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>基本情報</MCardTitle>
-                <MCardSub>表示名とメールアドレスを確認・編集できます</MCardSub>
-                <MField><Fl>メールアドレス</Fl><input type="email" value={email} disabled className={INP} /><Fh>変更はできません</Fh></MField>
-                <MField><Fl>表示名</Fl><input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="例: 山田 太郎" className={INP} /><Fh>イベントや申込みで表示される名前です</Fh></MField>
-              </MCard>
-              <MCard>
-                <MCardTitle><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8c8a84" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>個人情報</MCardTitle>
-                <MCardSub>すべて任意です。あとから入力できます</MCardSub>
-                <MField><Fl opt>電話番号</Fl><input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="例: 090-1234-5678" className={INP} /></MField>
-                <MField><Fl opt>地域</Fl><input type="text" value={region} onChange={e => setRegion(e.target.value)} placeholder="例: 東京都渋谷区" className={INP} /></MField>
-                <MField><Fl opt>住所</Fl><input type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="例: 〇〇町1-2-3" className={INP} /></MField>
-                <MField><Fl opt>自己紹介</Fl><textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="あなたについて簡単に紹介してください" className={INP + " resize-none min-h-[80px] leading-[1.7]"} /></MField>
-              </MCard>
-              <div className="h-2" />
-            </div>
-          )}
-          {tab === "participant" && pStep === 2 && (
-            <div className="px-3 pt-3 pb-2">
-              <MCard>
-                <MCardTitle><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a07a28" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" /></svg>アイコン設定</MCardTitle>
-                <MCardSub>参加者用・主催者用で別々に設定できます（任意）</MCardSub>
-                <IconBlock label="参加者用アイコン" url={pAvatarUrl} onFile={() => pFileRef.current?.click()} onCamera={() => pCamRef.current?.click()} urlValue={pAvatarUrl} onUrlChange={setPAvatarUrl} initials={initials} />
-                <IconBlock label="主催者用アイコン" url={oModeAvatarUrl} onFile={() => oModeFileRef.current?.click()} onCamera={() => oModeCamRef.current?.click()} urlValue={oModeAvatarUrl} onUrlChange={setOModeAvatarUrl} initials={initials} />
-              </MCard>
-              <div className="h-2" />
-            </div>
-          )}
-          {tab === "participant" && pStep === 3 && (
-            <div className="px-3 pt-3 pb-2">
-              <MCard>
-                <MCardTitle><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3a8a25" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>現在の表示モード</MCardTitle>
-                <MCardSub>参加者と主催者でアイコンが切り替わります</MCardSub>
-                <div className="flex gap-[8px] mb-[10px]">
-                  {(["participant", "organizer"] as const).map(r => (
-                    <button key={r} type="button" onClick={() => setActiveRole(r)}
-                      className={["flex-1 py-[9px] rounded-[22px] text-[13px] font-[500] border-[1.5px] transition-all",
-                        activeRole === r ? "bg-[#2B3A6B] text-white border-[#2B3A6B]" : "bg-[#F5F4EF] text-[#8c8a84] border-[#DEDAD2]"].join(" ")}>
-                      {r === "participant" ? "参加者" : "主催者"}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-[10px] px-[12px] py-[10px] bg-[#F5F4EF] rounded-[10px] border border-[#DEDAD2]">
-                  <div className="w-[30px] h-[30px] rounded-full overflow-hidden flex-shrink-0 border border-[#DEDAD2]">
-                    <AvatarImg url={activeRole === "participant" ? pAvatarUrl : oModeAvatarUrl} size={30} initials={initials} />
-                  </div>
-                  <div className="text-[11px] text-[#8c8a84] leading-[1.5]">
-                    {activeRole === "participant" ? <>参加者モードで表示中<br />参加者用アイコンが使われます</> : <>主催者モードで表示中<br />主催者用アイコンが使われます</>}
-                  </div>
-                </div>
-              </MCard>
-              <div className="h-2" />
-            </div>
-          )}
-          {tab === "participant" && pStep === 4 && (
-            <div className="px-3 pt-3 pb-2">
-              <MCard>
-                <div className="flex justify-between items-center mb-[10px]">
-                  <span className="text-[12px] font-[600] text-[#8c8a84]">基本情報</span>
-                  <button type="button" onClick={() => setPStep(1)} className="text-[12px] text-[#2B3A6B] font-[500]">編集</button>
-                </div>
-                <div className="flex justify-between py-[7px] border-b border-[#ECEAE3]"><span className="text-[11px] text-[#8c8a84]">メール</span><span className="text-[12px] font-[500]">{email.slice(0, 20)}{email.length > 20 ? "…" : ""}</span></div>
-                <div className="flex justify-between py-[7px] border-b border-[#ECEAE3]"><span className="text-[11px] text-[#8c8a84]">表示名</span><span className="text-[12px] font-[500]">{displayName || "未設定"}</span></div>
-                <div className="flex justify-between py-[7px]"><span className="text-[11px] text-[#8c8a84]">個人情報</span><span className="text-[12px] text-[#8c8a84]">{phone || address || region || bio ? "入力済み" : "未入力（任意）"}</span></div>
-              </MCard>
-              <MCard>
-                <div className="flex justify-between items-center mb-[10px]">
-                  <span className="text-[12px] font-[600] text-[#8c8a84]">アイコン・表示モード</span>
-                  <button type="button" onClick={() => setPStep(2)} className="text-[12px] text-[#2B3A6B] font-[500]">編集</button>
-                </div>
-                <div className="flex gap-[14px] mb-[8px]">
-                  {[{ url: pAvatarUrl, label: "参加者用" }, { url: oModeAvatarUrl, label: "主催者用" }].map(({ url, label }) => (
-                    <div key={label} className="flex flex-col items-center gap-[4px]">
-                      <div className="w-[38px] h-[38px] rounded-full overflow-hidden border-[2px] border-[#DEDAD2]">
-                        <AvatarImg url={url} size={38} initials={initials} />
-                      </div>
-                      <span className="text-[10px] text-[#8c8a84]">{label}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="text-[12px] text-[#2B3A6B] font-[500]">現在のモード：{activeRole === "participant" ? "参加者" : "主催者"}</div>
-              </MCard>
-              {pError && <p className="text-[12px] text-red-600 mb-2">{pError}</p>}
-              {pSuccess && <p className="text-[12px] text-[#4fa82a] mb-2">保存しました</p>}
-              <div className="h-2" />
-            </div>
-          )}
-
-          {/* Organizer steps */}
-          {tab === "organizer" && !isOrganizer && (
-            <div className="px-3 pt-3 pb-2">
-              <MCard>
-                <MCardTitle>主催者登録が必要です</MCardTitle>
-                <MCardSub>主催者プロフィールを編集するには、先に主催者登録を完了してください。</MCardSub>
-                <Link
-                  href="/organizer/register"
-                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-[10px] bg-[#c8a84b] px-4 text-[13px] font-[600] text-white"
-                >
-                  活動者登録をはじめる
-                </Link>
-              </MCard>
-            </div>
-          )}
-          {tab === "organizer" && isOrganizer && oStep === 1 && (
-            <div className="px-3 pt-3 pb-2">
-              <MCard>
-                <MCardTitle color="#86620a"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>紹介文</MCardTitle>
-                <MCardSub>信頼感・雰囲気・活動内容が伝わるように記載できます</MCardSub>
-                <MField>
-                  <Fl>{orgNameLabel}</Fl>
-                  <input type="text" value={organizationName} onChange={e => setOrganizationName(e.target.value)} placeholder={orgNamePlaceholder} className={INP} />
-                  <Fh>個人名・活動名でも団体名でもOK。あとから変更できます</Fh>
-                </MField>
-                <MField><Fl opt>活動エリア</Fl><input type="text" value={activityArea} onChange={e => setActivityArea(e.target.value)} placeholder="例：神奈川県藤沢市 / オンライン" className={INP} /><Fh>公開プロフィールの活動地域に表示されます</Fh></MField>
-                <MField><Fl opt>一言紹介</Fl><input type="text" value={shortBio} onChange={e => setShortBio(e.target.value)} placeholder="例：地域の魅力を伝える体験づくりをしています" className={INP} /><Fh>80文字程度がおすすめです（注目の主催者に表示）</Fh></MField>
-                <MField><Fl opt>詳細紹介</Fl><textarea value={orgBio} onChange={e => setOrgBio(e.target.value)} placeholder="主催者について、活動への想い、参加者へのメッセージなど" className={INP + " resize-none min-h-[80px] leading-[1.7]"} /></MField>
-              </MCard>
-              <div className="h-2" />
-            </div>
-          )}
-          {tab === "organizer" && isOrganizer && oStep === 2 && (
-            <div className="px-3 pt-3 pb-2">
-              <MCard>
-                <MCardTitle color="#86620a"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>画像</MCardTitle>
-                <MCardSub>画像はアップロード後すぐにプレビューできます（未設定でもOK）</MCardSub>
-                <div className="bg-[#F5F4EF] rounded-[10px] border border-[#DEDAD2] p-[11px] mb-[10px]">
-                  <div className="text-[11px] font-[600] text-[#52504c] mb-[9px]">カバー画像 <span className="font-[400] text-[#8c8a84] text-[9px]">任意</span></div>
-                  <div className="mb-[8px]"><CoverPreview url={coverImageUrl} height={72} /></div>
-                  <button type="button" onClick={() => orgCoverRef.current?.click()} className="w-full py-[7px] rounded-[8px] border border-[#DEDAD2] bg-white text-[11px] flex items-center justify-center gap-[5px] mb-[7px]"><UploadIco />ファイルを選択</button>
-                  <input type="url" value={coverImageUrl} onChange={e => setCoverImageUrl(e.target.value)} placeholder="または URL を入力" className={INP} />
-                </div>
-                <div className="bg-[#F5F4EF] rounded-[10px] border border-[#DEDAD2] p-[11px] mb-[10px]">
-                  <div className="text-[11px] font-[600] text-[#52504c] mb-[9px]">プロフィール画像 <span className="font-[400] text-[#8c8a84] text-[9px]">任意</span></div>
-                  <div className="flex items-center gap-[11px] mb-[8px]">
-                    <div className="flex-shrink-0 w-[46px] h-[46px] rounded-[10px] overflow-hidden border-[2px] border-[#DEDAD2]">
-                      <AvatarImg url={orgAvatarUrl} size={46} rounded="10" initials={initials} />
-                    </div>
-                    <button type="button" onClick={() => orgAvatarRef.current?.click()} className="flex-1 py-[7px] rounded-[8px] border border-[#DEDAD2] bg-white text-[11px] flex items-center justify-center gap-[5px]"><UploadIco />ファイルを選択</button>
-                  </div>
-                  <input type="url" value={orgAvatarUrl} onChange={e => setOrgAvatarUrl(e.target.value)} placeholder="または URL を入力" className={INP} />
-                </div>
-                <MField>
-                  <Fl opt>ギャラリー（最大6枚）</Fl>
-                  <div className="grid grid-cols-3 gap-[7px]">
-                    {galleryImages.map((url, idx) => (
-                      <div key={idx} className="relative aspect-square rounded-[8px] overflow-hidden border border-[#DEDAD2]">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt="" className="w-full h-full object-cover" />
-                        <button type="button" onClick={() => setGalleryImages(p => p.filter((_, i) => i !== idx))} className="absolute top-1 right-1 w-[18px] h-[18px] rounded-full bg-black/60 text-white text-[10px] flex items-center justify-center">×</button>
-                      </div>
-                    ))}
-                    {galleryImages.length < 6 && (
-                      <button type="button" onClick={() => orgGalleryRef.current?.click()} className="aspect-square rounded-[8px] border-[1.5px] border-dashed border-[#DEDAD2] bg-[#F5F4EF] flex items-center justify-center text-[18px] text-[#8c8a84]">＋</button>
-                    )}
-                  </div>
-                </MField>
-              </MCard>
-              <div className="h-2" />
-            </div>
-          )}
-          {tab === "organizer" && isOrganizer && oStep === 3 && (
-            <div className="px-3 pt-3 pb-2">
-              <MCard>
-                <MCardTitle color="#86620a"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>SNS / 外部リンク</MCardTitle>
-                <MCardSub>すべて任意です</MCardSub>
-                {[
-                  { bg: "#F3F2EE", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8c8a84" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" /></svg>, v: websiteUrl, set: setWebsiteUrl, ph: "公式サイト URL" },
-                  { bg: "#fce4ec", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c2185b" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5" /><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>, v: instagramUrl, set: setInstagramUrl, ph: "Instagram URL" },
-                  { bg: "#F3F2EE", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round"><path d="M4 4l16 16M4 20L20 4" /></svg>, v: xUrl, set: setXUrl, ph: "X（Twitter）URL" },
-                  { bg: "#e8eaf6", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3949ab" strokeWidth="2" strokeLinecap="round"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" /></svg>, v: facebookUrl, set: setFacebookUrl, ph: "Facebook URL" },
-                ].map(({ bg, icon, v, set, ph }, i) => (
-                  <div key={i} className="flex items-center gap-[8px] mb-[9px] last:mb-0">
-                    <div className="w-[28px] h-[28px] rounded-[7px] flex items-center justify-center flex-shrink-0" style={{ background: bg }}>{icon}</div>
-                    <input type="url" value={v} onChange={e => set(e.target.value)} placeholder={ph} className={INP} />
-                  </div>
-                ))}
-              </MCard>
-              <MCard>
-                <MCardTitle color="#86620a"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.4 9.27a2 2 0 012-2.18h3" /></svg>公開連絡先</MCardTitle>
-                <MCardSub>公開ONのものだけ主催者ページに表示されます（電話番号は非公開推奨）</MCardSub>
-                <MField>
-                  <Fl opt>公開メール</Fl>
-                  <input type="email" value={publicEmail} onChange={e => setPublicEmail(e.target.value)} placeholder="contact@example.com" className={INP} />
-                  <label className="flex items-center gap-[7px] text-[12px] cursor-pointer mt-[6px]">
-                    <input type="checkbox" checked={showEmail} onChange={e => setShowEmail(e.target.checked)} className="accent-[#2B3A6B] w-[15px] h-[15px]" />メールを公開する
-                  </label>
-                </MField>
-                <MField>
-                  <Fl opt>公開電話番号</Fl>
-                  <input type="tel" value={publicPhone} onChange={e => setPublicPhone(e.target.value)} placeholder="090-1234-5678" className={INP} />
-                  <label className="flex items-center gap-[7px] text-[12px] cursor-pointer mt-[6px]">
-                    <input type="checkbox" checked={showPhone} onChange={e => setShowPhone(e.target.checked)} className="accent-[#2B3A6B] w-[15px] h-[15px]" />電話番号を公開する <span className="text-[10px] text-[#8c8a84]">（非公開推奨）</span>
-                  </label>
-                </MField>
-              </MCard>
-              <div className="h-2" />
-            </div>
-          )}
-          {tab === "organizer" && isOrganizer && oStep === 4 && (
-            <div className="px-3 pt-3 pb-2">
-              {[
-                { label: "紹介文", val: shortBio || orgBio ? "入力済み" : "一言紹介・詳細紹介 — 未入力", onEdit: () => setOStep(1) },
-                { label: "画像", val: coverImageUrl || orgAvatarUrl ? "設定済み" : "カバー・プロフィール画像 — 未設定", onEdit: () => setOStep(2) },
-                { label: "SNS / 連絡先", val: websiteUrl || instagramUrl || xUrl || facebookUrl || publicEmail ? "入力済み" : "未入力", onEdit: () => setOStep(3) },
-              ].map(({ label, val, onEdit }) => (
-                <MCard key={label}>
-                  <div className="flex justify-between mb-[10px]">
-                    <span className="text-[12px] font-[600] text-[#8c8a84]">{label}</span>
-                    <button type="button" onClick={onEdit} className="text-[12px] text-[#86620a] font-[500]">編集</button>
-                  </div>
-                  <div className="text-[12px] text-[#8c8a84]">{val}</div>
-                </MCard>
-              ))}
-              {oError && <p className="text-[12px] text-red-600 mb-2">{oError}</p>}
-              {oSuccess && <p className="text-[12px] text-[#4fa82a] mb-2">保存しました</p>}
-              <div className="h-2" />
-            </div>
-          )}
-        </div>
-
-        {/* Footer nav */}
-        <div className="shrink-0 border-t border-[#DEDAD2] bg-white px-3 pt-2.5 pb-[max(12px,env(safe-area-inset-bottom,0px))]">
-          <div className="flex gap-[8px]">
-            {((tab === "participant" && pStep > 1) || (tab === "organizer" && oStep > 1)) && (
-              <button type="button"
-                onClick={() => tab === "participant" ? setPStep(s => (s - 1) as PStep) : setOStep(s => (s - 1) as OStep)}
-                className="flex-shrink-0 px-[16px] py-[11px] rounded-[10px] border border-[#DEDAD2] bg-white text-[13px] font-[500] flex items-center gap-[5px]">
-                <ChevL /> 戻る
-              </button>
-            )}
-            {tab === "participant" && (pStep < 4 ? (
-              <button type="button" onClick={() => setPStep(s => (s + 1) as PStep)}
-                className="flex-1 py-[11px] rounded-[10px] bg-[#2B3A6B] text-white text-[13px] font-[600] flex items-center justify-center gap-[5px]">
-                {pStep === 1 ? "アイコン設定へ" : pStep === 2 ? "表示モードへ" : "確認・保存へ"} <ChevR />
-              </button>
-            ) : (
-              <button type="button" onClick={saveParticipant} disabled={pSaving}
-                className="flex-1 py-[11px] rounded-[10px] bg-[#4fa82a] text-white text-[13px] font-[600] flex items-center justify-center gap-[5px] disabled:opacity-50">
-                <CheckIco /> {pSaving ? "保存中..." : "保存する"}
-              </button>
-            ))}
-            {tab === "organizer" && isOrganizer && (oStep < 4 ? (
-              <button type="button" onClick={() => setOStep(s => (s + 1) as OStep)}
-                className="flex-1 py-[11px] rounded-[10px] bg-[#c8a84b] text-white text-[13px] font-[600] flex items-center justify-center gap-[5px]">
-                {oStep === 1 ? "画像設定へ" : oStep === 2 ? "SNS/連絡先へ" : "確認・保存へ"} <ChevR />
-              </button>
-            ) : (
-              <button type="button" onClick={saveOrganizer} disabled={oSaving}
-                className="flex-1 py-[11px] rounded-[10px] bg-[#c8a84b] text-white text-[13px] font-[600] flex items-center justify-center gap-[5px] disabled:opacity-50">
-                <CheckIco /> {oSaving ? "保存中..." : "保存する"}
+        {/* 参加者 / 主催者 */}
+        <div className="shrink-0 border-b border-[#DEDAD2] bg-white px-3 py-2">
+          <div className="flex rounded-full bg-[#F1EFE9] p-1" role="tablist">
+            {(["participant", "organizer"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={tab === t}
+                onClick={() => setTab(t)}
+                className={[
+                  "flex-1 rounded-full py-2 text-[13px] font-[600] transition-all",
+                  tab === t
+                    ? t === "participant"
+                      ? "bg-white text-[#2B3A6B] shadow-[0_1px_3px_rgba(0,0,0,.12)]"
+                      : "bg-white text-[#86620a] shadow-[0_1px_3px_rgba(0,0,0,.12)]"
+                    : "text-[#8c8a84]",
+                ].join(" ")}
+              >
+                {t === "participant" ? "参加者として" : "主催者として"}
               </button>
             ))}
           </div>
         </div>
+        {fromSignup ? (
+          <p className="shrink-0 bg-[#F5F4EF] px-3 py-2 text-center text-[12px] leading-snug text-[#52504c]">
+            はじめのプロフィール設定です。空いている項目はあとからでも大丈夫です
+          </p>
+        ) : null}
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-4 pt-3">
+          {tab === "participant" ? (
+            <>
+              {/* アイコンと名前 */}
+              <MCard>
+                <div className="flex flex-col items-center pb-1 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => pFileRef.current?.click()}
+                    className="relative rounded-full border-[3px] border-white shadow-[0_2px_10px_rgba(0,0,0,.12)]"
+                    aria-label="アイコンの写真を変える"
+                  >
+                    <AvatarImg url={pAvatarUrl} size={92} initials={initials} />
+                    <span className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#2B3A6B] text-white">
+                      <CamIco />
+                    </span>
+                  </button>
+                  <div className="mt-3 flex gap-2">
+                    <button type="button" onClick={() => pFileRef.current?.click()} className={M_CHIP}>
+                      <UploadIco /> 写真を選ぶ
+                    </button>
+                    <button type="button" onClick={() => pCamRef.current?.click()} className={M_CHIP}>
+                      <CamIco /> 撮影する
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <MField>
+                    <Fl>表示名</Fl>
+                    <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="例: 山田 太郎" className={M_INP} autoComplete="nickname" enterKeyHint="next" />
+                    <Fh>投稿やイベントの申し込みで表示される名前です</Fh>
+                  </MField>
+                  <MField>
+                    <Fl opt>自己紹介</Fl>
+                    <textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="好きなこと、よく行く場所など" rows={3} maxLength={300} className={M_INP + " min-h-[96px] resize-none leading-[1.7]"} />
+                    <Fh>{bio.length} / 300</Fh>
+                  </MField>
+                  <MField>
+                    <Fl opt>地域</Fl>
+                    <input type="text" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="例: 東京都渋谷区" className={M_INP} autoComplete="address-level1" />
+                    <Fh>アルバムのプロフィールに表示されます</Fh>
+                  </MField>
+                </div>
+              </MCard>
+
+              {/* 連絡先 */}
+              <MCard>
+                <MCardTitle>連絡先</MCardTitle>
+                <MCardSub>イベントの申し込みなどで使います。すべて任意です</MCardSub>
+                <MField>
+                  <Fl>メールアドレス</Fl>
+                  <input type="email" value={email} disabled className={M_INP} />
+                  <Fh>メールアドレスはここでは変えられません</Fh>
+                </MField>
+                <MField>
+                  <Fl opt>電話番号</Fl>
+                  <input type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="例: 090-1234-5678" className={M_INP} autoComplete="tel" />
+                </MField>
+                <MField>
+                  <Fl opt>住所</Fl>
+                  <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="例: 〇〇町1-2-3" className={M_INP} autoComplete="street-address" />
+                </MField>
+              </MCard>
+
+              {/* 表示モード */}
+              <MCard>
+                <MCardTitle>表示モード</MCardTitle>
+                <MCardSub>主催者としても活動するときに切り替えます。モードごとにアイコンを変えられます</MCardSub>
+                <div className="mb-3 flex gap-2">
+                  {(["participant", "organizer"] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setActiveRole(r)}
+                      className={[
+                        "flex-1 rounded-full border-[1.5px] py-[10px] text-[14px] font-[600] transition-all",
+                        activeRole === r ? "border-[#2B3A6B] bg-[#2B3A6B] text-white" : "border-[#DEDAD2] bg-[#F5F4EF] text-[#8c8a84]",
+                      ].join(" ")}
+                    >
+                      {r === "participant" ? "参加者" : "主催者"}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 rounded-[12px] border border-[#DEDAD2] bg-[#F5F4EF] px-3 py-3">
+                  <button
+                    type="button"
+                    onClick={() => oModeFileRef.current?.click()}
+                    className="flex-shrink-0 overflow-hidden rounded-full border-2 border-white"
+                    aria-label="主催者用アイコンを変える"
+                  >
+                    <AvatarImg url={oModeAvatarUrl} size={44} initials={initials} />
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-[600]">主催者モードのアイコン</div>
+                    <div className="text-[11px] text-[#8c8a84]">{oModeAvatarUrl ? "設定済み" : "まだ設定していません"}</div>
+                  </div>
+                  <button type="button" onClick={() => oModeFileRef.current?.click()} className={M_CHIP}>
+                    変える
+                  </button>
+                </div>
+              </MCard>
+            </>
+          ) : !isOrganizer ? (
+            <MCard>
+              <MCardTitle>主催者登録が必要です</MCardTitle>
+              <MCardSub>主催者プロフィールを編集するには、先に主催者登録を完了してください。</MCardSub>
+              <Link
+                href="/organizer/register"
+                className="mt-3 inline-flex min-h-12 w-full items-center justify-center rounded-[12px] bg-[#c8a84b] px-4 text-[14px] font-[600] text-white"
+              >
+                活動者登録をはじめる
+              </Link>
+            </MCard>
+          ) : (
+            <>
+              {/* カバーとプロフィール画像（公開ページの見え方に近い形） */}
+              <div className="mb-[10px] overflow-hidden rounded-[12px] border border-[#DEDAD2] bg-white shadow-[0_1px_3px_rgba(0,0,0,.05),0_2px_8px_rgba(0,0,0,.06)]">
+                <button type="button" onClick={() => orgCoverRef.current?.click()} className="relative block w-full" aria-label="カバー画像を変える">
+                  <CoverPreview url={coverImageUrl} height={128} />
+                  <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-3 py-1.5 text-[12px] font-[600] text-white">
+                    <CamIco /> カバーを変える
+                  </span>
+                </button>
+                <div className="flex items-end gap-3 px-4 pb-4">
+                  <button
+                    type="button"
+                    onClick={() => orgAvatarRef.current?.click()}
+                    className="relative -mt-8 flex-shrink-0 rounded-[14px] border-[3px] border-white bg-white shadow-[0_2px_8px_rgba(0,0,0,.15)]"
+                    aria-label="プロフィール画像を変える"
+                  >
+                    <AvatarImg url={orgAvatarUrl} size={72} rounded="10" initials={initials} />
+                    <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#c8a84b] text-white">
+                      <CamIco />
+                    </span>
+                  </button>
+                  <p className="pb-1 text-[11px] leading-[1.5] text-[#8c8a84]">写真をタップすると変えられます</p>
+                </div>
+              </div>
+
+              <MCard>
+                <MCardTitle color="#86620a">紹介</MCardTitle>
+                <MCardSub>どんな活動をしているかが伝わるように書きましょう</MCardSub>
+                <MField>
+                  <Fl>{orgNameLabel}</Fl>
+                  <input type="text" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} placeholder={orgNamePlaceholder} className={M_INP} autoComplete="organization" />
+                </MField>
+                <MField>
+                  <Fl opt>活動エリア</Fl>
+                  <input type="text" value={activityArea} onChange={(e) => setActivityArea(e.target.value)} placeholder="例：神奈川県藤沢市 / オンライン" className={M_INP} />
+                </MField>
+                <MField>
+                  <Fl opt>ひとこと紹介</Fl>
+                  <input type="text" value={shortBio} onChange={(e) => setShortBio(e.target.value)} maxLength={80} placeholder="例：地域の魅力を伝える体験づくりをしています" className={M_INP} />
+                  <Fh>{shortBio.length} / 80（「注目の主催者」に表示されます）</Fh>
+                </MField>
+                <MField>
+                  <Fl opt>くわしい紹介</Fl>
+                  <textarea value={orgBio} onChange={(e) => setOrgBio(e.target.value)} rows={4} placeholder="活動への想い、参加者へのメッセージなど" className={M_INP + " min-h-[120px] resize-none leading-[1.7]"} />
+                </MField>
+              </MCard>
+
+              <MCard>
+                <MCardTitle color="#86620a">活動の写真</MCardTitle>
+                <MCardSub>主催者ページに並びます（6枚まで）</MCardSub>
+                <div className="grid grid-cols-3 gap-2">
+                  {galleryImages.map((url, idx) => (
+                    <div key={url + idx} className="relative aspect-square overflow-hidden rounded-[10px] border border-[#DEDAD2]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setGalleryImages((p) => p.filter((_, i) => i !== idx))}
+                        className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-[14px] text-white"
+                        aria-label="この写真を外す"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  {galleryImages.length < 6 ? (
+                    <button
+                      type="button"
+                      onClick={() => orgGalleryRef.current?.click()}
+                      className="flex aspect-square flex-col items-center justify-center gap-1 rounded-[10px] border-[1.5px] border-dashed border-[#d9c690] bg-[#FBF7EC] text-[12px] font-[600] text-[#86620a]"
+                    >
+                      <span className="text-[22px] leading-none">＋</span>
+                      追加
+                    </button>
+                  ) : null}
+                </div>
+              </MCard>
+
+              <MCard>
+                <MCardTitle color="#86620a">SNS・ホームページ</MCardTitle>
+                <MCardSub>すべて任意です</MCardSub>
+                {[
+                  { label: "ホームページ", v: websiteUrl, set: setWebsiteUrl, ph: "https://" },
+                  { label: "Instagram", v: instagramUrl, set: setInstagramUrl, ph: "https://instagram.com/…" },
+                  { label: "X（旧Twitter）", v: xUrl, set: setXUrl, ph: "https://x.com/…" },
+                  { label: "Facebook", v: facebookUrl, set: setFacebookUrl, ph: "https://facebook.com/…" },
+                ].map(({ label, v, set, ph }) => (
+                  <MField key={label}>
+                    <Fl>{label}</Fl>
+                    <input type="url" inputMode="url" autoCapitalize="none" value={v} onChange={(e) => set(e.target.value)} placeholder={ph} className={M_INP} />
+                  </MField>
+                ))}
+              </MCard>
+
+              <MCard>
+                <MCardTitle color="#86620a">公開する連絡先</MCardTitle>
+                <MCardSub>「公開する」をオンにしたものだけ主催者ページに表示されます</MCardSub>
+                <MField>
+                  <div className="mb-[6px] flex items-center justify-between">
+                    <Fl opt>メール</Fl>
+                    <MToggle checked={showEmail} onChange={setShowEmail} label="メールを公開する" />
+                  </div>
+                  <input type="email" inputMode="email" autoCapitalize="none" value={publicEmail} onChange={(e) => setPublicEmail(e.target.value)} placeholder="contact@example.com" className={M_INP} />
+                </MField>
+                <MField>
+                  <div className="mb-[6px] flex items-center justify-between">
+                    <Fl opt>電話番号</Fl>
+                    <MToggle checked={showPhone} onChange={setShowPhone} label="電話番号を公開する" />
+                  </div>
+                  <input type="tel" inputMode="tel" value={publicPhone} onChange={(e) => setPublicPhone(e.target.value)} placeholder="090-1234-5678" className={M_INP} />
+                  <Fh>電話番号は公開しないのがおすすめです</Fh>
+                </MField>
+              </MCard>
+            </>
+          )}
+        </div>
+
+        {/* 保存ボタン（いつでも押せる） */}
+        {tab === "participant" || isOrganizer ? (
+          <div className="shrink-0 border-t border-[#DEDAD2] bg-white px-3 pb-[max(12px,env(safe-area-inset-bottom,0px))] pt-2.5">
+            {(tab === "participant" ? pError : oError) ? (
+              <p className="mb-2 text-center text-[12px] text-red-600" role="alert">
+                {tab === "participant" ? pError : oError}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={tab === "participant" ? saveParticipant : saveOrganizer}
+              disabled={mobileSaveDisabled}
+              className={[
+                "flex w-full items-center justify-center gap-[6px] rounded-[12px] py-[14px] text-[15px] font-[700] text-white transition-colors disabled:opacity-60",
+                tab === "participant" ? "bg-[#2B3A6B]" : "bg-[#c8a84b]",
+                (tab === "participant" ? pSuccess : oSuccess) ? "!bg-[#4fa82a]" : "",
+              ].join(" ")}
+            >
+              <CheckIco size={15} />
+              {mobileSaveDisabled
+                ? "保存しています…"
+                : (tab === "participant" ? pSuccess : oSuccess)
+                  ? "保存しました"
+                  : "保存する"}
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {/* ══ PC ══ */}
