@@ -196,6 +196,15 @@ PC・タブレット・スマホの3つの画面幅で確認する。
 **そのほか**
 - [ ] **コミットされていない変更を整理する。** 2026-10-27 時点で `app/(auth)/onboarding/page.tsx` と `ios/App/App.xcodeproj/project.pbxproj` に変更が残っている。作業を始める前に、残すか消すか決める
 
+## 週次チェックで見つかったこと（2026-11-02）
+
+- [ ] **iOS アプリでも「応援する」などのお金のボタンが見えている。** 押すと裏側で断られて「アプリ内では応援できません」と出るだけ。ボタンを押せるように見せて失敗させるのは、使う人も審査もとまどう。アプリのときはボタン自体を隠すか、説明に変える。場所：`components/events/detail/EventDetailSupportBanner.tsx`、`app/events/[id]/event-support-card.tsx`、`app/api/stripe/checkout/support/route.ts`（`isIosAppShell` を使っている画面がまだ無い）
+- [ ] **ほかの人のプロフィール・主催者ページに、通報とブロックがあるか確かめる。** 通報メニューは投稿とコメントとマイアルバムにはあるが、`app/users/[id]/album` と `app/organizers/[id]` では見つからなかった。ユーザーそのものを通報・ブロックできないと審査（1.2）で指摘されるおそれ。場所：`app/users/[id]/album/page.tsx`、`app/organizers/[id]`
+- [ ] **イベントのお願い・記事など、ほかのユーザー投稿に通報があるか確かめる。** `app/event-requests` と `app/articles` の画面に通報の入り口が見つからない。人が書いた文章が見える所はすべて通報できるようにする。場所：`app/event-requests/[id]/page.tsx`、`app/articles/[id]/page.tsx`
+- [ ] **`min-h-screen`（100vh）を使う画面が多い。** iPhone ではアドレス帯やホームバーの分だけ高さがずれ、下が切れたり余計にスクロールしたりする。`dvh` に変える。場所：`app/recruitments/page.tsx`、`app/rankings/page.tsx`、`app/profile/edit/page.tsx`、`app/auth/*`、`app/stories`、`app/articles` など
+- [ ] **プロフィール編集のスマホ画面が、タブレット縦（768〜899px）まで引き伸ばされる。** 今回作り直した画面の切り替えが `899px` のため、iPad 縦では幅いっぱいのスマホの形になる。タブレット用の幅制限か形を足す。場所：`app/profile/edit/page.tsx`
+- [ ] **今週作り直したスマホの投稿詳細を、実機で確かめる。** 下のいいね帯や上の帯が、ホームバー・ダイナミックアイランドに重ならないか。このファイルは `safe-area-inset` の記述が1か所だけで、足りているか不安。場所：`components/posts/detail/MobilePostDetailView.tsx`
+
 ## 6. そのほか検討すること
 
 - [ ] イベントへのコメント機能（質問などに便利。ただし通報・ブロック・削除の仕組みが必要になる）
