@@ -20,6 +20,7 @@
     "ios:open": "npx cap open ios"
   },
   "dependencies": {
+    "@apple/app-store-server-library": "^3.1.0",
     "@base-ui/react": "^1.2.0",
     "@capacitor-community/apple-sign-in": "^7.1.0",
     "@capacitor/app": "^8.1.1",
@@ -28,6 +29,7 @@
     "@capacitor/ios": "^8.5.2",
     "@capacitor/push-notifications": "^8.1.2",
     "@capacitor/splash-screen": "^8.0.2",
+    "@capgo/native-purchases": "^8.9.6",
     "@sentry/nextjs": "^10.70.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",

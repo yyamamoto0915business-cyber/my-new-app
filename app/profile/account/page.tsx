@@ -39,6 +39,11 @@ export default function ProfileAccountPage() {
       <p className="mt-2 text-sm leading-relaxed text-[#5a7464]">
         アカウントを削除すると、ログイン情報とプロフィールが消えます。この操作は取り消せません。
       </p>
+      <p className="mt-2 text-sm leading-relaxed text-[#5a7464]">
+        Web（クレジットカード）で契約中の主催者プランは、削除と同時に解約されます。iPhone
+        アプリ（App Store）で契約中のプランは自動では止まらないため、先に iPhone の「設定」→
+        自分の名前 →「サブスクリプション」から解約してください。
+      </p>
       <div className="mt-8 rounded-2xl border border-[#e4ebe6] bg-white p-6">
         <label className="flex cursor-pointer items-start gap-3">
           <input

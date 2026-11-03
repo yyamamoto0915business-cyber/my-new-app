@@ -47,6 +47,10 @@ export type Organizer = {
   manual_grant_reason?: string | null;
   billing_source?: string | null;
   updated_by_admin?: string | null;
+  /** 主催者プランをどこで払っているか（NULL は Stripe 時代の行） */
+  subscription_provider?: "stripe" | "apple" | null;
+  apple_original_transaction_id?: string | null;
+  apple_product_id?: string | null;
 };
 
 export type Sponsorship = {

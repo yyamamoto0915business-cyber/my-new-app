@@ -8,6 +8,18 @@ import { organizerPlanColumnForPrice } from "@/lib/organizer-plan-prices";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+async function isAppleManagedOrganizer(
+  supabase: NonNullable<ReturnType<typeof createAdminClient>>,
+  organizerId: string
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("organizers")
+    .select("subscription_provider")
+    .eq("id", organizerId)
+    .maybeSingle();
+  return data?.subscription_provider === "apple";
+}
+
 async function updateOrganizerSubscription(
   supabase: NonNullable<ReturnType<typeof createAdminClient>>,
   organizerId: string,
@@ -15,6 +27,12 @@ async function updateOrganizerSubscription(
 ) {
   const userId = subscription?.metadata?.user_id as string | undefined;
   const now = new Date().toISOString();
+
+  // App 内課金（Apple）で契約中の主催者は、Stripe 側の古い契約のイベントで上書きしない
+  if (await isAppleManagedOrganizer(supabase, organizerId)) {
+    console.warn("[stripe-webhook] skip subscription update for Apple-managed organizer", organizerId);
+    return;
+  }
 
   if (!subscription) {
     await supabase
@@ -50,6 +68,7 @@ async function updateOrganizerSubscription(
     .from("organizers")
     .update({
       subscription_status: status,
+      subscription_provider: "stripe",
       stripe_subscription_id: subscription.id,
       stripe_customer_id: subscription.customer as string,
       current_period_end: periodEnd,
@@ -261,7 +280,7 @@ export async function POST(request: NextRequest) {
         if (subId) {
           const sub = await stripe.subscriptions.retrieve(subId);
           const organizerId = sub.metadata?.organizer_id as string;
-          if (organizerId) {
+          if (organizerId && !(await isAppleManagedOrganizer(supabase, organizerId))) {
             await supabase
               .from("organizers")
               .update({

@@ -6,8 +6,10 @@ import Link from "next/link";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
 import { OrganizerPageShell } from "@/components/organizer/OrganizerPageShell";
 import { OrganizerPlanHero } from "@/components/organizer/plan/OrganizerPlanHero";
+import { useAppleIap } from "@/hooks/use-apple-iap";
 import { useIosAppShell } from "@/hooks/use-ios-app-shell";
 import { useOrganizerBilling } from "@/hooks/use-organizer-billing";
+import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import {
   isPaidPlan,
   isFounderActive,
@@ -60,6 +62,32 @@ function CheckIcon() {
   );
 }
 
+/** アプリ内（App 内課金）でのプランカードの状態 */
+type ApplePlanCardState = {
+  /** 課金プラグインが入ったビルドで、App 内課金が使える */
+  available: boolean;
+  /** App Store の値段（その国の通貨）。取れないときは null */
+  priceString: string | null;
+  buying: boolean;
+  /** いまのプランを App Store で払っている */
+  managedByApple: boolean;
+  /** いまのプランを Web（クレジットカード）で払っている */
+  managedByWeb: boolean;
+  onBuy: () => void;
+  onManage: () => void;
+};
+
+/** App Store の自動更新サブスクで表示が必要な説明（ガイドライン 3.1.2） */
+function AppleSubscriptionTerms() {
+  return (
+    <p className="org-plan-tier__legal">
+      1か月ごとに自動で更新されます。お支払いは購入の確定時に Apple ID に請求されます。
+      期間が終わる24時間前までに自動更新をオフにしない限り、同じ料金で更新されます。
+      解約・変更は iPhone の「設定」→ 自分の名前 →「サブスクリプション」から行えます。
+    </p>
+  );
+}
+
 function CatalogPlanCard({
   plan,
   currentId,
@@ -73,6 +101,7 @@ function CatalogPlanCard({
   onCheckout,
   onPortal,
   iosApp,
+  apple,
 }: {
   plan: OrganizerCatalogPlan;
   currentId: OrganizerCatalogPlanId;
@@ -86,6 +115,7 @@ function CatalogPlanCard({
   onCheckout: () => void;
   onPortal: () => void;
   iosApp: boolean;
+  apple: ApplePlanCardState;
 }) {
   const cardRef = useRef<HTMLElement>(null);
   const isCurrent = plan.id === currentId;
@@ -101,7 +131,41 @@ function CatalogPlanCard({
   }, [expanded]);
 
   let cta: ReactNode;
-  if (isCurrent && plan.checkoutEnabled && pastDue) {
+  if (iosApp && isCurrent && plan.checkoutEnabled && apple.managedByApple) {
+    cta = (
+      <button
+        type="button"
+        onClick={apple.onManage}
+        className="org-plan-tier__cta org-plan-tier__cta--action"
+      >
+        App Store で管理
+      </button>
+    );
+  } else if (iosApp && showCheckoutForm) {
+    if (!apple.available) {
+      cta = null;
+    } else if (apple.managedByWeb) {
+      cta = (
+        <p className="org-plan-tier__legal">
+          いまのプランは Web（クレジットカード）でご契約中のため、アプリからは変更できません。
+        </p>
+      );
+    } else {
+      cta = (
+        <>
+          <AppleSubscriptionTerms />
+          <button
+            type="button"
+            onClick={apple.onBuy}
+            disabled={apple.buying}
+            className="org-plan-tier__cta org-plan-tier__cta--action"
+          >
+            {apple.buying ? "処理中..." : `${plan.name}を申し込む`}
+          </button>
+        </>
+      );
+    }
+  } else if (isCurrent && plan.checkoutEnabled && pastDue) {
     cta = iosApp ? (
       <span className="org-plan-tier__cta org-plan-tier__cta--current">利用中</span>
     ) : (
@@ -134,6 +198,12 @@ function CatalogPlanCard({
     );
   } else if (isCurrent) {
     cta = <span className="org-plan-tier__cta org-plan-tier__cta--current">{plan.ctaLabel}</span>;
+  } else if (showCheckoutForm && apple.managedByApple) {
+    cta = (
+      <p className="org-plan-tier__legal">
+        いまのプランは iPhone アプリ（App Store）でご契約中です。プランの変更は iPhone アプリから行えます。
+      </p>
+    );
   } else if (showCheckoutForm) {
     cta = iosApp ? null : (
       <>
@@ -202,7 +272,9 @@ function CatalogPlanCard({
       >
         <div className="org-plan-tier__head">
           <h3 className="org-plan-tier__name">{plan.name}</h3>
-          <p className="org-plan-tier__price">{plan.priceLabel}</p>
+          <p className="org-plan-tier__price">
+            {iosApp && apple.priceString ? `${apple.priceString} / 月` : plan.priceLabel}
+          </p>
           <p className="org-plan-tier__tagline">{plan.tagline}</p>
           <p className="org-plan-tier__desc">{plan.description}</p>
         </div>
@@ -282,8 +354,11 @@ export function OrganizerPlanPageBody() {
     portalLoading,
     handleCheckout,
     handlePortal,
+    refetch,
   } = useOrganizerBilling();
   const iosApp = useIosAppShell();
+  const { user } = useSupabaseUser();
+  const appleIap = useAppleIap(iosApp, refetch);
   const [billingAgreed, setBillingAgreed] = useState(false);
   const [openPlanId, setOpenPlanId] = useState<OrganizerCatalogPlanId | null>(null);
 
@@ -312,6 +387,13 @@ export function OrganizerPlanPageBody() {
   );
   const currentPlan = getOrganizerCatalogPlan(currentId);
   const pastDue = data?.organizer.subscription_status === "past_due";
+  const managedByApple = paid && data?.organizer.subscription_provider === "apple";
+  const managedByWeb =
+    paid && !managedByApple && Boolean(data?.organizer.subscription_status);
+  /** アプリでは、まだ申し込めないプラン（TEAM など）は出さない */
+  const visiblePlans = iosApp
+    ? ORGANIZER_CATALOG_PLANS.filter((plan) => plan.id === "free" || plan.checkoutEnabled)
+    : ORGANIZER_CATALOG_PLANS;
 
   const shellClass = [
     "org-plan-page",
@@ -347,6 +429,16 @@ export function OrganizerPlanPageBody() {
                 {actionMessage}
               </div>
             )}
+            {appleIap.message && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-800 sm:rounded-xl sm:px-4 sm:py-3 sm:text-sm">
+                {appleIap.message}
+              </div>
+            )}
+            {appleIap.error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700 sm:rounded-xl sm:px-4 sm:py-3 sm:text-sm">
+                {appleIap.error}
+              </div>
+            )}
             {actionError && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700 sm:rounded-xl sm:px-4 sm:py-3 sm:text-sm">
                 {actionError}
@@ -376,11 +468,17 @@ export function OrganizerPlanPageBody() {
                   <>
                     <span className="org-plan-current__warn">要対応</span>
                     <p className="org-plan-current__warn-text">
-                      {iosApp
-                        ? "お支払いでエラーが発生しています。"
-                        : "お支払いでエラーが発生しています。カード情報をご確認ください。"}
+                      {managedByApple
+                        ? "お支払いでエラーが発生しています。App Store のお支払い情報をご確認ください。"
+                        : iosApp
+                          ? "お支払いでエラーが発生しています。"
+                          : "お支払いでエラーが発生しています。カード情報をご確認ください。"}
                     </p>
-                    {iosApp ? null : (
+                    {iosApp && managedByApple ? (
+                      <button type="button" onClick={appleIap.manage} className="org-plan-current__cta">
+                        App Store で管理
+                      </button>
+                    ) : iosApp ? null : (
                     <button
                       type="button"
                       onClick={handlePortal}
@@ -399,7 +497,15 @@ export function OrganizerPlanPageBody() {
                         {new Date(data.organizer.current_period_end).toLocaleDateString("ja-JP")}
                       </p>
                     ) : null}
-                    {iosApp ? null : (
+                    {iosApp && managedByApple ? (
+                      <button type="button" onClick={appleIap.manage} className="org-plan-current__cta">
+                        App Store で管理
+                      </button>
+                    ) : iosApp ? null : managedByApple ? (
+                      <p className="org-plan-current__hint">
+                        iPhone アプリ（App Store）でご契約中です。変更・解約は iPhone の「設定」→「サブスクリプション」から行えます。
+                      </p>
+                    ) : (
                     <button
                       type="button"
                       onClick={handlePortal}
@@ -425,7 +531,7 @@ export function OrganizerPlanPageBody() {
             </section>
 
             <div className="org-plan-tier-grid">
-              {ORGANIZER_CATALOG_PLANS.map((plan) => (
+              {visiblePlans.map((plan) => (
                 <CatalogPlanCard
                   key={plan.id}
                   plan={plan}
@@ -442,9 +548,44 @@ export function OrganizerPlanPageBody() {
                   onCheckout={() => handleCheckout(plan.id === "game" ? "game" : "standard")}
                   onPortal={handlePortal}
                   iosApp={iosApp}
+                  apple={{
+                    available: appleIap.available,
+                    priceString:
+                      plan.id === "standard" || plan.id === "game"
+                        ? appleIap.productFor(plan.id)?.priceString ?? null
+                        : null,
+                    buying: appleIap.busy === plan.id,
+                    managedByApple,
+                    managedByWeb,
+                    onBuy: () => {
+                      if (user && (plan.id === "standard" || plan.id === "game")) {
+                        void appleIap.purchase(plan.id, user.id);
+                      }
+                    },
+                    onManage: appleIap.manage,
+                  }}
                 />
               ))}
             </div>
+
+            {iosApp && appleIap.available ? (
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[12px] text-[#5a7464]">
+                <button
+                  type="button"
+                  onClick={() => user && void appleIap.restore(user.id)}
+                  disabled={appleIap.busy !== null || !user}
+                  className="underline underline-offset-2 disabled:opacity-50"
+                >
+                  {appleIap.busy === "restore" ? "復元中..." : "購入を復元"}
+                </button>
+                <Link href="/terms" className="underline underline-offset-2">
+                  利用規約
+                </Link>
+                <Link href="/privacy" className="underline underline-offset-2">
+                  プライバシーポリシー
+                </Link>
+              </div>
+            ) : null}
 
             <aside className="org-plan-commons">
               <PlanIcon src="/organizer/plan/starter-leaf.png" size={32} />

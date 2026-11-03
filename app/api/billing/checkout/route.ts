@@ -75,6 +75,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "サーバーの設定が不足しています" }, { status: 503 });
   }
 
+  if (
+    organizer.subscription_provider === "apple" &&
+    PAID_SUBSCRIPTION_STATUSES.includes(organizer.subscription_status ?? "")
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "iPhone アプリ（App Store）で契約中のプランがあります。プランの変更・解約は iPhone の「設定」→「サブスクリプション」から行ってください。",
+      },
+      { status: 409 }
+    );
+  }
+
   const stripe = new Stripe(stripeKey);
   const appUrl = getAppUrl();
 

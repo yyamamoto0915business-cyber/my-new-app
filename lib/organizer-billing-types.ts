@@ -14,6 +14,8 @@ export type OrganizerBillingData = {
     founder30_granted_at?: string | null;
     founder30_end_at?: string | null;
     subscription_status?: string | null;
+    /** 主催者プランをどこで払っているか（NULL は Stripe 時代の行） */
+    subscription_provider?: "stripe" | "apple" | null;
     stripe_status?: string | null;
     current_period_end?: string | null;
     manual_grant_active?: boolean | null;

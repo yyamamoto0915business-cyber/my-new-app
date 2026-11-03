@@ -74,6 +74,7 @@ export async function GET() {
         founder30_granted_at: organizer.founder30_granted_at,
         founder30_end_at: organizer.founder30_end_at,
         subscription_status: organizer.subscription_status,
+        subscription_provider: organizer.subscription_provider ?? null,
         stripe_status: planState?.stripe_status ?? organizer.stripe_status ?? null,
         current_period_end: organizer.current_period_end,
         manual_grant_active:
