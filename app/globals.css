@@ -6748,6 +6748,40 @@ a.org-events-status-card--payout:hover {
 .org-plan-tier__cta--mobile-status {
   display: none;
 }
+/* App 内課金の「申し込む」。プランの色に合わせたグラデーションと、押したときの沈み */
+.org-plan-tier__cta--subscribe {
+  border-radius: 999px;
+  background: linear-gradient(135deg, #3d7a5c 0%, #2d5a45 55%, #24493a 100%);
+  color: #fff;
+  letter-spacing: 0.08em;
+  box-shadow:
+    0 4px 12px rgba(45, 90, 69, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.org-plan-tier--featured .org-plan-tier__cta--subscribe {
+  background: linear-gradient(135deg, #d9b54a 0%, #c9a227 50%, #a8831a 100%);
+  box-shadow:
+    0 4px 14px rgba(201, 162, 39, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.org-plan-tier--game .org-plan-tier__cta--subscribe {
+  background: linear-gradient(135deg, #8a7cc4 0%, #6a5aa8 55%, #54478a 100%);
+  box-shadow:
+    0 4px 14px rgba(106, 90, 168, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.org-plan-tier__cta--subscribe:hover {
+  filter: brightness(1.05);
+}
+.org-plan-tier__cta--subscribe:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+.org-plan-tier__cta--subscribe:disabled {
+  opacity: 0.6;
+  transform: none;
+}
 .org-plan-tier__cta--action:disabled {
   opacity: 0.5;
 }

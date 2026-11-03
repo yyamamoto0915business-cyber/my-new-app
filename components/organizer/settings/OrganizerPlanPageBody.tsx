@@ -158,9 +158,10 @@ function CatalogPlanCard({
             type="button"
             onClick={apple.onBuy}
             disabled={apple.buying}
-            className="org-plan-tier__cta org-plan-tier__cta--action"
+            aria-label={`${plan.name}プランを申し込む`}
+            className="org-plan-tier__cta org-plan-tier__cta--subscribe"
           >
-            {apple.buying ? "処理中..." : `${plan.name}を申し込む`}
+            {apple.buying ? "処理中..." : "申し込む"}
           </button>
         </>
       );
