@@ -183,6 +183,15 @@ export function AuthPcFormContent({
                 <ChevronRight className="ml-0.5 inline h-3.5 w-3.5" aria-hidden />
               </button>
             </p>
+            <p className="text-[#5a7464]">
+              ログインできないときは{" "}
+              <Link
+                href="/contact"
+                className="underline underline-offset-2 hover:text-[#1e3828]"
+              >
+                お問い合わせ
+              </Link>
+            </p>
           </div>
         </form>
       ) : (

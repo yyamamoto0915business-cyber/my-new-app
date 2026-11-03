@@ -68,6 +68,18 @@ function FaqItem({ id, q, a, open, onToggle }: { id: string; q: string; a: strin
   );
 }
 
+function ContactNote() {
+  return (
+    <p className="mt-3 border-t border-[#f0eee8] pt-3 text-[12px] text-[#666]">
+      解決しないときは{" "}
+      <Link href="/contact" className="font-[600] text-[#2a7a76] underline underline-offset-2">
+        お問い合わせ
+      </Link>
+      からご連絡ください。
+    </p>
+  );
+}
+
 function TabBar({ activeTab, onSwitch, variant }: { activeTab: Tab; onSwitch: (t: Tab) => void; variant: "pc" | "mobile" }) {
   const isPc = variant === "pc";
   return (
@@ -274,6 +286,7 @@ export default function GuidePage() {
                     onToggle={() => toggleFaq(`join-${i}`)}
                   />
                 ))}
+                <ContactNote />
               </div>
 
             </div>
@@ -489,6 +502,7 @@ export default function GuidePage() {
                     onToggle={() => toggleFaq(`org-${i}`)}
                   />
                 ))}
+                <ContactNote />
               </div>
 
             </div>

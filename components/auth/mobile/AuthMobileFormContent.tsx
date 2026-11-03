@@ -262,6 +262,12 @@ export function AuthMobileFormContent({
                 <ChevronRight className="ml-0.5 inline h-3.5 w-3.5" aria-hidden />
               </Link>
             </p>
+            <p className="text-[#5a7464]">
+              ログインできないときは{" "}
+              <Link href="/contact" className={footerLinkClass}>
+                お問い合わせ
+              </Link>
+            </p>
           </div>
         </form>
       ) : (
