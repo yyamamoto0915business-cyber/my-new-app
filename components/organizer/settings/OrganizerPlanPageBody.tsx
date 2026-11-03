@@ -77,13 +77,13 @@ type ApplePlanCardState = {
   onManage: () => void;
 };
 
-/** App Store の自動更新サブスクで表示が必要な説明（ガイドライン 3.1.2） */
+/** App Store の自動更新サブスクで表示が必要な説明（ガイドライン 3.1.2）。プラン一覧の下に1回だけ出す */
 function AppleSubscriptionTerms() {
   return (
-    <p className="org-plan-tier__apple-terms">
-      1か月ごとに自動で更新されます。お支払いは購入の確定時に Apple ID に請求されます。
+    <p className="org-plan-apple-terms">
+      お支払いは購入の確定時に Apple ID に請求されます。プランは1か月ごとに自動で更新され、
       期間が終わる24時間前までに自動更新をオフにしない限り、同じ料金で更新されます。
-      解約・変更は iPhone の「設定」→ 自分の名前 →「サブスクリプション」から行えます。
+      解約・変更は iPhone の「設定」→ 自分の名前 →「サブスクリプション」からいつでも行えます。
     </p>
   );
 }
@@ -153,7 +153,6 @@ function CatalogPlanCard({
     } else {
       cta = (
         <>
-          <AppleSubscriptionTerms />
           <button
             type="button"
             onClick={apple.onBuy}
@@ -163,6 +162,7 @@ function CatalogPlanCard({
           >
             {apple.buying ? "処理中..." : "申し込む"}
           </button>
+          <p className="org-plan-tier__apple-note">1か月ごとに自動更新・いつでも解約できます</p>
         </>
       );
     }
@@ -573,6 +573,8 @@ export function OrganizerPlanPageBody() {
                 />
               ))}
             </div>
+
+            {iosApp && appleIap.available ? <AppleSubscriptionTerms /> : null}
 
             {iosApp && appleIap.available ? (
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[12px] text-[#5a7464]">
