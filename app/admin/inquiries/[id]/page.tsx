@@ -69,6 +69,8 @@ export default async function AdminInquiryDetailPage({
       created_at,
       updated_at,
       user_id,
+      guest_name,
+      guest_email,
       profile:user_id ( display_name, email )
     `
     )
@@ -132,9 +134,14 @@ export default async function AdminInquiryDetailPage({
           <div>
             <dt className="text-xs font-medium text-slate-500">ユーザー</dt>
             <dd className="mt-1 text-sm text-slate-800">
-              {profile?.display_name || "（名前なし）"}
+              {profile?.display_name || data.guest_name || "（名前なし）"}
+              {!data.user_id && (
+                <span className="ml-1.5 text-xs text-slate-500">（未ログイン）</span>
+              )}
             </dd>
-            <dd className="text-xs text-slate-500">{profile?.email ?? "—"}</dd>
+            <dd className="text-xs text-slate-500">
+              {profile?.email ?? data.guest_email ?? "—"}
+            </dd>
           </div>
           <div>
             <dt className="text-xs font-medium text-slate-500">カテゴリ</dt>

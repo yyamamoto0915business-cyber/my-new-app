@@ -122,6 +122,7 @@ export async function getPanelDashboard(
         category,
         status,
         created_at,
+        guest_name,
         profile:user_id ( display_name )
       `
       )
@@ -176,7 +177,10 @@ export async function getPanelDashboard(
       category: r.category as string,
       status: r.status as string,
       createdAt: r.created_at as string,
-      userName: (r.profile?.display_name as string | null) ?? null,
+      userName:
+        (r.profile?.display_name as string | null) ??
+        (r.guest_name as string | null) ??
+        null,
     };
   });
 

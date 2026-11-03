@@ -6,6 +6,8 @@ import { Bell, Mail, Send } from "lucide-react";
 import {
   CONTACT_BODY_MAX,
   CONTACT_CATEGORIES,
+  CONTACT_GUEST_EMAIL_MAX,
+  CONTACT_GUEST_NAME_MAX,
   CONTACT_SUBJECT_MAX,
   type ContactCategory,
 } from "@/lib/contact";
@@ -100,7 +102,10 @@ function EnvelopeSpotlight() {
   );
 }
 
-export function ContactPageClient() {
+export function ContactPageClient({ isGuest }: { isGuest: boolean }) {
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [website, setWebsite] = useState("");
   const [category, setCategory] = useState<ContactCategory | "">("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -108,7 +113,11 @@ export function ContactPageClient() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  const guestReady =
+    !isGuest || (guestName.trim().length > 0 && guestEmail.trim().length > 0);
+
   const canSubmit =
+    guestReady &&
     category !== "" &&
     subject.trim().length > 0 &&
     body.trim().length > 0 &&
@@ -117,7 +126,7 @@ export function ContactPageClient() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (category === "" || !subject.trim() || !body.trim() || submitting) return;
+    if (!guestReady || category === "" || !subject.trim() || !body.trim() || submitting) return;
     if (body.length > CONTACT_BODY_MAX) return;
 
     setSubmitting(true);
@@ -131,6 +140,9 @@ export function ContactPageClient() {
           category,
           subject: subject.trim(),
           body: body.trim(),
+          ...(isGuest
+            ? { name: guestName.trim(), email: guestEmail.trim(), website }
+            : {}),
         }),
       });
       const json = (await res.json().catch(() => null)) as {
@@ -160,6 +172,64 @@ export function ContactPageClient() {
 
     return (
       <>
+        {isGuest && (
+          <>
+            <div>
+              <label
+                htmlFor={`${idPrefix}-contact-name`}
+                className="mb-1.5 flex items-center text-[12px] font-medium text-[#1e3828] min-[900px]:text-[13px]"
+              >
+                お名前
+                <ReqBadge tone={badgeTone} />
+              </label>
+              <input
+                id={`${idPrefix}-contact-name`}
+                type="text"
+                autoComplete="name"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value.slice(0, CONTACT_GUEST_NAME_MAX))}
+                placeholder="例）山田 花子"
+                className={inp}
+                maxLength={CONTACT_GUEST_NAME_MAX}
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor={`${idPrefix}-contact-email`}
+                className="mb-1.5 flex items-center text-[12px] font-medium text-[#1e3828] min-[900px]:text-[13px]"
+              >
+                返信先のメールアドレス
+                <ReqBadge tone={badgeTone} />
+              </label>
+              <input
+                id={`${idPrefix}-contact-email`}
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value.slice(0, CONTACT_GUEST_EMAIL_MAX))}
+                placeholder="例）hanako@example.com"
+                className={inp}
+                maxLength={CONTACT_GUEST_EMAIL_MAX}
+                required
+              />
+            </div>
+            {/* ボット対策。人には見えない欄 */}
+            <div className="hidden" aria-hidden>
+              <label htmlFor={`${idPrefix}-contact-website`}>Website</label>
+              <input
+                id={`${idPrefix}-contact-website`}
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+              />
+            </div>
+          </>
+        )}
+
         <div>
           <label
             htmlFor={`${idPrefix}-contact-category`}
@@ -240,11 +310,13 @@ export function ContactPageClient() {
     );
   };
 
+  const replyTo = isGuest ? "ご入力のメールアドレス" : "ご登録のメールアドレス";
+
   const donePanel = (
     <div className="rounded-[14px] border border-[#c8dcd0] bg-white px-5 py-6 text-center sm:px-8">
       <p className="text-[15px] font-semibold text-[#1e3828]">送信しました</p>
       <p className="mt-1.5 text-[13px] leading-[1.6] text-[#4a6858]">
-        内容を確認のうえ、登録メールアドレス宛にご連絡します。
+        内容を確認のうえ、{replyTo}宛にご連絡します。
       </p>
       <button
         type="button"
@@ -315,7 +387,7 @@ export function ContactPageClient() {
               管理者からの通知について
             </p>
             <p className="mt-0.5 text-[11px] leading-[1.55] text-[#4a6858]">
-              送信後、管理者が内容を確認し、登録メール宛にご連絡します。
+              送信後、管理者が内容を確認し、{replyTo}宛にご連絡します。
             </p>
           </div>
         </aside>
@@ -411,7 +483,7 @@ export function ContactPageClient() {
                         管理者からの通知について
                       </p>
                       <p className="mt-0.5 text-[10px] leading-[1.55] text-[#4a6858]">
-                        お問い合わせを送信すると、内容確認後、ご登録のメールアドレス宛にご連絡いたします。
+                        お問い合わせを送信すると、内容確認後、{replyTo}宛にご連絡いたします。
                       </p>
                     </div>
                   </div>

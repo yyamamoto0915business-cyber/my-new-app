@@ -35,3 +35,5 @@ export function contactStatusLabel(value: string): string {
 
 export const CONTACT_BODY_MAX = 1000;
 export const CONTACT_SUBJECT_MAX = 200;
+export const CONTACT_GUEST_NAME_MAX = 100;
+export const CONTACT_GUEST_EMAIL_MAX = 254;

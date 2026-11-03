@@ -20,7 +20,9 @@ type InquiryRow = {
   subject: string;
   status: string;
   created_at: string;
-  user_id: string;
+  user_id: string | null;
+  guest_name: string | null;
+  guest_email: string | null;
   profile: { display_name: string | null; email: string | null } | null;
 };
 
@@ -88,6 +90,8 @@ export default async function AdminSupportPage({
         status,
         created_at,
         user_id,
+        guest_name,
+        guest_email,
         profile:user_id ( display_name, email )
       `
       )
@@ -121,7 +125,9 @@ export default async function AdminSupportPage({
       (r) =>
         r.subject.toLowerCase().includes(lower) ||
         r.profile?.display_name?.toLowerCase().includes(lower) ||
-        r.profile?.email?.toLowerCase().includes(lower)
+        r.profile?.email?.toLowerCase().includes(lower) ||
+        r.guest_name?.toLowerCase().includes(lower) ||
+        r.guest_email?.toLowerCase().includes(lower)
     );
   }
 
@@ -202,9 +208,14 @@ export default async function AdminSupportPage({
                     {contactCategoryLabel(row.category)}
                   </td>
                   <td className="px-4 py-3.5">
-                    <div>{row.profile?.display_name ?? "—"}</div>
+                    <div>
+                      {row.profile?.display_name ?? row.guest_name ?? "—"}
+                      {!row.user_id && (
+                        <span className="ml-1.5 text-[11px] text-[#7a9888]">（未ログイン）</span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-[#7a9888]">
-                      {row.profile?.email ?? ""}
+                      {row.profile?.email ?? row.guest_email ?? ""}
                     </div>
                   </td>
                   <td className="px-4 py-3.5">
