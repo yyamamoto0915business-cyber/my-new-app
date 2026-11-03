@@ -16,6 +16,7 @@ import {
   getFounderBonusSlotsUsed,
   FOUNDER_BONUS_SLOTS_UI,
 } from "@/lib/organizer-billing-display";
+import { setOrganizerNavPlan } from "@/lib/organizer-pro-store";
 import {
   ORGANIZER_CATALOG_PLANS,
   getCurrentOrganizerCatalogPlanId,
@@ -362,6 +363,12 @@ export function OrganizerPlanPageBody() {
   const appleIap = useAppleIap(iosApp, refetch);
   const [billingAgreed, setBillingAgreed] = useState(false);
   const [openPlanId, setOpenPlanId] = useState<OrganizerCatalogPlanId | null>(null);
+
+  // 上の「主催」のプラン名バッジは主催画面を開いたときの値のままなので、ここで読んだ最新のプランにそろえる
+  const latestPlanTier = data?.planTier ?? null;
+  useEffect(() => {
+    if (latestPlanTier) setOrganizerNavPlan(getCurrentOrganizerCatalogPlanId(latestPlanTier));
+  }, [latestPlanTier]);
 
   if (loading) {
     return (
