@@ -80,7 +80,7 @@ type ApplePlanCardState = {
 /** App Store の自動更新サブスクで表示が必要な説明（ガイドライン 3.1.2） */
 function AppleSubscriptionTerms() {
   return (
-    <p className="org-plan-tier__legal">
+    <p className="org-plan-tier__apple-terms">
       1か月ごとに自動で更新されます。お支払いは購入の確定時に Apple ID に請求されます。
       期間が終わる24時間前までに自動更新をオフにしない限り、同じ料金で更新されます。
       解約・変更は iPhone の「設定」→ 自分の名前 →「サブスクリプション」から行えます。

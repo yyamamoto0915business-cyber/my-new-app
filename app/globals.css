@@ -6705,6 +6705,16 @@ a.org-events-status-card--payout:hover {
   line-height: 1.5;
   color: #7a6a58;
 }
+/* App 内課金の自動更新の説明。購入ボタンのそばに常に出す（ガイドライン 3.1.2） */
+.org-plan-tier__apple-terms {
+  border-radius: 10px;
+  border: 1px solid #e8e0d4;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 6px 8px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #7a6a58;
+}
 .org-plan-tier__legal-link {
   color: #b8860b;
   text-decoration: underline;
