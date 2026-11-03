@@ -954,7 +954,7 @@ export function OrganizerEventCard({
               今月の公開枠を超えています
             </p>
             <p className="mt-2 text-sm text-slate-600">
-              月980円のProプランで無制限に公開できます。
+              STANDARDプラン（月額980円）で無制限に公開できます。
             </p>
             <div className="mt-4 flex gap-2">
               <Link

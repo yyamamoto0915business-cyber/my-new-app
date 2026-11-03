@@ -23,7 +23,7 @@ const JOIN_FAQS = [
 const ORG_FAQS = [
   {
     q: "無料で主催できますか？",
-    a: "はい、Starterプラン（無料）で毎月1件のイベントを公開できます。継続的に主催したい方にはProプランがおすすめです。",
+    a: "はい、FREEプラン（無料）で毎月1件のイベントを公開できます。継続的に主催したい方にはSTANDARDプランがおすすめです。",
   },
   {
     q: "参加費を受け取るには？",
@@ -320,10 +320,10 @@ export default function GuidePage() {
                 <tr>
                   <th className="bg-white/10 p-[7px] text-[10px] text-white/70 text-left" />
                   <th className="bg-white/10 p-[7px] text-[10px] text-white/70 text-center">
-                    Starter<br /><span className="text-[9px] opacity-70">無料</span>
+                    FREE<br /><span className="text-[9px] opacity-70">無料</span>
                   </th>
                   <th className="bg-white/10 p-[7px] text-[10px] text-[#f5e07a] text-center">
-                    Pro<br /><span className="text-[9px]">月額980円</span>
+                    STANDARD<br /><span className="text-[9px]">月額980円</span>
                   </th>
                 </tr>
               </thead>
@@ -374,7 +374,7 @@ export default function GuidePage() {
                   イベントを主催しよう
                 </h1>
                 <p className="mb-3 text-[11px] leading-[1.5] text-white/80">
-                  MachiGlyphでイベントを公開し、スタッフを募集して運営できます。Starterプランは無料です。
+                  MachiGlyphでイベントを公開し、スタッフを募集して運営できます。FREEプランは無料です。
                 </p>
                 <div className="flex gap-[7px]">
                   <Link href="/auth?tab=signup" className="flex-1 rounded-[9px] bg-[#c8a84b] py-[9px] text-center text-[12px] font-[600] text-[#0A0D18]">
@@ -395,7 +395,7 @@ export default function GuidePage() {
               <div className="hidden min-[900px]:grid grid-cols-4 overflow-hidden rounded-[14px] relative z-[1] border border-[#e8e6e0] bg-[#ffffff]">
                 {[
                   { n: 1, bg: "#2B3A6B", title: "アカウント登録・プロフィール設定", desc: "無料で登録。団体名・問い合わせ先を設定して主催者として始めます。" },
-                  { n: 2, bg: "#2B3A6B", title: "プランを確認する", desc: "Starterプラン（無料）またはProプラン（月額980円・無制限）を選択します。" },
+                  { n: 2, bg: "#2B3A6B", title: "プランを確認する", desc: "FREEプラン（無料）またはSTANDARDプラン（月額980円・無制限）を選択します。" },
                   { n: 3, bg: "#6BBF3E", title: "イベントを作成・公開する", desc: "タイトル・日時・場所・参加費・定員を入力して公開。参加費ありはStripe設定が先に必要です。" },
                   { n: 4, bg: "#c8a84b", title: "スタッフを募集する（任意）", desc: "受付・誘導・設営など役割ごとに募集を作成。応募・承認もアプリ内で完結します。" },
                 ].map(({ n, bg, title, desc }, i) => (
@@ -418,7 +418,7 @@ export default function GuidePage() {
                 <div className="grid grid-cols-2 border-t border-[#e8e6e0]">
                   {[
                     { n: 1, bg: "#2B3A6B", title: "アカウント登録・プロフィール設定", desc: "無料で登録" },
-                    { n: 2, bg: "#2B3A6B", title: "プランを確認", desc: "Starter無料／Pro 980円" },
+                    { n: 2, bg: "#2B3A6B", title: "プランを確認", desc: "FREE無料／STANDARD 980円" },
                   ].map(({ n, bg, title, desc }) => (
                     <div key={n} className="border-r border-[#e8e6e0] last:border-r-0 p-[10px] text-center">
                       <div className="mx-auto mb-[5px] flex h-[18px] w-[18px] items-center justify-center rounded-full text-[8px] font-[700] text-white" style={{ background: bg }}>
@@ -452,8 +452,8 @@ export default function GuidePage() {
               <div className="overflow-hidden rounded-[10px] relative z-[1] border border-[#e8e6e0] bg-[#ffffff]">
                 <div className="flex items-center border-b border-[#f5f3ef] bg-[#fafaf8] px-3 py-2">
                   <div className="flex-[2] text-[11px] text-[#1a1a1a]" />
-                  <div className="flex-1 text-center text-[11px] text-[#888]">Starter<br /><span className="text-[9px]">無料</span></div>
-                  <div className="flex-1 text-center text-[11px] font-[500] text-[#2B3A6B]">Pro<br /><span className="text-[9px]">月額980円</span></div>
+                  <div className="flex-1 text-center text-[11px] text-[#888]">FREE<br /><span className="text-[9px]">無料</span></div>
+                  <div className="flex-1 text-center text-[11px] font-[500] text-[#2B3A6B]">STANDARD<br /><span className="text-[9px]">月額980円</span></div>
                 </div>
                 {[
                   ["月の公開枠", "1件", "無制限"],
@@ -477,7 +477,7 @@ export default function GuidePage() {
               <div className="rounded-[12px] relative z-[1] border border-[#e8e6e0] bg-[#ffffff] p-[14px] min-[900px]:p-[16px]">
                 <div className="mb-[10px] text-[12px] font-[600] tracking-[.06em] text-[#888]">主催者向けポイント</div>
                 {[
-                  { color: "#2B3A6B", text: <><strong>Starterは無料：</strong>まずは無料で始められます。月1件のイベントを公開できます。</> },
+                  { color: "#2B3A6B", text: <><strong>FREEは無料：</strong>まずは無料で始められます。月1件のイベントを公開できます。</> },
                   { color: "#6BBF3E", text: <><strong>参加費ありのイベントは：</strong>事前に売上受取設定（Stripe連携）が必要です。プランとは別の設定です。</> },
                   { color: "#c8a84b", text: <><strong>先着特典あり：</strong>早期登録の主催者には追加の公開枠特典が適用されます。</> },
                   { color: "#E8708A", text: <><strong>公開後も編集可能：</strong>イベント公開後もイベント管理ページから内容を変更できます。</> },

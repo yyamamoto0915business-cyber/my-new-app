@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Heart, HandHeart } from "lucide-react";
+import { useIosAppShell } from "@/hooks/use-ios-app-shell";
 
 const SUPPORT_AMOUNTS = [500, 1000, 3000] as const;
 
 type Props = { eventId: string };
 
 export function EventDetailSupportBanner({ eventId }: Props) {
+  const iosApp = useIosAppShell();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -36,6 +38,9 @@ export function EventDetailSupportBanner({ eventId }: Props) {
       setSubmitting(false);
     }
   };
+
+  // アプリ内では応援（お金を送る機能）を出さない。App Store のガイドライン 3.1.1 で App 内課金が必要になるため
+  if (iosApp) return null;
 
   return (
     <section className="overflow-hidden bg-[#faf6ee]">

@@ -25,14 +25,6 @@ function Chevron({ className = "text-[#bbb]" }: { className?: string }) {
   );
 }
 
-function PrepBadge() {
-  return (
-    <span className="ml-1 rounded border border-[#E8C878] bg-[#FFF3CD] px-1 py-px text-[8px] font-medium leading-none text-[#7A5800]">
-      準備中
-    </span>
-  );
-}
-
 function MobileCardShell({
   accent,
   href,
@@ -278,36 +270,7 @@ export function OrganizerSettingsMobileView({
         />
       </MobileCardShell>
 
-      <MobileCardShell accent="display">
-        <MobileCardHeader
-          accent="display"
-          title="公開情報 / 表示設定"
-          description="表示設定（準備中）"
-          compactDesc
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <path d="M3 9h18M9 21V9"/>
-            </svg>
-          }
-        />
-      </MobileCardShell>
 
-      <MobileCardShell accent="notification">
-        <MobileCardHeader
-          accent="notification"
-          title="通知設定"
-          titleExtra={<PrepBadge />}
-          description="お知らせの受け取り方"
-          compactDesc
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 01-3.46 0"/>
-            </svg>
-          }
-        />
-      </MobileCardShell>
 
       <MobileCardShell
         accent="organizer"

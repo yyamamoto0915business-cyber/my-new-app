@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import {
-  Bell,
   ChevronDown,
   ChevronRight,
   HelpCircle,
@@ -113,7 +112,7 @@ function ProfileContent() {
   const { user, loading: authLoading } = useSupabaseUser();
   const router = useRouter();
   const [summary, setSummary] = useState<MypageSummaryResponse | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(true);
   const [noSupabase] = useState(() => createClient() === null);
   const unreadCount = useUnreadCount(!!user);
 
@@ -234,14 +233,9 @@ function ProfileContent() {
                     title="公開 / 非公開"
                   />
                   <MobileRow
-                    href="/profile/settings"
-                    icon={<Bell className="h-4 w-4" />}
-                    title="通知設定"
-                  />
-                  <MobileRow
                     href="/profile/account"
                     icon={<UserRound className="h-4 w-4" />}
-                    title="アカウント"
+                    title="アカウント・削除"
                   />
                   <MobileRow
                     href="/contact"

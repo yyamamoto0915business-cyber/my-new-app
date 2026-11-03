@@ -315,46 +315,6 @@ export default function OrganizerSettingsPage() {
           <SettingBtn tone="account" href="/profile/edit">プロフィールを編集</SettingBtn>
         </SectionCard>
 
-        <div className={`flex h-full flex-col ${CARD_GAP}`}>
-          <SectionCard
-            tone="display"
-            className="flex-1"
-            icon={
-              <svg viewBox="0 0 24 24" fill="none" stroke={SECTION_TONES.display.icon} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M3 9h18M9 21V9"/>
-              </svg>
-            }
-            title="公開情報 / 表示設定"
-          >
-            <CardDesc tone="display">主催者ページやイベントでの表示設定（準備中）</CardDesc>
-          </SectionCard>
-
-          <div
-            className="flex shrink-0 cursor-pointer items-center gap-2.5 rounded-lg border-[0.5px] bg-white px-3 py-2 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_2px_10px_rgba(0,0,0,0.06)] min-[900px]:py-2.5"
-            style={{ borderColor: SECTION_TONES.account.border }}
-          >
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEF4FB]">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7BADC4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 01-3.46 0"/>
-              </svg>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-[500] text-[#1a1a1a]">
-                通知設定
-                <span className="ml-1.5 rounded-md border-[0.5px] border-[#c8a84b] px-1.5 py-px text-[9px] font-medium" style={{ background: "#FFF3CD", color: "#7A5800" }}>
-                  準備中
-                </span>
-              </p>
-              <p className="mt-px text-[10px] text-[#888]">お知らせの受け取り方を設定できます</p>
-            </div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" aria-hidden>
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </div>
-        </div>
-
         {/* 行3: 主催者プロフィール | セキュリティ */}
         <SectionCard
           tone="organizer"

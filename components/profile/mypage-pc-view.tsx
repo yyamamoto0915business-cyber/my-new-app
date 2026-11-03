@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Bell,
   Bookmark,
   CalendarDays,
   ChevronDown,
@@ -313,13 +312,8 @@ function MypagePcSidebar({
               icon={<Lock className={ICON_SM} strokeWidth={2} />}
             />
             <MenuRow
-              href="/profile/settings"
-              title="通知設定"
-              icon={<Bell className={ICON_SM} strokeWidth={2} />}
-            />
-            <MenuRow
               href="/profile/account"
-              title="アカウント"
+              title="アカウント・削除"
               icon={<UserRound className={ICON_SM} strokeWidth={2} />}
             />
             <MenuRow
@@ -360,7 +354,7 @@ export function MypagePcView({
   social,
   onLogout,
 }: MypagePcViewProps) {
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(true);
   const hasActivity = activity.length > 0;
 
   return (

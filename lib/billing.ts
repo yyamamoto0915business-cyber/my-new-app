@@ -120,7 +120,7 @@ export async function canPublishEvent(
     current,
     message:
       current >= limit
-        ? `今月の無料公開枠（${limit}本）を超えています。月980円のProプランで無制限に公開できます。`
+        ? `今月の無料公開枠（${limit}本）を超えています。STANDARDプラン（月額980円）で無制限に公開できます。`
         : undefined,
   };
 }
