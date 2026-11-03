@@ -553,7 +553,12 @@ export function OrganizerPlanPageBody() {
                     available: appleIap.available,
                     priceString:
                       plan.id === "standard" || plan.id === "game"
-                        ? appleIap.productFor(plan.id)?.priceString ?? null
+                        ? (() => {
+                            const product = appleIap.productFor(plan.id);
+                            // 日本のストアは決まった日本円の表示（¥980 / 月）のままにする
+                            if (!product || product.japanStorefront) return null;
+                            return product.priceString;
+                          })()
                         : null,
                     buying: appleIap.busy === plan.id,
                     managedByApple,

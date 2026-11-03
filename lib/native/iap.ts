@@ -17,6 +17,8 @@ export type AppleOrganizerProduct = {
   productId: string;
   title: string;
   priceString: string;
+  /** 日本のストア（値段は App Store Connect で決めた ¥980 / ¥2,980 のまま） */
+  japanStorefront: boolean;
 };
 
 async function loadPlugin() {
@@ -47,9 +49,21 @@ export async function getAppleOrganizerProducts(): Promise<AppleOrganizerProduct
     productIdentifiers: APPLE_ORGANIZER_PRODUCT_ID_LIST,
     productType: mod.PURCHASE_TYPE.SUBS,
   });
+  // TestFlight では商品の値段だけ別の国（$）で返ることがあるので、ストアの国も見る
+  const storefront = await mod.NativePurchases.getStorefront().catch(() => ({ countryCode: "" }));
+  const japanStorefront = ["JPN", "JP"].includes(storefront.countryCode.toUpperCase());
   return products.flatMap((p) => {
     const plan = appleProductIdToPlan(p.identifier);
-    return plan ? [{ plan, productId: p.identifier, title: p.title, priceString: p.priceString }] : [];
+    if (!plan) return [];
+    return [
+      {
+        plan,
+        productId: p.identifier,
+        title: p.title,
+        priceString: p.priceString,
+        japanStorefront: japanStorefront || p.currencyCode === "JPY",
+      },
+    ];
   });
 }
 
