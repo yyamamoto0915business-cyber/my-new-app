@@ -19,6 +19,8 @@ export type Message = {
   sender_id: string;
   content: string;
   created_at: string;
+  /** 写真のメッセージのとき、chat-media の中の場所 */
+  image_path?: string | null;
 };
 
 /** get_inbox RPC でトーク一覧を取得 */
@@ -203,7 +205,7 @@ export async function getMessages(
 ): Promise<Message[]> {
   const { data, error } = await supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, content, created_at")
+    .select("id, conversation_id, sender_id, content, created_at, image_path")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 
@@ -214,6 +216,7 @@ export async function getMessages(
     sender_id: row.sender_id,
     content: row.content,
     created_at: row.created_at,
+    image_path: (row as { image_path?: string | null }).image_path ?? null,
   }));
 }
 

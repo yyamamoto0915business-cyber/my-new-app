@@ -12,6 +12,7 @@ import {
   insertConversationMessageDirectDb,
 } from "@/lib/conversation-direct-db";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { attachChatPhotoUrls } from "@/lib/chat/chat-photos";
 
 const LOG_TAG = "[api/messages/conversations/.../messages]";
 
@@ -220,15 +221,16 @@ export async function GET(
       if (rows === null) {
         return structuredJsonError(403, "load_messages", "forbidden");
       }
-      return NextResponse.json(rows);
+      return NextResponse.json(await attachChatPhotoUrls(createAdminClient(), rows));
     } catch (e) {
       console.error(LOG_TAG, "direct db get messages failed, falling back to supabase", e);
     }
   }
 
   try {
+    // RLS で、参加者でなければ1件も返らない（写真の URL もつかない）
     const messages = await getMessages(supabase, conversationId);
-    return NextResponse.json(messages);
+    return NextResponse.json(await attachChatPhotoUrls(createAdminClient(), messages));
   } catch (e) {
     console.error(LOG_TAG, "getMessages error:", e);
     return structuredJsonError(
