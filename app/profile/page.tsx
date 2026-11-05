@@ -160,7 +160,7 @@ function ProfileContent() {
       )}
 
       {!user && !noSupabase && (
-        <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="flex min-h-screen-dvh items-center justify-center px-4">
           <div
             className="w-full max-w-sm rounded-2xl border border-[#DEDAD2] bg-white px-6 py-8 text-center"
             style={{ boxShadow: "0 4px 16px rgba(0,0,0,.08)" }}

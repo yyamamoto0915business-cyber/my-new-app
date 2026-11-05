@@ -248,7 +248,7 @@ export function HomeOtonami() {
 
 
   return (
-    <div className="min-h-screen min-[900px]:bg-[#f3f4f1]">
+    <div className="min-h-screen-dvh min-[900px]:bg-[#f3f4f1]">
       {/* PC（900px以上） */}
       <main className="mx-auto hidden max-w-[1280px] space-y-4 bg-[#f3f4f1] px-8 py-4 pb-4 min-[900px]:block">
         <PcTownBoardHero

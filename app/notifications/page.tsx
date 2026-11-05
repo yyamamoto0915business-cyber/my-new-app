@@ -99,7 +99,7 @@ export default function NotificationsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f7f8f5]">
+      <div className="flex min-h-screen-dvh items-center justify-center bg-[#f7f8f5]">
         <p className="text-sm text-[#6b7569]">読み込み中...</p>
       </div>
     );
@@ -107,7 +107,7 @@ export default function NotificationsPage() {
 
   if (authRequired) {
     return (
-      <div className="min-h-screen bg-[#f7f8f5] px-4">
+      <div className="min-h-screen-dvh bg-[#f7f8f5] px-4">
         <div className="mx-auto max-w-md pt-12">
           <ProfileEmptyCard
             title="ログインが必要です"

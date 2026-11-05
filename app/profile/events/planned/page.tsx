@@ -33,7 +33,7 @@ export default function PlannedEventsPage() {
   }, [user, authLoading]);
 
   return (
-    <div className="min-h-screen bg-[#F5F8F5]">
+    <div className="min-h-screen-dvh bg-[#F5F8F5]">
       <header className="sticky top-[var(--mg-mobile-top-header-h,0px)] z-30 border-b border-[#DDE8DF] bg-white/95 backdrop-blur-sm min-[900px]:top-0">
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3 min-[900px]:max-w-4xl">
           <Link

@@ -97,14 +97,14 @@ export default function OnboardingPage() {
   // 読み込み中・未ログイン・role 設定済み（＝上の useEffect でリダイレクト対象）はフォームを描画しない
   if (authLoading || !user || currentRole) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen-dvh items-center justify-center">
         <p className="text-sm text-zinc-500">読み込み中...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8">
+    <div className="flex min-h-screen-dvh flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-md space-y-6 rounded-2xl border border-zinc-200/60 bg-white p-6 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
         <h1 className="font-serif text-xl font-semibold text-zinc-900 dark:text-zinc-100">
           まちの出来事に出会う

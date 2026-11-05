@@ -466,7 +466,7 @@ export function ApplicationFormMobileView({
     <div
       className={cn(
         "flex flex-col bg-white",
-        forceShow ? "min-h-full" : "min-h-screen min-[900px]:hidden"
+        forceShow ? "min-h-full" : "min-h-screen-dvh min-[900px]:hidden"
       )}
     >
       {/* Header — 作成画面と同型 */}

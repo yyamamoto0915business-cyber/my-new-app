@@ -315,7 +315,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
 
   if (!isForeign && settled && !user && !demoMode) {
     return (
-      <div className="mg-album-hub my-album-page min-h-screen">
+      <div className="mg-album-hub my-album-page min-h-screen-dvh">
         <div className="my-album-shell">
           <MyAlbumProfileHeader
             profile={null}
@@ -340,7 +340,7 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
   const showSkeleton = !demoMode && (loading || authLoading);
 
   return (
-    <div className={cn("mg-album-hub my-album-page min-h-screen")}>
+    <div className={cn("mg-album-hub my-album-page min-h-screen-dvh")}>
       <div className="my-album-shell">
         {hideChrome ? null : showSkeleton ? (
           <MyAlbumProfileSkeleton />

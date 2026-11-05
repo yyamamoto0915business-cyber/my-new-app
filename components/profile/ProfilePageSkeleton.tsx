@@ -1,7 +1,7 @@
 /** マイページの初期表示用スケルトン（ルート loading とクライアント取得中で共通） */
 export function ProfilePageSkeleton() {
   return (
-    <div className="mg-profile-mobile-page mg-mypage-mobile-white relative min-h-screen w-full min-[900px]:bg-[#F7F8F5]">
+    <div className="mg-profile-mobile-page mg-mypage-mobile-white relative min-h-screen-dvh w-full min-[900px]:bg-[#F7F8F5]">
       {/* Mobile skeleton */}
       <div className="mx-auto w-full max-w-screen-sm space-y-2.5 px-4 py-3 pb-24 animate-pulse min-[900px]:hidden sm:pb-8">
         <div className="overflow-hidden rounded-[14px] border border-[#e8e6e0] bg-[#ffffff]">

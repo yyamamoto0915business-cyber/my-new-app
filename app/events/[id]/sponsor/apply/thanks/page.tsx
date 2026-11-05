@@ -6,7 +6,7 @@ export default async function SponsorApplyThanksPage({ params }: Props) {
   const { id: eventId } = await params;
 
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
+    <div className="min-h-screen-dvh bg-[var(--mg-paper)]">
       <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur-sm dark:bg-zinc-900/95 [border-color:var(--mg-line)]">
         <div className="mx-auto max-w-2xl px-4 py-4">
           <Link

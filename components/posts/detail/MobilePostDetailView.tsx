@@ -191,7 +191,7 @@ export function MobilePostDetailView({ post, viewer }: Props) {
   );
 
   return (
-    <div className="min-h-screen bg-white pb-6 text-[#1f1a14] min-[900px]:hidden">
+    <div className="min-h-screen-dvh bg-white pb-6 text-[#1f1a14] min-[900px]:hidden">
       {/* 上の帯 */}
       <header className="sticky top-0 z-40 flex h-[calc(48px+env(safe-area-inset-top,0px))] items-center border-b border-[#efebe4] bg-white/95 px-1 pt-[env(safe-area-inset-top,0px)] backdrop-blur">
         <button

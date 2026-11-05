@@ -101,7 +101,7 @@ export default function CheckinTokenPage() {
 
   if (phase === "loading" || userLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f5f8f5]">
+      <div className="flex min-h-screen-dvh items-center justify-center bg-[#f5f8f5]">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#315c4b] border-t-transparent" />
           <p className="text-[13px] text-[#607083]">読み込み中...</p>
@@ -112,7 +112,7 @@ export default function CheckinTokenPage() {
 
   if (phase === "error") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#f5f8f5] px-4">
+      <div className="flex min-h-screen-dvh flex-col items-center justify-center bg-[#f5f8f5] px-4">
         <div className="rounded-2xl bg-white p-8 text-center shadow-sm border border-[#d8e3dc] max-w-sm w-full">
           <div className="mb-4 text-4xl">😕</div>
           <h1 className="text-lg font-bold text-[#172033]">QRコードが無効です</h1>
@@ -127,7 +127,7 @@ export default function CheckinTokenPage() {
 
   if (phase === "already") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#f5f8f5] px-4">
+      <div className="flex min-h-screen-dvh flex-col items-center justify-center bg-[#f5f8f5] px-4">
         <div className="rounded-2xl bg-white p-8 text-center shadow-sm border border-[#d8e3dc] max-w-sm w-full">
           <div className="mb-4 text-4xl">✅</div>
           <h1 className="text-lg font-bold text-[#172033]">すでにチェックイン済みです</h1>
@@ -142,7 +142,7 @@ export default function CheckinTokenPage() {
 
   if (phase === "needs_registration") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#f5f8f5] px-4">
+      <div className="flex min-h-screen-dvh flex-col items-center justify-center bg-[#f5f8f5] px-4">
         <div className="rounded-2xl bg-white p-8 text-center shadow-sm border border-[#d8e3dc] max-w-sm w-full">
           <h1 className="text-lg font-bold text-[#172033]">事前申し込みが必要です</h1>
           <p className="mt-2 text-[13px] text-[#607083]">
@@ -167,7 +167,7 @@ export default function CheckinTokenPage() {
 
   if (phase === "done") {
     return (
-      <div className="min-h-screen bg-[#f5f8f5] pb-24">
+      <div className="min-h-screen-dvh bg-[#f5f8f5] pb-24">
         <div className="relative overflow-hidden bg-[#315c4b] px-4 pb-10 pt-12">
           <div
             className="absolute inset-0 opacity-10"
@@ -233,7 +233,7 @@ export default function CheckinTokenPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f8f5] pb-24">
+    <div className="min-h-screen-dvh bg-[#f5f8f5] pb-24">
       <div className="relative overflow-hidden bg-[#315c4b] px-4 pb-8 pt-12">
         <div
           className="absolute inset-0 opacity-10"

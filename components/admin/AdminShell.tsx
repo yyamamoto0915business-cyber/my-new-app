@@ -181,7 +181,7 @@ export function AdminShell({
   children,
 }: AdminShellProps) {
   return (
-    <div className="min-h-screen" style={{ background: "#eaf2ec" }}>
+    <div className="min-h-screen-dvh" style={{ background: "#eaf2ec" }}>
       <div
         className="sticky top-0 z-[200] flex items-center justify-between gap-3 px-4 py-1.5 text-[10px] tracking-[0.06em]"
         style={{ background: "#1e3848", color: "#e0f0f8" }}

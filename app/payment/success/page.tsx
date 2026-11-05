@@ -57,7 +57,7 @@ export default async function PaymentSuccessPage({ searchParams }: Props) {
   const kind = await resolveSession(session_id);
 
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
+    <div className="min-h-screen-dvh bg-[var(--mg-paper)]">
       <main className="mx-auto max-w-md px-4 py-16">
         <div className={CARD_CLS}>
           <CheckIcon />

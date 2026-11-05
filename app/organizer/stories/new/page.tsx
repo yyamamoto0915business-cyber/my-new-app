@@ -300,7 +300,7 @@ function NewStoryForm() {
       />
 
       {/* ══════════════ MOBILE ══════════════ */}
-      <div className="min-[900px]:hidden flex flex-col bg-[#EDECE7] min-h-screen">
+      <div className="min-[900px]:hidden flex flex-col bg-[#EDECE7] min-h-screen-dvh">
         {/* Header */}
         <div className="bg-white border-b border-[#DEDAD2] px-3 py-[7px] flex items-center gap-2 flex-shrink-0">
           <button

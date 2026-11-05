@@ -56,7 +56,7 @@ export default function CheckinScanPage() {
 
   return (
     <div
-      className="flex min-h-screen flex-col pb-[calc(72px+env(safe-area-inset-bottom,0px))]"
+      className="flex min-h-screen-dvh flex-col pb-[calc(72px+env(safe-area-inset-bottom,0px))]"
       style={{
         backgroundColor: "#172033",
         backgroundImage: "url(/assets/machiglyph/checkin/backgrounds/machi_pattern_background.svg)",

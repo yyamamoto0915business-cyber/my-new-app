@@ -44,7 +44,7 @@ export function ModeSelectionScreen() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen-dvh flex-col">
       <header className="flex justify-end px-4 pt-4">
         <ProfileLink />
       </header>

@@ -54,7 +54,7 @@ export default function NewArticlePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen-dvh bg-[var(--background)]">
       <header className="border-b border-[var(--border)] bg-white dark:bg-[var(--background)]">
         <div className="mx-auto max-w-2xl px-4 py-4">
           <div className="flex justify-end">

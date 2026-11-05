@@ -9,7 +9,7 @@ function PaymentCancelContent() {
   const returnTo = searchParams.get("return") ?? "/";
 
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
+    <div className="min-h-screen-dvh bg-[var(--mg-paper)]">
       <main className="mx-auto max-w-md px-4 py-16">
         <div className="rounded-2xl border border-[var(--mg-line)] bg-white p-8 shadow-[var(--mg-shadow)] dark:bg-zinc-900/50">
           <h1 className="text-center text-xl font-bold text-[var(--mg-ink)]">
@@ -41,7 +41,7 @@ function PaymentCancelContent() {
 export default function PaymentCancelPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[var(--mg-paper)] flex items-center justify-center">
+      <div className="min-h-screen-dvh bg-[var(--mg-paper)] flex items-center justify-center">
         <p className="text-[var(--mg-muted)]">読み込み中...</p>
       </div>
     }>

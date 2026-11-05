@@ -127,7 +127,7 @@ export default function OrganizerSponsorsPage() {
 
   if (!eventId) {
     return (
-      <div className="min-h-screen bg-[var(--mg-paper)]">
+      <div className="min-h-screen-dvh bg-[var(--mg-paper)]">
         <OrganizerHeader title="スポンサー管理" backHref="/organizer/events" backLabel="← 主催イベントへ" />
         <main className="mx-auto max-w-4xl px-4 py-8">
           <p className="text-sm text-zinc-500">イベントIDが不正です</p>
@@ -137,7 +137,7 @@ export default function OrganizerSponsorsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
+    <div className="min-h-screen-dvh bg-[var(--mg-paper)]">
       <OrganizerHeader
         title={`スポンサー管理 / ${eventTitle || "読み込み中..."}`}
         description="企業スポンサー申込の承認・却下"

@@ -15,7 +15,7 @@ export default function GlobalError({
 
   return (
     <html lang="ja">
-      <body className="flex min-h-screen flex-col items-center justify-center px-4">
+      <body className="flex min-h-screen-dvh flex-col items-center justify-center px-4">
         <h1 className="text-lg font-semibold text-zinc-900">
           エラーが発生しました
         </h1>

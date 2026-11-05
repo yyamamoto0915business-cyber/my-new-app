@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 function HomeFallback() {
   return (
-    <div className="min-h-screen min-[900px]:bg-[#f3f4f1]">
+    <div className="min-h-screen-dvh min-[900px]:bg-[#f3f4f1]">
       <div className="mx-auto hidden max-w-[1280px] space-y-4 px-8 py-4 min-[900px]:block">
         <div className="aspect-[1415/256] min-h-[185px] animate-pulse rounded-[16px] bg-[#e8ede4]" />
         <div className="grid grid-cols-4 gap-3">
@@ -41,7 +41,7 @@ function HomeFallback() {
 
 export default function Home() {
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen-dvh flex-col">
       <main className="relative z-10 flex-1">
         <Suspense fallback={<HomeFallback />}>
           <HomeOtonami />

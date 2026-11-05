@@ -223,7 +223,7 @@ export function NotificationsView({
   }, [listItems, effectiveSelectedKey, primaryPending]);
 
   return (
-    <div className="min-h-screen bg-[#fafbfa]">
+    <div className="min-h-screen-dvh bg-[#fafbfa]">
       {previewBanner ? (
         <div className="border-b border-[#cfe4c8] bg-[#e8f5e9] px-4 py-2 text-center text-[12px] font-medium text-[#1b5e20]">
           {previewBanner}

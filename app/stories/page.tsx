@@ -11,7 +11,7 @@ export default function StoriesListPage() {
   const stories = getPublishedStories();
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen-dvh bg-[var(--background)]">
       <header className="border-b border-[var(--border)] bg-white dark:bg-[var(--background)]">
         <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
           <h1 className="font-serif text-2xl font-semibold text-zinc-900 dark:text-zinc-100">

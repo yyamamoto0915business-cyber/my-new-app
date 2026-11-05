@@ -13,7 +13,7 @@ export default async function OrganizersPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
+    <div className="min-h-screen-dvh bg-[var(--mg-paper)]">
       <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur-sm [border-color:var(--mg-line)]">
         <div className="mx-auto max-w-2xl px-4 py-4">
           <Breadcrumb

@@ -131,7 +131,7 @@ export default function VolunteerDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F5F8F5]">
+      <div className="flex min-h-screen-dvh items-center justify-center bg-[#F5F8F5]">
         <p className="text-[13px] text-[#566358]">読み込み中...</p>
       </div>
     );
@@ -139,7 +139,7 @@ export default function VolunteerDetailPage() {
 
   if (error || !role) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#F5F8F5]">
+      <div className="flex min-h-screen-dvh flex-col items-center justify-center gap-3 bg-[#F5F8F5]">
         <p className="text-[13px] text-red-600">{error ?? "募集が見つかりません"}</p>
         <Link href="/?kind=volunteer" className="text-[13px] text-[#2D7A4F] underline">
           一覧に戻る
@@ -164,7 +164,7 @@ export default function VolunteerDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F8F5]">
+    <div className="min-h-screen-dvh bg-[#F5F8F5]">
       <VolunteerDetailPcView
         {...sharedProps}
         saved={saved}

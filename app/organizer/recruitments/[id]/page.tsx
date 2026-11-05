@@ -55,7 +55,7 @@ export default function OrganizerRecruitmentDetailPage({
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[var(--mg-paper)]">
+        <div className="flex min-h-screen-dvh items-center justify-center bg-[var(--mg-paper)]">
           <p className="text-zinc-500">読み込み中...</p>
         </div>
       }
@@ -391,7 +391,7 @@ function OrganizerRecruitmentDetailContent({
 
   if (!resolvedId || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--mg-paper)]">
+      <div className="flex min-h-screen-dvh items-center justify-center bg-[var(--mg-paper)]">
         <p className="text-zinc-500">読み込み中...</p>
       </div>
     );
@@ -399,7 +399,7 @@ function OrganizerRecruitmentDetailContent({
 
   if (!recruitment) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--mg-paper)]">
+      <div className="flex min-h-screen-dvh items-center justify-center bg-[var(--mg-paper)]">
         <p className="text-zinc-500">募集が見つかりません</p>
         <Link href="/organizer/recruitments" className="ml-2 text-[var(--accent)] underline">
           一覧へ

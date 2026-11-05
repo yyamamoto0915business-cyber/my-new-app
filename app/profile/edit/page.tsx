@@ -695,12 +695,12 @@ function ProfileEditPageInner() {
 
   const initials = displayName.trim().slice(0, 2) || "?";
   if (loading) return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen-dvh items-center justify-center">
       <p className="text-[13px] text-[#8c8a84]">読み込み中...</p>
     </div>
   );
   if (noSupabase) return (
-    <div className="flex min-h-screen items-center justify-center p-6">
+    <div className="flex min-h-screen-dvh items-center justify-center p-6">
       <p className="text-[13px] text-[#8c8a84]">Supabase の設定が必要です</p>
     </div>
   );
@@ -1603,7 +1603,7 @@ export default function ProfileEditPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center">
+        <div className="flex min-h-screen-dvh items-center justify-center">
           <p className="text-[13px] text-[#8c8a84]">読み込み中...</p>
         </div>
       }

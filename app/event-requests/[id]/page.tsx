@@ -65,14 +65,14 @@ export default function EventRequestDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen-dvh items-center justify-center">
         <p className="text-zinc-500">読み込み中...</p>
       </div>
     );
   }
   if (!request) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+      <div className="flex min-h-screen-dvh flex-col items-center justify-center gap-4">
         <p className="text-zinc-500">提案が見つかりません</p>
         <Link href="/event-requests" className="text-blue-600 underline">
           一覧へ戻る
@@ -87,7 +87,7 @@ export default function EventRequestDetailPage() {
   );
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen-dvh">
       <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto max-w-3xl px-4 py-4">
           <Link
