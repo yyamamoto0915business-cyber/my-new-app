@@ -20,7 +20,8 @@ export const ORGANIZER_TOP_TAB_ITEMS = ORGANIZER_SIDEBAR_NAV_ITEMS;
 
 export const ORGANIZER_LITE_NAV_ITEMS = [
   { label: "主催者登録", href: "/organizer/register" },
-  { label: "料金プラン", href: "/organizer/settings/plan" },
+  // 料金プランは主催者登録のあとで見られる（登録前に開くと「登録が必要です」になるため）
+  { label: "使い方", href: "/guide" },
   { label: "イベントを探す", href: "/events" },
 ] as const;
 
