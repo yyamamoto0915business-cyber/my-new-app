@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ClipboardList } from "lucide-react";
+import { LoginRequiredPanel } from "@/components/auth/LoginRequiredPanel";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
-import { getLoginUrl } from "@/lib/auth-utils";
 import {
   type ApplicationFormAnswers,
   type ApplicationFormConfig,
@@ -47,7 +47,6 @@ export default function ApplicationFormPage() {
   const [draftSaved, setDraftSaved] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const loginHref = getLoginUrl(`/recruitments/${recruitmentId}/application-form`);
 
   useEffect(() => {
     if (authLoading) return;
@@ -171,15 +170,13 @@ export default function ApplicationFormPage() {
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-12 min-[900px]:max-w-xl">
-        <p className="text-sm text-[#566358]">応募フォームの入力にはログインが必要です。</p>
-        <Link
-          href={loginHref}
-          className="mt-4 inline-flex rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white"
-        >
-          ログインする
-        </Link>
-      </div>
+      <LoginRequiredPanel
+        returnTo={`/recruitments/${recruitmentId}/application-form`}
+        Icon={ClipboardList}
+        title="応募フォーム"
+        description="応募には MachiGlyph のアカウントが必要です。入力した内容は、募集を出している人に届きます。"
+        benefits={["応募の状況をあとから確かめられる", "募集を出している人とメッセージでやりとりできる"]}
+      />
     );
   }
 

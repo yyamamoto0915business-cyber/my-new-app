@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { InboxItem } from "@/lib/inbox-queries";
-import { ProfileEmptyCard } from "@/components/profile/profile-empty-card";
-import { getLoginUrl } from "@/lib/auth-utils";
+import { MessageCircle } from "lucide-react";
+import { LoginRequiredPanel } from "@/components/auth/LoginRequiredPanel";
 import { isAbortLikeError } from "@/lib/is-abort-like-error";
 import { resolveAvatarUrlByRole } from "@/lib/profile-avatar";
 
@@ -205,7 +205,6 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const { user, loading: authLoading } = useSupabaseUser();
   const authRequired = !user && !AUTH_DISABLED;
-  const loginHref = getLoginUrl(pathname ?? "/messages");
   const [items, setItems] = useState<InboxItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -259,16 +258,17 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   }
   if (authRequired) {
     return (
-      <div style={{ display: "flex", minHeight: "100dvh", alignItems: "center", justifyContent: "center", padding: "0 16px" }}>
-        <div style={{ width: "100%", maxWidth: 440 }}>
-          <ProfileEmptyCard
-            title="ログインが必要です"
-            description="メッセージを利用するにはログインしてください"
-            ctaLabel="ログイン"
-            ctaHref={loginHref}
-          />
-        </div>
-      </div>
+      <LoginRequiredPanel
+        returnTo={pathname ?? "/messages"}
+        Icon={MessageCircle}
+        title="メッセージ"
+        description="イベントの主催者や、募集を出している人と直接やりとりできます。"
+        benefits={[
+          "イベントの内容や持ち物を、主催者に相談できる",
+          "ボランティアや募集の連絡をまとめて受け取れる",
+          "フォローしている人と気軽にメッセージを送り合える",
+        ]}
+      />
     );
   }
 
