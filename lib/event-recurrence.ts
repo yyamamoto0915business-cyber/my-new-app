@@ -66,8 +66,8 @@ export function formatEventScheduleLabel(
   // 期間イベント：10/27(火)〜12/20(日) 10:00〜17:00
   if (recurrence === "none" && endDate && endDate > date) {
     const range = `${formatEventDate(date)}〜${formatEventDate(endDate)}`;
-    // 開始 0:00・終了なしは「期間中いつでも」なので時刻を出さない
-    const allDay = !end && (!start || start === "0:00");
+    // 開始 0:00 で終了なし（または 23:59）は「期間中いつでも」なので時刻を出さない
+    const allDay = (!start || start === "0:00") && (!end || end === "23:59");
     return allDay ? range : `${range} ${timeRange}`;
   }
 
