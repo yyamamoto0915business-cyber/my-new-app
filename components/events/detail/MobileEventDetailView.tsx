@@ -223,7 +223,7 @@ export function MobileEventDetailView({
               alt={event.title}
               priority
               variant="mobileHero"
-              className="h-[210px]"
+              className="h-[210px] tablet:h-[340px]"
             />
           )}
         />
