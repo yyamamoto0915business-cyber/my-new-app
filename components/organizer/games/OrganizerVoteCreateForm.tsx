@@ -235,7 +235,7 @@ export function OrganizerVoteCreateForm() {
             </label>
           </div>
           <p className="text-[12px] leading-[1.7] text-[#6a7a70]">
-            参加者は、参加用の QR や参加コードから、どこからでも参加できます。
+            参加者は、参加用の QR や参加コードから、どこからでも参加できます。1人1票にするため、MachiGlyph にログインして参加します。
           </p>
           <GameCardSetup
             type="vote"
