@@ -17,6 +17,7 @@ import { getEventById } from "@/lib/events";
 import type { EventFormData } from "@/lib/db/types";
 import { normalizeEventRecurrence, normalizeRecurrenceCount } from "@/lib/event-recurrence";
 import { normalizeEventEndDate } from "@/lib/event-dates";
+import { sanitizeEventQuestions } from "@/lib/event-questions";
 import {
   normalizeCheckInMethod,
   normalizePaymentMethod,
@@ -148,6 +149,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     recurrence,
     recurrenceCount,
     endDate,
+    applicationQuestions,
     eventFormat,
     onlineService,
     onlineJoinUrl,
@@ -207,6 +209,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     description: String(description ?? "").trim(),
     date: String(date),
     endDate: normalizedEndDate,
+    applicationQuestions: sanitizeEventQuestions(applicationQuestions),
     startTime: normalizeHm(startTime),
     endTime: endTime ? normalizeHm(endTime) : "",
     location: locationValue,

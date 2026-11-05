@@ -34,7 +34,7 @@ export function EventInfoCard({ event, className }: Props) {
     event.endTime,
     event.recurrence ?? "none",
     event.recurrenceCount,
-            event.endDate
+    event.endDate
   );
 
   return (

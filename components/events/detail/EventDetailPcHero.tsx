@@ -50,7 +50,7 @@ export function EventDetailPcHero({ event }: Props) {
     event.endTime,
     event.recurrence ?? "none",
     event.recurrenceCount,
-            event.endDate
+    event.endDate
   );
 
   const priceLine =

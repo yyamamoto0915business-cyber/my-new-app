@@ -43,7 +43,7 @@ export function EventDetailHero({ event }: Props) {
         event.endTime,
         event.recurrence ?? "none",
         event.recurrenceCount,
-            event.endDate
+        event.endDate
       ),
     [event.date, event.startTime, event.endTime, event.recurrence, event.recurrenceCount]
   );

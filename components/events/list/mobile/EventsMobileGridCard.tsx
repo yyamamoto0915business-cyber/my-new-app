@@ -74,7 +74,7 @@ export function EventsMobileGridCard({ event }: Props) {
     event.endTime,
     event.recurrence ?? "none",
     event.recurrenceCount,
-            event.endDate
+    event.endDate
   );
 
   const handleOpen = () => {

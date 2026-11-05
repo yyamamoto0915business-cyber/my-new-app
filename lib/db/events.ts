@@ -1,4 +1,5 @@
 import { endedEventsOrFilter, isEventEndedBy, upcomingEventsOrFilter } from "@/lib/event-dates";
+import { sanitizeEventQuestions, type EventAnswers, type EventQuestion } from "@/lib/event-questions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DbEvent, Event, EventFormData } from "./types";
 import { normalizeGalleryImages } from "@/lib/gallery-images";
@@ -101,6 +102,7 @@ function dbEventToEvent(
     description: db.description,
     date: db.date,
     endDate: db.end_date ?? null,
+    applicationQuestions: sanitizeEventQuestions(db.application_questions),
     startTime: db.start_time,
     endTime: db.end_time ?? undefined,
     location: db.location,
@@ -894,6 +896,7 @@ export async function createEvent(
     description: form.description,
     date: form.date,
     end_date: endDateForDb(form),
+    application_questions: questionsForDb(form),
     start_time: form.startTime,
     end_time: form.endTime || null,
     location: onlinePayload.location,
@@ -1048,6 +1051,12 @@ function normalizeStoreIdForDb(storeId: string | null | undefined): string | nul
   return id;
 }
 
+/** 申し込みの質問。参加方法はあとから参加パスの設定で決めるので、申込必須でなくても残しておく（聞くのは申込必須のときだけ） */
+function questionsForDb(form: Pick<EventFormData, "applicationQuestions">): EventQuestion[] | null {
+  const questions = sanitizeEventQuestions(form.applicationQuestions);
+  return questions.length > 0 ? questions : null;
+}
+
 /** 期間イベントの終了日。くり返しと一緒には使わず、開始日以前なら1日だけにする */
 function endDateForDb(form: Pick<EventFormData, "date" | "endDate" | "recurrence">): string | null {
   if (normalizeEventRecurrence(form.recurrence) !== "none") return null;
@@ -1066,6 +1075,7 @@ function formToDb(form: EventFormData): Record<string, unknown> {
     gallery_images: normalizeGalleryImages(form.galleryImages),
     date: form.date,
     end_date: endDateForDb(form),
+    application_questions: questionsForDb(form),
     start_time: form.startTime,
     end_time: form.endTime || null,
     location: onlinePayload.location,
@@ -1219,12 +1229,15 @@ export async function deleteEvent(
 export async function joinEvent(
   supabase: SupabaseClient,
   eventId: string,
-  userId: string
+  userId: string,
+  /** 申し込みの質問への答え */
+  answers: EventAnswers | null = null
 ): Promise<void> {
   const { error } = await supabase.from("event_participants").insert({
     event_id: eventId,
     user_id: userId,
     status: "applied",
+    ...(answers ? { answers } : {}),
   });
   if (error) throw error;
 }

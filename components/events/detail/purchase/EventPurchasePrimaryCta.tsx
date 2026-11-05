@@ -23,6 +23,7 @@ import {
   type EventApplyConfirmInfo,
 } from "@/components/events/detail/EventApplyConfirmSheet";
 import { cn } from "@/lib/utils";
+import type { EventAnswers } from "@/lib/event-questions";
 
 type Props = {
   event: Event | EventPurchaseData;
@@ -72,7 +73,7 @@ function buildConfirmInfo(
       event.endTime,
       event.recurrence ?? "none",
       event.recurrenceCount,
-            event.endDate
+      event.endDate
     ),
     placeLabel,
     priceLabel: event.priceNote
@@ -104,6 +105,13 @@ export function EventPurchasePrimaryCta({
   const [isPurchased, setIsPurchased] = useState(Boolean(isPurchasedProp));
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  /** 主催者が足した質問と、その答え */
+  const questions = useMemo(
+    () => (isFullEvent(event) ? event.applicationQuestions ?? [] : []),
+    [event]
+  );
+  const [answers, setAnswers] = useState<EventAnswers>({});
+  const [applyError, setApplyError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof isPurchasedProp === "boolean") {
@@ -175,16 +183,24 @@ export function EventPurchasePrimaryCta({
     }
 
     setLoading(true);
+    // 答えのもれで断られたときは、直せるよう確認のカードを開いたままにする
+    let keepOpen = false;
     try {
       if (onlineCheckout) {
         const res = await fetchWithTimeout("/api/stripe/checkout/event", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId: purchaseData.id }),
+          body: JSON.stringify({ eventId: purchaseData.id, answers }),
         });
         const j = await res.json();
         if (res.ok && j.url) {
           window.location.href = j.url;
+          return;
+        }
+        if (j.code === "answers_required") {
+          setApplyError(j.error);
+          setConfirmOpen(true);
+          keepOpen = true;
           return;
         }
         alert(j.error ?? "購入手続きに失敗しました");
@@ -194,12 +210,21 @@ export function EventPurchasePrimaryCta({
       if (participationMode === "required") {
         const res = await fetchWithTimeout(
           `/api/events/${purchaseData.id}/join`,
-          { method: "POST" }
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ answers }),
+          }
         );
         if (res.ok) {
           setIsPurchased(true);
         } else {
           const j = await res.json();
+          if (j.code === "answers_required") {
+            setApplyError(j.error);
+            keepOpen = true;
+            return;
+          }
           alert(j.error ?? "申し込みに失敗しました");
         }
         return;
@@ -225,9 +250,10 @@ export function EventPurchasePrimaryCta({
       );
     } finally {
       setLoading(false);
-      setConfirmOpen(false);
+      if (!keepOpen) setConfirmOpen(false);
     }
   }, [
+    answers,
     ctaState,
     onlineCheckout,
     participationMode,
@@ -242,13 +268,16 @@ export function EventPurchasePrimaryCta({
       return;
     }
 
-    // 無料申込のみ確認カードを挟む（有料は Stripe 側で確認）
+    // 無料申込は確認カードを挟む。主催者の質問があるときは、有料のオンライン決済でも先に答えてもらう
+    const askQuestions = questions.length > 0 && user && participationMode === "required" && ctaState !== "purchased";
     if (
-      ctaState === "free_apply" &&
-      user &&
-      !onlineCheckout &&
-      participationMode === "required"
+      askQuestions ||
+      (ctaState === "free_apply" &&
+        user &&
+        !onlineCheckout &&
+        participationMode === "required")
     ) {
+      setApplyError(null);
       setConfirmOpen(true);
       return;
     }
@@ -261,6 +290,7 @@ export function EventPurchasePrimaryCta({
     onlineCheckout,
     participationMode,
     executePurchase,
+    questions.length,
   ]);
 
   return (
@@ -297,6 +327,11 @@ export function EventPurchasePrimaryCta({
         onConfirm={() => {
           void executePurchase();
         }}
+        questions={questions}
+        answers={answers}
+        onAnswersChange={setAnswers}
+        error={applyError}
+        checkout={onlineCheckout}
       />
     </div>
   );

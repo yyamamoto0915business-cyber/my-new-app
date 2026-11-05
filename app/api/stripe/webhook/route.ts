@@ -1,3 +1,4 @@
+import { answersFromStripeMetadata } from "@/lib/event-questions";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -182,8 +183,9 @@ export async function POST(request: NextRequest) {
                 .eq("event_id", eventId).eq("user_id", userId).maybeSingle();
               if (lookupParticipantError) throw lookupParticipantError;
               if (!participant || participant.status === "applied") {
+                const answers = answersFromStripeMetadata(meta as Record<string, string>);
                 const { error: participantError } = await supabase.from("event_participants").upsert(
-                  { event_id: eventId, user_id: userId, status: "confirmed" },
+                  { event_id: eventId, user_id: userId, status: "confirmed", ...(answers ? { answers } : {}) },
                   { onConflict: "event_id,user_id" }
                 );
                 if (participantError) throw participantError;

@@ -47,6 +47,7 @@ export function eventToForm(event: Event): EventFormData {
     registrationNote: event.registrationNote,
     recurrence: event.recurrence ?? "none",
     endDate: event.endDate ?? null,
+    applicationQuestions: event.applicationQuestions ?? [],
     recurrenceCount: event.recurrenceCount ?? null,
     eventFormat: event.eventFormat ?? "onsite",
     onlineService: event.onlineService ?? null,

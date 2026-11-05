@@ -436,7 +436,7 @@ function NewEventPageContent() {
           form.endTime || undefined,
           form.recurrence ?? "none",
           form.recurrenceCount,
-            form.endDate
+          form.endDate
         )
       : "—";
   const missingRequired = Object.keys(validateForm(form)).length > 0;

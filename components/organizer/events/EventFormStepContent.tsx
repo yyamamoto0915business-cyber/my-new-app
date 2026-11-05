@@ -1,5 +1,6 @@
 "use client";
 
+import { EventQuestionsEditor } from "@/components/organizer/events/EventQuestionsEditor";
 import type { EventFormData } from "@/lib/events";
 import { EventImageInput } from "@/components/organizer/events/EventImageInput";
 import { EventGalleryImagesInput } from "@/components/organizer/events/EventGalleryImagesInput";
@@ -846,6 +847,19 @@ export function EventFormStepContent({
                 <span className="tabular-nums text-[11px] text-[#888]">
                   {noteLen}/500
                 </span>
+              </div>
+            </div>
+            <div className="min-w-0">
+              <EventFormLabel label="申し込みのときの質問" opt="任意" />
+              <EventFormHint text="申込必須のイベントで、申し込む人に答えてもらいます。答えは参加者の一覧で見られます" />
+              <div className="mt-1.5">
+                <EventQuestionsEditor
+                  value={form.applicationQuestions ?? []}
+                  onChange={(applicationQuestions) =>
+                    setForm((prev) => ({ ...prev, applicationQuestions }))
+                  }
+                  inputClassName={eventFormInp}
+                />
               </div>
             </div>
           </div>
