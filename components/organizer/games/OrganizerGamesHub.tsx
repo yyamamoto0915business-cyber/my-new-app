@@ -202,7 +202,8 @@ const PC_TEMPLATES: {
   { id: "mystery", label: "謎解き街歩き", photo: "/profile/album/spring/walk.jpg", mascot: "/organizer/games/hub-mascot-mystery.png" },
   { id: "mission", label: "ミッション", photo: "/profile/album/spring/river.jpg", mascot: "/organizer/games/hub-mascot-mission.png" },
   { id: "photo", label: "フォトラリー", photo: "/profile/album/spring/nanohana.jpg", mascot: "/organizer/games/hub-mascot-photo.png" },
-  { id: "coupon", label: "クーポンラリー", photo: "/profile/album/spring/cafe.jpg", mascot: "/organizer/games/hub-mascot-coupon.png" },
+  { id: "vote", label: "投票", photo: "/profile/album/spring/sakura.jpg", mascot: "/organizer/games/hub-mascot.png" },
+  { id: "coupon", label: "クーポンラリー", photo: "/profile/album/spring/cafe.jpg", mascot: "/organizer/games/hub-mascot-coupon.png", extra: true },
   {
     id: "checkin",
     label: "チェックイン",
