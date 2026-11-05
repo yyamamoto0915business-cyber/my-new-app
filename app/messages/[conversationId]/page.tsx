@@ -7,6 +7,7 @@ import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { createClient } from "@/lib/supabase/client";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { isAbortLikeError } from "@/lib/is-abort-like-error";
+import { ModerationMenu } from "@/components/moderation/ModerationMenu";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
@@ -90,6 +91,7 @@ export default function ConversationPage() {
   const [eventTitle, setEventTitle] = useState<string | null>(null);
   const [counterpartName, setCounterpartName] = useState<string | null>(null);
   const [counterpartAvatarUrl, setCounterpartAvatarUrl] = useState<string | null>(null);
+  const [counterpartUserId, setCounterpartUserId] = useState<string | null>(null);
   const [myRole, setMyRole] = useState<"organizer" | "volunteer">("volunteer");
   const [conversationKind, setConversationKind] = useState<string>("event_inquiry");
   const [content, setContent] = useState("");
@@ -121,7 +123,7 @@ export default function ConversationPage() {
   useEffect(() => {
     if (!conversationId) return;
     const controller = new AbortController();
-    setEventId(null); setEventTitle(null); setCounterpartName(null); setCounterpartAvatarUrl(null);
+    setEventId(null); setEventTitle(null); setCounterpartName(null); setCounterpartAvatarUrl(null); setCounterpartUserId(null);
     setMyRole("volunteer"); setConversationKind("event_inquiry");
     fetchWithTimeout(`/api/messages/conversations/${conversationId}/meta`, {
       ...API_CREDENTIALS,
@@ -137,6 +139,7 @@ export default function ConversationPage() {
         setConversationKind(typeof data?.conversationKind === "string" ? data.conversationKind : "event_inquiry");
         setCounterpartName(data?.counterpartDisplayName ?? null);
         setCounterpartAvatarUrl(typeof data?.counterpartAvatarUrl === "string" ? data.counterpartAvatarUrl : null);
+        setCounterpartUserId(typeof data?.counterpartUserId === "string" ? data.counterpartUserId : null);
       })
       .catch((e) => {
         if (!controller.signal.aborted && !isAbortLikeError(e)) {
@@ -288,7 +291,11 @@ export default function ConversationPage() {
       className="ms-anim-up"
       style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", background: C.bg, ...(keyboardInset > 0 ? { paddingBottom: keyboardInset } : {}) }}>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface, padding: "6px 16px 8px 4px" }}>
+      {/* スマホでは上の帯（グローバル）を出さないので、時計・ダイナミックアイランドの分をここで空ける */}
+      <div
+        className="pt-[6px] max-[899px]:pt-[calc(6px+env(safe-area-inset-top,0px))]"
+        style={{ display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface, paddingRight: 8, paddingBottom: 8, paddingLeft: 4 }}
+      >
         <Link
           href="/messages"
           className="min-[900px]:hidden"
@@ -340,6 +347,17 @@ export default function ConversationPage() {
             </div>
           )}
         </div>
+        {counterpartUserId ? (
+          <ModerationMenu
+            targetType="user"
+            targetId={counterpartUserId}
+            authorId={counterpartUserId}
+            authorName={name}
+            viewerId={currentUserId}
+            className="shrink-0"
+            iconClassName="h-5 w-5"
+          />
+        ) : null}
       </div>
 
       {/* Messages */}

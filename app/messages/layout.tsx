@@ -301,10 +301,14 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
 
   const sidebarHidden = !!conversationId;
   const mainHidden = !conversationId;
+  // 会話を開いているときは、スマホの上の帯・下のメニューを出さない（mobile-main-shell）ので画面いっぱいを使う
+  const mobileHeightClass = conversationId
+    ? "max-[899px]:h-[100dvh]"
+    : "max-[899px]:h-[calc(100dvh-var(--mg-mobile-top-header-h,46px)-env(safe-area-inset-top,0px)-calc(72px+env(safe-area-inset-bottom,0px)))]";
 
   return (
     <div
-      className="ms-shell max-[899px]:h-[calc(100dvh-var(--mg-mobile-top-header-h,46px)-env(safe-area-inset-top,0px)-calc(72px+env(safe-area-inset-bottom,0px)))] min-[900px]:h-[100dvh]"
+      className={`ms-shell ${mobileHeightClass} min-[900px]:h-[100dvh]`}
       style={{ display: "flex", overflow: "hidden", background: C.bg, fontFamily: "'Noto Sans JP', sans-serif" }}
     >
       <aside

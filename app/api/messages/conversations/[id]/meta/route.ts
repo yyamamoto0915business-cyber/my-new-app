@@ -77,6 +77,8 @@ export async function GET(
         eventTitle: meta.eventTitle ?? "イベント",
         conversationKind: meta.conversationKind ?? "event_inquiry",
         myRole,
+        counterpartUserId:
+          myRole === "organizer" ? meta.otherUserId ?? null : meta.organizerProfileId ?? null,
         counterpartDisplayName,
         counterpartAvatarUrl,
       });
@@ -131,6 +133,7 @@ export async function GET(
       eventTitle: event?.title ?? "イベント",
       conversationKind: (conv.kind as string | null) ?? "event_inquiry",
       myRole,
+      counterpartUserId,
       counterpartDisplayName:
         counterpart?.display_name ?? (myRole === "organizer" ? "ボランティア参加者" : "主催者"),
       counterpartAvatarUrl:

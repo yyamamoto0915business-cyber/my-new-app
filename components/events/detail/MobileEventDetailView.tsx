@@ -155,7 +155,8 @@ export function MobileEventDetailView({
         } as React.CSSProperties
       }
     >
-      <header className="sticky top-0 z-50 flex h-[52px] items-center justify-between border-b border-[var(--ed-line)] bg-white px-4 pt-[env(safe-area-inset-top,0px)]">
+      {/* 高さは「52px＋時計・ダイナミックアイランドの分」。52px で固定すると中身が白い背景の外にはみ出す */}
+      <header className="sticky top-0 z-50 flex h-[calc(52px+env(safe-area-inset-top,0px))] items-center justify-between border-b border-[var(--ed-line)] bg-white px-4 pt-[env(safe-area-inset-top,0px)]">
         <button
           type="button"
           onClick={handleBack}
