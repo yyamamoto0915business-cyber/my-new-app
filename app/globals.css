@@ -534,6 +534,14 @@ body:has([data-follows-page])::before {
   --mg-line: var(--ed-line);
   --mg-shadow: var(--ed-shadow-sm);
 }
+/* タブレット（600〜899px）：上の帯は端まで、中身は真ん中 680px にまとめて行を短くする */
+@media (min-width: 600px) and (max-width: 899px) {
+  .mg-event-detail > :not(header):not(.fixed) {
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
 
 .mg-event-detail .ed-icon-well {
   display: flex;
