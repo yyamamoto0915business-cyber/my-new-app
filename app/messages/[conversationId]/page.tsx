@@ -62,6 +62,14 @@ type Message = {
   created_at: string;
 };
 
+/** 送った直後にすぐ出す吹き出し。サーバーに届いたら本物のメッセージに置きかわる */
+type PendingMessage = {
+  tempId: string;
+  content: string;
+  created_at: string;
+  status: "sending" | "failed";
+};
+
 function relationLabel(conversationKind: string): string {
   if (conversationKind === "follow_dm") return "フォロー";
   if (conversationKind === "general") return "手伝い";
@@ -98,6 +106,7 @@ export default function ConversationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [pending, setPending] = useState<PendingMessage[]>([]);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -196,12 +205,19 @@ export default function ConversationPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, pending]);
 
-  const handleSend = useCallback(async () => {
-    const text = content.trim();
-    if (!text || !conversationId || !currentUserId || sending) return;
+  /** 1通送る。すぐ吹き出しを出し、失敗したら「もう一度送る」を出す */
+  const sendText = useCallback(async (text: string, retryTempId?: string) => {
+    if (!text || !conversationId || !currentUserId) return;
+    const tempId = retryTempId ?? `tmp-${Date.now()}`;
+    setPending((prev) =>
+      retryTempId
+        ? prev.map((p) => (p.tempId === tempId ? { ...p, status: "sending" } : p))
+        : [...prev, { tempId, content: text, created_at: new Date().toISOString(), status: "sending" }]
+    );
     setSending(true);
+    setError(null);
     try {
       const res = await fetch(`/api/messages/conversations/${conversationId}/messages`, {
         method: "POST",
@@ -209,17 +225,23 @@ export default function ConversationPage() {
         ...API_CREDENTIALS,
         body: JSON.stringify({ content: text }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data?.step && data?.message ? `${data.step}: ${data.message}` : data?.error ?? "送信に失敗しました");
-        return;
-      }
-      setContent("");
+      if (!res.ok) throw new Error("send failed");
       const r2 = await fetchWithTimeout(`/api/messages/conversations/${conversationId}/messages`, API_CREDENTIALS);
       if (r2.ok) setMessages(await r2.json());
-    } catch { setError("通信に失敗しました"); }
-    finally { setSending(false); }
-  }, [content, conversationId, currentUserId, sending]);
+      setPending((prev) => prev.filter((p) => p.tempId !== tempId));
+    } catch {
+      setPending((prev) => prev.map((p) => (p.tempId === tempId ? { ...p, status: "failed" } : p)));
+    } finally {
+      setSending(false);
+    }
+  }, [conversationId, currentUserId]);
+
+  const handleSend = useCallback(() => {
+    const text = content.trim();
+    if (!text || sending) return;
+    setContent("");
+    void sendText(text);
+  }, [content, sending, sendText]);
 
   useEffect(() => {
     resizeComposer(inputRef.current);
@@ -330,20 +352,25 @@ export default function ConversationPage() {
           )}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="ms-ctx-name" style={{ fontSize: 15, fontWeight: 700, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.2px" }}>
-            {name}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+            <span className="ms-ctx-name" style={{ fontSize: 15, fontWeight: 700, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.2px", minWidth: 0 }}>
+              {name}
+            </span>
+            <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 600, color: C.green, background: C.greenL, borderRadius: 999, padding: "1px 7px" }}>
+              {rel}
+            </span>
           </div>
           {eventId ? (
             <Link
               href={`/events/${eventId}`}
               className="ms-ctx-ev"
-              style={{ display: "block", fontSize: 12, color: C.t3, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: "none" }}
+              style={{ display: "block", fontSize: 12, color: C.t2, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: "none" }}
             >
-              {eventTitle ?? "イベント"} · {rel}
+              📅 {eventTitle ?? "イベント"} ›
             </Link>
-          ) : (
-            <div className="ms-ctx-ev" style={{ fontSize: 12, color: C.t3, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {eventTitle ?? "イベント"} · {rel}
+          ) : conversationKind === "follow_dm" ? null : (
+            <div className="ms-ctx-ev" style={{ fontSize: 12, color: C.t3, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {eventTitle ?? "イベント"}
             </div>
           )}
         </div>
@@ -362,6 +389,18 @@ export default function ConversationPage() {
 
       {/* Messages */}
       <div className="ms-msgs-scroll" style={{ flex: 1, overflowY: "auto", padding: "12px 14px 20px", display: "flex", flexDirection: "column", background: C.bg }}>
+        {eventId && !loading ? (
+          <div style={{ margin: "4px auto 14px", maxWidth: 360, width: "100%", borderRadius: 16, border: `1px solid ${C.border}`, background: "#fafaf8", padding: "12px 14px", textAlign: "center" }}>
+            <p style={{ fontSize: 12, color: C.t3 }}>この会話のテーマ</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginTop: 2, lineHeight: 1.45 }}>{eventTitle ?? "イベント"}</p>
+            <Link
+              href={`/events/${eventId}`}
+              style={{ display: "inline-block", marginTop: 8, fontSize: 12.5, fontWeight: 600, color: C.green, textDecoration: "none" }}
+            >
+              イベントを見る ›
+            </Link>
+          </div>
+        ) : null}
         {error && (
           <div style={{ borderRadius: 12, background: "#fef2f2", padding: "8px 12px", fontSize: 13, color: "#b91c1c" }}>{error}</div>
         )}
@@ -387,7 +426,7 @@ export default function ConversationPage() {
           if (item.type === "date") {
             return (
               <div key={`date-${idx}`} style={{ textAlign: "center", margin: "18px 0 12px" }}>
-                <span style={{ fontSize: 12, color: C.t3, fontWeight: 500 }}>{item.label}</span>
+                <span style={{ fontSize: 11.5, color: C.t2, fontWeight: 600, background: "#f2f2f0", borderRadius: 999, padding: "3px 10px" }}>{item.label}</span>
               </div>
             );
           }
@@ -427,6 +466,49 @@ export default function ConversationPage() {
             </div>
           );
         })}
+        {pending.map((p) => (
+          <div
+            key={p.tempId}
+            style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", maxWidth: "78%", alignSelf: "flex-end", marginTop: 8 }}
+          >
+            <div
+              className="ms-bubble"
+              style={{
+                padding: "8px 14px",
+                fontSize: 15,
+                lineHeight: 1.45,
+                wordBreak: "break-word",
+                borderRadius: BUBBLE_R,
+                background: p.status === "failed" ? "#fde8e8" : C.green,
+                color: p.status === "failed" ? "#9b1c1c" : "white",
+                opacity: p.status === "sending" ? 0.6 : 1,
+              }}
+            >
+              {p.content}
+            </div>
+            {p.status === "sending" ? (
+              <span style={{ fontSize: 11, color: C.t3, marginTop: 4, padding: "0 4px" }}>送信中…</span>
+            ) : (
+              <span style={{ fontSize: 11, color: "#b91c1c", marginTop: 4, padding: "0 4px", display: "flex", gap: 8 }}>
+                送れませんでした
+                <button
+                  type="button"
+                  onClick={() => void sendText(p.content, p.tempId)}
+                  style={{ border: "none", background: "none", padding: 0, color: C.green, fontWeight: 700, fontSize: 11, cursor: "pointer" }}
+                >
+                  もう一度送る
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPending((prev) => prev.filter((x) => x.tempId !== p.tempId))}
+                  style={{ border: "none", background: "none", padding: 0, color: C.t3, fontSize: 11, cursor: "pointer" }}
+                >
+                  消す
+                </button>
+              </span>
+            )}
+          </div>
+        ))}
         <div ref={bottomRef} style={{ height: 8, flexShrink: 0 }} />
       </div>
 
