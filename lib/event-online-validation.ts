@@ -44,15 +44,16 @@ export function validateOnlineEventFormFields(
   }
 
   if (isOnlineCapableFormat(format)) {
-    const service = normalizeOnlineService(data.onlineService);
-    if (!service) {
-      errors.onlineService = "配信サービスを選択してください";
-    }
+    // 参加URLが空なら「会議のないオンライン企画」（投稿や応募だけの企画など）として、配信サービスもいらない。
+    // URL を入れたときだけ、配信サービスと URL の形を確かめる。
     const url = String(data.onlineJoinUrl ?? "").trim();
-    if (!url) {
-      errors.onlineJoinUrl = "参加URLを入力してください";
-    } else if (!isValidHttpUrl(url)) {
-      errors.onlineJoinUrl = "正しいURL形式で入力してください";
+    if (url) {
+      if (!isValidHttpUrl(url)) {
+        errors.onlineJoinUrl = "正しいURL形式で入力してください";
+      }
+      if (!normalizeOnlineService(data.onlineService)) {
+        errors.onlineService = "配信サービスを選択してください";
+      }
     }
     const guide = String(data.onlineGuideMessage ?? "");
     if (guide.length > ONLINE_GUIDE_MESSAGE_MAX) {

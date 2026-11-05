@@ -86,7 +86,7 @@ export default async function OrganizerPublicPage({ params }: Props) {
   const profileDisplay = buildOrganizerProfileDisplay(organizer, events, organizer.createdAt);
 
   return (
-    <div className="min-h-screen pb-2 lg:pb-12" style={{ background: "#f5f6f1" }}>
+    <div className="min-h-screen-dvh pb-2 lg:pb-12" style={{ background: "#f5f6f1" }}>
       {/* Breadcrumb — PC only */}
       <div className="hidden lg:block max-w-[1100px] mx-auto px-6 pt-5 pb-3">
         <nav className="flex items-center gap-2 text-[13px]" style={{ color: "#98a898" }}>

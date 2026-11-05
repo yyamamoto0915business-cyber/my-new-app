@@ -47,7 +47,7 @@ function NewChatRoomContent({ params }: Props) {
 
   if (loading && !error) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen-dvh items-center justify-center">
         <p className="text-sm text-zinc-500">チャットを準備しています...</p>
       </div>
     );
@@ -65,7 +65,7 @@ function NewChatRoomContent({ params }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen-dvh items-center justify-center">
       <p className="text-sm text-zinc-500">読み込み中...</p>
     </div>
   );
@@ -74,7 +74,7 @@ function NewChatRoomContent({ params }: Props) {
 export default function NewChatRoomPage(props: Props) {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen-dvh items-center justify-center">
         <p className="text-sm text-zinc-500">読み込み中...</p>
       </div>
     }>

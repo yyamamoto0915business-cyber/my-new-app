@@ -225,16 +225,14 @@ export function PassOnlineJoinSection({
                   参加する
                 </a>
               ) : (
-                <button
-                  type="button"
-                  disabled
-                  className={`inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#c5c9d4] font-semibold text-white ${
-                    dense ? "h-9 text-[12.5px]" : "h-10 text-[13px]"
+                // 参加URLのない、会議のないオンライン企画
+                <p
+                  className={`rounded-xl bg-[#f3f5f8] px-3 py-2 leading-snug text-[#4a5468] ${
+                    dense ? "text-[11.5px]" : "text-[12px]"
                   }`}
                 >
-                  <Video className="h-4 w-4" aria-hidden />
-                  参加する
-                </button>
+                  この企画には、会議に入るための参加URLはありません。参加のしかたは、主催者からの案内やイベントのページを見てください。
+                </p>
               )}
 
               {!dense && access.onlineMeetingId ? (

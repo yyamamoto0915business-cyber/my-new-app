@@ -361,7 +361,7 @@ export function ApplicationsManagementMobileView({
   const hasMore = filteredApplications.length > visibleCount;
 
   return (
-    <div className="mg-apps-mgmt-m flex min-h-screen flex-col gap-2 px-4 pb-24 pt-3">
+    <div className="mg-apps-mgmt-m flex min-h-screen-dvh flex-col gap-2 px-4 pb-24 pt-3">
         {/* ヒーロー：左テキスト＋右イラスト、編集は左寄せ */}
         <header className="mg-apps-mgmt-m__header">
           <p className="mg-apps-mgmt-m__eyebrow">応募管理</p>

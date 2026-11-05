@@ -339,7 +339,7 @@ export function PcTownBrowsePage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-[#f4f7f2]">
+    <div className="min-h-screen-dvh bg-[#f4f7f2]">
       <main className="mx-auto max-w-[1280px] px-3 py-3 min-[900px]:px-6 min-[900px]:py-4">
         <Link href="/" className="mb-3 inline-flex text-[12px] text-[#6d7c70] hover:text-[#1e3d2c]">
           ← まちの情報にもどる

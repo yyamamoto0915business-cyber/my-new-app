@@ -130,7 +130,7 @@ export default function AuthCallbackPage() {
 
   return (
     <div
-      className="min-h-screen bg-[var(--mg-paper)] px-4 py-6 sm:py-10"
+      className="min-h-screen-dvh bg-[var(--mg-paper)] px-4 py-6 sm:py-10"
       style={{ fontFamily: "var(--font-body)" }}
     >
       <AuthPageHeader />

@@ -45,7 +45,7 @@ export default async function ReadArticlePage({ params }: Props) {
   const recommendedEvents = getRankedEvents(getEvents(), "newest", 6);
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen-dvh bg-[var(--background)]">
       <article className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-6">
         {/* カバー */}
         <div className="relative aspect-[2/1] w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-800">

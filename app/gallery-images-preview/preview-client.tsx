@@ -35,7 +35,7 @@ export function GalleryImagesPreviewClient() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f3f1ec] px-4 py-6 text-[#1a1a1a]">
+    <div className="min-h-screen-dvh bg-[#f3f1ec] px-4 py-6 text-[#1a1a1a]">
       <div className="mx-auto mb-5 max-w-[920px]">
         <p className="mb-1 text-[12px] font-medium text-[#8a8680]">プレビュー（ログイン不要）</p>
         <h1 className="text-[22px] font-bold tracking-tight">複数画像対応</h1>

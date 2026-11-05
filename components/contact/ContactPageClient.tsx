@@ -329,7 +329,7 @@ export function ContactPageClient({ isGuest }: { isGuest: boolean }) {
   );
 
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)] min-[900px]:bg-[#eef3f0]">
+    <div className="min-h-screen-dvh bg-[var(--mg-paper)] min-[900px]:bg-[#eef3f0]">
       {/* —— Mobile —— */}
       <main className="mx-auto max-w-2xl px-4 py-3 sm:px-6 sm:py-6 min-[900px]:hidden">
         <section className="relative overflow-hidden rounded-[14px] bg-[#eef6f0]">

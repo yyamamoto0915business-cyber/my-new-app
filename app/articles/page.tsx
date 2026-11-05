@@ -38,7 +38,7 @@ export default function ArticlesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen-dvh bg-[var(--background)]">
       <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white dark:bg-[var(--background)]">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-2">

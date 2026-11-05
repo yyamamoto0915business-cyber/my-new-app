@@ -36,7 +36,7 @@ export default function CollectionDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--background)]">
+      <div className="min-h-screen-dvh bg-[var(--background)]">
         <div className="mx-auto max-w-5xl px-4 py-12">
           <div className="h-8 w-48 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -51,7 +51,7 @@ export default function CollectionDetailPage() {
 
   if (!data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+      <div className="flex min-h-screen-dvh items-center justify-center bg-[var(--background)]">
         <div className="text-center">
           <p className="text-[var(--foreground-muted)]">特集が見つかりません</p>
           <Link href="/collections" className="mt-4 text-sm text-[var(--accent)] hover:underline">
@@ -63,7 +63,7 @@ export default function CollectionDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen-dvh bg-[var(--background)]">
       <header className="border-b border-[var(--border)] bg-white dark:bg-[var(--background)]">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
           <div className="flex justify-end">

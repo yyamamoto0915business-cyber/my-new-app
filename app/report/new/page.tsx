@@ -115,7 +115,7 @@ function ReportNewForm() {
 
   if (!eventId) {
     return (
-      <div className="min-h-screen bg-[var(--background)] px-4 py-8">
+      <div className="min-h-screen-dvh bg-[var(--background)] px-4 py-8">
         <p className="text-[var(--foreground-muted)]">イベントが指定されていません。</p>
         <Link href="/?kind=volunteer" className="mt-4 inline-block text-sm font-medium text-[var(--accent)] hover:underline">
           まちの情報から選ぶ →
@@ -125,7 +125,7 @@ function ReportNewForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen-dvh bg-[var(--background)]">
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-white dark:bg-[var(--background)]">
         <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6">
           <Link href={`/events/${eventId}`} className="text-sm text-[var(--foreground-muted)] hover:underline">
@@ -285,7 +285,7 @@ function ReportNewForm() {
 
 export default function ReportNewPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[var(--background)]"><p className="text-[var(--foreground-muted)]">読み込み中…</p></div>}>
+    <Suspense fallback={<div className="flex min-h-screen-dvh items-center justify-center bg-[var(--background)]"><p className="text-[var(--foreground-muted)]">読み込み中…</p></div>}>
       <ReportNewForm />
     </Suspense>
   );

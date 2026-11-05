@@ -103,7 +103,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className={cn("font-sans", geist.variable, notoSerifJP.variable, shipporiMincho.variable, kleeOne.variable)}>
-      <body className="font-sans antialiased min-h-screen bg-[#f3f4f1]">
+      <body className="font-sans antialiased min-h-screen-dvh bg-[#f3f4f1]">
         <LanguageProvider>
           <AbortErrorRecovery />
           <NativeAppBridge />

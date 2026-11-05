@@ -98,7 +98,7 @@ export default function CheckEmailPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[var(--mg-paper)]">
+        <div className="flex min-h-screen-dvh items-center justify-center bg-[var(--mg-paper)]">
           <p className="text-sm text-[var(--mg-muted)]">読み込み中...</p>
         </div>
       }

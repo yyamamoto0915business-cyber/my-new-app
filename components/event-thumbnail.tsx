@@ -19,7 +19,7 @@ function isAllowedHost(url: string): boolean {
 }
 
 /** 高さを伸ばすNGクラス（親から渡されたら無視） */
-const NG_CLASSES = ["h-full", "flex-1", "min-h-screen", "h-screen", "min-h-0"];
+const NG_CLASSES = ["h-full", "flex-1", "min-h-screen-dvh", "h-screen", "min-h-0"];
 
 function filterNgClasses(cls: string): string {
   return cls

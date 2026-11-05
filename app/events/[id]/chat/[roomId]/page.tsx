@@ -82,7 +82,7 @@ export default function EventChatRoomPage({ params }: Props) {
 
   if (loading || !eventId || !roomId || !currentUserId) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen-dvh items-center justify-center">
         <p className="text-sm text-zinc-500">読み込み中...</p>
       </div>
     );
@@ -112,7 +112,7 @@ export default function EventChatRoomPage({ params }: Props) {
     : (room?.participant?.display_name ?? "参加者");
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen-dvh">
       <header className="border-b border-zinc-200/60 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto max-w-2xl px-4 py-4">
           <Link

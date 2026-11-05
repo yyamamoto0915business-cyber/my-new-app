@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function CommercePage() {
   return (
-    <div className="min-h-screen bg-[var(--mg-paper)]">
+    <div className="min-h-screen-dvh bg-[var(--mg-paper)]">
       <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
         <h1 className="font-serif text-2xl font-bold tracking-tight text-[var(--mg-ink)] sm:text-3xl">
           {COMMERCE_TITLE}

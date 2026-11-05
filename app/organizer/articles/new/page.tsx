@@ -277,7 +277,7 @@ function NewArticleForm() {
   const maxEventEmbed = 6;
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen-dvh bg-[var(--background)]">
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-white dark:bg-[var(--background)]">
         <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6">
           <Link
@@ -721,7 +721,7 @@ export default function NewArticlePage() {
     <OrganizerRegistrationGate>
       <Suspense
         fallback={
-          <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+          <div className="flex min-h-screen-dvh items-center justify-center bg-[var(--background)]">
             <p className="text-[var(--foreground-muted)]">読み込み中…</p>
           </div>
         }

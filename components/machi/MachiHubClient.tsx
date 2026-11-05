@@ -267,7 +267,7 @@ export function MachiHubClient() {
     : [...FEATURED_PREFECTURES];
 
   return (
-    <div className="min-h-screen min-[900px]:bg-[#f5f5f4]">
+    <div className="min-h-screen-dvh min-[900px]:bg-[#f5f5f4]">
       {/* ── PC（モック準拠） ── */}
       <main className="mx-auto hidden max-w-[1280px] space-y-4 bg-[#f5f5f4] px-8 py-4 pb-8 min-[900px]:block">
         <MachiPcHero

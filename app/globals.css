@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+
+/* 画面の高さいっぱい。iPhone のアドレス帯・ホームバーの分がずれないよう dvh を使い、
+   dvh のない古い端末（iOS 15.3 以前など）では 100vh にする。min-h-screen の代わりに使う */
+@utility min-h-screen-dvh {
+  min-height: 100vh;
+  @supports (min-height: 100dvh) {
+    min-height: 100dvh;
+  }
+}
 /* ---break---
    */
 @custom-variant dark (&:is(.dark *));

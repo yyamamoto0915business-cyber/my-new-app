@@ -491,7 +491,7 @@ function EventsPageContent() {
   ]);
 
   return (
-    <div className="relative z-10 min-h-screen bg-[#F5F8F5]">
+    <div className="relative z-10 min-h-screen-dvh bg-[#F5F8F5]">
       {/* ===== PC Layout ===== */}
       <div className="hidden min-[900px]:block px-4 py-4">
         <div className={`mx-auto ${EVENTS_PC_MAX_WIDTH}`}>
@@ -688,7 +688,7 @@ function EventsPageContent() {
       </div>
 
       {/* ===== Mobile Layout ===== */}
-      <div className="mg-events-mobile-page min-[900px]:hidden min-h-screen w-full space-y-1.5 bg-[#f7fbf8] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-0.5">
+      <div className="mg-events-mobile-page min-[900px]:hidden min-h-screen-dvh w-full space-y-1.5 bg-[#f7fbf8] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-0.5">
         <EventsMobileHero
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}

@@ -48,7 +48,7 @@ function EventRequestsPageContent() {
   }, [load]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen-dvh">
       <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <Breadcrumb items={[{ label: "トップ", href: "/" }, { label: "やってほしいイベント" }]} />

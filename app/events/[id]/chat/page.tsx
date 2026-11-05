@@ -121,7 +121,7 @@ export default function EventChatPage({ params }: Props) {
 
   if (loading || !eventId) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen-dvh items-center justify-center">
         <p className="text-sm text-zinc-500">読み込み中...</p>
       </div>
     );
@@ -180,7 +180,7 @@ export default function EventChatPage({ params }: Props) {
   if (role === "participant" && participantRoom) {
     router.replace(`/events/${eventId}/chat/${participantRoom.id}`);
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen-dvh items-center justify-center">
         <p className="text-sm text-zinc-500">質問画面へ移動中...</p>
       </div>
     );
@@ -196,7 +196,7 @@ export default function EventChatPage({ params }: Props) {
     role === "organizer" ? `/organizer/events/${eventId}` : `/events/${eventId}`;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen-dvh">
       <header className="border-b border-zinc-200/60 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto max-w-2xl px-4 py-4">
           <Link

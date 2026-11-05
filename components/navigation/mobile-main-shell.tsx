@@ -52,10 +52,10 @@ export function MobileMainShell({ children }: Props) {
   const mobileShellLayoutClass = immersiveMobile
     ? profileEdit
       ? "flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden pt-0 pb-0 min-[900px]:pb-0"
-      : "flex min-h-screen flex-col pt-0 pb-0 min-[900px]:pb-0"
+      : "flex min-h-screen-dvh flex-col pt-0 pb-0 min-[900px]:pb-0"
     : authRoute
       ? "flex h-[100dvh] min-h-0 flex-col overflow-hidden max-[899px]:pb-0 min-[900px]:pb-0"
-      : "flex min-h-screen flex-col max-[899px]:pb-[calc(88px+env(safe-area-inset-bottom,0px))] min-[900px]:pb-0";
+      : "flex min-h-screen-dvh flex-col max-[899px]:pb-[calc(88px+env(safe-area-inset-bottom,0px))] min-[900px]:pb-0";
 
   return (
     <div

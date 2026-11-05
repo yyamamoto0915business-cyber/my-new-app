@@ -8,10 +8,10 @@ function EventsLayoutBody({ children }: { children: React.ReactNode }) {
   const isEventDetail = /^\/events\/[^/]+$/.test(pathname ?? "");
 
   return (
-    <div className="relative z-10 min-h-screen min-w-0">
+    <div className="relative z-10 min-h-screen-dvh min-w-0">
       <div
         className={cn(
-          "min-h-screen",
+          "min-h-screen-dvh",
           isEventDetail ? "min-[900px]:bg-[var(--mg-paper)]" : "min-[900px]:bg-[#F5F8F5]"
         )}
       >

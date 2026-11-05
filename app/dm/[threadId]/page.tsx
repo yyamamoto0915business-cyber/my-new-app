@@ -97,7 +97,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
 
   if (authLoading || !threadId) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen-dvh items-center justify-center">
         <p className="text-sm text-zinc-500">読み込み中...</p>
       </div>
     );
@@ -116,7 +116,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen-dvh items-center justify-center">
         <p className="text-sm text-zinc-500">読み込み中...</p>
       </div>
     );
@@ -144,7 +144,7 @@ export default function DmPage({ params }: { params: Promise<{ threadId: string 
   const isOrganizer = thread && userId === thread.organizerId;
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen-dvh flex-col">
       <header className="sticky top-[var(--mg-mobile-top-header-h)] z-50 border-b border-zinc-200/60 bg-white/80 backdrop-blur-md min-[900px]:top-0 dark:border-zinc-700/60 dark:bg-zinc-900/80">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-4">
           <Link href={isOrganizer ? "/organizer/inbox" : "/machi"} className="text-sm text-zinc-500 hover:underline">

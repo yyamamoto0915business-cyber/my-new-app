@@ -1,6 +1,6 @@
 export default function EventsLoading() {
   return (
-    <div className="hidden min-[900px]:flex min-h-screen animate-pulse">
+    <div className="hidden min-[900px]:flex min-h-screen-dvh animate-pulse">
       {/* Sidebar skeleton */}
       <div className="w-[220px] shrink-0 border-r border-[#DDE8DF] bg-white px-3 py-5 space-y-2">
         <div className="h-4 w-16 rounded bg-[#e8ede8]" />

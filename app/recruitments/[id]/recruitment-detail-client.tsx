@@ -111,7 +111,7 @@ export function RecruitmentDetailClient({
 
   if (!recruitment) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen-dvh items-center justify-center">
         <p className="text-zinc-500">読み込み中...</p>
       </div>
     );
@@ -119,7 +119,7 @@ export function RecruitmentDetailClient({
 
   if (recruitment.status === "draft") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen-dvh items-center justify-center">
         <p className="text-zinc-500">この募集は非公開です</p>
       </div>
     );
@@ -145,7 +145,7 @@ export function RecruitmentDetailClient({
     applicationStatus !== "canceled";
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen-dvh">
       <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-md dark:border-zinc-700/60 dark:bg-zinc-900/80">
         <div className="mx-auto max-w-3xl px-4 py-4">
           <Breadcrumb
