@@ -719,7 +719,8 @@ function ProfileEditPageInner() {
       <input ref={orgGalleryRef} type="file" accept="image/*" multiple className="hidden" onChange={handleOrgGalleryFiles} />
 
       {/* ══ MOBILE — 1ページで全部編集でき、下の「保存する」1つで保存する ══ */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden min-[900px]:hidden">
+      {/* タブレット縦（640〜899px）では横に伸ばさず、真ん中に 600px の幅でまとめる */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden min-[640px]:mx-auto min-[640px]:w-full min-[640px]:max-w-[600px] min-[640px]:border-x min-[640px]:border-[#DEDAD2] min-[640px]:bg-white min-[900px]:hidden">
         {/* Header（グローバル MobileTopHeader 非表示のため safe-area をここで確保） */}
         <div className="flex shrink-0 items-center gap-2 border-b border-[#DEDAD2] bg-white px-3 pb-2 pt-[max(8px,env(safe-area-inset-top,0px))]">
           <button
