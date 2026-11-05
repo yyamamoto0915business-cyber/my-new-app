@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import type { OrganizerGameTypeId } from "@/lib/organizer/game-types";
 import type { OrganizerGame } from "@/lib/organizer/games";
 
-type HubTheme = "stamp" | "quiz" | "mystery" | "mission" | "photo" | "coupon" | "checkin";
+type HubTheme = "stamp" | "quiz" | "mystery" | "mission" | "photo" | "coupon" | "checkin" | "vote";
 type GameFilter = "draft" | "published" | "archived";
 
 const HUB_TYPES: {
@@ -94,6 +94,14 @@ const HUB_TYPES: {
     icon: "/organizer/games/game-type-checkin.png?v=hub4",
     cover: "/organizer/games/game-cover-stamp.png?v=hub2",
   },
+  {
+    id: "vote",
+    theme: "vote",
+    label: "投票",
+    blurb: "案を集めて、みんなで1つに決めよう",
+    icon: "/organizer/games/loading-mascot-3.png",
+    cover: "/organizer/games/game-cover-stamp.png?v=hub2",
+  },
 ];
 
 const HUB_TYPE_BY_ID = Object.fromEntries(HUB_TYPES.map((type) => [type.id, type])) as Record<
@@ -109,6 +117,7 @@ const COVER_BY_THEME: Record<HubTheme, string> = {
   photo: "/profile/album/spring/walk.jpg",
   coupon: "/profile/album/spring/town.jpg",
   checkin: "/profile/album/spring/sunset.jpg",
+  vote: "/profile/album/spring/town.jpg",
 };
 
 const MOBILE_ART_BY_THEME: Partial<Record<HubTheme, string>> = {
@@ -184,20 +193,19 @@ function GameCard({ game }: { game: OrganizerGame }) {
 const PC_TEMPLATES: {
   id: OrganizerGameTypeId;
   label: string;
-  photo: string;
   mascot: string;
   extra?: boolean;
 }[] = [
-  { id: "stamp", label: "スタンプラリー", photo: "/profile/album/spring/town.jpg", mascot: "/organizer/games/hub-mascot-stamp.png" },
-  { id: "quiz", label: "クイズラリー", photo: "/profile/album/spring/flower.jpg", mascot: "/organizer/games/hub-mascot-quiz.png" },
-  { id: "mystery", label: "謎解き街歩き", photo: "/profile/album/spring/walk.jpg", mascot: "/organizer/games/hub-mascot-mystery.png" },
-  { id: "mission", label: "ミッション", photo: "/profile/album/spring/river.jpg", mascot: "/organizer/games/hub-mascot-mission.png" },
-  { id: "photo", label: "フォトラリー", photo: "/profile/album/spring/nanohana.jpg", mascot: "/organizer/games/hub-mascot-photo.png" },
-  { id: "coupon", label: "クーポンラリー", photo: "/profile/album/spring/cafe.jpg", mascot: "/organizer/games/hub-mascot-coupon.png" },
+  { id: "stamp", label: "スタンプラリー", mascot: "/organizer/games/hub-mascot-stamp.png" },
+  { id: "quiz", label: "クイズラリー", mascot: "/organizer/games/hub-mascot-quiz.png" },
+  { id: "mystery", label: "謎解き街歩き", mascot: "/organizer/games/hub-mascot-mystery.png" },
+  { id: "mission", label: "ミッション", mascot: "/organizer/games/hub-mascot-mission.png" },
+  { id: "photo", label: "フォトラリー", mascot: "/organizer/games/hub-mascot-photo.png" },
+  { id: "vote", label: "投票", mascot: "/organizer/games/hub-mascot.png" },
+  { id: "coupon", label: "クーポンラリー", mascot: "/organizer/games/hub-mascot-coupon.png", extra: true },
   {
     id: "checkin",
     label: "チェックイン",
-    photo: "/profile/album/spring/sunset.jpg",
     mascot: "/organizer/games/game-type-checkin.png?v=hub4",
     extra: true,
   },
@@ -575,15 +583,15 @@ export function OrganizerGamesHub() {
           <ul className="org-hub-pc__templates">
             {pcTemplates.map((item, index) => (
               <li key={item.id}>
+                {/* 写真は使わず、マスコットと名前だけの小さなカードにする */}
                 <Link href={`/organizer/games/new?type=${item.id}`} className="org-hub-pc__template">
-                  <span className="org-hub-pc__template-photo">
-                    <Image src={item.photo} alt="" fill sizes="220px" unoptimized />
-                    <span className="org-hub-pc__template-no">{String(index + 1).padStart(2, "0")}</span>
-                    <span className="org-hub-pc__template-mascot" aria-hidden>
-                      <Image src={item.mascot} alt="" width={96} height={96} unoptimized />
-                    </span>
+                  <span className="org-hub-pc__template-mascot" aria-hidden>
+                    <Image src={item.mascot} alt="" width={96} height={96} unoptimized />
                   </span>
-                  <span className="org-hub-pc__template-label">{item.label}</span>
+                  <span className="org-hub-pc__template-text">
+                    <span className="org-hub-pc__template-no">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="org-hub-pc__template-label">{item.label}</span>
+                  </span>
                 </Link>
               </li>
             ))}

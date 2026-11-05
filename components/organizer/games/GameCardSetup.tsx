@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 export function gameTypeCover(type: OrganizerGameTypeId): string {
   // 謎解きだけは種類の絵がないので、テンプレートの絵を使う。
   if (type === "mystery") return "/organizer/games/template-mystery.jpg";
+  // 投票も種類の絵がないので、マスコットの絵を使う。
+  if (type === "vote") return "/organizer/games/loading-mascot-3.png";
   return `/organizer/games/game-type-${type}.png`;
 }
 

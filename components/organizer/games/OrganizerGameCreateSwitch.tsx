@@ -8,6 +8,7 @@ import { OrganizerMysteryCreateForm } from "@/components/organizer/games/Organiz
 import { OrganizerMissionCreateForm } from "@/components/organizer/games/OrganizerMissionCreateForm";
 import { OrganizerPhotoCreateForm } from "@/components/organizer/games/OrganizerPhotoCreateForm";
 import { OrganizerQuizCreateForm } from "@/components/organizer/games/OrganizerQuizCreateForm";
+import { OrganizerVoteCreateForm } from "@/components/organizer/games/OrganizerVoteCreateForm";
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 import { isDevPreviewSuccessQuery } from "@/lib/dev-publish-success-preview";
 import { getOrganizerGameType, isOrganizerGameTypeId } from "@/lib/organizer/game-types";
@@ -28,5 +29,6 @@ export function OrganizerGameCreateSwitch() {
   if (type === "photo") return <OrganizerPhotoCreateForm />;
   if (type === "coupon") return <OrganizerCouponCreateForm />;
   if (type === "checkin") return <OrganizerCheckinCreateForm />;
+  if (type === "vote") return <OrganizerVoteCreateForm />;
   return <OrganizerGameCreateForm />;
 }

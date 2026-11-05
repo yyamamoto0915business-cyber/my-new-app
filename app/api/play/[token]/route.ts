@@ -8,6 +8,7 @@ import { publicPhoto, readStoredPhoto } from "@/lib/organizer/photo-play";
 import { readStoredCoupon } from "@/lib/organizer/coupon-play";
 import { publicCheckin, readStoredCheckin } from "@/lib/organizer/checkin-play";
 import { publicMystery, readStoredMystery } from "@/lib/organizer/mystery-play";
+import { readStoredVote } from "@/lib/organizer/vote";
 import { getOrganizerGameType, isOrganizerGameTypeId } from "@/lib/organizer/game-types";
 import { playEventEntryHeld, playEventGate, playGameEntryHeld, playGameEntryStatus, getPlayDb, joinPlayGame, playGamePublished } from "@/lib/organizer/play";
 import { readPlayUserId } from "@/lib/organizer/play-user";
@@ -153,6 +154,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const storedMystery = readStoredMystery(settings);
     mystery = storedMystery ? publicMystery(storedMystery) : null;
   }
+  const storedVote = type === "vote" ? readStoredVote(settings) : null;
+  const vote = storedVote ? { prompt: storedVote.prompt, phase: storedVote.phase } : null;
   const look =
     type !== "stamp" && settings && typeof settings === "object"
       ? readGameLook((settings as { look?: unknown }).look)
@@ -200,6 +203,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     coupon,
     checkin,
     mystery,
+    vote,
     look,
   });
 }
