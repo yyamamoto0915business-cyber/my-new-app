@@ -1059,54 +1059,27 @@
 
   .org-hub-pc__template {
     display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
+    align-items: center;
+    gap: 0.6rem;
+    height: 100%;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid #e3ddcc;
+    border-radius: 0.9rem;
+    background: rgba(255, 255, 255, 0.78);
     color: var(--hub-ink);
     text-decoration: none;
-  }
-
-  .org-hub-pc__template-photo {
-    position: relative;
-    display: block;
-    aspect-ratio: 4 / 3;
-    overflow: hidden;
-    border-radius: 0.55rem;
-    background: #e7e2d2;
-    box-shadow: 0 6px 16px rgba(26, 34, 20, 0.1);
-  }
-
-  .org-hub-pc__template-photo > img {
-    object-fit: cover;
-    transition: transform 0.35s ease;
-  }
-
-  .org-hub-pc__template-no {
-    position: absolute;
-    top: 0;
-    left: 0;
-    border-radius: 0 0 0.7rem 0;
-    background: #f6f2e6;
-    padding: 0.15rem 0.6rem 0.2rem 0.45rem;
-    font-family: var(--hub-serif);
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #a8862f;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
   }
 
   .org-hub-pc__template-mascot {
-    position: absolute;
-    right: 0.55rem;
-    bottom: 0.55rem;
     display: grid;
-    width: 38%;
-    max-width: 4.6rem;
-    aspect-ratio: 1;
+    flex-shrink: 0;
+    width: 3rem;
+    height: 3rem;
     place-items: center;
     overflow: hidden;
     border-radius: 999px;
-    background: #fff;
-    box-shadow: 0 6px 14px rgba(26, 34, 20, 0.2);
-    outline: 3px solid rgba(255, 255, 255, 0.85);
+    background: #f6f2e6;
     transition: transform 0.25s ease;
   }
 
@@ -1116,19 +1089,38 @@
     object-fit: contain;
   }
 
-  .org-hub-pc__template-label {
-    font-family: var(--hub-serif);
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+  .org-hub-pc__template-text {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.05rem;
   }
 
-  .org-hub-pc__template:hover .org-hub-pc__template-photo > img {
-    transform: scale(1.05);
+  .org-hub-pc__template-no {
+    font-family: var(--hub-serif);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #a8862f;
+  }
+
+  .org-hub-pc__template-label {
+    overflow: hidden;
+    font-family: var(--hub-serif);
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .org-hub-pc__template:hover {
+    border-color: #b9c9a6;
+    background: #fff;
+    transform: translateY(-2px);
   }
 
   .org-hub-pc__template:hover .org-hub-pc__template-mascot {
-    transform: translateY(-3px) rotate(-4deg);
+    transform: rotate(-6deg);
   }
 
   .org-hub-pc__template:focus-visible {
@@ -1340,8 +1332,8 @@
   }
 
   .org-hub-pc__template-mascot {
-    right: 0.35rem;
-    bottom: 0.35rem;
+    width: 2.5rem;
+    height: 2.5rem;
   }
 
   .org-hub-pc__game-link {
@@ -1382,7 +1374,7 @@
 }
 
 @media (min-width: 900px) and (prefers-reduced-motion: reduce) {
-  .org-hub-pc__template-photo > img,
+  .org-hub-pc__template,
   .org-hub-pc__template-mascot,
   .org-hub-pc__game-link,
   .org-hub-pc__create {
