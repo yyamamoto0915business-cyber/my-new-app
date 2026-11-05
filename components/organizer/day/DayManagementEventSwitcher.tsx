@@ -449,7 +449,9 @@ export function DayManagementEventSwitcher({
                 ) : null}
                 {currentEventFormat === "online" ? (
                   <p className="text-[#566358]">
-                    参加者は参加パスの「参加する」から入室します
+                    {currentOnlineJoinUrl
+                      ? "参加者は参加パスの「参加する」から入室します"
+                      : "会議のない企画です（参加URLは出しません）"}
                   </p>
                 ) : null}
               </div>

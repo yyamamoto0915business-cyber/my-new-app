@@ -76,7 +76,7 @@ export function OnlineParticipationSettingsCard({
       <div className={dense ? "space-y-1" : "space-y-1.5"}>
         <div className={dense ? "grid grid-cols-2 gap-1.5" : undefined}>
           <div>
-            <EventFormLabel label="配信サービス" required />
+            <EventFormLabel label="配信サービス" opt="会議があるとき" />
             <select
               value={onlineService ?? ""}
               onChange={(e) =>
@@ -118,7 +118,7 @@ export function OnlineParticipationSettingsCard({
         </div>
 
         <div className="min-w-0">
-          <EventFormLabel label="参加URL" required />
+          <EventFormLabel label="参加URL" opt="会議があるとき" />
           <input
             type="url"
             value={onlineJoinUrl}
@@ -127,6 +127,11 @@ export function OnlineParticipationSettingsCard({
             className={`${inp} min-w-0 ${errors.onlineJoinUrl ? eventFormInpErr : ""}`}
           />
           <EventFormError msg={errors.onlineJoinUrl} />
+          {!errors.onlineJoinUrl ? (
+            <p className="mt-0.5 text-[10.5px] leading-snug text-[#888]">
+              Zoom などの会議がない企画（オンラインで応募・投稿するだけ など）は、空欄のままで大丈夫です。
+            </p>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-2 gap-1.5">
