@@ -12,6 +12,8 @@ import { shrinkPhotoForChat } from "@/lib/chat/shrink-photo";
 
 /** 写真だけを送ったときに入る文字（吹き出しには出さない） */
 const PHOTO_ONLY_TEXT = "写真を送りました";
+/** 1回に送れる写真の数 */
+const STAGED_MAX = 4;
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
@@ -122,6 +124,8 @@ export default function ConversationPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
+  /** 選んだけれど、まだ送っていない写真（送信ボタンで送る） */
+  const [staged, setStaged] = useState<{ id: string; file: File; previewUrl: string }[]>([]);
 
   useEffect(() => {
     const raw = routeParams?.conversationId;
@@ -295,18 +299,43 @@ export default function ConversationPage() {
     }
   }, [conversationId, currentUserId]);
 
+  /** 写真を選んだら、入力欄の上に並べるだけ（送るのは送信ボタンを押したとき） */
   const handlePickPhoto = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []).slice(0, 4);
+    const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    for (const f of files) void sendPhoto(f);
-  }, [sendPhoto]);
+    setStaged((prev) => {
+      const room = Math.max(0, STAGED_MAX - prev.length);
+      const added = files.slice(0, room).map((file, i) => ({
+        id: `${Date.now()}-${i}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+      return [...prev, ...added];
+    });
+  }, []);
+
+  const removeStaged = useCallback((id: string) => {
+    setStaged((prev) => {
+      const target = prev.find((x) => x.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((x) => x.id !== id);
+    });
+  }, []);
 
   const handleSend = useCallback(() => {
     const text = content.trim();
-    if (!text || sending) return;
-    setContent("");
-    void sendText(text);
-  }, [content, sending, sendText]);
+    if ((!text && staged.length === 0) || sending) return;
+    // 写真を先に、文章はそのあとに別のメッセージで送る
+    for (const s of staged) {
+      URL.revokeObjectURL(s.previewUrl);
+      void sendPhoto(s.file);
+    }
+    setStaged([]);
+    if (text) {
+      setContent("");
+      void sendText(text);
+    }
+  }, [content, staged, sending, sendText, sendPhoto]);
 
   useEffect(() => {
     resizeComposer(inputRef.current);
@@ -332,7 +361,7 @@ export default function ConversationPage() {
     );
   }
 
-  const canSend = content.trim().length > 0 && !sending;
+  const canSend = (content.trim().length > 0 || staged.length > 0) && !sending;
   const rel = relationLabel(conversationKind);
   const name = counterpartName?.trim() || "相手";
   const nameInitial = name.slice(0, 1).toUpperCase() || "?";
@@ -596,6 +625,26 @@ export default function ConversationPage() {
         <div ref={bottomRef} style={{ height: 8, flexShrink: 0 }} />
       </div>
 
+      {/* 選んだ写真（送信ボタンを押すまで送らない） */}
+      {staged.length > 0 ? (
+        <div style={{ display: "flex", gap: 8, padding: "8px 12px 0", overflowX: "auto", flexShrink: 0, background: C.surface }}>
+          {staged.map((s) => (
+            <div key={s.id} style={{ position: "relative", flexShrink: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- 手元の写真（blob:）をそのまま出す */}
+              <img src={s.previewUrl} alt="送る写真" style={{ width: 72, height: 72, borderRadius: 12, objectFit: "cover", display: "block", background: C.input }} />
+              <button
+                type="button"
+                onClick={() => removeStaged(s.id)}
+                aria-label="この写真をやめる"
+                style={{ position: "absolute", top: -6, right: -6, width: 24, height: 24, borderRadius: "50%", border: "2px solid white", background: "#19170f", color: "white", fontSize: 14, lineHeight: "18px", cursor: "pointer", padding: 0 }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {/* Input */}
       <div
         style={{
@@ -618,7 +667,8 @@ export default function ConversationPage() {
         <button
           type="button"
           onClick={() => photoInputRef.current?.click()}
-          aria-label="写真を送る"
+          disabled={staged.length >= STAGED_MAX}
+          aria-label="写真を選ぶ"
           style={{
             width: 44,
             height: 44,
@@ -631,6 +681,7 @@ export default function ConversationPage() {
             flexShrink: 0,
             background: "transparent",
             color: C.t2,
+            opacity: staged.length >= STAGED_MAX ? 0.35 : 1,
           }}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ width: 24, height: 24, strokeWidth: 1.8 }} aria-hidden>
