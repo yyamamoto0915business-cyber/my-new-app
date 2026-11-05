@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { getOrganizerById } from "@/lib/db/organizers";
+import { getOrganizerById, getOrganizerOwnerProfileId } from "@/lib/db/organizers";
 import { fetchPublishedEventsByOrganizer } from "@/lib/db/events";
 import type { Event } from "@/lib/db/types";
 import { EventThumbnail } from "@/components/event-thumbnail";
@@ -17,6 +17,8 @@ import { getJstTodayYmd } from "@/lib/jst-date";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import { getPrimaryCategory } from "@/lib/inferCategory";
 import { OrganizerFollowButton } from "./OrganizerFollowButton";
+import { ModerationMenu } from "@/components/moderation/ModerationMenu";
+import { getCachedAuthUser } from "@/lib/supabase/get-cached-auth-user";
 import { buildOrganizerProfileDisplay } from "@/lib/organizer/organizer-display";
 
 export const dynamic = "force-dynamic";
@@ -50,10 +52,13 @@ export default async function OrganizerPublicPage({ params }: Props) {
 
   if (!supabase) notFound();
 
-  const [organizer, events] = await Promise.all([
+  const [organizer, events, viewer, ownerProfileId] = await Promise.all([
     getOrganizerById(supabase, id),
     fetchPublishedEventsByOrganizer(supabase, id, 50),
+    getCachedAuthUser(),
+    getOrganizerOwnerProfileId(id),
   ]);
+  const viewerId = viewer?.id ?? null;
 
   if (!organizer) notFound();
 
@@ -137,9 +142,20 @@ export default async function OrganizerPublicPage({ params }: Props) {
                       <span>{initial}</span>
                     )}
                   </div>
-                  <h1 className="min-w-0 text-[17px] font-bold leading-snug" style={{ color: "#1a2818" }}>
+                  <h1 className="min-w-0 flex-1 text-[17px] font-bold leading-snug" style={{ color: "#1a2818" }}>
                     {organizer.organizationName}
                   </h1>
+                  {ownerProfileId ? (
+                    <ModerationMenu
+                      targetType="user"
+                      targetId={ownerProfileId}
+                      authorId={ownerProfileId}
+                      authorName={organizer.organizationName}
+                      viewerId={viewerId}
+                      className="shrink-0 text-[#6a7a68]"
+                      iconClassName="h-5 w-5"
+                    />
+                  ) : null}
                 </div>
 
                 {(profileDisplay.heroBio) && (
@@ -244,6 +260,8 @@ export default async function OrganizerPublicPage({ params }: Props) {
             bio={profileDisplay.heroBio}
             totalEventCount={totalEventCount}
             totalParticipants={totalParticipants}
+            ownerProfileId={ownerProfileId}
+            viewerId={viewerId}
           />
 
           <OrganizerProfilePcSidebar

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { OrganizerFollowButton } from "@/app/organizers/[id]/OrganizerFollowButton";
 import { OrganizerRemoteImage } from "@/components/organizers/OrganizerRemoteImage";
+import { ModerationMenu } from "@/components/moderation/ModerationMenu";
 
 type Props = {
   organizationName: string;
@@ -9,6 +10,9 @@ type Props = {
   bio: string | null;
   totalEventCount: number;
   totalParticipants: number;
+  /** 主催者のアカウント。あれば「…」から通報・ブロックできる */
+  ownerProfileId?: string | null;
+  viewerId?: string | null;
 };
 
 export function OrganizerProfilePcHero({
@@ -18,6 +22,8 @@ export function OrganizerProfilePcHero({
   bio,
   totalEventCount,
   totalParticipants,
+  ownerProfileId,
+  viewerId,
 }: Props) {
   const metaParts: string[] = [];
   if (totalEventCount > 0) metaParts.push(`開催 ${totalEventCount}回`);
@@ -93,6 +99,17 @@ export function OrganizerProfilePcHero({
                 </svg>
                 相談する
               </Link>
+              {ownerProfileId ? (
+                <ModerationMenu
+                  targetType="user"
+                  targetId={ownerProfileId}
+                  authorId={ownerProfileId}
+                  authorName={organizationName}
+                  viewerId={viewerId}
+                  className="text-[#6a7a68]"
+                  iconClassName="h-5 w-5"
+                />
+              ) : null}
             </div>
           </div>
         </div>

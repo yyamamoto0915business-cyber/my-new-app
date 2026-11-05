@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Organizer } from "./types";
 import type { CategoryKey } from "@/lib/categories";
@@ -319,4 +320,19 @@ export async function createOrganizer(
 
   if (error) throw error;
   return data as Organizer;
+}
+
+/**
+ * 主催者のアカウント（profiles.id）。公開ページで通報・ブロックの対象にする。
+ * organizers は本人しか読めないので、サーバーでサービスロールを使って id だけ取る。
+ */
+export async function getOrganizerOwnerProfileId(organizerId: string): Promise<string | null> {
+  const admin = createAdminClient();
+  if (!admin) return null;
+  const { data } = await admin
+    .from("organizers")
+    .select("profile_id")
+    .eq("id", organizerId)
+    .maybeSingle();
+  return (data?.profile_id as string | undefined) ?? null;
 }
