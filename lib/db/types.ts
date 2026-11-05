@@ -1,3 +1,4 @@
+import type { EventQuestion } from "@/lib/event-questions";
 // DB型定義（Supabase のテーブルに対応）
 
 export type ProfileRole = "user" | "organizer" | "developer_admin";
@@ -89,6 +90,8 @@ export type DbEvent = {
   date: string;
   /** 期間イベントの終了日（NULL なら date の1日だけ） */
   end_date?: string | null;
+  /** 申し込みのときに主催者が聞く質問 */
+  application_questions?: unknown;
   start_time: string;
   end_time: string | null;
   location: string;
@@ -192,6 +195,8 @@ export type Event = {
   date: string;
   /** 期間イベントの終了日（なければ date の1日だけ） */
   endDate?: string | null;
+  /** 申し込みのときに主催者が聞く質問 */
+  applicationQuestions?: EventQuestion[];
   startTime: string;
   endTime?: string;
   location: string;

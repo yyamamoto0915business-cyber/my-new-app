@@ -246,7 +246,7 @@ export default async function EventDetailPage({ params }: Props) {
       event.endTime,
       event.recurrence ?? "none",
       event.recurrenceCount,
-            event.endDate
+      event.endDate
     ),
     placeLabel: [event.location, event.address].filter(Boolean).join(" ") || null,
     priceLabel:

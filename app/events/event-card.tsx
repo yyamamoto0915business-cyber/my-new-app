@@ -93,7 +93,7 @@ export function EventCard({ event }: Props) {
               event.endTime,
               event.recurrence ?? "none",
               event.recurrenceCount,
-            event.endDate
+              event.endDate
             )}
           </span>
         </div>

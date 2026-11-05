@@ -1,3 +1,4 @@
+import { answersToStripeMetadata, sanitizeEventQuestions, validateEventAnswers } from "@/lib/event-questions";
 import { getRegistrationError } from "@/lib/event-registration";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "決済は現在利用できません" }, { status: 503 });
   }
 
-  let body: { eventId?: string };
+  let body: { eventId?: string; answers?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
   const { data: eventRow } = await supabase
     .from("events")
     .select(
-      "id, title, price, stripe_price_id, participation_mode, requires_registration, payment_method, date, end_date, end_time, registration_deadline, capacity"
+      "id, title, price, stripe_price_id, participation_mode, requires_registration, payment_method, date, end_date, end_time, registration_deadline, capacity, application_questions"
     )
     .eq("id", eventId)
     .eq("status", "published")
@@ -88,6 +89,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "受付状況を確認できません" }, { status: 503 });
   }
 
+  // 主催者が足した質問への答え。支払いのあとで Webhook が参加登録するときに使うので、metadata に入れておく
+  const checkedAnswers = validateEventAnswers(
+    sanitizeEventQuestions((eventRow as { application_questions?: unknown }).application_questions),
+    body.answers,
+  );
+  if (!checkedAnswers.ok) {
+    return NextResponse.json({ error: checkedAnswers.error, code: "answers_required" }, { status: 400 });
+  }
+
   const existing = await getParticipantStatus(supabase, eventId, user.id);
   if (existing) {
     return NextResponse.json(
@@ -132,6 +142,7 @@ export async function POST(request: NextRequest) {
       eventId,
       userId: user.id,
       amount: String(price),
+      ...answersToStripeMetadata(checkedAnswers.answers),
     },
     success_url: `${appUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/events/${eventId}?event=cancel`,

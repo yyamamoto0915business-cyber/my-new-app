@@ -144,6 +144,7 @@ export async function POST(request: NextRequest) {
       recurrence,
       recurrenceCount,
       endDate,
+      applicationQuestions,
       eventFormat,
       onlineService,
       onlineJoinUrl,
@@ -209,6 +210,7 @@ export async function POST(request: NextRequest) {
       "../../../lib/event-recurrence"
     );
     const { normalizeEventEndDate } = await import("../../../lib/event-dates");
+    const { sanitizeEventQuestions } = await import("../../../lib/event-questions");
     const { addCreatedEvent } = await import("../../../lib/created-events-store");
     const { addDefaultVolunteerRoleForEvent } = await import(
       "../../../lib/created-volunteer-roles-store"
@@ -234,6 +236,7 @@ export async function POST(request: NextRequest) {
       description: String(description).trim(),
       date: String(date),
       endDate: normalizedEndDate,
+      applicationQuestions: sanitizeEventQuestions(applicationQuestions),
       startTime: String(startTime),
       endTime: endTime ? String(endTime) : undefined,
       location: locationValue,

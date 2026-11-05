@@ -369,7 +369,7 @@ export default function EditEventPage() {
           form.endTime || undefined,
           form.recurrence ?? "none",
           form.recurrenceCount,
-            form.endDate
+          form.endDate
         )
       : "—";
   const missingRequired = Object.keys(validateForm(form)).length > 0;
@@ -734,6 +734,12 @@ export default function EditEventPage() {
                     className="flex w-full items-center justify-center rounded-[9px] border border-[#2D7A4F] bg-[#EAF4ED] py-[12px] text-[14px] font-[500] text-[#2D7A4F] hover:bg-[#D0ECD7]"
                   >
                     当日管理へ →
+                  </Link>
+                  <Link
+                    href={`/organizer/events/${encodeURIComponent(id)}/answers`}
+                    className="flex w-full items-center justify-center rounded-[9px] border border-[#e8e6e0] bg-white py-[12px] text-[14px] font-[500] text-[#1a1a1a] hover:bg-[#f5f4f0]"
+                  >
+                    申し込みと答えを見る
                   </Link>
                 </div>
 

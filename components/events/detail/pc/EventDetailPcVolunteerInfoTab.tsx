@@ -64,7 +64,7 @@ export function EventDetailPcVolunteerInfoTab({
     event.endTime,
     event.recurrence ?? "none",
     event.recurrenceCount,
-            event.endDate
+    event.endDate
   );
 
   const rows = [

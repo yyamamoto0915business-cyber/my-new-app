@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { CalendarDays, MapPin, Ticket, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EVENT_ANSWER_MAX, type EventAnswers, type EventQuestion } from "@/lib/event-questions";
 
 export type EventApplyConfirmInfo = {
   title: string;
@@ -17,6 +18,14 @@ type Props = {
   confirming?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  /** 主催者が足した質問。あれば答えの欄を出す */
+  questions?: EventQuestion[];
+  answers?: EventAnswers;
+  onAnswersChange?: (answers: EventAnswers) => void;
+  /** 申し込めなかったときの理由（答えのもれなど） */
+  error?: string | null;
+  /** 有料のオンライン決済のとき、ボタンを「支払いへ進む」にする */
+  checkout?: boolean;
 };
 
 function MetaRow({
@@ -55,7 +64,13 @@ export function EventApplyConfirmSheet({
   confirming = false,
   onConfirm,
   onCancel,
+  questions = [],
+  answers = {},
+  onAnswersChange,
+  error = null,
+  checkout = false,
 }: Props) {
+  const missingRequired = questions.some((q) => q.required && !answers[q.id]?.trim());
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -84,7 +99,7 @@ export function EventApplyConfirmSheet({
 
       <div
         className={cn(
-          "mg-apply-confirm-sheet relative z-10 w-full max-w-[400px] overflow-hidden",
+          "mg-apply-confirm-sheet relative z-10 max-h-[calc(100dvh-2rem)] w-full max-w-[400px] overflow-y-auto overscroll-contain",
           "rounded-[22px] border border-white/70",
           "bg-[linear-gradient(165deg,#ffffff_0%,#faf9f5_48%,#f5f3ed_100%)]",
           "shadow-[0_8px_16px_rgba(26,40,24,0.06),0_24px_48px_rgba(26,40,24,0.14),0_40px_80px_rgba(26,40,24,0.1)]",
@@ -163,14 +178,61 @@ export function EventApplyConfirmSheet({
           </div>
         </div>
 
+        {questions.length > 0 ? (
+          <div className="relative mx-5 mb-5 space-y-3.5 min-[900px]:mx-6">
+            <p className="text-[12px] font-semibold tracking-[0.04em] text-[#6f8f5a]">主催者からの質問</p>
+            {questions.map((q) => (
+              <label key={q.id} className="block">
+                <span className="text-[13px] font-semibold leading-snug text-[#1a2818]">
+                  {q.label}
+                  {q.required ? (
+                    <span className="ml-1.5 rounded bg-[#fdf3e6] px-1.5 py-[1px] text-[10px] font-semibold text-[#c47a2a]">必須</span>
+                  ) : null}
+                </span>
+                {q.type === "select" ? (
+                  <select
+                    value={answers[q.id] ?? ""}
+                    onChange={(e) => onAnswersChange?.({ ...answers, [q.id]: e.target.value })}
+                    disabled={confirming}
+                    className="mt-1.5 w-full rounded-xl border border-[#dfe8da] bg-white px-3 py-2.5 text-[14px] text-[#1a2818] outline-none focus:border-[#348b38]"
+                  >
+                    <option value="">選んでください</option>
+                    {q.options?.map((o) => (
+                      <option key={o} value={o}>
+                        {o}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <textarea
+                    value={answers[q.id] ?? ""}
+                    onChange={(e) =>
+                      onAnswersChange?.({ ...answers, [q.id]: e.target.value.slice(0, EVENT_ANSWER_MAX) })
+                    }
+                    disabled={confirming}
+                    rows={2}
+                    className="mt-1.5 w-full resize-none rounded-xl border border-[#dfe8da] bg-white px-3 py-2.5 text-[14px] text-[#1a2818] outline-none focus:border-[#348b38]"
+                  />
+                )}
+              </label>
+            ))}
+          </div>
+        ) : null}
+
+        {error ? (
+          <p role="alert" className="relative mx-5 mb-3 rounded-xl bg-[#fdecec] px-3 py-2 text-[12.5px] text-[#b91c1c] min-[900px]:mx-6">
+            {error}
+          </p>
+        ) : null}
+
         <div className="relative flex flex-col gap-1.5 px-5 pb-5 min-[900px]:px-6 min-[900px]:pb-6">
           <button
             type="button"
             onClick={onConfirm}
-            disabled={confirming}
+            disabled={confirming || missingRequired}
             className="flex min-h-[50px] w-full items-center justify-center rounded-2xl bg-[#348b38] px-4 text-[15px] font-bold tracking-wide text-white shadow-[0_12px_28px_rgba(52,139,56,0.32)] transition hover:bg-[#2d7a32] hover:shadow-[0_14px_32px_rgba(52,139,56,0.36)] active:scale-[0.99] disabled:opacity-60"
           >
-            {confirming ? "申し込み中..." : "申し込む"}
+            {confirming ? (checkout ? "支払いの準備中..." : "申し込み中...") : checkout ? "支払いへ進む" : "申し込む"}
           </button>
           <button
             type="button"

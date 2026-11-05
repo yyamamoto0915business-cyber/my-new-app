@@ -1,3 +1,4 @@
+import { validateEventAnswers } from "@/lib/event-questions";
 import { getRegistrationError } from "@/lib/event-registration";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -65,7 +66,7 @@ async function notifyPassIssued(
 }
 
 /** POST: イベントに申し込む（申込必須イベント用） */
-export async function POST(_request: Request, { params }: Params) {
+export async function POST(request: Request, { params }: Params) {
   const user = await getApiUser();
   if (!user) {
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
@@ -99,6 +100,13 @@ export async function POST(_request: Request, { params }: Params) {
   if (event.price > 0 && (event.paymentMethod === "online" || event.paymentMethod === "both")) {
     return NextResponse.json({ error: "オンライン決済からお申し込みください" }, { status: 400 });
   }
+
+  // 主催者が足した質問への答え
+  const body = (await request.json().catch(() => null)) as { answers?: unknown } | null;
+  const checked = validateEventAnswers(event.applicationQuestions ?? [], body?.answers);
+  if (!checked.ok) {
+    return NextResponse.json({ error: checked.error, code: "answers_required" }, { status: 400 });
+  }
   try {
     const error = await getRegistrationError(event);
     if (error) return NextResponse.json({ error }, { status: 400 });
@@ -116,7 +124,7 @@ export async function POST(_request: Request, { params }: Params) {
   }
 
   try {
-    await joinEvent(supabase, eventId, user.id);
+    await joinEvent(supabase, eventId, user.id, checked.answers);
     await notifyPassIssued(supabase, eventId, event.title, user.id);
     return NextResponse.json({ success: true });
   } catch (e) {
