@@ -143,7 +143,7 @@ export default async function ReadArticlePage({ params }: Props) {
               イベントに参加する
             </Link>
             <Link
-              href="/event-requests/new"
+              href="/contact"
               className="inline-flex items-center justify-center rounded-lg border border-[var(--border)] px-6 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               問い合わせ

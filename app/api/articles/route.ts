@@ -1,3 +1,4 @@
+import { getDeveloperAdminContext } from "@/lib/admin-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { getAllArticles, addArticle } from "../../../lib/articles-store";
 
@@ -10,7 +11,14 @@ export async function GET(request: NextRequest) {
   });
 }
 
+/**
+ * POST: 記事を作る。保存先はサーバーのメモリだけの仮の仕組みなので、
+ * 誰でも公開できないよう運営の管理者だけに限る（ゲスト投稿は受け付けない）。
+ */
 export async function POST(request: NextRequest) {
+  if (!(await getDeveloperAdminContext())) {
+    return NextResponse.json({ error: "記事を作成する権限がありません" }, { status: 403 });
+  }
   try {
     const body = await request.json();
     const { title, body: bodyText, excerpt, imageUrl, authorId, authorName, eventId } = body;

@@ -222,7 +222,8 @@ PC・タブレット・スマホの3つの画面幅で確認する。
 
 - [x] **iOS アプリでも「応援する」などのお金のボタンが見えている。** 押すと裏側で断られて「アプリ内では応援できません」と出るだけ。ボタンを押せるように見せて失敗させるのは、使う人も審査もとまどう。アプリのときはボタン自体を隠すか、説明に変える。場所：`components/events/detail/EventDetailSupportBanner.tsx`、`app/events/[id]/event-support-card.tsx`、`app/api/stripe/checkout/support/route.ts`（`isIosAppShell` を使っている画面がまだ無い）→ 2026-11-03 対応：アプリでは応援バナーを出さない（ページ下の応援カードは今は使われていない）
 - [x] **ほかの人のプロフィール・主催者ページに、通報とブロックがあるか確かめる。**（2026-11-05：ユーザーのアルバムには既にあった。主催者ページの見出しに「…」を足した） 通報メニューは投稿とコメントとマイアルバムにはあるが、`app/users/[id]/album` と `app/organizers/[id]` では見つからなかった。ユーザーそのものを通報・ブロックできないと審査（1.2）で指摘されるおそれ。場所：`app/users/[id]/album/page.tsx`、`app/organizers/[id]`
-- [ ] **イベントのお願い・記事など、ほかのユーザー投稿に通報があるか確かめる。** `app/event-requests` と `app/articles` の画面に通報の入り口が見つからない。人が書いた文章が見える所はすべて通報できるようにする。場所：`app/event-requests/[id]/page.tsx`、`app/articles/[id]/page.tsx`
+- [x] **イベントのお願い・記事など、ほかのユーザー投稿に通報があるか確かめる。**（2026-11-05：どちらも作りかけだった。記事は保存先がメモリだけで、誰でもゲスト投稿できたので、投稿 API を運営の管理者だけにした。お願いは詳細がモックのデータを読み、「支援する」も記録しない見せかけだったので、読み物ページの入り口（行き先を間違えた「問い合わせ」ボタン）を /contact に直して、アプリから行けないようにした）
+- [ ] **イベントのお願い（/event-requests）を作り直すか消すか決める。** 一覧は DB、詳細はモック、「支援する（円）」は何も記録しない。作り直すなら、お金ではなく「賛成」や「行きたい」の数にする（App 内課金の決まりにかからないように）。通報・ブロックも必要 `app/event-requests` と `app/articles` の画面に通報の入り口が見つからない。人が書いた文章が見える所はすべて通報できるようにする。場所：`app/event-requests/[id]/page.tsx`、`app/articles/[id]/page.tsx`
 - [ ] **`min-h-screen`（100vh）を使う画面が多い。** iPhone ではアドレス帯やホームバーの分だけ高さがずれ、下が切れたり余計にスクロールしたりする。`dvh` に変える。場所：`app/recruitments/page.tsx`、`app/rankings/page.tsx`、`app/profile/edit/page.tsx`、`app/auth/*`、`app/stories`、`app/articles` など
 - [ ] **プロフィール編集のスマホ画面が、タブレット縦（768〜899px）まで引き伸ばされる。** 今回作り直した画面の切り替えが `899px` のため、iPad 縦では幅いっぱいのスマホの形になる。タブレット用の幅制限か形を足す。場所：`app/profile/edit/page.tsx`
 - [ ] **今週作り直したスマホの投稿詳細を、実機で確かめる。** 下のいいね帯や上の帯が、ホームバー・ダイナミックアイランドに重ならないか。このファイルは `safe-area-inset` の記述が1か所だけで、足りているか不安。場所：`components/posts/detail/MobilePostDetailView.tsx`
