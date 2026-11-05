@@ -117,7 +117,7 @@ export function MobileBottomNav() {
       suppressHydrationWarning
     >
       <PlayResumeBar />
-      <div className="flex w-full items-stretch justify-around gap-0 px-1">
+      <div className="mx-auto flex w-full items-stretch justify-around gap-0 px-1 tablet:max-w-[560px]">
         {items.map((item) => {
           const href = getHref(item);
           const active = isActive(item);

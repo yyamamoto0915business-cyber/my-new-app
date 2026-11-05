@@ -102,7 +102,7 @@ export function PcTownKindCards({ activeChip, onChipClick }: Props) {
 /** モバイル：種別入口カード */
 export function MobileTownKindCards({ activeChip, onChipClick }: Props) {
   return (
-    <section aria-label="種別から探す" className="grid grid-cols-5 gap-1.5">
+    <section aria-label="種別から探す" className="grid grid-cols-5 gap-1.5 tablet:gap-2.5">
       {CARDS.map(({ key, label, Icon, color, bg }) => {
         const active = activeChip === key;
         const shortLabel = key === "volunteer" ? "ボランティア" : label;
@@ -112,19 +112,19 @@ export function MobileTownKindCards({ activeChip, onChipClick }: Props) {
             type="button"
             onClick={() => onChipClick(key)}
             className={cn(
-              "flex flex-col items-center gap-1 rounded-[12px] border px-1 py-2 text-center transition",
+              "flex flex-col items-center gap-1 rounded-[12px] border px-1 py-2 text-center transition tablet:gap-1.5 tablet:py-3",
               active
                 ? "border-[#dcc4a0] bg-gradient-to-b from-[#fdf8ee] to-[#faf2e4] shadow-[0_2px_6px_rgba(150,100,40,0.10)]"
                 : "border-[#ebe3d6] bg-white shadow-[0_1px_3px_rgba(120,80,40,0.05)] active:bg-[#fdfbf6]",
             )}
           >
             <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-1 ring-white/70 shadow-[0_1px_2px_rgba(120,80,40,0.06)]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full tablet:h-10 tablet:w-10 ring-1 ring-white/70 shadow-[0_1px_2px_rgba(120,80,40,0.06)]"
               style={{ background: bg, color }}
             >
-              <Icon className="h-4 w-4" aria-hidden />
+              <Icon className="h-4 w-4 tablet:h-5 tablet:w-5" aria-hidden />
             </span>
-            <span className="block text-[10px] font-semibold leading-tight tracking-[0.02em] text-[#1A2214]">
+            <span className="block text-[10px] tablet:text-[12px] font-semibold leading-tight tracking-[0.02em] text-[#1A2214]">
               {shortLabel}
             </span>
           </button>

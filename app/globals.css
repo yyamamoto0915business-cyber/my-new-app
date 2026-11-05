@@ -93,6 +93,18 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/*
+ * 画面幅の決まり（PC・タブレット・スマホの3つ）
+ *   スマホ      : 〜599px（何もつけない）
+ *   タブレット  : 600〜899px（tablet:  だけのときは tablet:max-pc: を使う）
+ *   PC          : 900px〜（pc:  ※ 前からある min-[900px]: と同じ）
+ * 新しく作る・直すところは、この tablet: / pc: を使う。
+ */
+@theme {
+  --breakpoint-tablet: 600px;
+  --breakpoint-pc: 900px;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -1172,6 +1184,15 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   font-weight: 600;
   color: #163828;
   line-height: 1.25;
+}
+/* タブレット（600〜899px）：スマホの形のまま、余白と見出しを少し大きくする */
+@media (min-width: 600px) and (max-width: 899px) {
+  .mg-mobile-section {
+    padding: 12px;
+  }
+  .mg-mobile-section-title {
+    font-size: 15px;
+  }
 }
 .mg-mobile-chip {
   display: inline-flex;
