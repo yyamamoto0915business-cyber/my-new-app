@@ -2,12 +2,13 @@
 
 import type { ReactNode } from "react";
 import { Leaf, Sprout, UserRound } from "lucide-react";
-import { Caveat } from "next/font/google";
+import localFont from "next/font/local";
 import { cn } from "@/lib/utils";
 
-const welcomeFont = Caveat({
-  subsets: ["latin"],
-  weight: ["500", "600"],
+/** 手書き風の英字（Caveat）。ビルドのたびに Google から取ると失敗することがあるので、ファイルを置いて使う */
+const welcomeFont = localFont({
+  src: "./fonts/caveat-latin.woff2",
+  weight: "500 600",
   display: "swap",
 });
 
