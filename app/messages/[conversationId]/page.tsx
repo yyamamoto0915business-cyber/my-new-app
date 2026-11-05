@@ -8,6 +8,10 @@ import { createClient } from "@/lib/supabase/client";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { isAbortLikeError } from "@/lib/is-abort-like-error";
 import { ModerationMenu } from "@/components/moderation/ModerationMenu";
+import { shrinkPhotoForChat } from "@/lib/chat/shrink-photo";
+
+/** 写真だけを送ったときに入る文字（吹き出しには出さない） */
+const PHOTO_ONLY_TEXT = "写真を送りました";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
@@ -60,6 +64,9 @@ type Message = {
   sender_id: string;
   content: string;
   created_at: string;
+  image_path?: string | null;
+  /** 写真を見るための期限つき URL（サーバーがつける） */
+  image_url?: string | null;
 };
 
 /** 送った直後にすぐ出す吹き出し。サーバーに届いたら本物のメッセージに置きかわる */
@@ -68,6 +75,9 @@ type PendingMessage = {
   content: string;
   created_at: string;
   status: "sending" | "failed";
+  /** 写真を送っているとき：手元の写真と、その仮の表示 */
+  photo?: File;
+  previewUrl?: string;
 };
 
 function relationLabel(conversationKind: string): string {
@@ -110,6 +120,8 @@ export default function ConversationPage() {
   const [keyboardInset, setKeyboardInset] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = routeParams?.conversationId;
@@ -193,6 +205,13 @@ export default function ConversationPage() {
     const channel = supabase.channel(`messages:${conversationId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
         const newRow = payload.new as Message;
+        if (newRow.image_path) {
+          // 写真は見るための URL をサーバーにつけてもらう必要があるので、読み直す
+          void fetchWithTimeout(`/api/messages/conversations/${conversationId}/messages`, API_CREDENTIALS)
+            .then(async (r) => { if (r.ok) setMessages(await r.json()); })
+            .catch(() => {});
+          return;
+        }
         setMessages((prev) => prev.some((m) => m.id === newRow.id) ? prev : [...prev, newRow]);
       })
       .subscribe();
@@ -235,6 +254,52 @@ export default function ConversationPage() {
       setSending(false);
     }
   }, [conversationId, currentUserId]);
+
+  /** 写真を1枚送る。送る前に小さくし、送っている間は手元の写真を出しておく */
+  const sendPhoto = useCallback(async (photo: File, retryTempId?: string) => {
+    if (!conversationId || !currentUserId) return;
+    const tempId = retryTempId ?? `tmp-${Date.now()}`;
+    if (retryTempId) {
+      setPending((prev) => prev.map((p) => (p.tempId === tempId ? { ...p, status: "sending" } : p)));
+    } else {
+      const previewUrl = URL.createObjectURL(photo);
+      setPending((prev) => [
+        ...prev,
+        { tempId, content: "", created_at: new Date().toISOString(), status: "sending", photo, previewUrl },
+      ]);
+    }
+    setError(null);
+    try {
+      const small = await shrinkPhotoForChat(photo);
+      const form = new FormData();
+      form.append("photo", small);
+      const res = await fetch(`/api/messages/conversations/${conversationId}/photo`, {
+        method: "POST",
+        ...API_CREDENTIALS,
+        body: form,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        if (typeof body.error === "string") setError(body.error);
+        throw new Error("send failed");
+      }
+      const r2 = await fetchWithTimeout(`/api/messages/conversations/${conversationId}/messages`, API_CREDENTIALS);
+      if (r2.ok) setMessages(await r2.json());
+      setPending((prev) => {
+        const done = prev.find((p) => p.tempId === tempId);
+        if (done?.previewUrl) URL.revokeObjectURL(done.previewUrl);
+        return prev.filter((p) => p.tempId !== tempId);
+      });
+    } catch {
+      setPending((prev) => prev.map((p) => (p.tempId === tempId ? { ...p, status: "failed" } : p)));
+    }
+  }, [conversationId, currentUserId]);
+
+  const handlePickPhoto = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []).slice(0, 4);
+    e.target.value = "";
+    for (const f of files) void sendPhoto(f);
+  }, [sendPhoto]);
 
   const handleSend = useCallback(() => {
     const text = content.trim();
@@ -454,9 +519,19 @@ export default function ConversationPage() {
                   borderRadius: bubbleRadius(isOwn, isFirst, isLast),
                   background: isOwn ? C.green : C.received,
                   color: isOwn ? "white" : C.t1,
+                  ...(msg.image_path ? { padding: 0, overflow: "hidden", background: "transparent" } : {}),
                 }}
               >
-                {msg.content}
+                {msg.image_path ? (
+                  <ChatPhoto
+                    url={msg.image_url ?? null}
+                    caption={msg.content && msg.content !== PHOTO_ONLY_TEXT ? msg.content : null}
+                    isOwn={isOwn}
+                    onOpen={setViewingPhoto}
+                  />
+                ) : (
+                  msg.content
+                )}
               </div>
               {showTime && (
                 <span className="ms-mtime" style={{ fontSize: 11, color: C.t3, marginTop: 4, padding: "0 4px" }}>
@@ -482,9 +557,15 @@ export default function ConversationPage() {
                 background: p.status === "failed" ? "#fde8e8" : C.green,
                 color: p.status === "failed" ? "#9b1c1c" : "white",
                 opacity: p.status === "sending" ? 0.6 : 1,
+                ...(p.previewUrl ? { padding: 0, overflow: "hidden", background: "transparent" } : {}),
               }}
             >
-              {p.content}
+              {p.previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- 手元の写真（blob:）をそのまま出す
+                <img src={p.previewUrl} alt="送っている写真" style={{ display: "block", maxWidth: 240, maxHeight: 320, borderRadius: BUBBLE_R, objectFit: "cover" }} />
+              ) : (
+                p.content
+              )}
             </div>
             {p.status === "sending" ? (
               <span style={{ fontSize: 11, color: C.t3, marginTop: 4, padding: "0 4px" }}>送信中…</span>
@@ -493,14 +574,17 @@ export default function ConversationPage() {
                 送れませんでした
                 <button
                   type="button"
-                  onClick={() => void sendText(p.content, p.tempId)}
+                  onClick={() => void (p.photo ? sendPhoto(p.photo, p.tempId) : sendText(p.content, p.tempId))}
                   style={{ border: "none", background: "none", padding: 0, color: C.green, fontWeight: 700, fontSize: 11, cursor: "pointer" }}
                 >
                   もう一度送る
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPending((prev) => prev.filter((x) => x.tempId !== p.tempId))}
+                  onClick={() => {
+                    if (p.previewUrl) URL.revokeObjectURL(p.previewUrl);
+                    setPending((prev) => prev.filter((x) => x.tempId !== p.tempId));
+                  }}
                   style={{ border: "none", background: "none", padding: 0, color: C.t3, fontSize: 11, cursor: "pointer" }}
                 >
                   消す
@@ -523,6 +607,38 @@ export default function ConversationPage() {
           flexShrink: 0,
         }}
       >
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handlePickPhoto}
+          style={{ display: "none" }}
+        />
+        <button
+          type="button"
+          onClick={() => photoInputRef.current?.click()}
+          aria-label="写真を送る"
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            border: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            flexShrink: 0,
+            background: "transparent",
+            color: C.t2,
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ width: 24, height: 24, strokeWidth: 1.8 }} aria-hidden>
+            <rect x="3" y="5" width="18" height="14" rx="3" />
+            <circle cx="9" cy="10" r="1.6" />
+            <path d="M21 16l-5-5-8 8" />
+          </svg>
+        </button>
         <div
           className="ms-input-wrap"
           style={{
@@ -593,6 +709,64 @@ export default function ConversationPage() {
           </svg>
         </button>
       </div>
+      {viewingPhoto ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="写真"
+          onClick={() => setViewingPhoto(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.92)", display: "flex", alignItems: "center", justifyContent: "center", padding: "env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- 期限つき URL をそのまま出す */}
+          <img src={viewingPhoto} alt="写真" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+          <button
+            type="button"
+            onClick={() => setViewingPhoto(null)}
+            aria-label="閉じる"
+            style={{ position: "absolute", top: "calc(12px + env(safe-area-inset-top,0px))", right: 12, width: 40, height: 40, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.16)", color: "white", fontSize: 22, cursor: "pointer" }}
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** 写真の吹き出し。URL がまだないとき（期限切れ・読みこみ前）は灰色の箱を出す */
+function ChatPhoto({
+  url,
+  caption,
+  isOwn,
+  onOpen,
+}: {
+  url: string | null;
+  caption: string | null;
+  isOwn: boolean;
+  onOpen: (url: string) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: isOwn ? "flex-end" : "flex-start", gap: 4 }}>
+      {url ? (
+        <button
+          type="button"
+          onClick={() => onOpen(url)}
+          aria-label="写真を大きく見る"
+          style={{ border: "none", padding: 0, background: "none", cursor: "zoom-in", display: "block" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- 期限つき URL をそのまま出す */}
+          <img src={url} alt="送られた写真" loading="lazy" style={{ display: "block", maxWidth: 240, maxHeight: 320, borderRadius: BUBBLE_R, objectFit: "cover", background: "#efefef" }} />
+        </button>
+      ) : (
+        <div style={{ width: 200, height: 150, borderRadius: BUBBLE_R, background: "#efefef", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#8e8e8e" }}>
+          写真を読みこめませんでした
+        </div>
+      )}
+      {caption ? (
+        <span style={{ padding: "8px 14px", borderRadius: BUBBLE_R, background: isOwn ? "#2e8a5a" : "#efefef", color: isOwn ? "white" : "#19170f" }}>
+          {caption}
+        </span>
+      ) : null}
     </div>
   );
 }

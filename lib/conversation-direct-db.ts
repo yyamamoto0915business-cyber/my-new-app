@@ -184,6 +184,8 @@ export type ConversationMessageRow = {
   sender_id: string;
   content: string;
   created_at: string;
+  /** 写真のメッセージのとき、chat-media の中の場所 */
+  image_path?: string | null;
 };
 
 export type ConversationMetaDirect = {
@@ -220,7 +222,7 @@ export async function fetchConversationMessagesDirectDb(
 
     const result = await client.query(
       `
-      SELECT id, conversation_id, sender_id, content, created_at
+      SELECT id, conversation_id, sender_id, content, created_at, image_path
       FROM public.messages
       WHERE conversation_id = $1::uuid
       ORDER BY created_at ASC
@@ -233,6 +235,7 @@ export async function fetchConversationMessagesDirectDb(
       conversation_id: row.conversation_id as string,
       sender_id: row.sender_id as string,
       content: row.content as string,
+      image_path: (row.image_path as string | null) ?? null,
       created_at:
         row.created_at instanceof Date
           ? row.created_at.toISOString()
