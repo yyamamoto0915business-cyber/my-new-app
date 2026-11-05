@@ -87,6 +87,8 @@ export type DbEvent = {
   title: string;
   description: string;
   date: string;
+  /** 期間イベントの終了日（NULL なら date の1日だけ） */
+  end_date?: string | null;
   start_time: string;
   end_time: string | null;
   location: string;
@@ -188,6 +190,8 @@ export type Event = {
   galleryImages?: string[];
   description: string;
   date: string;
+  /** 期間イベントの終了日（なければ date の1日だけ） */
+  endDate?: string | null;
   startTime: string;
   endTime?: string;
   location: string;

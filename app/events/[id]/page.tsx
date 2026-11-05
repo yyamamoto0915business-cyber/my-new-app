@@ -142,6 +142,7 @@ export default async function EventDetailPage({ params }: Props) {
             endTime={event.endTime}
             recurrence={event.recurrence ?? "none"}
             recurrenceCount={event.recurrenceCount}
+            endDate={event.endDate}
             receptionLabel={participationReception}
             price={event.price ?? 0}
             priceNote={event.priceNote}
@@ -183,6 +184,7 @@ export default async function EventDetailPage({ params }: Props) {
           endTime={event.endTime}
           recurrence={event.recurrence ?? "none"}
           recurrenceCount={event.recurrenceCount}
+            endDate={event.endDate}
           receptionLabel={participationReception}
           price={event.price ?? 0}
           priceNote={event.priceNote}
@@ -243,7 +245,8 @@ export default async function EventDetailPage({ params }: Props) {
       event.startTime,
       event.endTime,
       event.recurrence ?? "none",
-      event.recurrenceCount
+      event.recurrenceCount,
+            event.endDate
     ),
     placeLabel: [event.location, event.address].filter(Boolean).join(" ") || null,
     priceLabel:

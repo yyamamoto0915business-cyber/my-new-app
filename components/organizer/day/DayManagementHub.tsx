@@ -1,5 +1,6 @@
 "use client";
 
+import { eventOccursOn } from "@/lib/event-dates";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
@@ -47,7 +48,7 @@ export function DayManagementHub({
 
   useEffect(() => {
     if (eventsLoading || redirectedRef.current || eventId) return;
-    const todayPublic = events.filter((e) => e.date === today && e.status === "public");
+    const todayPublic = events.filter((e) => eventOccursOn(e, today) && e.status === "public");
     if (todayPublic.length === 1) {
       redirectedRef.current = true;
       router.replace(organizerDayEventHref(todayPublic[0].id), { scroll: false });
@@ -72,6 +73,7 @@ export function DayManagementHub({
         if (controller.signal.aborted || !data?.title) return;
         const phase = getEventDayPhase({
           date: data.date ?? "",
+          endDate: data.endDate ?? null,
           status: data.status,
           endTime: data.endTime,
           startTime: data.startTime,

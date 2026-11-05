@@ -1,5 +1,6 @@
 "use client";
 
+import { eventOccursOn } from "@/lib/event-dates";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -42,7 +43,7 @@ type EventGroup = {
 function groupSwitchableEvents(events: DayManageableEvent[], currentId: string, today: string): EventGroup[] {
   const others = events.filter((e) => e.id !== currentId);
 
-  const todayEvents = others.filter((e) => e.date === today && e.status === "public");
+  const todayEvents = others.filter((e) => eventOccursOn(e, today) && e.status === "public");
   const upcomingEvents = others
     .filter((e) => e.status === "public" && e.date > today)
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -60,7 +61,7 @@ function groupSwitchableEvents(events: DayManageableEvent[], currentId: string, 
 }
 
 function groupSelectableEvents(events: DayManageableEvent[], today: string): EventGroup[] {
-  const todayEvents = events.filter((e) => e.date === today && e.status === "public");
+  const todayEvents = events.filter((e) => eventOccursOn(e, today) && e.status === "public");
   const upcomingEvents = events
     .filter((e) => e.status === "public" && e.date > today)
     .sort((a, b) => a.date.localeCompare(b.date));

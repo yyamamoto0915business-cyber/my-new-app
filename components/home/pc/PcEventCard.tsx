@@ -79,7 +79,8 @@ export function PcEventCard({ event }: Props) {
             event.startTime,
             event.endTime,
             event.recurrence ?? "none",
-            event.recurrenceCount
+            event.recurrenceCount,
+            event.endDate
           )}
         </p>
         <h3 className="line-clamp-1 text-[12px] font-semibold leading-snug text-[#0e1610]">

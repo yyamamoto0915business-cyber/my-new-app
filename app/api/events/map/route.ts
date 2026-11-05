@@ -1,3 +1,4 @@
+import { eventOverlapsRange } from "@/lib/event-dates";
 import { createClient } from "../../../../lib/supabase/server";
 import { fetchEvents } from "../../../../lib/db/events";
 import { NextResponse } from "next/server";
@@ -38,7 +39,7 @@ function filterByDateRange(
   const startStr = start ?? today;
   const endStr = end ?? "9999-12-31";
   return events.filter(
-    (e) => e.date >= startStr && e.date <= endStr
+    (e) => eventOverlapsRange(e, startStr, endStr)
   );
 }
 

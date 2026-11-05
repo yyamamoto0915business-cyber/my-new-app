@@ -117,7 +117,8 @@ export function MobileEventDetailView({
     event.startTime,
     event.endTime,
     event.recurrence ?? "none",
-    event.recurrenceCount
+    event.recurrenceCount,
+            event.endDate
   );
 
   const priceLine =

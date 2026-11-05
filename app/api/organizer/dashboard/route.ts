@@ -1,3 +1,4 @@
+import { eventLastDay } from "@/lib/event-dates";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
@@ -27,13 +28,14 @@ function getEventEndAtJst(date: string, endTime?: string | null): Date {
 
 function getEventStatus(event: {
   date: string;
+  endDate?: string | null;
   status?: string;
   endTime?: string | null;
 }): "public" | "draft" | "ended" | "archived" {
   if (event.status === "archived") return "archived";
   if (event.status === "draft") return "draft";
   if (event.status && !isPublicEventStatus(event.status)) return "ended";
-  const endAtJst = getEventEndAtJst(event.date, event.endTime);
+  const endAtJst = getEventEndAtJst(eventLastDay(event), event.endTime);
   return endAtJst.getTime() >= Date.now() ? "public" : "ended";
 }
 
@@ -95,6 +97,7 @@ async function buildMockDashboard(): Promise<DashboardResponse> {
     ...e,
     status: getEventStatus({
       date: e.date,
+      endDate: e.endDate ?? null,
       status: (e as unknown as { status?: string }).status,
       endTime: (e as unknown as { endTime?: string | null }).endTime ?? null,
     }),
@@ -295,7 +298,7 @@ async function buildSupabaseDashboard(
 
       return {
         ...e,
-        status: getEventStatus({ date: e.date, status: e.status, endTime: e.endTime ?? null }),
+        status: getEventStatus({ date: e.date, endDate: e.endDate ?? null, status: e.status, endTime: e.endTime ?? null }),
         visibilityStatus: (e.status ?? "draft") as "draft" | "published" | "archived",
         participantCount: participants.length,
         plannedCount: reactionCounts.planned,

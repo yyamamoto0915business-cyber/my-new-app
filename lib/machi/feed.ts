@@ -1,6 +1,7 @@
 /**
  * まち情報ハブ用のフィード型・変換
  */
+import { isPeriodEventOngoing } from "@/lib/event-dates";
 import type { Event } from "@/lib/db/types";
 import type { CategoryKey } from "@/lib/categories";
 import { CATEGORY_LABELS } from "@/lib/categories";
@@ -136,6 +137,7 @@ function eventStatusLabel(event: Event): string {
   const status = getEventStatus(event);
   if (status === "ended") return "終了";
   if (status === "full") return "満席";
+  if (isPeriodEventOngoing(event, getJstTodayYmd())) return "開催中";
   if (event.date === getJstTodayYmd()) return "本日開催";
   return "開催予定";
 }

@@ -36,7 +36,7 @@ const initialForm: EventFormData = {
   englishGuideAvailable:false,capacity:undefined,requiresRegistration:false,
   participationMode:"none",paymentMethod:null,checkInMethod:null,passConfigured:false,
   registrationDeadline:undefined,registrationNote:undefined,
-  recurrence:"none",recurrenceCount:null,
+  recurrence:"none",recurrenceCount:null,endDate:null,
   eventFormat:"onsite",
   onlineService:null,
   onlineJoinUrl:"",
@@ -68,6 +68,9 @@ function validateForm(data: EventFormData): FormErrors {
   if (!data.organizerName?.trim()) errors.organizerName = "主催者名を入力してください";
   if (data.recurrence && data.recurrence !== "none" && (!data.recurrenceCount || data.recurrenceCount < 2)) {
     errors.recurrenceCount = "繰り返し回数を選択してください";
+  }
+  if (data.endDate && data.date && data.endDate < data.date) {
+    errors.endDate = "終了日は開始日より後の日付にしてください";
   }
   const onlineErrors = validateOnlineEventFormFields({
     eventFormat: data.eventFormat,
@@ -432,7 +435,8 @@ function NewEventPageContent() {
           form.startTime,
           form.endTime || undefined,
           form.recurrence ?? "none",
-          form.recurrenceCount
+          form.recurrenceCount,
+            form.endDate
         )
       : "—";
   const missingRequired = Object.keys(validateForm(form)).length > 0;
@@ -574,6 +578,9 @@ function NewEventPageContent() {
                 </div>
                 {[
                   { label: "開催日時", val: dateStr !== "—" ? dateStr : null },
+                  ...(form.endDate && form.endDate > form.date
+                    ? [{ label: "開催パターン", val: "期間（毎日開催）" }]
+                    : []),
                   ...(form.recurrence && form.recurrence !== "none"
                     ? [{
                         label: "開催パターン",

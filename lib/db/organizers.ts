@@ -1,3 +1,4 @@
+import { isEventEndedBy, upcomingEventsOrFilter } from "@/lib/event-dates";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Organizer } from "./types";
@@ -110,9 +111,9 @@ export async function fetchFeaturedOrganizers(
   const today = new Date().toISOString().split("T")[0];
   const { data: eventRows } = await supabase
     .from("events")
-    .select("organizer_id, id, title, date")
+    .select("organizer_id, id, title, date, end_date")
     .eq("status", "published")
-    .gte("date", today);
+    .or(upcomingEventsOrFilter(today));
 
   const organizerIds = [
     ...new Set(
@@ -216,7 +217,7 @@ export async function fetchOrganizersForListing(
   // 公開イベントを持つ主催者のみ（過去含む）
   const { data: eventRows } = await supabase
     .from("events")
-    .select("organizer_id, id, title, date")
+    .select("organizer_id, id, title, date, end_date")
     .eq("status", "published");
 
   const organizerIds = [
@@ -254,11 +255,12 @@ export async function fetchOrganizersForListing(
       id?: string;
       title?: string;
       date?: string;
+      end_date?: string | null;
     };
     const oid = row.organizer_id;
     if (oid) countByOrg[oid] = (countByOrg[oid] ?? 0) + 1;
     if (!oid || !row.id || !row.title || !row.date) continue;
-    if (row.date < today) continue;
+    if (isEventEndedBy({ date: row.date, endDate: row.end_date }, today)) continue;
     const current = nextByOrg[oid];
     if (!current || row.date < current.date) {
       nextByOrg[oid] = { id: row.id, title: row.title, date: row.date };

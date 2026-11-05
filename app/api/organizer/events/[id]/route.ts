@@ -16,6 +16,7 @@ import {
 import { getEventById } from "@/lib/events";
 import type { EventFormData } from "@/lib/db/types";
 import { normalizeEventRecurrence, normalizeRecurrenceCount } from "@/lib/event-recurrence";
+import { normalizeEventEndDate } from "@/lib/event-dates";
 import {
   normalizeCheckInMethod,
   normalizePaymentMethod,
@@ -146,6 +147,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     registrationNote,
     recurrence,
     recurrenceCount,
+    endDate,
     eventFormat,
     onlineService,
     onlineJoinUrl,
@@ -193,6 +195,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     normalizedRecurrence === "none"
       ? null
       : normalizeRecurrenceCount(recurrenceCount, normalizedRecurrence);
+  const normalizedEndDate = normalizeEventEndDate(date, endDate, normalizedRecurrence);
+  if (normalizedEndDate === "invalid") {
+    return NextResponse.json({ error: "終了日は開始日より後の日付にしてください" }, { status: 400 });
+  }
 
   const formData: EventFormData = {
     title: String(title ?? "").trim(),
@@ -200,6 +206,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     galleryImages: Array.isArray(galleryImages) ? galleryImages.filter((x): x is string => typeof x === "string") : [],
     description: String(description ?? "").trim(),
     date: String(date),
+    endDate: normalizedEndDate,
     startTime: normalizeHm(startTime),
     endTime: endTime ? normalizeHm(endTime) : "",
     location: locationValue,

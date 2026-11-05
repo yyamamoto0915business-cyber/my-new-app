@@ -1,6 +1,7 @@
 /**
  * 店舗に紐づくイベントの取得・表示用ヘルパー
  */
+import { isEventEndedBy } from "@/lib/event-dates";
 import type { Event } from "@/lib/db/types";
 import { createClient } from "@/lib/supabase/server";
 import { fetchEventsByStoreId } from "@/lib/db/events";
@@ -130,7 +131,7 @@ export async function listStoreEventsForPublic(
   const filterUpcoming = (events: Event[]) =>
     events
       .filter((e) => isPublicEventStatus(e.status) && isPublicEventLike(e))
-      .filter((e) => e.date >= today)
+      .filter((e) => !isEventEndedBy(e, today))
       .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
 
   const fromMemory = filterUpcoming(listCreatedEventsByStoreId(resolvedId)).map(

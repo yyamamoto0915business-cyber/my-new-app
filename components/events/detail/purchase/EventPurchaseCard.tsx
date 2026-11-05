@@ -24,6 +24,8 @@ type DisplayProps = {
   endTime?: string;
   recurrence?: EventRecurrence;
   recurrenceCount?: number | null;
+  /** 期間イベントの終了日 */
+  endDate?: string | null;
   location: string;
   address?: string;
   priceNote?: string | null;
@@ -61,6 +63,7 @@ export function EventPurchaseCard({
   endTime,
   recurrence = "none",
   recurrenceCount,
+  endDate,
   location,
   address,
   priceNote,
@@ -137,7 +140,8 @@ export function EventPurchaseCard({
     startTime,
     endTime,
     recurrence,
-    recurrenceCount
+    recurrenceCount,
+    endDate
   );
   const priceLine =
     purchaseData.price === 0

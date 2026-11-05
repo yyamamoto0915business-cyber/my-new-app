@@ -1,3 +1,4 @@
+import { eventLastDay } from "@/lib/event-dates";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getJstTodayYmd } from "@/lib/jst-date";
 
@@ -5,12 +6,15 @@ import { getJstTodayYmd } from "@/lib/jst-date";
 export async function getRegistrationError(event: {
   id: string;
   date: string;
+  endDate?: string | null;
   endTime?: string | null;
   registrationDeadline?: string | null;
   capacity?: number | null;
 }, now = new Date()): Promise<string | null> {
-  if (event.date < getJstTodayYmd(now) ||
-      (event.endTime && now >= new Date(`${event.date}T${event.endTime}+09:00`))) {
+  // 期間イベントは最終日の終了時刻まで受け付ける
+  const lastDay = eventLastDay(event);
+  if (lastDay < getJstTodayYmd(now) ||
+      (event.endTime && now >= new Date(`${lastDay}T${event.endTime}+09:00`))) {
     return "このイベントは終了しています";
   }
   if (event.registrationDeadline && now > new Date(event.registrationDeadline)) {

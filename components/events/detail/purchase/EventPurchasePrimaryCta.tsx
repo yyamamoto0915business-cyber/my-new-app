@@ -71,7 +71,8 @@ function buildConfirmInfo(
       event.startTime,
       event.endTime,
       event.recurrence ?? "none",
-      event.recurrenceCount
+      event.recurrenceCount,
+            event.endDate
     ),
     placeLabel,
     priceLabel: event.priceNote

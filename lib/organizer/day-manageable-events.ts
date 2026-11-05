@@ -1,3 +1,4 @@
+import { eventLastDay } from "@/lib/event-dates";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { PUBLIC_EVENT_STATUSES, isPublicEventStatus } from "@/lib/public-events";
 import {
@@ -12,6 +13,8 @@ export type DayManageableEvent = {
   id: string;
   title: string;
   date: string;
+  /** 期間イベントの終了日 */
+  endDate?: string | null;
   startTime?: string;
   endTime?: string | null;
   location?: string;
@@ -28,12 +31,13 @@ function getEventEndAtJst(date: string, endTime?: string | null): Date {
 
 function toDayStatus(event: {
   date: string;
+  endDate?: string | null;
   status?: string | null;
   endTime?: string | null;
 }): "public" | "ended" | null {
   if (event.status === "archived" || event.status === "draft") return null;
   if (event.status && !isPublicEventStatus(event.status)) return null;
-  const endAtJst = getEventEndAtJst(event.date, event.endTime);
+  const endAtJst = getEventEndAtJst(eventLastDay(event), event.endTime);
   return endAtJst.getTime() >= Date.now() ? "public" : "ended";
 }
 
@@ -50,6 +54,7 @@ export async function fetchDayManageableEvents(
     id: string;
     title: string;
     date: string;
+    end_date?: string | null;
     start_time?: string | null;
     end_time?: string | null;
     location?: string | null;
@@ -65,7 +70,7 @@ export async function fetchDayManageableEvents(
     const first = await supabase
       .from("events")
       .select(
-        "id, title, date, start_time, end_time, location, status, event_format, online_service"
+        "id, title, date, end_date, start_time, end_time, location, status, event_format, online_service"
       )
       .eq("organizer_id", organizerId)
       .in("status", [...PUBLIC_EVENT_STATUSES])
@@ -78,7 +83,7 @@ export async function fetchDayManageableEvents(
   if (error && /event_format|online_service/i.test(error.message)) {
     const fallback = await supabase
       .from("events")
-      .select("id, title, date, start_time, end_time, location, status")
+      .select("id, title, date, end_date, start_time, end_time, location, status")
       .eq("organizer_id", organizerId)
       .in("status", [...PUBLIC_EVENT_STATUSES])
       .order("date", { ascending: false })
@@ -94,6 +99,7 @@ export async function fetchDayManageableEvents(
     const endTime = row.end_time ?? null;
     const status = toDayStatus({
       date: row.date,
+      endDate: row.end_date ?? null,
       status: row.status ?? null,
       endTime,
     });
@@ -102,6 +108,7 @@ export async function fetchDayManageableEvents(
       id: row.id,
       title: row.title,
       date: row.date,
+      endDate: row.end_date ?? null,
       startTime: row.start_time ?? undefined,
       endTime,
       location: row.location ?? undefined,

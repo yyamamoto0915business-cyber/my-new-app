@@ -86,6 +86,7 @@ export function EventDetailPcView({
             endTime={event.endTime}
             recurrence={event.recurrence ?? "none"}
             recurrenceCount={event.recurrenceCount}
+            endDate={event.endDate}
             location={event.location}
             address={event.address}
             receptionLabel={receptionLabel}

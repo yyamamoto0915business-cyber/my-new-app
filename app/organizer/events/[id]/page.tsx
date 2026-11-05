@@ -56,6 +56,9 @@ function validateForm(data: EventFormData): FormErrors {
   ) {
     errors.recurrenceCount = "繰り返し回数を選択してください";
   }
+  if (data.endDate && data.date && data.endDate < data.date) {
+    errors.endDate = "終了日は開始日より後の日付にしてください";
+  }
   const onlineErrors = validateOnlineEventFormFields({
     eventFormat: data.eventFormat,
     onlineService: data.onlineService,
@@ -365,7 +368,8 @@ export default function EditEventPage() {
           form.startTime,
           form.endTime || undefined,
           form.recurrence ?? "none",
-          form.recurrenceCount
+          form.recurrenceCount,
+            form.endDate
         )
       : "—";
   const missingRequired = Object.keys(validateForm(form)).length > 0;
@@ -593,6 +597,9 @@ export default function EditEventPage() {
                 </div>
                 {[
                   { label: "開催日時", val: dateStr !== "—" ? dateStr : null },
+                  ...(form.endDate && form.endDate > form.date
+                    ? [{ label: "開催パターン", val: "期間（毎日開催）" }]
+                    : []),
                   ...(form.recurrence && form.recurrence !== "none"
                     ? [
                         {

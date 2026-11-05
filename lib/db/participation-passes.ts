@@ -1,3 +1,4 @@
+import { eventLastDay, eventOccursOn } from "@/lib/event-dates";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatTimeToHm } from "@/lib/format-date";
 import { getJstTodayYmd } from "@/lib/jst-date";
@@ -35,6 +36,7 @@ type EventJoinRow = {
   title: string;
   image_url: string | null;
   date: string;
+  end_date?: string | null;
   start_time: string;
   end_time: string | null;
   location: string;
@@ -162,14 +164,16 @@ function resolvePassVisibility(options: {
 }
 
 function resolveUiStatus(
-  eventDateYmd: string,
+  event: { date: string; end_date?: string | null },
   cancelled: boolean,
   now: Date
 ): ParticipationPass["status"] {
   if (cancelled) return "cancelled";
   const today = getJstTodayYmd(now);
-  if (eventDateYmd > today) return "upcoming";
-  if (eventDateYmd === today) return "today";
+  const days = { date: event.date, endDate: event.end_date };
+  if (event.date > today) return "upcoming";
+  // 期間イベントは期間中ずっと「本日」として使えるようにする
+  if (eventOccursOn(days, today)) return "today";
   return "completed";
 }
 
@@ -198,7 +202,7 @@ function toParticipationPass(options: {
   const price = event.price ?? 0;
   const startAt = toEventIso(event.date, event.start_time || "00:00");
   const endAt = toEventIso(
-    event.date,
+    eventLastDay({ date: event.date, endDate: event.end_date }),
     event.end_time || event.start_time || "23:59"
   );
   const receptionNumber = buildReceptionNumber(participantId);
@@ -226,7 +230,7 @@ function toParticipationPass(options: {
     qrValue:
       receptionType === "qr" ? `mg-pass:${participantId}` : undefined,
     expiresAt: endAt,
-    status: resolveUiStatus(event.date, cancelled, now),
+    status: resolveUiStatus(event, cancelled, now),
     kind: "visitor",
     eventFormat: normalizeEventFormat(event.event_format),
   };
@@ -244,7 +248,7 @@ function toVolunteerPass(options: {
     options;
   const startAt = toEventIso(event.date, event.start_time || "00:00");
   const endAt = toEventIso(
-    event.date,
+    eventLastDay({ date: event.date, endDate: event.end_date }),
     event.end_time || event.start_time || "23:59"
   );
   const receptionNumber = buildReceptionNumber(applicationId);
@@ -268,7 +272,7 @@ function toVolunteerPass(options: {
     quantity: 1,
     qrValue: `mg-pass:${applicationId}`,
     expiresAt: endAt,
-    status: resolveUiStatus(event.date, false, now),
+    status: resolveUiStatus(event, false, now),
     kind: "volunteer",
     roleLabel,
     recruitmentId,
@@ -285,6 +289,7 @@ const EVENT_SELECT_WITH_FORMAT = `
         title,
         image_url,
         date,
+        end_date,
         start_time,
         end_time,
         location,
@@ -305,6 +310,7 @@ const EVENT_SELECT_WITHOUT_FORMAT = `
         title,
         image_url,
         date,
+        end_date,
         start_time,
         end_time,
         location,
@@ -332,6 +338,7 @@ const VOLUNTEER_SELECT_WITH_FORMAT = `
           title,
           image_url,
           date,
+          end_date,
           start_time,
           end_time,
           location,
@@ -361,6 +368,7 @@ const VOLUNTEER_SELECT_WITHOUT_FORMAT = `
           title,
           image_url,
           date,
+          end_date,
           start_time,
           end_time,
           location,

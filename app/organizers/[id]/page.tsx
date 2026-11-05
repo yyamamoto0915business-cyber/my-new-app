@@ -1,3 +1,4 @@
+import { isEventEndedBy } from "@/lib/event-dates";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -69,10 +70,10 @@ export default async function OrganizerPublicPage({ params }: Props) {
 
   const today = getJstTodayYmd();
   const upcomingEvents = events
-    .filter((e) => e.date >= today)
+    .filter((e) => !isEventEndedBy(e, today))
     .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime || "").localeCompare(b.startTime || ""));
   const pastEvents = events
-    .filter((e) => e.date < today)
+    .filter((e) => isEventEndedBy(e, today))
     .sort((a, b) => b.date.localeCompare(a.date) || (b.startTime || "").localeCompare(a.startTime || ""));
 
   const allDisplayEvents = [

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   const { data: eventRow } = await supabase
     .from("events")
     .select(
-      "id, title, price, stripe_price_id, participation_mode, requires_registration, payment_method, date, end_time, registration_deadline, capacity"
+      "id, title, price, stripe_price_id, participation_mode, requires_registration, payment_method, date, end_date, end_time, registration_deadline, capacity"
     )
     .eq("id", eventId)
     .eq("status", "published")
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const error = await getRegistrationError({
-      id: eventRow.id, date: eventRow.date, endTime: eventRow.end_time,
+      id: eventRow.id, date: eventRow.date, endDate: eventRow.end_date, endTime: eventRow.end_time,
       registrationDeadline: eventRow.registration_deadline, capacity: eventRow.capacity,
     });
     if (error) return NextResponse.json({ error }, { status: 400 });

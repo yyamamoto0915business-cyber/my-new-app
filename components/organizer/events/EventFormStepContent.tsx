@@ -443,6 +443,10 @@ export function EventFormStepContent({
                   onCountChange={(recurrenceCount) =>
                     setForm((prev) => ({ ...prev, recurrenceCount }))
                   }
+                  startDate={form.date}
+                  endDate={form.endDate ?? null}
+                  onEndDateChange={(endDate) => setForm((prev) => ({ ...prev, endDate }))}
+                  endDateError={errors.endDate}
                 />
                 <EventFormError msg={errors.recurrenceCount} />
               </div>
@@ -568,6 +572,10 @@ export function EventFormStepContent({
                 onCountChange={(recurrenceCount) =>
                   setForm((prev) => ({ ...prev, recurrenceCount }))
                 }
+                startDate={form.date}
+                endDate={form.endDate ?? null}
+                onEndDateChange={(endDate) => setForm((prev) => ({ ...prev, endDate }))}
+                endDateError={errors.endDate}
               />
               <EventFormError msg={errors.recurrenceCount} />
             </div>

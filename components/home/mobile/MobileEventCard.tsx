@@ -110,7 +110,8 @@ export function MobileEventCard({ event }: Props) {
             event.startTime,
             event.endTime,
             event.recurrence ?? "none",
-            event.recurrenceCount
+            event.recurrenceCount,
+            event.endDate
           )}
         </p>
         <h3 className="line-clamp-2 text-[10px] font-semibold leading-[1.2] text-[#163828]">

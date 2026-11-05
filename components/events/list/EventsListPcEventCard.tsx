@@ -80,7 +80,8 @@ export function EventsListPcEventCard({ event }: Props) {
     event.startTime,
     event.endTime,
     event.recurrence ?? "none",
-    event.recurrenceCount
+    event.recurrenceCount,
+            event.endDate
   );
 
   const handleOpen = () => {

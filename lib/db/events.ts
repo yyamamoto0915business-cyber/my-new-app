@@ -1,3 +1,4 @@
+import { endedEventsOrFilter, isEventEndedBy, upcomingEventsOrFilter } from "@/lib/event-dates";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DbEvent, Event, EventFormData } from "./types";
 import { normalizeGalleryImages } from "@/lib/gallery-images";
@@ -99,6 +100,7 @@ function dbEventToEvent(
     galleryImages: normalizeGalleryImages(db.gallery_images),
     description: db.description,
     date: db.date,
+    endDate: db.end_date ?? null,
     startTime: db.start_time,
     endTime: db.end_time ?? undefined,
     location: db.location,
@@ -515,7 +517,7 @@ export async function fetchOtherPublishedEventsByOrganizer(
     .eq("organizer_id", organizerId)
     .in("status", [...PUBLIC_EVENT_STATUSES])
     .neq("id", excludeEventId)
-    .gte("date", today)
+    .or(upcomingEventsOrFilter(today))
     .order("date", { ascending: true })
     .limit(limit);
 
@@ -581,7 +583,7 @@ export async function fetchRelatedPublishedEvents(
       .select(selectJoin)
       .in("status", [...PUBLIC_EVENT_STATUSES])
       .neq("id", base.id)
-      .gte("date", today)
+      .or(upcomingEventsOrFilter(today))
       .contains("tags", [firstTag])
       .order("date", { ascending: true })
       .limit(limit);
@@ -612,7 +614,7 @@ export async function fetchRelatedPublishedEvents(
       .select(selectJoin)
       .in("status", [...PUBLIC_EVENT_STATUSES])
       .neq("id", base.id)
-      .gte("date", today)
+      .or(upcomingEventsOrFilter(today))
       .eq("prefecture", base.prefecture)
       .order("date", { ascending: true })
       .limit(limit);
@@ -686,7 +688,7 @@ export async function fetchPublishedEventsByIds(
   const publicEvents = filterOutSampleEvents(events).filter((e) => isPublicEventLike(e));
 
   return publicEvents
-    .filter((e) => e.date >= today)
+    .filter((e) => !isEventEndedBy(e, today))
     .sort(
       (a, b) =>
         a.date.localeCompare(b.date) ||
@@ -741,7 +743,7 @@ export async function fetchPublishedEventsByOrganizer(
       .select(select)
       .eq("organizer_id", organizerId)
       .in("status", [...PUBLIC_EVENT_STATUSES])
-      .gte("date", today)
+      .or(upcomingEventsOrFilter(today))
       .order("date", { ascending: true })
       .limit(perSide),
     supabase
@@ -749,7 +751,7 @@ export async function fetchPublishedEventsByOrganizer(
       .select(select)
       .eq("organizer_id", organizerId)
       .in("status", [...PUBLIC_EVENT_STATUSES])
-      .lt("date", today)
+      .or(endedEventsOrFilter(today))
       .order("date", { ascending: false })
       .limit(perSide),
   ]);
@@ -891,6 +893,7 @@ export async function createEvent(
     title: form.title,
     description: form.description,
     date: form.date,
+    end_date: endDateForDb(form),
     start_time: form.startTime,
     end_time: form.endTime || null,
     location: onlinePayload.location,
@@ -1045,6 +1048,14 @@ function normalizeStoreIdForDb(storeId: string | null | undefined): string | nul
   return id;
 }
 
+/** 期間イベントの終了日。くり返しと一緒には使わず、開始日以前なら1日だけにする */
+function endDateForDb(form: Pick<EventFormData, "date" | "endDate" | "recurrence">): string | null {
+  if (normalizeEventRecurrence(form.recurrence) !== "none") return null;
+  const end = form.endDate?.trim();
+  if (!end || !form.date || end <= form.date) return null;
+  return end;
+}
+
 function formToDb(form: EventFormData): Record<string, unknown> {
   const recurrence = normalizeEventRecurrence(form.recurrence);
   const onlinePayload = buildOnlineDbPayload(form);
@@ -1054,6 +1065,7 @@ function formToDb(form: EventFormData): Record<string, unknown> {
     image_url: form.imageUrl?.trim() || null,
     gallery_images: normalizeGalleryImages(form.galleryImages),
     date: form.date,
+    end_date: endDateForDb(form),
     start_time: form.startTime,
     end_time: form.endTime || null,
     location: onlinePayload.location,

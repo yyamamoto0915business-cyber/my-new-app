@@ -21,6 +21,7 @@ type Props = {
   endTime?: string;
   recurrence?: EventRecurrence;
   recurrenceCount?: number | null;
+  endDate?: string | null;
   receptionLabel: string;
   price: number;
   priceNote?: string | null;
@@ -47,6 +48,7 @@ export function EventDetailOverviewGrid({
   endTime,
   recurrence = "none",
   recurrenceCount,
+  endDate,
   receptionLabel,
   price,
   priceNote,
@@ -104,6 +106,7 @@ export function EventDetailOverviewGrid({
             endTime={endTime}
             recurrence={recurrence}
             recurrenceCount={recurrenceCount}
+            endDate={endDate}
             receptionLabel={receptionLabel}
             price={price}
             priceNote={priceNote}

@@ -143,6 +143,7 @@ export async function POST(request: NextRequest) {
       registrationNote,
       recurrence,
       recurrenceCount,
+      endDate,
       eventFormat,
       onlineService,
       onlineJoinUrl,
@@ -207,6 +208,7 @@ export async function POST(request: NextRequest) {
     const { normalizeEventRecurrence, normalizeRecurrenceCount } = await import(
       "../../../lib/event-recurrence"
     );
+    const { normalizeEventEndDate } = await import("../../../lib/event-dates");
     const { addCreatedEvent } = await import("../../../lib/created-events-store");
     const { addDefaultVolunteerRoleForEvent } = await import(
       "../../../lib/created-volunteer-roles-store"
@@ -220,6 +222,10 @@ export async function POST(request: NextRequest) {
       normalizedRecurrence === "none"
         ? null
         : normalizeRecurrenceCount(recurrenceCount, normalizedRecurrence);
+    const normalizedEndDate = normalizeEventEndDate(date, endDate, normalizedRecurrence);
+    if (normalizedEndDate === "invalid") {
+      return NextResponse.json({ error: "終了日は開始日より後の日付にしてください" }, { status: 400 });
+    }
 
     const formData = {
       title: String(title).trim(),
@@ -227,6 +233,7 @@ export async function POST(request: NextRequest) {
       galleryImages: Array.isArray(galleryImages) ? galleryImages : [],
       description: String(description).trim(),
       date: String(date),
+      endDate: normalizedEndDate,
       startTime: String(startTime),
       endTime: endTime ? String(endTime) : undefined,
       location: locationValue,

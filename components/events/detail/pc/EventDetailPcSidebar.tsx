@@ -17,6 +17,7 @@ type Props = {
   endTime?: string;
   recurrence?: EventRecurrence;
   recurrenceCount?: number | null;
+  endDate?: string | null;
   location: string;
   address?: string;
   receptionLabel: string;
@@ -36,6 +37,7 @@ export function EventDetailPcSidebar({
   endTime,
   recurrence = "none",
   recurrenceCount,
+  endDate,
   location,
   address,
   receptionLabel,
@@ -125,6 +127,7 @@ export function EventDetailPcSidebar({
         endTime={endTime}
         recurrence={recurrence}
         recurrenceCount={recurrenceCount}
+        endDate={endDate}
         location={location}
         address={address}
         priceNote={priceNote}

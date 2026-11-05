@@ -32,7 +32,8 @@ export function EventDetailPcHeroCard({
     event.startTime,
     event.endTime,
     event.recurrence ?? "none",
-    event.recurrenceCount
+    event.recurrenceCount,
+            event.endDate
   );
 
   return (

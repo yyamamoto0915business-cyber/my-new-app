@@ -7,6 +7,8 @@ type Props = {
   endTime?: string;
   recurrence?: EventRecurrence;
   recurrenceCount?: number | null;
+  /** 期間イベントの終了日 */
+  endDate?: string | null;
   location: string;
   price: number;
   priceNote?: string | null;
@@ -19,6 +21,7 @@ export function EventDetailBasicInfoCard({
   endTime,
   recurrence = "none",
   recurrenceCount,
+  endDate,
   location,
   price,
   priceNote,
@@ -29,7 +32,8 @@ export function EventDetailBasicInfoCard({
     startTime,
     endTime,
     recurrence,
-    recurrenceCount
+    recurrenceCount,
+    endDate
   );
   const priceLine =
     price === 0

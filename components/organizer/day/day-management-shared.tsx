@@ -1,5 +1,6 @@
 "use client";
 
+import { eventLastDay } from "@/lib/event-dates";
 import React, { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Send, Save, AlertTriangle } from "lucide-react";
@@ -206,18 +207,23 @@ export type DayHubTab = "today" | "upcoming" | "past" | "all";
 
 export function getEventDayPhase(input: {
   date: string;
+  /** 期間イベントの終了日 */
+  endDate?: string | null;
   status?: string;
   endTime?: string | null;
   startTime?: string | null;
 }): EventDayPhase {
   const date = input.date?.slice(0, 10) ?? "";
+  const lastDay = eventLastDay({ date, endDate: input.endDate?.slice(0, 10) ?? null });
   const today = getJstTodayYmd();
 
   if (date > today) return "upcoming";
-  if (date < today) return "past";
+  if (lastDay < today) return "past";
+  // 期間イベントは最終日まで毎日「開催中」
+  if (lastDay > today) return "live";
 
   const endTime = (input.endTime?.trim() || input.startTime?.trim() || "23:59");
-  const endTs = Date.parse(`${date}T${endTime}:00+09:00`);
+  const endTs = Date.parse(`${lastDay}T${endTime}:00+09:00`);
   if (!Number.isNaN(endTs) && Date.now() > endTs) return "past";
 
   return "live";
@@ -225,12 +231,13 @@ export function getEventDayPhase(input: {
 
 export function getEventDayPhaseFromDashboard(event: {
   date: string;
+  endDate?: string | null;
   status: "public" | "draft" | "ended" | "archived";
 }): EventDayPhase {
   if (event.status === "ended" || event.status === "archived") return "past";
   const today = getJstTodayYmd();
   if (event.date > today) return "upcoming";
-  if (event.date < today) return "past";
+  if (eventLastDay(event) < today) return "past";
   return "live";
 }
 

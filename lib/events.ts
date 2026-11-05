@@ -3,6 +3,7 @@ import type { Event } from "./db/types";
 import { mockEvents } from "./events-mock";
 import { getCreatedEvents } from "./created-events-store";
 import { getJstTodayYmd } from "./jst-date";
+import { eventLastDay, eventOccursOn, eventOverlapsRange, isEventEndedBy } from "./event-dates";
 
 export type { Event, EventFormData } from "./db/types";
 
@@ -31,20 +32,28 @@ export function getEventsByDateRange(
   const todayStr = getJstTodayYmd(today);
 
   if (specificDate) {
-    return events.filter((e) => e.date === specificDate);
+    return events.filter((e) => eventOccursOn(e, specificDate));
   }
 
   if (range === "all") return events;
   if (range === "today") {
-    return events.filter((e) => e.date === todayStr);
+    return events.filter((e) => eventOccursOn(e, todayStr));
   }
 
   if (range === "weekend") {
     return events.filter((e) => {
-      if (e.date < todayStr) return false;
-      const d = new Date(e.date + "T12:00:00");
-      const day = d.getDay();
-      return day === 0 || day === 6;
+      if (isEventEndedBy(e, todayStr)) return false;
+      // 期間イベントは、今日以降の期間に土日が1日でも入っていれば週末に出す
+      const from = e.date > todayStr ? e.date : todayStr;
+      const to = eventLastDay(e);
+      for (let ymd = from, i = 0; ymd <= to && i < 7; i++) {
+        const day = new Date(ymd + "T12:00:00").getDay();
+        if (day === 0 || day === 6) return true;
+        const next = new Date(ymd + "T12:00:00");
+        next.setDate(next.getDate() + 1);
+        ymd = getJstTodayYmd(next);
+      }
+      return false;
     });
   }
 
@@ -63,14 +72,14 @@ export function getEventsByDateRange(
           ? getEndDate(90)
           : getEndDate(7);
 
-  return events.filter((e) => e.date >= todayStr && e.date <= endStr);
+  return events.filter((e) => eventOverlapsRange(e, todayStr, endStr));
 }
 
 export type EventStatus = "available" | "full" | "ended";
 
 export function getEventStatus(e: Event): EventStatus {
   const todayStr = getJstTodayYmd();
-  if (e.date < todayStr) return "ended";
+  if (isEventEndedBy(e, todayStr)) return "ended";
   if (e.capacity != null && e.capacity <= 0) return "full";
   return "available";
 }
@@ -160,7 +169,7 @@ export function getThisWeekendEvents(events: Event[], limit = 8): Event[] {
   const { saturday, sunday } = getThisWeekendYmdBounds();
   return events
     .filter((e) => getEventStatus(e) !== "ended")
-    .filter((e) => e.date >= todayStr && e.date >= saturday && e.date <= sunday)
+    .filter((e) => eventOverlapsRange(e, todayStr > saturday ? todayStr : saturday, sunday))
     .sort(
       (a, b) =>
         a.date.localeCompare(b.date) ||
@@ -180,7 +189,7 @@ export function getPastEvents(
   const pastCutoff = getPastCutoffYmd(pastDays);
   return events
     .filter((e) => getEventStatus(e) === "ended")
-    .filter((e) => e.date >= pastCutoff)
+    .filter((e) => eventLastDay(e) >= pastCutoff)
     .sort(
       (a, b) =>
         b.date.localeCompare(a.date) ||
@@ -218,7 +227,7 @@ export function backfillWithRecentEndedEvents(
   const existingIds = new Set(filtered.map((e) => e.id));
   const endedBackfill = source
     .filter((e) => getEventStatus(e) === "ended")
-    .filter((e) => e.date >= pastCutoff && e.date < todayStr)
+    .filter((e) => eventLastDay(e) >= pastCutoff && isEventEndedBy(e, todayStr))
     .filter((e) => !existingIds.has(e.id))
     .sort(
       (a, b) =>
@@ -307,11 +316,11 @@ export type RankingType = "newest" | "popular" | "satisfaction";
  */
 export function getRecommendedEvents(events: Event[], limit = 3): Event[] {
   const todayStr = getJstTodayYmd();
-  const futureOrToday = events.filter((e) => e.date >= todayStr);
+  const futureOrToday = events.filter((e) => !isEventEndedBy(e, todayStr));
   const copy = [...futureOrToday];
   copy.sort((a, b) => {
-    const aToday = a.date === todayStr ? 1 : 0;
-    const bToday = b.date === todayStr ? 1 : 0;
+    const aToday = eventOccursOn(a, todayStr) ? 1 : 0;
+    const bToday = eventOccursOn(b, todayStr) ? 1 : 0;
     if (aToday !== bToday) return bToday - aToday;
     return a.date.localeCompare(b.date) || (a.startTime || "").localeCompare(b.startTime || "");
   });
@@ -324,7 +333,7 @@ export function getRankedEvents(
   limit = 10
 ): Event[] {
   const todayStr = getJstTodayYmd();
-  const futureOrToday = events.filter((e) => e.date >= todayStr);
+  const futureOrToday = events.filter((e) => !isEventEndedBy(e, todayStr));
   const copy = [...futureOrToday];
 
   if (type === "newest") {
