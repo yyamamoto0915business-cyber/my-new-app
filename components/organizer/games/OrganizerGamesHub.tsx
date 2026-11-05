@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import type { OrganizerGameTypeId } from "@/lib/organizer/game-types";
 import type { OrganizerGame } from "@/lib/organizer/games";
 
-type HubTheme = "stamp" | "quiz" | "mystery" | "mission" | "photo" | "coupon" | "checkin";
+type HubTheme = "stamp" | "quiz" | "mystery" | "mission" | "photo" | "coupon" | "checkin" | "vote";
 type GameFilter = "draft" | "published" | "archived";
 
 const HUB_TYPES: {
@@ -94,6 +94,14 @@ const HUB_TYPES: {
     icon: "/organizer/games/game-type-checkin.png?v=hub4",
     cover: "/organizer/games/game-cover-stamp.png?v=hub2",
   },
+  {
+    id: "vote",
+    theme: "vote",
+    label: "投票",
+    blurb: "案を集めて、みんなで1つに決めよう",
+    icon: "/organizer/games/loading-mascot-3.png",
+    cover: "/organizer/games/game-cover-stamp.png?v=hub2",
+  },
 ];
 
 const HUB_TYPE_BY_ID = Object.fromEntries(HUB_TYPES.map((type) => [type.id, type])) as Record<
@@ -109,6 +117,7 @@ const COVER_BY_THEME: Record<HubTheme, string> = {
   photo: "/profile/album/spring/walk.jpg",
   coupon: "/profile/album/spring/town.jpg",
   checkin: "/profile/album/spring/sunset.jpg",
+  vote: "/profile/album/spring/town.jpg",
 };
 
 const MOBILE_ART_BY_THEME: Partial<Record<HubTheme, string>> = {

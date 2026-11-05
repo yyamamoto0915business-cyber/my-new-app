@@ -1876,6 +1876,36 @@ export async function completePlayPhoto(
   };
 }
 
+/**
+ * 参加中の人を、参加用QRで受け取った端末の印（deviceToken）から確かめる。
+ * ほかのゲームの記録と同じ確かめ方で、投票など play.ts の外の処理から使う。
+ */
+export async function resolvePlayPlayer(
+  db: SupabaseClient,
+  joinToken: string,
+  deviceToken: string,
+): Promise<
+  | { ok: true; game: GameLookup; player: { id: string; nickname: string } }
+  | { ok: false; status: number; error: string }
+> {
+  if (!deviceToken || deviceToken.length < 16) {
+    return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  }
+  const game = await lookupPlayGameByJoinToken(db, joinToken);
+  if (!game) return { ok: false, status: 404, error: "ゲームが見つかりません" };
+  const { data } = await db
+    .from("organizer_game_players")
+    .select("id, nickname, auth_epoch")
+    .eq("game_id", game.id)
+    .eq("device_token_hash", hashDeviceToken(deviceToken))
+    .maybeSingle();
+  if (!data) return { ok: false, status: 401, error: "先に参加用QRから入ってください" };
+  if ((data.auth_epoch as number) !== game.playEpoch) {
+    return { ok: false, status: 401, error: "合言葉がリセットされました。参加用QRから入り直してください" };
+  }
+  return { ok: true, game, player: { id: data.id as string, nickname: (data.nickname as string) ?? "" } };
+}
+
 export async function completePlayCoupon(
   db: SupabaseClient,
   joinToken: string,

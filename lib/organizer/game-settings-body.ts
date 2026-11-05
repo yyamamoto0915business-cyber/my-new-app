@@ -6,6 +6,7 @@ import { sanitizeCouponSettings } from "@/lib/organizer/coupon";
 import { sanitizeMissionSettings } from "@/lib/organizer/mission";
 import { sanitizePhotoSettings } from "@/lib/organizer/photo";
 import { readGamePassSettings } from "@/lib/organizer/game-pass";
+import { sanitizeVoteSettings } from "@/lib/organizer/vote";
 
 export type GameSettingsBody = {
   quiz?: unknown;
@@ -14,6 +15,7 @@ export type GameSettingsBody = {
   coupon?: unknown;
   checkin?: unknown;
   mystery?: unknown;
+  vote?: unknown;
   experience?: unknown;
   look?: unknown;
   audience?: unknown;
@@ -31,6 +33,9 @@ export function settingsFromBody(body: GameSettingsBody) {
   const coupon = sanitizeCouponSettings(body.coupon);
   const checkin = sanitizeCheckinSettings(body.checkin);
   const mystery = sanitizeMysterySettings(body.mystery);
+  // 投票はお題があるときだけ残す
+  const voteRaw = body.vote && typeof body.vote === "object" ? sanitizeVoteSettings(body.vote) : null;
+  const vote = voteRaw?.prompt ? voteRaw : null;
   const experience = sanitizeGameExperience(body.experience);
   // 参加画面のアイコンと背景（スタンプラリー以外）。
   const look = body.look && typeof body.look === "object" ? readGameLook(body.look) : null;
@@ -50,7 +55,7 @@ export function settingsFromBody(body: GameSettingsBody) {
   // 参加パスの定員・締め切り・注意書き（申し込んだ人だけのとき。スタンプラリーは experience に参加できる人がある）。
   const pass =
     audience === "entry" || experience?.basics.audience === "entry" ? readGamePassSettings(body.pass) : null;
-  if (!quiz && !mission && !photo && !coupon && !checkin && !mystery && !experience && !look) return undefined;
+  if (!quiz && !mission && !photo && !coupon && !checkin && !mystery && !vote && !experience && !look) return undefined;
   return {
     ...(quiz ? { quiz } : {}),
     ...(mission ? { mission } : {}),
@@ -58,6 +63,7 @@ export function settingsFromBody(body: GameSettingsBody) {
     ...(coupon ? { coupon } : {}),
     ...(checkin ? { checkin } : {}),
     ...(mystery ? { mystery } : {}),
+    ...(vote ? { vote } : {}),
     ...(experience ? { experience } : {}),
     ...(look ? { look } : {}),
     ...(audience ? { audience } : {}),
