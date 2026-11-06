@@ -10,6 +10,7 @@ import { publicCheckin, readStoredCheckin } from "@/lib/organizer/checkin-play";
 import { publicMystery, readStoredMystery } from "@/lib/organizer/mystery-play";
 import { readStoredVote } from "@/lib/organizer/vote";
 import { readStoredLottery } from "@/lib/organizer/lottery";
+import { readStoredSurvey } from "@/lib/organizer/survey";
 import { getOrganizerGameType, isOrganizerGameTypeId } from "@/lib/organizer/game-types";
 import { playEventEntryHeld, playEventGate, playGameEntryHeld, playGameEntryStatus, getPlayDb, joinPlayGame, playGamePublished } from "@/lib/organizer/play";
 import { readPlayUserId } from "@/lib/organizer/play-user";
@@ -159,6 +160,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const vote = storedVote ? { prompt: storedVote.prompt, phase: storedVote.phase } : null;
   const storedLottery = type === "lottery" ? readStoredLottery(settings) : null;
   const lottery = storedLottery ? { prizes: storedLottery.prizes, phase: storedLottery.phase } : null;
+  const storedSurvey = type === "survey" ? readStoredSurvey(settings) : null;
+  const survey = storedSurvey ? { count: storedSurvey.questions.length, phase: storedSurvey.phase } : null;
   const look =
     type !== "stamp" && settings && typeof settings === "object"
       ? readGameLook((settings as { look?: unknown }).look)
@@ -208,6 +211,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     mystery,
     vote,
     lottery,
+    survey,
     look,
   });
 }
