@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { markConversationAsRead } from "@/lib/db/messages";
 import { hasDirectPostgresEnv } from "@/lib/direct-postgres-config";
 import { markConversationReadDirectDb } from "@/lib/conversation-direct-db";
@@ -54,4 +55,38 @@ export async function POST(
       { status: 500 }
     );
   }
+}
+
+/** GET: 相手が最後に読んだ時刻（自分が会話の参加者のときだけ） */
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await getApiUser();
+  if (!user) {
+    return NextResponse.json({ error: "未ログイン" }, { status: 401 });
+  }
+  const admin = createAdminClient();
+  if (!admin) {
+    return NextResponse.json({ otherLastReadAt: null });
+  }
+  const { id: conversationId } = await params;
+  const { data: members, error } = await admin
+    .from("conversation_members")
+    .select("user_id, last_read_at")
+    .eq("conversation_id", conversationId);
+  if (error) {
+    console.error(LOG_TAG, "get read state error:", error.message);
+    return NextResponse.json({ otherLastReadAt: null });
+  }
+  const rows = (members ?? []) as { user_id: string; last_read_at: string | null }[];
+  if (!rows.some((m) => m.user_id === user.id)) {
+    return NextResponse.json({ error: "会話が見つかりません" }, { status: 404 });
+  }
+  const others = rows.filter((m) => m.user_id !== user.id && m.last_read_at);
+  const otherLastReadAt =
+    others.length > 0
+      ? others.map((m) => m.last_read_at as string).sort().at(-1) ?? null
+      : null;
+  return NextResponse.json({ otherLastReadAt });
 }

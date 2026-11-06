@@ -14,6 +14,8 @@ import { shrinkPhotoForChat } from "@/lib/chat/shrink-photo";
 const PHOTO_ONLY_TEXT = "写真を送りました";
 /** 1回に送れる写真の数 */
 const STAGED_MAX = 4;
+/** 既読を確かめる間隔 */
+const READ_POLL_MS = 15_000;
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
@@ -124,6 +126,8 @@ export default function ConversationPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
+  /** 相手が最後に読んだ時刻（既読の表示に使う） */
+  const [otherLastReadAt, setOtherLastReadAt] = useState<string | null>(null);
   /** 選んだけれど、まだ送っていない写真（送信ボタンで送る） */
   const [staged, setStaged] = useState<{ id: string; file: File; previewUrl: string }[]>([]);
 
@@ -209,6 +213,10 @@ export default function ConversationPage() {
     const channel = supabase.channel(`messages:${conversationId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
         const newRow = payload.new as Message;
+        if (newRow.sender_id !== currentUserId && document.visibilityState === "visible") {
+          // 画面を開いているときに届いたら、そのまま既読にする
+          void fetch(`/api/messages/conversations/${conversationId}/read`, { method: "POST", ...API_CREDENTIALS }).catch(() => {});
+        }
         if (newRow.image_path) {
           // 写真は見るための URL をサーバーにつけてもらう必要があるので、読み直す
           void fetchWithTimeout(`/api/messages/conversations/${conversationId}/messages`, API_CREDENTIALS)
@@ -223,6 +231,32 @@ export default function ConversationPage() {
     return () => {
       controller.abort();
       supabase.removeChannel(channel);
+    };
+  }, [conversationId, currentUserId]);
+
+  // 相手が読んだかどうかを、開いている間は15秒ごとに確かめる
+  useEffect(() => {
+    if (!conversationId || !currentUserId) return;
+    let stopped = false;
+    const load = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const res = await fetch(`/api/messages/conversations/${conversationId}/read`, API_CREDENTIALS);
+        if (!res.ok || stopped) return;
+        const body = (await res.json()) as { otherLastReadAt?: string | null };
+        setOtherLastReadAt(body.otherLastReadAt ?? null);
+      } catch {
+        // 次の回にまた確かめる
+      }
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), READ_POLL_MS);
+    const onVisible = () => void load();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [conversationId, currentUserId]);
 
@@ -365,6 +399,15 @@ export default function ConversationPage() {
   const rel = relationLabel(conversationKind);
   const name = counterpartName?.trim() || "相手";
   const nameInitial = name.slice(0, 1).toUpperCase() || "?";
+
+  /** 相手が読んだ、自分のいちばん新しいメッセージ（ここに「既読」を出す） */
+  const readUpTo = otherLastReadAt ? Date.parse(otherLastReadAt) : NaN;
+  let lastReadOwnId: string | null = null;
+  if (!Number.isNaN(readUpTo)) {
+    for (const m of messages) {
+      if (m.sender_id === currentUserId && Date.parse(m.created_at) <= readUpTo) lastReadOwnId = m.id;
+    }
+  }
 
   type MsgItem =
     | { type: "date"; label: string }
@@ -562,9 +605,12 @@ export default function ConversationPage() {
                   msg.content
                 )}
               </div>
-              {showTime && (
+              {(showTime || msg.id === lastReadOwnId) && (
                 <span className="ms-mtime" style={{ fontSize: 11, color: C.t3, marginTop: 4, padding: "0 4px" }}>
-                  {formatTime(msg.created_at)}
+                  {msg.id === lastReadOwnId ? (
+                    <span style={{ color: C.green, fontWeight: 600, marginRight: showTime ? 6 : 0 }}>既読</span>
+                  ) : null}
+                  {showTime ? formatTime(msg.created_at) : null}
                 </span>
               )}
             </div>
