@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getApiUser } from "@/lib/api-auth";
 import { getStripe } from "@/lib/stripe";
+import { CHAT_MEDIA_BUCKET } from "@/lib/chat/chat-photos";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,17 @@ export async function DELETE() {
     }
   }
 
+  // チャットで送った写真の場所を、消す前に控えておく（メッセージは退会で一緒に消える）
+  const { data: photoRows } = await admin
+    .from("messages")
+    .select("image_path")
+    .eq("sender_id", user.id)
+    .not("image_path", "is", null)
+    .limit(5000);
+  const photoPaths = (photoRows ?? [])
+    .map((r) => (r as { image_path: string | null }).image_path)
+    .filter((p): p is string => !!p);
+
   const { error } = await admin.auth.admin.deleteUser(user.id);
   if (error) {
     console.error("[account-delete]", error);
@@ -49,6 +61,14 @@ export async function DELETE() {
       { error: "アカウントを削除できませんでした。時間をおいて再度お試しください。" },
       { status: 500 }
     );
+  }
+
+  // 退会が済んでから写真を消す（失敗しても退会そのものは成功として返す）
+  for (let i = 0; i < photoPaths.length; i += 100) {
+    const { error: removeError } = await admin.storage
+      .from(CHAT_MEDIA_BUCKET)
+      .remove(photoPaths.slice(i, i + 100));
+    if (removeError) console.error("[account-delete] chat photos", removeError.message);
   }
 
   const supabase = await createClient();
