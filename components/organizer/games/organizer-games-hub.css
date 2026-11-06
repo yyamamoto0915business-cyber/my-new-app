@@ -193,6 +193,7 @@
 .org-hub .org-hub__template.is-coupon .org-hub__template-go { background: #c9a0e0; }
 .org-hub .org-hub__template.is-checkin .org-hub__template-go { background: #7ec9c2; }
 .org-hub .org-hub__template.is-vote .org-hub__template-go { background: #c9a227; }
+.org-hub .org-hub__template.is-lottery .org-hub__template-go { background: #d9534f; }
 
 @media (hover: hover) {
   .org-hub .org-hub__template:hover {

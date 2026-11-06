@@ -7,6 +7,7 @@ export const ORGANIZER_GAME_TYPE_IDS = [
   "coupon",
   "checkin",
   "vote",
+  "lottery",
 ] as const;
 
 export type OrganizerGameTypeId = (typeof ORGANIZER_GAME_TYPE_IDS)[number];
@@ -68,6 +69,12 @@ export const ORGANIZER_GAME_TYPES: readonly OrganizerGameType[] = [
     id: "vote",
     label: "投票",
     description: "案を集めて、みんなで1つに決めます",
+    available: true,
+  },
+  {
+    id: "lottery",
+    label: "抽選",
+    description: "参加した人の中から、当選者をランダムに選びます",
     available: true,
   },
 ];
