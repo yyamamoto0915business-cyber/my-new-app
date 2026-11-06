@@ -7,6 +7,7 @@ import { sanitizeMissionSettings } from "@/lib/organizer/mission";
 import { sanitizePhotoSettings } from "@/lib/organizer/photo";
 import { readGamePassSettings } from "@/lib/organizer/game-pass";
 import { sanitizeVoteSettings } from "@/lib/organizer/vote";
+import { sanitizeLotterySettings } from "@/lib/organizer/lottery";
 
 export type GameSettingsBody = {
   quiz?: unknown;
@@ -16,6 +17,7 @@ export type GameSettingsBody = {
   checkin?: unknown;
   mystery?: unknown;
   vote?: unknown;
+  lottery?: unknown;
   experience?: unknown;
   look?: unknown;
   audience?: unknown;
@@ -36,6 +38,9 @@ export function settingsFromBody(body: GameSettingsBody) {
   // 投票はお題があるときだけ残す
   const voteRaw = body.vote && typeof body.vote === "object" ? sanitizeVoteSettings(body.vote) : null;
   const vote = voteRaw?.prompt ? voteRaw : null;
+  // 抽選は賞が1つ以上あるときだけ残す
+  const lotteryRaw = body.lottery && typeof body.lottery === "object" ? sanitizeLotterySettings(body.lottery) : null;
+  const lottery = lotteryRaw && lotteryRaw.prizes.length > 0 ? lotteryRaw : null;
   const experience = sanitizeGameExperience(body.experience);
   // 参加画面のアイコンと背景（スタンプラリー以外）。
   const look = body.look && typeof body.look === "object" ? readGameLook(body.look) : null;
@@ -55,7 +60,7 @@ export function settingsFromBody(body: GameSettingsBody) {
   // 参加パスの定員・締め切り・注意書き（申し込んだ人だけのとき。スタンプラリーは experience に参加できる人がある）。
   const pass =
     audience === "entry" || experience?.basics.audience === "entry" ? readGamePassSettings(body.pass) : null;
-  if (!quiz && !mission && !photo && !coupon && !checkin && !mystery && !vote && !experience && !look) return undefined;
+  if (!quiz && !mission && !photo && !coupon && !checkin && !mystery && !vote && !lottery && !experience && !look) return undefined;
   return {
     ...(quiz ? { quiz } : {}),
     ...(mission ? { mission } : {}),
@@ -64,6 +69,7 @@ export function settingsFromBody(body: GameSettingsBody) {
     ...(checkin ? { checkin } : {}),
     ...(mystery ? { mystery } : {}),
     ...(vote ? { vote } : {}),
+    ...(lottery ? { lottery } : {}),
     ...(experience ? { experience } : {}),
     ...(look ? { look } : {}),
     ...(audience ? { audience } : {}),

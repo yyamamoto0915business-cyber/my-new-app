@@ -56,6 +56,7 @@ const TYPE_MARK: Partial<Record<OrganizerGame["type"], string>> = {
   coupon: "/organizer/games/game-type-coupon.png",
   checkin: "/organizer/games/game-type-checkin.png",
   vote: "/organizer/games/loading-mascot-3.png",
+  lottery: "/organizer/games/loading-mascot-3.png",
 };
 
 function gameTypeMark(type: OrganizerGame["type"]) {

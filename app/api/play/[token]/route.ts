@@ -9,6 +9,7 @@ import { readStoredCoupon } from "@/lib/organizer/coupon-play";
 import { publicCheckin, readStoredCheckin } from "@/lib/organizer/checkin-play";
 import { publicMystery, readStoredMystery } from "@/lib/organizer/mystery-play";
 import { readStoredVote } from "@/lib/organizer/vote";
+import { readStoredLottery } from "@/lib/organizer/lottery";
 import { getOrganizerGameType, isOrganizerGameTypeId } from "@/lib/organizer/game-types";
 import { playEventEntryHeld, playEventGate, playGameEntryHeld, playGameEntryStatus, getPlayDb, joinPlayGame, playGamePublished } from "@/lib/organizer/play";
 import { readPlayUserId } from "@/lib/organizer/play-user";
@@ -156,6 +157,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }
   const storedVote = type === "vote" ? readStoredVote(settings) : null;
   const vote = storedVote ? { prompt: storedVote.prompt, phase: storedVote.phase } : null;
+  const storedLottery = type === "lottery" ? readStoredLottery(settings) : null;
+  const lottery = storedLottery ? { prizes: storedLottery.prizes, phase: storedLottery.phase } : null;
   const look =
     type !== "stamp" && settings && typeof settings === "object"
       ? readGameLook((settings as { look?: unknown }).look)
@@ -204,6 +207,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     checkin,
     mystery,
     vote,
+    lottery,
     look,
   });
 }
