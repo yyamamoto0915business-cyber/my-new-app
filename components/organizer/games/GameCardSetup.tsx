@@ -15,6 +15,7 @@ export function gameTypeCover(type: OrganizerGameTypeId): string {
   // 投票も種類の絵がないので、マスコットの絵を使う。
   if (type === "vote") return "/organizer/games/loading-mascot-3.png";
   if (type === "lottery") return "/organizer/games/loading-mascot-3.png";
+  if (type === "survey") return "/organizer/games/loading-mascot-3.png";
   return `/organizer/games/game-type-${type}.png`;
 }
 

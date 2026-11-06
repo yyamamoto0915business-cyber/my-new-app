@@ -43,6 +43,8 @@ import { readPublicVoteIntro, type PublicVoteIntro } from "@/lib/organizer/vote"
 import { PlayVote } from "@/components/play/PlayVote";
 import { readPublicLotteryIntro, type PublicLotteryIntro } from "@/lib/organizer/lottery";
 import { PlayLottery } from "@/components/play/PlayLottery";
+import { readPublicSurveyIntro, type PublicSurveyIntro } from "@/lib/organizer/survey";
+import { PlaySurvey } from "@/components/play/PlaySurvey";
 import { readPublicCheckin, type PublicCheckinPlay } from "@/lib/organizer/checkin-play";
 import { readPublicCoupon, type PublicCouponPlay } from "@/lib/organizer/coupon-play";
 import { readPublicPhoto, type PublicPhotoPlay } from "@/lib/organizer/photo-play";
@@ -87,6 +89,7 @@ type PlayGame = {
   mystery: PublicMysteryPlay | null;
   vote: PublicVoteIntro | null;
   lottery: PublicLotteryIntro | null;
+  survey: PublicSurveyIntro | null;
   /** 参加画面のアイコンと背景（スタンプラリー以外）。 */
   look: GameLook | null;
 };
@@ -247,6 +250,7 @@ export function PlayJoinClient() {
             mystery: readPublicMystery(body.mystery),
             vote: readPublicVoteIntro((body as { vote?: unknown }).vote),
             lottery: readPublicLotteryIntro((body as { lottery?: unknown }).lottery),
+            survey: readPublicSurveyIntro((body as { survey?: unknown }).survey),
           });
           if (knownNickname) setNickname((current) => current || knownNickname);
         }
@@ -873,6 +877,25 @@ export function PlayJoinClient() {
     );
   }
 
+  if (progress && game.type === "survey" && game.survey) {
+    return (
+      <main className={`play-game ${gameLookClass(look)} play-game--scene`}>
+        <GameLookBackdrop look={look} />
+        <GameSceneBand look={look} scene="play" />
+        <div className="play-game__card">
+          <PlayLookHead
+            look={look}
+            screen="play"
+            kicker={<p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>}
+            title={<h1>{game.name}</h1>}
+            meta={<p className="play-game__meta">{progress.nickname}</p>}
+          />
+          <PlaySurvey token={token} />
+        </div>
+      </main>
+    );
+  }
+
   if (progress && game.type === "mystery" && game.mystery) {
     return (
       <main className={`play-game ${gameLookClass(look)} play-game--scene`}>
@@ -968,6 +991,8 @@ export function PlayJoinClient() {
                             ? `お題：${game.vote.prompt}`
                             : game.type === "lottery" && game.lottery
                             ? `賞：${game.lottery.prizes.map((p) => p.label).join("・")}`
+                            : game.type === "survey" && game.survey
+                            ? `質問 ${game.survey.count}問`
                             : game.spotCount > 0
                       ? copy.spotMeta(game.spotCount)
                       : copy.spotsPreparing}
