@@ -69,7 +69,10 @@ function tabSizeClass(compact?: boolean) {
 }
 
 function tabWidthClass(isMachi: boolean) {
-  return isMachi ? "shrink-0" : "min-w-0 flex-1";
+  // スマホは「まちの情報」を文字の幅にそろえる。タブレット（600px〜）では3つを同じ幅にする
+  return isMachi
+    ? "shrink-0 tablet:min-w-0 tablet:flex-1 tablet:basis-0"
+    : "min-w-0 flex-1 tablet:basis-0";
 }
 
 export function TopModeTabs({ onTabClick, className, compact }: Props) {
