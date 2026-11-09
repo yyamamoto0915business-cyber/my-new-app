@@ -9,6 +9,7 @@ export const ORGANIZER_GAME_TYPE_IDS = [
   "vote",
   "lottery",
   "survey",
+  "tournament",
 ] as const;
 
 export type OrganizerGameTypeId = (typeof ORGANIZER_GAME_TYPE_IDS)[number];
@@ -82,6 +83,12 @@ export const ORGANIZER_GAME_TYPES: readonly OrganizerGameType[] = [
     id: "survey",
     label: "アンケート",
     description: "感想や意見を集めて、結果をグラフで見ます",
+    available: true,
+  },
+  {
+    id: "tournament",
+    label: "トーナメント表",
+    description: "勝ち抜き・リーグ戦の対戦表を、みんなのスマホで見られます",
     available: true,
   },
 ];

@@ -30,6 +30,7 @@ import { OrganizerMissionPhotos } from "@/components/organizer/games/OrganizerMi
 import { OrganizerVoteDesk } from "@/components/organizer/games/OrganizerVoteDesk";
 import { OrganizerLotteryDesk } from "@/components/organizer/games/OrganizerLotteryDesk";
 import { OrganizerSurveyDesk } from "@/components/organizer/games/OrganizerSurveyDesk";
+import { OrganizerTournamentDesk } from "@/components/organizer/games/OrganizerTournamentDesk";
 import { GameJoinCodePanel } from "@/components/organizer/games/GameJoinCodePanel";
 import { gameTypeCover } from "@/components/organizer/games/GameCardSetup";
 import {
@@ -41,7 +42,7 @@ import type { OrganizerGame, OrganizerGameSpot } from "@/lib/organizer/games";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 /** 作成画面を開き直して、保存した内容を直せるゲーム（スタンプラリーは別の入口）。 */
-const DRAFT_EDIT_TYPES = new Set<string>(["quiz", "mystery", "mission", "photo", "checkin", "coupon", "vote", "lottery", "survey"]);
+const DRAFT_EDIT_TYPES = new Set<string>(["quiz", "mystery", "mission", "photo", "checkin", "coupon", "vote", "lottery", "survey", "tournament"]);
 
 /** 期間を「5/1(木)〜5/31(土)」のように見せる。 */
 function formatPeriod(startsAt: string | null, endsAt: string | null): string {
@@ -570,6 +571,7 @@ export function OrganizerGameEditor() {
       <OrganizerVoteDesk gameId={game.id} gameType={game.type} />
       <OrganizerLotteryDesk gameId={game.id} gameType={game.type} />
       <OrganizerSurveyDesk gameId={game.id} gameType={game.type} />
+      <OrganizerTournamentDesk gameId={game.id} gameType={game.type} />
 
       {game.type === "stamp" ? (
       <section className="org-game-editor__panel">

@@ -9,6 +9,7 @@ import { readGamePassSettings } from "@/lib/organizer/game-pass";
 import { sanitizeVoteSettings } from "@/lib/organizer/vote";
 import { sanitizeLotterySettings } from "@/lib/organizer/lottery";
 import { sanitizeSurveySettings } from "@/lib/organizer/survey";
+import { sanitizeTournamentSettings } from "@/lib/organizer/tournament";
 
 export type GameSettingsBody = {
   quiz?: unknown;
@@ -20,6 +21,7 @@ export type GameSettingsBody = {
   vote?: unknown;
   lottery?: unknown;
   survey?: unknown;
+  tournament?: unknown;
   experience?: unknown;
   look?: unknown;
   audience?: unknown;
@@ -46,6 +48,10 @@ export function settingsFromBody(body: GameSettingsBody) {
   // アンケートは質問が1つ以上あるときだけ残す
   const surveyRaw = body.survey && typeof body.survey === "object" ? sanitizeSurveySettings(body.survey) : null;
   const survey = surveyRaw && surveyRaw.questions.length > 0 ? surveyRaw : null;
+  // トーナメントは出場者が2人以上のときだけ残す
+  const tournamentRaw =
+    body.tournament && typeof body.tournament === "object" ? sanitizeTournamentSettings(body.tournament) : null;
+  const tournament = tournamentRaw && tournamentRaw.entrants.length >= 2 ? tournamentRaw : null;
   const experience = sanitizeGameExperience(body.experience);
   // 参加画面のアイコンと背景（スタンプラリー以外）。
   const look = body.look && typeof body.look === "object" ? readGameLook(body.look) : null;
@@ -65,7 +71,7 @@ export function settingsFromBody(body: GameSettingsBody) {
   // 参加パスの定員・締め切り・注意書き（申し込んだ人だけのとき。スタンプラリーは experience に参加できる人がある）。
   const pass =
     audience === "entry" || experience?.basics.audience === "entry" ? readGamePassSettings(body.pass) : null;
-  if (!quiz && !mission && !photo && !coupon && !checkin && !mystery && !vote && !lottery && !survey && !experience && !look) return undefined;
+  if (!quiz && !mission && !photo && !coupon && !checkin && !mystery && !vote && !lottery && !survey && !tournament && !experience && !look) return undefined;
   return {
     ...(quiz ? { quiz } : {}),
     ...(mission ? { mission } : {}),
@@ -76,6 +82,7 @@ export function settingsFromBody(body: GameSettingsBody) {
     ...(vote ? { vote } : {}),
     ...(lottery ? { lottery } : {}),
     ...(survey ? { survey } : {}),
+    ...(tournament ? { tournament } : {}),
     ...(experience ? { experience } : {}),
     ...(look ? { look } : {}),
     ...(audience ? { audience } : {}),
