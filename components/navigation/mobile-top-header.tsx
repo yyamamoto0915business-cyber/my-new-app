@@ -14,6 +14,7 @@ import { isAuthRoute } from "@/lib/is-auth-route";
 import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
+import { isEventFormRoute } from "@/lib/is-event-form-route";
 import { isPlayRoute } from "@/lib/is-play-route";
 import { isPostDetailRoute } from "@/lib/is-post-detail-route";
 
@@ -77,6 +78,7 @@ export function MobileTopHeader({ className }: Props) {
     isEventDetailRoute(pathname ?? "") ||
     isMessagesConversationRoute(pathname ?? "") ||
     isProfileEditRoute(pathname ?? "") ||
+    isEventFormRoute(pathname) ||
     isPlayRoute(pathname) ||
     // 投稿の詳細は画面専用の「← みんなの投稿」帯があるので、上の帯を2段にしない
     isPostDetailRoute(pathname)

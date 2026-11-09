@@ -6,6 +6,7 @@ import { getMobileTopHeaderHeightPx } from "@/components/navigation/mobile-top-h
 import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
+import { isEventFormRoute } from "@/lib/is-event-form-route";
 import { isAuthRoute } from "@/lib/is-auth-route";
 import { isPlayRoute } from "@/lib/is-play-route";
 
@@ -26,7 +27,8 @@ export function MobileMainShell({ children }: Props) {
   /** モバイルでグローバル上・下を外し、画面専用UIに任せる */
   const profileEdit = isProfileEditRoute(pathname ?? "");
   const playRoute = isPlayRoute(pathname);
-  const immersiveMobile = eventDetail || chatConversation || profileEdit || playRoute;
+  const eventForm = isEventFormRoute(pathname);
+  const immersiveMobile = eventDetail || chatConversation || profileEdit || playRoute || eventForm;
   const followsPage = pathname?.startsWith("/profile/follows") ?? false;
   const topHeaderH = getMobileTopHeaderHeightPx(pathname ?? "");
   const organizerArea =
