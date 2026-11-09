@@ -21123,6 +21123,27 @@ a.org-pos__setup-text-btn {
     font-size: 0.72rem;
   }
 
+  /* スマホ（600px 未満）：4つのタブが横にはみ出さないよう、アイコンを上・文字を下にして等分に並べる */
+  @media (max-width: 599px) {
+    .org-store-mgmt__tabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      overflow: visible;
+    }
+
+    .org-store-mgmt__tab {
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.2rem;
+      min-height: 3.1rem;
+      padding: 0.45rem 0.15rem;
+      font-size: 0.68rem;
+      line-height: 1.2;
+      text-align: center;
+      white-space: normal;
+    }
+  }
+
   .org-store-mgmt__panel {
     padding: 0.85rem 0.9rem 0.95rem;
     border-radius: 1rem;
