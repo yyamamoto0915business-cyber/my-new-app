@@ -16,6 +16,7 @@ export function gameTypeCover(type: OrganizerGameTypeId): string {
   if (type === "vote") return "/organizer/games/loading-mascot-3.png";
   if (type === "lottery") return "/organizer/games/loading-mascot-3.png";
   if (type === "survey") return "/organizer/games/loading-mascot-3.png";
+  if (type === "tournament") return "/organizer/games/loading-mascot-3.png";
   return `/organizer/games/game-type-${type}.png`;
 }
 

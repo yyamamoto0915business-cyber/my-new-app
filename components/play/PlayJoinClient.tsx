@@ -45,6 +45,7 @@ import { readPublicLotteryIntro, type PublicLotteryIntro } from "@/lib/organizer
 import { PlayLottery } from "@/components/play/PlayLottery";
 import { readPublicSurveyIntro, type PublicSurveyIntro } from "@/lib/organizer/survey";
 import { PlaySurvey } from "@/components/play/PlaySurvey";
+import { PlayTournament } from "@/components/play/PlayTournament";
 import { readPublicCheckin, type PublicCheckinPlay } from "@/lib/organizer/checkin-play";
 import { readPublicCoupon, type PublicCouponPlay } from "@/lib/organizer/coupon-play";
 import { readPublicPhoto, type PublicPhotoPlay } from "@/lib/organizer/photo-play";
@@ -492,6 +493,26 @@ export function PlayJoinClient() {
   const showStart = game.type === "stamp" && !progress && !showJoin;
   // アイコンと背景は、スタンプラリー以外で変えられる。
   const look = game.type === "stamp" ? null : game.look;
+
+  // トーナメント表は見るだけなので、参加の手続きなしで対戦表を出す。
+  if (game.type === "tournament") {
+    return (
+      <main className={`play-game ${gameLookClass(look)} play-game--scene`}>
+        <GameLookBackdrop look={look} />
+        <GameSceneBand look={look} scene="play" />
+        <div className="play-game__card">
+          <PlayLookHead
+            look={look}
+            screen="play"
+            kicker={<p className="play-game__kicker">{copy.msg(game.typeLabel)}</p>}
+            title={<h1>{game.name}</h1>}
+            meta={null}
+          />
+          <PlayTournament token={token} />
+        </div>
+      </main>
+    );
+  }
 
   // ゲームだけで申し込みを受け付けるときは、このページで申し込む。
   if (!progress && game.entry && (!game.entry.applied || appliedPassHref)) {
