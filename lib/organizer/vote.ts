@@ -23,7 +23,14 @@ export type VoteSettings = {
   /** 案に理由・ひとことを添えられるか */
   allowNote: boolean;
   phase: VotePhase;
+  /**
+   * 決まった候補（案を集めずに、この候補から投票する）。2つ以上あれば、保存したときに候補として入れ、
+   * 投票の段階から始める。名前募集をメッセージで受けたときなど。
+   */
+  presetCandidates: string[];
 };
+
+export const VOTE_PRESET_MAX = 30;
 
 export const VOTE_BODY_MAX = 40;
 export const VOTE_NOTE_MAX = 120;
@@ -35,6 +42,7 @@ export const DEFAULT_VOTE_SETTINGS: VoteSettings = {
   votesPerPlayer: 1,
   allowNote: true,
   phase: "collect",
+  presetCandidates: [],
 };
 
 function clampInt(value: unknown, min: number, max: number, fallback: number): number {
@@ -61,7 +69,25 @@ export function sanitizeVoteSettings(raw: unknown): VoteSettings {
     votesPerPlayer: clampInt(body.votesPerPlayer, 1, 3, DEFAULT_VOTE_SETTINGS.votesPerPlayer),
     allowNote: typeof body.allowNote === "boolean" ? body.allowNote : DEFAULT_VOTE_SETTINGS.allowNote,
     phase: isVotePhase(body.phase) ? body.phase : DEFAULT_VOTE_SETTINGS.phase,
+    presetCandidates: sanitizePresetCandidates(body.presetCandidates),
   };
+}
+
+/** 決まった候補をそろえる（空・同じものは捨てる） */
+export function sanitizePresetCandidates(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of raw) {
+    const body = normalizeVoteBody(item);
+    if (!body) continue;
+    const key = voteBodyKey(body);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(body);
+    if (out.length >= VOTE_PRESET_MAX) break;
+  }
+  return out;
 }
 
 /** ゲームの settings から投票の設定を取り出す。お題がなければ null */

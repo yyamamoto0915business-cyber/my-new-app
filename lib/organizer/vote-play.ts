@@ -348,6 +348,56 @@ export async function addVoteCandidate(db: SupabaseClient, gameId: string, bodyR
   return { ok: true };
 }
 
+/**
+ * 決まった候補（settings.vote.presetCandidates）を、投票の候補にそろえる。
+ * - 一覧にあってまだない候補は足す
+ * - 主催者が足した候補で、一覧から消えていて、まだ票が入っていないものは消す
+ * - 候補が2つ以上そろっていて「案を集める」段階なら、「投票」にする
+ */
+export async function syncPresetVoteCandidates(db: SupabaseClient, gameId: string): Promise<{ ok: true } | Fail> {
+  const { data } = await db.from("organizer_games").select("settings").eq("id", gameId).maybeSingle();
+  const raw = (data as { settings?: unknown } | null)?.settings;
+  const vote = sanitizeVoteSettings(raw && typeof raw === "object" ? (raw as { vote?: unknown }).vote : null);
+  const preset = vote.presetCandidates;
+  if (preset.length < 2) return { ok: true };
+
+  const { data: rows, error } = await db
+    .from("organizer_vote_ideas")
+    .select("id, body, player_id")
+    .eq("game_id", gameId)
+    .is("player_id", null);
+  if (error) throw error;
+  const existing = (rows ?? []) as { id: string; body: string }[];
+  const existingKeys = new Set(existing.map((r) => voteBodyKey(r.body)));
+  const presetKeys = new Set(preset.map((b) => voteBodyKey(b)));
+
+  const toAdd = preset.filter((b) => !existingKeys.has(voteBodyKey(b)));
+  if (toAdd.length > 0) {
+    const { error: insErr } = await db.from("organizer_vote_ideas").insert(
+      toAdd.map((body) => ({ game_id: gameId, player_id: null, nickname: null, body, is_candidate: true })),
+    );
+    if (insErr) throw insErr;
+  }
+
+  const removed = existing.filter((r) => !presetKeys.has(voteBodyKey(r.body)));
+  if (removed.length > 0) {
+    const { data: voted } = await db
+      .from("organizer_vote_ballots")
+      .select("idea_id")
+      .eq("game_id", gameId)
+      .in("idea_id", removed.map((r) => r.id));
+    const votedIds = new Set(((voted ?? []) as { idea_id: string }[]).map((v) => v.idea_id));
+    const deletable = removed.filter((r) => !votedIds.has(r.id)).map((r) => r.id);
+    if (deletable.length > 0) {
+      const { error: delErr } = await db.from("organizer_vote_ideas").delete().in("id", deletable);
+      if (delErr) throw delErr;
+    }
+  }
+
+  if (vote.phase === "collect") return setVotePhase(db, gameId, "vote");
+  return { ok: true };
+}
+
 /** 段階を切りかえる（案を集める → 投票 → 結果） */
 export async function setVotePhase(db: SupabaseClient, gameId: string, phase: VotePhase): Promise<{ ok: true } | Fail> {
   const { data } = await db.from("organizer_games").select("settings").eq("id", gameId).maybeSingle();

@@ -15,6 +15,8 @@ import type { OrganizerGameEventOption } from "@/lib/organizer/games";
 import {
   DEFAULT_VOTE_SETTINGS,
   VOTE_PHASES,
+  VOTE_PRESET_MAX,
+  sanitizePresetCandidates,
   sanitizeVoteSettings,
   type VotePhase,
   type VoteSettings,
@@ -170,19 +172,20 @@ function VotePhonePreview({
 const DEMO_OTHERS: Record<string, number> = { あおば: 4, まちの灯: 3, ひだまり: 2 };
 
 /** 「お試しで見る」：記録せずに、案を送る → 投票 → 結果をその場で試す */
-function VoteTryDemo({ vote, name }: { vote: VoteSettings; name: string }) {
-  const [phase, setPhase] = useState<VotePhase>("collect");
+function VoteTryDemo({ vote, name, preset = [] }: { vote: VoteSettings; name: string; preset?: string[] }) {
+  const usePreset = preset.length >= 2;
+  const [phase, setPhase] = useState<VotePhase>(usePreset ? "vote" : "collect");
   const [ideas, setIdeas] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [picked, setPicked] = useState<string | null>(null);
-  const candidates = [...ideas, ...Object.keys(DEMO_OTHERS)].slice(0, 6);
+  const candidates = usePreset ? preset : [...ideas, ...Object.keys(DEMO_OTHERS)].slice(0, 6);
   const votes = (s: string) => (s === picked ? 1 : 0) + (DEMO_OTHERS[s] ?? 0);
   const ranked = [...candidates].sort((a, b) => votes(b) - votes(a));
 
   return (
     <div className="space-y-3 px-4 pb-6 pt-2">
       <div className="flex gap-1.5">
-        {VOTE_PHASES.map((p) => (
+        {VOTE_PHASES.filter((p) => !usePreset || p.id !== "collect").map((p) => (
           <Choice key={p.id} on={phase === p.id} onClick={() => setPhase(p.id)}>
             {p.label}
           </Choice>
@@ -284,6 +287,9 @@ export function OrganizerVoteCreateForm() {
   const [startDate, setStartDate] = useState(() => jstDate());
   const [endDate, setEndDate] = useState(() => jstDate(13));
   const [vote, setVote] = useState<VoteSettings>({ ...DEFAULT_VOTE_SETTINGS });
+  /** 決まった候補から投票する（案を集めない） */
+  const [presetMode, setPresetMode] = useState(false);
+  const [candidateText, setCandidateText] = useState("");
   const [sample, setSample] = useState<string[]>(TEMPLATES[0].sample);
   const [previewPhase, setPreviewPhase] = useState<VotePhase>("collect");
   const [events, setEvents] = useState<OrganizerGameEventOption[]>([]);
@@ -301,7 +307,12 @@ export function OrganizerVoteCreateForm() {
     if (saved.startDate) setStartDate(saved.startDate);
     if (saved.endDate) setEndDate(saved.endDate);
     setCardImage(typeof saved.settings.cardImage === "string" ? saved.settings.cardImage : "");
-    setVote(sanitizeVoteSettings(saved.settings.vote));
+    const restored = sanitizeVoteSettings(saved.settings.vote);
+    setVote(restored);
+    if (restored.presetCandidates.length > 0) {
+      setPresetMode(true);
+      setCandidateText(restored.presetCandidates.join("\n"));
+    }
   });
 
   useEffect(() => {
@@ -321,6 +332,8 @@ export function OrganizerVoteCreateForm() {
   }, []);
 
   const stepIndex = STEPS.findIndex((s) => s.id === step);
+  const presetCandidates = presetMode ? sanitizePresetCandidates(candidateText.split("\n")) : [];
+  const presetRawCount = candidateText.split("\n").filter((x) => x.trim()).length;
   const update = (patch: Partial<VoteSettings>) => setVote((prev) => ({ ...prev, ...patch }));
   /** 自分で直していなければ、ゲーム名をお題に合わせる */
   const effectiveName = nameTouched ? name : name || vote.prompt.slice(0, 30);
@@ -333,6 +346,10 @@ export function OrganizerVoteCreateForm() {
 
   function validate(id: StepId): string | null {
     if (id === "vote" && !vote.prompt.trim()) return "お題を入力するか、上の例から選んでください";
+    if (id === "vote" && presetMode) {
+      if (presetCandidates.length < 2) return "候補を2つ以上入れてください（1行に1つ）";
+      if (presetRawCount > VOTE_PRESET_MAX) return `候補は${VOTE_PRESET_MAX}個までです`;
+    }
     if (id === "basic") {
       if (!effectiveName.trim()) return "ゲーム名を入力してください";
       return periodProblem(startDate, endDate);
@@ -375,13 +392,36 @@ export function OrganizerVoteCreateForm() {
           startsAt: toIso(startDate, "00:00"),
           endsAt: toIso(endDate, "23:59"),
           spots: [],
-          vote: { ...vote, prompt: vote.prompt.trim() },
+          vote: {
+            ...vote,
+            prompt: vote.prompt.trim(),
+            presetCandidates,
+            // 決まった候補のときは、案を集めずに投票から始める
+            phase: presetMode ? "vote" : "collect",
+          },
         },
         status,
       );
       if (!result.ok) {
         setError(result.error);
         return;
+      }
+      if (presetMode) {
+        // 決まった候補を、投票の候補として入れる
+        const res = await fetchWithTimeout(`/api/organizer/games/${result.id}/vote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "sync-preset" }),
+        }).catch(() => null);
+        if (!res || !res.ok) {
+          const json = res ? await res.json().catch(() => ({})) : {};
+          setError(
+            (json as { error?: string }).error ??
+              "候補を入れられませんでした。ゲームの管理画面で候補を確かめてください",
+          );
+          router.push(`/organizer/games/${result.id}`);
+          return;
+        }
       }
       if (status === "published") {
         setPublished(true);
@@ -414,13 +454,18 @@ export function OrganizerVoteCreateForm() {
   const preview = (
     <div className="space-y-3">
       <div className="mx-auto flex max-w-[320px] gap-1">
-        {VOTE_PHASES.map((p) => (
+        {VOTE_PHASES.filter((p) => !presetMode || p.id !== "collect").map((p) => (
           <Choice key={p.id} on={previewPhase === p.id} onClick={() => setPreviewPhase(p.id)}>
             {p.label}
           </Choice>
         ))}
       </div>
-      <VotePhonePreview name={effectiveName} vote={vote} phase={previewPhase} sample={sample} />
+      <VotePhonePreview
+        name={effectiveName}
+        vote={vote}
+        phase={presetMode && previewPhase === "collect" ? "vote" : previewPhase}
+        sample={presetMode && presetCandidates.length > 0 ? presetCandidates.slice(0, 3) : sample}
+      />
     </div>
   );
 
@@ -479,6 +524,44 @@ export function OrganizerVoteCreateForm() {
                 className={field}
               />
             </label>
+            <div>
+              <p className={labelCls}>決め方</p>
+              <div className="mt-1.5 flex gap-1.5">
+                <Choice on={!presetMode} onClick={() => setPresetMode(false)}>
+                  案を集めてから投票
+                </Choice>
+                <Choice
+                  on={presetMode}
+                  onClick={() => {
+                    setPresetMode(true);
+                    setPreviewPhase("vote");
+                  }}
+                >
+                  決まった候補から投票
+                </Choice>
+              </div>
+              <p className="mt-1.5 text-[11.5px] leading-relaxed text-[#6a7a70]">
+                {presetMode
+                  ? "候補を先に決めておき、公開したらすぐ投票できます。応募をメッセージなどで受けたときにも使えます。"
+                  : "参加者から案を集め、その中から候補を選んで投票します。"}
+              </p>
+            </div>
+            {presetMode ? (
+              <label className={labelCls}>
+                候補 <span className="text-[11px] text-[#c8a84b]">必須・2つ以上</span>
+                <textarea
+                  value={candidateText}
+                  onChange={(e) => setCandidateText(e.target.value)}
+                  rows={6}
+                  placeholder={"まちぴょん\nめぶき\nグリフ"}
+                  className={`${field} resize-y font-normal leading-[1.7]`}
+                />
+                <span className={`mt-1 block text-[11.5px] font-normal ${presetRawCount > VOTE_PRESET_MAX ? "text-[#b91c1c]" : "text-[#6a7a70]"}`}>
+                  1行に1つ ・ {presetCandidates.length}/{VOTE_PRESET_MAX}
+                </span>
+              </label>
+            ) : null}
+            {!presetMode ? (
             <label className={labelCls}>
               案を書くときのヒント <span className="text-[11px] font-normal text-[#8a978f]">任意</span>
               <textarea
@@ -489,6 +572,8 @@ export function OrganizerVoteCreateForm() {
                 className={`${field} resize-none`}
               />
             </label>
+            ) : null}
+            {!presetMode ? (
             <div>
               <p className={labelCls}>1人が送れる案</p>
               <div className="mt-1.5 flex gap-1.5">
@@ -499,6 +584,7 @@ export function OrganizerVoteCreateForm() {
                 ))}
               </div>
             </div>
+            ) : null}
             <div>
               <p className={labelCls}>1人の票の数</p>
               <div className="mt-1.5 flex gap-1.5">
@@ -509,6 +595,7 @@ export function OrganizerVoteCreateForm() {
                 ))}
               </div>
             </div>
+            {!presetMode ? (
             <label className="flex items-center gap-2.5 rounded-xl bg-[#f6f8f4] px-3.5 py-3 text-[13px] text-[#1e3828]">
               <input
                 type="checkbox"
@@ -518,6 +605,7 @@ export function OrganizerVoteCreateForm() {
               />
               案に「理由・ひとこと」を添えられるようにする
             </label>
+            ) : null}
           </section>
         ) : null}
 
@@ -601,7 +689,9 @@ export function OrganizerVoteCreateForm() {
                 ["お題", vote.prompt || "（未入力）"],
                 ["ゲーム名", effectiveName || "（未入力）"],
                 ["期間", `${startDate || "—"} 〜 ${endDate || "—"}`],
-                ["1人が送れる案", `${vote.maxIdeasPerPlayer}つまで`],
+                presetMode
+                  ? ["候補", `${presetCandidates.length}個（${presetCandidates.slice(0, 3).join("・")}${presetCandidates.length > 3 ? " ほか" : ""}）`]
+                  : ["1人が送れる案", `${vote.maxIdeasPerPlayer}つまで`],
                 ["1人の票の数", `${vote.votesPerPlayer}票`],
                 ["対象イベント", events.find((item) => item.id === eventId)?.title ?? "選ばない"],
               ].map(([k, v]) => (
@@ -613,11 +703,19 @@ export function OrganizerVoteCreateForm() {
             </dl>
             <div className="rounded-xl bg-[#f6f8f4] px-4 py-3 text-[12.5px] leading-[1.75] text-[#3a4a40]">
               <p className="font-semibold">公開したあとの流れ</p>
+              {presetMode ? (
+                <ol className="mt-1 list-decimal space-y-0.5 pl-5">
+                  <li>公開すると、すぐに候補から投票できます</li>
+                  <li>候補はゲームの管理画面で足したり隠したりできます</li>
+                  <li>投票が集まったら「結果発表」に切りかえると、参加者に1位が見えます</li>
+                </ol>
+              ) : (
               <ol className="mt-1 list-decimal space-y-0.5 pl-5">
                 <li>参加者が案を送ります</li>
                 <li>ゲームの管理画面で、届いた案の ☆ を押して候補を選び、「投票」に切りかえます</li>
                 <li>投票が集まったら「結果発表」に切りかえると、参加者に1位が見えます</li>
               </ol>
+              )}
             </div>
             <label className="flex items-start gap-2.5 rounded-xl border border-[#e3e8e2] px-3.5 py-3 text-[13px] text-[#1e3828]">
               <input
@@ -633,7 +731,7 @@ export function OrganizerVoteCreateForm() {
       </GameCreateShell>
       {testing ? (
         <GameTestSheet onClose={() => setTesting(false)}>
-          <VoteTryDemo vote={vote} name={effectiveName} />
+          <VoteTryDemo vote={vote} name={effectiveName} preset={presetCandidates} />
         </GameTestSheet>
       ) : null}
     </>
