@@ -252,17 +252,18 @@ export function EventFormTagSelector({
   return (
     <div className="flex flex-wrap gap-[6px] min-[900px]:gap-1.5">
       {EVENT_TAGS.map((tag) => {
-        const on = selected.includes(tag.id);
+        // 「英語対応」のタグと「英語の案内あり」は同じ意味なので、1つのボタンでそろえて切りかえる
+        const linkedEnglish = tag.id === "english" && onEnglishGuideAvailableChange != null;
+        const on = selected.includes(tag.id) || (linkedEnglish && Boolean(englishGuideAvailable));
         return (
           <EventFormTagPill
             key={tag.id}
             label={tag.label}
             on={on}
-            onToggle={() =>
-              onChange(
-                on ? selected.filter((t) => t !== tag.id) : [...selected, tag.id]
-              )
-            }
+            onToggle={() => {
+              onChange(on ? selected.filter((t) => t !== tag.id) : [...selected, tag.id]);
+              if (linkedEnglish) onEnglishGuideAvailableChange(!on);
+            }}
           />
         );
       })}
@@ -271,13 +272,6 @@ export function EventFormTagSelector({
           label="子連れOK"
           on={Boolean(childFriendly)}
           onToggle={() => onChildFriendlyChange(!childFriendly)}
-        />
-      )}
-      {onEnglishGuideAvailableChange != null && (
-        <EventFormTagPill
-          label="英語対応あり"
-          on={Boolean(englishGuideAvailable)}
-          onToggle={() => onEnglishGuideAvailableChange(!englishGuideAvailable)}
         />
       )}
     </div>
@@ -511,6 +505,8 @@ export function EventFormSidePanel({
     onlineService?: string | null;
     onlineJoinUrl?: string | null;
     rainPolicy?: string;
+    prefecture?: string;
+    address?: string;
   };
   currentStep: EventFormStep;
   onNext: () => void;
@@ -527,7 +523,13 @@ export function EventFormSidePanel({
     { key: "概要", done: !!form.description.trim() },
     { key: "主催者名", done: !!form.organizerName?.trim() },
     { key: "開催日時", done: !!form.date && !!form.startTime },
-    ...(showVenue ? [{ key: "開催場所", done: !!form.location.trim() }] : []),
+    ...(showVenue
+      ? [
+          { key: "開催場所", done: !!form.location.trim() },
+          { key: "都道府県", done: !!form.prefecture?.trim() },
+          { key: "住所", done: !!form.address?.trim() },
+        ]
+      : []),
     ...(showOnline
       ? [
           {

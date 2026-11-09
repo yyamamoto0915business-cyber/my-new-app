@@ -22,6 +22,7 @@ import { getJstNowHm, getJstTodayYmd, toJstTimestamp } from "@/lib/jst-date";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { validateOnlineEventFormFields } from "@/lib/event-online-validation";
+import { needsVenueFields, normalizeEventFormat } from "@/lib/event-online";
 import { EventPublishSuccess } from "@/components/organizer/events/EventPublishSuccess";
 import { isDevPreviewSuccessQuery } from "@/lib/dev-publish-success-preview";
 
@@ -83,8 +84,20 @@ function validateForm(data: EventFormData): FormErrors {
     startTime: data.startTime,
   });
   Object.assign(errors, onlineErrors as FormErrors);
+  // 都道府県は「地域から探す」に使うので、会場があるときは入れてもらう
+  if (needsVenueFields(normalizeEventFormat(data.eventFormat)) && !data.prefecture?.trim()) {
+    errors.prefecture = "都道府県を選んでください";
+  }
   return errors;
 }
+
+/** 入力が足りない項目が、どのステップにあるか */
+const FIELD_STEP: Partial<Record<keyof EventFormData, Step>> = {
+  title: 1,
+  description: 1,
+  organizerName: 1,
+  organizerContact: 1,
+};
 
 // ── PC step bar ──
 function PcStepBar({
@@ -98,7 +111,7 @@ function PcStepBar({
   backLabelOverride?: string;
   hideActions?: boolean;
 }) {
-  const backLabel = backLabelOverride ?? (current === 1 ? "イベント一覧へ" : ["","基本情報に戻る","開催情報に戻る","詳細情報に戻る",""][current]);
+  const backLabel = backLabelOverride ?? (current === 1 ? "イベント一覧へ" : ["","基本情報に戻る","開催情報に戻る","詳細情報に戻る",""][current - 1]);
   const planLabel = planSummary
     ? planSummary.publishLimit === null
       ? "公開枠 無制限"
@@ -439,7 +452,14 @@ function NewEventPageContent() {
           form.endDate
         )
       : "—";
-  const missingRequired = Object.keys(validateForm(form)).length > 0;
+  const formErrors = validateForm(form);
+  const missingRequired = Object.keys(formErrors).length > 0;
+  /** 確認の段階で出す「足りない項目」（同じステップの項目はまとめて、どこへ戻ればよいかを出す） */
+  const missingList = (Object.entries(formErrors) as [keyof EventFormData, string][]).map(([field, message]) => ({
+    field,
+    message,
+    step: FIELD_STEP[field] ?? 2,
+  }));
 
   return (
     <div
@@ -591,6 +611,7 @@ function NewEventPageContent() {
                     : []),
                   { label: "開催場所", val: form.location || null },
                   { label: "都道府県", val: form.prefecture || null },
+                  { label: "住所", val: form.address || null },
                   { label: "参加費", val: `${form.price}円${form.price === 0 ? "（無料）" : ""}` },
                 ].map(({ label, val }) => (
                   <div key={label} className="flex items-start justify-between gap-[10px] border-b border-[#f5f3ef] py-[9px] last:border-b-0">
@@ -621,7 +642,23 @@ function NewEventPageContent() {
                 {missingRequired && (
                   <div className="mb-[16px] flex gap-[9px] rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] p-[14px]">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E8708A" strokeWidth="2" strokeLinecap="round" className="mt-[1px] shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    <p className="text-[13px] leading-[1.6] text-[#c04060]">必須項目が未入力です。公開するにはすべての必須項目を入力してください。</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-[600] leading-[1.6] text-[#c04060]">公開する前に、次の項目を入れてください</p>
+                      <ul className="mt-[6px] space-y-[4px]">
+                        {missingList.map((m) => (
+                          <li key={m.field} className="flex items-center justify-between gap-[8px] text-[12.5px] text-[#c04060]">
+                            <span className="min-w-0">・{m.message}</span>
+                            <button
+                              type="button"
+                              onClick={() => goToStep(m.step)}
+                              className="shrink-0 rounded-full border border-[#f2b8c4] bg-white px-[10px] py-[3px] text-[11.5px] font-[600] text-[#c04060]"
+                            >
+                              入力する
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 )}
                 <div className="mb-[16px] rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] p-[14px]">
@@ -643,7 +680,7 @@ function NewEventPageContent() {
                     type="button"
                     onClick={() => { if (!agreedToTerms) { showToast("error","利用規約への同意が必要です"); return; } if (missingRequired) { showToast("error","必須項目を入力してください"); return; } setShowPublishConfirm(true); }}
                     disabled={!!submitting}
-                    className="w-full rounded-[9px] py-[12px] text-[14px] font-[600] text-white transition disabled:opacity-50"
+                    className="w-full rounded-[9px] py-[12px] text-[14px] font-[600] text-white transition disabled:opacity-50 max-[899px]:hidden"
                     style={{ background: !missingRequired && agreedToTerms ? "#6BBF3E" : "#bbb" }}
                   >
                     {submitting === "publish" ? "公開中…" : "公開する"}
@@ -670,10 +707,10 @@ function NewEventPageContent() {
 
       {/* ── Footer nav (mobile step 1–3) ── */}
       {currentStep < 4 && !showPassSettings && (
-        <div className="sticky bottom-0 z-10 shrink-0 -mx-4 border-t border-[#e8e6e0] bg-white px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 sm:-mx-6 sm:px-5 min-[900px]:hidden">
+        <div className="sticky bottom-0 z-10 shrink-0 border-t border-[#e8e6e0] bg-white px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 min-[900px]:hidden">
           <DraftSaveHint className="mb-2" />
-          <div className="grid grid-cols-3 items-center gap-2">
-            <div className="justify-self-start">
+          <div className="flex items-center justify-between gap-2">
+            <div className="shrink-0">
               {currentStep > 1 ? (
                 <button
                   type="button"
@@ -687,13 +724,13 @@ function NewEventPageContent() {
                 <span className="inline-block h-10 w-[4.5rem]" aria-hidden />
               )}
             </div>
-            <div className="justify-self-center">
+            <div className="flex min-w-0 flex-1 justify-center">
               <DraftSaveButton
                 onClick={saveDraft}
                 submitting={submitting === "draft"}
               />
             </div>
-            <div className="justify-self-end">
+            <div className="shrink-0">
               <button
                 type="button"
                 onClick={goNext}

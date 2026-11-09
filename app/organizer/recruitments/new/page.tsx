@@ -275,8 +275,9 @@ function PcSidePanel({
           { key: "タイトル", done: !!form.title.trim() },
           { key: "説明", done: !!form.description.trim() },
           { key: "役割・人数", done: form.roles.some((r) => r.name.trim()) },
-          { key: "開始日時", done: !!form.start_at },
-          { key: "集合場所", done: !!form.meeting_place.trim() },
+          // 任意の項目は、入れていなくても赤くしない
+          { key: "開始日時", done: !!form.start_at, optional: true },
+          { key: "集合場所", done: !!form.meeting_place.trim(), optional: true },
         ];
 
   const filled = prog.filter((p) => p.done).length;
@@ -299,24 +300,28 @@ function PcSidePanel({
             />
           </div>
           <ul className="space-y-0.5">
-            {prog.map(({ key, done }) => (
+            {prog.map((item) => {
+              const { key, done } = item;
+              const optional = "optional" in item && item.optional === true;
+              return (
               <li key={key} className="flex items-center gap-2 rounded-[6px] px-1 py-0.5">
                 <div
                   className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                  style={{ background: done ? "#6BBF3E" : "#E8708A" }}
+                  style={{ background: done ? "#6BBF3E" : optional ? "#c9c5bb" : "#E8708A" }}
                   aria-hidden
                 >
-                  {done ? "✓" : "!"}
+                  {done ? "✓" : optional ? "−" : "!"}
                 </div>
                 <span className="flex-1 text-[12px] text-[#1a1a1a]">{key}</span>
                 <span
                   className="text-[11px] font-medium"
-                  style={{ color: done ? "#3a7a10" : "#c45a6a" }}
+                  style={{ color: done ? "#3a7a10" : optional ? "#999" : "#c45a6a" }}
                 >
-                  {done ? "完了" : "未入力"}
+                  {done ? "完了" : optional ? "任意" : "未入力"}
                 </span>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
 
