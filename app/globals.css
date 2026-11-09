@@ -15,6 +15,10 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* 日本語フォントの名前（app/layout.tsx の <head> で Google Fonts から読む） */
+  --font-noto-serif-jp: "Noto Serif JP";
+  --font-shippori-mincho: "Shippori Mincho";
+  --font-klee: "Klee One";
   --font-heading: var(--font-noto-serif-jp), "Hiragino Mincho ProN", "Yu Mincho", serif;
   --font-body: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   --font-serif-display: var(--font-shippori-mincho), "Hiragino Mincho ProN", serif;
