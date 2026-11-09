@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { PREFECTURES } from "@/lib/prefectures";
 import type {
@@ -43,17 +44,32 @@ function SelectChip({
   active: boolean;
   children: React.ReactNode;
 }) {
+  const selectRef = useRef<HTMLSelectElement>(null);
+  const [label, setLabel] = useState("");
+  // 見た目は小さい丸ボタンのまま、上に重ねた透明の select（16px）で選ぶ。
+  // select の文字が16px未満だと、iPhone は押したときに画面を拡大してしまうため。
+  useEffect(() => {
+    const el = selectRef.current;
+    setLabel(el?.selectedOptions[0]?.text ?? "");
+  }, [value, children]);
+
   return (
-    <div className="relative shrink-0">
+    <div
+      className={cn(
+        "relative flex h-8 shrink-0 items-center rounded-full border bg-white pl-3 pr-7 text-[11px] font-medium transition focus-within:ring-2 focus-within:ring-[#e0b890]/50",
+        active ? "border-[#e0b890] text-[#b56a2e]" : "border-[#e5ddd2] text-[#5a4a38]",
+      )}
+    >
+      <span className="whitespace-nowrap" aria-hidden>
+        {label}
+      </span>
       <select
+        ref={selectRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          "h-8 cursor-pointer appearance-none rounded-full border bg-white pl-3 pr-7 text-[11px] font-medium outline-none transition",
-          active
-            ? "border-[#e0b890] text-[#b56a2e]"
-            : "border-[#e5ddd2] text-[#5a4a38]",
-        )}
+        aria-label={label}
+        className="absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-full opacity-0"
+        style={{ fontSize: 16 }}
       >
         {children}
       </select>
