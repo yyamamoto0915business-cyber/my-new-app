@@ -149,12 +149,6 @@ export function HomePageContent() {
             >
               <HomeEventCards />
             </Suspense>
-            <Link
-              href="/event-requests"
-              className="block rounded-lg border border-zinc-200 py-2.5 text-center text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              {t.eventRequests}
-            </Link>
           </div>
         )}
 

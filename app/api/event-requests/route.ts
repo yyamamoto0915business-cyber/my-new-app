@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { mockEventRequests } from "@/lib/db/event-requests";
 
+const EVENT_REQUESTS_DISABLED = true;
+
 export async function GET(request: NextRequest) {
+  // 「イベントのお願い」はいったん公開を止めている（app/event-requests/layout.tsx）
+  if (EVENT_REQUESTS_DISABLED) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const { searchParams } = new URL(request.url);
   const prefecture = searchParams.get("prefecture") ?? undefined;
   const city = searchParams.get("city") ?? undefined;
