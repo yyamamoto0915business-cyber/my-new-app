@@ -44,13 +44,15 @@ export const metadata: Metadata = {
   description: APP_TAGLINE1,
   manifest: "/site.webmanifest",
   icons: {
+    // アプリのアイコン（マスコット）にそろえる。タブの小さいアイコンは、分かるように顔と芽だけを切り抜いたもの
     icon: [
-      { url: "/brand/machiglyph_favicon_v2.ico", type: "image/x-icon" },
-      { url: "/brand/favicon-32-v3.png", sizes: "32x32", type: "image/png" },
-      { url: "/brand/machiglyph_mark.png", sizes: "192x192", type: "image/png" },
+      { url: "/brand/mascot-favicon.ico", type: "image/x-icon" },
+      { url: "/brand/mascot-favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/mascot-favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/brand/mascot-icon-192.png", sizes: "192x192", type: "image/png" },
     ],
-    apple: "/brand/apple-touch-icon.png",
-    shortcut: "/brand/machiglyph_favicon_v2.ico",
+    apple: "/brand/mascot-apple-touch-icon.png",
+    shortcut: "/brand/mascot-favicon.ico",
   },
   openGraph: {
     title: `${APP_NAME} - ${APP_SUBTITLE}`,
