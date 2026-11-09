@@ -239,7 +239,7 @@ export function DayManagementMobileView({
         </header>
       ) : null}
 
-      <section className="grid grid-cols-2 gap-1.5">
+      <section className="grid grid-cols-2 gap-1.5 tablet:grid-cols-4 tablet:gap-2">
         <KpiCard
           icon={
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#EAF4ED]">

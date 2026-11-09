@@ -74,7 +74,7 @@ export function EventSummaryCards({
 
   return (
     <section aria-label="イベントの概要">
-      <div className="grid grid-cols-2 gap-2 min-[900px]:grid-cols-4 min-[900px]:gap-3">
+      <div className="grid grid-cols-2 gap-2 tablet:grid-cols-4 min-[900px]:gap-3">
         {CARD_CONFIG.map(({ key, label, filter, tone, icon: Icon }) => {
           const isActive = activeFilter !== null && activeFilter === filter;
           const value = values[key];
