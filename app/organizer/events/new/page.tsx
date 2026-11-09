@@ -573,7 +573,7 @@ function NewEventPageContent() {
               <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7">
                 <div className="mb-[10px] flex items-center justify-between">
                   <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">基本情報</span>
-                  <button type="button" onClick={() => goToStep(1)} className="text-[12px] font-[500] text-[#2B3A6B]">編集</button>
+                  <button type="button" onClick={() => goToStep(1)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#2B3A6B] hover:bg-[#f0f2f8]">編集</button>
                 </div>
                 {[
                   { label: "イベント名", val: form.title || null },
@@ -594,7 +594,7 @@ function NewEventPageContent() {
               <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7">
                 <div className="mb-[10px] flex items-center justify-between">
                   <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">開催情報</span>
-                  <button type="button" onClick={() => goToStep(2)} className="text-[12px] font-[500] text-[#2B3A6B]">編集</button>
+                  <button type="button" onClick={() => goToStep(2)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#2B3A6B] hover:bg-[#f0f2f8]">編集</button>
                 </div>
                 {[
                   { label: "開催日時", val: dateStr !== "—" ? dateStr : null },
@@ -621,7 +621,7 @@ function NewEventPageContent() {
                 ))}
                 <div className="mt-[20px] mb-[10px] flex items-center justify-between">
                   <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">詳細情報</span>
-                  <button type="button" onClick={() => goToStep(3)} className="text-[12px] font-[500] text-[#2B3A6B]">編集</button>
+                  <button type="button" onClick={() => goToStep(3)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#2B3A6B] hover:bg-[#f0f2f8]">編集</button>
                 </div>
                 {[
                   { label: "定員", val: form.capacity ? `${form.capacity}人` : "未設定（無制限）" },
@@ -651,7 +651,7 @@ function NewEventPageContent() {
                             <button
                               type="button"
                               onClick={() => goToStep(m.step)}
-                              className="shrink-0 rounded-full border border-[#f2b8c4] bg-white px-[10px] py-[3px] text-[11.5px] font-[600] text-[#c04060]"
+                              className="shrink-0 rounded-full border border-[#f2b8c4] bg-white px-[12px] py-[6px] text-[12px] font-[600] text-[#c04060]"
                             >
                               入力する
                             </button>
@@ -668,7 +668,7 @@ function NewEventPageContent() {
                     下書きは「イベント管理」から編集できます。
                   </p>
                   <label className="flex cursor-pointer items-start gap-[6px]">
-                    <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="mt-[2px]" style={{ accentColor: "#2B3A6B" }} />
+                    <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="mt-[1px] h-[18px] w-[18px] shrink-0" style={{ accentColor: "#2B3A6B" }} />
                     <span className="text-[13px] leading-[1.5] text-[#555]">掲載内容の責任を理解し、<Link href="/terms" target="_blank" className="text-[#c8a84b]">利用規約</Link>に同意する</span>
                   </label>
                 </div>

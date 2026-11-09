@@ -93,7 +93,7 @@ export function RecurrenceSelector({
               aria-checked={selected}
               onClick={() => handlePatternChange(opt.value)}
               className={[
-                "rounded-[8px] px-1 text-center transition",
+                "min-h-[40px] rounded-[8px] px-1 text-center transition min-[900px]:min-h-0",
                 compact ? "py-1.5" : "py-2",
                 selected
                   ? "bg-[#2B3A6B] text-white shadow-sm"
@@ -135,7 +135,7 @@ export function RecurrenceSelector({
             value={endDate ?? ""}
             min={startDate || undefined}
             onChange={(e) => onEndDateChange?.(e.target.value || null)}
-            className={`min-w-0 flex-1 rounded-[8px] border bg-white px-2 py-1.5 text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B] ${
+            className={`min-w-0 flex-1 rounded-[8px] border bg-white px-2 py-1.5 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B] ${
               endDateError ? "border-[#e05060]" : "border-[#e8e6e0]"
             }`}
           />
@@ -163,7 +163,7 @@ export function RecurrenceSelector({
             id="recurrenceCount"
             value={effectiveCount}
             onChange={(e) => onCountChange(Number(e.target.value))}
-            className="min-w-0 flex-1 rounded-[8px] border border-[#e8e6e0] bg-white px-2 py-1.5 text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B]"
+            className="min-w-0 flex-1 rounded-[8px] border border-[#e8e6e0] bg-white px-2 py-1.5 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B]"
           >
             {RECURRENCE_COUNT_OPTIONS.map((n) => (
               <option key={n} value={n}>

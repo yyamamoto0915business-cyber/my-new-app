@@ -36,7 +36,7 @@ export function EventFormatSelector({ value, onChange }: Props) {
               aria-checked={selected}
               onClick={() => onChange(opt.value)}
               className={[
-                "flex items-center justify-center gap-1 rounded-[8px] border px-1 py-1.5 text-center transition",
+                "flex min-h-[44px] items-center justify-center gap-1 rounded-[8px] border px-1 py-1.5 text-center transition min-[900px]:min-h-0",
                 selected
                   ? "border-[#6BBF3E] bg-[#eef8e8] text-[#1a2818] shadow-sm"
                   : "border-[#e8e6e0] bg-white text-[#5c5a54] hover:bg-[#f5f4f0]",

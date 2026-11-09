@@ -70,9 +70,9 @@ function toDatetimeLocal(iso: string | null | undefined): string {
 
 
 const inp =
-  "w-full min-w-0 rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[13px] py-[10px] text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
+  "w-full min-w-0 rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[13px] py-[10px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
 const inpSm =
-  "w-full min-w-0 rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-[12px] py-[9px] text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
+  "w-full min-w-0 rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-[12px] py-[9px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
 const inpErr = "!border-[#E8708A]";
 
 function Fl({
@@ -200,21 +200,21 @@ function RoleList({
               value={role.name}
               onChange={(e) => onUpdate(i, "name", e.target.value)}
               placeholder="役割名（例：受付）"
-              className="flex-1 rounded-[8px] border border-[#e8e6e0] bg-white px-[10px] py-[7px] text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B]"
+              className="min-w-0 flex-1 rounded-[8px] border border-[#e8e6e0] bg-white px-[10px] py-[7px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B]"
             />
             <input
               type="number"
               min={1}
               value={role.count}
               onChange={(e) => onUpdate(i, "count", parseInt(e.target.value, 10) || 1)}
-              className="w-[54px] rounded-[8px] border border-[#e8e6e0] bg-white px-[8px] py-[7px] text-center text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B]"
+              className="w-[58px] rounded-[8px] border border-[#e8e6e0] bg-white px-[8px] py-[7px] text-center text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B]"
             />
             <span className="whitespace-nowrap text-[12px] text-[#888]">名</span>
             <button
               type="button"
               onClick={() => onRemove(i)}
               disabled={roles.length <= 1}
-              className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-[7px] text-[#888] transition hover:bg-[#FEF2F2] hover:text-[#E8708A] disabled:opacity-30"
+              className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-[7px] text-[#888] min-[900px]:h-[28px] min-[900px]:w-[28px] transition hover:bg-[#FEF2F2] hover:text-[#E8708A] disabled:opacity-30"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -900,7 +900,7 @@ function NewRecruitmentPageContent() {
               update("capacity", e.target.value ? parseInt(e.target.value, 10) : null)
             }
             placeholder="未入力で無制限"
-            className="w-[120px] rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[13px] py-[10px] text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white"
+            className="w-[120px] rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[13px] py-[10px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white"
           />
           <span className="text-[13px] text-[#888]">名まで（未入力で無制限）</span>
         </div>

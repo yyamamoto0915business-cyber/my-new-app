@@ -15,10 +15,10 @@ import {
 export type EventFormStep = 1 | 2 | 3 | 4;
 
 export const eventFormInp =
-  "box-border block w-full max-w-full min-w-0 rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[14px] py-[10px] min-[900px]:py-2 text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
+  "box-border block w-full max-w-full min-w-0 rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[14px] py-[10px] min-[900px]:py-2 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
 export const eventFormInpErr = "!border-[#E8708A]";
 export const eventFormInpSm =
-  "box-border block w-full max-w-full min-w-0 rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-3 py-2 text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
+  "box-border block w-full max-w-full min-w-0 rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-3 py-2 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
 export const eventFormFieldSubLbl = "mb-1.5 text-[11px] text-[#888]";
 export const eventFormDateTimeStack = "min-w-0 space-y-3";
 export const eventFormDateTimeRow =

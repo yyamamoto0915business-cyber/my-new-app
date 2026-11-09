@@ -110,7 +110,7 @@ export function EventQuestionsEditor({ value, onChange, inputClassName }: Props)
                       update(q.id, { options });
                     }}
                     placeholder={`選択肢${oi + 1}`}
-                    className={`${inputClassName} min-w-0 flex-1 !py-1.5 text-[13px]`}
+                    className={`${inputClassName} min-w-0 flex-1 !py-1.5 min-[900px]:text-[13px]`}
                   />
                   <button
                     type="button"
@@ -145,7 +145,7 @@ export function EventQuestionsEditor({ value, onChange, inputClassName }: Props)
                 key={p.label}
                 type="button"
                 onClick={() => add(p)}
-                className="rounded-full border border-[#e0ddd5] bg-white px-2.5 py-1 text-[11.5px] text-[#5c5a54] hover:border-[#2B3A6B]"
+                className="min-h-[34px] rounded-full border border-[#e0ddd5] bg-white px-3 py-1.5 text-[12px] text-[#5c5a54] hover:border-[#2B3A6B] min-[900px]:min-h-0 min-[900px]:px-2.5 min-[900px]:py-1 min-[900px]:text-[11.5px]"
               >
                 ＋ {p.label.length > 16 ? `${p.label.slice(0, 16)}…` : p.label}
               </button>
