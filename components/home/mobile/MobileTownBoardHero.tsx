@@ -26,7 +26,7 @@ export function MobileTownBoardHero({ searchQuery, onSearchQueryChange }: Props)
         />
 
         <div className="absolute inset-0 flex items-center justify-center px-4">
-          <div className="relative w-full max-w-[292px] rounded-[10px] border border-[#e6dbc8]/70 bg-[#fdfaf3]/80 px-4 py-1.5 tablet:max-w-[420px] tablet:px-6 tablet:py-3 text-center shadow-[0_4px_18px_rgba(120,80,40,0.10)] backdrop-blur-[1px] before:pointer-events-none before:absolute before:inset-[3px] before:rounded-[7px] before:border before:border-[#e0d3bd]/45 before:content-['']">
+          <div className="relative w-full max-w-[330px] rounded-[10px] border border-[#e6dbc8]/70 bg-[#fdfaf3]/80 px-4 py-1.5 tablet:max-w-[420px] tablet:px-6 tablet:py-3 text-center shadow-[0_4px_18px_rgba(120,80,40,0.10)] backdrop-blur-[1px] before:pointer-events-none before:absolute before:inset-[3px] before:rounded-[7px] before:border before:border-[#e0d3bd]/45 before:content-['']">
             <div className="mb-0.5 flex items-center justify-center gap-2">
               <span className="h-px w-5 bg-[#cbbba0]" aria-hidden />
               <span className="text-[8px] font-medium tracking-[0.24em] tablet:text-[9.5px] text-[#a08a68]">
@@ -56,7 +56,7 @@ export function MobileTownBoardHero({ searchQuery, onSearchQueryChange }: Props)
                 type="search"
                 value={searchQuery}
                 onChange={(e) => onSearchQueryChange(e.target.value)}
-                placeholder="イベントやお店を検索"
+                placeholder="キーワードで探す"
                 className="mg-hero-search-input min-w-0 flex-1 bg-transparent text-[10px] text-[#3a2a18] tablet:text-[13px] placeholder:text-[#a89c8c] outline-none"
               />
               <button

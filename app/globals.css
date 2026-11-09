@@ -38407,3 +38407,16 @@ button.mg-album-place {
   font-weight: 900;
   transform: translateY(-50%) rotate(-12deg);
 }
+
+/*
+ * スマホ・タブレット（900px より狭い）では、入力欄と選ぶ欄の文字を16px以上にする。
+ * iPhone は16px未満の入力欄を押すと画面を勝手に拡大するため。
+ * @layer の外に書いて、Tailwind の text-[13px] などより強くする（PC の見た目は変えない）。
+ */
+@media (max-width: 899px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  textarea,
+  select {
+    font-size: max(16px, 1em) !important;
+  }
+}
