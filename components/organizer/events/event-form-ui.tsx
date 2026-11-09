@@ -22,7 +22,7 @@ export const eventFormInpSm =
 export const eventFormFieldSubLbl = "mb-1.5 text-[11px] text-[#888]";
 export const eventFormDateTimeStack = "min-w-0 space-y-3";
 export const eventFormDateTimeRow =
-  "grid min-w-0 grid-cols-1 gap-3 min-[420px]:grid-cols-2 min-[420px]:gap-3 [&>*]:min-w-0";
+  "grid min-w-0 grid-cols-2 gap-3 [&>*]:min-w-0";
 export const eventFormStackedFields = "min-w-0 space-y-3.5";
 export const eventFormFieldM = "mb-2 min-w-0 min-[900px]:mb-2.5";
 export const eventFormPcSectionHead =
@@ -96,7 +96,7 @@ export function EventFormVenueRegionFields({
     <div className={dense ? "space-y-1.5" : "space-y-3.5"}>
       <div
         className={
-          dense ? "grid grid-cols-2 gap-1.5" : "space-y-3.5"
+          dense ? "grid grid-cols-2 gap-1.5" : "grid grid-cols-2 gap-3"
         }
       >
         <div>
@@ -130,7 +130,7 @@ export function EventFormVenueRegionFields({
             aria-label="都道府県"
           >
             <option value="">
-              {regionId ? "都道府県を選ぶ" : "地域を選んでから"}
+              {regionId ? "選ぶ" : "先に地域を"}
             </option>
             {prefectures.map((p) => (
               <option key={p} value={p}>
@@ -324,7 +324,7 @@ export function EventFormStepIndicator({
             >
               <div
                 className={[
-                  "flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border text-[10px] font-bold transition-all",
+                  "flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border text-[11px] font-bold transition-all",
                   "min-[900px]:h-[28px] min-[900px]:w-[28px] min-[900px]:text-[12px]",
                   circleClass,
                 ].join(" ")}
@@ -363,7 +363,7 @@ export function EventFormStepIndicator({
                 {label}
               </span>
               <span
-                className={`max-w-[3.25rem] truncate whitespace-nowrap text-[8px] leading-tight min-[900px]:hidden ${labelClass}`}
+                className={`max-w-[4.5rem] truncate whitespace-nowrap text-[11px] leading-tight min-[900px]:hidden ${labelClass}`}
               >
                 {label}
               </span>

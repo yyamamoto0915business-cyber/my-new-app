@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useUnreadCount } from "@/hooks/use-unread-count";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
+import { isEventFormRoute } from "@/lib/is-event-form-route";
 import { isAuthRoute } from "@/lib/is-auth-route";
 import { isPlayRoute } from "@/lib/is-play-route";
 import { cn } from "@/lib/utils";
@@ -101,6 +102,7 @@ export function MobileBottomNav() {
     isPlayRoute(pathname) ||
     isMessagesConversationRoute(pathname) ||
     isProfileEditRoute(pathname) ||
+    isEventFormRoute(pathname) ||
     pathname === "/application-form-preview" ||
     pathname === "/applications-confirm-preview" ||
     pathname.includes("/application-form")

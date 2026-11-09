@@ -390,7 +390,7 @@ export default function EditEventPage() {
         backLabelOverride={showPassSettings ? "詳細情報に戻る" : undefined}
       />
 
-      <div className="sticky top-0 z-10 -mx-4 border-b border-[#e8e6e0] bg-white sm:-mx-6 min-[900px]:hidden">
+      <div className="sticky top-0 z-20 -mx-4 border-b border-[#e8e6e0] bg-white pt-[env(safe-area-inset-top,0px)] sm:-mx-6 min-[900px]:hidden">
         <div className="flex items-center gap-2 px-4 py-2 sm:px-6">
           <button
             type="button"

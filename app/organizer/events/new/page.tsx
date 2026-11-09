@@ -7,7 +7,7 @@ import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegis
 import type { Event, EventFormData } from "@/lib/events";
 import { eventToForm } from "@/lib/organizer-event-to-form";
 import { EVENT_TAGS } from "@/lib/db/types";
-import { DraftSaveButton, DraftSaveHint } from "@/components/organizer/events/DraftSaveButtonWithHint";
+import { DraftSaveButton } from "@/components/organizer/events/DraftSaveButtonWithHint";
 import { EventFormStepContent } from "@/components/organizer/events/EventFormStepContent";
 import { PassSettingsPcView } from "@/components/organizer/events/PassSettingsPcView";
 import {
@@ -478,19 +478,21 @@ function NewEventPageContent() {
       />
 
       {/* ── Mobile header ── */}
-      <div className="min-[900px]:hidden sticky top-0 z-10 -mx-4 border-b border-[#e8e6e0] bg-white sm:-mx-6">
+      <div className="min-[900px]:hidden sticky top-0 z-20 -mx-4 border-b border-[#e8e6e0] bg-white pt-[env(safe-area-inset-top,0px)] sm:-mx-6">
         <div className="flex items-center gap-2 px-4 py-2 sm:px-6">
-          <button type="button" onClick={goPrev} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F3F2EF]">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          <button type="button" onClick={goPrev} aria-label="戻る" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3F2EF]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
-          <div className="min-w-0 flex-1 truncate text-[13px] font-[600]">
+          <div className="min-w-0 flex-1 truncate text-[15px] font-[600]">
             {publishDone
               ? "公開完了"
               : showPassSettings
               ? "参加パス設定"
               : currentStep === 1
                 ? "新しいイベントを作成"
-                : stepLabels[currentStep] + "を入力"}
+                : currentStep === 4
+                  ? "確認して公開"
+                  : stepLabels[currentStep] + "を入力"}
           </div>
         </div>
         <div className="flex items-center px-4 pb-2 sm:px-6">
@@ -705,23 +707,27 @@ function NewEventPageContent() {
         )}
       </div>
 
+      {/* 下に固定したボタン列のぶんの余白（スマホ） */}
+      {!publishDone && !showPassSettings ? (
+        <div className="h-[calc(76px+env(safe-area-inset-bottom,0px))] shrink-0 min-[900px]:hidden" aria-hidden />
+      ) : null}
+
       {/* ── Footer nav (mobile step 1–3) ── */}
       {currentStep < 4 && !showPassSettings && (
-        <div className="sticky bottom-0 z-10 shrink-0 border-t border-[#e8e6e0] bg-white px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 min-[900px]:hidden">
-          <DraftSaveHint className="mb-2" />
-          <div className="flex items-center justify-between gap-2">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#e8e6e0] bg-white/95 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] backdrop-blur min-[900px]:hidden">
+          <div className="mx-auto flex max-w-[680px] items-center justify-between gap-2">
             <div className="shrink-0">
               {currentStep > 1 ? (
                 <button
                   type="button"
                   onClick={goPrev}
-                  className="inline-flex h-10 items-center gap-0.5 rounded-[9px] border border-[#e8e6e0] bg-white px-3 text-[12px] font-[500]"
+                  className="inline-flex h-11 items-center gap-0.5 rounded-[10px] border border-[#e8e6e0] bg-white px-3 text-[13px] font-[500]"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
                   戻る
                 </button>
               ) : (
-                <span className="inline-block h-10 w-[4.5rem]" aria-hidden />
+                <span className="inline-block h-11 w-[4.5rem]" aria-hidden />
               )}
             </div>
             <div className="flex min-w-0 flex-1 justify-center">
@@ -734,7 +740,7 @@ function NewEventPageContent() {
               <button
                 type="button"
                 onClick={goNext}
-                className="inline-flex h-10 max-w-full items-center gap-1 rounded-[9px] border-none bg-[#2B3A6B] px-3 text-[12px] font-[600] text-white"
+                className="inline-flex h-11 max-w-full items-center gap-1 rounded-[10px] border-none bg-[#2B3A6B] px-4 text-[14px] font-[600] text-white"
               >
                 <span className="truncate">{nextLabels[currentStep]}</span>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
@@ -744,7 +750,7 @@ function NewEventPageContent() {
         </div>
       )}
       {currentStep === 4 && !publishDone && (
-        <div className="min-[900px]:hidden sticky bottom-0 z-10 border-t border-[#e8e6e0] bg-white px-4 py-2 flex gap-[8px]">
+        <div className="fixed inset-x-0 bottom-0 z-30 flex gap-[8px] border-t border-[#e8e6e0] bg-white/95 px-4 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] backdrop-blur min-[900px]:hidden">
           <button type="button" onClick={goPrev} className="flex items-center rounded-[10px] border border-[#e8e6e0] bg-white px-[18px] py-[11px] text-[13px] font-[500]">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             戻る

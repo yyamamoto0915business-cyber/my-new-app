@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { isEventFormRoute } from "@/lib/is-event-form-route";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
@@ -16,6 +17,9 @@ export default function OrganizerMobileNav({
 }) {
   const pathname = usePathname() ?? "";
   const navItems = variant === "lite" ? ORGANIZER_LITE_NAV_ITEMS : ORGANIZER_SIDEBAR_NAV_ITEMS;
+
+  // イベントの作成・編集は、入力に集中できるよう主催者メニューを出さない（画面の上に戻るボタンがある）
+  if (isEventFormRoute(pathname)) return null;
 
   return (
     <nav aria-label="主催者メニュー" className="min-[900px]:hidden">
