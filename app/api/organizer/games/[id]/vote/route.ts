@@ -3,7 +3,13 @@ import { getOwnedOrganizerGame } from "@/lib/organizer/games";
 import { getPlayDb } from "@/lib/organizer/play";
 import { requireOrganizerApi } from "@/lib/organizer/require-organizer-api";
 import { isVotePhase } from "@/lib/organizer/vote";
-import { addVoteCandidate, loadVoteAdminState, setVotePhase, updateVoteIdea } from "@/lib/organizer/vote-play";
+import {
+  addVoteCandidate,
+  loadVoteAdminState,
+  setVotePhase,
+  syncPresetVoteCandidates,
+  updateVoteIdea,
+} from "@/lib/organizer/vote-play";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -57,7 +63,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 }
 
-/** POST: 候補を足す（action: candidate）・段階を切りかえる（action: phase） */
+/** POST: 候補を足す（action: candidate）・段階を切りかえる（action: phase）・決まった候補をそろえる（action: sync-preset） */
 export async function POST(request: NextRequest, { params }: Params) {
   const { id } = await params;
   const owned = await ownedVoteGame(id);
@@ -71,6 +77,8 @@ export async function POST(request: NextRequest, { params }: Params) {
       result = await addVoteCandidate(owned.db, owned.game.id, body.body);
     } else if (body?.action === "phase" && isVotePhase(body.phase)) {
       result = await setVotePhase(owned.db, owned.game.id, body.phase);
+    } else if (body?.action === "sync-preset") {
+      result = await syncPresetVoteCandidates(owned.db, owned.game.id);
     } else {
       return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
