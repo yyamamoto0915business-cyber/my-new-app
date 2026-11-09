@@ -15,35 +15,25 @@ import { AbortErrorRecovery } from "@/components/abort-error-recovery";
 import { NativeAppBridge } from "@/components/native/NativeAppBridge";
 import { PushRegistration } from "@/components/native/PushRegistration";
 import "./globals.css";
-import { Geist, Klee_One, Noto_Serif_JP, Shippori_Mincho } from "next/font/google";
+import localFont from "next/font/local";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
-
-// アルバムのキャプション用（手書き楷書系）
-const kleeOne = Klee_One({
-  weight: ['400', '600'],
-  subsets: ['latin'],
-  display: 'swap',
-  preload: false,
-  variable: '--font-klee',
+/*
+ * フォント：ビルドのたびに Google から取りに行くと、つながらないときにビルドが止まる。
+ * - 英字の Geist はファイルを置いて読む
+ * - 日本語（明朝・手書き）は文字の範囲ごとに数百のファイルに分かれていて重いので、
+ *   ビルドでは取らず、画面を開いたときにブラウザが Google Fonts から読む（<head> の link）。
+ *   名前は globals.css の --font-noto-serif-jp などに入れてある。
+ */
+const geist = localFont({
+  src: "./fonts/geist-latin.woff2",
+  weight: "100 900",
+  display: "swap",
+  variable: "--font-sans",
 });
 
-const notoSerifJP = Noto_Serif_JP({
-  weight: ['400', '500', '600', '700'],
-  subsets: ['latin'],
-  display: 'swap',
-  preload: false,
-  variable: '--font-noto-serif-jp',
-});
-
-const shipporiMincho = Shippori_Mincho({
-  weight: ['400', '500', '600'],
-  subsets: ['latin'],
-  display: 'swap',
-  preload: false,
-  variable: '--font-shippori-mincho',
-});
+const JP_FONTS_HREF =
+  "https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Noto+Serif+JP:wght@400;500;600;700&family=Shippori+Mincho:wght@400;500;600&display=swap";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.machiglyph.jp";
@@ -102,7 +92,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={cn("font-sans", geist.variable, notoSerifJP.variable, shipporiMincho.variable, kleeOne.variable)}>
+    <html lang="ja" className={cn("font-sans", geist.variable)}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* 日本語フォントはビルドで取らず、開いたときに読む（上のコメント） */}
+        <link rel="stylesheet" href={JP_FONTS_HREF} />
+      </head>
       <body className="font-sans antialiased min-h-screen-dvh bg-[#f3f4f1]">
         <LanguageProvider>
           <AbortErrorRecovery />
