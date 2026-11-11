@@ -51,7 +51,9 @@ export function OrganizerSettingsMobileView({
   billingLoading,
 }: OrganizerSettingsMobileViewProps) {
   const orgName = organizationName || (orgLoading ? "" : "団体名が未設定です");
-  const initial = (organizationName || displayName || "主").trim().charAt(0).toUpperCase();
+  // 団体名・表示名がないとき（「—」になっているときも）は「主」にする
+  const nameForInitial = [organizationName, displayName].find((v) => v && v.trim() && v.trim() !== "—");
+  const initial = (nameForInitial ?? "主").trim().charAt(0).toUpperCase();
 
   const rows: Row[] = [
     {

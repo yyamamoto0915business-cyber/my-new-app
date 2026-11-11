@@ -94,30 +94,45 @@ export default function OrganizerToolsPage() {
         />
 
         <section className="relative overflow-hidden rounded-[22px] shadow-[0_8px_24px_rgba(22,56,40,0.16)]">
-          <div className="relative aspect-[2/1] w-full">
+          {/* ツールが画面の下に押し出されないよう低めにする */}
+          <div className="relative h-[120px] w-full">
             <Image src="/hero-festival.jpg" alt="" fill sizes="(max-width: 640px) 100vw, 576px" className="object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-[#123524]/90 via-[#123524]/55 to-transparent" aria-hidden />
             <div className="absolute inset-0 flex flex-col justify-center px-5 text-white">
               <p className="text-[11px] font-medium tracking-[0.18em] text-white/85">ORGANIZER TOOLS</p>
               <p
-                className="mt-1.5 text-[22px] font-bold leading-[1.35]"
+                className="mt-1 text-[19px] font-bold leading-[1.35]"
                 style={{ fontFamily: "var(--font-serif-display), 'Noto Serif JP', serif" }}
               >
                 地域の活動を、
                 <br />
                 もっとスムーズに。
               </p>
-              <p className="mt-1.5 text-[12px] text-white/90">用途に合わせた運営ツール</p>
             </div>
           </div>
         </section>
+
+        {/* イベント当日にいちばん使うので、いちばん上に置く */}
+        <Link
+          href="/organizer"
+          className="flex items-center gap-3 rounded-[20px] bg-gradient-to-b from-[#2f7d4e] to-[#1f6a42] p-4 text-white shadow-[0_6px_16px_rgba(22,56,40,0.22)] transition active:scale-[0.99]"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/95 text-[#1f6a42]" aria-hidden>
+            <QrCode className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[16px] font-bold">当日の運営</span>
+            <span className="mt-0.5 block text-[12.5px] text-white/85">チェックイン・スタッフ受付</span>
+          </span>
+          <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
+        </Link>
 
         <ul className="grid grid-cols-2 gap-3">
           {MAIN_TOOLS.map(({ href, title, desc, Icon, color, bg }) => (
             <li key={href}>
               <Link
                 href={href}
-                className="flex h-full min-h-[168px] flex-col rounded-[22px] border border-[#ebeee8] p-4 shadow-[0_3px_10px_rgba(22,56,40,0.05)] transition active:scale-[0.98]"
+                className="flex h-full min-h-[140px] flex-col rounded-[22px] border border-[#ebeee8] p-4 shadow-[0_3px_10px_rgba(22,56,40,0.05)] transition active:scale-[0.98]"
                 style={{ background: bg }}
               >
                 <span
@@ -136,20 +151,6 @@ export default function OrganizerToolsPage() {
             </li>
           ))}
         </ul>
-
-        <Link
-          href="/organizer"
-          className="flex items-center gap-3 rounded-[20px] border border-[#d9eadf] bg-[#f1f8f3] p-4 transition active:scale-[0.99]"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-[#2f7d4e]" aria-hidden>
-            <QrCode className="h-5 w-5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[16px] font-bold text-[#163828]">当日の運営</span>
-            <span className="mt-0.5 block text-[12.5px] text-[#6b776f]">チェックイン・スタッフ受付</span>
-          </span>
-          <ChevronRight className="h-5 w-5 shrink-0 text-[#163828]" aria-hidden />
-        </Link>
 
         <section aria-labelledby="more-tools" className="space-y-2">
           <h2 id="more-tools" className="text-[15px] font-bold text-[#163828]">

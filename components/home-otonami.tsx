@@ -34,7 +34,11 @@ import { PcPastEventsRow } from "@/components/home/pc/PcPastEventsRow";
 import { MobileTownSearchBar } from "@/components/home/mobile/MobileTownSearchBar";
 import { MobileTownFilterBar } from "@/components/home/mobile/MobileTownFilterBar";
 import { MobileRecommendedCarousel } from "@/components/home/mobile/MobileRecommendedCarousel";
-import { MobileFeaturedBanner } from "@/components/home/mobile/MobileFeaturedBanner";
+import {
+  MobileFeaturedBanner,
+  selectFeaturedItems,
+} from "@/components/home/mobile/MobileFeaturedBanner";
+import { SearchLeafIcon } from "@/components/home/DiscoverHeroCatchphrase";
 import { MobileThemeDiscovery } from "@/components/home/mobile/MobileThemeDiscovery";
 import { MobileUpcomingEvents } from "@/components/home/mobile/MobileUpcomingEvents";
 import { MobileNewStores } from "@/components/home/mobile/MobileNewStores";
@@ -77,8 +81,6 @@ export function HomeOtonami() {
   const [timeRange, setTimeRange] = useState<TownTimeRange>("all");
   const [sortMode, setSortMode] = useState<TownSortMode>("recommended");
   const [showEnded, setShowEnded] = useState(false);
-  /** スマホ：検索バー右のボタンで開く絞り込み */
-  const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     if (KIND_KEYS.has(kindParam)) {
@@ -187,12 +189,14 @@ export function HomeOtonami() {
     selectedArea !== "" ||
     timeRange !== "all";
 
-  /** スマホの絞り込みボタンに点を出すか（検索語と種別カードは画面に見えているので含めない） */
-  const hasMobileFilter =
-    selectedCategory !== "" ||
-    selectedArea !== "" ||
-    timeRange !== "all" ||
-    sortMode !== "recommended";
+  /** スマホ：注目バナーに出したもの（下の「おすすめ」では除く） */
+  const featuredIds = useMemo(
+    () =>
+      selectFeaturedItems(allEvents, stores, volunteers, games, effectiveArea, categoryPrefs).map(
+        (i) => i.id
+      ),
+    [allEvents, stores, volunteers, games, effectiveArea, categoryPrefs]
+  );
 
   const isDefaultFilters =
     activeChip === "all" &&
@@ -358,30 +362,33 @@ export function HomeOtonami() {
 
       {/* モバイル（見本「まちの情報フィード」の並び） */}
       <main className="w-full space-y-5 bg-[#fbfcf9] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1 min-[900px]:hidden sm:max-w-none">
-        <div className="space-y-2">
-          <MobileTownSearchBar
-            searchQuery={searchQuery}
-            onSearchQueryChange={setSearchQuery}
-            filterOpen={filterOpen}
-            onToggleFilter={() => setFilterOpen((v) => !v)}
-            filterActive={hasMobileFilter}
-          />
-          {filterOpen && (
-            <MobileTownFilterBar
-              selectedCategory={selectedCategory}
-              onCategoryChange={handleSelectCategory}
-              selectedArea={selectedArea}
-              onAreaChange={handleSelectArea}
-              timeRange={timeRange}
-              onTimeRangeChange={setTimeRange}
-              sortMode={sortMode}
-              onSortChange={setSortMode}
-              onReset={handleResetFilters}
-              isDefault={isDefaultFilters}
-            />
-          )}
+        <div className="space-y-2.5">
+          {/* 前のヒーローにあったひとこと。画像はなくして、検索の上に小さく残す */}
+          <p
+            className="flex items-center gap-1.5 px-1 text-[15px] tracking-[0.06em] text-[#3a2a18]"
+            style={{ fontFamily: "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif" }}
+          >
+            <SearchLeafIcon className="h-4 w-4 text-[#3d7355]" />
+            まちの魅力に、出会いにいく。
+          </p>
+          <MobileTownSearchBar searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
         </div>
-        <MobileTownKindCards activeChip={activeChip} onChipClick={handleChipClick} />
+        <div className="space-y-2.5">
+          <MobileTownKindCards activeChip={activeChip} onChipClick={handleChipClick} />
+          {/* 絞り込みは前と同じく常に見せる（ボタンの奥に隠すと一手間ふえるため） */}
+          <MobileTownFilterBar
+            selectedCategory={selectedCategory}
+            onCategoryChange={handleSelectCategory}
+            selectedArea={selectedArea}
+            onAreaChange={handleSelectArea}
+            timeRange={timeRange}
+            onTimeRangeChange={setTimeRange}
+            sortMode={sortMode}
+            onSortChange={setSortMode}
+            onReset={handleResetFilters}
+            isDefault={isDefaultFilters}
+          />
+        </div>
         {isTownKindView ? (
           <TownInfoKindFeed
             kind={activeChip as "store" | "volunteer" | "kitchen" | "game"}
@@ -426,6 +433,17 @@ export function HomeOtonami() {
                   areaPreference={effectiveArea}
                   categoryPrefs={categoryPrefs}
                 />
+                {/* 前にあった「おすすめ」の横並び。バナーに出したものは除く */}
+                <MobileRecommendedCarousel
+                  events={allEvents}
+                  stores={stores}
+                  volunteers={volunteers}
+                  games={games}
+                  loading={bootLoading}
+                  areaPreference={effectiveArea}
+                  categoryPrefs={categoryPrefs}
+                  excludeIds={featuredIds}
+                />
                 <MobileThemeDiscovery
                   events={allEvents}
                   loading={eventsSectionLoading}
@@ -435,8 +453,7 @@ export function HomeOtonami() {
                     } else {
                       setTimeRange(selection.range);
                     }
-                    // どの条件で絞り込んだか見えるよう、絞り込みを開いておく
-                    setFilterOpen(true);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                 />
                 <MobileUpcomingEvents events={allEvents} loading={eventsSectionLoading} />
