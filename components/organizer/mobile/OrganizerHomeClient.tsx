@@ -8,8 +8,11 @@ import {
   Bell,
   CalendarDays,
   ChevronRight,
+  Gamepad2,
   Info,
   MapPin,
+  MessageCircle,
+  QrCode,
   Users,
   Wallet,
   type LucideIcon,
@@ -32,6 +35,13 @@ function formatEventWhen(e: DashboardEvent): string {
   if (!start) return day;
   return `${day} ${start}${end ? `〜${end}` : "〜"}`;
 }
+
+const QUICK_ACTIONS: { href: string; label: string; Icon: LucideIcon; color: string; bg: string }[] = [
+  { href: "/organizer", label: "当日の運営", Icon: QrCode, color: "#2f7d4e", bg: "#e6f3ea" },
+  { href: "/organizer/pos", label: "レジ", Icon: Wallet, color: "#2f6fae", bg: "#e6f1fa" },
+  { href: "/messages", label: "メッセージ", Icon: MessageCircle, color: "#d4843a", bg: "#fdf1e4" },
+  { href: "/organizer/games", label: "ゲーム", Icon: Gamepad2, color: "#7a5cc0", bg: "#efeaf9" },
+];
 
 const STATUS_LABEL: Record<DashboardEvent["status"], { label: string; className: string }> = {
   public: { label: "公開中", className: "bg-[#e3f2e7] text-[#1f7a4a]" },
@@ -58,10 +68,10 @@ function SummaryCard({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-[20px] border border-[#ebeee8] bg-white px-3.5 py-4 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:scale-[0.98]"
+      className="flex min-w-0 items-center gap-2.5 rounded-[20px] border border-[#ebeee8] bg-white px-3 py-4 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:scale-[0.98]"
     >
       <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
         style={{ background: bg, color }}
         aria-hidden
       >
@@ -69,7 +79,8 @@ function SummaryCard({
       </span>
       <span className="min-w-0">
         <span className="block text-[12px] font-bold text-[#4f5d54]">{label}</span>
-        <span className="mt-0.5 block truncate text-[24px] font-bold leading-tight text-[#163828]">
+        {/* 半分の幅に「¥48,200」まで入る大きさにする（24px だと「¥48,…」と切れていた） */}
+        <span className="mt-0.5 block whitespace-nowrap text-[20px] font-bold leading-tight tracking-tight text-[#163828]">
           {value}
         </span>
       </span>
@@ -128,7 +139,7 @@ export function OrganizerHomeClient() {
     <div className="mx-auto w-full max-w-xl space-y-6 pb-6">
       {/* ヒーロー */}
       <section className="relative overflow-hidden rounded-[24px] shadow-[0_8px_24px_rgba(22,56,40,0.16)]">
-        <div className="relative aspect-[2/1] w-full">
+        <div className="relative aspect-[5/2] w-full">
           <Image
             src="/hero-festival.jpg"
             alt=""
@@ -156,6 +167,26 @@ export function OrganizerHomeClient() {
           </div>
         </div>
       </section>
+
+      {/* よく使う操作。当日の受付やレジにホームから一度で行けるようにする */}
+      <nav aria-label="よく使う操作" className="grid grid-cols-4 gap-2">
+        {QUICK_ACTIONS.map(({ href, label, Icon, color, bg }) => (
+          <Link
+            key={href}
+            href={href}
+            className="flex flex-col items-center gap-1.5 rounded-[18px] border border-[#ebeee8] bg-white px-1 py-3 text-center shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:scale-[0.97]"
+          >
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-full"
+              style={{ background: bg, color }}
+              aria-hidden
+            >
+              <Icon className="h-5 w-5" />
+            </span>
+            <span className="whitespace-nowrap text-[11px] font-bold leading-tight text-[#163828]">{label}</span>
+          </Link>
+        ))}
+      </nav>
 
       {error ? (
         <div className="rounded-[18px] border border-[#f1d9c4] bg-[#fdf6ef] px-4 py-4 text-center">
