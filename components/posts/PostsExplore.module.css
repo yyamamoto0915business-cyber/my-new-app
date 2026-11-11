@@ -545,51 +545,6 @@
   letter-spacing: 0.06em;
 }
 
-/* 投稿が少ないときに、グリッドの下で投稿をよびかける */
-.invite {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  margin-top: 1rem;
-  padding: 1rem 1.1rem;
-  border: 1px solid #dfeae2;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #eef7f0, #fbf8f1);
-}
-
-.inviteText {
-  flex: 1;
-  min-width: 0;
-}
-
-.inviteTitle {
-  color: #1f5e3a;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.inviteLead {
-  margin-top: 0.2rem;
-  color: #5f7266;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.inviteButton {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.25rem;
-  height: 40px;
-  padding: 0 0.95rem;
-  border-radius: 999px;
-  background: #2a5540;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-}
-
 /* 検索欄は幅いっぱい・枠なしで少し浮かせる */
 .mobileTop :global(.posts-user-search) {
   width: 100%;

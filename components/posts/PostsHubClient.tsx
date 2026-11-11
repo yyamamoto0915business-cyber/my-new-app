@@ -419,21 +419,6 @@ export function PostsHubClient() {
 
         <section aria-label="投稿一覧">{renderGrid("mobile")}</section>
 
-        {/* 投稿が少ないと下が空くので、投稿をよびかける */}
-        {!loading && posts.length < 9 ? (
-          <div className={styles.invite}>
-            <div className={styles.inviteText}>
-              <p className={styles.inviteTitle}>あなたの見つけた、まちの魅力を</p>
-              <p className={styles.inviteLead}>
-                おでかけ先の景色やごはん、イベントの様子を写真でシェアしよう。
-              </p>
-            </div>
-            <Link href="/posts/new" className={styles.inviteButton}>
-              <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
-              投稿
-            </Link>
-          </div>
-        ) : null}
 
         {!loading ? (
           <PostsDiscoverFooter
