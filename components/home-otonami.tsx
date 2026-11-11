@@ -31,14 +31,13 @@ import {
 import { PcTownKindColumns } from "@/components/home/pc/PcTownKindColumns";
 import { PcRecommendedRow } from "@/components/home/pc/PcRecommendedRow";
 import { PcPastEventsRow } from "@/components/home/pc/PcPastEventsRow";
-import { MobileTownSearchBar } from "@/components/home/mobile/MobileTownSearchBar";
+import { MobileTownBoardHero } from "@/components/home/mobile/MobileTownBoardHero";
 import { MobileTownFilterBar } from "@/components/home/mobile/MobileTownFilterBar";
 import { MobileRecommendedCarousel } from "@/components/home/mobile/MobileRecommendedCarousel";
 import {
   MobileFeaturedBanner,
   selectFeaturedItems,
 } from "@/components/home/mobile/MobileFeaturedBanner";
-import { MobileTownHero } from "@/components/home/mobile/MobileTownHero";
 import { MobileUpcomingEvents } from "@/components/home/mobile/MobileUpcomingEvents";
 import { MobileNewStores } from "@/components/home/mobile/MobileNewStores";
 import { MobilePastEventsSection } from "@/components/home/mobile/MobilePastEventsSection";
@@ -361,13 +360,8 @@ export function HomeOtonami() {
 
       {/* モバイル（見本「まちの情報フィード」の並び） */}
       <main className="w-full space-y-4 bg-[#fbfcf9] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1 min-[900px]:hidden sm:max-w-none">
-        {/* 前の掲示板風ヒーローを低くして戻し、検索欄をその下端に重ねる */}
-        <div>
-          <MobileTownHero />
-          <div className="relative z-10 -mt-7 px-3">
-            <MobileTownSearchBar searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
-          </div>
-        </div>
+        {/* 作り直し前の掲示板風ヒーロー（検索欄は紙のカードの中） */}
+        <MobileTownBoardHero searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
         <div className="space-y-3.5">
           <MobileTownKindCards activeChip={activeChip} onChipClick={handleChipClick} />
           {/* 絞り込みは前と同じく常に見せる（ボタンの奥に隠すと一手間ふえるため） */}
