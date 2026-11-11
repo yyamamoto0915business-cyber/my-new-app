@@ -27,7 +27,7 @@ function HomeFallback() {
             <div key={i} className="h-[92px] w-[80px] shrink-0 animate-pulse rounded-[18px] bg-[#e8ede4]" />
           ))}
         </div>
-        <div className="aspect-[16/9] w-full animate-pulse rounded-[22px] bg-[#e8ede4]" />
+        <div className="aspect-[2/1] w-full animate-pulse rounded-[22px] bg-[#e8ede4]" />
       </div>
     </div>
   );

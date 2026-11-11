@@ -20,9 +20,9 @@ import { isPostDetailRoute } from "@/lib/is-post-detail-route";
 
 /**
  * 利用者側のモバイル上部の高さ（safe-area 除く）
- * 上8 + 1行目36 + 間8 + 2択タブ44（36 + 内側3×2 + 枠2） + 下10
+ * 上8 + 1行目36 + 間6 + 2択タブ40（32 + 内側3×2 + 枠2） + 下8
  */
-export const MOBILE_TOP_HEADER_HEIGHT_PX = 106;
+export const MOBILE_TOP_HEADER_HEIGHT_PX = 98;
 
 /** 主催者側（1行だけ）の高さ（safe-area 除く）。上8 + 1行目36 + 下8 */
 export const MOBILE_TOP_HEADER_HEIGHT_ORGANIZER_PX = 52;
@@ -98,7 +98,7 @@ export function MobileTopHeader({ className }: Props) {
       )}
       aria-label="MachiGlyph 上部ヘッダー"
     >
-      <div className={cn("w-full px-4", organizerArea ? "pb-2 pt-2" : "pb-2.5 pt-2")}>
+      <div className={cn("w-full px-4", organizerArea ? "pb-2 pt-2" : "pb-2 pt-2")}>
         {/* 1行目：ロゴ／モード切替／お知らせ（利用者・主催者で同じ形） */}
         <div className="flex h-9 items-center justify-between gap-2">
           <Link
@@ -142,7 +142,7 @@ export function MobileTopHeader({ className }: Props) {
 
         {/* 2行目：まちの情報｜みんなの投稿（利用者側だけ） */}
         {!organizerArea && (
-          <TopModeTabs className="mt-2" onTabClick={handleTabClick} />
+          <TopModeTabs className="mt-1.5" onTabClick={handleTabClick} />
         )}
       </div>
     </header>

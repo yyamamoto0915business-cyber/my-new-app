@@ -99,7 +99,8 @@ export function MobileTownFilterBar({
   return (
     <section
       aria-label="絞り込み"
-      className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5 scrollbar-hide"
+      // 横にスクロールしたとき、画面の端で切れるように帯を端まで広げる（内側で切れると「べて」のように見える）
+      className="-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 py-0.5 scrollbar-hide"
     >
       <button
         type="button"

@@ -33,7 +33,7 @@ function Banner({ item, priority }: { item: MachiFeedItem; priority: boolean }) 
   return (
     <Link
       href={item.href}
-      className="relative block aspect-[16/9] w-full shrink-0 snap-center overflow-hidden rounded-[22px] bg-[#2f5e43]"
+      className="relative block aspect-[2/1] w-full shrink-0 snap-center overflow-hidden rounded-[22px] bg-[#2f5e43]"
       aria-label={`${item.title}を見る`}
     >
       {item.imageUrl ? (
@@ -132,7 +132,7 @@ export function MobileFeaturedBanner({
   );
 
   if (loading) {
-    return <div className="aspect-[16/9] w-full animate-pulse rounded-[22px] bg-[#e5ede6]" />;
+    return <div className="aspect-[2/1] w-full animate-pulse rounded-[22px] bg-[#e5ede6]" />;
   }
   if (items.length === 0) return null;
 
