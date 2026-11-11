@@ -404,7 +404,6 @@ export function PostsHubClient() {
           <div className={styles.mobileTitleRow}>
             <span className={styles.mobileEyebrow}>COMMUNITY</span>
             <h1 className={styles.mobileTitle}>みんなの投稿</h1>
-            <span className={styles.mobileLead}>みんなで見つける、まちの魅力</span>
           </div>
           <div className={styles.mobileSearchRow}>
             <PostsSearch value={query} onQueryChange={setQuery} />

@@ -510,7 +510,7 @@
 .mobileTop {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 /* 見出し：まちの情報と同じく、小さな英字ラベル＋明朝体 */
@@ -547,12 +547,6 @@
   line-height: 1.3;
 }
 
-.mobileLead {
-  margin-top: 0.15rem;
-  color: #8a7d6c;
-  font-size: 11.5px;
-  letter-spacing: 0.04em;
-}
 
 /* 検索欄は幅いっぱい・枠なしで少し浮かせる */
 .mobileTop :global(.posts-user-search) {
@@ -565,7 +559,7 @@
   border-radius: 999px;
   background: #fff;
   /* 右端のブックマーク（お気に入りへ）のぶん空ける */
-  padding: 0.3rem 3.25rem 0.3rem 1rem;
+  padding: 0.2rem 3.25rem 0.2rem 1rem;
   box-shadow: 0 4px 14px rgba(22, 56, 40, 0.07);
 }
 
@@ -603,7 +597,7 @@
 }
 
 .mobileTop :global(.posts-user-search__field input) {
-  min-height: 38px;
+  min-height: 34px;
   /* 16px 未満だと iPhone で入力時に画面が拡大される */
   font-size: 16px;
 }
@@ -630,7 +624,7 @@
   flex-shrink: 0;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.45rem 0.9rem 0.45rem 0.75rem;
+  padding: 0.38rem 0.9rem 0.38rem 0.75rem;
   border: 1px solid rgba(42, 85, 64, 0.12);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.75);
