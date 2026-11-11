@@ -211,6 +211,17 @@ export function storeToMachiItem(store: StoreRecord): MachiFeedItem {
   };
 }
 
+/**
+ * 募集の活動日が今日より前か。
+ * dateTime は「2026-09-20…」と「2026/9/20(日) 19:00〜21:00」の両方の形がある。日付が読めないものは過ぎていない扱い。
+ */
+export function isVolunteerRolePast(role: VolunteerRoleWithEvent, todayYmd: string): boolean {
+  const m = role.dateTime?.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (!m) return false;
+  const ymd = `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  return ymd < todayYmd;
+}
+
 export function volunteerToMachiItem(role: VolunteerRoleWithEvent): MachiFeedItem {
   const dateMatch = role.dateTime.match(/^(\d{4}-\d{2}-\d{2})/);
   let metaLabel = role.dateTime;
@@ -359,7 +370,10 @@ export function buildRecommendedFeed(
     .filter((s) => s.kind === "kitchen_car")
     .map(storeToMachiItem)
     .sort((a, b) => b.sortAt - a.sortAt);
+  // 活動日が過ぎた募集は出さない（イベントと同じ扱い）
+  const today = getJstTodayYmd();
   const volunteerItems = volunteers
+    .filter((v) => includeEnded || !isVolunteerRolePast(v, today))
     .map(volunteerToMachiItem)
     .sort((a, b) => b.sortAt - a.sortAt);
   const gameItems = (options.games ?? [])
