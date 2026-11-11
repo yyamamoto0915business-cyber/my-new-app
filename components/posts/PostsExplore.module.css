@@ -58,6 +58,41 @@
   outline-offset: -3px;
 }
 
+/* スマホ：3列の均等なグリッド。角を丸め、全部の写真にいいね数を重ねる */
+.gridUniform {
+  gap: 4px;
+  margin: 0 -0.5rem;
+}
+
+@media (min-width: 600px) {
+  .gridUniform {
+    gap: 6px;
+    margin: 0;
+  }
+}
+
+.tileUniform {
+  border-radius: 10px;
+}
+
+.tileLikes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1.6rem 0.55rem 0.45rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
 /* 注目マス：2×2、白フチでポラロイドっぽく */
 .tileFeaturedLeft,
 .tileFeaturedRight {
@@ -478,38 +513,6 @@
   gap: 0.75rem;
 }
 
-.mobileTitleRow {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.1rem 0.15rem 0;
-}
-
-.mobileTitle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #2a2218;
-  font-family: var(--font-serif-display), "Shippori Mincho", "Noto Serif JP", serif;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-/* タイトルの右に細い飾り線 */
-.mobileTitle::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(42, 85, 64, 0.28), rgba(42, 85, 64, 0));
-}
-
-.mobileLead {
-  color: #9a8b78;
-  font-size: 11.5px;
-  letter-spacing: 0.06em;
-}
-
 /* 検索欄は幅いっぱい・枠なしで少し浮かせる */
 .mobileTop :global(.posts-user-search) {
   width: 100%;
@@ -517,11 +520,37 @@
 
 .mobileTop :global(.posts-user-search__field) {
   gap: 0.55rem;
-  border: 1px solid rgba(42, 85, 64, 0.08);
-  border-radius: 14px;
+  border: 1px solid #e3ece5;
+  border-radius: 999px;
   background: #fff;
-  padding: 0.3rem 0.95rem;
-  box-shadow: 0 6px 18px rgba(90, 70, 40, 0.08);
+  /* 右端のブックマーク（お気に入りへ）のぶん空ける */
+  padding: 0.3rem 3.25rem 0.3rem 1rem;
+  box-shadow: 0 4px 14px rgba(22, 56, 40, 0.07);
+}
+
+/* 検索欄と、その右端に重ねるブックマーク */
+.mobileSearchRow {
+  position: relative;
+}
+
+.mobileSavedLink {
+  position: absolute;
+  top: 50%;
+  right: 0.4rem;
+  /* 検索欄（.posts-user-search は z-index: 20）より上に出す */
+  z-index: 21;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  color: #1f5e3a;
+  transform: translateY(-50%);
+}
+
+.mobileSavedLink:active {
+  background: #f4f8f5;
 }
 
 .mobileTop :global(.posts-user-search__field:focus-within) {
@@ -533,7 +562,12 @@
 }
 
 .mobileTop :global(.posts-user-search__field input) {
-  min-height: 34px;
+  min-height: 38px;
+  /* 16px 未満だと iPhone で入力時に画面が拡大される */
+  font-size: 16px;
+}
+
+.mobileTop :global(.posts-user-search__field input::placeholder) {
   font-size: 14px;
 }
 

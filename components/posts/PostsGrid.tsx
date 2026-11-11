@@ -21,13 +21,16 @@ function GridTile({
   post,
   index,
   onOpen,
+  uniform,
 }: {
   post: CommunityPost;
   index: number;
   onOpen: (index: number) => void;
+  /** スマホ：大きいマスを作らず、全部の写真にいいね数を重ねる */
+  uniform: boolean;
 }) {
   const [src, setSrc] = useState(post.imageUrl || POST_CARD_FALLBACK_IMAGE);
-  const side = featuredSide(index);
+  const side = uniform ? null : featuredSide(index);
   const isVideo = Boolean(post.videoUrl);
   const hasGallery = !isVideo && (post.galleryImages?.length ?? 0) > 1;
   // ポスターのない動画は imageUrl に動画 URL が入っている
@@ -38,6 +41,7 @@ function GridTile({
       type="button"
       className={cn(
         styles.tile,
+        uniform && styles.tileUniform,
         side === "left" && styles.tileFeaturedLeft,
         side === "right" && styles.tileFeaturedRight,
       )}
@@ -75,6 +79,13 @@ function GridTile({
           ) : null}
         </span>
       ) : null}
+      {uniform ? (
+        <span className={styles.tileLikes}>
+          <Heart className="h-[18px] w-[18px]" strokeWidth={2.2} aria-hidden />
+          <span>{post.likeCount}</span>
+          <span className="sr-only">いいね</span>
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -88,6 +99,8 @@ type Props = {
   /** 表示中の件数（スクロールで増やす） */
   visibleCount: number;
   onLoadMore: () => void;
+  /** mobile：3列の均等なグリッド（見本「みんなの投稿グリッド」） */
+  variant?: "default" | "mobile";
 };
 
 export function PostsGrid({
@@ -98,7 +111,10 @@ export function PostsGrid({
   onOpen,
   visibleCount,
   onLoadMore,
+  variant = "default",
 }: Props) {
+  const uniform = variant === "mobile";
+  const gridClass = cn(styles.grid, uniform && styles.gridUniform);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const visible = posts.slice(0, visibleCount);
   const hasMore = posts.length > visible.length;
@@ -118,14 +134,15 @@ export function PostsGrid({
 
   if (loading) {
     return (
-      <div className={styles.grid} aria-busy="true" aria-label="投稿を読み込んでいます">
+      <div className={gridClass} aria-busy="true" aria-label="投稿を読み込んでいます">
         {Array.from({ length: 12 }, (_, i) => (
           <span
             key={i}
             className={cn(
               styles.tile,
               styles.tileSkeleton,
-              i === 0 && styles.tileFeaturedLeft,
+              uniform && styles.tileUniform,
+              i === 0 && !uniform && styles.tileFeaturedLeft,
             )}
           />
         ))}
@@ -152,9 +169,9 @@ export function PostsGrid({
 
   return (
     <>
-      <div className={styles.grid}>
+      <div className={gridClass}>
         {visible.map((post, i) => (
-          <GridTile key={post.id} post={post} index={i} onOpen={onOpen} />
+          <GridTile key={post.id} post={post} index={i} onOpen={onOpen} uniform={uniform} />
         ))}
       </div>
       {hasMore ? <div ref={sentinelRef} className={styles.sentinel} aria-hidden /> : null}
