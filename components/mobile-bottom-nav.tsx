@@ -9,6 +9,7 @@ import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 import { isEventFormRoute } from "@/lib/is-event-form-route";
 import { isAuthRoute } from "@/lib/is-auth-route";
 import { isPlayRoute } from "@/lib/is-play-route";
+import { isCheckinScanRoute } from "@/lib/is-checkin-scan-route";
 import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { cn } from "@/lib/utils";
 import { prefetchMypageSummary } from "@/lib/prefetch-mypage-summary";
@@ -104,6 +105,7 @@ export function MobileBottomNav() {
     // 主催者モードは専用の下部ナビ（OrganizerBottomNav）を出す
     isOrganizerDashboardPath(pathname) ||
     isPlayRoute(pathname) ||
+    isCheckinScanRoute(pathname) ||
     isMessagesConversationRoute(pathname) ||
     isProfileEditRoute(pathname) ||
     isEventFormRoute(pathname) ||

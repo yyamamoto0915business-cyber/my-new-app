@@ -55,20 +55,23 @@ export default function CheckinScanPage() {
   const shownMessage = scanState === "starting" ? "カメラを起動しています…" : statusMessage;
 
   return (
-    <div
-      className="flex min-h-screen-dvh flex-col pb-[calc(72px+env(safe-area-inset-bottom,0px))]"
-      style={{
-        backgroundColor: "#172033",
-        backgroundImage: "url(/assets/machiglyph/checkin/backgrounds/machi_pattern_background.svg)",
-        backgroundRepeat: "repeat",
-        backgroundSize: "160px",
-      }}
-    >
-      <header className="flex items-center gap-3 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]">
+    // 全画面のカメラ画面（スマホでは上の帯・下のメニューを出さない）。
+    // 模様の画像は明るい不透明色なので、背景色に直接重ねず、薄くした層として置く。
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-[#121a24] pb-[env(safe-area-inset-bottom,0px)] min-[900px]:h-auto min-[900px]:min-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px))]">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.06]"
+        style={{
+          backgroundImage: "url(/assets/machiglyph/checkin/backgrounds/machi_pattern_background.svg)",
+          backgroundRepeat: "repeat",
+          backgroundSize: "160px",
+        }}
+        aria-hidden
+      />
+      <header className="relative flex items-center gap-3 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]">
         <Link
-          href="/checkin"
+          href="/pass"
           onClick={stopCamera}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white"
           aria-label="戻る"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -77,11 +80,11 @@ export default function CheckinScanPage() {
         </Link>
         <div>
           <h1 className="text-[16px] font-bold text-white">QRコードを読み取る</h1>
-          <p className="text-[11px] text-white/70">会場やゲームのQRコードを枠内に合わせてください</p>
+          <p className="text-[11.5px] text-white/75">会場やゲームのQRコードを枠に合わせてください</p>
         </div>
       </header>
 
-      <div className="relative mx-4 flex flex-1 flex-col overflow-hidden rounded-[20px] bg-black">
+      <div className="relative mx-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] bg-black">
         <video
           ref={videoRef}
           className="absolute inset-0 h-full w-full object-cover"
@@ -99,7 +102,10 @@ export default function CheckinScanPage() {
             <span className="absolute -bottom-0.5 -right-0.5 h-6 w-6 rounded-br-lg border-b-4 border-r-4 border-[#d49a25]" />
           </div>
 
-          <p className="mt-6 text-center text-[13px] font-medium text-white">{shownMessage}</p>
+          {/* 案内はカメラの映像の上でも読めるよう、暗い下地に乗せる */}
+          <p className="mt-6 rounded-full bg-black/55 px-4 py-2 text-center text-[13px] font-medium text-white backdrop-blur-sm">
+            {shownMessage}
+          </p>
         </div>
 
         {(scanState === "unsupported" || scanState === "denied" || scanState === "error") && (
@@ -125,7 +131,7 @@ export default function CheckinScanPage() {
                   : "受付コードを手入力してチェックインできます。"}
               </p>
               <Link
-                href="/checkin"
+                href="/pass?code=1"
                 className="mt-4 block rounded-xl bg-[#2d4635] py-3 text-[13px] font-bold text-white"
               >
                 受付コードを入力する
@@ -135,12 +141,12 @@ export default function CheckinScanPage() {
         )}
       </div>
 
-      <div className="flex flex-col gap-3 px-4 py-4">
+      <div className="relative flex flex-col gap-3 px-4 py-4">
         <PlayResumeCard tone="dark" />
         <Link
-          href="/checkin"
+          href="/pass?code=1"
           onClick={stopCamera}
-          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 text-[13px] font-semibold text-white"
+          className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 text-[14px] font-semibold text-white"
         >
           <Image
             src="/assets/machiglyph/checkin/icons/keyboard_code_icon.svg"
@@ -149,7 +155,7 @@ export default function CheckinScanPage() {
             alt=""
             className="brightness-[10]"
           />
-          受付コードを入力
+          QRが読めないときは受付コードを入力
         </Link>
       </div>
     </div>

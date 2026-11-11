@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,11 @@ export function PassCheckinActions({ className }: Props) {
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [codeError, setCodeError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // 読み取り画面の「受付コードを入力」から来たとき（/pass?code=1）は、入力欄を開いておく
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("code") === "1") setShowCodeInput(true);
+  }, []);
 
   const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
