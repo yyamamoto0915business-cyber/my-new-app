@@ -20,9 +20,9 @@ import { isPostDetailRoute } from "@/lib/is-post-detail-route";
 
 /**
  * 利用者側のモバイル上部の高さ（safe-area 除く）
- * 上8 + 1行目36 + 間8 + 2択タブ54（44 + 内側4×2 + 枠2） + 下10
+ * 上8 + 1行目36 + 間8 + 2択タブ44（36 + 内側3×2 + 枠2） + 下10
  */
-export const MOBILE_TOP_HEADER_HEIGHT_PX = 116;
+export const MOBILE_TOP_HEADER_HEIGHT_PX = 106;
 
 /** 主催者側（1行だけ）の高さ（safe-area 除く）。上8 + 1行目36 + 下8 */
 export const MOBILE_TOP_HEADER_HEIGHT_ORGANIZER_PX = 52;

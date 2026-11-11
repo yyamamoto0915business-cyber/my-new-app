@@ -39,7 +39,6 @@ import {
   selectFeaturedItems,
 } from "@/components/home/mobile/MobileFeaturedBanner";
 import { MobileTownHero } from "@/components/home/mobile/MobileTownHero";
-import { MobileThemeDiscovery } from "@/components/home/mobile/MobileThemeDiscovery";
 import { MobileUpcomingEvents } from "@/components/home/mobile/MobileUpcomingEvents";
 import { MobileNewStores } from "@/components/home/mobile/MobileNewStores";
 import { MobilePastEventsSection } from "@/components/home/mobile/MobilePastEventsSection";
@@ -369,7 +368,7 @@ export function HomeOtonami() {
             <MobileTownSearchBar searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
           </div>
         </div>
-        <div className="space-y-2.5">
+        <div className="space-y-3.5">
           <MobileTownKindCards activeChip={activeChip} onChipClick={handleChipClick} />
           {/* 絞り込みは前と同じく常に見せる（ボタンの奥に隠すと一手間ふえるため） */}
           <MobileTownFilterBar
@@ -439,18 +438,6 @@ export function HomeOtonami() {
                   areaPreference={effectiveArea}
                   categoryPrefs={categoryPrefs}
                   excludeIds={featuredIds}
-                />
-                <MobileThemeDiscovery
-                  events={allEvents}
-                  loading={eventsSectionLoading}
-                  onSelect={(selection) => {
-                    if (selection.type === "category") {
-                      handleSelectCategory(selection.key);
-                    } else {
-                      setTimeRange(selection.range);
-                    }
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
                 />
                 <MobileUpcomingEvents events={allEvents} loading={eventsSectionLoading} />
                 <MobileNewStores stores={stores} loading={storesLoading} />
