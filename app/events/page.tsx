@@ -14,6 +14,7 @@ import {
   sortEvents,
   backfillWithRecentEndedEvents,
   sortEventsForDiscover,
+  getEventStatus,
   type Event,
   type DateRangeFilter,
   type EventSort,
@@ -338,12 +339,23 @@ function EventsPageContent() {
     urlTags,
   ]);
 
+  /** スマホ：これから開催と、終了したイベントを分ける（終了は下にまとめて、開いたときだけ出す） */
+  const mobileUpcomingEvents = useMemo(
+    () => filteredEvents.filter((e) => getEventStatus(e) !== "ended"),
+    [filteredEvents]
+  );
+  const mobileEndedEvents = useMemo(
+    () => filteredEvents.filter((e) => getEventStatus(e) === "ended"),
+    [filteredEvents]
+  );
+  const [mobileEndedOpen, setMobileEndedOpen] = useState(false);
+
   const visibleMobileEvents = useMemo(
-    () => filteredEvents.slice(0, mobileVisibleCount),
-    [filteredEvents, mobileVisibleCount]
+    () => mobileUpcomingEvents.slice(0, mobileVisibleCount),
+    [mobileUpcomingEvents, mobileVisibleCount]
   );
 
-  const hasMoreMobile = mobileVisibleCount < filteredEvents.length;
+  const hasMoreMobile = mobileVisibleCount < mobileUpcomingEvents.length;
 
   const handleSearch = useCallback(() => {
     eventListRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -688,7 +700,7 @@ function EventsPageContent() {
       </div>
 
       {/* ===== Mobile Layout ===== */}
-      <div className="mg-events-mobile-page min-[900px]:hidden min-h-screen-dvh w-full space-y-1.5 bg-[#f7fbf8] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-0.5">
+      <div className="mg-events-mobile-page min-[900px]:hidden min-h-screen-dvh w-full space-y-3 bg-[#fbfcf9] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-0.5">
         <EventsMobileHero
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
@@ -699,7 +711,7 @@ function EventsPageContent() {
           {view === "list" ? (
             <section ref={eventListRef} className="scroll-mt-4">
               <EventsMobileListHeader
-                totalCount={filteredEvents.length}
+                totalCount={mobileUpcomingEvents.length}
                 sortOrder={sortOrder}
                 onSortChange={setSortOrder}
                 viewMode={mobileViewMode}
@@ -760,7 +772,11 @@ function EventsPageContent() {
                 </div>
               ) : (
                 <>
-                  {mobileViewMode === "grid" ? (
+                  {mobileUpcomingEvents.length === 0 ? (
+                    <p className="rounded-[14px] border border-dashed border-[#dde9e1] bg-white px-4 py-6 text-center text-[13px] text-[#6a7068]">
+                      これから開催のイベントはまだありません
+                    </p>
+                  ) : mobileViewMode === "grid" ? (
                     <div className={EVENTS_MOBILE_GRID_CLASS}>
                       {visibleMobileEvents.map((event) => (
                         <EventsMobileGridCard key={event.id} event={event} />
@@ -781,7 +797,7 @@ function EventsPageContent() {
                       type="button"
                       onClick={() =>
                         setMobileVisibleCount((n) =>
-                          Math.min(n + EVENTS_MOBILE_PAGE_STEP, filteredEvents.length)
+                          Math.min(n + EVENTS_MOBILE_PAGE_STEP, mobileUpcomingEvents.length)
                         )
                       }
                       className="mt-4 flex h-11 w-full items-center justify-center gap-1 rounded-full border border-[#dde9e1] bg-white text-[13px] font-medium text-[#6a7068] shadow-[0_2px_10px_rgba(22,56,40,0.05)] transition active:bg-[#f7fbf8]"
@@ -789,6 +805,31 @@ function EventsPageContent() {
                       もっと見る
                       <ChevronDown className="h-4 w-4" aria-hidden />
                     </button>
+                  ) : null}
+
+                  {/* 終了したイベントは下にまとめ、開いたときだけ出す */}
+                  {mobileEndedEvents.length > 0 ? (
+                    <div className="mt-5">
+                      <button
+                        type="button"
+                        onClick={() => setMobileEndedOpen((v) => !v)}
+                        aria-expanded={mobileEndedOpen}
+                        className="flex h-11 w-full items-center justify-between rounded-[14px] border border-[#e3e8e2] bg-white px-4 text-[13px] font-semibold text-[#5f6d64]"
+                      >
+                        <span>終了したイベント（{mobileEndedEvents.length}件）</span>
+                        <ChevronDown
+                          className={`h-4 w-4 transition-transform ${mobileEndedOpen ? "rotate-180" : ""}`}
+                          aria-hidden
+                        />
+                      </button>
+                      {mobileEndedOpen ? (
+                        <div className={`mt-2.5 ${EVENTS_MOBILE_GRID_CLASS}`}>
+                          {mobileEndedEvents.map((event) => (
+                            <EventsMobileGridCard key={event.id} event={event} />
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
                   ) : null}
                 </>
               )}

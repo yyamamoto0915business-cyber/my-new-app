@@ -65,7 +65,8 @@ export function EventsMobileGridCard({ event }: Props) {
       categoryLabel && !fromTags.includes(categoryLabel)
         ? [categoryLabel, ...fromTags]
         : fromTags;
-    return combined.slice(0, 2);
+    // カードの高さを抑えるため1つだけ出す
+    return combined.slice(0, 1);
   }, [event.tags, categoryLabel]);
 
   const scheduleLabel = formatEventScheduleLabel(
@@ -96,38 +97,30 @@ export function EventsMobileGridCard({ event }: Props) {
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#e8ebe6]">
         <CardCoverImage imageUrl={event.imageUrl} alt={event.title} />
 
-        <div className="absolute left-1.5 top-1.5 z-10 flex max-w-[calc(100%-28px)] flex-wrap gap-1">
-          <span
-            className={`inline-flex h-[18px] items-center rounded-md px-1.5 text-[9px] font-semibold ${
-              isFree
-                ? "bg-[#e8f5ec] text-[#2f6b4f]"
-                : "bg-[#eef4fc] text-[#2b5a9e]"
-            }`}
-          >
-            {isFree ? "無料" : "有料"}
-          </span>
-          {status === "ended" ? (
-            <span className="inline-flex h-[18px] items-center rounded-md bg-white/95 px-1.5 text-[9px] font-semibold text-[#6a7068]">
-              終了
-            </span>
-          ) : status === "full" ? (
-            <span className="inline-flex h-[18px] items-center rounded-md bg-white/95 px-1.5 text-[9px] font-semibold text-[#6a7068]">
-              満員
-            </span>
-          ) : null}
-        </div>
+        {/* 札は左上に1つだけ（終了・満員を優先）。チラシの文字と重ならないよう小さく白地にする */}
+        <span
+          className={`absolute left-1.5 top-1.5 z-10 inline-flex h-[18px] items-center rounded-full bg-white/95 px-2 text-[9.5px] font-bold shadow-[0_1px_3px_rgba(22,56,40,0.12)] ${
+            status === "ended" || status === "full"
+              ? "text-[#6a7068]"
+              : isFree
+                ? "text-[#2f6b4f]"
+                : "text-[#2b5a9e]"
+          }`}
+        >
+          {status === "ended" ? "終了" : status === "full" ? "満員" : isFree ? "無料" : "有料"}
+        </span>
 
         <button
           type="button"
           aria-label={saved ? "お気に入り解除" : "お気に入りに追加"}
-          className="absolute right-1.5 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 shadow-[0_1px_4px_rgba(22,56,40,0.12)]"
+          className="absolute right-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/95 shadow-[0_1px_4px_rgba(22,56,40,0.12)]"
           onClick={(e) => {
             e.stopPropagation();
             setSaved(toggleBookmark(event.id));
           }}
         >
           <Heart
-            className="h-3.5 w-3.5"
+            className="h-3 w-3"
             style={{
               color: saved ? "#2f6b4f" : "#8a9088",
               fill: saved ? "#2f6b4f" : "none",

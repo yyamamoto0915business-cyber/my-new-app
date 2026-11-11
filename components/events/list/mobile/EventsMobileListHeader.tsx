@@ -36,7 +36,8 @@ export function EventsMobileListHeader({
   return (
     <div className="flex items-center justify-between gap-3 py-2">
       <p className="shrink-0 text-[12px] leading-none text-[#6a7068]">
-        全{" "}
+        {/* 終了したイベントは下にまとめているので、ここは開催予定の件数 */}
+        開催予定{" "}
         <span className="font-semibold text-[#163828]">{totalCount}</span>
         件
       </p>
