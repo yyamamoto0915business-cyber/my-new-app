@@ -30,7 +30,7 @@ const ITEMS: Item[] = [
 
 /**
  * 主催者モードのスマホ下部ナビ（見本：ホーム／掲載管理／＋新しく掲載／運営／マイページ）。
- * 真ん中の「新しく掲載」は丸いボタンにして少し浮かせる。
+ * 画面の下にぴったり付く帯（利用者側と同じ）。真ん中の「新しく掲載」は丸いボタンにして少し浮かせる。
  */
 export function OrganizerBottomNav() {
   const pathname = usePathname() ?? "";
@@ -44,9 +44,9 @@ export function OrganizerBottomNav() {
     <nav
       data-mg-chrome="mobile-bottom"
       aria-label="主催者メニュー"
-      className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 px-3 pb-[calc(8px+env(safe-area-inset-bottom,0px))] min-[900px]:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#dde9e1] bg-[#f7fbf8]/98 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_16px_rgba(22,56,40,0.05)] backdrop-blur-sm min-[900px]:hidden"
     >
-      <div className="pointer-events-auto mx-auto flex w-full items-end justify-around rounded-[28px] border border-[#e3ece5] bg-white/97 px-1.5 py-1 shadow-[0_8px_28px_rgba(22,56,40,0.14)] backdrop-blur-sm tablet:max-w-[560px]">
+      <div className="mx-auto flex w-full items-end justify-around px-1 py-0.5 tablet:max-w-[560px]">
         {ITEMS.map(({ id, href, label, Icon }) => {
           const active = activeId === id;
           if (id === "new") {
