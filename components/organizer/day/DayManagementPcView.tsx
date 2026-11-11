@@ -178,7 +178,7 @@ export function DayManagementPcView({
           )}
         >
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="mg-day-mgmt-pc__title">ダッシュボード</h1>
+            <h1 className="mg-day-mgmt-pc__title">当日の運営</h1>
             <span className="rounded-full bg-[#EAF4ED] px-2.5 py-0.5 text-[10px] font-bold text-[#2D7A4F]">
               本日の運営
             </span>
