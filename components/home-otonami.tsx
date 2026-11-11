@@ -38,7 +38,7 @@ import {
   MobileFeaturedBanner,
   selectFeaturedItems,
 } from "@/components/home/mobile/MobileFeaturedBanner";
-import { SearchLeafIcon } from "@/components/home/DiscoverHeroCatchphrase";
+import { MobileTownHero } from "@/components/home/mobile/MobileTownHero";
 import { MobileThemeDiscovery } from "@/components/home/mobile/MobileThemeDiscovery";
 import { MobileUpcomingEvents } from "@/components/home/mobile/MobileUpcomingEvents";
 import { MobileNewStores } from "@/components/home/mobile/MobileNewStores";
@@ -362,16 +362,12 @@ export function HomeOtonami() {
 
       {/* モバイル（見本「まちの情報フィード」の並び） */}
       <main className="w-full space-y-5 bg-[#fbfcf9] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1 min-[900px]:hidden sm:max-w-none">
-        <div className="space-y-2.5">
-          {/* 前のヒーローにあったひとこと。画像はなくして、検索の上に小さく残す */}
-          <p
-            className="flex items-center gap-1.5 px-1 text-[15px] tracking-[0.06em] text-[#3a2a18]"
-            style={{ fontFamily: "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif" }}
-          >
-            <SearchLeafIcon className="h-4 w-4 text-[#3d7355]" />
-            まちの魅力に、出会いにいく。
-          </p>
-          <MobileTownSearchBar searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
+        {/* 前の掲示板風ヒーローを低くして戻し、検索欄をその下端に重ねる */}
+        <div>
+          <MobileTownHero />
+          <div className="relative z-10 -mt-7 px-3">
+            <MobileTownSearchBar searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
+          </div>
         </div>
         <div className="space-y-2.5">
           <MobileTownKindCards activeChip={activeChip} onChipClick={handleChipClick} />

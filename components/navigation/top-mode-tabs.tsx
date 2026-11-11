@@ -84,8 +84,9 @@ export function TopModeTabs({ onTabClick, className }: Props) {
             aria-current={isActive ? "page" : undefined}
             className={cn(
               "flex min-h-[44px] min-w-0 flex-1 basis-0 touch-manipulation select-none items-center justify-center gap-2 rounded-full px-3 text-[14px] font-bold leading-none tracking-[0.02em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2a5540]/35 active:scale-[0.98]",
+              // 選択中は前と同じ葉っぱ模様（globals.css の mg-top-mode-tab-active）
               isActive
-                ? "bg-gradient-to-b from-[#2f7d4e] to-[#1f5e3a] text-white shadow-[0_3px_10px_rgba(22,56,40,0.25)]"
+                ? "mg-top-mode-tab-active border-0 text-white shadow-[0_3px_10px_rgba(22,56,40,0.25)]"
                 : "text-[#163828] active:bg-[#f4f8f5]"
             )}
           >

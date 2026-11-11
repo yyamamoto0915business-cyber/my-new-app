@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Bookmark, CalendarDays, CalendarPlus, MapPin } from "lucide-react";
+import { Bookmark, CalendarDays, MapPin } from "lucide-react";
+import { MobileSectionHeading } from "@/components/home/mobile/MobileSectionHeading";
 import type { Event } from "@/lib/db/types";
 import { getEventStatus } from "@/lib/events";
 import { getJstTodayYmd } from "@/lib/jst-date";
@@ -101,19 +102,7 @@ export function MobileUpcomingEvents({ events, loading }: Props) {
 
   return (
     <section aria-label="近日開催のイベント">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-1.5 text-[16px] font-bold text-[#163828]">
-          <CalendarPlus className="h-5 w-5 text-[#1f5e3a]" aria-hidden />
-          近日開催のイベント
-        </h2>
-        <Link
-          href="/events"
-          className="inline-flex items-center gap-0.5 text-[12px] font-semibold text-[#1f5e3a]"
-        >
-          もっとみる
-          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-        </Link>
-      </div>
+      <MobileSectionHeading eyebrow="UPCOMING" title="近日開催のイベント" href="/events" />
 
       {loading ? (
         <div className="flex gap-2">

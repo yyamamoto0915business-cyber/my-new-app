@@ -1,14 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
 import {
-  ArrowRight,
   BookOpen,
   CalendarClock,
   Dumbbell,
   HandHeart,
-  Leaf,
   MapPin,
   Music,
   Palette,
@@ -21,6 +18,7 @@ import type { Event } from "@/lib/db/types";
 import type { CategoryKey } from "@/lib/categories";
 import { getEventStatus, getEventsByDateRange } from "@/lib/events";
 import { getPrimaryCategory } from "@/lib/inferCategory";
+import { MobileSectionHeading } from "@/components/home/mobile/MobileSectionHeading";
 
 const THEME_COUNT = 3;
 
@@ -111,19 +109,7 @@ export function MobileThemeDiscovery({ events, loading, onSelect }: Props) {
 
   return (
     <section aria-label="テーマから見つける">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-1.5 text-[16px] font-bold text-[#163828]">
-          <Leaf className="h-5 w-5 text-[#1f5e3a]" aria-hidden />
-          テーマから見つける
-        </h2>
-        <Link
-          href="/events"
-          className="inline-flex items-center gap-0.5 text-[12px] font-semibold text-[#1f5e3a]"
-        >
-          もっとみる
-          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-        </Link>
-      </div>
+      <MobileSectionHeading eyebrow="THEME" title="テーマから見つける" href="/events" />
       <div className="grid grid-cols-3 gap-2">
         {themes.map(({ id, selection, label, Icon, color, bg, count }) => (
           <button

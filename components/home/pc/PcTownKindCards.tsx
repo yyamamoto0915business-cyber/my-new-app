@@ -118,7 +118,7 @@ export function MobileTownKindCards({ activeChip, onChipClick }: Props) {
       aria-label="種別から探す"
       className="-mx-3 -my-2 flex snap-x scroll-px-3 gap-2 overflow-x-auto px-3 py-2 scrollbar-hide tablet:mx-0 tablet:grid tablet:grid-cols-5 tablet:gap-3 tablet:overflow-visible tablet:px-0"
     >
-      {CARDS.map(({ key, label, Icon }) => {
+      {CARDS.map(({ key, label, Icon, color, bg }) => {
         const active = activeChip === key;
         return (
           <button
@@ -127,13 +127,20 @@ export function MobileTownKindCards({ activeChip, onChipClick }: Props) {
             onClick={() => onChipClick(key)}
             aria-pressed={active}
             className={cn(
-              "flex w-[80px] shrink-0 snap-start flex-col items-center gap-1.5 rounded-[18px] border px-1 pb-2.5 pt-3 text-center transition active:scale-[0.98] tablet:w-auto",
+              "flex w-[80px] shrink-0 snap-start flex-col items-center gap-1.5 rounded-[18px] border px-1 pb-2.5 pt-2.5 text-center transition active:scale-[0.98] tablet:w-auto",
               active
                 ? "border-[#2f7d4e] bg-[#f1f8f2] shadow-[0_4px_12px_rgba(22,56,40,0.12)]"
                 : "border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.06)]",
             )}
           >
-            <Icon className="h-7 w-7 text-[#1f5e3a]" strokeWidth={1.8} aria-hidden />
+            {/* 前と同じく、種類ごとの淡い色の丸にアイコンを置く */}
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-white/70 shadow-[0_1px_2px_rgba(120,80,40,0.06)]"
+              style={{ background: bg, color }}
+              aria-hidden
+            >
+              <Icon className="h-5 w-5" strokeWidth={1.9} />
+            </span>
             <span className="block whitespace-nowrap text-[11px] font-bold leading-tight text-[#163828] tablet:text-[13px]">
               {label}
             </span>

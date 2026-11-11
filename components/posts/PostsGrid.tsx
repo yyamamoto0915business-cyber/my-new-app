@@ -26,11 +26,11 @@ function GridTile({
   post: CommunityPost;
   index: number;
   onOpen: (index: number) => void;
-  /** スマホ：大きいマスを作らず、全部の写真にいいね数を重ねる */
+  /** スマホ：角を丸め、全部の写真にいいね数を重ねる（大きいマスは前と同じく残す） */
   uniform: boolean;
 }) {
   const [src, setSrc] = useState(post.imageUrl || POST_CARD_FALLBACK_IMAGE);
-  const side = uniform ? null : featuredSide(index);
+  const side = featuredSide(index);
   const isVideo = Boolean(post.videoUrl);
   const hasGallery = !isVideo && (post.galleryImages?.length ?? 0) > 1;
   // ポスターのない動画は imageUrl に動画 URL が入っている
@@ -79,7 +79,8 @@ function GridTile({
           ) : null}
         </span>
       ) : null}
-      {uniform ? (
+      {/* 大きいマスは上の場所といいね数のキャプションを出すので、ここでは出さない */}
+      {uniform && !side ? (
         <span className={styles.tileLikes}>
           <Heart className="h-[18px] w-[18px]" strokeWidth={2.2} aria-hidden />
           <span>{post.likeCount}</span>
@@ -142,7 +143,7 @@ export function PostsGrid({
               styles.tile,
               styles.tileSkeleton,
               uniform && styles.tileUniform,
-              i === 0 && !uniform && styles.tileFeaturedLeft,
+              i === 0 && styles.tileFeaturedLeft,
             )}
           />
         ))}
