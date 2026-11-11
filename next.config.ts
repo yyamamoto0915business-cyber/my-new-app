@@ -3,6 +3,13 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   compress: true,
+  // Cloud Agent / Cloudflare トンネル経由のプレビューで Host が弾かれないようにする
+  allowedDevOrigins: [
+    "*.trycloudflare.com",
+    "*.cursor.sh",
+    "*.cursor.com",
+    "*.cursor.app",
+  ],
   async redirects() {
     return [
       { source: "/rankings", destination: "/discover?tab=ranking", permanent: false },
