@@ -7,7 +7,7 @@ export const ORGANIZER_HOME_HREF = "/organizer/listings";
 export const ORGANIZER_MOBILE_HOME_HREF = "/organizer/home";
 /** 新しく掲載する（種類を選ぶ）。スマホ下部ナビの真ん中 */
 export const ORGANIZER_NEW_LISTING_HREF = "/organizer/new";
-/** 運営ツールの一覧（レジ・ゲーム・プラン・当日の運営など） */
+/** 運営ツールの一覧（当日の運営・レジ・ゲームなど） */
 export const ORGANIZER_TOOLS_HREF = "/organizer/tools";
 
 export type OrganizerBottomNavId = "home" | "listings" | "new" | "tools" | "mypage";
@@ -18,7 +18,6 @@ export function organizerBottomNavActive(pathname: string): OrganizerBottomNavId
   if (pathname === ORGANIZER_NEW_LISTING_HREF || /^\/organizer\/[^/]+\/new\/?$/.test(pathname)) {
     return "new";
   }
-  if (pathname.startsWith("/organizer/settings/plan")) return "tools";
   if (pathname === "/organizer/settings" || pathname.startsWith("/organizer/settings/")) {
     return "mypage";
   }
@@ -40,7 +39,7 @@ export function organizerBottomNavActive(pathname: string): OrganizerBottomNavId
 /** 左サイドバー（セクション切替はここだけ）。shortLabel はモバイルタブ専用 */
 export const ORGANIZER_SIDEBAR_NAV_ITEMS = [
   { label: "掲載管理", shortLabel: "掲載", href: "/organizer/listings" },
-  { label: "ダッシュボード", shortLabel: "ダッシュ", href: "/organizer" },
+  { label: "当日の運営", shortLabel: "当日", href: "/organizer" },
   { label: "レジ・当日販売", shortLabel: "レジ", href: "/organizer/pos", badge: "NEW" },
   { label: "ゲーム機能", shortLabel: "ゲーム", href: "/organizer/games", badge: "NEW" },
   { label: "主催者プラン", shortLabel: "プラン", href: "/organizer/settings/plan" },

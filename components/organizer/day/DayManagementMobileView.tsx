@@ -223,7 +223,7 @@ export function DayManagementMobileView({
         <header className="mg-day-mgmt-m__hero relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex flex-wrap items-center gap-1.5">
-              <h1 className="mg-day-mgmt-m__title">ダッシュボード</h1>
+              <h1 className="mg-day-mgmt-m__title">当日の運営</h1>
               <span className="inline-flex rounded-full bg-[#EAF4ED] px-2 py-0.5 text-[9px] font-bold text-[#2D7A4F]">
                 本日の運営
               </span>

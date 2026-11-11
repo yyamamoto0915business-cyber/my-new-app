@@ -37,8 +37,8 @@ type Tool = {
 const MAIN_TOOLS: Tool[] = [
   {
     href: "/organizer/events",
-    title: "ダッシュボード",
-    desc: "来場・応募・進行",
+    title: "イベント管理",
+    desc: "申込・公開・募集",
     Icon: BarChart3,
     color: "#2f7d4e",
     bg: "linear-gradient(160deg,#f3faf4,#ffffff)",

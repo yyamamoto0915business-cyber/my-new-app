@@ -82,7 +82,7 @@ export function TicketSalesDetailClient() {
         className="inline-flex items-center gap-1 text-[13px] font-medium text-[#2D7A4F] hover:underline"
       >
         <ArrowLeft size={14} />
-        ダッシュボードに戻る
+        当日の運営に戻る
       </Link>
 
       <header className="mt-4">
