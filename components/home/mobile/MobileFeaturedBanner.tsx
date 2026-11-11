@@ -48,9 +48,9 @@ function Banner({ item, priority }: { item: MachiFeedItem; priority: boolean }) 
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-[#3d7a55] to-[#1f4a33]" aria-hidden />
       )}
-      {/* 文字を読みやすくする左下からの影 */}
+      {/* 文字を読みやすくする影。画像に文字が入っていてもタイトルが負けないよう、下半分は濃くする */}
       <div
-        className="absolute inset-0 bg-gradient-to-tr from-[#0f2a1c]/85 via-[#0f2a1c]/35 to-transparent"
+        className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent"
         aria-hidden
       />
 
@@ -60,7 +60,7 @@ function Banner({ item, priority }: { item: MachiFeedItem; priority: boolean }) 
       </span>
 
       <div className="absolute inset-x-0 bottom-0 px-4 pb-3.5 pr-14">
-        <p className="line-clamp-2 text-[22px] font-bold leading-[1.25] text-white drop-shadow-sm">
+        <p className="line-clamp-2 text-[20px] font-bold leading-[1.3] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.45)]">
           {item.title}
         </p>
         <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] text-white/95">
@@ -89,6 +89,30 @@ function Banner({ item, priority }: { item: MachiFeedItem; priority: boolean }) 
   );
 }
 
+/**
+ * バナーに出すもの：おすすめの上位から、写真のあるものを先にして3件。
+ * 下の「おすすめ」で同じものを出さないよう、ホームからも呼ぶ。
+ */
+export function selectFeaturedItems(
+  events: Event[],
+  stores: StoreRecord[],
+  volunteers: VolunteerRoleWithEvent[],
+  games: PublicOrganizerGame[],
+  areaPreference: string,
+  categoryPrefs: CategoryKey[]
+): MachiFeedItem[] {
+  const feed = buildRecommendedFeed(events, stores, volunteers, {
+    areaPreference,
+    categoryPrefs,
+    limit: 12,
+    games,
+  });
+  // 大きく見せるので、写真のあるものを先にする
+  const withImage = feed.filter((i) => i.imageUrl);
+  const without = feed.filter((i) => !i.imageUrl);
+  return [...withImage, ...without].slice(0, BANNER_COUNT);
+}
+
 /** まちの情報（スマホ）：「注目のまち情報」の大きなバナー。おすすめの上位を横にめくって見せる */
 export function MobileFeaturedBanner({
   events,
@@ -102,18 +126,10 @@ export function MobileFeaturedBanner({
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
 
-  const items = useMemo(() => {
-    const feed = buildRecommendedFeed(events, stores, volunteers, {
-      areaPreference,
-      categoryPrefs,
-      limit: 12,
-      games,
-    });
-    // 大きく見せるので、写真のあるものを先にする
-    const withImage = feed.filter((i) => i.imageUrl);
-    const without = feed.filter((i) => !i.imageUrl);
-    return [...withImage, ...without].slice(0, BANNER_COUNT);
-  }, [events, stores, volunteers, games, areaPreference, categoryPrefs]);
+  const items = useMemo(
+    () => selectFeaturedItems(events, stores, volunteers, games, areaPreference, categoryPrefs),
+    [events, stores, volunteers, games, areaPreference, categoryPrefs]
+  );
 
   if (loading) {
     return <div className="aspect-[16/9] w-full animate-pulse rounded-[22px] bg-[#e5ede6]" />;

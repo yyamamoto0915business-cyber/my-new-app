@@ -31,6 +31,8 @@ type Props = {
   categoryPrefs: CategoryKey[];
   searchQuery?: string;
   selectedArea?: string;
+  /** 上のバナーに出したものは除く（絞り込みなしのときだけ） */
+  excludeIds?: string[];
 };
 
 export function MobileRecommendedCarousel({
@@ -46,6 +48,7 @@ export function MobileRecommendedCarousel({
   categoryPrefs,
   searchQuery = "",
   selectedArea = "",
+  excludeIds = [],
 }: Props) {
   const displayItems = useMemo(() => {
     if (hasActiveFilter) {
@@ -75,10 +78,13 @@ export function MobileRecommendedCarousel({
     return buildRecommendedFeed(events, stores, volunteers, {
       areaPreference,
       categoryPrefs,
-      limit: CARD_COUNT,
+      limit: CARD_COUNT + excludeIds.length,
       games,
-    });
+    })
+      .filter((item) => !excludeIds.includes(item.id))
+      .slice(0, CARD_COUNT);
   }, [
+    excludeIds,
     hasActiveFilter,
     eventOnlyFilter,
     filteredEvents,
@@ -91,6 +97,11 @@ export function MobileRecommendedCarousel({
     areaPreference,
     categoryPrefs,
   ]);
+
+  // 絞り込みなしで、上のバナーに全部出ているときは出さない
+  if (!hasActiveFilter && !loading && displayItems.length === 0 && excludeIds.length > 0) {
+    return null;
+  }
 
   return (
     <section aria-label="おすすめ" className="mg-mobile-section">
