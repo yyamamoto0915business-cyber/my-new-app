@@ -11,11 +11,12 @@ type Props = {
   onSearchQueryChange: (v: string) => void;
 };
 
-/** まちの情報 モバイルヒーロー（掲示板素材・中央にコピーと検索） */
+/** まちの情報 モバイルヒーロー（掲示板素材・中央にコピーと検索）。枠を減らしてシンプルにしている */
 export function MobileTownBoardHero({ searchQuery, onSearchQueryChange }: Props) {
+  // 外側の白い枠は付けず、木目の写真をそのまま角丸で出す
   return (
-    <section className="mg-mobile-section p-0" aria-label="まちの情報を探す">
-      <div className="relative aspect-[900/320] min-h-[130px] w-full tablet:aspect-[900/280] overflow-hidden rounded-[14px]">
+    <section className="relative z-[1]" aria-label="まちの情報を探す">
+      <div className="relative aspect-[900/290] min-h-[118px] w-full tablet:aspect-[900/260] overflow-hidden rounded-[18px] shadow-[0_4px_16px_rgba(120,80,40,0.10)]">
         <Image
           src={HERO_IMAGE}
           alt=""
@@ -26,7 +27,7 @@ export function MobileTownBoardHero({ searchQuery, onSearchQueryChange }: Props)
         />
 
         <div className="absolute inset-0 flex items-center justify-center px-4">
-          <div className="relative w-full max-w-[330px] rounded-[10px] border border-[#e6dbc8]/70 bg-[#fdfaf3]/80 px-4 py-1.5 tablet:max-w-[420px] tablet:px-6 tablet:py-3 text-center shadow-[0_4px_18px_rgba(120,80,40,0.10)] backdrop-blur-[1px] before:pointer-events-none before:absolute before:inset-[3px] before:rounded-[7px] before:border before:border-[#e0d3bd]/45 before:content-['']">
+          <div className="relative w-full max-w-[330px] rounded-[10px] border border-[#e6dbc8]/70 bg-[#fdfaf3]/80 px-4 py-1.5 tablet:max-w-[420px] tablet:px-6 tablet:py-3 text-center shadow-[0_4px_18px_rgba(120,80,40,0.10)] backdrop-blur-[1px]">
             <div className="mb-0.5 flex items-center justify-center gap-2">
               <span className="h-px w-5 bg-[#cbbba0]" aria-hidden />
               <span className="text-[8px] font-medium tracking-[0.24em] tablet:text-[9.5px] text-[#a08a68]">
@@ -43,9 +44,6 @@ export function MobileTownBoardHero({ searchQuery, onSearchQueryChange }: Props)
             >
               まちの魅力に、出会いにいく。
             </h1>
-            <p className="mt-1 text-[10.5px] leading-[1.6] tablet:text-[12.5px] tracking-[0.03em] text-[#6b5b48]">
-              イベント・お店・募集を、ひとつの場所で。
-            </p>
 
             <form
               onSubmit={(e) => e.preventDefault()}
