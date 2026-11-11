@@ -223,21 +223,8 @@ async function buildSupabaseDashboard(
     appliedCountByEvent[p.event_id] = (appliedCountByEvent[p.event_id] ?? 0) + 1;
   }
 
-  for (const ev of eventsData) {
-    const count = appliedCountByEvent[ev.id] ?? 0;
-    if (count > 0) {
-      const recForEvent = recruitmentsData.find((r) => r.event_id === ev.id);
-      todos.push({
-        id: `ep-${ev.id}`,
-        type: "approval_waiting",
-        title: `「${ev.title}」に${count}件の参加申し込み`,
-        eventId: ev.id,
-        recruitmentId: recForEvent?.id,
-        // イベントの参加者はスタッフ募集の画面には出ないので、そのイベントの申込者の画面へ
-        href: `/organizer/events/${ev.id}/answers`,
-      });
-    }
-  }
+  // イベントの参加申し込みは承認の手順がない（申し込んだ時点で「申込済み」）ので、
+  // 「対応が必要なこと」には入れない（入れると何をしても消えない）。数は下の「新規申込」に出す。
 
   const pendingEventParticipants = Object.values(appliedCountByEvent).reduce((a, b) => a + b, 0);
 
