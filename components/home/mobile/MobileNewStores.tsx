@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ChevronRight, Store } from "lucide-react";
+import { ChevronRight, Store } from "lucide-react";
+import { MobileSectionHeading } from "@/components/home/mobile/MobileSectionHeading";
 import type { StoreRecord } from "@/lib/stores/types";
 
 /** 掲載からこの日数までは NEW を付ける */
@@ -38,19 +39,7 @@ export function MobileNewStores({ stores, loading }: Props) {
 
   return (
     <section aria-label="新しくできたお店">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-1.5 text-[16px] font-bold text-[#163828]">
-          <Store className="h-5 w-5 text-[#1f5e3a]" aria-hidden />
-          新しくできたお店
-        </h2>
-        <Link
-          href="/?kind=store"
-          className="inline-flex items-center gap-0.5 text-[12px] font-semibold text-[#1f5e3a]"
-        >
-          もっとみる
-          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-        </Link>
-      </div>
+      <MobileSectionHeading eyebrow="NEW OPEN" title="新しくできたお店" href="/?kind=store" />
 
       <Link
         href={`/stores/${store.id}`}

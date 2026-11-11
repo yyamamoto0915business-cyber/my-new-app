@@ -68,7 +68,7 @@ export function TopModeTabs({ onTabClick, className }: Props) {
   return (
     <div
       className={cn(
-        "flex min-w-0 items-stretch gap-1 rounded-full border border-[#e3ece5] bg-white/90 p-1 shadow-[0_4px_14px_rgba(22,56,40,0.08)]",
+        "flex min-w-0 items-stretch gap-1 rounded-full border border-[#e3ece5] bg-white/90 p-[3px] shadow-[0_3px_10px_rgba(22,56,40,0.07)]",
         className
       )}
     >
@@ -83,14 +83,15 @@ export function TopModeTabs({ onTabClick, className }: Props) {
             onClick={() => onTabClick?.(tab.id)}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "flex min-h-[44px] min-w-0 flex-1 basis-0 touch-manipulation select-none items-center justify-center gap-2 rounded-full px-3 text-[14px] font-bold leading-none tracking-[0.02em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2a5540]/35 active:scale-[0.98]",
+              "flex min-h-[36px] min-w-0 flex-1 basis-0 touch-manipulation select-none items-center justify-center gap-1.5 rounded-full px-3 text-[13px] font-bold leading-none tracking-[0.02em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2a5540]/35 active:scale-[0.98]",
+              // 選択中は前と同じ葉っぱ模様（globals.css の mg-top-mode-tab-active）
               isActive
-                ? "bg-gradient-to-b from-[#2f7d4e] to-[#1f5e3a] text-white shadow-[0_3px_10px_rgba(22,56,40,0.25)]"
+                ? "mg-top-mode-tab-active border-0 text-white shadow-[0_3px_10px_rgba(22,56,40,0.25)]"
                 : "text-[#163828] active:bg-[#f4f8f5]"
             )}
           >
             <Icon
-              className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-white" : "text-[#2f6b4f]")}
+              className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-[#2f6b4f]")}
             />
             <span className="whitespace-nowrap">{tab.label}</span>
           </Link>

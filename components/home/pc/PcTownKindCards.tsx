@@ -1,6 +1,7 @@
 "use client";
 
-import { CalendarCheck, Truck, Store, HeartHandshake, Gamepad2 } from "lucide-react";
+import Image from "next/image";
+import { CalendarCheck, Check, Truck, Store, HeartHandshake, Gamepad2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type KindCard = {
@@ -99,27 +100,31 @@ export function PcTownKindCards({ activeChip, onChipClick }: Props) {
   );
 }
 
-/** モバイルの種別カードの下線の色（見本：イベント緑・キッチンカー黄・お店朱・ボランティア水色） */
-const MOBILE_UNDERLINE: Record<string, string> = {
-  event: "#bfe0b0",
-  kitchen: "#f3df86",
-  store: "#f6b9a4",
-  volunteer: "#b5dbf0",
-  game: "#d5c6ef",
+/**
+ * モバイルの種別カードの絵と色。
+ * イベント・お店・キッチンカー・ボランティアは掲載管理の水彩イラスト、ゲームはマスコットの絵を使う。
+ */
+const MOBILE_ART: Record<string, { src: string; en: string; tint: string; fit: "contain" | "cover" }> = {
+  event: { src: "/organizer/listings/illust-event.png", en: "EVENT", tint: "#eef6ea", fit: "contain" },
+  kitchen: { src: "/organizer/listings/illust-kitchen-car.png", en: "KITCHEN CAR", tint: "#fdf6e3", fit: "contain" },
+  store: { src: "/organizer/listings/illust-store.png", en: "SHOP", tint: "#fdf0e8", fit: "contain" },
+  volunteer: { src: "/organizer/listings/illust-volunteer.png", en: "VOLUNTEER", tint: "#eaf4f8", fit: "contain" },
+  game: { src: "/organizer/games/game-type-stamp.png", en: "GAME", tint: "#e6f4ec", fit: "cover" },
 };
 
 /**
- * モバイル：種別入口カード。5つあるので横にスクロールさせ、
- * 右に続きがあると分かるよう4枚半ほど見せる（タブレットでは5つを並べる）。
+ * モバイル：種別入口カード（水彩イラストつき）。5つあるので横にスクロールさせ、
+ * 右に続きがあると分かるよう3枚半ほど見せる（タブレットでは5つを並べる）。
  */
 export function MobileTownKindCards({ activeChip, onChipClick }: Props) {
   return (
     <section
       aria-label="種別から探す"
-      className="-mx-3 -my-2 flex snap-x scroll-px-3 gap-2 overflow-x-auto px-3 py-2 scrollbar-hide tablet:mx-0 tablet:grid tablet:grid-cols-5 tablet:gap-3 tablet:overflow-visible tablet:px-0"
+      className="-mx-3 -my-2 flex snap-x scroll-px-3 gap-2.5 overflow-x-auto px-3 py-2 scrollbar-hide tablet:mx-0 tablet:grid tablet:grid-cols-5 tablet:gap-3 tablet:overflow-visible tablet:px-0"
     >
-      {CARDS.map(({ key, label, Icon }) => {
+      {CARDS.map(({ key, label, color }) => {
         const active = activeChip === key;
+        const art = MOBILE_ART[key];
         return (
           <button
             key={key}
@@ -127,21 +132,37 @@ export function MobileTownKindCards({ activeChip, onChipClick }: Props) {
             onClick={() => onChipClick(key)}
             aria-pressed={active}
             className={cn(
-              "flex w-[80px] shrink-0 snap-start flex-col items-center gap-1.5 rounded-[18px] border px-1 pb-2.5 pt-3 text-center transition active:scale-[0.98] tablet:w-auto",
+              "relative flex w-[104px] shrink-0 snap-start flex-col overflow-hidden rounded-[20px] border text-left transition active:scale-[0.98] tablet:w-auto",
               active
-                ? "border-[#2f7d4e] bg-[#f1f8f2] shadow-[0_4px_12px_rgba(22,56,40,0.12)]"
-                : "border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.06)]",
+                ? "border-[#2f7d4e] shadow-[0_6px_16px_rgba(22,56,40,0.18)] ring-2 ring-[#2f7d4e]/25"
+                : "border-[#ebe6dc] shadow-[0_4px_12px_rgba(120,80,40,0.08)]",
             )}
+            style={{ background: art?.tint ?? "#fff" }}
           >
-            <Icon className="h-7 w-7 text-[#1f5e3a]" strokeWidth={1.8} aria-hidden />
-            <span className="block whitespace-nowrap text-[11px] font-bold leading-tight text-[#163828] tablet:text-[13px]">
-              {label}
+            <span className="relative block h-[64px] w-full" aria-hidden>
+              {art ? (
+                <Image
+                  src={art.src}
+                  alt=""
+                  fill
+                  sizes="104px"
+                  className={art.fit === "cover" ? "object-cover object-[50%_60%]" : "object-contain object-bottom px-1.5 pt-1.5"}
+                />
+              ) : null}
             </span>
-            <span
-              className="h-[5px] w-[70%] rounded-full"
-              style={{ background: MOBILE_UNDERLINE[key] ?? "#e3ece5" }}
-              aria-hidden
-            />
+            <span className="block w-full self-stretch border-t border-white bg-white px-2.5 pb-2 pt-1.5">
+              <span className="block text-[8px] font-semibold tracking-[0.18em]" style={{ color }}>
+                {art?.en}
+              </span>
+              <span className="block whitespace-nowrap text-[12.5px] font-bold leading-tight text-[#2a2218]">
+                {label}
+              </span>
+            </span>
+            {active ? (
+              <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2f7d4e] text-white" aria-hidden>
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </span>
+            ) : null}
           </button>
         );
       })}
