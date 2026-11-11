@@ -37,7 +37,7 @@ function formatEventWhen(e: DashboardEvent): string {
  * ゲーム・プランなどはそれぞれのタブ（運営・マイページ）から行く。
  */
 const QUICK_ACTIONS: { href: string; label: string; Icon: LucideIcon; color: string; bg: string }[] = [
-  { href: "/organizer/events", label: "応募を確認", Icon: ClipboardList, color: "#d4843a", bg: "#fdf1e4" },
+  { href: "/organizer/events", label: "申込を確認", Icon: ClipboardList, color: "#d4843a", bg: "#fdf1e4" },
   { href: "/organizer", label: "当日の受付", Icon: QrCode, color: "#2f7d4e", bg: "#e6f3ea" },
   { href: "/organizer/pos", label: "レジ", Icon: Wallet, color: "#2f6fae", bg: "#e6f1fa" },
   { href: "/messages", label: "メッセージ", Icon: MessageCircle, color: "#7a5cc0", bg: "#efeaf9" },

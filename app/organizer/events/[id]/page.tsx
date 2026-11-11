@@ -433,6 +433,24 @@ export default function EditEventPage() {
         </div>
       </div>
 
+      {/* スマホ：申込者と当日管理は確認ステップの下にしかなかったので、最初の画面の上にも出す */}
+      {currentStep === 1 && !showPassSettings && id ? (
+        <div className="mx-4 mt-3 grid grid-cols-2 gap-2 min-[900px]:hidden">
+          <Link
+            href={`/organizer/events/${encodeURIComponent(id)}/answers`}
+            className="flex h-11 items-center justify-center rounded-[12px] border border-[#e8e6e0] bg-white text-[13px] font-semibold text-[#1a1a1a] active:bg-[#f5f4f0]"
+          >
+            申込者を見る
+          </Link>
+          <Link
+            href={`/organizer?event=${encodeURIComponent(id)}`}
+            className="flex h-11 items-center justify-center rounded-[12px] border border-[#2D7A4F] bg-[#EAF4ED] text-[13px] font-semibold text-[#2D7A4F] active:bg-[#D0ECD7]"
+          >
+            当日管理へ
+          </Link>
+        </div>
+      ) : null}
+
       {toast && (
         <div
           className="mx-4 mt-3 min-[900px]:mx-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
