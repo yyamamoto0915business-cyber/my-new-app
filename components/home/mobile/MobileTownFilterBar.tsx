@@ -17,6 +17,8 @@ const CATEGORY_OPTIONS: { value: string; label: string }[] = [
   { value: "workshop", label: "体験・ワークショップ" },
   { value: "study", label: "学び・講座" },
   { value: "music", label: "音楽・ライブ" },
+  { value: "family", label: "親子" },
+  { value: "food", label: "グルメ・食" },
   { value: "volunteer", label: "ボランティア" },
 ];
 
