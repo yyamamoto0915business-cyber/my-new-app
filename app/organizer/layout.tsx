@@ -1,5 +1,6 @@
 import OrganizerSidebar from "@/components/organizer/OrganizerSidebar";
 import OrganizerMobileNav from "@/components/organizer/OrganizerMobileNav";
+import { OrganizerBottomNav } from "@/components/organizer/mobile/OrganizerBottomNav";
 import { OrganizerMainChrome } from "@/components/organizer/OrganizerMainChrome";
 import { OrganizerAccountMenu } from "@/components/organizer/OrganizerAccountMenu";
 import { OrganizerProSyncer } from "@/components/organizer/OrganizerProSyncer";
@@ -49,19 +50,26 @@ export default async function OrganizerLayout({
   return (
     <div className="org-workspace-shell flex min-h-0 flex-col bg-[#f9f9f7] [--mg-organizer-subheader-h:44px] min-[900px]:mt-[var(--mg-pc-top-nav-h)] min-[900px]:min-h-[calc(100dvh-var(--mg-pc-top-nav-h))]">
       <OrganizerProSyncer plan={organizerNavPlan(organizerRegistered, planTier)} />
-      {/* モバイルサブヘッダー（モードタブの下に sticky） */}
-      <header className="org-workspace-mobile-bar sticky top-[calc(var(--mg-mobile-top-header-h,46px)+env(safe-area-inset-top,0px))] z-30 min-[900px]:hidden border-b border-[#e8e6e0] bg-white">
-        <div className="flex items-stretch">
-          <div className="min-w-0 flex-1">
-            <OrganizerMobileNav variant={navVariant} />
-          </div>
-          {showAdminLink ? (
-            <div className="flex shrink-0 items-center pr-1.5">
-              <OrganizerAccountMenu />
+      {/*
+        モバイルサブヘッダー（上部ヘッダーの下に sticky）。
+        登録済みの主催者は下部ナビと運営ページで行き来するので、タブ帯は出さない。
+        登録前の人向けのタブ帯と、開発者用メニューだけ残す。
+      */}
+      {navVariant === "lite" || showAdminLink ? (
+        <header className="org-workspace-mobile-bar sticky top-[calc(var(--mg-mobile-top-header-h,46px)+env(safe-area-inset-top,0px))] z-30 min-[900px]:hidden border-b border-[#e8e6e0] bg-white">
+          <div className="flex items-stretch">
+            <div className="min-w-0 flex-1">
+              {navVariant === "lite" ? <OrganizerMobileNav variant={navVariant} /> : null}
             </div>
-          ) : null}
-        </div>
-      </header>
+            {showAdminLink ? (
+              <div className="flex shrink-0 items-center pr-1.5">
+                <OrganizerAccountMenu />
+              </div>
+            ) : null}
+          </div>
+        </header>
+      ) : null}
+      <OrganizerBottomNav />
 
       <div className="flex min-h-0 flex-1 min-[900px]:overflow-hidden">
         <OrganizerSidebar variant={navVariant} showAdminLink={showAdminLink} />

@@ -10,7 +10,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { cn } from "@/lib/utils";
 import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { ArrowLeftRight } from "lucide-react";
-import { ORGANIZER_HOME_HREF } from "@/lib/organizer/organizer-nav";
+import { ORGANIZER_MOBILE_HOME_HREF } from "@/lib/organizer/organizer-nav";
 import { isEventDetailRoute } from "@/lib/is-event-detail-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
@@ -102,7 +102,7 @@ export function MobileTopHeader({ className }: Props) {
         {/* 1行目：ロゴ／モード切替／お知らせ（利用者・主催者で同じ形） */}
         <div className="flex h-9 items-center justify-between gap-2">
           <Link
-            href={organizerArea ? ORGANIZER_HOME_HREF : "/"}
+            href={organizerArea ? ORGANIZER_MOBILE_HOME_HREF : "/"}
             className="flex min-w-0 items-center gap-1.5"
             aria-label="MachiGlyph ホームへ"
           >
@@ -124,7 +124,7 @@ export function MobileTopHeader({ className }: Props) {
 
           <div className="flex shrink-0 items-center justify-end gap-1.5">
             <Link
-              href={organizerArea ? "/" : ORGANIZER_HOME_HREF}
+              href={organizerArea ? "/" : ORGANIZER_MOBILE_HOME_HREF}
               prefetch
               onClick={() => setModeCookie(organizerArea ? "EVENT" : "ORGANIZER")}
               className="flex h-9 items-center gap-1 rounded-full border border-[#dde9e1] bg-white px-3 text-[12px] font-semibold text-[#1f5e3a] shadow-[0_2px_8px_rgba(22,56,40,0.06)] active:bg-[#f4f8f5]"

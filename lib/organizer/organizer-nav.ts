@@ -1,7 +1,41 @@
 export type OrganizerNavVariant = "full" | "lite";
 
-/** 主催モードの入口（掲載管理） */
+/** 主催モードの入口（掲載管理）。PC のサイドバーなどで使う */
 export const ORGANIZER_HOME_HREF = "/organizer/listings";
+
+/** スマホの主催者ホーム（見本「01_ホーム」） */
+export const ORGANIZER_MOBILE_HOME_HREF = "/organizer/home";
+/** 新しく掲載する（種類を選ぶ）。スマホ下部ナビの真ん中 */
+export const ORGANIZER_NEW_LISTING_HREF = "/organizer/new";
+/** 運営ツールの一覧（レジ・ゲーム・プラン・当日の運営など） */
+export const ORGANIZER_TOOLS_HREF = "/organizer/tools";
+
+export type OrganizerBottomNavId = "home" | "listings" | "new" | "tools" | "mypage";
+
+/** スマホ下部ナビで、いまのページがどの項目に入るか */
+export function organizerBottomNavActive(pathname: string): OrganizerBottomNavId | null {
+  if (pathname === ORGANIZER_MOBILE_HOME_HREF) return "home";
+  if (pathname === ORGANIZER_NEW_LISTING_HREF || /^\/organizer\/[^/]+\/new\/?$/.test(pathname)) {
+    return "new";
+  }
+  if (pathname.startsWith("/organizer/settings/plan")) return "tools";
+  if (pathname === "/organizer/settings" || pathname.startsWith("/organizer/settings/")) {
+    return "mypage";
+  }
+  if (
+    pathname === ORGANIZER_TOOLS_HREF ||
+    pathname === "/organizer" ||
+    pathname === "/organizer/day" ||
+    /^\/organizer\/events\/[^/]+\/day\/?$/.test(pathname) ||
+    pathname.startsWith("/organizer/pos") ||
+    pathname.startsWith("/organizer/games") ||
+    pathname.startsWith("/organizer/inbox")
+  ) {
+    return "tools";
+  }
+  if (organizerSidebarNavIsActive(pathname, "/organizer/listings")) return "listings";
+  return null;
+}
 
 /** 左サイドバー（セクション切替はここだけ）。shortLabel はモバイルタブ専用 */
 export const ORGANIZER_SIDEBAR_NAV_ITEMS = [
