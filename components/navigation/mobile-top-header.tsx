@@ -18,6 +18,9 @@ import { isEventFormRoute } from "@/lib/is-event-form-route";
 import { isPlayRoute } from "@/lib/is-play-route";
 import { isCheckinScanRoute } from "@/lib/is-checkin-scan-route";
 import { isPostDetailRoute } from "@/lib/is-post-detail-route";
+import { useOrganizerNavPlan } from "@/lib/organizer-pro-store";
+import { getOrganizerCatalogPlan } from "@/lib/organizer-plans";
+import { OrganizerAccountMenu } from "@/components/organizer/OrganizerAccountMenu";
 
 /**
  * 利用者側のモバイル上部の高さ（safe-area 除く）
@@ -52,6 +55,7 @@ export function MobileTopHeader({ className }: Props) {
   const pathname = usePathname();
   const headerRef = useRef<HTMLElement>(null);
   const organizerArea = pathname ? isOrganizerDashboardPath(pathname) : false;
+  const organizerPlan = useOrganizerNavPlan();
   const handleTabClick = (id: TopModeTabId) => {
     setModeCookie(id === "machi" ? "VOLUNTEER" : "EVENT");
   };
@@ -131,6 +135,17 @@ export function MobileTopHeader({ className }: Props) {
               MachiGlyph
             </span>
           </Link>
+          {/* 主催者側：今のプラン名。押すとプランの画面へ */}
+          {organizerArea && organizerPlan ? (
+            <Link
+              href="/organizer/settings/plan"
+              className={`org-plan-tab-badge org-plan-chip org-plan-tab-badge--${organizerPlan} shrink-0`}
+              aria-label={`今のプラン：${getOrganizerCatalogPlan(organizerPlan).name}（プランの画面へ）`}
+            >
+              {getOrganizerCatalogPlan(organizerPlan).name}
+            </Link>
+          ) : null}
+          <span className="min-w-0 flex-1" aria-hidden />
 
           <div className="flex shrink-0 items-center justify-end gap-1.5">
             <Link
@@ -147,6 +162,8 @@ export function MobileTopHeader({ className }: Props) {
             <Suspense fallback={null}>
               <NotificationBell className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#dde9e1] bg-white text-[#163828] shadow-[0_2px_8px_rgba(22,56,40,0.06)] active:bg-[#f7fbf8] hover:bg-white hover:text-[#163828]" />
             </Suspense>
+            {/* 開発者だけに出る管理画面ボタン（ほかの人には何も出ない） */}
+            {organizerArea ? <OrganizerAccountMenu compact /> : null}
           </div>
         </div>
 

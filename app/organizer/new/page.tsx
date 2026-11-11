@@ -3,7 +3,6 @@ import Link from "next/link";
 import {
   CalendarDays,
   ChevronRight,
-  Gamepad2,
   Heart,
   Plus,
   Store,
@@ -60,14 +59,6 @@ const KINDS: Kind[] = [
     color: "#d0567a",
     bg: "#fde9ef",
   },
-  {
-    href: "/organizer/games/new",
-    title: "ゲームを作成",
-    desc: "スタンプ・クイズ・フォトラリー",
-    Icon: Gamepad2,
-    color: "#7a5cc0",
-    bg: "#efeaf9",
-  },
 ];
 
 /** 主催者：新しく掲載する（見本「06_新規掲載」）。何を載せるかを選んで、それぞれの作成画面へ進む */
@@ -111,6 +102,15 @@ export default function OrganizerNewListingPage() {
             ))}
           </ul>
         </section>
+
+        {/* ゲームは掲載ではなくイベントで使う道具なので、作る場所は「運営 → ゲーム」 */}
+        <p className="text-center text-[12.5px] leading-relaxed text-[#6b776f]">
+          スタンプラリーやくじなどのゲームは
+          <Link href="/organizer/games" className="mx-0.5 font-bold text-[#1f7a4a] underline underline-offset-2">
+            運営 → ゲーム
+          </Link>
+          から作れます
+        </p>
       </div>
     </OrganizerRegistrationGate>
   );

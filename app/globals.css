@@ -1275,6 +1275,15 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
     right: 2px;
   }
 }
+/* スマホの上の1行に置くプラン名のマーク（押すとプランの画面へ）。色は .org-plan-tab-badge--{plan} を使う */
+.org-plan-tab-badge.org-plan-chip {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  padding: 3px 8px;
+  pointer-events: auto;
+}
 .org-plan-tab-badge--free {
   color: #3a3020;
   background: linear-gradient(135deg, #fbf6ea 0%, #e4d0a6 46%, #f6ead0 100%);

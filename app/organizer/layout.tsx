@@ -2,7 +2,6 @@ import OrganizerSidebar from "@/components/organizer/OrganizerSidebar";
 import OrganizerMobileNav from "@/components/organizer/OrganizerMobileNav";
 import { OrganizerBottomNav } from "@/components/organizer/mobile/OrganizerBottomNav";
 import { OrganizerMainChrome } from "@/components/organizer/OrganizerMainChrome";
-import { OrganizerAccountMenu } from "@/components/organizer/OrganizerAccountMenu";
 import { OrganizerProSyncer } from "@/components/organizer/OrganizerProSyncer";
 import { getOrganizerNavState } from "@/lib/organizer/get-organizer-nav-state";
 import { getDeveloperAdminContext } from "@/lib/admin-auth";
@@ -53,19 +52,14 @@ export default async function OrganizerLayout({
       {/*
         モバイルサブヘッダー（上部ヘッダーの下に sticky）。
         登録済みの主催者は下部ナビと運営ページで行き来するので、タブ帯は出さない。
-        登録前の人向けのタブ帯と、開発者用メニューだけ残す。
+        登録前の人向けのタブ帯だけ残す（開発者用の盾ボタンは上の1行に置いている）。
       */}
-      {navVariant === "lite" || showAdminLink ? (
+      {navVariant === "lite" ? (
         <header className="org-workspace-mobile-bar sticky top-[calc(var(--mg-mobile-top-header-h,46px)+env(safe-area-inset-top,0px))] z-30 min-[900px]:hidden border-b border-[#e8e6e0] bg-white">
           <div className="flex items-stretch">
             <div className="min-w-0 flex-1">
               {navVariant === "lite" ? <OrganizerMobileNav variant={navVariant} /> : null}
             </div>
-            {showAdminLink ? (
-              <div className="flex shrink-0 items-center pr-1.5">
-                <OrganizerAccountMenu />
-              </div>
-            ) : null}
           </div>
         </header>
       ) : null}

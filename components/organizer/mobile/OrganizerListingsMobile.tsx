@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   CalendarDays,
   ChevronRight,
-  Gamepad2,
   Heart,
   Pencil,
   Plus,
@@ -18,12 +17,12 @@ import {
 import type { DashboardResponse } from "@/app/api/organizer/dashboard/route";
 import type { RecruitmentDashboardResponse } from "@/app/api/organizer/recruitments-dashboard/route";
 import type { StoreRecord } from "@/lib/stores/types";
-import type { OrganizerGame } from "@/lib/organizer/games";
 import { EventThumbnail } from "@/components/event-thumbnail";
 import { OrganizerPageTitle } from "@/components/organizer/mobile/OrganizerPageTitle";
 import { cn } from "@/lib/utils";
 
-type Kind = "event" | "store" | "kitchen" | "volunteer" | "game";
+/** まちに載せるものだけ。ゲームはイベントの中で使う道具なので「運営 → ゲーム」で管理する */
+type Kind = "event" | "store" | "kitchen" | "volunteer";
 type Status = "public" | "draft" | "ended";
 type Tab = "all" | Status;
 
@@ -47,7 +46,6 @@ const KIND_META: Record<Kind, { label: string; Icon: LucideIcon }> = {
   store: { label: "お店", Icon: Store },
   kitchen: { label: "キッチンカー", Icon: Truck },
   volunteer: { label: "募集", Icon: Heart },
-  game: { label: "ゲーム", Icon: Gamepad2 },
 };
 
 const TABS: { id: Tab; label: string }[] = [
@@ -137,23 +135,6 @@ function fromRecruitments(data: RecruitmentDashboardResponse | null): Listing[] 
   });
 }
 
-function fromGames(games: OrganizerGame[] | null): Listing[] {
-  return (games ?? []).map((g) => {
-    const status: Status = g.status === "published" ? "public" : g.status === "draft" ? "draft" : "ended";
-    return {
-      id: `game-${g.id}`,
-      kind: "game",
-      title: g.name,
-      imageUrl: null,
-      status,
-      statusLabel: status === "ended" ? "終了" : "",
-      sub: joinSub("ゲーム", g.typeLabel, shortDate(g.startsAt)),
-      metric: g.spotCount > 0 ? `スポット ${g.spotCount}か所` : null,
-      href: `/organizer/games/${g.id}`,
-    };
-  });
-}
-
 function StatusBadge({ item }: { item: Listing }) {
   const label =
     item.status === "public" ? "公開中" : item.status === "draft" ? "下書き" : item.statusLabel || "終了";
@@ -213,7 +194,6 @@ const KIND_PAGES: { href: string; label: string; kind: Kind }[] = [
   { href: "/organizer/stores", label: "お店の管理", kind: "store" },
   { href: "/organizer/kitchen-cars", label: "キッチンカーの管理", kind: "kitchen" },
   { href: "/organizer/recruitments", label: "募集の管理", kind: "volunteer" },
-  { href: "/organizer/games", label: "ゲームの管理", kind: "game" },
 ];
 
 /** 主催者：掲載管理（スマホ、見本「02_掲載管理」）。種類をまたいで1つの一覧にする */
@@ -231,14 +211,12 @@ export function OrganizerListingsMobile() {
       getJson<DashboardResponse>("/api/organizer/dashboard", signal),
       getJson<{ stores?: StoreRecord[] }>("/api/organizer/stores", signal),
       getJson<RecruitmentDashboardResponse>("/api/organizer/recruitments-dashboard", signal),
-      getJson<{ games?: OrganizerGame[] }>("/api/organizer/games", signal),
-    ]).then(([events, stores, recruitments, games]) => {
+    ]).then(([events, stores, recruitments]) => {
       if (signal.aborted) return;
       const all = [
         ...fromEvents(events),
         ...fromStores(stores?.stores ?? null),
         ...fromRecruitments(recruitments),
-        ...fromGames(games?.games ?? null),
       ];
       // 公開中→下書き→終了の順（同じ状態の中は API の並びのまま）
       all.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
@@ -320,7 +298,7 @@ export function OrganizerListingsMobile() {
         </label>
         {filterOpen && (
           <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 scrollbar-hide">
-            {(["all", "event", "store", "kitchen", "volunteer", "game"] as const).map((k) => (
+            {(["all", "event", "store", "kitchen", "volunteer"] as const).map((k) => (
               <button
                 key={k}
                 type="button"

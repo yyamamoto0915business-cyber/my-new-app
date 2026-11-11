@@ -29,7 +29,7 @@ function clearOrganizerStorage() {
 }
 
 /** 主催者ヘッダー右上の開発者ボタン（developer_admin のみ表示） */
-export function OrganizerAccountMenu() {
+export function OrganizerAccountMenu({ compact = false }: { compact?: boolean } = {}) {
   const router = useRouter();
   const { user } = useSupabaseUser();
   const [isDeveloperAdmin, setIsDeveloperAdmin] = useState(false);
@@ -61,6 +61,19 @@ export function OrganizerAccountMenu() {
   // developer_admin 以外のユーザーには何も表示しない
   if (!isDeveloperAdmin) {
     return null;
+  }
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={() => router.push("/admin")}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#dde9e1] bg-white text-[#163828] shadow-[0_2px_8px_rgba(22,56,40,0.06)] active:bg-[#f7fbf8]"
+        aria-label="開発者管理画面を開く"
+      >
+        <Shield className="h-4 w-4" strokeWidth={2.2} aria-hidden />
+      </button>
+    );
   }
 
   return (
