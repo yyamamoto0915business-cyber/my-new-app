@@ -24,15 +24,23 @@ import { isPostDetailRoute } from "@/lib/is-post-detail-route";
  */
 export const MOBILE_TOP_HEADER_HEIGHT_PX = 98;
 
-/** 主催者側（1行だけ）の高さ（safe-area 除く）。上8 + 1行目36 + 下8 */
+/** 1行だけのときの高さ（主催者側・2択を出さない利用者側の画面。safe-area 除く）。上8 + 1行目36 + 下8 */
 export const MOBILE_TOP_HEADER_HEIGHT_ORGANIZER_PX = 52;
+
+/**
+ * 「まちの情報｜みんなの投稿」の2択を出す画面。
+ * 行き来する場所（ホームとみんなの投稿）だけに出し、マイアルバム・参加パス・チャット・マイページなどでは出さない。
+ */
+export function showsTopModeTabs(pathname: string | null | undefined): boolean {
+  return pathname === "/" || pathname === "/posts";
+}
 
 const MOBILE_TOP_HEADER_CSS_VAR = "--mg-mobile-top-header-h";
 
 export function getMobileTopHeaderHeightPx(pathname: string | null | undefined): number {
   if (!pathname) return MOBILE_TOP_HEADER_HEIGHT_PX;
   if (isOrganizerDashboardPath(pathname)) return MOBILE_TOP_HEADER_HEIGHT_ORGANIZER_PX;
-  return MOBILE_TOP_HEADER_HEIGHT_PX;
+  return showsTopModeTabs(pathname) ? MOBILE_TOP_HEADER_HEIGHT_PX : MOBILE_TOP_HEADER_HEIGHT_ORGANIZER_PX;
 }
 
 type Props = {
@@ -141,7 +149,7 @@ export function MobileTopHeader({ className }: Props) {
         </div>
 
         {/* 2行目：まちの情報｜みんなの投稿（利用者側だけ） */}
-        {!organizerArea && (
+        {!organizerArea && showsTopModeTabs(pathname) && (
           <TopModeTabs className="mt-1.5" onTabClick={handleTabClick} />
         )}
       </div>
