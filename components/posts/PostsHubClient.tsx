@@ -402,6 +402,7 @@ export function PostsHubClient() {
       <main className={cn("posts-board-main posts-board-main--mobile", styles.mobileMain)}>
         <div className={styles.mobileTop}>
           <div className={styles.mobileTitleRow}>
+            <span className={styles.mobileEyebrow}>COMMUNITY</span>
             <h1 className={styles.mobileTitle}>みんなの投稿</h1>
             <span className={styles.mobileLead}>みんなで見つける、まちの魅力</span>
           </div>
