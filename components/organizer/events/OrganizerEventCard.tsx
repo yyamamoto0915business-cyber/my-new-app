@@ -404,6 +404,11 @@ export function OrganizerEventCard({
                   詳細
                 </Link>
               )}
+              {event.visibilityStatus !== "draft" ? (
+                <Link href={`/organizer/events/${event.id}/answers`} className="org-event-row-card__btn-outline">
+                  申込者 {event.participantCount ?? 0}
+                </Link>
+              ) : null}
 
               <Link href={recruitmentHref} className="org-event-row-card__btn-recruit">
                 <Users className="h-3 w-3" aria-hidden />
@@ -659,6 +664,15 @@ export function OrganizerEventCard({
                   詳細
                 </Link>
               )}
+              {/* 申込者は編集画面のいちばん下にしか入口がなかったので、一覧から直接行けるようにする */}
+              {event.visibilityStatus !== "draft" ? (
+                <Link
+                  href={`/organizer/events/${event.id}/answers`}
+                  className="org-event-row-card__m-btn no-underline"
+                >
+                  申込者 {event.participantCount ?? 0}人
+                </Link>
+              ) : null}
               <Link
                 href={recruitmentHref}
                 className="org-event-row-card__m-btn no-underline"

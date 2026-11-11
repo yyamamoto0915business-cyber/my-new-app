@@ -230,12 +230,11 @@ async function buildSupabaseDashboard(
       todos.push({
         id: `ep-${ev.id}`,
         type: "approval_waiting",
-        title: `「${ev.title}」に${count}件の参加申請`,
+        title: `「${ev.title}」に${count}件の参加申し込み`,
         eventId: ev.id,
         recruitmentId: recForEvent?.id,
-        href: recForEvent
-          ? `/organizer/recruitments/${recForEvent.id}`
-          : `/organizer/recruitments`,
+        // イベントの参加者はスタッフ募集の画面には出ないので、そのイベントの申込者の画面へ
+        href: `/organizer/events/${ev.id}/answers`,
       });
     }
   }
