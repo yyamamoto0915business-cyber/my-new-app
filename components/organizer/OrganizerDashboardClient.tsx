@@ -512,13 +512,13 @@ export default function OrganizerDashboardClient() {
             </div>
           </div>
           <Link
-            href="/organizer/inbox"
+            href="/messages"
             className="block rounded-[10px] px-3 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-opacity active:opacity-85 min-[900px]:px-3.5 min-[900px]:py-3"
             style={{ background: "#fff", border: "0.5px solid #e8e6e0" }}
           >
             <div className="text-[16px] font-semibold leading-none min-[900px]:text-[22px]" style={{ color: "#E8708A" }}>{kpis.unreadMessages}</div>
             <div className="mt-0.5 text-[9px] leading-tight min-[900px]:mt-1 min-[900px]:text-[10px]" style={{ color: "#999" }}>
-              受信箱 未読
+              メッセージ 未読
             </div>
           </Link>
         </div>
