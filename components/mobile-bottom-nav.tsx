@@ -26,7 +26,7 @@ const MOBILE_ITEMS = [
 ] as const;
 
 function NavIcon({ icon, active }: { icon: string; active: boolean }) {
-  const stroke = active ? "#1f5e3a" : "#7a8a80";
+  const stroke = active ? "#2f7d4e" : "#7a8a80";
   if (icon === "home") {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
@@ -117,20 +117,17 @@ export function MobileBottomNav() {
   return (
     <nav
       data-mg-chrome="mobile-bottom"
-      className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 px-3 pb-[calc(8px+env(safe-area-inset-bottom,0px))] min-[900px]:hidden"
+      // 前と同じく、画面の下にぴったり付く帯にする
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#dde9e1] bg-[#f7fbf8]/98 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_16px_rgba(22,56,40,0.05)] backdrop-blur-sm min-[900px]:hidden"
       aria-label="モバイルナビゲーション"
       role="navigation"
       suppressHydrationWarning
     >
-      {/* 浮かせた角丸のバー。ゲーム中は上に「ゲームに戻る」を重ねる */}
-      <div className="pointer-events-auto mx-auto w-full overflow-hidden rounded-[28px] border border-[#e3ece5] bg-white/97 shadow-[0_8px_28px_rgba(22,56,40,0.14)] backdrop-blur-sm tablet:max-w-[560px]">
       <PlayResumeBar />
-      <div className="flex w-full items-stretch justify-around gap-0 px-1.5 py-1">
+      <div className="mx-auto flex w-full items-stretch justify-around gap-0 px-1 tablet:max-w-[560px]">
         {items.map((item) => {
           const href = getHref(item);
           const active = isActive(item);
-          /** 真ん中の参加パスは、選んでいなくても薄い緑の丸で目立たせる */
-          const featured = item.id === "pass";
           return (
           <Link
             key={item.id}
@@ -152,20 +149,21 @@ export function MobileBottomNav() {
             }
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative flex min-h-[52px] flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-[20px] px-0.5 py-1 text-[10px] transition-colors",
-              featured && "bg-[#eaf4ed]",
-              active ? "font-bold text-[#1f5e3a]" : "font-medium text-[#7a8a80]",
-              featured && !active && "text-[#2f6b4f]"
+              "relative mx-0.5 flex min-h-[48px] flex-1 touch-manipulation flex-col items-center justify-center gap-px px-0.5 py-1 text-[10px] transition-colors",
+              active ? "text-[#2f7d4e]" : "text-[#7a8a80]"
             )}
             suppressHydrationWarning
           >
             <span
-              className="relative inline-flex items-center justify-center px-2 py-0.5"
+              className={cn(
+                "relative inline-flex items-center justify-center rounded-full px-3 py-1",
+                active && "bg-[#eef6f2]"
+              )}
               suppressHydrationWarning
             >
-              <NavIcon icon={item.icon} active={active || featured} />
+              <NavIcon icon={item.icon} active={active} />
               {showBadge(item.icon) && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white">
+                <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -175,7 +173,6 @@ export function MobileBottomNav() {
             </span>
           </Link>
         );})}
-      </div>
       </div>
     </nav>
   );
