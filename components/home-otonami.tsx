@@ -31,10 +31,13 @@ import {
 import { PcTownKindColumns } from "@/components/home/pc/PcTownKindColumns";
 import { PcRecommendedRow } from "@/components/home/pc/PcRecommendedRow";
 import { PcPastEventsRow } from "@/components/home/pc/PcPastEventsRow";
-import { MobileTownBoardHero } from "@/components/home/mobile/MobileTownBoardHero";
+import { MobileTownSearchBar } from "@/components/home/mobile/MobileTownSearchBar";
 import { MobileTownFilterBar } from "@/components/home/mobile/MobileTownFilterBar";
 import { MobileRecommendedCarousel } from "@/components/home/mobile/MobileRecommendedCarousel";
-import { MobileWeekendEventsSection } from "@/components/home/mobile/MobileWeekendEventsSection";
+import { MobileFeaturedBanner } from "@/components/home/mobile/MobileFeaturedBanner";
+import { MobileThemeDiscovery } from "@/components/home/mobile/MobileThemeDiscovery";
+import { MobileUpcomingEvents } from "@/components/home/mobile/MobileUpcomingEvents";
+import { MobileNewStores } from "@/components/home/mobile/MobileNewStores";
 import { MobilePastEventsSection } from "@/components/home/mobile/MobilePastEventsSection";
 import { TownInfoKindFeed } from "@/components/home/TownInfoKindFeed";
 import { TownGallery } from "@/components/home/TownGallery";
@@ -74,6 +77,8 @@ export function HomeOtonami() {
   const [timeRange, setTimeRange] = useState<TownTimeRange>("all");
   const [sortMode, setSortMode] = useState<TownSortMode>("recommended");
   const [showEnded, setShowEnded] = useState(false);
+  /** スマホ：検索バー右のボタンで開く絞り込み */
+  const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     if (KIND_KEYS.has(kindParam)) {
@@ -181,6 +186,13 @@ export function HomeOtonami() {
     selectedCategory !== "" ||
     selectedArea !== "" ||
     timeRange !== "all";
+
+  /** スマホの絞り込みボタンに点を出すか（検索語と種別カードは画面に見えているので含めない） */
+  const hasMobileFilter =
+    selectedCategory !== "" ||
+    selectedArea !== "" ||
+    timeRange !== "all" ||
+    sortMode !== "recommended";
 
   const isDefaultFilters =
     activeChip === "all" &&
@@ -344,25 +356,32 @@ export function HomeOtonami() {
         <TownGallery />
       </main>
 
-      {/* モバイル */}
-      <main className="w-full space-y-2 bg-[#f7fbf8] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1 min-[900px]:hidden sm:max-w-none">
-        <MobileTownBoardHero
-          searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
-        />
+      {/* モバイル（見本「まちの情報フィード」の並び） */}
+      <main className="w-full space-y-5 bg-[#fbfcf9] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1 min-[900px]:hidden sm:max-w-none">
+        <div className="space-y-2">
+          <MobileTownSearchBar
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            filterOpen={filterOpen}
+            onToggleFilter={() => setFilterOpen((v) => !v)}
+            filterActive={hasMobileFilter}
+          />
+          {filterOpen && (
+            <MobileTownFilterBar
+              selectedCategory={selectedCategory}
+              onCategoryChange={handleSelectCategory}
+              selectedArea={selectedArea}
+              onAreaChange={handleSelectArea}
+              timeRange={timeRange}
+              onTimeRangeChange={setTimeRange}
+              sortMode={sortMode}
+              onSortChange={setSortMode}
+              onReset={handleResetFilters}
+              isDefault={isDefaultFilters}
+            />
+          )}
+        </div>
         <MobileTownKindCards activeChip={activeChip} onChipClick={handleChipClick} />
-        <MobileTownFilterBar
-          selectedCategory={selectedCategory}
-          onCategoryChange={handleSelectCategory}
-          selectedArea={selectedArea}
-          onAreaChange={handleSelectArea}
-          timeRange={timeRange}
-          onTimeRangeChange={setTimeRange}
-          sortMode={sortMode}
-          onSortChange={setSortMode}
-          onReset={handleResetFilters}
-          isDefault={isDefaultFilters}
-        />
         {isTownKindView ? (
           <TownInfoKindFeed
             kind={activeChip as "store" | "volunteer" | "kitchen" | "game"}
@@ -380,7 +399,8 @@ export function HomeOtonami() {
                 onRetry={retryTownData}
               />
             ) : null}
-            {!(townLoadError && !hasTownItems) ? (
+            {townLoadError && !hasTownItems ? null : hasActiveFilter ? (
+              // 検索・絞り込み中は、条件に合うものを一覧で出す
               <MobileRecommendedCarousel
                 events={allEvents}
                 stores={stores}
@@ -395,12 +415,33 @@ export function HomeOtonami() {
                 searchQuery={searchQuery}
                 selectedArea={selectedArea}
               />
-            ) : null}
-            {activeChip === "all" && !hasActiveFilter && (
-              <MobileWeekendEventsSection
-                events={allEvents}
-                loading={eventsSectionLoading}
-              />
+            ) : (
+              <>
+                <MobileFeaturedBanner
+                  events={allEvents}
+                  stores={stores}
+                  volunteers={volunteers}
+                  games={games}
+                  loading={bootLoading}
+                  areaPreference={effectiveArea}
+                  categoryPrefs={categoryPrefs}
+                />
+                <MobileThemeDiscovery
+                  events={allEvents}
+                  loading={eventsSectionLoading}
+                  onSelect={(selection) => {
+                    if (selection.type === "category") {
+                      handleSelectCategory(selection.key);
+                    } else {
+                      setTimeRange(selection.range);
+                    }
+                    // どの条件で絞り込んだか見えるよう、絞り込みを開いておく
+                    setFilterOpen(true);
+                  }}
+                />
+                <MobileUpcomingEvents events={allEvents} loading={eventsSectionLoading} />
+                <MobileNewStores stores={stores} loading={storesLoading} />
+              </>
             )}
             <MobilePastEventsSection
               events={allEvents}

@@ -15,7 +15,8 @@ function isAuthRequiredPath(path: string): boolean {
     if (path.startsWith("/notifications/preview")) return false;
     return true;
   }
-  if (path === "/pass" || path.startsWith("/pass/")) {
+  // /pass はページ側で判断する（ゲストには会場の受付だけ出し、パスを開くときはログインへ）
+  if (path.startsWith("/pass/")) {
     // 見た目確認用デモ・プレビューはログイン不要
     if (path.startsWith("/pass/demo")) return false;
     return true;

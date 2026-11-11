@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Bookmark,
   ChevronDown,
   LayoutGrid,
   Luggage,
@@ -289,8 +290,9 @@ export function PostsHubClient() {
   );
   const popularTags = useMemo(() => collectPopularTags(apiPosts, 8), [apiPosts]);
 
-  const renderGrid = () => (
+  const renderGrid = (variant: "default" | "mobile" = "default") => (
     <PostsGrid
+      variant={variant}
       posts={posts}
       loading={loading}
       loadError={loadError}
@@ -399,18 +401,21 @@ export function PostsHubClient() {
       {/* Mobile */}
       <main className={cn("posts-board-main posts-board-main--mobile", styles.mobileMain)}>
         <div className={styles.mobileTop}>
-          <div className={styles.mobileTitleRow}>
-            <h1 className={styles.mobileTitle}>みんなの投稿</h1>
-            <span className={styles.mobileLead}>みんなで見つける、まちの魅力</span>
+          {/* 見出しは上部のタブで分かるので画面には出さない（読み上げ用に残す） */}
+          <h1 className="sr-only">みんなの投稿</h1>
+          <div className={styles.mobileSearchRow}>
+            <PostsSearch value={query} onQueryChange={setQuery} />
+            <Link href="/saved" className={styles.mobileSavedLink} aria-label="お気に入り">
+              <Bookmark className="h-[22px] w-[22px]" aria-hidden />
+            </Link>
           </div>
-          <PostsSearch value={query} onQueryChange={setQuery} />
           <PostsFollowingStories
             onOpen={(story) => setViewer({ posts: story.posts, index: 0 })}
           />
           <PostsCategoryChips category={category} onCategoryChange={setCategory} />
         </div>
 
-        <section aria-label="投稿一覧">{renderGrid()}</section>
+        <section aria-label="投稿一覧">{renderGrid("mobile")}</section>
 
         {!loading ? (
           <PostsDiscoverFooter

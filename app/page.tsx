@@ -19,21 +19,15 @@ function HomeFallback() {
           ))}
         </div>
       </div>
-      <div className="space-y-3 px-3 pt-1 min-[900px]:hidden">
-        <div className="h-[160px] animate-pulse rounded-[16px] bg-[#e8ede4]" />
-        <div className="flex gap-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-9 flex-1 animate-pulse rounded-full bg-[#e8ede4]" />
+      {/* スマホ：検索バー／種別カード／注目バナー */}
+      <div className="space-y-5 px-3 pt-1 min-[900px]:hidden">
+        <div className="h-12 animate-pulse rounded-full bg-[#e8ede4]" />
+        <div className="flex gap-2 overflow-hidden">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-[92px] w-[80px] shrink-0 animate-pulse rounded-[18px] bg-[#e8ede4]" />
           ))}
         </div>
-        <div className="flex gap-3 overflow-hidden">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-[200px] w-[148px] shrink-0 animate-pulse rounded-[16px] bg-[#e8ede4]"
-            />
-          ))}
-        </div>
+        <div className="aspect-[16/9] w-full animate-pulse rounded-[22px] bg-[#e8ede4]" />
       </div>
     </div>
   );

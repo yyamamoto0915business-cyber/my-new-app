@@ -15,6 +15,7 @@ import { PassDetailDrawer } from "@/components/pass/PassDetailDrawer";
 import { ParticipationPassTabs } from "@/components/pass/ParticipationPassTabs";
 import { ParticipationPassEmptyState } from "@/components/pass/ParticipationPassEmptyState";
 import { ParticipationPassEmptyDetail } from "@/components/pass/ParticipationPassEmptyDetail";
+import { PassCheckinActions } from "@/components/pass/PassCheckinActions";
 
 type Props = {
   passes: ParticipationPass[];
@@ -127,6 +128,9 @@ export function ParticipationPassView({
           申し込み済み・取得済みのイベント参加パスを確認できます
         </p>
       </header>
+
+      {/* 会場での受付（もとのチェックイン画面）。スマホで使うものなので PC では出さない */}
+      <PassCheckinActions className="mb-3 shrink-0 min-[900px]:hidden" />
 
       <ParticipationPassTabs
         activeTab={activeTab}

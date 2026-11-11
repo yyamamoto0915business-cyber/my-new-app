@@ -99,34 +99,49 @@ export function PcTownKindCards({ activeChip, onChipClick }: Props) {
   );
 }
 
-/** モバイル：種別入口カード */
+/** モバイルの種別カードの下線の色（見本：イベント緑・キッチンカー黄・お店朱・ボランティア水色） */
+const MOBILE_UNDERLINE: Record<string, string> = {
+  event: "#bfe0b0",
+  kitchen: "#f3df86",
+  store: "#f6b9a4",
+  volunteer: "#b5dbf0",
+  game: "#d5c6ef",
+};
+
+/**
+ * モバイル：種別入口カード。5つあるので横にスクロールさせ、
+ * 右に続きがあると分かるよう4枚半ほど見せる（タブレットでは5つを並べる）。
+ */
 export function MobileTownKindCards({ activeChip, onChipClick }: Props) {
   return (
-    <section aria-label="種別から探す" className="grid grid-cols-5 gap-1.5 tablet:gap-2.5">
-      {CARDS.map(({ key, label, Icon, color, bg }) => {
+    <section
+      aria-label="種別から探す"
+      className="-mx-3 -my-2 flex snap-x scroll-px-3 gap-2 overflow-x-auto px-3 py-2 scrollbar-hide tablet:mx-0 tablet:grid tablet:grid-cols-5 tablet:gap-3 tablet:overflow-visible tablet:px-0"
+    >
+      {CARDS.map(({ key, label, Icon }) => {
         const active = activeChip === key;
-        const shortLabel = key === "volunteer" ? "ボランティア" : label;
         return (
           <button
             key={key}
             type="button"
             onClick={() => onChipClick(key)}
+            aria-pressed={active}
             className={cn(
-              "flex flex-col items-center gap-1 rounded-[12px] border px-1 py-2 text-center transition tablet:gap-1.5 tablet:py-3",
+              "flex w-[80px] shrink-0 snap-start flex-col items-center gap-1.5 rounded-[18px] border px-1 pb-2.5 pt-3 text-center transition active:scale-[0.98] tablet:w-auto",
               active
-                ? "border-[#dcc4a0] bg-gradient-to-b from-[#fdf8ee] to-[#faf2e4] shadow-[0_2px_6px_rgba(150,100,40,0.10)]"
-                : "border-[#ebe3d6] bg-white shadow-[0_1px_3px_rgba(120,80,40,0.05)] active:bg-[#fdfbf6]",
+                ? "border-[#2f7d4e] bg-[#f1f8f2] shadow-[0_4px_12px_rgba(22,56,40,0.12)]"
+                : "border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.06)]",
             )}
           >
+            <Icon className="h-7 w-7 text-[#1f5e3a]" strokeWidth={1.8} aria-hidden />
+            <span className="block whitespace-nowrap text-[11px] font-bold leading-tight text-[#163828] tablet:text-[13px]">
+              {label}
+            </span>
             <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full tablet:h-10 tablet:w-10 ring-1 ring-white/70 shadow-[0_1px_2px_rgba(120,80,40,0.06)]"
-              style={{ background: bg, color }}
-            >
-              <Icon className="h-4 w-4 tablet:h-5 tablet:w-5" aria-hidden />
-            </span>
-            <span className="block text-[10px] tablet:text-[12px] font-semibold leading-tight tracking-[0.02em] text-[#1A2214]">
-              {shortLabel}
-            </span>
+              className="h-[5px] w-[70%] rounded-full"
+              style={{ background: MOBILE_UNDERLINE[key] ?? "#e3ece5" }}
+              aria-hidden
+            />
           </button>
         );
       })}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ParticipationPassView } from "@/components/pass/ParticipationPassView";
+import { PassGuestView } from "@/components/pass/PassGuestView";
 import { getApiUser } from "@/lib/api-auth";
 import { getLoginUrl } from "@/lib/auth-utils";
 import { fetchMyParticipationPasses } from "@/lib/db/participation-passes";
@@ -24,7 +25,16 @@ export default async function PassPage({ searchParams }: Props) {
   const previewMode = parsePassOnlinePreviewMode(params.preview ?? null);
   const user = await getApiUser();
 
-  // プレビュー以外はログイン必須
+  // ログインしていなくても、会場の受付（QR・受付コード）は使えるようにする
+  if (!user && !previewMode && !params.game && !params.event) {
+    return (
+      <div className="bg-[var(--mg-paper,#faf9f6)]">
+        <PassGuestView loginHref={getLoginUrl("/pass")} />
+      </div>
+    );
+  }
+
+  // 申し込み直後など、特定のパスを開くときはログインが必要
   if (!user && !previewMode) {
     redirect(
       getLoginUrl(

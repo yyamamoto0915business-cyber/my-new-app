@@ -9,22 +9,24 @@ import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 import { isEventFormRoute } from "@/lib/is-event-form-route";
 import { isAuthRoute } from "@/lib/is-auth-route";
 import { isPlayRoute } from "@/lib/is-play-route";
+import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { cn } from "@/lib/utils";
 import { prefetchMypageSummary } from "@/lib/prefetch-mypage-summary";
 import { prefetchMyPosts } from "@/lib/prefetch-my-posts";
 import { MyAlbumIcon } from "@/components/profile/MyAlbumIcon";
+import { ParticipationPassIcon } from "@/components/pass/ParticipationPassIcon";
 import { PlayResumeBar } from "@/components/play/PlayResume";
 
 const MOBILE_ITEMS = [
   { id: "home" as const, href: "/", label: "ホーム", icon: "home" },
   { id: "album" as const, href: "/profile/posts", label: "マイアルバム", icon: "album" },
-  { id: "checkin" as const, href: "/checkin", label: "チェックイン", icon: "checkin" },
+  { id: "pass" as const, href: "/pass", label: "参加パス", icon: "pass" },
   { id: "messages" as const, href: "/messages", label: "チャット", icon: "messages" },
   { id: "profile" as const, href: "/profile", label: "マイページ", icon: "profile" },
 ] as const;
 
 function NavIcon({ icon, active }: { icon: string; active: boolean }) {
-  const stroke = active ? "#2f7d4e" : "#7a8a80";
+  const stroke = active ? "#1f5e3a" : "#7a8a80";
   if (icon === "home") {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
@@ -32,12 +34,8 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
       </svg>
     );
   }
-  if (icon === "checkin") {
-    return (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7V5a1 1 0 011-1h2M16 4h2a1 1 0 011 1v2M20 16v2a1 1 0 01-1 1h-2M8 20H6a1 1 0 01-1-1v-2M8 11h8" />
-      </svg>
-    );
+  if (icon === "pass") {
+    return <ParticipationPassIcon className="h-5 w-5" stroke={stroke} />;
   }
   if (icon === "messages") {
     return (
@@ -59,7 +57,7 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
   return null;
 }
 
-/** モバイル用5項目ナビ（ホーム/マイアルバム/チェックイン/チャット/マイページ）。役割切替は上部セグメントで行う。 */
+/** モバイル用5項目ナビ（ホーム/マイアルバム/参加パス/チャット/マイページ）。役割切替は上部セグメントで行う。 */
 export function MobileBottomNav() {
   /** 初回から DOM に Link を出す（SSR 含む）→ ビューポート内プリフェッチが効き、モバイルのタップが速くなりやすい */
   const pathname = usePathname() ?? "";
@@ -88,7 +86,11 @@ export function MobileBottomNav() {
         !pathname?.startsWith("/profile/posts")
       );
     }
-    /** messages / checkin は href がそのままプレフィックスになる */
+    /** QR読み取り・受付（/checkin/〜）も参加パスの一部として扱う */
+    if (item.id === "pass") {
+      return pathname.startsWith("/pass") || pathname.startsWith("/checkin");
+    }
+    /** messages は href がそのままプレフィックスになる */
     return pathname.startsWith(item.href);
   };
 
@@ -99,6 +101,8 @@ export function MobileBottomNav() {
 
   if (
     authRoute ||
+    // 主催者モードは専用の下部ナビ（OrganizerBottomNav）を出す
+    isOrganizerDashboardPath(pathname) ||
     isPlayRoute(pathname) ||
     isMessagesConversationRoute(pathname) ||
     isProfileEditRoute(pathname) ||
@@ -113,16 +117,20 @@ export function MobileBottomNav() {
   return (
     <nav
       data-mg-chrome="mobile-bottom"
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#dde9e1] bg-[#f7fbf8]/98 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_16px_rgba(22,56,40,0.05)] backdrop-blur-sm min-[900px]:hidden"
+      className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 px-3 pb-[calc(8px+env(safe-area-inset-bottom,0px))] min-[900px]:hidden"
       aria-label="モバイルナビゲーション"
       role="navigation"
       suppressHydrationWarning
     >
+      {/* 浮かせた角丸のバー。ゲーム中は上に「ゲームに戻る」を重ねる */}
+      <div className="pointer-events-auto mx-auto w-full overflow-hidden rounded-[28px] border border-[#e3ece5] bg-white/97 shadow-[0_8px_28px_rgba(22,56,40,0.14)] backdrop-blur-sm tablet:max-w-[560px]">
       <PlayResumeBar />
-      <div className="mx-auto flex w-full items-stretch justify-around gap-0 px-1 tablet:max-w-[560px]">
+      <div className="flex w-full items-stretch justify-around gap-0 px-1.5 py-1">
         {items.map((item) => {
           const href = getHref(item);
           const active = isActive(item);
+          /** 真ん中の参加パスは、選んでいなくても薄い緑の丸で目立たせる */
+          const featured = item.id === "pass";
           return (
           <Link
             key={item.id}
@@ -144,21 +152,20 @@ export function MobileBottomNav() {
             }
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative mx-0.5 flex min-h-[48px] flex-1 touch-manipulation flex-col items-center justify-center gap-px px-0.5 py-1 text-[10px] transition-colors",
-              active ? "text-[#2f7d4e]" : "text-[#7a8a80]"
+              "relative flex min-h-[52px] flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-[20px] px-0.5 py-1 text-[10px] transition-colors",
+              featured && "bg-[#eaf4ed]",
+              active ? "font-bold text-[#1f5e3a]" : "font-medium text-[#7a8a80]",
+              featured && !active && "text-[#2f6b4f]"
             )}
             suppressHydrationWarning
           >
             <span
-              className={cn(
-                "relative inline-flex items-center justify-center rounded-full px-3 py-1",
-                active && "bg-[#eef6f2]"
-              )}
+              className="relative inline-flex items-center justify-center px-2 py-0.5"
               suppressHydrationWarning
             >
-              <NavIcon icon={item.icon} active={active} />
+              <NavIcon icon={item.icon} active={active || featured} />
               {showBadge(item.icon) && (
-                <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white">
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -168,6 +175,7 @@ export function MobileBottomNav() {
             </span>
           </Link>
         );})}
+      </div>
       </div>
     </nav>
   );

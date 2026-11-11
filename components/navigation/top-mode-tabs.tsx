@@ -3,13 +3,8 @@
 import Link from "next/link";
 import type { ComponentType } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { CalendarDays, MapPinned, BriefcaseBusiness } from "lucide-react";
+import { CalendarDays, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useOrganizerNavPlan } from "@/lib/organizer-pro-store";
-import {
-  OrganizerPlanTabBadge,
-  organizerPlanTabClass,
-} from "@/components/navigation/OrganizerPlanTabMark";
 import {
   getTopModeTabIdFromContext,
   isEventModePath,
@@ -22,6 +17,7 @@ import { useModeFromCookie } from "@/hooks/use-mode-from-cookie";
 
 export type { TopModeTabId };
 
+/** 利用者側の2択。主催者モードへは上部の「⇄ 主催者モードへ」ボタンから行く */
 const TABS = [
   {
     id: "event" as const,
@@ -33,13 +29,7 @@ const TABS = [
     id: "machi" as const,
     label: "みんなの投稿",
     href: "/posts",
-    icon: MapPinned,
-  },
-  {
-    id: "organizer" as const,
-    label: "主催",
-    href: "/organizer/listings",
-    icon: BriefcaseBusiness,
+    icon: Users,
   },
 ] as const satisfies ReadonlyArray<{
   id: TopModeTabId;
@@ -48,34 +38,12 @@ const TABS = [
   icon: ComponentType<{ className?: string }>;
 }>;
 
-const TAB_BASE =
-  "flex touch-manipulation items-center justify-center gap-1.5 border font-medium leading-none transition-all duration-200 select-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2a5540]/35 focus-visible:ring-offset-1 active:scale-[0.98]";
-
-const TAB_INACTIVE = "mg-top-mode-tab-inactive active:bg-[#fafaf8]";
-
-const TAB_ACTIVE = "mg-top-mode-tab-active";
-
 type Props = {
   onTabClick?: (id: TopModeTabId) => void;
   className?: string;
-  /** 主催エリアなど、上部を詰めたいとき用 */
-  compact?: boolean;
 };
 
-function tabSizeClass(compact?: boolean) {
-  return compact
-    ? "min-h-[32px] px-3 py-1 text-[11px]"
-    : "min-h-[32px] px-3 py-1 text-[11px]";
-}
-
-function tabWidthClass(isMachi: boolean) {
-  // スマホは「まちの情報」を文字の幅にそろえる。タブレット（600px〜）では3つを同じ幅にする
-  return isMachi
-    ? "shrink-0 tablet:min-w-0 tablet:flex-1 tablet:basis-0"
-    : "min-w-0 flex-1 tablet:basis-0";
-}
-
-export function TopModeTabs({ onTabClick, className, compact }: Props) {
+export function TopModeTabs({ onTabClick, className }: Props) {
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
   const modeFromCookie = useModeFromCookie();
@@ -89,79 +57,42 @@ export function TopModeTabs({ onTabClick, className, compact }: Props) {
     if (isOrganizerDashboardPath(pathname)) return "organizer" as const;
     if (isMachiModePath(pathname)) return "machi" as const;
     if (isEventModePath(pathname)) return "event" as const;
-    // 認証画面は戻り先が主催・みんなの投稿でない限り「まちの情報」を選択
+    // 認証画面は戻り先がみんなの投稿でない限り「まちの情報」を選択
     if (pathname === "/auth" || pathname.startsWith("/auth/")) {
-      if (returnPath && isOrganizerDashboardPath(returnPath)) return "organizer";
       if (returnPath && isMachiModePath(returnPath)) return "machi";
       return "event";
     }
     return getTopModeTabIdFromContext(pathname, returnPath, modeFromCookie);
   })();
-  const organizerPlan = useOrganizerNavPlan();
 
   return (
     <div
       className={cn(
-        "flex min-w-0 items-stretch gap-1.5",
-        compact && "gap-1",
+        "flex min-w-0 items-stretch gap-1 rounded-full border border-[#e3ece5] bg-white/90 p-1 shadow-[0_4px_14px_rgba(22,56,40,0.08)]",
         className
       )}
     >
       {TABS.map((tab) => {
         const isActive = activeId === tab.id;
         const Icon = tab.icon;
-        const isMachi = tab.id === "machi";
-        const isOrganizerPlanTab = tab.id === "organizer" && organizerPlan;
-        const widthClass = tabWidthClass(isMachi);
-        const linkClass = cn(
-          TAB_BASE,
-          tabSizeClass(compact),
-          widthClass,
-          isOrganizerPlanTab && isActive && organizerPlan
-            ? organizerPlanTabClass(organizerPlan)
-            : isActive
-              ? TAB_ACTIVE
-              : TAB_INACTIVE
-        );
-
-        if (isOrganizerPlanTab && organizerPlan) {
-          return (
-            <span
-              key={tab.id}
-              className={cn(
-                "org-tab-plan-wrap relative z-10 inline-flex overflow-visible",
-                `org-tab-plan-wrap--${organizerPlan}`,
-                widthClass
-              )}
-            >
-              <Link
-                href={tab.href}
-                prefetch
-                onClick={() => onTabClick?.(tab.id)}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(linkClass, "w-full")}
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{tab.label}</span>
-              </Link>
-              <OrganizerPlanTabBadge plan={organizerPlan} />
-            </span>
-          );
-        }
-
         return (
           <Link
             key={tab.id}
             href={tab.href}
             prefetch
             onClick={() => onTabClick?.(tab.id)}
-            className={linkClass}
             aria-current={isActive ? "page" : undefined}
+            className={cn(
+              "flex min-h-[44px] min-w-0 flex-1 basis-0 touch-manipulation select-none items-center justify-center gap-2 rounded-full px-3 text-[14px] font-bold leading-none tracking-[0.02em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2a5540]/35 active:scale-[0.98]",
+              isActive
+                ? "bg-gradient-to-b from-[#2f7d4e] to-[#1f5e3a] text-white shadow-[0_3px_10px_rgba(22,56,40,0.25)]"
+                : "text-[#163828] active:bg-[#f4f8f5]"
+            )}
           >
-            <Icon className="h-3.5 w-3.5 shrink-0" />
-            <span className={isMachi ? "whitespace-nowrap" : "truncate"}>
-              {tab.label}
-            </span>
+            <Icon
+              className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-white" : "text-[#2f6b4f]")}
+            />
+            <span className="whitespace-nowrap">{tab.label}</span>
           </Link>
         );
       })}
