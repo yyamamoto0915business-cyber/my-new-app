@@ -360,7 +360,7 @@ export function HomeOtonami() {
       </main>
 
       {/* モバイル（見本「まちの情報フィード」の並び） */}
-      <main className="w-full space-y-5 bg-[#fbfcf9] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1 min-[900px]:hidden sm:max-w-none">
+      <main className="w-full space-y-4 bg-[#fbfcf9] px-3 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-1 min-[900px]:hidden sm:max-w-none">
         {/* 前の掲示板風ヒーローを低くして戻し、検索欄をその下端に重ねる */}
         <div>
           <MobileTownHero />

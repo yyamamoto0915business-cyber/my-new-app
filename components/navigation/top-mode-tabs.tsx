@@ -83,7 +83,7 @@ export function TopModeTabs({ onTabClick, className }: Props) {
             onClick={() => onTabClick?.(tab.id)}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "flex min-h-[36px] min-w-0 flex-1 basis-0 touch-manipulation select-none items-center justify-center gap-1.5 rounded-full px-3 text-[13px] font-bold leading-none tracking-[0.02em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2a5540]/35 active:scale-[0.98]",
+              "flex min-h-[32px] min-w-0 flex-1 basis-0 touch-manipulation select-none items-center justify-center gap-1.5 rounded-full px-3 text-[12.5px] font-bold leading-none tracking-[0.02em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2a5540]/35 active:scale-[0.98]",
               // 選択中は前と同じ葉っぱ模様（globals.css の mg-top-mode-tab-active）
               isActive
                 ? "mg-top-mode-tab-active border-0 text-white shadow-[0_3px_10px_rgba(22,56,40,0.25)]"
@@ -91,7 +91,7 @@ export function TopModeTabs({ onTabClick, className }: Props) {
             )}
           >
             <Icon
-              className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-[#2f6b4f]")}
+              className={cn("h-[15px] w-[15px] shrink-0", isActive ? "text-white" : "text-[#2f6b4f]")}
             />
             <span className="whitespace-nowrap">{tab.label}</span>
           </Link>
