@@ -9,6 +9,7 @@ import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 import { isEventFormRoute } from "@/lib/is-event-form-route";
 import { isAuthRoute } from "@/lib/is-auth-route";
 import { isPlayRoute } from "@/lib/is-play-route";
+import { isCheckinScanRoute } from "@/lib/is-checkin-scan-route";
 
 type Props = {
   children: ReactNode;
@@ -26,7 +27,7 @@ export function MobileMainShell({ children }: Props) {
   const chatConversation = isMessagesConversationRoute(pathname ?? "");
   /** モバイルでグローバル上・下を外し、画面専用UIに任せる */
   const profileEdit = isProfileEditRoute(pathname ?? "");
-  const playRoute = isPlayRoute(pathname);
+  const playRoute = isPlayRoute(pathname) || isCheckinScanRoute(pathname);
   const eventForm = isEventFormRoute(pathname);
   const immersiveMobile = eventDetail || chatConversation || profileEdit || playRoute || eventForm;
   const followsPage = pathname?.startsWith("/profile/follows") ?? false;
