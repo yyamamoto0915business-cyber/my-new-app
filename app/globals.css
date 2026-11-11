@@ -5737,23 +5737,24 @@ a.org-events-status-card--payout:hover {
 
   .org-events-mgmt--compact .org-events-list-shell__hint {
     margin-bottom: 4px;
-    font-size: 10px;
+    font-size: 11.5px;
     line-height: 1.35;
     color: #9aa89c;
   }
 
   .org-events-mgmt--compact .org-events-list-shell__archive-hint {
     padding: 5px 9px 0;
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.4;
   }
 
+  /* スマホのカード：読める・押せる大きさにする（前は文字 9〜12px・ボタンの高さ 20px ほどで押しにくかった） */
   .org-events-mgmt--compact .org-event-row-card__mobile {
-    padding: 8px;
+    padding: 12px;
   }
 
   .org-events-mgmt--compact .org-event-row-card__mobile-title {
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 600;
     line-height: 1.3;
     color: #1a2214;
@@ -5761,26 +5762,36 @@ a.org-events-status-card--payout:hover {
 
   .org-events-mgmt--compact .org-event-row-card__mobile-badge {
     border-radius: 4px;
-    padding: 1px 5px;
-    font-size: 9px;
+    padding: 2px 7px;
+    font-size: 11px;
     font-weight: 600;
     line-height: 1.35;
   }
 
   .org-events-mgmt--compact .org-event-row-card__mobile-meta {
-    font-size: 10px;
+    margin-top: 3px;
+    font-size: 12px;
     line-height: 1.35;
     color: #7a8a7e;
   }
 
   .org-events-mgmt--compact .org-event-row-card__m-btn {
-    padding: 3px 8px;
-    font-size: 10px;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
   }
 
   .org-events-mgmt--compact .org-event-row-card__m-menu {
-    height: 26px;
-    width: 26px;
+    height: 36px;
+    width: 36px;
+    border-radius: 10px;
+  }
+
+  .org-events-mgmt--compact .org-event-row-card__mobile-actions {
+    margin-top: 10px;
+    gap: 6px;
   }
 
   .org-events-mgmt--compact .org-events-toolbar__archive-btn {

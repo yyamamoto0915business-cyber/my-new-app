@@ -584,10 +584,10 @@ export function OrganizerEventCard({
       <div className="org-event-row-card__mobile p-2 min-[900px]:hidden">
         <div className="flex items-start gap-1.5">
           <span
-            className="org-event-row-card__mobile-icon flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[#e8ede4] bg-[#f0f4ee]"
+            className="org-event-row-card__mobile-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#e8ede4] bg-[#f0f4ee]"
             aria-hidden
           >
-            <Calendar className="h-3 w-3 text-[#7a9488]" strokeWidth={1.75} />
+            <Calendar className="h-4 w-4 text-[#7a9488]" strokeWidth={1.75} />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-1.5">
@@ -608,7 +608,7 @@ export function OrganizerEventCard({
             </div>
             <div className="org-event-row-card__mobile-meta mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0">
               <span className="inline-flex items-center gap-0.5 whitespace-nowrap">
-                <Calendar className="h-2.5 w-2.5 shrink-0" aria-hidden />
+                <Calendar className="h-3 w-3 shrink-0" aria-hidden />
                 {dateTimeStr}
               </span>
               <span className="whitespace-nowrap">{billingTag.label}</span>
