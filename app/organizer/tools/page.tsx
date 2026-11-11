@@ -63,7 +63,7 @@ const MAIN_TOOLS: Tool[] = [
 
 /** そのほかの機能（スマホの上のタブ帯をなくしたので、ここから行けるようにする） */
 const MORE_TOOLS: { href: string; title: string; desc: string; Icon: LucideIcon }[] = [
-  { href: "/organizer/inbox", title: "受信箱", desc: "ボランティアとのメッセージ", Icon: Inbox },
+  { href: "/messages", title: "メッセージ", desc: "参加者・ボランティアとのやりとり", Icon: Inbox },
   { href: "/organizer/articles", title: "記事", desc: "まちの記事を書く・管理する", Icon: BookOpen },
   { href: "/organizer/stories", title: "ストーリー", desc: "活動の様子を短く届ける", Icon: Sparkles },
 ];
