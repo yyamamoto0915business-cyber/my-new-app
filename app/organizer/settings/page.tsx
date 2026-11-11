@@ -197,7 +197,8 @@ export default function OrganizerSettingsPage() {
 
   return (
     <OrganizerPageShell variant="hero" contentClassName="space-y-1.5 pb-16 min-[900px]:space-y-2.5 min-[900px]:pb-0">
-      <OrganizerHeroBleed>
+      {/* スマホは見本「05_マイページ」の見出しを出すので、ヒーローは PC だけ */}
+      <OrganizerHeroBleed pcOnly>
         <OrganizerSettingsHeroBanner />
       </OrganizerHeroBleed>
 
