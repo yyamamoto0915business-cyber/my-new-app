@@ -5,14 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bookmark,
   ChevronDown,
-  LayoutGrid,
-  Luggage,
-  MapPin,
-  Mountain,
-  PartyPopper,
   Plus,
-  UtensilsCrossed,
-  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -143,45 +136,6 @@ function PostsCategoryTabs({
           );
         })}
       </div>
-    </div>
-  );
-}
-
-const CATEGORY_CHIP_ICONS: Record<PostCategoryTab, LucideIcon> = {
-  all: LayoutGrid,
-  spot: MapPin,
-  kitchen: UtensilsCrossed,
-  scenery: Mountain,
-  event: PartyPopper,
-  trip: Luggage,
-};
-
-function PostsCategoryChips({
-  category,
-  onCategoryChange,
-}: {
-  category: PostCategoryTab;
-  onCategoryChange: (c: PostCategoryTab) => void;
-}) {
-  return (
-    <div className={styles.chips} role="tablist" aria-label="投稿カテゴリ">
-      {POST_CATEGORY_TABS.map((tab) => {
-        const active = category === tab.key;
-        const Icon = CATEGORY_CHIP_ICONS[tab.key];
-        return (
-          <button
-            key={tab.key}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => onCategoryChange(tab.key)}
-            className={cn(styles.chip, active && styles.chipActive)}
-          >
-            <Icon className={styles.chipIcon} strokeWidth={2} aria-hidden />
-            {tab.label}
-          </button>
-        );
-      })}
     </div>
   );
 }
@@ -414,7 +368,6 @@ export function PostsHubClient() {
           <PostsFollowingStories
             onOpen={(story) => setViewer({ posts: story.posts, index: 0 })}
           />
-          <PostsCategoryChips category={category} onCategoryChange={setCategory} />
         </div>
 
         <section aria-label="投稿一覧">{renderGrid("mobile")}</section>
