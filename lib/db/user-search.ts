@@ -1,7 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
-  normalizeProfileAvatarRole,
   resolveAvatarUrlByRole,
 } from "@/lib/profile-avatar";
 
@@ -69,7 +68,7 @@ export async function searchUsersByName(
             participant_avatar_url: row.participant_avatar_url,
             organizer_avatar_url: row.organizer_avatar_url,
           },
-          normalizeProfileAvatarRole(row.active_profile_role),
+          "participant",
         ),
         region: row.region?.trim() || null,
         isPrivate: Boolean(row.is_private),

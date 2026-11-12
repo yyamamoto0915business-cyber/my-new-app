@@ -30,7 +30,6 @@ import {
 import { MY_POSTS_DEMO } from "@/lib/posts/my-posts-demo";
 import { toMyPostItem } from "@/lib/posts/to-my-post-item";
 import {
-  normalizeProfileAvatarRole,
   resolveAvatarUrlByRole,
   type ProfileAvatarFields,
 } from "@/lib/profile-avatar";
@@ -102,10 +101,7 @@ async function loadProfiles(ids: string[]): Promise<Map<string, ProfileLite>> {
         map.set(fields.id, {
           id: fields.id,
           displayName: fields.display_name?.trim() || "ユーザー",
-          avatarUrl: resolveAvatarUrlByRole(
-            fields,
-            normalizeProfileAvatarRole(fields.active_profile_role),
-          ),
+          avatarUrl: resolveAvatarUrlByRole(fields, "participant"),
         });
       }
     }

@@ -10,7 +10,6 @@ import { NotificationBell } from "@/components/notification-bell";
 import {
   resolveAvatarUrlByRole,
   resolveProfileDisplayName,
-  type ProfileAvatarRole,
 } from "@/lib/profile-avatar";
 import { isAdmin } from "@/lib/admin";
 import { useOrganizerNavPlan } from "@/lib/organizer-pro-store";
@@ -18,7 +17,7 @@ import {
   OrganizerPlanTabBadge,
   organizerPlanTabClass,
 } from "@/components/navigation/OrganizerPlanTabMark";
-import { isEventModePath, isMachiModePath } from "@/lib/top-mode-active";
+import { isEventModePath, isMachiModePath, isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { CalendarDays, MapPinned } from "lucide-react";
 import { setModeCookie } from "@/lib/mode-preference";
 import { shouldHidePcGlobalNav } from "@/lib/is-auth-route";
@@ -113,8 +112,6 @@ function PcTopNavInner() {
   const pathname = usePathname() ?? "";
   const { user } = useSupabaseUser();
   const organizerPlan = useOrganizerNavPlan();
-  const [activeProfileRole, setActiveProfileRole] =
-    useState<ProfileAvatarRole>("participant");
   const [participantAvatarUrl, setParticipantAvatarUrl] = useState<string | null>(null);
   const [organizerAvatarUrl, setOrganizerAvatarUrl] = useState<string | null>(null);
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
@@ -151,9 +148,6 @@ function PcTopNavInner() {
       setProfileDisplayName(resolved.display_name ?? null);
       setParticipantAvatarUrl(resolved.participant_avatar_url ?? resolved.avatar_url ?? null);
       setOrganizerAvatarUrl(resolved.organizer_avatar_url ?? null);
-      setActiveProfileRole(
-        resolved.active_profile_role === "organizer" ? "organizer" : "participant"
-      );
     };
 
     loadProfile();
@@ -185,9 +179,9 @@ function PcTopNavInner() {
     {
       participant_avatar_url: participantAvatarUrl,
       organizer_avatar_url: organizerAvatarUrl,
-      active_profile_role: activeProfileRole,
     },
-    activeProfileRole
+    // 主催者の画面では主催者のアイコン、それ以外では参加者のアイコン（表示モードの設定は使わない）
+    isOrganizerDashboardPath(pathname) ? "organizer" : "participant"
   );
 
   return (
