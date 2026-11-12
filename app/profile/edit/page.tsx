@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 
@@ -422,6 +422,10 @@ function ProfileEditPageInner() {
   const { user } = useSupabaseUser();
   const fromSignup = searchParams.get("from") === "signup";
   const tabParam = searchParams.get("tab");
+  // 主催者モード（/organizer/settings/profile）では主催者のプロフィールだけ、
+  // 利用者モード（/profile/edit）では参加者のプロフィールだけを出す。タブで行き来はしない
+  const pathname = usePathname();
+  const organizerRoute = pathname?.startsWith("/organizer/") ?? false;
   const asParam = searchParams.get("as");
   const registerAs =
     asParam === "individual" || asParam === "organization" ? asParam : null;
@@ -438,9 +442,7 @@ function ProfileEditPageInner() {
         ? "例：地域振興会 / ○○実行委員会"
         : "例：地域振興会 / 山田太郎";
 
-  const [tab, setTab] = useState<ProfileTab>(
-    tabParam === "organizer" ? "organizer" : "participant"
-  );
+  const tab: ProfileTab = organizerRoute ? "organizer" : "participant";
   const [loading, setLoading] = useState(true);
   const [pSaving, setPSaving] = useState(false);
   const [oSaving, setOSaving] = useState(false);
@@ -498,11 +500,14 @@ function ProfileEditPageInner() {
     return () => window.clearTimeout(t);
   }, [pSuccess, oSuccess]);
 
+  // 前のリンク（/profile/edit?tab=organizer）は主催者モードのプロフィールへ移す（from・as はそのまま渡す）
   useEffect(() => {
-    if (tabParam === "organizer" || tabParam === "participant") {
-      setTab(tabParam);
-    }
-  }, [tabParam]);
+    if (organizerRoute || tabParam !== "organizer") return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("tab");
+    const qs = params.toString();
+    router.replace(`/organizer/settings/profile${qs ? `?${qs}` : ""}`);
+  }, [organizerRoute, tabParam, searchParams, router]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -690,7 +695,7 @@ function ProfileEditPageInner() {
       router.push("/");
       return;
     }
-    router.push("/profile");
+    router.push(organizerRoute ? "/organizer/settings" : "/profile");
   };
 
   const initials = displayName.trim().slice(0, 2) || "?";
@@ -743,30 +748,6 @@ function ProfileEditPageInner() {
           ) : null}
         </div>
 
-        {/* 参加者 / 主催者 */}
-        <div className="shrink-0 border-b border-[#DEDAD2] bg-white px-3 py-2">
-          <div className="flex rounded-full bg-[#F1EFE9] p-1" role="tablist">
-            {(["participant", "organizer"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={tab === t}
-                onClick={() => setTab(t)}
-                className={[
-                  "flex-1 rounded-full py-2 text-[13px] font-[600] transition-all",
-                  tab === t
-                    ? t === "participant"
-                      ? "bg-white text-[#2B3A6B] shadow-[0_1px_3px_rgba(0,0,0,.12)]"
-                      : "bg-white text-[#86620a] shadow-[0_1px_3px_rgba(0,0,0,.12)]"
-                    : "text-[#8c8a84]",
-                ].join(" ")}
-              >
-                {t === "participant" ? "参加者として" : "主催者として"}
-              </button>
-            ))}
-          </div>
-        </div>
         {fromSignup ? (
           <p className="shrink-0 bg-[#F5F4EF] px-3 py-2 text-center text-[12px] leading-snug text-[#52504c]">
             はじめのプロフィール設定です。空いている項目はあとからでも大丈夫です
@@ -1077,26 +1058,6 @@ function ProfileEditPageInner() {
               {(tab === "participant" ? pSaving : oSaving) ? "保存中..." : "保存する"}
             </button>
           </div>
-        </div>
-
-        {/* Profile tab bar */}
-        <div className="flex shrink-0 border-b bg-white px-5" style={{ borderColor: PC.border }}>
-          <button type="button" onClick={() => setTab("participant")}
-            className={["flex items-center gap-1.5 border-b-2 px-4 py-2 text-[12px] font-medium transition-all",
-              tab === "participant" ? "border-[#2B3A6B] text-[#2B3A6B]" : "border-transparent hover:text-[#2D3748]"].join(" ")}
-            style={{ color: tab === "participant" ? PC.navy : PC.muted }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-            参加者プロフィール
-            <span className={["rounded-full px-2 py-0.5 text-[10px] font-semibold", tab === "participant" ? "bg-[#EBF8FF] text-[#2B6CB0]" : "bg-[#EDF2F7] text-[#718096]"].join(" ")}>基本</span>
-          </button>
-          <button type="button" onClick={() => setTab("organizer")}
-            className={["flex items-center gap-1.5 border-b-2 px-4 py-2 text-[12px] font-medium transition-all",
-              tab === "organizer" ? "border-[#ED8936] text-[#C05621]" : "border-transparent hover:text-[#2D3748]"].join(" ")}
-            style={{ color: tab === "organizer" ? "#C05621" : PC.muted }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 00-4 0v2M8 7V5a2 2 0 00-4 0v2" /></svg>
-            主催者プロフィール
-            <span className={["rounded-full px-2 py-0.5 text-[10px] font-bold", tab === "organizer" ? "text-[#C05621]" : "text-[#ED8936]"].join(" ")} style={{ backgroundColor: PC.proSoft }}>PRO</span>
-          </button>
         </div>
 
         {/* Participant panels */}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ProfileBannerAvatar } from "./profile-banner-avatar";
 import { AccountVisibilityChip } from "./account-visibility-chip";
+import { cn } from "@/lib/utils";
 
 const MYPAGE_BG = "/profile/mypage-bg.png";
 const MG_GREEN = "#48BB78";
@@ -140,7 +141,7 @@ export function MypageMobileProfileCard({
   const organizerHref = isOrganizerRegistered ? "/organizer" : "/organizer/register";
   const planHref = isOrganizerRegistered ? "/organizer/settings/plan" : "/organizer/register";
 
-  const statItems: StatItem[] = [
+  const allStatItems: StatItem[] = [
     {
       label: "投稿",
       shortLabel: "投稿",
@@ -186,6 +187,11 @@ export function MypageMobileProfileCard({
       ),
     },
   ];
+  // 主催者として登録済みの人は、主催者のことは右上の「主催者モードへ」から行う（マイページは利用者のことだけ）。
+  // まだの人には「主催」「プラン」が登録への入口になるので残す
+  const statItems = isOrganizerRegistered
+    ? allStatItems.filter((item) => item.href !== organizerHref && item.href !== planHref)
+    : allStatItems;
 
   return (
     <section
@@ -310,7 +316,12 @@ export function MypageMobileProfileCard({
         </div>
       ) : null}
 
-      <div className="relative z-[2] grid grid-cols-4 divide-x divide-[#eceae3] border-t border-[#eceae3] bg-[#ffffff] min-[900px]:hidden">
+      <div
+        className={cn(
+          "relative z-[2] grid divide-x divide-[#eceae3] border-t border-[#eceae3] bg-[#ffffff] min-[900px]:hidden",
+          statItems.length === 2 ? "grid-cols-2" : "grid-cols-4"
+        )}
+      >
         {statItems.map((item) => (
           <StatCell key={item.label} {...item} />
         ))}

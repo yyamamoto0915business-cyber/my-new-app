@@ -194,9 +194,10 @@ function ProfileContent() {
               }}
             />
 
-            <MypageMobileOrganize
-              isOrganizerRegistered={data.profile.isOrganizerRegistered}
-            />
+            {/* 主催者として登録済みの人は、掲載は主催者モードで行う（マイページは利用者のことだけ）。まだの人には登録への案内として出す */}
+            {!data.profile.isOrganizerRegistered ? (
+              <MypageMobileOrganize isOrganizerRegistered={false} />
+            ) : null}
 
             <MypageMobileAlbum />
 

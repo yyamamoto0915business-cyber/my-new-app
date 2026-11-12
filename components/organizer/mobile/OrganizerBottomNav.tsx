@@ -6,6 +6,7 @@ import { CalendarDays, Home, MessageCircle, Plus, User, type LucideIcon } from "
 import { cn } from "@/lib/utils";
 import { isEventFormRoute } from "@/lib/is-event-form-route";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
+import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 import { ORGANIZER_MESSAGES_HREF } from "@/lib/messages-scope";
 import { useOrganizerUnreadCount } from "@/hooks/use-scoped-unread-count";
 import {
@@ -37,10 +38,11 @@ const ITEMS: Item[] = [
  */
 export function OrganizerBottomNav() {
   const pathname = usePathname() ?? "";
-  const hidden = isEventFormRoute(pathname) || isMessagesConversationRoute(pathname);
+  const hidden =
+    isEventFormRoute(pathname) || isMessagesConversationRoute(pathname) || isProfileEditRoute(pathname);
   const unread = useOrganizerUnreadCount(!hidden);
 
-  // 作成・編集フォームと、会話を開いているときは入力に集中させる（利用者側と同じ）
+  // 作成・編集フォーム・プロフィール編集と、会話を開いているときは入力に集中させる（利用者側と同じ）
   if (hidden) return null;
 
   const activeId = organizerBottomNavActive(pathname);
