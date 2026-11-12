@@ -9,7 +9,7 @@ import { ProfileLink } from "@/components/profile-link";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { SectionHeader } from "@/components/home/SectionHeader";
 
-type ContentType = "events" | "volunteer" | "story" | "stories" | "ranking";
+type ContentType = "events" | "volunteer" | "ranking";
 type RankingType = "newest" | "popular" | "satisfaction";
 
 const RANKING_TABS: { id: RankingType; label: string }[] = [
@@ -19,11 +19,12 @@ const RANKING_TABS: { id: RankingType; label: string }[] = [
 ];
 
 const TAB_PARAM = "tab";
-const VALID_TABS: ContentType[] = ["events", "volunteer", "story", "stories", "ranking"];
+// ストーリーは保存先がサーバーのメモリだけの仮の作り（lib/stories-store）で見本しか出ないので、
+// 切り替えから外している。古いリンクの ?tab=stories はイベントを出す。
+const VALID_TABS: ContentType[] = ["events", "volunteer", "ranking"];
 
 function parseTabParam(tab: string | null): ContentType {
   if (!tab) return "events";
-  if (tab === "stories") return "stories";
   if (VALID_TABS.includes(tab as ContentType)) return tab as ContentType;
   return "events";
 }
@@ -87,7 +88,6 @@ function DiscoverPageContent() {
             [
               { id: "events" as const, label: "イベント" },
               { id: "volunteer" as const, label: "ボランティア" },
-              { id: "stories" as const, label: "ストーリー" },
               { id: "ranking" as const, label: "ランキング" },
             ] as const
           ).map(({ id, label }) => (
@@ -120,24 +120,6 @@ function DiscoverPageContent() {
               className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
             >
               まちの情報を見る
-              <span aria-hidden>→</span>
-            </Link>
-          </section>
-        ) : contentType === "story" || contentType === "stories" ? (
-          <section className="space-y-4" aria-label="ストーリー">
-            <SectionHeader
-              title="ストーリー"
-              subtitle="地域のストーリーを読む"
-              href="/stories"
-            />
-            <p className="text-sm text-[var(--foreground-muted)]">
-              イベントや地域の魅力が詰まったストーリーを楽しめます。
-            </p>
-            <Link
-              href="/stories"
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
-            >
-              ストーリーを見る
               <span aria-hidden>→</span>
             </Link>
           </section>
@@ -238,13 +220,6 @@ function DiscoverPageContent() {
               className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm font-medium shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)]"
             >
               特集
-              <span aria-hidden>→</span>
-            </Link>
-            <Link
-              href="/stories"
-              className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm font-medium shadow-sm transition-shadow hover:shadow-md dark:bg-[var(--background)]"
-            >
-              ストーリー
               <span aria-hidden>→</span>
             </Link>
           </div>
