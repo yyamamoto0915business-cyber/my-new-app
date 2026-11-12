@@ -1284,6 +1284,13 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   padding: 3px 8px;
   pointer-events: auto;
 }
+/* 「MachiGlyph」の下に重ねる小さい版 */
+.org-plan-tab-badge.org-plan-chip.org-plan-chip--stacked {
+  margin-top: 2px;
+  font-size: 8.5px;
+  line-height: 1.2;
+  padding: 1px 6px;
+}
 .org-plan-tab-badge--free {
   color: #3a3020;
   background: linear-gradient(135deg, #fbf6ea 0%, #e4d0a6 46%, #f6ead0 100%);

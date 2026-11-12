@@ -115,36 +115,46 @@ export function MobileTopHeader({ className }: Props) {
       <div className={cn("w-full px-4", organizerArea ? "pb-2 pt-2" : "pb-2 pt-2")}>
         {/* 1行目：ロゴ／モード切替／お知らせ（利用者・主催者で同じ形） */}
         <div className="flex h-9 items-center justify-between gap-2">
-          <Link
-            href={organizerArea ? ORGANIZER_MOBILE_HOME_HREF : "/"}
-            className="flex min-w-0 items-center gap-1.5"
-            aria-label="MachiGlyph ホームへ"
-          >
-            <Image
-              src="/brand/machiglyph_mark.png"
-              alt=""
-              width={32}
-              height={32}
-              unoptimized
-              className="h-8 w-8 shrink-0 object-contain bg-transparent"
-            />
-            <span
-              className="truncate text-[15px] font-semibold tracking-[-0.02em] text-[#163828]"
-              style={{ fontFamily: "var(--font-serif-display)" }}
-            >
-              MachiGlyph
-            </span>
-          </Link>
-          {/* 主催者側：今のプラン名。押すとプランの画面へ */}
-          {organizerArea && organizerPlan ? (
+          {/*
+            ロゴ。主催者側では「MachiGlyph」の下にプラン名を小さく重ねる（2段）。
+            横に並べると「利用者へ」「お知らせ」「管理」と合わせて幅が足りず、「Machi…」と切れていた。
+          */}
+          <div className="flex min-w-0 items-center gap-1.5">
             <Link
-              href="/organizer/settings/plan"
-              className={`org-plan-tab-badge org-plan-chip org-plan-tab-badge--${organizerPlan} shrink-0`}
-              aria-label={`今のプラン：${getOrganizerCatalogPlan(organizerPlan).name}（プランの画面へ）`}
+              href={organizerArea ? ORGANIZER_MOBILE_HOME_HREF : "/"}
+              className="flex min-w-0 shrink-0 items-center"
+              aria-label="MachiGlyph ホームへ"
             >
-              {getOrganizerCatalogPlan(organizerPlan).name}
+              <Image
+                src="/brand/machiglyph_mark.png"
+                alt=""
+                width={32}
+                height={32}
+                unoptimized
+                className="h-8 w-8 shrink-0 object-contain bg-transparent"
+              />
             </Link>
-          ) : null}
+            <div className="flex min-w-0 flex-col items-start">
+              <Link
+                href={organizerArea ? ORGANIZER_MOBILE_HOME_HREF : "/"}
+                tabIndex={-1}
+                aria-hidden
+                className="truncate text-[15px] font-semibold leading-[1.15] tracking-[-0.02em] text-[#163828]"
+                style={{ fontFamily: "var(--font-serif-display)" }}
+              >
+                MachiGlyph
+              </Link>
+              {organizerArea && organizerPlan ? (
+                <Link
+                  href="/organizer/settings/plan"
+                  className={`org-plan-tab-badge org-plan-chip org-plan-chip--stacked org-plan-tab-badge--${organizerPlan}`}
+                  aria-label={`今のプラン：${getOrganizerCatalogPlan(organizerPlan).name}（プランの画面へ）`}
+                >
+                  {getOrganizerCatalogPlan(organizerPlan).name}
+                </Link>
+              ) : null}
+            </div>
+          </div>
           <span className="min-w-0 flex-1" aria-hidden />
 
           <div className="flex shrink-0 items-center justify-end gap-1.5">
