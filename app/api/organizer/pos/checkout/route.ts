@@ -8,6 +8,7 @@ import {
   attachStripeSessionToSale,
   createCashSale,
   createPendingOnlineSale,
+  listPosProducts,
 } from "@/lib/db/pos";
 import { getAppUrl, getStripeSecretKey } from "@/lib/stripe";
 import {
@@ -16,6 +17,12 @@ import {
   posTapAppLink,
 } from "@/lib/pos/tap-app";
 import { requireOrganizerFeature } from "@/lib/organizer/require-organizer-feature";
+import { planPointExchange } from "@/lib/pos/point-exchange";
+import {
+  lookupPosPointsHolder,
+  redeemPosPoints,
+  restorePosPoints,
+} from "@/lib/points/pos-points";
 
 type LineBody = { productId?: string; quantity?: number };
 
@@ -43,6 +50,8 @@ export async function POST(request: NextRequest) {
     eventId?: string | null;
     lines?: LineBody[];
     cashReceivedYen?: number;
+    /** イベントポイントを使うとき：読み取った参加パスのQR（会計のときにもう一度サーバーで読み直す） */
+    pointsQr?: string | null;
   };
   try {
     body = await request.json();
@@ -67,16 +76,98 @@ export async function POST(request: NextRequest) {
   }
 
   const eventId = body.eventId || null;
+  const pointsQr = typeof body.pointsQr === "string" ? body.pointsQr.trim() : "";
+
+  if (pointsQr && paymentMethod !== "cash") {
+    return NextResponse.json(
+      { error: "ポイントを使う会計は、いまは現金だけです。お支払い方法を現金にしてください" },
+      { status: 400 }
+    );
+  }
 
   if (paymentMethod === "cash") {
+    // ポイントを使うとき：先にポイントを使って（足りなければここで止まる）、同じ会計IDで売上を記録する
+    let points:
+      | { userId: string; eventId: string; saleId: string; amount: number; byProduct: Map<string, { units: number; points: number }> }
+      | null = null;
+    if (pointsQr) {
+      if (!eventId) {
+        return NextResponse.json({ error: "ポイントを使うには、イベントを選んでください" }, { status: 400 });
+      }
+      const lookup = await lookupPosPointsHolder(supabase, organizerId, eventId, pointsQr);
+      if (!lookup.ok) return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+
+      let products;
+      try {
+        products = await listPosProducts(supabase, organizerId, { eventId, activeOnly: true });
+      } catch (e) {
+        console.error("pos checkout products:", e);
+        return NextResponse.json({ error: "会計に失敗しました" }, { status: 500 });
+      }
+      const byId = new Map(products.map((p) => [p.id, p]));
+      const plan = planPointExchange(
+        lines.map((l) => ({
+          productId: l.productId,
+          quantity: l.quantity,
+          unitPriceYen: byId.get(l.productId)?.priceYen ?? 0,
+          pointPrice: byId.get(l.productId)?.pointPrice ?? null,
+        })),
+        lookup.holder.balance
+      );
+      // お預かりが足りないときは、ポイントを使う前に止める
+      if (Math.max(0, Math.round(Number(body.cashReceivedYen ?? 0))) < plan.payYen) {
+        return NextResponse.json({ error: "お預かり金額が不足しています" }, { status: 400 });
+      }
+      if (plan.pointsUsed > 0) {
+        points = {
+          userId: lookup.holder.userId,
+          eventId,
+          saleId: crypto.randomUUID(),
+          amount: plan.pointsUsed,
+          byProduct: new Map(
+            plan.lines.filter((l) => l.units > 0).map((l) => [l.productId, { units: l.units, points: l.points }])
+          ),
+        };
+        const redeemed = await redeemPosPoints({
+          userId: points.userId,
+          eventId,
+          amount: points.amount,
+          saleId: points.saleId,
+        });
+        if (!redeemed.ok) {
+          return NextResponse.json(
+            {
+              error:
+                redeemed.error === "insufficient_points"
+                  ? "ポイントが足りません。もう一度読み取ってください"
+                  : "ポイントを使えませんでした。時間をおいてお試しください",
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     try {
       const sale = await createCashSale(supabase, organizerId, {
         eventId,
         lines,
         cashReceivedYen: Number(body.cashReceivedYen ?? 0),
+        ...(points
+          ? { saleId: points.saleId, points: { userId: points.userId, byProduct: points.byProduct } }
+          : {}),
       });
       return NextResponse.json({ sale });
     } catch (e) {
+      // 売上を記録できなかったら、先に使ったポイントを戻す（途中まで記録された会計は取り消し扱いにする）
+      if (points) {
+        await restorePosPoints({ userId: points.userId, eventId: points.eventId, saleId: points.saleId });
+        await supabase
+          .from("pos_sales")
+          .update({ status: "cancelled" })
+          .eq("id", points.saleId)
+          .eq("organizer_id", organizerId);
+      }
       const msg = e instanceof Error ? e.message : "";
       if (msg === "insufficient_cash") {
         return NextResponse.json({ error: "お預かり金額が不足しています" }, { status: 400 });

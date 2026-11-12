@@ -17,6 +17,8 @@ export type PosProduct = {
   priceYen: number;
   category: PosCategoryId;
   imageUrl: string | null;
+  /** イベントポイントで交換できるときの pt（null：交換しない） */
+  pointPrice: number | null;
   sortOrder: number;
   isActive: boolean;
   createdAt: string;
@@ -35,6 +37,8 @@ export type PosSaleItem = {
   unitPriceYen: number;
   quantity: number;
   lineTotalYen: number;
+  /** この行でイベントポイントを使った分 */
+  pointsUsed: number;
 };
 
 export type PosSale = {
@@ -52,6 +56,9 @@ export type PosSale = {
   stripePaymentIntentId: string | null;
   paidAt: string | null;
   createdAt: string;
+  /** この会計でイベントポイントを使った分（0：使っていない） */
+  pointsUsed: number;
+  pointsUserId: string | null;
   items?: PosSaleItem[];
 };
 
@@ -60,6 +67,7 @@ export type PosCartLine = {
   name: string;
   unitPriceYen: number;
   imageUrl: string | null;
+  pointPrice: number | null;
   quantity: number;
 };
 

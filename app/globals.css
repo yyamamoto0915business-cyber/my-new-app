@@ -18921,6 +18921,161 @@ a.org-pos__setup-text-btn {
   color: #1a4d32;
 }
 
+/* イベントポイント：ポイントで交換した行・ポイントを使う欄 */
+.org-pos__pt-chip {
+  align-self: flex-start;
+  border-radius: 999px;
+  background: #fdf0cf;
+  color: #8a6a1c;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.org-pos__cart-line-total.is-exchanged {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: #2f8f57;
+}
+
+.org-pos__cart-line-total.is-exchanged s {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #8a958d;
+}
+
+.org-pos__points {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border-radius: 1rem;
+  border: 1px solid #ecd9a6;
+  background: linear-gradient(135deg, #fffaf0, #fdf0cf);
+  padding: 0.8rem;
+}
+
+.org-pos__points-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #a87412;
+}
+
+.org-pos__points-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #3a2c10;
+}
+
+.org-pos__points-badge {
+  margin-left: auto;
+  border-radius: 999px;
+  background: #e3f2e7;
+  color: #1f7a4a;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.org-pos__points-holder {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.6rem 0.7rem;
+}
+
+.org-pos__points-avatar {
+  display: flex;
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #2f7d4e;
+  color: #fff;
+  font-weight: 700;
+}
+
+.org-pos__points-who {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  font-size: 0.7rem;
+  color: #6b5a33;
+}
+
+.org-pos__points-who strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: #163828;
+}
+
+.org-pos__points-after {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.65rem;
+  color: #8a7650;
+}
+
+.org-pos__points-after strong {
+  font-size: 1.05rem;
+  color: #2f8f57;
+}
+
+.org-pos__points-note {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.55;
+  color: #6b5a33;
+}
+
+.org-pos__points-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.org-pos__points-rescan,
+.org-pos__points-off {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 0.85rem;
+  background: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.org-pos__points-rescan {
+  flex: 1;
+  border: 1.5px solid #cfe3d6;
+  color: #1f5e3a;
+}
+
+.org-pos__points-off {
+  border: 1.5px solid #e3e8e3;
+  color: #6b776f;
+  padding: 0 1rem;
+}
+
+.org-pos__points-sum {
+  margin: 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #6b776f;
+}
+
 .org-pos__cart-footer {
   margin-top: auto;
   padding-top: 0.85rem;

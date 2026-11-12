@@ -17,7 +17,9 @@ import {
   Pencil,
   Plus,
   QrCode,
+  ScanLine,
   Search,
+  Sparkles,
   Trash2,
   X,
 } from "lucide-react";
@@ -34,6 +36,8 @@ import {
   type PosSale,
   type PosSalesSummary,
 } from "@/lib/pos/types";
+import { planPointExchange } from "@/lib/pos/point-exchange";
+import { PosPointsScanModal, type PosPointsHolderView } from "@/components/organizer/pos/PosPointsScanModal";
 
 type DayEvent = {
   id: string;
@@ -121,6 +125,33 @@ export function OrganizerPosPage() {
   const [refundingSaleId, setRefundingSaleId] = useState<string | null>(null);
   const cartRef = useRef<HTMLElement | null>(null);
   const [cartInView, setCartInView] = useState(false);
+  // イベントポイント：このイベントのレジで使えるか・読み取った人
+  const [pointsAvail, setPointsAvail] = useState<{ enabled: boolean; untilLabel?: string } | null>(null);
+  const [pointsHolder, setPointsHolder] = useState<PosPointsHolderView | null>(null);
+  const [pointsScanOpen, setPointsScanOpen] = useState(false);
+
+  useEffect(() => {
+    setPointsHolder(null);
+    setPointsAvail(null);
+    if (!eventId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/organizer/pos/points?eventId=${encodeURIComponent(eventId)}`, {
+          cache: "no-store",
+        });
+        const json = await res.json();
+        if (!cancelled && res.ok) {
+          setPointsAvail({ enabled: Boolean(json.enabled), untilLabel: json.untilLabel });
+        }
+      } catch {
+        /* ポイントが確認できなくても、ふつうの会計はできる */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId]);
 
   useEffect(() => {
     if (!message || error) return;
@@ -283,6 +314,19 @@ export function OrganizerPosPage() {
     [cart]
   );
   const itemCount = useMemo(() => cart.reduce((sum, line) => sum + line.quantity, 0), [cart]);
+  const pointsPlan = useMemo(
+    () => (pointsHolder ? planPointExchange(cart, pointsHolder.balance) : null),
+    [cart, pointsHolder]
+  );
+  const pointsUsed = pointsPlan?.pointsUsed ?? 0;
+  const exchangeByProduct = useMemo(
+    () => new Map((pointsPlan?.lines ?? []).filter((l) => l.units > 0).map((l) => [l.productId, l])),
+    [pointsPlan]
+  );
+  /** ポイントで交換したあとに払うお金 */
+  const payYen = pointsPlan ? pointsPlan.payYen : subtotal;
+  // ポイントを使う会計は、いまは現金だけ（スマホ払いは途中でやめられるため）
+  const pointsBlockNonCash = pointsUsed > 0 && paymentMethod !== "cash";
   const qtyByProduct = useMemo(
     () => new Map(cart.map((line) => [line.productId, line.quantity])),
     [cart]
@@ -290,10 +334,10 @@ export function OrganizerPosPage() {
 
   // 空欄は「ちょうど」として扱い、毎回入力しなくても会計できるようにする
   const cashEntered = cashReceived !== "";
-  const cashReceivedNum = cashEntered ? Number(cashReceived) : subtotal;
-  const changeYen = Math.max(0, cashReceivedNum - subtotal);
-  const cashShortYen = Math.max(0, subtotal - cashReceivedNum);
-  const quickCash = useMemo(() => quickCashAmounts(subtotal), [subtotal]);
+  const cashReceivedNum = cashEntered ? Number(cashReceived) : payYen;
+  const changeYen = Math.max(0, cashReceivedNum - payYen);
+  const cashShortYen = Math.max(0, payYen - cashReceivedNum);
+  const quickCash = useMemo(() => quickCashAmounts(payYen), [payYen]);
 
   const hasCart = cart.length > 0;
   useEffect(() => {
@@ -326,6 +370,7 @@ export function OrganizerPosPage() {
           name: product.name,
           unitPriceYen: product.priceYen,
           imageUrl: product.imageUrl,
+          pointPrice: product.pointPrice ?? null,
           quantity: 1,
         },
       ];
@@ -346,6 +391,7 @@ export function OrganizerPosPage() {
   function clearCart() {
     setCart([]);
     setCashReceived("");
+    setPointsHolder(null);
     setError(null);
   }
 
@@ -357,10 +403,13 @@ export function OrganizerPosPage() {
         : sale.paymentMethod === "tap"
           ? "カードタッチ"
           : "スマホ決済";
+    const pointsNote = sale.pointsUsed > 0 ? `\n使った${sale.pointsUsed}ptは、お客様に戻します。` : "";
     const ok = window.confirm(
-      sale.paymentMethod === "cash"
-        ? `${formatYen(sale.totalYen)}の現金会計を返金済みにします。お客様へ現金をお戻しのうえ、よろしいですか？`
-        : `${formatYen(sale.totalYen)}の${methodLabel}決済を全額返金します。よろしいですか？`
+      (sale.paymentMethod === "cash"
+        ? sale.totalYen > 0
+          ? `${formatYen(sale.totalYen)}の現金会計を返金済みにします。お客様へ現金をお戻しのうえ、よろしいですか？`
+          : "ポイントで交換した会計を取り消します。よろしいですか？"
+        : `${formatYen(sale.totalYen)}の${methodLabel}決済を全額返金します。よろしいですか？`) + pointsNote
     );
     if (!ok) return;
 
@@ -388,6 +437,10 @@ export function OrganizerPosPage() {
 
   async function handleCheckout() {
     if (cart.length === 0 || checkingOut) return;
+    if (pointsBlockNonCash) {
+      setError("ポイントを使う会計は、いまは現金だけです。お支払い方法を現金にしてください。");
+      return;
+    }
     if ((paymentMethod === "online" || paymentMethod === "tap") && !stripeReady) {
       setError("カード・タッチ決済には受取設定が必要です。売上受取設定から設定してください。");
       return;
@@ -404,6 +457,7 @@ export function OrganizerPosPage() {
           eventId: eventId || null,
           lines: cart.map((l) => ({ productId: l.productId, quantity: l.quantity })),
           cashReceivedYen: paymentMethod === "cash" ? cashReceivedNum : undefined,
+          pointsQr: pointsUsed > 0 && pointsHolder ? pointsHolder.qr : undefined,
         }),
       });
       const json = await res.json();
@@ -413,7 +467,8 @@ export function OrganizerPosPage() {
       }
 
       if (paymentMethod === "cash") {
-        setMessage(`会計完了：${formatYen(json.sale.totalYen)}`);
+        const used = Number(json.sale.pointsUsed) || 0;
+        setMessage(`会計完了：${formatYen(json.sale.totalYen)}${used > 0 ? `（${used}pt 使用）` : ""}`);
         clearCart();
         await loadSales(eventId);
       } else if (paymentMethod === "tap") {
@@ -760,6 +815,7 @@ export function OrganizerPosPage() {
                               ? "カードタッチ"
                               : "スマホ決済"} ·{" "}
                           {formatYen(sale.totalYen)}
+                          {sale.pointsUsed > 0 ? ` · ${sale.pointsUsed}pt` : ""}
                           {isRefunded ? (
                             <span className="org-pos__history-badge">返金済み</span>
                           ) : null}
@@ -955,7 +1011,19 @@ export function OrganizerPosPage() {
                     </div>
                     <div className="org-pos__cart-meta">
                       <span className="org-pos__cart-name">{line.name}</span>
-                      <span className="org-pos__muted">{formatYen(line.unitPriceYen)}</span>
+                      {exchangeByProduct.has(line.productId) ? (
+                        <span className="org-pos__pt-chip">
+                          {exchangeByProduct.get(line.productId)!.units < line.quantity
+                            ? `${exchangeByProduct.get(line.productId)!.units}点を`
+                            : ""}
+                          {exchangeByProduct.get(line.productId)!.points}ptで交換
+                        </span>
+                      ) : (
+                        <span className="org-pos__muted">
+                          {formatYen(line.unitPriceYen)}
+                          {pointsHolder && line.pointPrice ? ` ・ ${line.pointPrice}pt` : ""}
+                        </span>
+                      )}
                     </div>
                     <div className="org-pos__qty">
                       <button type="button" onClick={() => updateQty(line.productId, -1)} aria-label="減らす">
@@ -966,18 +1034,80 @@ export function OrganizerPosPage() {
                         <Plus className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    <span className="org-pos__cart-line-total">
-                      {formatYen(line.unitPriceYen * line.quantity)}
-                    </span>
+                    {exchangeByProduct.has(line.productId) ? (
+                      <span className="org-pos__cart-line-total is-exchanged">
+                        <s>{formatYen(line.unitPriceYen * line.quantity)}</s>
+                        {formatYen(exchangeByProduct.get(line.productId)!.payYen)}
+                      </span>
+                    ) : (
+                      <span className="org-pos__cart-line-total">
+                        {formatYen(line.unitPriceYen * line.quantity)}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
 
               <div className="org-pos__cart-footer">
                 <div className="org-pos__total">
-                  <span>合計</span>
-                  <strong>{formatYen(subtotal)}</strong>
+                  <span>{pointsUsed > 0 ? "お支払い" : "合計"}</span>
+                  <strong>{formatYen(payYen)}</strong>
                 </div>
+
+                {pointsAvail?.enabled && (
+                  <div className="org-pos__points">
+                    <div className="org-pos__points-head">
+                      <Sparkles className="h-4 w-4" aria-hidden />
+                      <span className="org-pos__points-title">ポイントを使う</span>
+                      {pointsHolder ? <span className="org-pos__points-badge">読み取り済み</span> : null}
+                    </div>
+                    {pointsHolder ? (
+                      <>
+                        <div className="org-pos__points-holder">
+                          <span className="org-pos__points-avatar" aria-hidden>
+                            {pointsHolder.name.slice(0, 1)}
+                          </span>
+                          <span className="org-pos__points-who">
+                            <strong>{pointsHolder.name} さん</strong>
+                            <span>持っているポイント {pointsHolder.balance}pt</span>
+                          </span>
+                          <span className="org-pos__points-after">
+                            <span>使ったあと</span>
+                            <strong>{pointsHolder.balance - pointsUsed}pt</strong>
+                          </span>
+                        </div>
+                        <p className="org-pos__points-note">
+                          {pointsUsed > 0
+                            ? "交換できる商品が「ポイントで交換」になりました。"
+                            : pointsPlan?.hasExchangeable
+                              ? "ポイントが足りないため、交換できる商品がありません。"
+                              : "カートに、ポイントで交換できる商品がありません。"}
+                          {pointsBlockNonCash ? " ポイントを使う会計は、いまは現金だけです。" : ""}
+                        </p>
+                        <div className="org-pos__points-actions">
+                          <button type="button" className="org-pos__points-rescan" onClick={() => setPointsScanOpen(true)}>
+                            <ScanLine className="h-4 w-4" aria-hidden />
+                            別の人を読み取る
+                          </button>
+                          <button type="button" className="org-pos__points-off" onClick={() => setPointsHolder(null)}>
+                            使わない
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="org-pos__points-note">
+                          参加パスのQRを読み取ると、このイベントのポイントが出ます。交換できる商品が自動で「ポイントで交換」になります。
+                          {pointsAvail.untilLabel ? `（${pointsAvail.untilLabel}）` : ""}
+                        </p>
+                        <button type="button" className="org-pos__points-rescan" onClick={() => setPointsScanOpen(true)}>
+                          <ScanLine className="h-4 w-4" aria-hidden />
+                          参加パスを読み取る
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 <fieldset className="org-pos__pay">
                   <legend>お支払い方法</legend>
@@ -1011,7 +1141,7 @@ export function OrganizerPosPage() {
                   </div>
                 </fieldset>
 
-                {paymentMethod === "cash" && (
+                {paymentMethod === "cash" && payYen > 0 && (
                   <div className="org-pos__cash-block">
                     <div className="org-pos__quick-cash" role="group" aria-label="お預かり金額">
                       <button
@@ -1042,7 +1172,7 @@ export function OrganizerPosPage() {
                           inputMode="numeric"
                           value={cashReceived}
                           onChange={(e) => setCashReceived(e.target.value.replace(/[^\d]/g, ""))}
-                          placeholder={`${subtotal}（ちょうど）`}
+                          placeholder={`${payYen}（ちょうど）`}
                         />
                       </label>
                       <div className={cn("org-pos__change", cashShortYen > 0 && "is-short")}>
@@ -1103,12 +1233,18 @@ export function OrganizerPosPage() {
                   </div>
                 )}
 
+                {pointsUsed > 0 && !pointsBlockNonCash && (
+                  <p className="org-pos__points-sum">
+                    {payYen > 0 ? `現金 ${formatYen(payYen)} ・ ` : "お支払いなし ・ "}ポイント {pointsUsed}pt
+                  </p>
+                )}
                 <button
                   type="button"
                   className="org-pos__checkout"
                   disabled={
                     checkingOut ||
-                    (paymentMethod === "cash" && cashReceivedNum < subtotal) ||
+                    pointsBlockNonCash ||
+                    (paymentMethod === "cash" && cashReceivedNum < payYen) ||
                     ((paymentMethod === "online" || paymentMethod === "tap") && !stripeReady) ||
                     (paymentMethod === "tap" && !posTapConfigured)
                   }
@@ -1116,8 +1252,14 @@ export function OrganizerPosPage() {
                 >
                   {checkingOut
                     ? "処理中…"
-                    : paymentMethod === "cash"
-                      ? `${formatYen(subtotal)}を会計する`
+                    : pointsBlockNonCash
+                      ? "ポイントを使うときは現金を選んでください"
+                      : paymentMethod === "cash"
+                      ? pointsUsed > 0
+                        ? payYen > 0
+                          ? `${formatYen(payYen)}を会計する（${pointsUsed}pt 使う）`
+                          : `${pointsUsed}ptで交換する`
+                        : `${formatYen(subtotal)}を会計する`
                       : paymentMethod === "tap"
                         ? !stripeReady
                           ? "受取設定が必要です"
@@ -1138,13 +1280,26 @@ export function OrganizerPosPage() {
       {hasCart && !cartInView && (
         <button type="button" className="org-pos__float-bar" onClick={scrollToCart}>
           <span className="org-pos__float-count">{itemCount}点</span>
-          <span className="org-pos__float-total">{formatYen(subtotal)}</span>
+          <span className="org-pos__float-total">{formatYen(payYen)}</span>
           <span className="org-pos__float-cta">
             会計へ
             <ChevronDown className="h-4 w-4" aria-hidden />
           </span>
         </button>
       )}
+
+      {eventId ? (
+        <PosPointsScanModal
+          open={pointsScanOpen}
+          onClose={() => setPointsScanOpen(false)}
+          eventId={eventId}
+          onResolved={(holder) => {
+            setPointsHolder(holder);
+            setPointsScanOpen(false);
+            setCashReceived("");
+          }}
+        />
+      ) : null}
 
       {productModal !== "closed" && productModalHostReady
         ? createPortal(

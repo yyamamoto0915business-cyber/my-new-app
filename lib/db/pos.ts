@@ -22,6 +22,8 @@ type ProductRow = {
   price_yen: number;
   category: string;
   image_url: string | null;
+  /** 00127 の適用前は無い */
+  point_price?: number | null;
   sort_order: number;
   is_active: boolean;
   created_at: string;
@@ -43,6 +45,9 @@ type SaleRow = {
   stripe_payment_intent_id: string | null;
   paid_at: string | null;
   created_at: string;
+  /** 00127 の適用前は無い */
+  points_used?: number | null;
+  points_user_id?: string | null;
 };
 
 type SaleItemRow = {
@@ -53,6 +58,7 @@ type SaleItemRow = {
   unit_price_yen: number;
   quantity: number;
   line_total_yen: number;
+  points_used?: number | null;
 };
 
 function mapProduct(row: ProductRow): PosProduct {
@@ -64,6 +70,7 @@ function mapProduct(row: ProductRow): PosProduct {
     priceYen: row.price_yen,
     category: (row.category as PosCategoryId) || "other",
     imageUrl: row.image_url,
+    pointPrice: row.point_price == null ? null : Number(row.point_price),
     sortOrder: row.sort_order,
     isActive: row.is_active,
     createdAt: row.created_at,
@@ -80,6 +87,7 @@ function mapSaleItem(row: SaleItemRow): PosSaleItem {
     unitPriceYen: row.unit_price_yen,
     quantity: row.quantity,
     lineTotalYen: row.line_total_yen,
+    pointsUsed: Number(row.points_used) || 0,
   };
 }
 
@@ -99,6 +107,8 @@ function mapSale(row: SaleRow, items?: PosSaleItem[]): PosSale {
     stripePaymentIntentId: row.stripe_payment_intent_id,
     paidAt: row.paid_at,
     createdAt: row.created_at,
+    pointsUsed: Number(row.points_used) || 0,
+    pointsUserId: row.points_user_id ?? null,
     items,
   };
 }
@@ -215,6 +225,10 @@ export async function createCashSale(
     eventId: string | null;
     lines: CheckoutLineInput[];
     cashReceivedYen: number;
+    /** 会計のID（ポイントを先に使うとき、同じIDで記録するため） */
+    saleId?: string;
+    /** イベントポイントで交換した分（商品ID → 個数とpt）。使った本人の ID も残す */
+    points?: { userId: string; byProduct: Map<string, { units: number; points: number }> };
   }
 ): Promise<PosSale> {
   const products = await listPosProducts(supabase, organizerId, {
@@ -229,27 +243,34 @@ export async function createCashSale(
     unit_price_yen: number;
     quantity: number;
     line_total_yen: number;
+    points_used?: number;
   }> = [];
 
   let totalYen = 0;
+  let pointsUsed = 0;
   for (const line of opts.lines) {
     const product = byId.get(line.productId);
     if (!product || line.quantity <= 0) {
       throw new Error("invalid_line");
     }
     const qty = Math.floor(line.quantity);
-    const lineTotal = product.priceYen * qty;
+    const exchanged = opts.points?.byProduct.get(product.id);
+    const units = Math.min(qty, Math.max(0, exchanged?.units ?? 0));
+    const lineTotal = product.priceYen * (qty - units);
     totalYen += lineTotal;
+    pointsUsed += units > 0 ? (exchanged?.points ?? 0) : 0;
     items.push({
       product_id: product.id,
       product_name: product.name,
       unit_price_yen: product.priceYen,
       quantity: qty,
       line_total_yen: lineTotal,
+      ...(opts.points ? { points_used: units > 0 ? (exchanged?.points ?? 0) : 0 } : {}),
     });
   }
 
-  if (items.length === 0 || totalYen <= 0) {
+  // ポイントだけで払う会計（¥0）は、ポイントを使ったときだけ認める
+  if (items.length === 0 || (totalYen <= 0 && pointsUsed <= 0)) {
     throw new Error("empty_cart");
   }
 
@@ -263,10 +284,14 @@ export async function createCashSale(
   const { data: sale, error: saleErr } = await supabase
     .from("pos_sales")
     .insert({
+      ...(opts.saleId ? { id: opts.saleId } : {}),
       organizer_id: organizerId,
       event_id: opts.eventId,
       payment_method: "cash",
       status: "paid",
+      ...(pointsUsed > 0 && opts.points
+        ? { points_used: pointsUsed, points_user_id: opts.points.userId }
+        : {}),
       total_yen: totalYen,
       cash_received_yen: cashReceived,
       cash_change_yen: change,

@@ -8,6 +8,14 @@ import {
   markPosSaleRefunded,
 } from "@/lib/db/pos";
 import { getStripeSecretKey } from "@/lib/stripe";
+import { restorePosPoints } from "@/lib/points/pos-points";
+import type { PosSale } from "@/lib/pos/types";
+
+/** 会計でイベントポイントを使っていたら戻す（何度呼んでも二重には戻さない）。戻せなかったら false */
+async function restoreSalePoints(sale: PosSale): Promise<boolean> {
+  if (!sale.pointsUsed || !sale.pointsUserId || !sale.eventId) return true;
+  return restorePosPoints({ userId: sale.pointsUserId, eventId: sale.eventId, saleId: sale.id });
+}
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -43,6 +51,8 @@ export async function POST(_request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "会計が見つかりません" }, { status: 404 });
   }
   if (sale.status === "refunded") {
+    // 前回ポイントを戻せていなかったときのために、もう一度戻す（二重には戻らない）
+    await restoreSalePoints(sale);
     return NextResponse.json({ sale, message: "すでに返金済みです" });
   }
   if (sale.status !== "paid") {
@@ -108,12 +118,22 @@ export async function POST(_request: NextRequest, { params }: Params) {
     if (!updated) {
       return NextResponse.json({ error: "返金の記録に失敗しました" }, { status: 500 });
     }
+    const pointsRestored = await restoreSalePoints(sale);
+    const pointsNote =
+      sale.pointsUsed > 0
+        ? pointsRestored
+          ? `使った${sale.pointsUsed}ptも戻しました。`
+          : `${sale.pointsUsed}ptを戻せませんでした。もう一度「返金」を押してください。`
+        : "";
+    const baseMessage =
+      sale.paymentMethod === "cash"
+        ? sale.totalYen > 0
+          ? "現金の返金として記録しました。お客様へ現金をお戻しください。"
+          : "会計を取り消しました。"
+        : "返金が完了しました。";
     return NextResponse.json({
       sale: updated,
-      message:
-        sale.paymentMethod === "cash"
-          ? "現金の返金として記録しました。お客様へ現金をお戻しください。"
-          : "返金が完了しました。",
+      message: `${baseMessage}${pointsNote}`,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
