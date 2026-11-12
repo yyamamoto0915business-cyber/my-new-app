@@ -700,7 +700,11 @@ export function OrganizerGamesHub() {
       </div>
       <section
         ref={listRef}
-        className={cn("org-hub__section", showGameList && "is-list-open")}
+        className={cn(
+          "org-hub__section",
+          // スマホでは一覧は is-list-open のときだけ出る。テンプレートを閉じているとき（作ったゲームがあるとき）は最初から出す
+          (showGameList || (!picking && !loading && games.length > 0)) && "is-list-open"
+        )}
         id="created-games"
         aria-labelledby="game-list-heading"
       >
