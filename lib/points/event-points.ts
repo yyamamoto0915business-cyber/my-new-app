@@ -42,7 +42,8 @@ export type MyEventPoints = {
 const GAME_SOURCES = new Set(["stamp-rally", "photo", "checkin", "mission"]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function statusOf(e: { date: string; end_date: string | null; end_time: string | null }): EventPointsStatus {
+/** イベントが開催前・開催中・終わったか（日本時間） */
+export function eventPointsStatusOf(e: { date: string; end_date: string | null; end_time: string | null }): EventPointsStatus {
   const today = getJstTodayYmd();
   const last = e.end_date || e.date;
   if (today < e.date) return "upcoming";
@@ -118,7 +119,7 @@ export async function fetchMyEventPoints(supabase: SupabaseClient, userId: strin
       endDate: (e.end_date as string | null) ?? null,
       startTime: ((e.start_time as string | null) ?? "").slice(0, 5) || null,
       endTime: ((e.end_time as string | null) ?? "").slice(0, 5) || null,
-      status: statusOf({
+      status: eventPointsStatusOf({
         date: e.date as string,
         end_date: (e.end_date as string | null) ?? null,
         end_time: (e.end_time as string | null) ?? null,
