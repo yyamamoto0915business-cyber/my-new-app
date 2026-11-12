@@ -113,7 +113,7 @@ export function OrganizerHomeClient() {
   const todos = data?.todos ?? [];
 
   return (
-    <div className="mx-auto w-full max-w-xl space-y-5 pb-6">
+    <div className="mx-auto w-full max-w-xl space-y-5 pb-6 tablet:max-w-[860px]">
       {/* 誰の主催者ホームか（写真の帯はやめて1行にする） */}
       <div className="flex items-baseline justify-between gap-2 pt-1">
         <h1 className="min-w-0 truncate text-[20px] font-bold text-[#163828]">
@@ -135,6 +135,9 @@ export function OrganizerHomeClient() {
         </div>
       ) : null}
 
+      {/* タブレットでは2列：左に「今やること」、右に管理中のイベント */}
+      <div className="space-y-5 tablet:grid tablet:grid-cols-2 tablet:items-start tablet:gap-6 tablet:space-y-0">
+      <div className="min-w-0 space-y-5">
       {/* 対応が必要なこと（いちばん上に置く） */}
       {loading ? (
         <div className="h-[72px] animate-pulse rounded-[18px] bg-[#e8ede4]" />
@@ -209,6 +212,8 @@ export function OrganizerHomeClient() {
         ))}
       </nav>
 
+      </div>
+      <div className="min-w-0">
       {/* 管理中のイベント */}
       {data ? (
         <section aria-labelledby="org-events">
@@ -255,7 +260,8 @@ export function OrganizerHomeClient() {
           )}
         </section>
       ) : null}
-
+      </div>
+      </div>
     </div>
   );
 }

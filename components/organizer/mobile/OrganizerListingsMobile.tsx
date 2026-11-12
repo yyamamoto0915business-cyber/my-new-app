@@ -157,7 +157,7 @@ function ListingCard({ item }: { item: Listing }) {
   return (
     <Link
       href={item.href}
-      className="flex items-stretch gap-3 rounded-[20px] border border-[#ebeee8] bg-white p-2.5 pr-3.5 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:bg-[#fafcf9]"
+      className="flex h-full items-stretch gap-3 rounded-[20px] border border-[#ebeee8] bg-white p-2.5 pr-3.5 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:bg-[#fafcf9]"
     >
       <span className="relative h-[92px] w-[92px] shrink-0 overflow-hidden rounded-[14px] bg-[#eef3ef]">
         {item.imageUrl ? (
@@ -236,7 +236,7 @@ export function OrganizerListingsMobile() {
   }, [items, tab, query, kindFilter]);
 
   return (
-    <div className="mx-auto w-full max-w-xl space-y-4 pb-6">
+    <div className="mx-auto w-full max-w-xl space-y-4 pb-6 tablet:max-w-[860px]">
       <OrganizerPageTitle
         title="掲載管理"
         subtitle="イベント・店舗・募集をまとめて管理"
@@ -333,7 +333,7 @@ export function OrganizerListingsMobile() {
             {items.length === 0 ? "まだ掲載がありません。「新しく掲載する」から始めましょう。" : "条件に合う掲載はありません"}
           </p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-3 tablet:grid tablet:grid-cols-2 tablet:gap-3 tablet:space-y-0">
             {visible.map((item) => (
               <li key={item.id}>
                 <ListingCard item={item} />
