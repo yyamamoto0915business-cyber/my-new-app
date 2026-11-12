@@ -4,6 +4,8 @@ import { getEventPointSettings } from "@/lib/db/event-point-settings";
 import { eventPointsStatusOf, usableUntilLabel } from "@/lib/points/event-points";
 import { resolvePassQr } from "@/lib/checkin/resolve-pass-qr";
 import { buildReceptionNumber } from "@/lib/checkin/parse-pass-qr";
+import { looksLikePointsQr } from "@/lib/points/points-qr-format";
+import { verifyPointsQr } from "@/lib/points/points-qr";
 
 /**
  * レジでイベントポイントを使う（商品と交換する）ための、サーバー側の処理。
@@ -93,23 +95,40 @@ export async function lookupPosPointsHolder(
     return { ok: false, status: 400, error: POS_POINTS_UNAVAILABLE_MESSAGE[availability.reason] };
   }
 
-  const resolved = await resolvePassQr(supabase, qr, eventId);
-  if (!resolved) {
-    return { ok: false, status: 404, error: "このイベントの参加パスが見つかりません" };
-  }
-  if (resolved.kind === "visitor" && resolved.status === "declined") {
-    return { ok: false, status: 403, error: "この参加は辞退済みです" };
-  }
-  if (!resolved.userId) {
-    return { ok: false, status: 400, error: "この参加パスはアカウントがないため、ポイントを持てません" };
+  // 「レジで見せるQR」（ポイントの画面）か、参加パスのQR・受付番号
+  let userId: string;
+  let receptionNumber: string;
+  if (looksLikePointsQr(qr)) {
+    const verified = verifyPointsQr(qr);
+    if (!verified) return { ok: false, status: 400, error: "このQRは読み取れません" };
+    if (verified.eventId !== eventId.toLowerCase()) {
+      return { ok: false, status: 404, error: "別のイベントのポイントのQRです" };
+    }
+    userId = verified.userId;
+    receptionNumber = "";
+  } else {
+    const resolved = await resolvePassQr(supabase, qr, eventId);
+    if (!resolved) {
+      return { ok: false, status: 404, error: "このイベントの参加パスが見つかりません" };
+    }
+    if (resolved.kind === "visitor" && resolved.status === "declined") {
+      return { ok: false, status: 403, error: "この参加は辞退済みです" };
+    }
+    if (!resolved.userId) {
+      return { ok: false, status: 400, error: "この参加パスはアカウントがないため、ポイントを持てません" };
+    }
+    userId = resolved.userId;
+    receptionNumber = buildReceptionNumber(
+      resolved.kind === "visitor" ? resolved.participantId : resolved.applicationId
+    );
   }
 
   const admin = createAdminClient();
   if (!admin) return { ok: false, status: 503, error: "ポイントを確認できません。時間をおいてお試しください" };
 
   const [{ data: balance, error }, { data: profile }] = await Promise.all([
-    admin.rpc("event_points_balance", { p_user_id: resolved.userId, p_event_id: eventId }),
-    admin.from("profiles").select("display_name").eq("id", resolved.userId).maybeSingle(),
+    admin.rpc("event_points_balance", { p_user_id: userId, p_event_id: eventId }),
+    admin.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
   ]);
   if (error) {
     console.error("pos points balance:", error);
@@ -119,11 +138,9 @@ export async function lookupPosPointsHolder(
   return {
     ok: true,
     holder: {
-      userId: resolved.userId,
+      userId,
       name: (profile?.display_name as string | null)?.trim() || "参加者",
-      receptionNumber: buildReceptionNumber(
-        resolved.kind === "visitor" ? resolved.participantId : resolved.applicationId
-      ),
+      receptionNumber,
       balance: Math.max(0, Number(balance) || 0),
     },
   };

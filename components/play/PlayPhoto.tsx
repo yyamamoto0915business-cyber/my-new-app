@@ -1,5 +1,6 @@
 "use client";
 
+import { PlayClearPointsLink } from "@/components/play/PlayClearPointsLink";
 import { RewardLine } from "@/components/play/RewardLine";
 import { shrinkPhoto } from "@/components/play/shrinkPhoto";
 import { useState } from "react";
@@ -144,9 +145,7 @@ export function PlayPhoto({ token, photo, progress, onProgress, previewOpen }: P
           progress.rewardPointsAwarded ? (
             <>
               <p className="play-clear__points">{copy.pointsGot(progress.rewardPoints)}</p>
-              <Link className="play-join__login" href="/points">
-                {copy.seePoints}
-              </Link>
+              <PlayClearPointsLink />
             </>
           ) : (
             <p className="play-clear__points">{copy.pointsReady(progress.rewardPoints)}</p>

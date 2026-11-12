@@ -1,5 +1,6 @@
 "use client";
 
+import { PlayClearPointsLink } from "@/components/play/PlayClearPointsLink";
 import { RewardLine } from "@/components/play/RewardLine";
 import { shrinkPhoto } from "@/components/play/shrinkPhoto";
 import { useEffect, useState } from "react";
@@ -207,9 +208,7 @@ export function PlayMission({ token, mission, progress, onProgress, previewOpen 
           progress.rewardPointsAwarded ? (
             <>
               <p className="play-clear__points">{copy.pointsGot(progress.rewardPoints)}</p>
-              <Link className="play-join__login" href="/points">
-                {copy.seePoints}
-              </Link>
+              <PlayClearPointsLink />
             </>
           ) : (
             <p className="play-clear__points">{copy.pointsReady(progress.rewardPoints)}</p>

@@ -352,6 +352,8 @@ export function playCopy(locale: Locale) {
     seeBadges: en ? "See your badges" : "もらったバッジを見る",
     badgeStays: en ? "It stays on the signed-in account" : "ログイン中のアカウントに残ります",
     seePoints: en ? "See my points" : "マイポイントを見る",
+    pointsAtRegister: en ? "During the event, you can trade points for items at the register" : "開催中は、会場のレジでポイントを商品と交換できます",
+    showRegisterQr: en ? "Show the QR for the register" : "レジで見せるQRを出す",
     cleared: en ? "Clear" : "クリア",
     noQuestions: en ? "No questions yet." : "問題がまだありません。",
     noPuzzles: en ? "No puzzles yet." : "謎がまだありません。",

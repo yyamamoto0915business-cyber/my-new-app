@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readPlayUserId } from "@/lib/organizer/play-user";
 import { fetchMyEventPoints, usableUntilLabel } from "@/lib/points/event-points";
+import { listExchangeEventIds } from "@/lib/db/event-point-settings";
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -38,6 +39,9 @@ export async function GET(_req: Request, { params }: Params) {
       { headers: { "Cache-Control": "private, no-store" } }
     );
   }
+  // 開催中で「商品と交換」なら、会場のレジで使える
+  const exchange =
+    item.status === "live" && (await listExchangeEventIds(admin, [eventId])).has(eventId);
   return NextResponse.json(
     {
       linked: true,
@@ -45,6 +49,7 @@ export async function GET(_req: Request, { params }: Params) {
       balance: item.status === "ended" ? 0 : item.balance,
       status: item.status,
       until: item.status === "ended" ? null : usableUntilLabel(item),
+      exchange,
     },
     { headers: { "Cache-Control": "private, no-store" } }
   );

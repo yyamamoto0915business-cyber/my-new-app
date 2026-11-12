@@ -5,6 +5,10 @@ import { getLoginUrl } from "@/lib/auth-utils";
 import { createClient } from "@/lib/supabase/server";
 import styles from "./points.module.css";
 import { fetchMyEventPoints, usableUntilLabel, type EventPointsItem } from "@/lib/points/event-points";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { listExchangeEventIds } from "@/lib/db/event-point-settings";
+import { buildPointsQr } from "@/lib/points/points-qr";
+import { PointsRegisterQr } from "@/components/points/PointsRegisterQr";
 
 export const metadata: Metadata = {
   title: "イベントポイント | MachiGlyph",
@@ -39,6 +43,10 @@ type BadgeRow = {
 };
 
 function transactionLabel(row: TransactionRow): string {
+  if (row.reference_id?.startsWith("event:")) {
+    if (row.reference_id.endsWith(":restore")) return "取り消しで戻ったポイント";
+    if (row.reference_id.includes(":pos:")) return "レジで交換";
+  }
   if (row.reference_id?.startsWith("stamp-rally:")) return "スタンプラリー";
   if (row.reference_id?.startsWith("photo:")) return "フォトラリー";
   if (row.reference_id?.startsWith("checkin:")) return "チェックイン";
@@ -82,6 +90,15 @@ export default async function PointsPage() {
     : [{ usable: [], ended: [], unlinked: 0, totalEarned: 0 }, { data: null }, { data: null }];
 
   const history = (transactions ?? []) as TransactionRow[];
+
+  // 開催中で「商品と交換」のイベントは、レジで見せるQRを出す
+  const live = eventPoints.usable.filter((i) => i.status === "live");
+  const admin = live.length ? createAdminClient() : null;
+  const exchangeIds = admin ? await listExchangeEventIds(admin, live.map((i) => i.eventId)) : new Set<string>();
+  const registerQrs = live
+    .filter((i) => exchangeIds.has(i.eventId))
+    .map((i) => ({ item: i, qr: buildPointsQr(user.id, i.eventId) }))
+    .filter((x): x is { item: EventPointsItem; qr: string } => Boolean(x.qr));
   const owned = (badges ?? []) as BadgeRow[];
 
   return (
@@ -92,6 +109,23 @@ export default async function PointsPage() {
         <p className={styles.empty}>
           ポイントは、イベントのゲーム（スタンプラリーなど）をクリアするともらえます。もらったイベントの開催中に、そのイベントで使えます。
         </p>
+
+        {registerQrs.length > 0 ? (
+          <section className={styles.section} id="qr">
+            <h2>レジで見せるQR</h2>
+            <div className={styles.qrList}>
+              {registerQrs.map(({ item, qr }) => (
+                <PointsRegisterQr
+                  key={item.eventId}
+                  value={qr}
+                  title={item.title}
+                  balance={item.balance}
+                  until={`${usableUntilLabel(item)}使えます`}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <section className={styles.section}>
           <h2>使えるポイント</h2>

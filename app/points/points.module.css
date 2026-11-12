@@ -133,3 +133,8 @@
 .medal small {
   color: #6a7568;
 }
+
+.qrList {
+  display: grid;
+  gap: 0.75rem;
+}

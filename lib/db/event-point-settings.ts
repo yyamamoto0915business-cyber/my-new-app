@@ -107,3 +107,17 @@ export async function savePointPrices(
     if (error) throw error;
   }
 }
+
+/** 「商品と交換」の設定になっているイベントのID（表がまだないときは空） */
+export async function listExchangeEventIds(supabase: SupabaseClient, eventIds: string[]): Promise<Set<string>> {
+  if (eventIds.length === 0) return new Set();
+  const { data, error } = await supabase
+    .from("event_point_settings")
+    .select("event_id, mode")
+    .in("event_id", eventIds);
+  if (error) {
+    if (!isMissingSchemaError(error)) console.error("listExchangeEventIds:", error);
+    return new Set();
+  }
+  return new Set((data ?? []).filter((r) => r.mode === "exchange").map((r) => r.event_id as string));
+}
