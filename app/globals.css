@@ -38465,3 +38465,27 @@ button.mg-album-place {
     font-size: max(16px, 1em) !important;
   }
 }
+
+/* レジ（スマホ・タブレット）：お金に関わる「−／＋」を押し間違えない大きさにし、小さすぎる文字を上げる */
+@media (max-width: 899px) {
+  .org-pos__qty button,
+  html[data-org-pos-focus="1"] .org-pos__qty button {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  .org-pos__product-name {
+    font-size: 0.875rem;
+  }
+  .org-pos__product-price {
+    font-size: 0.95rem;
+  }
+  .org-pos__summary-title {
+    font-size: 0.875rem;
+  }
+  .org-pos__metric-label {
+    font-size: 0.75rem;
+  }
+  .org-pos__metric-value {
+    font-size: 0.95rem;
+  }
+}
