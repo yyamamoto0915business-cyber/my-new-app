@@ -105,10 +105,10 @@ function EditPcStepBar({
   backLabelOverride?: string;
 }) {
   const backLabels: Record<EventFormStep, string> = {
-    1: "イベント一覧へ",
-    2: "基本情報に戻る",
-    3: "開催情報に戻る",
-    4: "詳細情報に戻る",
+    1: "確認に戻る",
+    2: "確認に戻る",
+    3: "確認に戻る",
+    4: "イベント一覧へ",
   };
   const backLabel = backLabelOverride ?? backLabels[current];
 
@@ -185,7 +185,8 @@ export default function EditEventPage() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [currentStep, setCurrentStep] = useState<EventFormStep>(1);
+  // 今あるイベントの編集は、全体が見える「確認」から開き、直したい所の「編集」から各ステップへ行く
+  const [currentStep, setCurrentStep] = useState<EventFormStep>(4);
   const [showPassSettings, setShowPassSettings] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -340,8 +341,9 @@ export default function EditEventPage() {
       setShowPassSettings(false);
       return;
     }
-    if (currentStep === 1) router.push("/organizer/events");
-    else setCurrentStep((s) => (s - 1) as EventFormStep);
+    // 確認からは一覧へ、各ステップからは確認へ戻る（前のステップへ順に戻すと、確認まで何度も押すことになる）
+    if (currentStep === 4) router.push("/organizer/events");
+    else setCurrentStep(4);
   };
 
   const stepLabels: Record<EventFormStep, string> = {
@@ -413,9 +415,9 @@ export default function EditEventPage() {
           <div className="flex-1 truncate text-[13px] font-[600]">
             {showPassSettings
               ? "参加パス設定"
-              : currentStep === 1
+              : currentStep === 4
                 ? "イベントを編集"
-                : `${stepLabels[currentStep]}を入力`}
+                : `${stepLabels[currentStep]}を編集`}
           </div>
           <button
             type="button"
@@ -433,8 +435,8 @@ export default function EditEventPage() {
         </div>
       </div>
 
-      {/* スマホ：申込者と当日管理は確認ステップの下にしかなかったので、最初の画面の上にも出す */}
-      {currentStep === 1 && !showPassSettings && id ? (
+      {/* スマホ：申込者と当日管理は確認の下のほうにしかなかったので、上にも出す */}
+      {currentStep === 4 && !showPassSettings && id ? (
         <div className="mx-4 mt-3 grid grid-cols-2 gap-2 min-[900px]:hidden">
           <Link
             href={`/organizer/events/${encodeURIComponent(id)}/answers`}
@@ -817,10 +819,9 @@ export default function EditEventPage() {
             type="button"
             onClick={goPrev}
             className="flex items-center gap-1 rounded-[9px] border border-[#e8e6e0] bg-white px-3 py-2 text-[13px] font-[500] min-[900px]:gap-[6px] min-[900px]:px-5 min-[900px]:py-[9px]"
-            style={{ visibility: currentStep === 1 ? "hidden" : "visible" }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-            戻る
+            確認に戻る
           </button>
           <div className="hidden min-[900px]:block text-center text-[12px] text-[#888]">
             STEP {currentStep} / 4 — {stepLabels[currentStep]}
@@ -843,7 +844,7 @@ export default function EditEventPage() {
             className="flex items-center rounded-[10px] border border-[#e8e6e0] bg-white px-[18px] py-[11px] text-[13px] font-[500]"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-            戻る
+            一覧へ
           </button>
           <button
             type="button"
