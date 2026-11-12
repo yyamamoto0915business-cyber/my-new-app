@@ -1,5 +1,6 @@
 "use client";
 
+import { POINTS_NEED_EVENT_HINT, POINTS_NEED_EVENT_MESSAGE } from "@/lib/organizer/points-need-event";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -911,6 +912,11 @@ export function StampRallyWizard() {
     const endsAt = toIso(endDate, endTime);
     if (startsAt && endsAt && new Date(endsAt) < new Date(startsAt)) {
       setError("終了日時は開始日時より後にしてください");
+      setStep(2);
+      return;
+    }
+    if (mode === "publish" && experience.reward.kind === "points" && !eventId) {
+      setError(POINTS_NEED_EVENT_MESSAGE);
       setStep(2);
       return;
     }
@@ -2364,6 +2370,11 @@ export function StampRallyWizard() {
                     }}
                   />
                   <small>クリアすると、ログイン中のアカウントに入ります。ログイン前でも、あとから受け取れます。</small>
+                  {!eventId ? (
+                  <p style={{ margin: "0.4rem 0 0", fontSize: "0.74rem", fontWeight: 700, lineHeight: 1.5, color: "#b0582a" }}>
+                    {POINTS_NEED_EVENT_HINT}
+                  </p>
+                ) : null}
                 </label>
               ) : null}
               {experience.reward.kind === "badge" ? (
