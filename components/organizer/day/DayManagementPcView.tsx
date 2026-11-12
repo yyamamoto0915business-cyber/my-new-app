@@ -4,9 +4,6 @@ import type { ReactNode } from "react";
 import {
   UserCheck,
   Users,
-  Calendar,
-  Bell,
-  Clock,
   QrCode,
   ScanLine,
   Megaphone,
@@ -22,12 +19,8 @@ import {
   useDayOpsSummary,
 } from "@/hooks/use-day-ops-summary";
 import {
-  MOCK_STAFF,
-  MOCK_SCHEDULE,
-  scheduleChip,
   noticeBadge,
-  countStaffPresent,
-  countScheduleProgress,
+  countRealStaff,
   EMPTY_CHECKIN,
   type DayNotice,
   type EventInfo,
@@ -100,20 +93,17 @@ export function DayManagementPcView({
     reload: reloadStaff,
   } = useStaffStatus({ eventId, emptyMode });
   const isPast = dayPhase === "past";
-  const isLive = dayPhase === "live";
   const showHero = emptyMode || !isPast;
-  const scheduleTitle = emptyMode ? "本日のスケジュール" : isPast ? "スケジュール" : "本日のスケジュール";
   const descText = emptyMode
     ? "イベント当日の受付・進行状況をリアルタイムで確認できます。"
     : isPast
       ? "イベント当日の受付・進行状況を振り返れます。"
       : "イベント当日の受付・進行状況をリアルタイムで確認できます。";
   const checkin = emptyMode ? EMPTY_CHECKIN : attendanceToCheckinKpi(dayOps);
-  const staffPresent = emptyMode ? 0 : countStaffPresent(MOCK_STAFF);
-  const staffTotal = emptyMode ? 0 : MOCK_STAFF.length;
-  const schedDone = emptyMode ? 0 : countScheduleProgress(MOCK_SCHEDULE);
-  const schedTotal = emptyMode ? 0 : MOCK_SCHEDULE.length;
-  const unreadNotices = emptyMode ? 0 : notices.length;
+  // 前は仮のスタッフ（MOCK_STAFF）から数えていた。本物の応募・出勤から数える
+  const realStaff = countRealStaff(staffMembers);
+  const staffPresent = emptyMode ? 0 : realStaff.present;
+  const staffTotal = emptyMode ? 0 : realStaff.total;
   const checkinPct = checkin.total > 0 ? Math.round((checkin.checkedIn / checkin.total) * 100) : 0;
   const staffPct = staffTotal > 0 ? Math.round((staffPresent / staffTotal) * 100) : 0;
 
@@ -210,7 +200,7 @@ export function DayManagementPcView({
       />
 
       {/* KPI */}
-      <div className="mg-day-mgmt-pc__kpi-grid grid shrink-0 grid-cols-4">
+      <div className="mg-day-mgmt-pc__kpi-grid grid shrink-0 grid-cols-2">
         <div className="mg-day-mgmt-pc__kpi">
           <div className="flex items-center gap-1.5">
             <span className="mg-day-mgmt-pc__kpi-icon mg-day-mgmt-pc__kpi-icon--green">
@@ -245,60 +235,10 @@ export function DayManagementPcView({
           <KpiProgressBar pct={staffPct} tone="blue" />
         </div>
 
-        <div className="mg-day-mgmt-pc__kpi">
-          <div className="flex items-center gap-1.5">
-            <span className="mg-day-mgmt-pc__kpi-icon mg-day-mgmt-pc__kpi-icon--amber">
-              <Clock size={13} className="text-[#CF9010]" />
-            </span>
-            <span className="mg-day-mgmt-pc__kpi-label">プログラム進行</span>
-          </div>
-          <p className="mg-day-mgmt-pc__kpi-value mt-0.5">
-            {schedDone}
-            <span className="mg-day-mgmt-pc__kpi-unit">/ {schedTotal}</span>
-          </p>
-          <div className="mt-1 flex justify-end">
-            {!emptyMode ? (
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                isPast
-                  ? "bg-[#f0f0f0] text-[#566358]"
-                  : isLive
-                    ? "bg-[#EAF4ED] text-[#2D7A4F]"
-                    : "bg-[#E3F2FD] text-[#1976D2]"
-              }`}
-            >
-              {isPast ? "終了" : isLive ? "進行中" : "開催前"}
-            </span>
-            ) : (
-              <span className="rounded-full bg-[#f0f0f0] px-2 py-0.5 text-[10px] font-semibold text-[#566358]">
-                —
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="mg-day-mgmt-pc__kpi">
-          <div className="flex items-center gap-1.5">
-            <span className="mg-day-mgmt-pc__kpi-icon mg-day-mgmt-pc__kpi-icon--danger">
-              <Bell size={13} className="text-[#E53935]" />
-            </span>
-            <span className="mg-day-mgmt-pc__kpi-label">お知らせ未読</span>
-          </div>
-          <p className="mg-day-mgmt-pc__kpi-value mt-0.5">
-            {unreadNotices}
-            <span className="mg-day-mgmt-pc__kpi-unit">件</span>
-          </p>
-          <p className="mt-1 text-[10px] leading-snug text-[#566358]">
-            {emptyMode
-              ? "未読はありません"
-              : isPast
-                ? "当日のお知らせ履歴"
-                : "未読のお知らせがあります"}
-          </p>
-        </div>
       </div>
 
-      <div className="mg-day-mgmt-pc__sections">
+      {/* プログラム進行は仮データ（MOCK_SCHEDULE）しかなかったので外し、左の列はチケット・来場状況が縦に使う */}
+      <div className="mg-day-mgmt-pc__sections mg-day-mgmt-pc__sections--3">
         <TicketSalesAttendanceCard
           eventId={eventId}
           emptyMode={emptyMode}
@@ -310,52 +250,6 @@ export function DayManagementPcView({
           summaryRefreshing={dayOpsRefreshing}
           onRefreshSummary={reloadDayOps}
         />
-
-        <div className="mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact flex min-h-0 flex-col">
-          <h2 className="mg-day-mgmt-pc__panel-title shrink-0">{scheduleTitle}</h2>
-          {emptyMode ? (
-            <div className="mg-day-mgmt-pc__empty-inline flex-1">
-              <Calendar size={18} className="shrink-0 text-[#DDE8DF]" aria-hidden />
-              <p className="mg-day-mgmt-pc__empty-text">
-                開催予定のイベントを選択すると、スケジュールがここに表示されます。
-              </p>
-            </div>
-          ) : (
-            <ul className="mt-1 min-h-0 flex-1 space-y-0.5 overflow-y-auto">
-              {MOCK_SCHEDULE.map((item, i) => (
-                <li
-                  key={i}
-                  className={cn(
-                    "flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1",
-                    item.status === "live"
-                      ? "border-l-[3px] border-[#2D7A4F] bg-[#EAF4ED]"
-                      : "border-l-[3px] border-transparent bg-[#F5F8F5]"
-                  )}
-                >
-                  <Clock
-                    size={11}
-                    className={cn(
-                      "shrink-0",
-                      item.status === "live" ? "text-[#2D7A4F]" : "text-[#566358]"
-                    )}
-                  />
-                  <div className="min-w-0 flex-1 leading-tight">
-                    <span className="text-[9px] text-[#566358]">{item.time}</span>
-                    <p
-                      className={cn(
-                        "truncate text-[11px] font-medium",
-                        item.status === "live" ? "text-[#2D7A4F]" : "text-[#1A2214]"
-                      )}
-                    >
-                      {item.name}
-                    </p>
-                  </div>
-                  {scheduleChip(item.status, { compact: true })}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
 
         <StaffStatusCard
           emptyMode={emptyMode}

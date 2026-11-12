@@ -514,6 +514,17 @@ export function countStaffPresent(staff: typeof MOCK_STAFF) {
   return staff.filter((s) => s.status === "ok" || s.status === "late").length;
 }
 
+/**
+ * 本物のスタッフ（応募→承認済みの人）から、出勤している人数と全体の人数を数える。
+ * 前は MOCK_STAFF（仮の6人）から数えていて、どのイベントでも「4/6」と出ていた。
+ */
+export function countRealStaff(members: DashboardStaffMember[]): { present: number; total: number } {
+  const notStaff = new Set(["applied", "pending_review", "rejected", "declined"]);
+  const working = new Set(["checked_in", "on_duty", "on_break", "finished"]);
+  const staff = members.filter((m) => !notStaff.has(m.status));
+  return { present: staff.filter((m) => working.has(m.status)).length, total: staff.length };
+}
+
 export function countScheduleProgress(schedule: typeof MOCK_SCHEDULE) {
   return schedule.filter((s) => s.status === "done" || s.status === "live").length;
 }

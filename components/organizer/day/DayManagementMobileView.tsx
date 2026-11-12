@@ -4,10 +4,7 @@ import type { ReactNode } from "react";
 import {
   UserCheck,
   Users,
-  Calendar,
-  Bell,
   Megaphone,
-  Clock,
   ChevronRight,
   QrCode,
   ScanLine,
@@ -22,12 +19,8 @@ import {
   useDayOpsSummary,
 } from "@/hooks/use-day-ops-summary";
 import {
-  MOCK_STAFF,
-  MOCK_SCHEDULE,
-  scheduleChip,
   noticeBadge,
-  countStaffPresent,
-  countScheduleProgress,
+  countRealStaff,
   EMPTY_CHECKIN,
   type DayNotice,
   type EventInfo,
@@ -69,14 +62,14 @@ function PanelHeader({
           <button
             type="button"
             onClick={onAction}
-            className="inline-flex shrink-0 items-center gap-0.5 text-[9px] font-medium text-[#2D7A4F]"
+            className="inline-flex min-h-9 shrink-0 items-center gap-0.5 text-[12px] font-semibold text-[#2D7A4F]"
           >
             {actionLabel}
-            <ChevronRight size={10} aria-hidden />
+            <ChevronRight size={14} aria-hidden />
           </button>
         ) : null}
       </div>
-      {subtitle ? <p className="mt-0.5 text-[8px] leading-snug text-[#566358]">{subtitle}</p> : null}
+      {subtitle ? <p className="mt-0.5 text-[11.5px] leading-snug text-[#566358]">{subtitle}</p> : null}
     </div>
   );
 }
@@ -100,9 +93,9 @@ function KpiCard({
     <div className="mg-day-mgmt-m__kpi">
       <div className="flex items-center gap-1">
         {icon}
-        <span className="text-[9px] font-medium leading-tight text-[#566358]">{label}</span>
+        <span className="text-[12px] font-semibold leading-tight text-[#566358]">{label}</span>
       </div>
-      <div className="mt-1 leading-none">
+      <div className="mt-1.5 leading-none">
         {value}
         {sub}
       </div>
@@ -135,8 +128,6 @@ export function DayManagementMobileView({
     reload: reloadStaff,
   } = useStaffStatus({ eventId, emptyMode });
   const isPast = dayPhase === "past";
-  const isUpcoming = dayPhase === "upcoming";
-  const scheduleTitle = emptyMode ? "本日のスケジュール" : isPast ? "スケジュール" : "本日のスケジュール";
   const descText = emptyMode
     ? "イベント当日の受付・進行状況をリアルタイムで確認できます。"
     : isPast
@@ -144,14 +135,12 @@ export function DayManagementMobileView({
       : "イベント当日の受付・進行状況をリアルタイムで確認できます。";
 
   const checkin = emptyMode ? EMPTY_CHECKIN : attendanceToCheckinKpi(dayOps);
-  const staffPresent = emptyMode ? 0 : countStaffPresent(MOCK_STAFF);
-  const staffTotal = emptyMode ? 0 : MOCK_STAFF.length;
-  const schedDone = emptyMode ? 0 : countScheduleProgress(MOCK_SCHEDULE);
-  const schedTotal = emptyMode ? 0 : MOCK_SCHEDULE.length;
-  const unreadNotices = emptyMode ? 0 : notices.length;
+  // 前は仮のスタッフ（MOCK_STAFF）から数えていた。本物の応募・出勤から数える
+  const realStaff = countRealStaff(staffMembers);
+  const staffPresent = emptyMode ? 0 : realStaff.present;
+  const staffTotal = emptyMode ? 0 : realStaff.total;
   const checkinPct = checkin.total > 0 ? Math.round((checkin.checkedIn / checkin.total) * 100) : 0;
   const staffPct = staffTotal > 0 ? Math.round((staffPresent / staffTotal) * 100) : 0;
-  const schedPct = schedTotal > 0 ? Math.round((schedDone / schedTotal) * 100) : 0;
 
   const quickActions: {
     key: ModalType;
@@ -202,7 +191,7 @@ export function DayManagementMobileView({
   ];
 
   return (
-    <div className="mg-day-mgmt-m -mx-4 flex flex-col gap-1.5 px-4 pb-20 sm:-mx-6 sm:px-6">
+    <div className="mg-day-mgmt-m -mx-4 flex flex-col gap-2.5 px-4 pb-20 sm:-mx-6 sm:px-6">
       <DayManagementEventSwitcher
         currentEventId={eventId}
         currentTitle={event.title}
@@ -224,14 +213,14 @@ export function DayManagementMobileView({
           <div className="relative z-10">
             <div className="flex flex-wrap items-center gap-1.5">
               <h1 className="mg-day-mgmt-m__title">当日の運営</h1>
-              <span className="inline-flex rounded-full bg-[#EAF4ED] px-2 py-0.5 text-[9px] font-bold text-[#2D7A4F]">
+              <span className="inline-flex rounded-full bg-[#EAF4ED] px-2 py-0.5 text-[11px] font-bold text-[#2D7A4F]">
                 本日の運営
               </span>
             </div>
             <p className="mg-day-mgmt-m__desc mt-0.5">{descText}</p>
             <div className="mg-day-mgmt-m__event-card mt-2">
-              <p className="text-[11px] font-semibold leading-snug text-[#1A2214]">本日の開催はありません</p>
-              <p className="mt-1 text-[9px] leading-snug text-[#566358]">
+              <p className="text-[13px] font-semibold leading-snug text-[#1A2214]">本日の開催はありません</p>
+              <p className="mt-1 text-[11.5px] leading-snug text-[#566358]">
                 開催予定のイベントを選択してください
               </p>
             </div>
@@ -239,86 +228,75 @@ export function DayManagementMobileView({
         </header>
       ) : null}
 
-      <section className="grid grid-cols-2 gap-1.5 tablet:grid-cols-4 tablet:gap-2">
+      {/* 受付の操作。当日いちばん使うので、いちばん上に大きく置く（前は画面のいちばん下だった） */}
+      <section aria-label="受付の操作" className="grid grid-cols-2 gap-2">
+        {(["qr_scan", "qr"] as const)
+          .map((key) => quickActions.find((a) => a.key === key))
+          .filter((action): action is (typeof quickActions)[number] => Boolean(action))
+          .map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              onClick={() => onOpenModal(action.key)}
+              className={cn(
+                "flex min-h-[64px] items-center justify-center gap-2 rounded-[14px] px-3 text-[14px] font-bold shadow-[0_3px_10px_rgba(22,56,40,0.12)] active:scale-[0.98]",
+                action.key === "qr_scan"
+                  ? "bg-[#2D7A4F] text-white"
+                  : "border border-[#cfe3d5] bg-white text-[#1f5e3a]"
+              )}
+            >
+              {action.key === "qr_scan" ? <ScanLine size={20} aria-hidden /> : <QrCode size={20} aria-hidden />}
+              {action.key === "qr_scan" ? "QRを読み取る" : "受付QRを表示"}
+            </button>
+          ))}
+      </section>
+      <nav aria-label="連絡と記録" className="grid grid-cols-4 gap-1.5">
+        {quickActions
+          .filter((a) => a.key !== "qr_scan" && a.key !== "qr")
+          .map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              onClick={() => onOpenModal(action.key)}
+              className={cn(
+                "flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[12px] border border-[#dde8df] bg-white px-1 py-2 text-center active:bg-[#f5f8f5]",
+                action.btnClass
+              )}
+            >
+              <span className={cn("flex h-8 w-8 items-center justify-center rounded-full", action.iconBg)}>
+                {action.icon}
+              </span>
+              <span className={cn("text-[10.5px] font-semibold leading-tight text-[#1A2214]", action.labelClass)}>
+                {action.label}
+              </span>
+            </button>
+          ))}
+      </nav>
+
+      <section className="grid grid-cols-2 gap-2">
         <KpiCard
           icon={
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#EAF4ED]">
-              <UserCheck size={11} className="text-[#2D7A4F]" />
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#EAF4ED]">
+              <UserCheck size={13} className="text-[#2D7A4F]" />
             </span>
           }
           label="来場者チェックイン"
-          value={<span className="text-[16px] font-bold text-[#1A2214]">{checkin.checkedIn}</span>}
-          sub={
-            <span className="ml-0.5 text-[10px] text-[#566358]">
-              / {checkin.total}人
-            </span>
-          }
+          value={<span className="text-[22px] font-bold text-[#1A2214]">{checkin.checkedIn}</span>}
+          sub={<span className="ml-1 text-[12px] text-[#566358]">/ {checkin.total}人</span>}
           progress={emptyMode ? 0 : checkinPct}
-          footer={
-            !emptyMode ? (
-              <p className="text-right text-[9px] text-[#566358]">{checkinPct}%</p>
-            ) : null
-          }
+          footer={!emptyMode ? <p className="text-right text-[11px] text-[#566358]">{checkinPct}%</p> : null}
         />
         <KpiCard
           icon={
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E3F2FD]">
-              <Users size={11} className="text-[#1976D2]" />
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E3F2FD]">
+              <Users size={13} className="text-[#1976D2]" />
             </span>
           }
           label="スタッフ出勤"
-          value={<span className="text-[16px] font-bold text-[#1A2214]">{staffPresent}</span>}
-          sub={
-            <span className="ml-0.5 text-[10px] text-[#566358]">
-              / {staffTotal}名
-            </span>
-          }
+          value={<span className="text-[22px] font-bold text-[#1A2214]">{staffPresent}</span>}
+          sub={<span className="ml-1 text-[12px] text-[#566358]">/ {staffTotal}名</span>}
           progress={emptyMode ? 0 : staffPct}
-          footer={
-            !emptyMode ? (
-              <p className="text-right text-[9px] text-[#566358]">{staffPct}%</p>
-            ) : null
-          }
-        />
-        <KpiCard
-          icon={
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FDF6E3]">
-              <Clock size={11} className="text-[#CF9010]" />
-            </span>
-          }
-          label="プログラム進行"
-          value={<span className="text-[16px] font-bold text-[#1A2214]">{schedDone}</span>}
-          sub={
-            <span className="ml-0.5 text-[10px] text-[#566358]">
-              / {schedTotal}件
-            </span>
-          }
-          footer={
-            emptyMode || isUpcoming ? (
-              <span className="inline-flex rounded-full bg-[#FDF6E3] px-2 py-0.5 text-[9px] font-semibold text-[#CF9010]">
-                未開始
-              </span>
-            ) : (
-              <div className="h-1 w-full overflow-hidden rounded-full bg-[#FDF6E3]">
-                <div className="h-full rounded-full bg-[#CF9010]" style={{ width: `${schedPct}%` }} />
-              </div>
-            )
-          }
-        />
-        <KpiCard
-          icon={
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FFEBEE]">
-              <Bell size={11} className="text-[#E53935]" />
-            </span>
-          }
-          label="お知らせ未読"
-          value={<span className="text-[16px] font-bold text-[#1A2214]">{unreadNotices}</span>}
-          sub={<span className="ml-0.5 text-[10px] text-[#566358]">件</span>}
-          footer={
-            <p className="text-[9px] text-[#566358]">
-              {emptyMode || unreadNotices === 0 ? "未読はありません" : "未読のお知らせがあります"}
-            </p>
-          }
+          footer={!emptyMode ? <p className="text-right text-[11px] text-[#566358]">{staffPct}%</p> : null}
         />
       </section>
 
@@ -334,39 +312,7 @@ export function DayManagementMobileView({
         onRefreshSummary={reloadDayOps}
       />
 
-      <section className="mg-day-mgmt-m__panel">
-        <PanelHeader
-          title={scheduleTitle}
-          actionLabel={emptyMode ? undefined : "すべて見る"}
-          onAction={() => onOpenModal("memo")}
-        />
-        {emptyMode ? (
-          <div className="mt-2 flex flex-col items-center py-2 text-center">
-            <Calendar size={18} className="text-[#DDE8DF]" aria-hidden />
-            <p className="mt-1.5 text-[9px] leading-snug text-[#566358]">
-              イベントを選択すると表示されます
-            </p>
-          </div>
-        ) : (
-          <ul className="mt-1.5 space-y-1">
-            {MOCK_SCHEDULE.map((item, i) => (
-              <li
-                key={i}
-                className={cn(
-                  "flex items-center gap-1 rounded-lg px-1.5 py-1",
-                  item.status === "live" ? "bg-[#EAF4ED]" : "bg-[#F5F8F5]"
-                )}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-[7px] leading-none text-[#566358]">{item.time}</p>
-                  <p className="truncate text-[9px] font-medium leading-tight text-[#1A2214]">{item.name}</p>
-                </div>
-                <div className="shrink-0 scale-[0.82] origin-right">{scheduleChip(item.status)}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* プログラム進行は仮データ（MOCK_SCHEDULE）しかなかったので外した */}
 
       <StaffStatusCard
         emptyMode={emptyMode}
@@ -388,57 +334,27 @@ export function DayManagementMobileView({
         {emptyMode || notices.length === 0 ? (
           <div className="mt-2 flex flex-col items-center rounded-lg bg-[#F5F8F5] py-3 text-center">
             <Megaphone size={18} className="text-[#DDE8DF]" aria-hidden />
-            <p className="mt-1.5 text-[9px] text-[#566358]">現在、お知らせはありません</p>
+            <p className="mt-1.5 text-[12px] text-[#566358]">現在、お知らせはありません</p>
           </div>
         ) : (
-          <ul className="mt-1.5 space-y-1.5">
+          <ul className="mt-2 space-y-1.5">
             {notices.map((notice, i) => (
               <li
                 key={i}
                 className={cn(
-                  "flex items-start gap-1.5 rounded-lg p-1.5",
+                  "flex items-start gap-2 rounded-lg p-2",
                   notice.type === "urg" ? "bg-[#FFEBEE]" : "bg-[#E3F2FD]"
                 )}
               >
                 {noticeBadge(notice.type)}
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] leading-snug text-[#1A2214]">{notice.text}</p>
-                  <p className="mt-0.5 text-[8px] text-[#566358]">{notice.time}</p>
+                  <p className="text-[13px] leading-snug text-[#1A2214]">{notice.text}</p>
+                  <p className="mt-0.5 text-[11px] text-[#566358]">{notice.time}</p>
                 </div>
               </li>
             ))}
           </ul>
         )}
-      </section>
-
-      <section className="mg-day-mgmt-m__panel py-2">
-        <div className="mg-day-mgmt-m__quick-scroll -mx-0.5 px-0.5">
-          {quickActions.map((action) => (
-            <button
-              key={action.key}
-              type="button"
-              onClick={() => onOpenModal(action.key)}
-              className={cn("mg-day-mgmt-m__quick-btn shrink-0", action.btnClass)}
-            >
-              <span
-                className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-full",
-                  action.iconBg
-                )}
-              >
-                {action.icon}
-              </span>
-              <span
-                className={cn(
-                  "text-[8px] font-medium leading-tight text-[#1A2214]",
-                  action.labelClass
-                )}
-              >
-                {action.label}
-              </span>
-            </button>
-          ))}
-        </div>
       </section>
     </div>
   );

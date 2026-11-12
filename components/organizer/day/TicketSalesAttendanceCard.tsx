@@ -192,7 +192,7 @@ export function TicketSalesAttendanceCard({
                   >
                     {summary.attendance.checkedIn}
                   </span>
-                  <span className={cn("text-[#566358]", compact ? "text-[8px]" : "mt-0.5 text-[10px]")}>
+                  <span className={cn("text-[#566358]", compact ? "text-[11px]" : "mt-0.5 text-[10px]")}>
                     入場
                   </span>
                 </div>
@@ -357,7 +357,7 @@ function FlowStep({
         <p
           className={cn(
             "leading-tight text-[#566358]",
-            compact ? "text-[9px]" : "text-[10px]"
+            compact ? "text-[11px]" : "text-[10px]"
           )}
         >
           {label}

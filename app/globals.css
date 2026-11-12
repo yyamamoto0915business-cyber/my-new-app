@@ -3178,6 +3178,10 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   font-weight: 400;
   color: var(--mg-day-muted);
 }
+/* 3つのとき：左の列はチケット・来場状況が縦いっぱい、右にスタッフとお知らせ */
+.mg-day-mgmt-pc__sections--3 > :first-child {
+  grid-row: span 2;
+}
 .mg-day-mgmt-pc__sections {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3664,7 +3668,7 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
     color: #1a2214;
   }
   .mg-day-mgmt-m__desc {
-    font-size: 9px;
+    font-size: 12px;
     line-height: 1.45;
     color: #566358;
     display: -webkit-box;
@@ -3682,21 +3686,21 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
     backdrop-filter: blur(4px);
   }
   .mg-day-mgmt-m__kpi {
-    border-radius: 10px;
+    border-radius: 12px;
     border: 1px solid #dde8df;
     background: #fff;
-    padding: 8px;
+    padding: 12px;
     box-shadow: 0 1px 6px rgba(26, 34, 20, 0.04);
   }
   .mg-day-mgmt-m__panel {
-    border-radius: 10px;
+    border-radius: 12px;
     border: 1px solid #dde8df;
     background: #fff;
-    padding: 8px;
+    padding: 12px;
     box-shadow: 0 1px 6px rgba(26, 34, 20, 0.04);
   }
   .mg-day-mgmt-m__panel-title {
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 700;
     color: #1a2214;
   }
