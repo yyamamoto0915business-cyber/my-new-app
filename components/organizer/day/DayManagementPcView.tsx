@@ -237,7 +237,7 @@ export function DayManagementPcView({
 
       </div>
 
-      {/* プログラム進行は仮データ（MOCK_SCHEDULE）しかなかったので外し、左の列はチケット・来場状況が縦に使う */}
+      {/* プログラム進行は仮データ（MOCK_SCHEDULE）しかなかったので外し、上段に来場状況とスタッフ、下段にお知らせを置く */}
       <div className="mg-day-mgmt-pc__sections mg-day-mgmt-pc__sections--3">
         <TicketSalesAttendanceCard
           eventId={eventId}

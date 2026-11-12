@@ -3178,9 +3178,14 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
   font-weight: 400;
   color: var(--mg-day-muted);
 }
-/* 3つのとき：左の列はチケット・来場状況が縦いっぱい、右にスタッフとお知らせ */
-.mg-day-mgmt-pc__sections--3 > :first-child {
-  grid-row: span 2;
+/* 3つのとき：上段に来場状況とスタッフ、下段にお知らせを横いっぱい（縦に伸ばすと下が空いた） */
+.mg-day-mgmt-pc__sections--3 > :last-child {
+  grid-column: span 2;
+}
+.mg-day-mgmt-pc__sections.mg-day-mgmt-pc__sections--3,
+.mg-day-mgmt-pc--selected .mg-day-mgmt-pc__sections.mg-day-mgmt-pc__sections--3 {
+  grid-template-rows: auto auto;
+  align-content: start;
 }
 .mg-day-mgmt-pc__sections {
   display: grid;
@@ -38487,5 +38492,24 @@ button.mg-album-place {
   }
   .org-pos__metric-value {
     font-size: 0.95rem;
+  }
+}
+
+/* 当日の運営（スマホ・タブレット）：来場状況とスタッフのカードに残っていた 8〜10px の文字を読める大きさにする */
+@media (max-width: 899px) {
+  .mg-day-mgmt-m .mg-staff-status--mobile .mg-staff-status__pill { font-size: 11px; }
+  .mg-day-mgmt-m .mg-staff-status--mobile .mg-staff-status__hint { font-size: 11px; }
+  .mg-day-mgmt-m .mg-staff-status--mobile .mg-staff-status__name { font-size: 13.5px; }
+  .mg-day-mgmt-m .mg-staff-status--mobile .mg-staff-status__badge { font-size: 10.5px; }
+  .mg-day-mgmt-m .mg-staff-status--mobile .mg-staff-status__row-meta { font-size: 11.5px; }
+  .mg-day-mgmt-m .mg-staff-status--mobile .mg-staff-status__footer-link { font-size: 12px; }
+  .mg-day-mgmt-m .mg-ticket-sales-card--compact .mg-ticket-sales-card__updated { font-size: 11px; }
+  .mg-day-mgmt-m .mg-ticket-sales-card--compact .mg-ticket-sales-card__legend { font-size: 12px; }
+  .mg-day-mgmt-m .mg-ticket-sales-card--compact .mg-ticket-sales-card__summary-label { font-size: 12px; }
+  .mg-day-mgmt-m .mg-ticket-sales-card--compact .mg-ticket-sales-card__summary-unit { font-size: 12px; }
+  .mg-day-mgmt-m .mg-ticket-sales-card--compact .mg-ticket-sales-card__offline p { font-size: 12px; }
+  .mg-day-mgmt-m .mg-ticket-sales-card--compact .mg-ticket-sales-card__btn,
+  .mg-day-mgmt-m .mg-ticket-sales-card--compact .mg-ticket-sales-card__actions:not(.mg-ticket-sales-card__actions--single) {
+    font-size: 12.5px;
   }
 }
