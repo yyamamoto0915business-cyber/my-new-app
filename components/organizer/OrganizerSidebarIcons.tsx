@@ -95,6 +95,21 @@ export function OrganizerSidebarPosIcon({ active }: NavIconProps) {
   );
 }
 
+export function OrganizerSidebarChatIcon({ active }: NavIconProps) {
+  const stroke = active ? GREEN : GREEN_MUTED;
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
+      <path
+        d="M4 5.5A1.5 1.5 0 0 1 5.5 4h11A1.5 1.5 0 0 1 18 5.5v8a1.5 1.5 0 0 1-1.5 1.5H9l-3.5 3v-3H5.5A1.5 1.5 0 0 1 4 13.5v-8Z"
+        stroke={stroke}
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path d="M7.5 8.5h7M7.5 11.5h4.5" stroke={stroke} strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function OrganizerSidebarAdminIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>

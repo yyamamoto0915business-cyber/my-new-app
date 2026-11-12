@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Home, LayoutGrid, Plus, User, type LucideIcon } from "lucide-react";
+import { CalendarDays, Home, MessageCircle, Plus, User, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isEventFormRoute } from "@/lib/is-event-form-route";
+import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
+import { ORGANIZER_MESSAGES_HREF } from "@/lib/messages-scope";
+import { useOrganizerUnreadCount } from "@/hooks/use-scoped-unread-count";
 import {
   ORGANIZER_MOBILE_HOME_HREF,
   ORGANIZER_NEW_LISTING_HREF,
-  ORGANIZER_TOOLS_HREF,
   organizerBottomNavActive,
   type OrganizerBottomNavId,
 } from "@/lib/organizer/organizer-nav";
@@ -24,19 +26,22 @@ const ITEMS: Item[] = [
   { id: "home", href: ORGANIZER_MOBILE_HOME_HREF, label: "ホーム", Icon: Home },
   { id: "listings", href: "/organizer/listings", label: "掲載管理", Icon: CalendarDays },
   { id: "new", href: ORGANIZER_NEW_LISTING_HREF, label: "新しく掲載", Icon: Plus },
-  { id: "tools", href: ORGANIZER_TOOLS_HREF, label: "運営", Icon: LayoutGrid },
+  { id: "chat", href: ORGANIZER_MESSAGES_HREF, label: "チャット", Icon: MessageCircle },
   { id: "mypage", href: "/organizer/settings", label: "マイページ", Icon: User },
 ];
 
 /**
- * 主催者モードのスマホ下部ナビ（見本：ホーム／掲載管理／＋新しく掲載／運営／マイページ）。
+ * 主催者モードのスマホ下部ナビ（ホーム／掲載管理／＋新しく掲載／チャット／マイページ）。
+ * 前は4つ目が「運営」だったが、中身がホームと重なっていたので、道具はホームにまとめ、主催者のチャットにした。
  * 画面の下にぴったり付く帯（利用者側と同じ）。真ん中の「新しく掲載」は丸いボタンにして少し浮かせる。
  */
 export function OrganizerBottomNav() {
   const pathname = usePathname() ?? "";
+  const hidden = isEventFormRoute(pathname) || isMessagesConversationRoute(pathname);
+  const unread = useOrganizerUnreadCount(!hidden);
 
-  // 作成・編集フォームは入力に集中させる（利用者側と同じ）
-  if (isEventFormRoute(pathname)) return null;
+  // 作成・編集フォームと、会話を開いているときは入力に集中させる（利用者側と同じ）
+  if (hidden) return null;
 
   const activeId = organizerBottomNavActive(pathname);
 
@@ -75,7 +80,17 @@ export function OrganizerBottomNav() {
                 active ? "bg-[#eaf4ed] font-bold text-[#1f5e3a]" : "font-medium text-[#7a8a80]"
               )}
             >
-              <Icon className="h-5 w-5" strokeWidth={active ? 2.3 : 2} aria-hidden />
+              <span className="relative">
+                <Icon className="h-5 w-5" strokeWidth={active ? 2.3 : 2} aria-hidden />
+                {id === "chat" && unread > 0 ? (
+                  <span
+                    className="absolute -right-2.5 -top-1.5 min-w-[18px] rounded-full bg-[#d0567a] px-1 text-center text-[10px] font-bold leading-[18px] text-white"
+                    aria-label={`未読 ${unread}件`}
+                  >
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                ) : null}
+              </span>
               <span className="whitespace-nowrap leading-tight">{label}</span>
             </Link>
           );

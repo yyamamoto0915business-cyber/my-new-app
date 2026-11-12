@@ -353,7 +353,7 @@ export function OrganizerRecruitmentsMobileView({
         </p>
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           <Link
-            href="/messages"
+            href="/organizer/messages"
             className="mg-recruitments-m__btn-outline inline-flex items-center justify-center gap-1 rounded-lg border border-[#c5dbe8] bg-white px-2 py-2 text-[11px] font-medium text-[#2b3a6b] no-underline shadow-sm"
           >
             <MessageCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
