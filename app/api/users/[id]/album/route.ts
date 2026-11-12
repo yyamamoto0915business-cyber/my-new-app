@@ -19,7 +19,6 @@ import { MY_POSTS_DEMO } from "@/lib/posts/my-posts-demo";
 import { ymdFromDb } from "@/lib/posts/visited-range";
 import { getFollowPreviewPerson, isFollowPreviewUserId, PREVIEW_FOLLOWERS, PREVIEW_FOLLOWING } from "@/lib/follows/preview-people";
 import {
-  normalizeProfileAvatarRole,
   resolveAvatarUrlByRole,
 } from "@/lib/profile-avatar";
 
@@ -78,7 +77,8 @@ export async function GET(_request: Request, { params }: Params) {
           participant_avatar_url: data.participant_avatar_url as string | null,
           organizer_avatar_url: data.organizer_avatar_url as string | null,
         },
-        normalizeProfileAvatarRole(data.active_profile_role),
+        // アルバムは利用者側なので参加者のアイコン
+        "participant",
       );
     }
   }

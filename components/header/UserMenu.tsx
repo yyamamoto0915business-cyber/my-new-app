@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { Coins, LogOut, User, Shield } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
@@ -16,7 +17,6 @@ import { CommonAvatar } from "@/components/profile/common-avatar";
 import {
   resolveAvatarUrlByRole,
   resolveProfileDisplayName,
-  type ProfileAvatarRole,
 } from "@/lib/profile-avatar";
 
 function isMissingAvatarColumnsError(message: string): boolean {
@@ -27,13 +27,12 @@ function isMissingAvatarColumnsError(message: string): boolean {
 
 /** ログイン中ユーザー向けアカウントメニュー。developer_admin のみ「開発者管理画面」を表示 */
 export function UserMenu() {
+  const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useSupabaseUser();
   const userId = user?.id ?? null;
   const [isDeveloperAdmin, setIsDeveloperAdmin] = useState(false);
   const [menuLoading, setMenuLoading] = useState(false);
-  const [activeProfileRole, setActiveProfileRole] =
-    useState<ProfileAvatarRole>("participant");
   const [participantAvatarUrl, setParticipantAvatarUrl] = useState<string | null>(null);
   const [organizerAvatarUrl, setOrganizerAvatarUrl] = useState<string | null>(null);
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
@@ -93,9 +92,6 @@ export function UserMenu() {
       setProfileDisplayName(resolved.display_name ?? null);
       setParticipantAvatarUrl(resolved.participant_avatar_url ?? resolved.avatar_url ?? null);
       setOrganizerAvatarUrl(resolved.organizer_avatar_url ?? null);
-      setActiveProfileRole(
-        resolved.active_profile_role === "organizer" ? "organizer" : "participant"
-      );
     };
     loadProfile();
     const handleProfileUpdated = () => {
@@ -142,9 +138,9 @@ export function UserMenu() {
     {
       participant_avatar_url: participantAvatarUrl,
       organizer_avatar_url: organizerAvatarUrl,
-      active_profile_role: activeProfileRole,
     },
-    activeProfileRole
+    // 主催者の画面では主催者のアイコン、それ以外では参加者のアイコン（表示モードの設定は使わない）
+    isOrganizerDashboardPath(pathname ?? "") ? "organizer" : "participant"
   );
 
   return (

@@ -462,8 +462,6 @@ function ProfileEditPageInner() {
   const [region, setRegion] = useState("");
   const [bio, setBio] = useState("");
   const [pAvatarUrl, setPAvatarUrl] = useState("");
-  const [oModeAvatarUrl, setOModeAvatarUrl] = useState("");
-  const [activeRole, setActiveRole] = useState<"participant" | "organizer">("participant");
 
   // Organizer fields
   const [organizationName, setOrganizationName] = useState("");
@@ -484,8 +482,6 @@ function ProfileEditPageInner() {
 
   const pFileRef = useRef<HTMLInputElement>(null);
   const pCamRef = useRef<HTMLInputElement>(null);
-  const oModeFileRef = useRef<HTMLInputElement>(null);
-  const oModeCamRef = useRef<HTMLInputElement>(null);
   const orgAvatarRef = useRef<HTMLInputElement>(null);
   const orgCoverRef = useRef<HTMLInputElement>(null);
   const orgGalleryRef = useRef<HTMLInputElement>(null);
@@ -526,8 +522,6 @@ function ProfileEditPageInner() {
         if (!cancelled && profile) {
           setDisplayName((profile.display_name as string) ?? "");
           setPAvatarUrl((profile.participant_avatar_url as string) ?? (profile.avatar_url as string) ?? "");
-          setOModeAvatarUrl((profile.organizer_avatar_url as string) ?? "");
-          setActiveRole(profile.active_profile_role === "organizer" ? "organizer" : "participant");
           setPhone((profile.phone as string) ?? "");
           setAddress((profile.address as string) ?? "");
           setRegion((profile.region as string) ?? "");
@@ -548,7 +542,8 @@ function ProfileEditPageInner() {
             .eq("organizer_id", org.id)
             .maybeSingle();
           if (!cancelled && op) {
-            setOrgAvatarUrl((op.avatar_url as string) ?? "");
+            // 主催者のプロフィール画像がまだなく、前の「主催者モードのアイコン」がある人は、それを引き継いで出す
+            setOrgAvatarUrl((op.avatar_url as string) || (profile?.organizer_avatar_url as string) || "");
             setShortBio((op.short_bio as string) ?? "");
             setOrgBio((op.bio as string) ?? "");
             setActivityArea((op.activity_area as string) ?? "");
@@ -562,6 +557,8 @@ function ProfileEditPageInner() {
             setPublicPhone((op.public_phone as string) ?? "");
             setShowEmail(Boolean(op.show_email));
             setShowPhone(Boolean(op.show_phone));
+          } else if (!cancelled && profile?.organizer_avatar_url) {
+            setOrgAvatarUrl(profile.organizer_avatar_url as string);
           }
         }
       } finally {
@@ -586,15 +583,6 @@ function ProfileEditPageInner() {
       const ext = file.name.split(".").pop() || "jpg";
       const url = await uploadToStorage("avatars", `${user.id}/participant/avatar.${ext}`, file);
       setPAvatarUrl(url);
-    } catch (err) { setPError(err instanceof Error ? err.message : "アップロードに失敗しました"); }
-  };
-  const handleOModeAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; e.target.value = "";
-    if (!file || !user?.id) return;
-    try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const url = await uploadToStorage("avatars", `${user.id}/organizer/avatar.${ext}`, file);
-      setOModeAvatarUrl(url);
     } catch (err) { setPError(err instanceof Error ? err.message : "アップロードに失敗しました"); }
   };
   const handleOrgAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -639,8 +627,8 @@ function ProfileEditPageInner() {
     try {
       const { error } = await supabase.from("profiles").upsert({
         id: user.id, email: email || null, display_name: displayName || null,
+        // 主催者のアイコンは主催者モードのプロフィールで設定するので、ここでは書き換えない
         avatar_url: pAvatarUrl || null, participant_avatar_url: pAvatarUrl || null,
-        organizer_avatar_url: oModeAvatarUrl || null, active_profile_role: activeRole,
         phone: phone.trim() || null, address: address.trim() || null,
         region: region.trim() || null, bio: bio.trim() || null,
         updated_at: new Date().toISOString(),
@@ -669,6 +657,11 @@ function ProfileEditPageInner() {
       const orgName = organizationName.trim();
       if (!orgName) throw new Error(`${orgNameLabel}は必須です`);
       await supabase.from("organizers").update({ organization_name: orgName, updated_at: new Date().toISOString() }).eq("profile_id", user.id);
+      // 主催者のアイコンは1つにまとめる：プロフィール画像を、チャットで主催者として話すときのアイコンにも使う
+      await supabase
+        .from("profiles")
+        .update({ organizer_avatar_url: orgAvatarUrl || null, updated_at: new Date().toISOString() })
+        .eq("id", user.id);
       const { error } = await supabase.from("organizer_profiles").upsert({
         organizer_id: organizerId, avatar_url: orgAvatarUrl || null,
         short_bio: shortBio.trim() || null, bio: orgBio.trim() || null,
@@ -717,8 +710,6 @@ function ProfileEditPageInner() {
       {/* Hidden file inputs */}
       <input ref={pFileRef} type="file" accept="image/*" className="hidden" onChange={handlePAvatarFile} />
       <input ref={pCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePAvatarFile} />
-      <input ref={oModeFileRef} type="file" accept="image/*" className="hidden" onChange={handleOModeAvatarFile} />
-      <input ref={oModeCamRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleOModeAvatarFile} />
       <input ref={orgAvatarRef} type="file" accept="image/*" className="hidden" onChange={handleOrgAvatarFile} />
       <input ref={orgCoverRef} type="file" accept="image/*" className="hidden" onChange={handleOrgCoverFile} />
       <input ref={orgGalleryRef} type="file" accept="image/*" multiple className="hidden" onChange={handleOrgGalleryFiles} />
@@ -818,43 +809,6 @@ function ProfileEditPageInner() {
                 </MField>
               </MCard>
 
-              {/* 表示モード */}
-              <MCard>
-                <MCardTitle>表示モード</MCardTitle>
-                <MCardSub>主催者としても活動するときに切り替えます。モードごとにアイコンを変えられます</MCardSub>
-                <div className="mb-3 flex gap-2">
-                  {(["participant", "organizer"] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setActiveRole(r)}
-                      className={[
-                        "flex-1 rounded-full border-[1.5px] py-[10px] text-[14px] font-[600] transition-all",
-                        activeRole === r ? "border-[#2B3A6B] bg-[#2B3A6B] text-white" : "border-[#DEDAD2] bg-[#F5F4EF] text-[#8c8a84]",
-                      ].join(" ")}
-                    >
-                      {r === "participant" ? "参加者" : "主催者"}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3 rounded-[12px] border border-[#DEDAD2] bg-[#F5F4EF] px-3 py-3">
-                  <button
-                    type="button"
-                    onClick={() => oModeFileRef.current?.click()}
-                    className="flex-shrink-0 overflow-hidden rounded-full border-2 border-white"
-                    aria-label="主催者用アイコンを変える"
-                  >
-                    <AvatarImg url={oModeAvatarUrl} size={44} initials={initials} />
-                  </button>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-[600]">主催者モードのアイコン</div>
-                    <div className="text-[11px] text-[#8c8a84]">{oModeAvatarUrl ? "設定済み" : "まだ設定していません"}</div>
-                  </div>
-                  <button type="button" onClick={() => oModeFileRef.current?.click()} className={M_CHIP}>
-                    変える
-                  </button>
-                </div>
-              </MCard>
             </>
           ) : !isOrganizer ? (
             <MCard>
@@ -1129,7 +1083,7 @@ function ProfileEditPageInner() {
                 </PcCard>
               </PcCol>
 
-              {/* Middle: アイコン・表示モード */}
+              {/* Middle: アイコン（参加者用だけ。主催者のアイコン・表示モードは主催者モードと利用者モードを分けたのでなくした） */}
               <PcCol>
                 <PcCard className="flex flex-col gap-2.5">
                   <PcSectionTitle
@@ -1153,57 +1107,6 @@ function ProfileEditPageInner() {
                     onUrlChange={setPAvatarUrl}
                     initials={initials}
                   />
-                  <PcIconBlock
-                    label="主催者用アイコン"
-                    url={oModeAvatarUrl}
-                    onFile={() => oModeFileRef.current?.click()}
-                    onCamera={() => oModeCamRef.current?.click()}
-                    urlValue={oModeAvatarUrl}
-                    onUrlChange={setOModeAvatarUrl}
-                    initials={initials}
-                  />
-                  <div className="h-px shrink-0" style={{ backgroundColor: PC.border }} />
-                  <PcSectionTitle
-                    icBg="#E6FFFA"
-                    icon={
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#319795" strokeWidth="2" strokeLinecap="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    }
-                  >
-                    表示モード
-                  </PcSectionTitle>
-                  <div className="flex gap-1.5">
-                    {(["participant", "organizer"] as const).map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => setActiveRole(r)}
-                        className={[
-                          "flex-1 rounded-full border py-1.5 text-[12px] font-semibold transition-all",
-                          activeRole === r
-                            ? "border-[#2B3A6B] bg-[#2B3A6B] text-white"
-                            : "border-[#E2E8F0] bg-white text-[#718096]",
-                        ].join(" ")}
-                      >
-                        {r === "participant" ? "参加者" : "主催者"}
-                      </button>
-                    ))}
-                  </div>
-                  <div
-                    className="flex items-center gap-2 rounded-[8px] border px-2 py-1.5"
-                    style={{ borderColor: PC.infoTealBorder, backgroundColor: PC.infoTeal }}
-                  >
-                    <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-white">
-                      <AvatarImg url={activeRole === "participant" ? pAvatarUrl : oModeAvatarUrl} size={24} initials={initials} />
-                    </div>
-                    <p className="text-[10px] leading-snug" style={{ color: PC.infoTealInk }}>
-                      {activeRole === "participant"
-                        ? "参加者モード — 参加者用アイコンを表示"
-                        : "主催者モード — 主催者用アイコンを表示"}
-                    </p>
-                  </div>
                 </PcCard>
               </PcCol>
 
@@ -1227,8 +1130,6 @@ function ProfileEditPageInner() {
                         { label: "メールアドレス", done: !!email, st: email ? "✓" : "未入力" },
                         { label: "表示名", done: !!displayName, st: displayName ? "✓" : "未入力" },
                         { label: "参加者用アイコン", done: !!pAvatarUrl, st: "任意" },
-                        { label: "主催者用アイコン", done: !!oModeAvatarUrl, st: "任意" },
-                        { label: "表示モード", done: true, st: activeRole === "participant" ? "参加者" : "主催者" },
                         {
                           label: "個人情報（任意）",
                           done: !!(phone || address || region || bio),
@@ -1239,7 +1140,7 @@ function ProfileEditPageInner() {
                   </PcCard>
                   <div className="flex shrink-0 flex-col gap-2">
                     <PcInfoCallout variant="blue" title="アイコンについて">
-                      参加者用・主催者用で別々に設定できます。表示モードで切り替わります。
+                      ここで設定するのは参加者としてのアイコンです。主催者のアイコンは、主催者モードのプロフィールで設定します。
                     </PcInfoCallout>
                     <PcInfoCallout variant="green" title="プライバシー">
                       住所・電話番号は他のユーザーには表示されません。
