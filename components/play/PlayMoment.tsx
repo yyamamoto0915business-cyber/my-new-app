@@ -1,5 +1,6 @@
 "use client";
 
+import { PlayClearPointsLink } from "@/components/play/PlayClearPointsLink";
 import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -80,6 +81,7 @@ export function PlayClearPanel({
   badgeAwarded,
   badgeImage,
   claimHref,
+  gameToken,
 }: {
   moment: PublicPlayMoment;
   code?: string;
@@ -90,6 +92,8 @@ export function PlayClearPanel({
   badgeAwarded?: boolean;
   badgeImage?: string;
   claimHref?: string;
+  /** ゲームのトークン（スポットの画面など、URLからわからないとき） */
+  gameToken?: string;
 }) {
   const copy = usePlayCopy();
   if (!playMomentHasClear(moment) && !code && !used && !points && !badge) return null;
@@ -119,7 +123,10 @@ export function PlayClearPanel({
       ) : null}
       {points ? (
         pointsAwarded ? (
-          <p className="play-clear__points">{copy.pointsGot(points)}</p>
+          <>
+            <p className="play-clear__points">{copy.pointsGot(points)}</p>
+            <PlayClearPointsLink gameToken={gameToken} />
+          </>
         ) : (
           <div className="play-clear__claim">
             <p className="play-clear__points">{copy.pointsReady(points)}</p>

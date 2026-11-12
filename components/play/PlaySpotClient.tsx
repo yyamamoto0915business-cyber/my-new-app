@@ -468,6 +468,7 @@ export function PlaySpotClient() {
                 badgeAwarded={progress.rewardBadgeAwarded}
                 badgeImage={progress.rewardBadgeImage}
                 claimHref={`/auth?next=${encodeURIComponent(`/play/spot/${token}`)}`}
+                gameToken={spot.joinToken}
               />
             ) : null}
           </PlayProgressCard>

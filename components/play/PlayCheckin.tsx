@@ -1,5 +1,6 @@
 "use client";
 
+import { PlayClearPointsLink } from "@/components/play/PlayClearPointsLink";
 import { RewardLine } from "@/components/play/RewardLine";
 import { useState } from "react";
 import Link from "next/link";
@@ -124,9 +125,7 @@ export function PlayCheckin({ token, checkin, progress, onProgress, previewOpen 
           progress.rewardPointsAwarded ? (
             <>
               <p className="play-clear__points">{copy.pointsGot(progress.rewardPoints)}</p>
-              <Link className="play-join__login" href="/points">
-                {copy.seePoints}
-              </Link>
+              <PlayClearPointsLink />
             </>
           ) : (
             <p className="play-clear__points">{copy.pointsReady(progress.rewardPoints)}</p>

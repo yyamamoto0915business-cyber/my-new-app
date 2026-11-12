@@ -5,6 +5,12 @@ import { Keyboard, ScanLine } from "lucide-react";
 import { Modal } from "@/components/organizer/day/day-management-shared";
 import { useQrCamera } from "@/hooks/use-qr-camera";
 import { parsePassQr } from "@/lib/checkin/parse-pass-qr";
+import { looksLikePointsQr } from "@/lib/points/points-qr-format";
+
+/** 参加パスのQR・受付番号か、ポイントの画面の「レジで見せるQR」か */
+function isReadableQr(raw: string): boolean {
+  return Boolean(parsePassQr(raw)) || looksLikePointsQr(raw);
+}
 
 export type PosPointsHolderView = {
   /** 読み取ったQR（会計のときにサーバーで読み直すために送る） */
@@ -42,7 +48,7 @@ export function PosPointsScanModal({ open, onClose, eventId, onResolved }: Props
   const lookup = useCallback(
     async (raw: string): Promise<boolean> => {
       const qr = raw.trim();
-      if (!parsePassQr(qr) || busyRef.current) return false;
+      if (!isReadableQr(qr) || busyRef.current) return false;
       busyRef.current = true;
       setBusy(true);
       setError(null);
@@ -78,7 +84,7 @@ export function PosPointsScanModal({ open, onClose, eventId, onResolved }: Props
   return (
     <Modal open={open} onClose={onClose} title="参加パスを読み取る">
       <p className="mb-3 text-[13px] leading-relaxed text-[#566358]">
-        お客さまの参加パスのQRを読み取ると、このイベントのポイントが出ます。
+        お客さまの参加パスのQR（またはポイントの画面のQR）を読み取ると、このイベントのポイントが出ます。
       </p>
       {manual ? (
         <div>
@@ -152,7 +158,7 @@ function PosPointsCamera({
   const { state } = useQrCamera(
     videoRef,
     (raw) => {
-      if (!parsePassQr(raw)) return false;
+      if (!isReadableQr(raw)) return false;
       const now = Date.now();
       const last = lastRef.current;
       if (last && last.raw === raw && now - last.at < 3000) return false;
@@ -173,7 +179,7 @@ function PosPointsCamera({
           </div>
         </div>
         <p className="px-3 py-2.5 text-center text-[12px] font-medium text-white">
-          {busy ? "ポイントを確認しています…" : state === "starting" ? "カメラを起動しています…" : "参加パスのQRを枠内に合わせてください"}
+          {busy ? "ポイントを確認しています…" : state === "starting" ? "カメラを起動しています…" : "QRを枠内に合わせてください"}
         </p>
         {failed && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#172033]/92 p-4">
