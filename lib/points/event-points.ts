@@ -146,3 +146,38 @@ export function usableUntilLabel(item: Pick<EventPointsItem, "date" | "endDate" 
   const day = last === today ? "今日" : `${m}/${d}`;
   return item.endTime ? `${day} ${item.endTime}まで` : `${day}まで`;
 }
+
+export type EventPointStats = { issued: number; used: number; earners: number };
+
+/** 主催者の設定画面に出す、このイベントのポイントの数（発行済み・使われた・ためた人） */
+export async function fetchEventPointStats(eventId: string): Promise<EventPointStats> {
+  const admin = createAdminClient();
+  const zero = { issued: 0, used: 0, earners: 0 };
+  if (!admin || !UUID.test(eventId)) return zero;
+  const { data: games } = await admin.from("organizer_games").select("id").eq("event_id", eventId);
+  const gameIds = (games ?? []).map((g) => g.id as string).filter((id) => UUID.test(id));
+
+  const earnedRows: { user_id: string; amount: number }[] = [];
+  if (gameIds.length) {
+    const { data } = await admin
+      .from("point_transactions")
+      .select("user_id, amount, reference_id")
+      .or(gameIds.map((id) => `reference_id.like.%:${id}:%`).join(","))
+      .limit(20000);
+    for (const r of data ?? []) {
+      const [source] = String(r.reference_id ?? "").split(":");
+      if (GAME_SOURCES.has(source)) earnedRows.push({ user_id: r.user_id as string, amount: Number(r.amount) || 0 });
+    }
+  }
+  const { data: spent } = await admin
+    .from("point_transactions")
+    .select("amount")
+    .like("reference_id", `event:${eventId}:%`)
+    .limit(20000);
+
+  return {
+    issued: earnedRows.reduce((s, r) => s + Math.max(r.amount, 0), 0),
+    used: Math.max(-(spent ?? []).reduce((s, r) => s + (Number(r.amount) || 0), 0), 0),
+    earners: new Set(earnedRows.filter((r) => r.amount > 0).map((r) => r.user_id)).size,
+  };
+}
