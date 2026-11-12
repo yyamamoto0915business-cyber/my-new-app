@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  BarChart3,
+  CalendarDays,
   ChevronRight,
   Gamepad2,
   Inbox,
@@ -37,7 +37,7 @@ const MAIN_TOOLS: Tool[] = [
     href: "/organizer/events",
     title: "イベント管理",
     desc: "申込・公開・募集",
-    Icon: BarChart3,
+    Icon: CalendarDays,
     color: "#2f7d4e",
     bg: "linear-gradient(160deg,#f3faf4,#ffffff)",
   },
@@ -70,7 +70,7 @@ const MORE_TOOLS: { href: string; title: string; desc: string; Icon: LucideIcon 
 export default function OrganizerToolsPage() {
   return (
     <OrganizerRegistrationGate>
-      <div className="mx-auto w-full max-w-xl space-y-5 pb-6">
+      <div className="mx-auto w-full max-w-xl space-y-5 pb-6 tablet:max-w-[720px]">
         <OrganizerPageTitle
           title="運営ツール"
           subtitle="当日の受付・レジ・ゲームなど、イベントを動かす道具"

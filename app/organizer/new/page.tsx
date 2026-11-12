@@ -65,7 +65,7 @@ const KINDS: Kind[] = [
 export default function OrganizerNewListingPage() {
   return (
     <OrganizerRegistrationGate>
-      <div className="mx-auto w-full max-w-xl space-y-5 pb-6">
+      <div className="mx-auto w-full max-w-xl space-y-5 pb-6 tablet:max-w-[860px]">
         <OrganizerPageTitle title="新しく掲載する" subtitle="掲載したい情報の種類を選択" Icon={Plus} />
 
         <p className="rounded-[18px] border border-[#d9eadf] bg-gradient-to-br from-[#eef7f0] to-[#f8fbf5] px-5 py-4 text-[14px] leading-[1.8] text-[#3f5146]">
@@ -78,12 +78,13 @@ export default function OrganizerNewListingPage() {
           <h2 id="new-listing-kinds" className="text-[17px] font-bold text-[#163828]">
             掲載する内容を選ぶ
           </h2>
-          <ul className="space-y-3">
+          {/* タブレットでは2列×2段にして、4種類が一度に見えるようにする */}
+          <ul className="space-y-3 tablet:grid tablet:grid-cols-2 tablet:gap-3 tablet:space-y-0">
             {KINDS.map(({ href, title, desc, Icon, color, bg }) => (
               <li key={href}>
                 <Link
                   href={href}
-                  className="flex items-center gap-4 rounded-[20px] border border-[#ebeee8] bg-white p-3 pr-4 shadow-[0_3px_10px_rgba(22,56,40,0.05)] transition active:scale-[0.99] active:bg-[#fafcf9]"
+                  className="flex h-full items-center gap-4 rounded-[20px] border border-[#ebeee8] bg-white p-3 pr-4 shadow-[0_3px_10px_rgba(22,56,40,0.05)] transition active:scale-[0.99] active:bg-[#fafcf9]"
                 >
                   <span
                     className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[16px]"
