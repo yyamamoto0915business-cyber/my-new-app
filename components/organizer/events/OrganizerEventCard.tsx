@@ -480,16 +480,6 @@ export function OrganizerEventCard({
               <DropdownMenuItem
                 onClick={() => {
                   closeAllMenus();
-                  nav(`/organizer/stories/new?eventId=${event.id}`);
-                }}
-                className="min-h-10 cursor-pointer gap-2 px-3 py-2"
-              >
-                <FileText className="h-4 w-4" />
-                ストーリーを書く
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  closeAllMenus();
                   nav(`/organizer/events/${event.id}/sponsors`);
                 }}
                 className="min-h-10 cursor-pointer gap-2 px-3 py-2"
