@@ -49,12 +49,6 @@ export default function StoriesListPage() {
           >
             イベント一覧 →
           </Link>
-          <Link
-            href="/organizer/stories"
-            className="text-sm text-[var(--foreground-muted)] hover:underline"
-          >
-            主催者の方はストーリーを書く
-          </Link>
         </div>
       </main>
     </div>

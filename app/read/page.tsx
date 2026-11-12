@@ -49,12 +49,6 @@ export default function ReadListPage() {
           >
             イベント一覧 →
           </Link>
-          <Link
-            href="/organizer/articles"
-            className="text-sm text-[var(--foreground-muted)] hover:underline"
-          >
-            主催者の方は記事を書く
-          </Link>
         </div>
       </main>
     </div>

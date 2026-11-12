@@ -2,13 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   BarChart3,
-  BookOpen,
   ChevronRight,
   Gamepad2,
   Inbox,
   LayoutGrid,
   QrCode,
-  Sparkles,
   UserPlus,
   Wallet,
   type LucideIcon,
@@ -64,8 +62,8 @@ const MAIN_TOOLS: Tool[] = [
 /** そのほかの機能（スマホの上のタブ帯をなくしたので、ここから行けるようにする） */
 const MORE_TOOLS: { href: string; title: string; desc: string; Icon: LucideIcon }[] = [
   { href: "/messages", title: "メッセージ", desc: "参加者・ボランティアとのやりとり", Icon: Inbox },
-  { href: "/organizer/articles", title: "記事", desc: "まちの記事を書く・管理する", Icon: BookOpen },
-  { href: "/organizer/stories", title: "ストーリー", desc: "活動の様子を短く届ける", Icon: Sparkles },
+  // 記事・ストーリーは保存先がサーバーのメモリだけ（lib/read-articles-store・lib/stories-store）で、
+  // 書いても消え、書いた人も「地域振興会」に固定されるため、データベースに保存できるまで入口を出さない
 ];
 
 /** 主催者：運営ツール（見本「04_運営」） */
