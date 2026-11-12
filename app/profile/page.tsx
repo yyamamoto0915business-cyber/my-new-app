@@ -18,6 +18,7 @@ import { ProfilePageSkeleton } from "@/components/profile/ProfilePageSkeleton";
 import { MypageMobileProfileCard } from "@/components/profile/mypage-mobile-profile-card";
 import { MypageMobileOrganize } from "@/components/profile/mypage-mobile-organize";
 import { MypageMobileAlbum } from "@/components/profile/mypage-mobile-album";
+import { MypageNextEvent } from "@/components/profile/mypage-next-event";
 import { MypageMobileFooterLinks } from "@/components/profile/mypage-mobile-footer-links";
 import { MypagePointsCard } from "@/components/profile/MypagePointsCard";
 import { MypagePcView } from "@/components/profile/mypage-pc-view";
@@ -194,6 +195,9 @@ function ProfileContent() {
               }}
             />
 
+            {/* 次に行くイベント（参加者がマイページでいちばん知りたいこと） */}
+            <MypageNextEvent event={data.nextEvent} />
+
             {/* 主催者として登録済みの人は、掲載は主催者モードで行う（マイページは利用者のことだけ）。まだの人には登録への案内として出す */}
             {!data.profile.isOrganizerRegistered ? (
               <MypageMobileOrganize isOrganizerRegistered={false} />
@@ -201,7 +205,7 @@ function ProfileContent() {
 
             <MypageMobileAlbum />
 
-            <MypagePointsCard />
+            <MypagePointsCard compact />
 
             <section
               className="overflow-hidden rounded-[14px] border border-[#e8e6e0] bg-white"

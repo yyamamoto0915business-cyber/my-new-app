@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { ProfileBannerAvatar } from "./profile-banner-avatar";
 import { AccountVisibilityChip } from "./account-visibility-chip";
-import { cn } from "@/lib/utils";
 
 const MYPAGE_BG = "/profile/mypage-bg.png";
 const MG_GREEN = "#48BB78";
@@ -310,22 +309,23 @@ export function MypageMobileProfileCard({
         </div>
       </div>
 
+      {/* スマホ：数字の行に「お気に入り」も並べて1行にする（前はこの下に「投稿・お気に入り」の大きなボタンの段があり、
+          「投稿」はマイアルバムと同じ画面だった） */}
       {social ? (
         <div className="relative z-[2] flex items-stretch border-t border-[#eceae3] bg-[#ffffff] min-[900px]:hidden">
           <SocialCountLinks social={social} />
+          <Link
+            href="/saved"
+            className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 border-l border-[#eceae3] py-1.5 transition-colors hover:bg-[#f7faf8] active:bg-[#eaf4ee]"
+          >
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#d0567a" strokeWidth="1.9" strokeLinecap="round" aria-hidden className="my-[3px]">
+              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+            </svg>
+            <span className="whitespace-nowrap text-[10px] tracking-[0.06em] text-[#5c5a56]">お気に入り</span>
+          </Link>
         </div>
       ) : null}
 
-      <div
-        className={cn(
-          "relative z-[2] grid divide-x divide-[#eceae3] border-t border-[#eceae3] bg-[#ffffff] min-[900px]:hidden",
-          statItems.length === 2 ? "grid-cols-2" : "grid-cols-4"
-        )}
-      >
-        {statItems.map((item) => (
-          <StatCell key={item.label} {...item} />
-        ))}
-      </div>
     </section>
   );
 }
