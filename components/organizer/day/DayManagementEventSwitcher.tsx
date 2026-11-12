@@ -132,12 +132,12 @@ function EventDropdownList({
                           {event.title}
                         </span>
                         {event.eventFormat && event.eventFormat !== "onsite" ? (
-                          <span className="shrink-0 rounded-full bg-[#eef8e8] px-1.5 py-0.5 text-[9px] font-bold text-[#3a7a10]">
+                          <span className="shrink-0 rounded-full bg-[#eef8e8] px-1.5 py-0.5 text-[11px] font-bold text-[#3a7a10]">
                             {EVENT_FORMAT_LABEL[event.eventFormat]}
                           </span>
                         ) : null}
                         <span
-                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${eventDayPhaseBadgeClass(phase)}`}
+                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-bold ${eventDayPhaseBadgeClass(phase)}`}
                         >
                           {eventDayPhaseLabel(phase)}
                         </span>

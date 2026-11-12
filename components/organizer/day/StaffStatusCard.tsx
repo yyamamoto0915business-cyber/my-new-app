@@ -319,7 +319,7 @@ export function StaffStatusCard({
           </div>
           <p
             className={cn(
-              isMobile ? "mt-1.5 text-[9px] text-[#566358]" : "mg-day-mgmt-pc__empty-text mt-1.5"
+              isMobile ? "mt-1.5 text-[12px] text-[#566358]" : "mg-day-mgmt-pc__empty-text mt-1.5"
             )}
           >
             イベントを選択するとスタッフが表示されます。
