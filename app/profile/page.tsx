@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { useRouter } from "next/navigation";
 import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
-import { useUnreadCount } from "@/hooks/use-unread-count";
+import { useScopedUnreadCount } from "@/hooks/use-scoped-unread-count";
 import { ProfilePageSkeleton } from "@/components/profile/ProfilePageSkeleton";
 import { MypageMobileProfileCard } from "@/components/profile/mypage-mobile-profile-card";
 import { MypageMobileOrganize } from "@/components/profile/mypage-mobile-organize";
@@ -114,7 +114,7 @@ function ProfileContent() {
   const [summary, setSummary] = useState<MypageSummaryResponse | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(true);
   const [noSupabase] = useState(() => createClient() === null);
-  const unreadCount = useUnreadCount(!!user);
+  const unreadCount = useScopedUnreadCount("member", !!user);
 
   useEffect(() => {
     if (!user) return;

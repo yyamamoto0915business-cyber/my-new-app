@@ -301,7 +301,7 @@ async function buildSupabaseDashboard(
       id: "unread-messages",
       type: "unread",
       title: `未読メッセージが${unreadMessages}件あります`,
-      href: "/messages",
+      href: "/organizer/messages",
     });
   }
 

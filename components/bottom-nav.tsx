@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useUnreadCount } from "@/hooks/use-unread-count";
+import { useScopedUnreadCount } from "@/hooks/use-scoped-unread-count";
 import { useRegionPreference } from "@/hooks/use-region-preference";
 import { setModeCookie } from "@/lib/mode-preference";
 import { RegionSettingModal } from "@/components/region/RegionSettingModal";
@@ -122,7 +122,8 @@ function NavLink({
 export function BottomNav() {
   const pathname = usePathname() ?? "";
   const hideOnAuth = shouldHidePcGlobalNav(pathname);
-  const unreadCount = useUnreadCount(!hideOnAuth);
+  // 利用者のチャット（/messages）に出る会話の分だけ
+  const unreadCount = useScopedUnreadCount("member", !hideOnAuth);
 
   useEffect(() => {
     if (pathname.startsWith("/organizer")) {

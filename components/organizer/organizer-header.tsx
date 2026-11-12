@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { MessageSquare } from "lucide-react";
-import { useUnreadCount } from "@/hooks/use-unread-count";
+import { useOrganizerUnreadCount } from "@/hooks/use-scoped-unread-count";
 import { cn } from "@/lib/utils";
 
-const MESSAGES_HREF = "/messages";
+// 主催者の画面のヘッダーなので、主催者のチャットへ
+const MESSAGES_HREF = "/organizer/messages";
 
 type Props = {
   title: string;
@@ -44,7 +45,7 @@ export function OrganizerHeader({
   tertiaryCtaLabel = "売上受取設定",
   tertiaryCtaHighlight,
 }: Props) {
-  const unreadCount = useUnreadCount(true);
+  const unreadCount = useOrganizerUnreadCount(true);
 
   return (
     <header

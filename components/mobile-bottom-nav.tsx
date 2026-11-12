@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useUnreadCount } from "@/hooks/use-unread-count";
+import { useScopedUnreadCount } from "@/hooks/use-scoped-unread-count";
 import { isMessagesConversationRoute } from "@/lib/is-messages-conversation-route";
 import { isProfileEditRoute } from "@/lib/is-profile-edit-route";
 import { isEventFormRoute } from "@/lib/is-event-form-route";
@@ -63,7 +63,8 @@ export function MobileBottomNav() {
   /** 初回から DOM に Link を出す（SSR 含む）→ ビューポート内プリフェッチが効き、モバイルのタップが速くなりやすい */
   const pathname = usePathname() ?? "";
   const authRoute = isAuthRoute(pathname);
-  const unreadCount = useUnreadCount(!authRoute);
+  // 利用者のチャット（/messages）に出る会話の分だけ。主催者として参加している会話は主催者のチャットに出る
+  const unreadCount = useScopedUnreadCount("member", !authRoute);
   /** pathname 依存の active 表示はマウント後に揃える（SSR/CSR の不一致を防ぐ） */
   const [hydrated, setHydrated] = useState(false);
 

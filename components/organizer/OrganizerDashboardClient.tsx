@@ -512,7 +512,7 @@ export default function OrganizerDashboardClient() {
             </div>
           </div>
           <Link
-            href="/messages"
+            href="/organizer/messages"
             className="block rounded-[10px] px-3 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-opacity active:opacity-85 min-[900px]:px-3.5 min-[900px]:py-3"
             style={{ background: "#fff", border: "0.5px solid #e8e6e0" }}
           >

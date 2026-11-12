@@ -10,6 +10,11 @@ import { MessageCircle } from "lucide-react";
 import { LoginRequiredPanel } from "@/components/auth/LoginRequiredPanel";
 import { isAbortLikeError } from "@/lib/is-abort-like-error";
 import { resolveAvatarUrlByRole } from "@/lib/profile-avatar";
+import {
+  isOrganizerConversation,
+  messagesBasePath,
+  messagesScopeFromPath,
+} from "@/lib/messages-scope";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
@@ -26,7 +31,8 @@ const C = {
   greenL: "#eaf4f0",
 } as const;
 
-type FilterId = "all" | "unread" | "h" | "v" | "p" | "f";
+/** h は使っていない（主催の会話は主催者のチャットに分けた）。op/ov は主催者のチャットの「参加者」「ボランティア」 */
+type FilterId = "all" | "unread" | "h" | "v" | "p" | "f" | "op" | "ov";
 
 function formatRel(iso: string): string {
   const d = new Date(iso);
@@ -67,6 +73,8 @@ function isFollowChat(item: InboxItem): boolean {
 function itemMatchesFilter(item: InboxItem, filter: FilterId): boolean {
   if (filter === "all") return true;
   if (filter === "unread") return item.unread_count > 0;
+  if (filter === "op") return isOrganizerConversation(item) && item.conversation_kind !== "general";
+  if (filter === "ov") return isOrganizerConversation(item) && item.conversation_kind === "general";
   if (filter === "f") return isFollowChat(item);
   if (isFollowChat(item)) return false;
   if (filter === "h") return item.my_role === "organizer";
@@ -90,7 +98,7 @@ function initials(name: string): string {
   return (compact.slice(0, 1) || "?").toUpperCase();
 }
 
-function PersonRow({ item, activeId }: { item: InboxItem; activeId?: string }) {
+function PersonRow({ item, activeId, basePath }: { item: InboxItem; activeId?: string; basePath: string }) {
   const name = getName(item);
   const active = item.conversation_id === activeId;
   const unread = item.unread_count > 0;
@@ -101,7 +109,7 @@ function PersonRow({ item, activeId }: { item: InboxItem; activeId?: string }) {
 
   return (
     <Link
-      href={`/messages/${item.conversation_id}`}
+      href={`${basePath}/${item.conversation_id}`}
       className="ms-pitem"
       style={{
         display: "flex",
@@ -211,7 +219,13 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const [filter, setFilter] = useState<FilterId>("all");
   const [search, setSearch] = useState("");
 
-  const conversationId = pathname?.split("/").filter(Boolean)[1];
+  // 主催者として（/organizer/messages）か、利用者として（/messages）か。会話の一覧もそれぞれの分だけ出す
+  const scope = messagesScopeFromPath(pathname);
+  const basePath = messagesBasePath(scope);
+  const conversationId =
+    pathname && pathname.startsWith(`${basePath}/`)
+      ? pathname.slice(basePath.length + 1).split("/")[0] || undefined
+      : undefined;
 
   useEffect(() => {
     if (!user && !AUTH_DISABLED) {
@@ -272,13 +286,17 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
     );
   }
 
-  const sorted = [...items].sort((a, b) => {
+  const scopedItems = items.filter((i) =>
+    scope === "organizer" ? isOrganizerConversation(i) : !isOrganizerConversation(i)
+  );
+  const sorted = [...scopedItems].sort((a, b) => {
     if ((a.unread_count > 0) !== (b.unread_count > 0)) return b.unread_count > 0 ? 1 : -1;
     return (b.last_message_at ?? "").localeCompare(a.last_message_at ?? "");
   });
 
   const unreadThreadCount = sorted.filter((i) => i.unread_count > 0).length;
-  const hCount = sorted.filter((i) => itemMatchesFilter(i, "h") && i.unread_count > 0).length;
+  const opCount = sorted.filter((i) => itemMatchesFilter(i, "op") && i.unread_count > 0).length;
+  const ovCount = sorted.filter((i) => itemMatchesFilter(i, "ov") && i.unread_count > 0).length;
   const vCount = sorted.filter((i) => itemMatchesFilter(i, "v") && i.unread_count > 0).length;
   const pCount = sorted.filter((i) => itemMatchesFilter(i, "p") && i.unread_count > 0).length;
   const fCount = sorted.filter((i) => itemMatchesFilter(i, "f") && i.unread_count > 0).length;
@@ -290,25 +308,39 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
     return getName(i).includes(q) || (i.event_title ?? "").includes(q);
   });
 
-  const chips: { id: FilterId; label: string; badge: number }[] = [
-    { id: "all", label: "すべて", badge: 0 },
-    { id: "unread", label: "未読", badge: unreadThreadCount },
-    { id: "h", label: "主催", badge: hCount },
-    { id: "p", label: "参加", badge: pCount },
-    { id: "v", label: "手伝い", badge: vCount },
-    { id: "f", label: "フォロー", badge: fCount },
-  ];
+  const chips: { id: FilterId; label: string; badge: number }[] =
+    scope === "organizer"
+      ? [
+          { id: "all", label: "すべて", badge: 0 },
+          { id: "unread", label: "未読", badge: unreadThreadCount },
+          { id: "op", label: "参加者", badge: opCount },
+          { id: "ov", label: "ボランティア", badge: ovCount },
+        ]
+      : [
+          { id: "all", label: "すべて", badge: 0 },
+          { id: "unread", label: "未読", badge: unreadThreadCount },
+          { id: "p", label: "参加", badge: pCount },
+          { id: "v", label: "手伝い", badge: vCount },
+          { id: "f", label: "フォロー", badge: fCount },
+        ];
 
   const sidebarHidden = !!conversationId;
   const mainHidden = !conversationId;
   // 会話を開いているときは、スマホの上の帯・下のメニューを出さない（mobile-main-shell）ので画面いっぱいを使う
+  // 主催者の下のナビは利用者のものより低い（約58px）
+  const bottomNavH = scope === "organizer" ? "58px" : "72px";
   const mobileHeightClass = conversationId
     ? "max-[899px]:h-[100dvh]"
-    : "max-[899px]:h-[calc(100dvh-var(--mg-mobile-top-header-h,46px)-env(safe-area-inset-top,0px)-calc(72px+env(safe-area-inset-bottom,0px)))]";
+    : scope === "organizer"
+      ? `max-[899px]:h-[calc(100dvh-var(--mg-mobile-top-header-h,46px)-env(safe-area-inset-top,0px)-calc(${bottomNavH}+env(safe-area-inset-bottom,0px)))]`
+      : "max-[899px]:h-[calc(100dvh-var(--mg-mobile-top-header-h,46px)-env(safe-area-inset-top,0px)-calc(72px+env(safe-area-inset-bottom,0px)))]";
+  // PC の主催者の画面は上のナビの下に入るので、その分を引く
+  const pcHeightClass =
+    scope === "organizer" ? "min-[900px]:h-[calc(100dvh-var(--mg-pc-top-nav-h,52px))]" : "min-[900px]:h-[100dvh]";
 
   return (
     <div
-      className={`ms-shell ${mobileHeightClass} min-[900px]:h-[100dvh]`}
+      className={`ms-shell ${mobileHeightClass} ${pcHeightClass}`}
       style={{ display: "flex", overflow: "hidden", background: C.bg, fontFamily: "'Noto Sans JP', sans-serif" }}
     >
       <aside
@@ -331,7 +363,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               lineHeight: 1.2,
             }}
           >
-            メッセージ
+            {scope === "organizer" ? "主催者のチャット" : "メッセージ"}
           </div>
           <div style={{ position: "relative" }}>
             <svg
@@ -437,7 +469,15 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               ))}
             </div>
           )}
-          {!loading && !error && items.length === 0 && (
+          {!loading && !error && scopedItems.length === 0 && scope === "organizer" && (
+            <div className="ms-empty-state" style={{ padding: "40px 20px", textAlign: "center" }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: C.t1 }}>メッセージはまだありません</p>
+              <p style={{ fontSize: 12, color: C.t3, marginTop: 8, lineHeight: 1.7 }}>
+                参加者やボランティアに応募した人とのやりとりが、ここに出ます
+              </p>
+            </div>
+          )}
+          {!loading && !error && scopedItems.length === 0 && scope === "member" && (
             <div className="ms-empty-state" style={{ padding: "40px 20px", textAlign: "center" }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: C.t1 }}>メッセージはまだありません</p>
               <p style={{ fontSize: 12, color: C.t3, marginTop: 8, lineHeight: 1.7 }}>
@@ -448,13 +488,13 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               </Link>
             </div>
           )}
-          {!loading && !error && items.length > 0 && visible.length === 0 && (
+          {!loading && !error && scopedItems.length > 0 && visible.length === 0 && (
             <div className="ms-empty-state" style={{ padding: "32px 20px", textAlign: "center" }}>
               <p style={{ fontSize: 13, color: C.t3 }}>条件に合う会話はありません</p>
             </div>
           )}
           {!loading && !error && visible.map((item) => (
-            <PersonRow key={item.conversation_id} item={item} activeId={conversationId} />
+            <PersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
           ))}
         </div>
       </aside>

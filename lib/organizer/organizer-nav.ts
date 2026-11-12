@@ -7,10 +7,10 @@ export const ORGANIZER_HOME_HREF = "/organizer/listings";
 export const ORGANIZER_MOBILE_HOME_HREF = "/organizer/home";
 /** 新しく掲載する（種類を選ぶ）。スマホ下部ナビの真ん中 */
 export const ORGANIZER_NEW_LISTING_HREF = "/organizer/new";
-/** 運営ツールの一覧（当日の運営・レジ・ゲームなど） */
+/** 旧「運営」タブ（今はホームへ移す）。古いリンクのために残す */
 export const ORGANIZER_TOOLS_HREF = "/organizer/tools";
 
-export type OrganizerBottomNavId = "home" | "listings" | "new" | "tools" | "mypage";
+export type OrganizerBottomNavId = "home" | "listings" | "new" | "chat" | "mypage";
 
 /** スマホ下部ナビで、いまのページがどの項目に入るか */
 export function organizerBottomNavActive(pathname: string): OrganizerBottomNavId | null {
@@ -21,6 +21,8 @@ export function organizerBottomNavActive(pathname: string): OrganizerBottomNavId
   if (pathname === "/organizer/settings" || pathname.startsWith("/organizer/settings/")) {
     return "mypage";
   }
+  if (pathname === "/organizer/messages" || pathname.startsWith("/organizer/messages/")) return "chat";
+  // 当日の運営・レジ・ゲームはホームの「よく使う」から行くので、ホームを光らせる
   if (
     pathname === ORGANIZER_TOOLS_HREF ||
     pathname === "/organizer" ||
@@ -30,7 +32,7 @@ export function organizerBottomNavActive(pathname: string): OrganizerBottomNavId
     pathname.startsWith("/organizer/games") ||
     pathname.startsWith("/organizer/inbox")
   ) {
-    return "tools";
+    return "home";
   }
   if (organizerSidebarNavIsActive(pathname, "/organizer/listings")) return "listings";
   return null;
@@ -42,6 +44,7 @@ export const ORGANIZER_SIDEBAR_NAV_ITEMS = [
   { label: "当日の運営", shortLabel: "当日", href: "/organizer" },
   { label: "レジ・当日販売", shortLabel: "レジ", href: "/organizer/pos", badge: "NEW" },
   { label: "ゲーム機能", shortLabel: "ゲーム", href: "/organizer/games", badge: "NEW" },
+  { label: "チャット", shortLabel: "チャット", href: "/organizer/messages" },
   { label: "主催者プラン", shortLabel: "プラン", href: "/organizer/settings/plan" },
 ] as const;
 

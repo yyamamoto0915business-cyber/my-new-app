@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
+import { messagesBasePath, messagesScopeFromPath } from "@/lib/messages-scope";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { createClient } from "@/lib/supabase/client";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
@@ -105,6 +106,8 @@ function formatDateSep(iso: string): string {
 
 
 export default function ConversationPage() {
+  // 主催者のチャット（/organizer/messages/…）から開いたときは、主催者のチャットの一覧に戻る
+  const listHref = messagesBasePath(messagesScopeFromPath(usePathname()));
   const routeParams = useParams<{ conversationId?: string | string[] }>();
   const { user, loading: authLoading } = useSupabaseUser();
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -390,7 +393,7 @@ export default function ConversationPage() {
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 16px" }}>
         <p style={{ color: C.t2 }}>ログインするとメッセージを利用できます</p>
-        <Link href={`/auth?next=/messages/${conversationId}`} style={{ color: C.green, textDecoration: "underline" }}>ログイン</Link>
+        <Link href={`/auth?next=${listHref}/${conversationId}`} style={{ color: C.green, textDecoration: "underline" }}>ログイン</Link>
       </div>
     );
   }
@@ -456,7 +459,7 @@ export default function ConversationPage() {
         style={{ display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface, paddingRight: 8, paddingBottom: 8, paddingLeft: 4 }}
       >
         <Link
-          href="/messages"
+          href={listHref}
           className="min-[900px]:hidden"
           aria-label="一覧に戻る"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, color: C.t1, textDecoration: "none", flexShrink: 0 }}

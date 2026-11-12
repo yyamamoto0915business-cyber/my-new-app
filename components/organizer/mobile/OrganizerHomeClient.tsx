@@ -8,7 +8,7 @@ import {
   ClipboardList,
   Info,
   MapPin,
-  MessageCircle,
+  Gamepad2,
   QrCode,
   Wallet,
   type LucideIcon,
@@ -18,6 +18,8 @@ import type { PosSalesSummary } from "@/lib/pos/types";
 import { formatYen } from "@/lib/pos/types";
 import { EventThumbnail } from "@/components/event-thumbnail";
 import { cn } from "@/lib/utils";
+import { useOrganizerUnreadCount } from "@/hooks/use-scoped-unread-count";
+import type { DashboardTodo } from "@/app/api/organizer/dashboard/route";
 
 const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
@@ -33,14 +35,14 @@ function formatEventWhen(e: DashboardEvent): string {
 }
 
 /**
- * ホームから一度で行きたい、毎回のように使う4つ。
- * ゲーム・プランなどはそれぞれのタブ（運営・マイページ）から行く。
+ * イベントを動かす道具。入口はここだけ（前の「運営」タブはホームと重なっていたのでなくした）。
+ * チャットは下のナビ、プランはマイページから行く。
  */
 const QUICK_ACTIONS: { href: string; label: string; Icon: LucideIcon; color: string; bg: string }[] = [
-  { href: "/organizer/events", label: "申込を確認", Icon: ClipboardList, color: "#d4843a", bg: "#fdf1e4" },
+  { href: "/organizer/events", label: "イベント管理", Icon: ClipboardList, color: "#d4843a", bg: "#fdf1e4" },
   { href: "/organizer", label: "当日の受付", Icon: QrCode, color: "#2f7d4e", bg: "#e6f3ea" },
   { href: "/organizer/pos", label: "レジ", Icon: Wallet, color: "#2f6fae", bg: "#e6f1fa" },
-  { href: "/messages", label: "メッセージ", Icon: MessageCircle, color: "#7a5cc0", bg: "#efeaf9" },
+  { href: "/organizer/games", label: "ゲーム", Icon: Gamepad2, color: "#7a5cc0", bg: "#efeaf9" },
 ];
 
 const STATUS_LABEL: Record<DashboardEvent["status"], { label: string; className: string }> = {
@@ -50,7 +52,7 @@ const STATUS_LABEL: Record<DashboardEvent["status"], { label: string; className:
   archived: { label: "非公開", className: "bg-[#eef0ec] text-[#6b776f]" },
 };
 
-/** 数字だけを見せる欄。押して移動するのは下の「よく使う操作」に任せ、入口を重ねない */
+/** 数字だけを見せる欄。押して移動するのは下の「運営の道具」に任せ、入口を重ねない */
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 px-1 text-center">
@@ -78,7 +80,7 @@ function SectionHead({ title, href }: { title: string; href?: string }) {
 
 /**
  * 主催者ホーム：開いてすぐ「今やること」が見える順に並べる。
- * 対応が必要なこと → 数字 → よく使う操作 → 管理中のイベント
+ * 対応が必要なこと → 数字 → 運営の道具（イベント管理・当日の受付・レジ・ゲーム） → 管理中のイベント
  */
 export function OrganizerHomeClient() {
   const [data, setData] = useState<DashboardResponse | null>(null);
@@ -110,7 +112,22 @@ export function OrganizerHomeClient() {
 
   const loading = !data && !error;
   const events = (data?.events ?? []).filter((e) => e.status === "public" || e.status === "draft");
-  const todos = data?.todos ?? [];
+  // 未読メッセージは、主催者として参加している会話の分だけを数える（下のナビの「チャット」と同じ数）。
+  // サーバーの数は利用者として参加している会話の未読も含むので、ここで置きかえる。
+  const organizerUnread = useOrganizerUnreadCount();
+  const todos: DashboardTodo[] = [
+    ...(organizerUnread > 0
+      ? [
+          {
+            id: "unread-messages",
+            type: "unread" as const,
+            title: `未読メッセージが${organizerUnread}件あります`,
+            href: "/organizer/messages",
+          },
+        ]
+      : []),
+    ...(data?.todos ?? []).filter((t) => t.id !== "unread-messages"),
+  ];
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-5 pb-6 tablet:max-w-[860px]">
@@ -192,8 +209,8 @@ export function OrganizerHomeClient() {
         </dl>
       ) : null}
 
-      {/* よく使う操作 */}
-      <nav aria-label="よく使う操作" className="grid grid-cols-4 gap-2">
+      {/* 運営の道具 */}
+      <nav aria-label="運営の道具" className="grid grid-cols-4 gap-2">
         {QUICK_ACTIONS.map(({ href, label, Icon, color, bg }) => (
           <Link
             key={href}

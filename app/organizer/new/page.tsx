@@ -104,11 +104,11 @@ export default function OrganizerNewListingPage() {
           </ul>
         </section>
 
-        {/* ゲームは掲載ではなくイベントで使う道具なので、作る場所は「運営 → ゲーム」 */}
+        {/* ゲームは掲載ではなくイベントで使う道具なので、作る場所はホームの「ゲーム」 */}
         <p className="text-center text-[12.5px] leading-relaxed text-[#6b776f]">
-          スタンプラリーやくじなどのゲームは
+          スタンプラリーやくじなどのゲームは、ホームの
           <Link href="/organizer/games" className="mx-0.5 font-bold text-[#1f7a4a] underline underline-offset-2">
-            運営 → ゲーム
+            ゲーム
           </Link>
           から作れます
         </p>
