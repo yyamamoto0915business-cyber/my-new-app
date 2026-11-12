@@ -20,7 +20,6 @@ import { MypageMobileOrganize } from "@/components/profile/mypage-mobile-organiz
 import { MypageMobileAlbum } from "@/components/profile/mypage-mobile-album";
 import { MypageNextEvent } from "@/components/profile/mypage-next-event";
 import { MypageMobileFooterLinks } from "@/components/profile/mypage-mobile-footer-links";
-import { MypagePointsCard } from "@/components/profile/MypagePointsCard";
 import { MypagePcView } from "@/components/profile/mypage-pc-view";
 import {
   prefetchMypageSummary,
@@ -205,7 +204,7 @@ function ProfileContent() {
 
             <MypageMobileAlbum />
 
-            <MypagePointsCard compact />
+            {/* ポイントはイベントのゲームでたまり、そのイベントで使うものなので、マイページには出さずゲームの画面で見せる */}
 
             <section
               className="overflow-hidden rounded-[14px] border border-[#e8e6e0] bg-white"

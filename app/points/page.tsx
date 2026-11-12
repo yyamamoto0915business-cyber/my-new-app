@@ -4,11 +4,24 @@ import { getApiUser } from "@/lib/api-auth";
 import { getLoginUrl } from "@/lib/auth-utils";
 import { createClient } from "@/lib/supabase/server";
 import styles from "./points.module.css";
+import { fetchMyEventPoints, usableUntilLabel, type EventPointsItem } from "@/lib/points/event-points";
 
 export const metadata: Metadata = {
-  title: "マイポイント | MachiGlyph",
-  description: "保有ポイントと、受け取ったバッジを確認できます",
+  title: "イベントポイント | MachiGlyph",
+  description: "イベントで使えるポイントと、受け取ったバッジを確認できます",
 };
+
+function EventPointRow({ item, note }: { item: EventPointsItem; note: string }) {
+  return (
+    <li>
+      <div>
+        <b>{item.title}</b>
+        <small>{note}</small>
+      </div>
+      <span className={styles.plus}>{item.balance.toLocaleString("ja-JP")}pt</span>
+    </li>
+  );
+}
 
 type TransactionRow = {
   id: string;
@@ -51,9 +64,9 @@ export default async function PointsPage() {
   if (!user) redirect(getLoginUrl("/points"));
 
   const supabase = await createClient();
-  const [{ data: points }, { data: transactions }, { data: badges }] = supabase
+  const [eventPoints, { data: transactions }, { data: badges }] = supabase
     ? await Promise.all([
-        supabase.from("user_points").select("balance").eq("user_id", user.id).maybeSingle(),
+        fetchMyEventPoints(supabase, user.id),
         supabase
           .from("point_transactions")
           .select("id, amount, type, reference_id, created_at")
@@ -66,20 +79,51 @@ export default async function PointsPage() {
           .eq("user_id", user.id)
           .order("awarded_at", { ascending: false }),
       ])
-    : [{ data: null }, { data: null }, { data: null }];
+    : [{ usable: [], ended: [], unlinked: 0, totalEarned: 0 }, { data: null }, { data: null }];
 
-  const balance = typeof points?.balance === "number" ? points.balance : 0;
   const history = (transactions ?? []) as TransactionRow[];
   const owned = (badges ?? []) as BadgeRow[];
 
   return (
     <main className={styles.page}>
       <div className={styles.inner}>
-        <p className={styles.kicker}>アカウント</p>
-        <h1 className={styles.title}>マイポイント</h1>
+        <p className={styles.kicker}>ポイント・バッジ</p>
+        <h1 className={styles.title}>イベントポイント</h1>
+        <p className={styles.empty}>
+          ポイントは、イベントのゲーム（スタンプラリーなど）をクリアするともらえます。もらったイベントの開催中に、そのイベントで使えます。
+        </p>
+
+        <section className={styles.section}>
+          <h2>使えるポイント</h2>
+          {eventPoints.usable.length === 0 ? (
+            <p className={styles.empty}>いま使えるポイントはありません。</p>
+          ) : (
+            <ul className={styles.list}>
+              {eventPoints.usable.map((item) => (
+                <EventPointRow
+                  key={item.eventId}
+                  item={item}
+                  note={item.status === "live" ? `開催中・${usableUntilLabel(item)}` : `開催前・${usableUntilLabel(item)}`}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {eventPoints.ended.length > 0 ? (
+          <section className={styles.section}>
+            <h2>終わったイベント（記録）</h2>
+            <ul className={styles.list}>
+              {eventPoints.ended.map((item) => (
+                <EventPointRow key={item.eventId} item={{ ...item, balance: item.earned }} note="ためたポイント・今は使えません" />
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
         <section className={styles.balance}>
-          <span>保有ポイント</span>
-          <strong>{balance.toLocaleString("ja-JP")}</strong>
+          <span>これまでにためたポイント</span>
+          <strong>{eventPoints.totalEarned.toLocaleString("ja-JP")}</strong>
         </section>
 
         <section className={styles.section}>

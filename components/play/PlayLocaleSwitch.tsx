@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
 import { usePlayCopy } from "@/components/play/usePlayCopy";
+import { PlayEventPoints } from "@/components/play/PlayEventPoints";
 
 export function PlayLocaleToggle() {
   const { locale, setLocale } = useLanguage();
@@ -35,6 +36,8 @@ export function PlayLocaleSwitch() {
   return (
     <div className="play-locale-bar">
       <PlayExitLink />
+      {/* このイベントで持っているポイント（イベントにつながったゲームのときだけ） */}
+      <PlayEventPoints />
       <PlayLocaleToggle />
     </div>
   );
