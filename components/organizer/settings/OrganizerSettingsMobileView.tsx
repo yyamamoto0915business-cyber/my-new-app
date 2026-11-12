@@ -8,13 +8,13 @@ import {
   Landmark,
   Pencil,
   Settings,
-  ShieldCheck,
   UserRound,
   Users,
   type LucideIcon,
 } from "lucide-react";
 import { OrganizerPageTitle } from "@/components/organizer/mobile/OrganizerPageTitle";
 import { cn } from "@/lib/utils";
+import { OrganizerLogoutButton } from "@/components/organizer/OrganizerLogoutButton";
 
 export type OrganizerSettingsMobileViewProps = {
   planLabel: string;
@@ -85,21 +85,15 @@ export function OrganizerSettingsMobileView({
           ? { label: "設定済み", tone: "ok" }
           : { label: receiving ?? "未設定", tone: "warn" },
     },
+    // 前は「アカウント情報」「ログイン・セキュリティ」とも利用者のプロフィール編集（/profile/edit）に移っていた。
+    // 主催者の画面のまま開けるアカウントの画面にし、ログアウトはこのページの下にボタンで置く
     {
-      href: "/profile/edit",
-      title: "アカウント情報",
+      href: "/organizer/settings/account",
+      title: "アカウント・削除",
       desc: `ログイン中：${displayEmail}`,
       Icon: UserRound,
       color: "#2f6fae",
       bg: "#e6f1fa",
-    },
-    {
-      href: "/profile/edit",
-      title: "ログイン・セキュリティ",
-      desc: "パスワード・ログアウト",
-      Icon: ShieldCheck,
-      color: "#6b5a3a",
-      bg: "#f3eee5",
     },
     {
       href: "/contact",
@@ -203,6 +197,10 @@ export function OrganizerSettingsMobileView({
           ))}
         </ul>
       </section>
+
+      <div className="flex justify-center pt-1">
+        <OrganizerLogoutButton />
+      </div>
     </div>
   );
 }

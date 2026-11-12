@@ -10,6 +10,7 @@ import { getPlanLabel, getSlotsLabel, getReceivingStatus } from "@/lib/organizer
 import type { OrganizerBillingData } from "@/lib/organizer-billing-types";
 import { SECTION_TONES, type SectionTone } from "@/lib/section-tones";
 import { OrganizerSettingsMobileView } from "@/components/organizer/settings/OrganizerSettingsMobileView";
+import { OrganizerLogoutButton } from "@/components/organizer/OrganizerLogoutButton";
 
 const CARD_GAP = "gap-2.5 min-[900px]:gap-3";
 
@@ -305,7 +306,7 @@ export default function OrganizerSettingsPage() {
           }
           title="アカウント情報"
         >
-          <CardDesc tone="account">ログイン中のアカウントや表示名を管理します</CardDesc>
+          <CardDesc tone="account">ログイン中のアカウントです（主催者・利用者で共通）</CardDesc>
           <InfoRows
             tone="account"
             rows={[
@@ -313,7 +314,8 @@ export default function OrganizerSettingsPage() {
               { label: "表示名", value: displayName || "未設定" },
             ]}
           />
-          <SettingBtn tone="account" href="/profile/edit">プロフィールを編集</SettingBtn>
+          {/* 主催者モードでは利用者（参加者）のプロフィールは触らない。アカウントの画面は主催者の画面のまま開く */}
+          <SettingBtn tone="account" href="/organizer/settings/account">アカウント・削除</SettingBtn>
         </SectionCard>
 
         {/* 行3: 主催者プロフィール | セキュリティ */}
@@ -349,12 +351,14 @@ export default function OrganizerSettingsPage() {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
           }
-          title="セキュリティ / ログアウト"
+          title="ログアウト"
         >
           <CardDesc tone="security">
-            ログアウトは右上のアカウントメニューから行えます。プロフィールやパスワードの変更はアカウント設定で行えます。
+            この端末からログアウトします。主催者・利用者のどちらのモードからもログアウトされます。
           </CardDesc>
-          <SettingBtn tone="security" href="/profile/edit">アカウント設定を開く</SettingBtn>
+          <div>
+            <OrganizerLogoutButton variant="subnav" />
+          </div>
         </SectionCard>
       </div>
     </OrganizerPageShell>

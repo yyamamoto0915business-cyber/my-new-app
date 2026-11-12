@@ -111,7 +111,7 @@ export function OrganizerRegisterChoice() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "登録に失敗しました");
-      router.push(`/profile/edit?tab=organizer&as=${registerAs}`);
+      router.push(`/organizer/settings/profile?as=${registerAs}`);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "登録に失敗しました");
