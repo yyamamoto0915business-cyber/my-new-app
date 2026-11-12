@@ -417,14 +417,14 @@ export function OrganizerGamesHub() {
             className={cn("org-hub__mobile-create", picking && "is-picking")}
             aria-expanded={picking}
             aria-controls="mobile-templates"
-            onClick={focusTemplates}
+            onClick={() => (picking ? setPicking(false) : focusTemplates())}
           >
             <span className="org-hub__mobile-create-title">ゲームを作る</span>
             <span className="org-hub__mobile-create-plus" aria-hidden>
               <Plus className="h-5 w-5" strokeWidth={2.4} />
             </span>
             <span className="org-hub__mobile-create-label">
-              {picking ? "下のカードをタップ" : "種類を選ぶ"}
+              {picking ? "閉じる" : "種類を選ぶ"}
             </span>
           </button>
 
@@ -448,6 +448,11 @@ export function OrganizerGamesHub() {
         <style>{HUB_DATA_CSS}</style>
 
 
+        {/*
+          テンプレート（10種類）は、ゲームを作ったことがある人には「ゲームを作る」を押したときだけ出す。
+          いつも出していると、作ったゲームの一覧がカード10枚の下になり、毎回スクロールが要った。
+        */}
+        {picking || (!loading && games.length === 0) ? (
         <section
           id="mobile-templates"
           ref={templatesRef}
@@ -511,6 +516,7 @@ export function OrganizerGamesHub() {
             ))}
           </ul>
         </section>
+        ) : null}
       </div>
 
       <div className="org-hub-pc">
