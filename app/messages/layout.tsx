@@ -327,12 +327,12 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const sidebarHidden = !!conversationId;
   const mainHidden = !conversationId;
   // 会話を開いているときは、スマホの上の帯・下のメニューを出さない（mobile-main-shell）ので画面いっぱいを使う
-  // 主催者の下のナビは利用者のものより低い（約58px）
-  const bottomNavH = scope === "organizer" ? "58px" : "72px";
+  // 主催者の下のナビは利用者のものより低い（約58px）。
+  // Tailwind はソースに書かれたクラスしか作らないので、組み立てずにそのまま書く
   const mobileHeightClass = conversationId
     ? "max-[899px]:h-[100dvh]"
     : scope === "organizer"
-      ? `max-[899px]:h-[calc(100dvh-var(--mg-mobile-top-header-h,46px)-env(safe-area-inset-top,0px)-calc(${bottomNavH}+env(safe-area-inset-bottom,0px)))]`
+      ? "max-[899px]:h-[calc(100dvh-var(--mg-mobile-top-header-h,46px)-env(safe-area-inset-top,0px)-calc(58px+env(safe-area-inset-bottom,0px)))]"
       : "max-[899px]:h-[calc(100dvh-var(--mg-mobile-top-header-h,46px)-env(safe-area-inset-top,0px)-calc(72px+env(safe-area-inset-bottom,0px)))]";
   // PC の主催者の画面は上のナビの下に入るので、その分を引く
   const pcHeightClass =
