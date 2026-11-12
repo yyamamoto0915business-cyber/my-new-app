@@ -191,7 +191,7 @@ export function DayManagementMobileView({
   ];
 
   return (
-    <div className="mg-day-mgmt-m -mx-4 flex flex-col gap-2.5 px-4 pb-20 sm:-mx-6 sm:px-6">
+    <div className="mg-day-mgmt-m -mx-4 flex flex-col gap-2.5 px-4 pb-20 tablet:mx-auto tablet:w-full tablet:max-w-[860px] tablet:px-0">
       <DayManagementEventSwitcher
         currentEventId={eventId}
         currentTitle={event.title}
@@ -300,6 +300,8 @@ export function DayManagementMobileView({
         />
       </section>
 
+      {/* タブレットでは2列：左にチケット・来場状況、右にスタッフとお知らせ */}
+      <div className="flex flex-col gap-2.5 tablet:grid tablet:grid-cols-2 tablet:items-start">
       <TicketSalesAttendanceCard
         eventId={eventId}
         emptyMode={emptyMode}
@@ -313,6 +315,7 @@ export function DayManagementMobileView({
       />
 
       {/* プログラム進行は仮データ（MOCK_SCHEDULE）しかなかったので外した */}
+      <div className="flex min-w-0 flex-col gap-2.5">
 
       <StaffStatusCard
         emptyMode={emptyMode}
@@ -356,6 +359,8 @@ export function DayManagementMobileView({
           </ul>
         )}
       </section>
+      </div>
+      </div>
     </div>
   );
 }
