@@ -1,5 +1,6 @@
 "use client";
 
+import { POINTS_NEED_EVENT_HINT, POINTS_NEED_EVENT_MESSAGE } from "@/lib/organizer/points-need-event";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -313,6 +314,15 @@ export function OrganizerMissionCreateForm() {
     }
     if (periodError) {
       setError(periodError);
+      setStep(0);
+      return;
+    }
+    if (
+      status === "published" &&
+      (pointsOn || missions.some((mission) => mission.reward === "points")) &&
+      !eventId
+    ) {
+      setError(POINTS_NEED_EVENT_MESSAGE);
       setStep(0);
       return;
     }
@@ -876,6 +886,11 @@ export function OrganizerMissionCreateForm() {
                   );
                 })}
               </ul>
+              {(pointsOn || missions.some((mission) => mission.reward === "points")) && !eventId ? (
+                  <p style={{ margin: "0.4rem 0 0", fontSize: "0.74rem", fontWeight: 700, lineHeight: 1.5, color: "#b0582a" }}>
+                    {POINTS_NEED_EVENT_HINT}
+                  </p>
+                ) : null}
               <label className="org-mission__field">
                 <span>景品引換場所</span>
                 <input
