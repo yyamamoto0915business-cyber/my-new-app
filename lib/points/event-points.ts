@@ -74,7 +74,8 @@ export async function fetchMyEventPoints(supabase: SupabaseClient, userId: strin
   for (const t of txs) {
     const amount = Number(t.amount) || 0;
     const [source, id] = (t.reference_id ?? "").split(":");
-    if (amount > 0) totalEarned += amount;
+    // 使った分を戻したとき（event:…:restore）は「ためた」には数えない
+    if (amount > 0 && source !== "event") totalEarned += amount;
     if (source === "event" && id && UUID.test(id)) {
       usedByEvent.set(id, (usedByEvent.get(id) ?? 0) + amount);
     } else if (GAME_SOURCES.has(source) && id && UUID.test(id)) {
