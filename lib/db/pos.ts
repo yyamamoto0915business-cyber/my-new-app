@@ -48,6 +48,8 @@ type SaleRow = {
   /** 00127 の適用前は無い */
   points_used?: number | null;
   points_user_id?: string | null;
+  /** 00129 の適用前は無い */
+  points_discount_yen?: number | null;
 };
 
 type SaleItemRow = {
@@ -109,6 +111,7 @@ function mapSale(row: SaleRow, items?: PosSaleItem[]): PosSale {
     createdAt: row.created_at,
     pointsUsed: Number(row.points_used) || 0,
     pointsUserId: row.points_user_id ?? null,
+    pointsDiscountYen: Number(row.points_discount_yen) || 0,
     items,
   };
 }
@@ -227,8 +230,15 @@ export async function createCashSale(
     cashReceivedYen: number;
     /** 会計のID（ポイントを先に使うとき、同じIDで記録するため） */
     saleId?: string;
-    /** イベントポイントで交換した分（商品ID → 個数とpt）。使った本人の ID も残す */
-    points?: { userId: string; byProduct: Map<string, { units: number; points: number }> };
+    /**
+     * イベントポイントを使った分。使った本人の ID も残す。
+     * 交換：byProduct（商品ID → 個数とpt）／割引：discount（使ったptと引いた円。会計全体から引く）
+     */
+    points?: {
+      userId: string;
+      byProduct?: Map<string, { units: number; points: number }>;
+      discount?: { points: number; yen: number };
+    };
   }
 ): Promise<PosSale> {
   const products = await listPosProducts(supabase, organizerId, {
@@ -254,7 +264,7 @@ export async function createCashSale(
       throw new Error("invalid_line");
     }
     const qty = Math.floor(line.quantity);
-    const exchanged = opts.points?.byProduct.get(product.id);
+    const exchanged = opts.points?.byProduct?.get(product.id);
     const units = Math.min(qty, Math.max(0, exchanged?.units ?? 0));
     const lineTotal = product.priceYen * (qty - units);
     totalYen += lineTotal;
@@ -267,6 +277,16 @@ export async function createCashSale(
       line_total_yen: lineTotal,
       ...(opts.points ? { points_used: units > 0 ? (exchanged?.points ?? 0) : 0 } : {}),
     });
+  }
+
+  // 割引：会計全体から引く（商品ごとの金額は定価のまま）
+  const discount = opts.points?.discount;
+  let discountYen = 0;
+  if (discount && discount.points > 0) {
+    discountYen = Math.floor(discount.yen);
+    if (discountYen <= 0 || discountYen > totalYen) throw new Error("invalid_discount");
+    totalYen -= discountYen;
+    pointsUsed += Math.floor(discount.points);
   }
 
   // ポイントだけで払う会計（¥0）は、ポイントを使ったときだけ認める
@@ -292,6 +312,7 @@ export async function createCashSale(
       ...(pointsUsed > 0 && opts.points
         ? { points_used: pointsUsed, points_user_id: opts.points.userId }
         : {}),
+      ...(discountYen > 0 ? { points_discount_yen: discountYen } : {}),
       total_yen: totalYen,
       cash_received_yen: cashReceived,
       cash_change_yen: change,
@@ -616,6 +637,7 @@ export async function getPosSalesSummary(
   let cashYen = 0;
   let onlineYen = 0;
   let platformFeeYen = 0;
+  let pointsDiscountYen = 0;
   const productMap = new Map<
     string,
     { productId: string | null; productName: string; quantity: number; totalYen: number }
@@ -624,6 +646,7 @@ export async function getPosSalesSummary(
   for (const sale of paidSales) {
     totalYen += sale.totalYen;
     platformFeeYen += sale.platformFeeYen;
+    pointsDiscountYen += sale.pointsDiscountYen;
     if (sale.paymentMethod === "cash") cashYen += sale.totalYen;
     else onlineYen += sale.totalYen;
 
@@ -648,6 +671,7 @@ export async function getPosSalesSummary(
       onlineYen,
       saleCount: paidSales.length,
       platformFeeYen,
+      pointsDiscountYen,
       byProduct: Array.from(productMap.values()).sort((a, b) => b.quantity - a.quantity),
     },
     sales,

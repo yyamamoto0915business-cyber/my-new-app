@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getEventPointSettings } from "@/lib/db/event-point-settings";
+import { getEventPointSettings, isPointsDiscountReady } from "@/lib/db/event-point-settings";
 import { eventPointsStatusOf, usableUntilLabel } from "@/lib/points/event-points";
 import { resolvePassQr } from "@/lib/checkin/resolve-pass-qr";
 import { buildReceptionNumber } from "@/lib/checkin/parse-pass-qr";
@@ -8,14 +8,23 @@ import { looksLikePointsQr } from "@/lib/points/points-qr-format";
 import { verifyPointsQr } from "@/lib/points/points-qr";
 
 /**
- * レジでイベントポイントを使う（商品と交換する）ための、サーバー側の処理。
+ * レジでイベントポイントを使う（商品と交換する／お会計の割引に使う）ための、サーバー側の処理。
  * 使うときの履歴は reference_id = "event:<イベントID>:pos:<会計ID>"（関数が "event:<イベントID>:" を前につける）。
  * 残り・使う・戻すは 00127 のデータベース関数（service_role だけが呼べる）で行う。
  */
 
 export type PosPointsAvailability =
-  | { enabled: true; eventTitle: string; untilLabel: string }
-  | { enabled: false; reason: "no_event" | "not_ready" | "off" | "discount" | "upcoming" | "ended" };
+  | {
+      enabled: true;
+      eventTitle: string;
+      untilLabel: string;
+      mode: "exchange" | "discount";
+      /** 割引のとき：1pt で何円引くか */
+      yenPerPoint: number;
+      /** 割引のとき：1回のお会計で引ける上限（円）。null は上限なし */
+      discountMaxYen: number | null;
+    }
+  | { enabled: false; reason: "no_event" | "not_ready" | "off" | "upcoming" | "ended" };
 
 type EventRow = {
   id: string;
@@ -25,7 +34,7 @@ type EventRow = {
   end_time: string | null;
 };
 
-/** このイベントのレジで、いまポイントを使えるか（自分のイベント・「商品と交換」・開催中） */
+/** このイベントのレジで、いまポイントを使えるか（自分のイベント・「商品と交換」か「割引」・開催中） */
 export async function getPosPointsAvailability(
   supabase: SupabaseClient,
   organizerId: string,
@@ -43,8 +52,11 @@ export async function getPosPointsAvailability(
 
   const settings = await getEventPointSettings(supabase, eventId);
   if (!settings.ready) return { enabled: false, reason: "not_ready" };
-  if (settings.mode === "discount") return { enabled: false, reason: "discount" };
-  if (settings.mode !== "exchange") return { enabled: false, reason: "off" };
+  if (settings.mode !== "exchange" && settings.mode !== "discount") return { enabled: false, reason: "off" };
+  // 割引の金額を残す列（00129）がまだないときは準備中にする（会計の途中で失敗しないように）
+  if (settings.mode === "discount" && !(await isPointsDiscountReady(supabase))) {
+    return { enabled: false, reason: "not_ready" };
+  }
 
   const status = eventPointsStatusOf(ev);
   if (status !== "live") return { enabled: false, reason: status };
@@ -57,6 +69,9 @@ export async function getPosPointsAvailability(
       endDate: ev.end_date,
       endTime: (ev.end_time ?? "").slice(0, 5) || null,
     }),
+    mode: settings.mode,
+    yenPerPoint: settings.yenPerPoint,
+    discountMaxYen: settings.discountMaxYen,
   };
 }
 
@@ -67,7 +82,6 @@ export const POS_POINTS_UNAVAILABLE_MESSAGE: Record<
   no_event: "ポイントを使うには、売上を記録するイベントを選んでください",
   not_ready: "イベントポイントはただいま準備中です",
   off: "このイベントは、ポイントを使わない設定です",
-  discount: "このイベントのポイントは、レジではまだ使えません",
   upcoming: "ポイントはイベントの開催中だけ使えます（まだ始まっていません）",
   ended: "このイベントは終わったため、ポイントは使えません",
 };
@@ -80,7 +94,7 @@ export type PosPointsHolder = {
 };
 
 export type PosPointsLookup =
-  | { ok: true; holder: PosPointsHolder }
+  | { ok: true; holder: PosPointsHolder; availability: Extract<PosPointsAvailability, { enabled: true }> }
   | { ok: false; status: number; error: string };
 
 /** 参加パスのQR（または受付番号）から、その人のこのイベントのポイントの残りを調べる */
@@ -137,6 +151,7 @@ export async function lookupPosPointsHolder(
 
   return {
     ok: true,
+    availability,
     holder: {
       userId,
       name: (profile?.display_name as string | null)?.trim() || "参加者",

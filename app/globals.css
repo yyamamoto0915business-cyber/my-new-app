@@ -19042,6 +19042,86 @@ a.org-pos__setup-text-btn {
   gap: 0.5rem;
 }
 
+/* 割引：使うポイントを − ＋ で決める（画面案 ⑥） */
+.org-pos__points-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.6rem 0.75rem;
+}
+
+.org-pos__points-amount-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6b5a33;
+}
+
+.org-pos__points-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.org-pos__points-stepper button {
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #e3d3a8;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: #6b5a33;
+  cursor: pointer;
+}
+
+.org-pos__points-stepper button:disabled {
+  border-color: #efe6cd;
+  background: #faf6ea;
+  color: #c9b98d;
+  cursor: default;
+}
+
+.org-pos__points-stepper strong {
+  flex: 1;
+  text-align: center;
+  font-size: 1.35rem;
+  color: #3a2c10;
+  font-variant-numeric: tabular-nums;
+}
+
+.org-pos__points-stepper small {
+  margin-left: 0.15rem;
+  font-size: 0.8rem;
+}
+
+.org-pos__points-amount-hint {
+  text-align: center;
+  font-size: 0.7rem;
+  color: #6b5a33;
+}
+
+.org-pos__discount-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+  color: #3f5146;
+}
+
+.org-pos__discount-rows p {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.org-pos__discount-rows .is-discount {
+  font-weight: 700;
+  color: #1f7a4a;
+}
+
 .org-pos__points-rescan,
 .org-pos__points-off {
   display: inline-flex;

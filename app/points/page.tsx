@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import styles from "./points.module.css";
 import { fetchMyEventPoints, usableUntilLabel, type EventPointsItem } from "@/lib/points/event-points";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { listExchangeEventIds } from "@/lib/db/event-point-settings";
+import { listRegisterPointEvents, registerDiscountLabel } from "@/lib/db/event-point-settings";
 import { buildPointsQr } from "@/lib/points/points-qr";
 import { PointsRegisterQr } from "@/components/points/PointsRegisterQr";
 
@@ -42,9 +42,18 @@ type BadgeRow = {
   awarded_at: string;
 };
 
-function transactionLabel(row: TransactionRow): string {
+/** レジで使った履歴の会計ID（event:<イベントID>:pos:<会計ID>） */
+function posSaleIdOf(row: TransactionRow): string | null {
+  const m = row.reference_id?.match(/^event:[^:]+:pos:([0-9a-f-]{36})$/i);
+  return m ? m[1] : null;
+}
+
+function transactionLabel(row: TransactionRow, discountBySale: Map<string, number>): string {
   if (row.reference_id?.startsWith("event:")) {
     if (row.reference_id.endsWith(":restore")) return "取り消しで戻ったポイント";
+    const saleId = posSaleIdOf(row);
+    const discount = saleId ? discountBySale.get(saleId) : undefined;
+    if (discount) return `レジで割引（−¥${discount.toLocaleString("ja-JP")}）`;
     if (row.reference_id.includes(":pos:")) return "レジで交換";
   }
   if (row.reference_id?.startsWith("stamp-rally:")) return "スタンプラリー";
@@ -91,14 +100,30 @@ export default async function PointsPage() {
 
   const history = (transactions ?? []) as TransactionRow[];
 
-  // 開催中で「商品と交換」のイベントは、レジで見せるQRを出す
+  // 開催中で「商品と交換」か「割引」のイベントは、レジで見せるQRを出す
   const live = eventPoints.usable.filter((i) => i.status === "live");
-  const admin = live.length ? createAdminClient() : null;
-  const exchangeIds = admin ? await listExchangeEventIds(admin, live.map((i) => i.eventId)) : new Set<string>();
+  const posSaleIds = history.map(posSaleIdOf).filter((id): id is string => Boolean(id));
+  const admin = live.length || posSaleIds.length ? createAdminClient() : null;
+  const registerUse = admin ? await listRegisterPointEvents(admin, live.map((i) => i.eventId)) : new Map();
   const registerQrs = live
-    .filter((i) => exchangeIds.has(i.eventId))
-    .map((i) => ({ item: i, qr: buildPointsQr(user.id, i.eventId) }))
-    .filter((x): x is { item: EventPointsItem; qr: string } => Boolean(x.qr));
+    .filter((i) => registerUse.has(i.eventId))
+    .map((i) => ({ item: i, use: registerUse.get(i.eventId)!, qr: buildPointsQr(user.id, i.eventId) }))
+    .filter((x): x is { item: EventPointsItem; use: typeof x.use; qr: string } => Boolean(x.qr));
+
+  // 履歴：割引に使った会計は「レジで割引（−¥…）」と出す（本人の会計だけ）
+  const discountBySale = new Map<string, number>();
+  if (admin && posSaleIds.length) {
+    const { data: sales, error } = await admin
+      .from("pos_sales")
+      .select("id, points_discount_yen")
+      .in("id", posSaleIds)
+      .eq("points_user_id", user.id);
+    if (!error) {
+      for (const s of (sales ?? []) as { id: string; points_discount_yen: number | null }[]) {
+        if (Number(s.points_discount_yen) > 0) discountBySale.set(s.id, Number(s.points_discount_yen));
+      }
+    }
+  }
   const owned = (badges ?? []) as BadgeRow[];
 
   return (
@@ -114,13 +139,18 @@ export default async function PointsPage() {
           <section className={styles.section} id="qr">
             <h2>レジで見せるQR</h2>
             <div className={styles.qrList}>
-              {registerQrs.map(({ item, qr }) => (
+              {registerQrs.map(({ item, use, qr }) => (
                 <PointsRegisterQr
                   key={item.eventId}
                   value={qr}
                   title={item.title}
                   balance={item.balance}
                   until={`${usableUntilLabel(item)}使えます`}
+                  discount={
+                    use.mode === "discount"
+                      ? { label: registerDiscountLabel(use), maxYen: use.discountMaxYen }
+                      : undefined
+                  }
                 />
               ))}
             </div>
@@ -169,7 +199,7 @@ export default async function PointsPage() {
               {history.map((row) => (
                 <li key={row.id}>
                   <div>
-                    <b>{transactionLabel(row)}</b>
+                    <b>{transactionLabel(row, discountBySale)}</b>
                     <small>{formatWhen(row.created_at)}</small>
                   </div>
                   <span className={styles.plus}>

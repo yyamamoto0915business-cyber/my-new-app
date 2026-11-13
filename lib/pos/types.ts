@@ -59,6 +59,8 @@ export type PosSale = {
   /** この会計でイベントポイントを使った分（0：使っていない） */
   pointsUsed: number;
   pointsUserId: string | null;
+  /** ポイントをお会計の割引に使って引いた金額（0：割引なし）。totalYen は割引のあと */
+  pointsDiscountYen: number;
   items?: PosSaleItem[];
 };
 
@@ -77,6 +79,8 @@ export type PosSalesSummary = {
   onlineYen: number;
   saleCount: number;
   platformFeeYen: number;
+  /** ポイント割引で引いた合計（商品ごとの売上は定価なので、その差） */
+  pointsDiscountYen: number;
   byProduct: Array<{
     productId: string | null;
     productName: string;
