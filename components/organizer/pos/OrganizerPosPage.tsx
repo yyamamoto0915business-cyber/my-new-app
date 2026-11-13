@@ -37,6 +37,7 @@ import {
   type PosSalesSummary,
 } from "@/lib/pos/types";
 import { planPointExchange } from "@/lib/pos/point-exchange";
+import { planPointDiscount, POINT_DISCOUNT_STEP, stepPointDiscount } from "@/lib/pos/point-discount";
 import { PosPointsScanModal, type PosPointsHolderView } from "@/components/organizer/pos/PosPointsScanModal";
 
 type DayEvent = {
@@ -82,6 +83,7 @@ function emptySummary(): PosSalesSummary {
     onlineYen: 0,
     saleCount: 0,
     platformFeeYen: 0,
+    pointsDiscountYen: 0,
     byProduct: [],
   };
 }
@@ -126,8 +128,20 @@ export function OrganizerPosPage() {
   const cartRef = useRef<HTMLElement | null>(null);
   const [cartInView, setCartInView] = useState(false);
   // イベントポイント：このイベントのレジで使えるか・読み取った人
-  const [pointsAvail, setPointsAvail] = useState<{ enabled: boolean; untilLabel?: string } | null>(null);
+  const [pointsAvail, setPointsAvail] = useState<{
+    enabled: boolean;
+    untilLabel?: string;
+    mode: "exchange" | "discount";
+    yenPerPoint: number;
+    discountMaxYen: number | null;
+  } | null>(null);
   const [pointsHolder, setPointsHolder] = useState<PosPointsHolderView | null>(null);
+  /** 割引のとき：使うポイント（null：使えるだけ全部） */
+  const [pointsToUse, setPointsToUse] = useState<number | null>(null);
+  // 読み取る人が変わったら、使う量は「使えるだけ全部」に戻す
+  useEffect(() => {
+    setPointsToUse(null);
+  }, [pointsHolder]);
   const [pointsScanOpen, setPointsScanOpen] = useState(false);
 
   useEffect(() => {
@@ -142,7 +156,13 @@ export function OrganizerPosPage() {
         });
         const json = await res.json();
         if (!cancelled && res.ok) {
-          setPointsAvail({ enabled: Boolean(json.enabled), untilLabel: json.untilLabel });
+          setPointsAvail({
+            enabled: Boolean(json.enabled),
+            untilLabel: json.untilLabel,
+            mode: json.mode === "discount" ? "discount" : "exchange",
+            yenPerPoint: Number(json.yenPerPoint) || 1,
+            discountMaxYen: json.discountMaxYen == null ? null : Number(json.discountMaxYen),
+          });
         }
       } catch {
         /* ポイントが確認できなくても、ふつうの会計はできる */
@@ -314,17 +334,32 @@ export function OrganizerPosPage() {
     [cart]
   );
   const itemCount = useMemo(() => cart.reduce((sum, line) => sum + line.quantity, 0), [cart]);
+  const isDiscount = pointsAvail?.mode === "discount";
+  // 交換：商品ごとに ¥0 にする（画面案 ③）
   const pointsPlan = useMemo(
-    () => (pointsHolder ? planPointExchange(cart, pointsHolder.balance) : null),
-    [cart, pointsHolder]
+    () => (pointsHolder && !isDiscount ? planPointExchange(cart, pointsHolder.balance) : null),
+    [cart, pointsHolder, isDiscount]
   );
-  const pointsUsed = pointsPlan?.pointsUsed ?? 0;
+  // 割引：お会計全体から引く（画面案 ⑥）
+  const discountPlan = useMemo(
+    () =>
+      pointsHolder && pointsAvail && isDiscount
+        ? planPointDiscount(
+            subtotal,
+            pointsHolder.balance,
+            { yenPerPoint: pointsAvail.yenPerPoint, maxYen: pointsAvail.discountMaxYen },
+            pointsToUse
+          )
+        : null,
+    [subtotal, pointsHolder, pointsAvail, isDiscount, pointsToUse]
+  );
+  const pointsUsed = pointsPlan?.pointsUsed ?? discountPlan?.pointsUsed ?? 0;
   const exchangeByProduct = useMemo(
     () => new Map((pointsPlan?.lines ?? []).filter((l) => l.units > 0).map((l) => [l.productId, l])),
     [pointsPlan]
   );
-  /** ポイントで交換したあとに払うお金 */
-  const payYen = pointsPlan ? pointsPlan.payYen : subtotal;
+  /** ポイントで交換・割引したあとに払うお金 */
+  const payYen = pointsPlan ? pointsPlan.payYen : discountPlan ? discountPlan.payYen : subtotal;
   // ポイントを使う会計は、いまは現金だけ（スマホ払いは途中でやめられるため）
   const pointsBlockNonCash = pointsUsed > 0 && paymentMethod !== "cash";
   const qtyByProduct = useMemo(
@@ -458,6 +493,7 @@ export function OrganizerPosPage() {
           lines: cart.map((l) => ({ productId: l.productId, quantity: l.quantity })),
           cashReceivedYen: paymentMethod === "cash" ? cashReceivedNum : undefined,
           pointsQr: pointsUsed > 0 && pointsHolder ? pointsHolder.qr : undefined,
+          pointsToUse: pointsUsed > 0 && discountPlan ? discountPlan.pointsUsed : undefined,
         }),
       });
       const json = await res.json();
@@ -786,6 +822,11 @@ export function OrganizerPosPage() {
             <p className="org-pos__fee">
               MachiGlyph手数料（オンライン）: {formatYen(summary.platformFeeYen)}
             </p>
+            {summary.pointsDiscountYen > 0 ? (
+              <p className="org-pos__fee">
+                ポイント割引: −{formatYen(summary.pointsDiscountYen)}（商品ごとの金額は割引前）
+              </p>
+            ) : null}
             {summary.byProduct.length > 0 ? (
               <ul className="org-pos__by-product">
                 {summary.byProduct.map((row) => (
@@ -815,7 +856,9 @@ export function OrganizerPosPage() {
                               ? "カードタッチ"
                               : "スマホ決済"} ·{" "}
                           {formatYen(sale.totalYen)}
-                          {sale.pointsUsed > 0 ? ` · ${sale.pointsUsed}pt` : ""}
+                          {sale.pointsUsed > 0
+                            ? ` · ${sale.pointsUsed}pt${sale.pointsDiscountYen > 0 ? `（−${formatYen(sale.pointsDiscountYen)}）` : ""}`
+                            : ""}
                           {isRefunded ? (
                             <span className="org-pos__history-badge">返金済み</span>
                           ) : null}
@@ -1021,7 +1064,7 @@ export function OrganizerPosPage() {
                       ) : (
                         <span className="org-pos__muted">
                           {formatYen(line.unitPriceYen)}
-                          {pointsHolder && line.pointPrice ? ` ・ ${line.pointPrice}pt` : ""}
+                          {pointsHolder && !isDiscount && line.pointPrice ? ` ・ ${line.pointPrice}pt` : ""}
                         </span>
                       )}
                     </div>
@@ -1049,6 +1092,18 @@ export function OrganizerPosPage() {
               </ul>
 
               <div className="org-pos__cart-footer">
+                {discountPlan && discountPlan.pointsUsed > 0 ? (
+                  <div className="org-pos__discount-rows">
+                    <p>
+                      <span>小計</span>
+                      <span>{formatYen(subtotal)}</span>
+                    </p>
+                    <p className="is-discount">
+                      <span>ポイント割引（{discountPlan.pointsUsed}pt）</span>
+                      <span>−{formatYen(discountPlan.discountYen)}</span>
+                    </p>
+                  </div>
+                ) : null}
                 <div className="org-pos__total">
                   <span>{pointsUsed > 0 ? "お支払い" : "合計"}</span>
                   <strong>{formatYen(payYen)}</strong>
@@ -1076,12 +1131,52 @@ export function OrganizerPosPage() {
                             <strong>{pointsHolder.balance - pointsUsed}pt</strong>
                           </span>
                         </div>
+                        {discountPlan && discountPlan.maxPoints > 0 ? (
+                          <div className="org-pos__points-amount">
+                            <span className="org-pos__points-amount-label">使うポイント</span>
+                            <div className="org-pos__points-stepper">
+                              <button
+                                type="button"
+                                aria-label={`${POINT_DISCOUNT_STEP}pt減らす`}
+                                disabled={discountPlan.pointsUsed <= 0}
+                                onClick={() => setPointsToUse(stepPointDiscount(discountPlan.pointsUsed, discountPlan.maxPoints, -1))}
+                              >
+                                <Minus className="h-4 w-4" aria-hidden />
+                              </button>
+                              <strong aria-live="polite">
+                                {discountPlan.pointsUsed}
+                                <small>pt</small>
+                              </strong>
+                              <button
+                                type="button"
+                                aria-label={`${POINT_DISCOUNT_STEP}pt増やす`}
+                                disabled={discountPlan.pointsUsed >= discountPlan.maxPoints}
+                                onClick={() => setPointsToUse(stepPointDiscount(discountPlan.pointsUsed, discountPlan.maxPoints, 1))}
+                              >
+                                <Plus className="h-4 w-4" aria-hidden />
+                              </button>
+                            </div>
+                            <span className="org-pos__points-amount-hint">
+                              {discountPlan.pointsUsed < discountPlan.maxPoints
+                                ? `最大 ${discountPlan.maxPoints}pt まで使えます`
+                                : discountPlan.cappedByLimit && pointsAvail?.discountMaxYen != null
+                                  ? `1回の上限 ${formatYen(pointsAvail.discountMaxYen)} まで使っています`
+                                  : "使えるだけ使っています"}
+                            </span>
+                          </div>
+                        ) : null}
                         <p className="org-pos__points-note">
-                          {pointsUsed > 0
-                            ? "交換できる商品が「ポイントで交換」になりました。"
-                            : pointsPlan?.hasExchangeable
-                              ? "ポイントが足りないため、交換できる商品がありません。"
-                              : "カートに、ポイントで交換できる商品がありません。"}
+                          {discountPlan
+                            ? discountPlan.maxPoints > 0
+                              ? `1pt＝${pointsAvail?.yenPerPoint ?? 1}円でお会計から引きます。`
+                              : pointsHolder.balance <= 0
+                                ? "このイベントのポイントがありません。"
+                                : "お会計が少ないため、ポイントを使えません。"
+                            : pointsUsed > 0
+                              ? "交換できる商品が「ポイントで交換」になりました。"
+                              : pointsPlan?.hasExchangeable
+                                ? "ポイントが足りないため、交換できる商品がありません。"
+                                : "カートに、ポイントで交換できる商品がありません。"}
                           {pointsBlockNonCash ? " ポイントを使う会計は、いまは現金だけです。" : ""}
                         </p>
                         <div className="org-pos__points-actions">
@@ -1097,7 +1192,10 @@ export function OrganizerPosPage() {
                     ) : (
                       <>
                         <p className="org-pos__points-note">
-                          参加パスのQRを読み取ると、このイベントのポイントが出ます。交換できる商品が自動で「ポイントで交換」になります。
+                          参加パスのQRを読み取ると、このイベントのポイントが出ます。
+                          {isDiscount
+                            ? `1pt＝${pointsAvail.yenPerPoint}円でお会計から引きます${pointsAvail.discountMaxYen != null ? `（1回 ${formatYen(pointsAvail.discountMaxYen)} まで）` : ""}。`
+                            : "交換できる商品が自動で「ポイントで交換」になります。"}
                           {pointsAvail.untilLabel ? `（${pointsAvail.untilLabel}）` : ""}
                         </p>
                         <button type="button" className="org-pos__points-rescan" onClick={() => setPointsScanOpen(true)}>
@@ -1236,6 +1334,7 @@ export function OrganizerPosPage() {
                 {pointsUsed > 0 && !pointsBlockNonCash && (
                   <p className="org-pos__points-sum">
                     {payYen > 0 ? `現金 ${formatYen(payYen)} ・ ` : "お支払いなし ・ "}ポイント {pointsUsed}pt
+                    {discountPlan && discountPlan.discountYen > 0 ? `（−${formatYen(discountPlan.discountYen)}）` : ""}
                   </p>
                 )}
                 <button
@@ -1258,7 +1357,9 @@ export function OrganizerPosPage() {
                       ? pointsUsed > 0
                         ? payYen > 0
                           ? `${formatYen(payYen)}を会計する（${pointsUsed}pt 使う）`
-                          : `${pointsUsed}ptで交換する`
+                          : discountPlan
+                            ? `${pointsUsed}ptで支払う`
+                            : `${pointsUsed}ptで交換する`
                         : `${formatYen(subtotal)}を会計する`
                       : paymentMethod === "tap"
                         ? !stripeReady

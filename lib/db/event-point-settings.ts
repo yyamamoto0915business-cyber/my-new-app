@@ -32,6 +32,12 @@ export function isMissingSchemaError(error: { code?: string; message?: string } 
   );
 }
 
+/** 割引の金額を会計に残す列（00129）が、データベースにもうあるか */
+export async function isPointsDiscountReady(supabase: SupabaseClient): Promise<boolean> {
+  const { error } = await supabase.from("pos_sales").select("points_discount_yen").limit(0);
+  return !isMissingSchemaError(error);
+}
+
 export async function getEventPointSettings(supabase: SupabaseClient, eventId: string): Promise<EventPointSettings> {
   const { data, error } = await supabase
     .from("event_point_settings")
@@ -108,16 +114,45 @@ export async function savePointPrices(
   }
 }
 
-/** 「商品と交換」の設定になっているイベントのID（表がまだないときは空） */
-export async function listExchangeEventIds(supabase: SupabaseClient, eventIds: string[]): Promise<Set<string>> {
-  if (eventIds.length === 0) return new Set();
+export type RegisterPointUse = {
+  mode: "exchange" | "discount";
+  yenPerPoint: number;
+  discountMaxYen: number | null;
+};
+
+/**
+ * レジでポイントを使える設定（「商品と交換」か「割引」）になっているイベントと、その使い方。
+ * 表がまだないときは空。割引は、金額を残す列（00129）がまだないときは入れない（レジが「準備中」のため）。
+ */
+export async function listRegisterPointEvents(
+  supabase: SupabaseClient,
+  eventIds: string[]
+): Promise<Map<string, RegisterPointUse>> {
+  const out = new Map<string, RegisterPointUse>();
+  if (eventIds.length === 0) return out;
   const { data, error } = await supabase
     .from("event_point_settings")
-    .select("event_id, mode")
+    .select("event_id, mode, yen_per_point, discount_max_yen")
     .in("event_id", eventIds);
   if (error) {
-    if (!isMissingSchemaError(error)) console.error("listExchangeEventIds:", error);
-    return new Set();
+    if (!isMissingSchemaError(error)) console.error("listRegisterPointEvents:", error);
+    return out;
   }
-  return new Set((data ?? []).filter((r) => r.mode === "exchange").map((r) => r.event_id as string));
+  const rows = (data ?? []) as { event_id: string; mode: string; yen_per_point: number; discount_max_yen: number | null }[];
+  const discountReady = rows.some((r) => r.mode === "discount") ? await isPointsDiscountReady(supabase) : false;
+  for (const r of rows) {
+    if (r.mode !== "exchange" && !(r.mode === "discount" && discountReady)) continue;
+    out.set(r.event_id, {
+      mode: r.mode,
+      yenPerPoint: Number(r.yen_per_point) || 1,
+      discountMaxYen: r.discount_max_yen == null ? null : Number(r.discount_max_yen),
+    });
+  }
+  return out;
+}
+
+/** 割引のときの、参加者向けのひとこと（例：最大 ¥500 引き（1pt＝1円）） */
+export function registerDiscountLabel(use: RegisterPointUse): string {
+  const rate = `1pt＝${use.yenPerPoint}円`;
+  return use.discountMaxYen != null ? `最大 ¥${use.discountMaxYen.toLocaleString("ja-JP")} 引き（${rate}）` : `${rate}で割引`;
 }
