@@ -20,6 +20,7 @@ import { EventThumbnail } from "@/components/event-thumbnail";
 import { cn } from "@/lib/utils";
 import { useOrganizerUnreadCount } from "@/hooks/use-scoped-unread-count";
 import type { DashboardTodo } from "@/app/api/organizer/dashboard/route";
+import { useOrganizerRole } from "@/hooks/use-organizer-role";
 
 const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
@@ -83,6 +84,7 @@ function SectionHead({ title, href }: { title: string; href?: string }) {
  * 対応が必要なこと → 数字 → 運営の道具（イベント管理・当日の受付・レジ・ゲーム） → 管理中のイベント
  */
 export function OrganizerHomeClient() {
+  const role = useOrganizerRole();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [sales, setSales] = useState<PosSalesSummary | null>(null);
   const [error, setError] = useState(false);
@@ -209,7 +211,7 @@ export function OrganizerHomeClient() {
         </dl>
       ) : null}
       {/* くわしい数字（ダッシュボード）の入口はここだけ */}
-      {!loading && data ? (
+      {!loading && data && role !== "staff" ? (
         <Link
           href="/organizer/dashboard"
           className="-mt-2 flex min-h-[44px] items-center justify-end gap-1 text-[13px] font-bold text-[#1f7a4a]"
