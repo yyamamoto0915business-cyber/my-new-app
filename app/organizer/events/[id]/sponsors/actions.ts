@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
-import { isOrganizerOfEvent } from "@/lib/db/events";
+import { isTeamOrganizerOfEvent } from "@/lib/db/events";
 import { updateSponsorApplicationStatus } from "@/lib/db/sponsors";
 
 export type SetStatusResult = { error?: string };
@@ -41,7 +41,7 @@ export async function setSponsorStatus(
       return { error: "データベースに接続できません" };
     }
 
-    const isOrganizer = await isOrganizerOfEvent(supabase, eventId, user.id);
+    const isOrganizer = await isTeamOrganizerOfEvent(supabase, eventId, user.id, "editor");
     if (!isOrganizer) {
       return { error: "このイベントの主催者ではありません" };
     }

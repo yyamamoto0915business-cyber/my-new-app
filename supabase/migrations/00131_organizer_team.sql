@@ -63,6 +63,11 @@ BEGIN
     CREATE POLICY "organizer_members_select_team" ON public.organizer_members FOR SELECT TO authenticated
       USING (profile_id = auth.uid() OR organizer_id IN (SELECT public.my_organizer_ids('staff')));
   END IF;
+  -- メンバーは、所属する主催者の行（団体名・プランなど）を読める。書き換えは今までどおり本人だけ
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'organizers' AND policyname = 'organizers_select_member') THEN
+    CREATE POLICY "organizers_select_member" ON public.organizers FOR SELECT TO authenticated
+      USING (id IN (SELECT public.my_organizer_ids('staff')));
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'organizer_invites' AND policyname = 'organizer_invites_select_admin') THEN
     CREATE POLICY "organizer_invites_select_admin" ON public.organizer_invites FOR SELECT TO authenticated
       USING (organizer_id IN (SELECT public.my_organizer_ids('admin')));

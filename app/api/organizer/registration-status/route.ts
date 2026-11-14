@@ -1,3 +1,4 @@
+import { getOrganizerAccess } from "@/lib/organizer/team";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
@@ -16,12 +17,11 @@ export async function GET() {
     );
   }
 
-  const { data } = await supabase
-    .from("organizers")
-    .select("id")
-    .eq("profile_id", user.id)
-    .maybeSingle();
-
-  return NextResponse.json({ registered: !!data }, { status: 200 });
+  // 本人の主催者か、TEAM のメンバーとして所属する主催者があれば「登録済み」
+  const access = await getOrganizerAccess(supabase, user.id);
+  return NextResponse.json(
+    { registered: !!access, role: access?.role ?? null },
+    { status: 200 }
+  );
 }
 

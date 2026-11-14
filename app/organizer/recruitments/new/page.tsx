@@ -1,5 +1,6 @@
 "use client";
 
+import { getOrganizerAccess } from "@/lib/organizer/team";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -468,11 +469,8 @@ function NewRecruitmentPageContent() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: org } = await supabase
-        .from("organizers")
-        .select("id")
-        .eq("profile_id", user.id)
-        .maybeSingle();
+      const access = await getOrganizerAccess(supabase, user.id);
+      const org = access ? { id: access.organizerId } : null;
       if (!org?.id) return;
       const { data: evts } = await supabase
         .from("events")

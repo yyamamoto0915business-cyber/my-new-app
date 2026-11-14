@@ -1,5 +1,6 @@
 "use client";
 
+import { getOrganizerAccess } from "@/lib/organizer/team";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -152,11 +153,14 @@ export default function OrganizerSettingsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase
-          .from("organizers")
-          .select("organization_name, contact_email, contact_phone")
-          .eq("profile_id", user.id)
-          .maybeSingle();
+        const access = await getOrganizerAccess(supabase, user.id);
+        const { data } = access
+          ? await supabase
+              .from("organizers")
+              .select("organization_name, contact_email, contact_phone")
+              .eq("id", access.organizerId)
+              .maybeSingle()
+          : { data: null };
         if (!cancelled) setOrganizer(data ?? null);
       } catch {
         if (!cancelled) setOrganizer(null);

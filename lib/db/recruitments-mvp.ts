@@ -2,6 +2,7 @@
  * MachiGlyph MVP: 募集・応募・チャット用のDB操作
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getOrganizerAccess } from "@/lib/organizer/team";
 import {
   type ApplicationFormAnswers,
   type ApplicationFormConfig,
@@ -205,19 +206,17 @@ export async function fetchRecruitmentsByOrganizer(
   return (data ?? []).map((r) => mapRecruitmentRow(r as Record<string, unknown>)) as RecruitmentMvp[];
 }
 
-/** profile_id から organizer_id を取得 */
+/**
+ * profile_id から、その人が動かす organizer_id を取得。
+ * 本人の主催者があればそれ。なければ TEAM のメンバーとして所属する主催者（lib/organizer/team.ts）。
+ * 役割（管理者・編集者・スタッフ）が要るときは getOrganizerAccess を使う。
+ */
 export async function getOrganizerIdByProfileId(
   supabase: SupabaseClient,
   profileId: string
 ): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("organizers")
-    .select("id")
-    .eq("profile_id", profileId)
-    .maybeSingle();
-
-  if (error || !data) return null;
-  return data.id;
+  const access = await getOrganizerAccess(supabase, profileId);
+  return access?.organizerId ?? null;
 }
 
 export type RecruitmentCreateInput = {

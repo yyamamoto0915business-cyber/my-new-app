@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getOrganizerAccess, roleAtLeast } from "@/lib/organizer/team";
 import { getApiUser } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { requireOrganizerFeature } from "@/lib/organizer/require-organizer-feature";
 
 const ALLOWED_MIME = new Set([
@@ -78,7 +78,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "画像ストレージが利用できません" }, { status: 503 });
   }
 
-  const organizerId = await getOrganizerIdByProfileId(supabase, user.id);
+  const access = await getOrganizerAccess(supabase, user.id);
+
+  const organizerId = access?.organizerId ?? null;
+
+  if (access && !roleAtLeast(access.role, "editor")) {
+
+    return NextResponse.json({ error: "この操作は編集者以上だけができます" }, { status: 403 });
+
+  }
   if (!organizerId) {
     return NextResponse.json({ error: "主催者登録が必要です" }, { status: 403 });
   }

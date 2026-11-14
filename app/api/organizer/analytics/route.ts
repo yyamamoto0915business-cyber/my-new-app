@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getOrganizerAccess, roleAtLeast } from "@/lib/organizer/team";
 import { getApiUser } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { isMissingSchemaError } from "@/lib/db/event-point-settings";
 import {
   ANALYTICS_PERIODS,
@@ -29,7 +29,11 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   const supabase = await createClient();
   if (!supabase) return NextResponse.json({ error: "データベースに接続できません" }, { status: 503 });
-  const organizerId = await getOrganizerIdByProfileId(supabase, user.id);
+  const access = await getOrganizerAccess(supabase, user.id);
+  const organizerId = access?.organizerId ?? null;
+  if (access && !roleAtLeast(access.role, "editor")) {
+    return NextResponse.json({ error: "この操作は編集者以上だけができます" }, { status: 403 });
+  }
   if (!organizerId) return NextResponse.json({ error: "主催者登録が必要です" }, { status: 403 });
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: "データベースに接続できません" }, { status: 503 });

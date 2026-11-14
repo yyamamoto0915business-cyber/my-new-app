@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
-import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
+import { getOwnOrganizerId } from "@/lib/organizer/team";
 import { getOrganizerByProfileId } from "@/lib/db/organizers";
 import { getStripeSecretKey } from "@/lib/stripe";
 import { getPublicOriginForStripeRedirect } from "@/lib/stripe-redirect-origin";
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "データベースに接続できません" }, { status: 503 });
   }
 
-  const organizerId = await getOrganizerIdByProfileId(supabase, user.id);
+  const organizerId = await getOwnOrganizerId(supabase, user.id) /* プランと受取設定はオーナーだけ（TEAM のメンバーは不可） */;
   if (!organizerId) {
     return NextResponse.json({ error: "主催者登録が必要です" }, { status: 403 });
   }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
-import { getOrganizerByProfileId } from "@/lib/db/organizers";
+import { getOrganizerRowById } from "@/lib/db/organizers";
 import { publishEvent, getOrganizerIdByEventId } from "@/lib/db/events";
 import { canPublishEvent, isEventPublishedThisMonthJst } from "@/lib/billing";
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "このイベントの主催者ではありません" }, { status: 403 });
   }
 
-  const organizer = await getOrganizerByProfileId(supabase, user.id);
+  const organizer = await getOrganizerRowById(supabase, organizerId) /* TEAM のメンバーも、所属する主催者で数える */;
   if (!organizer) {
     return NextResponse.json({ error: "主催者情報を取得できません" }, { status: 500 });
   }

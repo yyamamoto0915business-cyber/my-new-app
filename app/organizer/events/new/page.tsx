@@ -1,5 +1,6 @@
 "use client";
 
+import { getOrganizerAccess } from "@/lib/organizer/team";
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -278,9 +279,11 @@ function NewEventPageContent() {
       const supabase = createClient();
       if (!supabase) return;
       try {
+        const access = await getOrganizerAccess(supabase, user.id);
+        if (!access) return;
         const { data } = await supabase.from("organizers")
           .select("organization_name, contact_email, contact_phone")
-          .eq("profile_id", user.id).maybeSingle();
+          .eq("id", access.organizerId).maybeSingle();
         if (cancelled || !data) return;
         const d = data as { organization_name?: string; contact_email?: string; contact_phone?: string };
         setForm(prev => ({

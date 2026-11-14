@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getOrganizerAccess, roleAtLeast } from "@/lib/organizer/team";
 import { getApiUser } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerIdByStoreId } from "@/lib/db/stores";
 
 type Params = { params: Promise<{ id: string }> };
@@ -105,7 +105,11 @@ export async function POST(request: NextRequest, { params }: Params) {
       !storeId.startsWith("demo-") &&
       !storeId.startsWith("store-mem-")
     ) {
-      const organizerId = await getOrganizerIdByProfileId(supabase, user.id);
+      const access = await getOrganizerAccess(supabase, user.id);
+      const organizerId = access?.organizerId ?? null;
+      if (access && !roleAtLeast(access.role, "editor")) {
+        return NextResponse.json({ error: "この操作は編集者以上だけができます" }, { status: 403 });
+      }
       const storeOrganizerId = await getOrganizerIdByStoreId(supabase, storeId);
       if (!organizerId || storeOrganizerId !== organizerId) {
         return NextResponse.json(

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAuth } from "@/lib/get-auth";
-import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
+import { getOwnOrganizerId } from "@/lib/organizer/team";
 import { createOrganizerWithGrants } from "@/lib/db/organizers-with-grants";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { truncateShortBio } from "@/lib/organizer/organizer-display";
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
   const contactPhone = body.contactPhone?.trim() || undefined;
 
   const [existing, profileResult] = await Promise.all([
-    getOrganizerIdByProfileId(supabase, userId),
+    getOwnOrganizerId(supabase, userId), // メンバーとして所属していても、自分の団体は別に登録できる
     supabase.from("profiles").select("id").eq("id", userId).maybeSingle(),
   ]);
 

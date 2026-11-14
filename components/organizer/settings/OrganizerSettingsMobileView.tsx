@@ -1,5 +1,6 @@
 "use client";
 
+import { getOrganizerAccess } from "@/lib/organizer/team";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -41,11 +42,8 @@ function useOrganizerIdentity(userId: string | undefined) {
     let cancelled = false;
     (async () => {
       try {
-        const { data: org } = await supabase
-          .from("organizers")
-          .select("id")
-          .eq("profile_id", userId)
-          .maybeSingle();
+        const access = await getOrganizerAccess(supabase, userId);
+        const org = access ? { id: access.organizerId } : null;
         if (cancelled || !org) return;
         setOrganizerId(org.id as string);
         const [{ data: op }, { data: profile }] = await Promise.all([

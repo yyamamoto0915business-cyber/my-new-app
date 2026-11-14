@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
-import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
+import { getOwnOrganizerId } from "@/lib/organizer/team";
 
 /**
  * POST: 主催者の Stripe Connect 紐付けを DB から消し、本番/テスト切替後にやり直せるようにする
@@ -17,7 +17,7 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({ error: "データベースに接続できません" }, { status: 503 });
   }
 
-  const organizerId = await getOrganizerIdByProfileId(supabase, user.id);
+  const organizerId = await getOwnOrganizerId(supabase, user.id) /* プランと受取設定はオーナーだけ（TEAM のメンバーは不可） */;
   if (!organizerId) {
     return NextResponse.json({ error: "主催者登録が必要です" }, { status: 403 });
   }
