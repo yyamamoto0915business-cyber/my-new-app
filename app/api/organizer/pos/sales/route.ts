@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getApiUser } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
+import Stripe from "stripe";
 import { getPosSalesSummary } from "@/lib/db/pos";
+import { getStripeSecretKey } from "@/lib/stripe";
+import { sweepStalePendingPointSales } from "@/lib/pos/pending-sales";
 
 /** GET: 本日の売上サマリー＋履歴 */
 export async function GET(request: NextRequest) {
@@ -22,6 +25,10 @@ export async function GET(request: NextRequest) {
   }
 
   const eventId = request.nextUrl.searchParams.get("eventId");
+
+  // ポイントを預かったまま払われなかった支払い待ちを片づける（ポイントを戻す）
+  const key = getStripeSecretKey();
+  await sweepStalePendingPointSales(supabase, key ? new Stripe(key) : null, organizerId);
 
   try {
     const { summary, sales } = await getPosSalesSummary(supabase, organizerId, {
