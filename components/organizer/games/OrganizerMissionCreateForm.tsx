@@ -63,6 +63,7 @@ import { GameDraftLoading } from "@/components/organizer/games/GameDraftLoading"
 import { useGameDraft } from "@/components/organizer/games/useGameDraft";
 import { readGameLook } from "@/lib/organizer/game-look";
 import { sanitizeMissionSettings } from "@/lib/organizer/mission";
+import { MissionAddSheet } from "@/components/organizer/games/MissionAddSheet";
 
 const KIND_ICONS: Record<MissionKindId, LucideIcon> = {
   visit: MapPin,
@@ -166,6 +167,7 @@ export function OrganizerMissionCreateForm() {
   const [events, setEvents] = useState<OrganizerGameEventOption[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [formats, setFormats] = useState<MissionKindId[]>(MISSION_KINDS.map((kind) => kind.id));
+  const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [missions, setMissions] = useState<MissionItem[]>(() => sampleMissions());
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [clearCount, setClearCount] = useState(3);
@@ -255,11 +257,13 @@ export function OrganizerMissionCreateForm() {
     });
   }
 
-  function addMission() {
-    const kind = formats[0] ?? "visit";
+  /** 「部品を足す」で選んだ種類のミッションを足す（画面案 ③）。選んだ種類はミッション形式にも入れる */
+  function addMission(kind: MissionKindId) {
     const next = createMissionItem(kind);
+    setFormats((current) => (current.includes(kind) ? current : [...current, kind]));
     setMissions((current) => [...current, next]);
     setEditingKey(next.key);
+    setAddSheetOpen(false);
   }
 
   function duplicateMission(key: string) {
@@ -698,9 +702,9 @@ export function OrganizerMissionCreateForm() {
                   <p>ミッションを追加して、達成条件や報酬を設定します。</p>
                 </div>
               </div>
-              <button type="button" className="org-mission__add" onClick={addMission}>
+              <button type="button" className="org-mission__add" onClick={() => setAddSheetOpen(true)}>
                 <Plus className="h-4 w-4" aria-hidden />
-                ミッションを追加する
+                部品を足す
               </button>
             </div>
             {missions.length === 0 ? (
@@ -830,9 +834,9 @@ export function OrganizerMissionCreateForm() {
                   );
                 })}
               </ol>
-              <button type="button" className="org-mission__add" style={{ marginTop: "0.7rem" }} onClick={addMission}>
+              <button type="button" className="org-mission__add" style={{ marginTop: "0.7rem" }} onClick={() => setAddSheetOpen(true)}>
                 <Plus className="h-4 w-4" aria-hidden />
-                ミッションを追加する
+                部品を足す
               </button>
               </>
             )}
@@ -988,6 +992,7 @@ export function OrganizerMissionCreateForm() {
           onClose={() => setTesting(false)}
         />
       ) : null}
+      <MissionAddSheet open={addSheetOpen} onClose={() => setAddSheetOpen(false)} onPick={addMission} />
     </GameCreateShell>
   );
 }

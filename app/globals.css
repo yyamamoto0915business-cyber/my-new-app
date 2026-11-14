@@ -15638,11 +15638,15 @@ a.org-games__card:hover {
   padding: 0.45rem 0.6rem;
   font-size: 0.8rem;
   font-weight: 500;
+  /* 列の幅に合わせる（もとの幅のままだと、スマホでカードの右にはみ出していた） */
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .org-mission__editor-row {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 0.7fr;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.7fr);
   gap: 0.55rem;
 }
 
@@ -16000,7 +16004,7 @@ a.org-games__card:hover {
   .org-mission__grid,
   .org-mission__editor-row,
   .org-mission__card-head {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     flex-direction: column;
   }
 }
