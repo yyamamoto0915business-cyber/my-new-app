@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, HelpCircle, MapPin, Camera, Trophy, type LucideIcon } from "lucide-react";
+import { ChevronRight, HelpCircle, LayoutGrid, MapPin, Camera, Trophy, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getOrganizerGameType, type OrganizerGameTypeId } from "@/lib/organizer/game-types";
 
@@ -138,6 +138,15 @@ export function GamePurposePicker({ className }: { className?: string }) {
           })}
         </ul>
       </div>
+
+      {/* ひな形を使わず、部品を自分で並べて作る（今はミッションの部品で組み立てる） */}
+      <Link
+        href="/organizer/games/new?type=mission"
+        className="flex min-h-[50px] items-center justify-center gap-2 rounded-[16px] border-[1.5px] border-dashed border-[#9cc3aa] px-3 text-[14px] font-bold text-[#1f5e3a]"
+      >
+        <LayoutGrid className="h-[18px] w-[18px]" aria-hidden />
+        ひな形を使わず、まっさらから組み立てる
+      </Link>
     </div>
   );
 }
