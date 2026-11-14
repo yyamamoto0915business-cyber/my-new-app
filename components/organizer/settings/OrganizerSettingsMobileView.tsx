@@ -1,9 +1,12 @@
 "use client";
 
+import { getOrganizerAccess } from "@/lib/organizer/team";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Crown, HelpCircle, Landmark, UserRound } from "lucide-react";
+import { ChevronDown, ChevronRight, Crown, HelpCircle, Landmark, UserRound,
+  UsersRound,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { ProfileBannerAvatar } from "@/components/profile/profile-banner-avatar";
@@ -41,11 +44,8 @@ function useOrganizerIdentity(userId: string | undefined) {
     let cancelled = false;
     (async () => {
       try {
-        const { data: org } = await supabase
-          .from("organizers")
-          .select("id")
-          .eq("profile_id", userId)
-          .maybeSingle();
+        const access = await getOrganizerAccess(supabase, userId);
+        const org = access ? { id: access.organizerId } : null;
         if (cancelled || !org) return;
         setOrganizerId(org.id as string);
         const [{ data: op }, { data: profile }] = await Promise.all([
@@ -305,6 +305,21 @@ export function OrganizerSettingsMobileView({
           )}
         </span>
         <ChevronRight className="h-5 w-5 shrink-0 text-[#3a2c10]" aria-hidden />
+      </Link>
+
+      {/* チーム・メンバー（TEAM。入口はここだけ） */}
+      <Link
+        href="/organizer/team"
+        className="flex items-center gap-3 rounded-[14px] border border-[#d9eadf] bg-white px-4 py-3 active:scale-[0.99]"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#e6f3ea] text-[#2f7d4e]" aria-hidden>
+          <UsersRound className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-bold text-[#163828]">チーム・メンバー</span>
+          <span className="block truncate text-[12px] text-[#5f6d64]">メンバーを招待して、一緒に運営する</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-[#163828]" aria-hidden />
       </Link>
 
       {/* 設定・サポート（利用者のマイページと同じく開いて使う） */}

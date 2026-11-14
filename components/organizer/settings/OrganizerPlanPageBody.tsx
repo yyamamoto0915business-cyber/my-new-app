@@ -390,9 +390,9 @@ export function OrganizerPlanPageBody() {
 
   const paid = data ? isPaidPlan(data) : false;
   const founder = data ? isFounderActive(data) : false;
-  const currentId = getCurrentOrganizerCatalogPlanId(
-    data?.planTier ?? (paid ? "standard" : "free")
-  );
+  const currentId = data?.isTeam
+    ? "team"
+    : getCurrentOrganizerCatalogPlanId(data?.planTier ?? (paid ? "standard" : "free"));
   const currentPlan = getOrganizerCatalogPlan(currentId);
   const pastDue = data?.organizer.subscription_status === "past_due";
   const managedByApple = paid && data?.organizer.subscription_provider === "apple";
@@ -400,7 +400,7 @@ export function OrganizerPlanPageBody() {
     paid && !managedByApple && Boolean(data?.organizer.subscription_status);
   /** アプリでは、まだ申し込めないプラン（TEAM など）は出さない */
   const visiblePlans = iosApp
-    ? ORGANIZER_CATALOG_PLANS.filter((plan) => plan.id === "free" || plan.checkoutEnabled)
+    ? ORGANIZER_CATALOG_PLANS.filter((plan) => plan.id === "free" || plan.checkoutEnabled || plan.id === currentId)
     : ORGANIZER_CATALOG_PLANS;
 
   const shellClass = [

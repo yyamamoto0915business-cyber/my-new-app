@@ -1,3 +1,4 @@
+import { getOrganizerAccess, roleAtLeast, type OrganizerRole } from "@/lib/organizer/team";
 import { endedEventsOrFilter, isEventEndedBy, upcomingEventsOrFilter } from "@/lib/event-dates";
 import { sanitizeEventQuestions, type EventAnswers, type EventQuestion } from "@/lib/event-questions";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -283,6 +284,10 @@ export async function getOrganizerProfileId(
   return org?.profile_id ?? null;
 }
 
+/**
+ * このイベントの主催者本人か（チャットなど、本人だけのもの用）。
+ * TEAM のメンバーも含めるときは isTeamOrganizerOfEvent。
+ */
 export async function isOrganizerOfEvent(
   supabase: SupabaseClient,
   eventId: string,
@@ -299,6 +304,24 @@ export async function isOrganizerOfEvent(
     .select("id")
     .eq("id", eventId)
     .eq("organizer_id", org.id)
+    .maybeSingle();
+  return !!ev;
+}
+
+/** このイベントを、本人か TEAM のメンバー（minRole 以上）として扱えるか */
+export async function isTeamOrganizerOfEvent(
+  supabase: SupabaseClient,
+  eventId: string,
+  profileId: string,
+  minRole: OrganizerRole = "editor"
+): Promise<boolean> {
+  const access = await getOrganizerAccess(supabase, profileId);
+  if (!access || !roleAtLeast(access.role, minRole)) return false;
+  const { data: ev } = await supabase
+    .from("events")
+    .select("id")
+    .eq("id", eventId)
+    .eq("organizer_id", access.organizerId)
     .maybeSingle();
   return !!ev;
 }

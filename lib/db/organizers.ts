@@ -288,6 +288,16 @@ export async function fetchOrganizersForListing(
     .slice(0, limit);
 }
 
+/** 主催者の行を ID で読む（TEAM のメンバーも、所属する主催者の行を読める：00131） */
+export async function getOrganizerRowById(
+  supabase: SupabaseClient,
+  organizerId: string
+): Promise<Organizer | null> {
+  const { data, error } = await supabase.from("organizers").select("*").eq("id", organizerId).maybeSingle();
+  if (error || !data) return null;
+  return data as Organizer;
+}
+
 export async function getOrganizerByProfileId(
   supabase: SupabaseClient,
   profileId: string

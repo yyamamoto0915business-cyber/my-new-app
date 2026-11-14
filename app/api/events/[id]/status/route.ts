@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
-import { getOrganizerByProfileId } from "@/lib/db/organizers";
+import { getOrganizerRowById } from "@/lib/db/organizers";
 import { canPublishEvent, isEventPublishedThisMonthJst } from "@/lib/billing";
 import { getOrganizerIdByEventId, updateEventStatus } from "@/lib/db/events";
 
@@ -50,7 +50,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // 同月内に一度公開済みのイベントは「再公開」扱いにして枠チェックをスキップ
     const alreadyPublishedThisMonth = await isEventPublishedThisMonthJst(supabase, eventId);
     if (!alreadyPublishedThisMonth) {
-      const organizer = await getOrganizerByProfileId(supabase, user.id);
+      const organizer = await getOrganizerRowById(supabase, organizerId) /* TEAM のメンバーも、所属する主催者で数える */;
       if (!organizer) {
         return NextResponse.json({ error: "主催者情報を取得できません" }, { status: 500 });
       }

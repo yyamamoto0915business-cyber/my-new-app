@@ -1,3 +1,4 @@
+import { getOrganizerAccess } from "@/lib/organizer/team";
 import { cache } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -21,15 +22,12 @@ export const getOrganizerNavState = cache(async (): Promise<{
   if (!user) {
     return { supabase, user: null, organizerRegistered: false, organizerId: null };
   }
-  const { data } = await supabase
-    .from("organizers")
-    .select("id")
-    .eq("profile_id", user.id)
-    .maybeSingle();
+  // 本人の主催者か、TEAM のメンバーとして所属する主催者
+  const access = await getOrganizerAccess(supabase, user.id);
   return {
     supabase,
     user,
-    organizerRegistered: !!data,
-    organizerId: data?.id ?? null,
+    organizerRegistered: !!access,
+    organizerId: access?.organizerId ?? null,
   };
 });

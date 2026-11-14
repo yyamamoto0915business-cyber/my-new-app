@@ -1,5 +1,6 @@
 "use client";
 
+import { getOrganizerAccess } from "@/lib/organizer/team";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -152,11 +153,14 @@ export default function OrganizerSettingsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase
-          .from("organizers")
-          .select("organization_name, contact_email, contact_phone")
-          .eq("profile_id", user.id)
-          .maybeSingle();
+        const access = await getOrganizerAccess(supabase, user.id);
+        const { data } = access
+          ? await supabase
+              .from("organizers")
+              .select("organization_name, contact_email, contact_phone")
+              .eq("id", access.organizerId)
+              .maybeSingle()
+          : { data: null };
         if (!cancelled) setOrganizer(data ?? null);
       } catch {
         if (!cancelled) setOrganizer(null);
@@ -214,6 +218,16 @@ export default function OrganizerSettingsPage() {
         orgLoading={orgLoading}
         billingLoading={billingLoading}
       />
+
+      {/* PC：チーム・メンバー（TEAM。スマホはマイページの同じ位置） */}
+      <Link
+        href="/organizer/team"
+        className="hidden items-center gap-3 rounded-lg border border-[#d9eadf] bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_2px_10px_rgba(0,0,0,0.06)] min-[900px]:flex"
+      >
+        <span className="text-[13px] font-bold text-[#163828]">チーム・メンバー</span>
+        <span className="text-[12px] text-[#5f6d64]">メンバーを招待して、一緒に運営する（TEAM プラン）</span>
+        <span className="ml-auto text-[12px] font-bold text-[#1f7a4a]">開く ›</span>
+      </Link>
 
       {/* PC: 行ごとに左右を揃えるフラット2列グリッド */}
       <div className={`hidden min-[900px]:grid min-[900px]:grid-cols-2 min-[900px]:items-stretch ${CARD_GAP}`}>

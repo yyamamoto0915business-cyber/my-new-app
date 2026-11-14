@@ -3,6 +3,8 @@ import type { OrganizerPlanTier } from "@/lib/billing";
 export type OrganizerBillingData = {
   /** いまのプラン（FREE / STANDARD / GAME） */
   planTier: OrganizerPlanTier;
+  /** TEAM プランか（planTier は GAME と同じ "game"） */
+  isTeam?: boolean;
   /** サーバーに STRIPE_SECRET_KEY があるか（Connect / Checkout API が動くか） */
   stripeConnectConfigured: boolean;
   /** Stripe Terminal の日本 Location が設定済みか（iPhoneカードタッチ） */

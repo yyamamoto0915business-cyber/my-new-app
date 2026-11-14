@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
-import { isOrganizerOfEvent } from "@/lib/db/events";
+import { isTeamOrganizerOfEvent } from "@/lib/db/events";
 import { updateSponsorApplicationStatus } from "@/lib/db/sponsors";
 
 type RouteParams = { params: Promise<{ id: string; appId: string }> };
@@ -36,7 +36,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   if (user) {
-    const isOrganizer = await isOrganizerOfEvent(supabase, eventId, user.id);
+    const isOrganizer = await isTeamOrganizerOfEvent(supabase, eventId, user.id, "editor");
     if (!isOrganizer) {
       return NextResponse.json({ error: "このイベントの主催者ではありません" }, { status: 403 });
     }
