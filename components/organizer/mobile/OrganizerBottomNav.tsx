@@ -15,6 +15,7 @@ import {
   organizerBottomNavActive,
   type OrganizerBottomNavId,
 } from "@/lib/organizer/organizer-nav";
+import { useOrganizerRole } from "@/hooks/use-organizer-role";
 
 type Item = {
   id: OrganizerBottomNavId;
@@ -41,6 +42,11 @@ export function OrganizerBottomNav() {
   const hidden =
     isEventFormRoute(pathname) || isMessagesConversationRoute(pathname) || isProfileEditRoute(pathname);
   const unread = useOrganizerUnreadCount(!hidden);
+  // TEAM：スタッフには「新しく掲載」を出さない。チャットは団体のアカウント本人だけ
+  const role = useOrganizerRole();
+  const items = ITEMS.filter(
+    (it) => !(it.id === "new" && role === "staff") && !(it.id === "chat" && role && role !== "owner")
+  );
 
   // 作成・編集フォーム・プロフィール編集と、会話を開いているときは入力に集中させる（利用者側と同じ）
   if (hidden) return null;
@@ -54,7 +60,7 @@ export function OrganizerBottomNav() {
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#dde9e1] bg-[#f7fbf8]/98 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_16px_rgba(22,56,40,0.05)] backdrop-blur-sm min-[900px]:hidden"
     >
       <div className="mx-auto flex w-full items-end justify-around px-1 py-0.5 tablet:max-w-[560px]">
-        {ITEMS.map(({ id, href, label, Icon }) => {
+        {items.map(({ id, href, label, Icon }) => {
           const active = activeId === id;
           if (id === "new") {
             return (
