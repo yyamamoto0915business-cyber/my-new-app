@@ -208,6 +208,16 @@ export function OrganizerHomeClient() {
           <Stat label="今日の売上" value={formatYen(sales?.totalYen ?? 0)} />
         </dl>
       ) : null}
+      {/* くわしい数字（ダッシュボード）の入口はここだけ */}
+      {!loading && data ? (
+        <Link
+          href="/organizer/dashboard"
+          className="-mt-2 flex min-h-[44px] items-center justify-end gap-1 text-[13px] font-bold text-[#1f7a4a]"
+        >
+          くわしい数字を見る（参加・閲覧・売上）
+          <ChevronRight className="h-4 w-4" aria-hidden />
+        </Link>
+      ) : null}
 
       {/* 運営の道具 */}
       <nav aria-label="運営の道具" className="grid grid-cols-4 gap-2">
