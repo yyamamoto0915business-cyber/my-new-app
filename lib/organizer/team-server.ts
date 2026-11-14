@@ -26,7 +26,8 @@ export async function organizerHasTeamPlan(admin: SupabaseClient, organizerId: s
   const [{ data: org }, { data: planState }] = await Promise.all([
     admin
       .from("organizers")
-      .select("plan, subscription_status, stripe_status, manual_grant_active, manual_grant_plan, manual_grant_expires_at")
+      // organizers に stripe_status の列はない（organizer_plan_state の方にある）。ない列を読むと全体が失敗するので入れない
+      .select("plan, subscription_status, manual_grant_active, manual_grant_plan, manual_grant_expires_at")
       .eq("id", organizerId)
       .maybeSingle(),
     admin
