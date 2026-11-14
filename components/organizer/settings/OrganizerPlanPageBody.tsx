@@ -67,6 +67,8 @@ function CheckIcon() {
 type ApplePlanCardState = {
   /** 課金プラグインが入ったビルドで、App 内課金が使える */
   available: boolean;
+  /** このプランをアプリで申し込めるか（TEAM は App Store から商品が返ってきたときだけ） */
+  productAvailable: boolean;
   /** App Store の値段（その国の通貨）。取れないときは null */
   priceString: string | null;
   buying: boolean;
@@ -121,7 +123,7 @@ function CatalogPlanCard({
   const cardRef = useRef<HTMLElement>(null);
   const isCurrent = plan.id === currentId;
   // アプリでは App Store の商品があるプランだけ申し込める（TEAM は Web だけ）
-  const purchasable = iosApp ? (plan.appleEnabled ?? plan.checkoutEnabled) : plan.checkoutEnabled;
+  const purchasable = iosApp ? apple.productAvailable : plan.checkoutEnabled;
   const showCheckoutForm = purchasable && !isCurrent;
 
   useEffect(() => {
@@ -400,11 +402,14 @@ export function OrganizerPlanPageBody() {
   const managedByApple = paid && data?.organizer.subscription_provider === "apple";
   const managedByWeb =
     paid && !managedByApple && Boolean(data?.organizer.subscription_status);
-  /** アプリでは、まだ申し込めないプラン（TEAM など）は出さない */
+  /** アプリで申し込めるか。TEAM は App Store から商品が返ってきたとき（承認後・審査中）だけ */
+  const appleProductAvailable = (plan: (typeof ORGANIZER_CATALOG_PLANS)[number]) =>
+    plan.id === "team"
+      ? Boolean(appleIap.productFor("team"))
+      : plan.id !== "free" && (plan.appleEnabled ?? plan.checkoutEnabled);
+  /** アプリでは、まだ申し込めないプランは出さない */
   const visiblePlans = iosApp
-    ? ORGANIZER_CATALOG_PLANS.filter(
-        (plan) => plan.id === "free" || (plan.appleEnabled ?? plan.checkoutEnabled) || plan.id === currentId
-      )
+    ? ORGANIZER_CATALOG_PLANS.filter((plan) => plan.id === "free" || appleProductAvailable(plan) || plan.id === currentId)
     : ORGANIZER_CATALOG_PLANS;
 
   const shellClass = [
@@ -564,8 +569,9 @@ export function OrganizerPlanPageBody() {
                   iosApp={iosApp}
                   apple={{
                     available: appleIap.available,
+                    productAvailable: appleProductAvailable(plan),
                     priceString:
-                      plan.id === "standard" || plan.id === "game"
+                      plan.id === "standard" || plan.id === "game" || plan.id === "team"
                         ? (() => {
                             const product = appleIap.productFor(plan.id);
                             // 日本のストアは決まった日本円の表示（¥980 / 月）のままにする
@@ -577,7 +583,7 @@ export function OrganizerPlanPageBody() {
                     managedByApple,
                     managedByWeb,
                     onBuy: () => {
-                      if (user && (plan.id === "standard" || plan.id === "game")) {
+                      if (user && (plan.id === "standard" || plan.id === "game" || plan.id === "team")) {
                         void appleIap.purchase(plan.id, user.id);
                       }
                     },

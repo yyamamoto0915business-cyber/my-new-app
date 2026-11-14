@@ -118,8 +118,8 @@ export const ORGANIZER_CATALOG_PLANS: readonly OrganizerCatalogPlan[] = [
     ctaLabel: "TEAMをはじめる",
     recommended: false,
     checkoutEnabled: true,
-    // App Store の商品（jp.machiglyph.app.organizer.team.monthly）ができるまで、アプリでは申し込めない
-    appleEnabled: false,
+    // アプリでは、App Store から TEAM の商品が返ってきたときだけ出す（審査で承認されるまでは出ない。OrganizerPlanPageBody）
+    appleEnabled: true,
     tone: "team",
   },
 ];

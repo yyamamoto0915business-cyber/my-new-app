@@ -68,7 +68,7 @@ export function verifyAppleNotification(signedPayload: string) {
 }
 
 type AppleSubscriptionState = {
-  plan: "free" | "starter" | "game";
+  plan: "free" | "starter" | "game" | "team";
   subscriptionStatus: "active" | "past_due" | "canceled";
   currentPeriodEnd: string | null;
 };

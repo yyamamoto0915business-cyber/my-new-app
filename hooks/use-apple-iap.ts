@@ -54,7 +54,7 @@ export function useAppleIap(enabled: boolean, onChanged: () => Promise<void> | v
       setMessage(null);
       try {
         await purchaseAppleOrganizerPlan(plan, userId);
-        setMessage(`${plan === "game" ? "GAME" : "STANDARD"}プランのお申し込みが完了しました。`);
+        setMessage(`${plan === "team" ? "TEAM" : plan === "game" ? "GAME" : "STANDARD"}プランのお申し込みが完了しました。`);
         await onChanged();
       } catch (err) {
         if (!(err instanceof AppleIapCancelledError)) {
