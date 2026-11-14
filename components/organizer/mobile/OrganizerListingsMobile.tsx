@@ -13,6 +13,7 @@ import {
   Store,
   Truck,
   type LucideIcon,
+  Sparkles,
 } from "lucide-react";
 import type { DashboardResponse } from "@/app/api/organizer/dashboard/route";
 import type { RecruitmentDashboardResponse } from "@/app/api/organizer/recruitments-dashboard/route";
@@ -39,6 +40,8 @@ type Listing = {
   /** 申込数など、実データのある数だけ */
   metric: string | null;
   href: string;
+  /** イベントだけ：ポイントの設定（スマホではここが入口。PC はイベント管理のメニュー） */
+  pointsHref?: string;
 };
 
 const KIND_META: Record<Kind, { label: string; Icon: LucideIcon }> = {
@@ -96,6 +99,7 @@ function fromEvents(data: DashboardResponse | null): Listing[] {
       sub: joinSub("イベント", shortDate(e.date)),
       metric: `申込 ${e.applicationCount}件`,
       href: `/organizer/events/${e.id}`,
+      pointsHref: `/organizer/events/${e.id}/points`,
     };
   });
 }
@@ -154,37 +158,50 @@ function StatusBadge({ item }: { item: Listing }) {
 
 function ListingCard({ item }: { item: Listing }) {
   const { Icon } = KIND_META[item.kind];
+  // カード全体は編集へのリンク。イベントだけ、下の行に「ポイント」を並べる（リンクの入れ子にしないよう、上に重ねる）
   return (
-    <Link
-      href={item.href}
-      className="flex h-full items-stretch gap-3 rounded-[20px] border border-[#ebeee8] bg-white p-2.5 pr-3.5 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:bg-[#fafcf9]"
-    >
-      <span className="relative h-[92px] w-[92px] shrink-0 overflow-hidden rounded-[14px] bg-[#eef3ef]">
-        {item.imageUrl ? (
-          <EventThumbnail imageUrl={item.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
-        ) : (
-          <span className="flex h-full w-full items-center justify-center text-[#7fa08c]">
-            <Icon className="h-8 w-8" aria-hidden />
-          </span>
-        )}
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col py-0.5">
-        <span className="flex items-start justify-between gap-2">
-          <span className="line-clamp-2 text-[15px] font-bold leading-snug text-[#163828] [overflow-wrap:anywhere]">
-            {item.title}
-          </span>
-          <StatusBadge item={item} />
+    <div className="relative h-full">
+      <Link
+        href={item.href}
+        className="flex h-full items-stretch gap-3 rounded-[20px] border border-[#ebeee8] bg-white p-2.5 pr-3.5 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:bg-[#fafcf9]"
+      >
+        <span className="relative h-[92px] w-[92px] shrink-0 overflow-hidden rounded-[14px] bg-[#eef3ef]">
+          {item.imageUrl ? (
+            <EventThumbnail imageUrl={item.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-[#7fa08c]">
+              <Icon className="h-8 w-8" aria-hidden />
+            </span>
+          )}
         </span>
-        <span className="mt-1 truncate text-[12px] text-[#6b776f]">{item.sub}</span>
-        <span className="mt-auto flex items-center justify-between gap-2 pt-1.5">
-          <span className="truncate text-[12.5px] text-[#4f5d54]">{item.metric ?? ""}</span>
-          <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-bold text-[#1f7a4a]">
-            <Pencil className="h-4 w-4" aria-hidden />
-            編集
+        <span className="flex min-w-0 flex-1 flex-col py-0.5">
+          <span className="flex items-start justify-between gap-2">
+            <span className="line-clamp-2 text-[15px] font-bold leading-snug text-[#163828] [overflow-wrap:anywhere]">
+              {item.title}
+            </span>
+            <StatusBadge item={item} />
+          </span>
+          <span className="mt-1 truncate text-[12px] text-[#6b776f]">{item.sub}</span>
+          <span className="mt-auto flex items-center justify-between gap-2 pt-1.5">
+            <span className="truncate text-[12.5px] text-[#4f5d54]">{item.metric ?? ""}</span>
+            <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-bold text-[#1f7a4a]">
+              <Pencil className="h-4 w-4" aria-hidden />
+              編集
+            </span>
           </span>
         </span>
-      </span>
-    </Link>
+      </Link>
+      {item.pointsHref ? (
+        <Link
+          href={item.pointsHref}
+          aria-label={`${item.title}のイベントポイント`}
+          className="absolute bottom-2 right-[74px] inline-flex min-h-[36px] items-center gap-1 rounded-full border border-[#ecd9a6] bg-[#fffaf0] px-2.5 text-[12.5px] font-bold text-[#8a6a1c]"
+        >
+          <Sparkles className="h-3.5 w-3.5" aria-hidden />
+          ポイント
+        </Link>
+      ) : null}
+    </div>
   );
 }
 
