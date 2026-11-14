@@ -221,6 +221,69 @@ export type CheckoutLineInput = {
   quantity: number;
 };
 
+/**
+ * 会計でイベントポイントを使った分。使った本人の ID も残す。
+ * 交換：byProduct（商品ID → 個数とpt）／割引：discount（使ったptと引いた円。会計全体から引く）
+ */
+export type SalePointsInput = {
+  userId: string;
+  byProduct?: Map<string, { units: number; points: number }>;
+  discount?: { points: number; yen: number };
+};
+
+type SaleItemInsert = {
+  product_id: string;
+  product_name: string;
+  unit_price_yen: number;
+  quantity: number;
+  line_total_yen: number;
+  points_used?: number;
+};
+
+/** カートから、会計の行と合計を作る（現金・オンラインで同じ）。交換した分は ¥0、割引は合計から引く */
+function buildSaleRows(
+  byId: Map<string, PosProduct>,
+  lines: CheckoutLineInput[],
+  points?: SalePointsInput
+): { items: SaleItemInsert[]; totalYen: number; pointsUsed: number; discountYen: number; listYen: number } {
+  const items: SaleItemInsert[] = [];
+  let totalYen = 0;
+  let listYen = 0;
+  let pointsUsed = 0;
+  for (const line of lines) {
+    const product = byId.get(line.productId);
+    if (!product || line.quantity <= 0) {
+      throw new Error("invalid_line");
+    }
+    const qty = Math.floor(line.quantity);
+    const exchanged = points?.byProduct?.get(product.id);
+    const units = Math.min(qty, Math.max(0, exchanged?.units ?? 0));
+    const lineTotal = product.priceYen * (qty - units);
+    totalYen += lineTotal;
+    listYen += product.priceYen * qty;
+    pointsUsed += units > 0 ? (exchanged?.points ?? 0) : 0;
+    items.push({
+      product_id: product.id,
+      product_name: product.name,
+      unit_price_yen: product.priceYen,
+      quantity: qty,
+      line_total_yen: lineTotal,
+      ...(points ? { points_used: units > 0 ? (exchanged?.points ?? 0) : 0 } : {}),
+    });
+  }
+
+  // 割引：会計全体から引く（商品ごとの金額は定価のまま）
+  const discount = points?.discount;
+  let discountYen = 0;
+  if (discount && discount.points > 0) {
+    discountYen = Math.floor(discount.yen);
+    if (discountYen <= 0 || discountYen > totalYen) throw new Error("invalid_discount");
+    totalYen -= discountYen;
+    pointsUsed += Math.floor(discount.points);
+  }
+  return { items, totalYen, pointsUsed, discountYen, listYen };
+}
+
 export async function createCashSale(
   supabase: DbClient,
   organizerId: string,
@@ -230,15 +293,7 @@ export async function createCashSale(
     cashReceivedYen: number;
     /** 会計のID（ポイントを先に使うとき、同じIDで記録するため） */
     saleId?: string;
-    /**
-     * イベントポイントを使った分。使った本人の ID も残す。
-     * 交換：byProduct（商品ID → 個数とpt）／割引：discount（使ったptと引いた円。会計全体から引く）
-     */
-    points?: {
-      userId: string;
-      byProduct?: Map<string, { units: number; points: number }>;
-      discount?: { points: number; yen: number };
-    };
+    points?: SalePointsInput;
   }
 ): Promise<PosSale> {
   const products = await listPosProducts(supabase, organizerId, {
@@ -247,47 +302,7 @@ export async function createCashSale(
   });
   const byId = new Map(products.map((p) => [p.id, p]));
 
-  const items: Array<{
-    product_id: string;
-    product_name: string;
-    unit_price_yen: number;
-    quantity: number;
-    line_total_yen: number;
-    points_used?: number;
-  }> = [];
-
-  let totalYen = 0;
-  let pointsUsed = 0;
-  for (const line of opts.lines) {
-    const product = byId.get(line.productId);
-    if (!product || line.quantity <= 0) {
-      throw new Error("invalid_line");
-    }
-    const qty = Math.floor(line.quantity);
-    const exchanged = opts.points?.byProduct?.get(product.id);
-    const units = Math.min(qty, Math.max(0, exchanged?.units ?? 0));
-    const lineTotal = product.priceYen * (qty - units);
-    totalYen += lineTotal;
-    pointsUsed += units > 0 ? (exchanged?.points ?? 0) : 0;
-    items.push({
-      product_id: product.id,
-      product_name: product.name,
-      unit_price_yen: product.priceYen,
-      quantity: qty,
-      line_total_yen: lineTotal,
-      ...(opts.points ? { points_used: units > 0 ? (exchanged?.points ?? 0) : 0 } : {}),
-    });
-  }
-
-  // 割引：会計全体から引く（商品ごとの金額は定価のまま）
-  const discount = opts.points?.discount;
-  let discountYen = 0;
-  if (discount && discount.points > 0) {
-    discountYen = Math.floor(discount.yen);
-    if (discountYen <= 0 || discountYen > totalYen) throw new Error("invalid_discount");
-    totalYen -= discountYen;
-    pointsUsed += Math.floor(discount.points);
-  }
+  const { items, totalYen, pointsUsed, discountYen } = buildSaleRows(byId, opts.lines, opts.points);
 
   // ポイントだけで払う会計（¥0）は、ポイントを使ったときだけ認める
   if (items.length === 0 || (totalYen <= 0 && pointsUsed <= 0)) {
@@ -346,54 +361,40 @@ export async function createPendingOnlineSale(
     eventId: string | null;
     lines: CheckoutLineInput[];
     paymentMethod?: "online" | "tap";
+    /** 会計のID（ポイントを先に預かるとき、同じIDで記録するため） */
+    saleId?: string;
+    /** イベントポイントを使う分（支払いが終わるまでは「預かり」。やめたら戻す） */
+    points?: SalePointsInput;
   }
-): Promise<{ sale: PosSale; platformFeeYen: number }> {
+): Promise<{ sale: PosSale; platformFeeYen: number; listYen: number }> {
   const products = await listPosProducts(supabase, organizerId, {
     eventId: opts.eventId,
     activeOnly: true,
   });
   const byId = new Map(products.map((p) => [p.id, p]));
+  const { items, totalYen, pointsUsed, discountYen, listYen } = buildSaleRows(byId, opts.lines, opts.points);
 
-  const items: Array<{
-    product_id: string;
-    product_name: string;
-    unit_price_yen: number;
-    quantity: number;
-    line_total_yen: number;
-  }> = [];
-
-  let totalYen = 0;
-  for (const line of opts.lines) {
-    const product = byId.get(line.productId);
-    if (!product || line.quantity <= 0) {
-      throw new Error("invalid_line");
-    }
-    const qty = Math.floor(line.quantity);
-    const lineTotal = product.priceYen * qty;
-    totalYen += lineTotal;
-    items.push({
-      product_id: product.id,
-      product_name: product.name,
-      unit_price_yen: product.priceYen,
-      quantity: qty,
-      line_total_yen: lineTotal,
-    });
-  }
-
+  // オンラインは、払うお金があるときだけ（ポイントだけで払うときは現金の ¥0 会計にする）
   if (items.length === 0 || totalYen <= 0) {
     throw new Error("empty_cart");
   }
 
+  // 手数料は、実際に払われる金額（ポイントを引いたあと）にかける
   const platformFeeYen = calcPosPlatformFeeYen(totalYen);
   const organizerNetYen = calcPosOrganizerNetYen(totalYen, platformFeeYen);
 
   const { data: sale, error: saleErr } = await supabase
     .from("pos_sales")
     .insert({
+      ...(opts.saleId ? { id: opts.saleId } : {}),
       organizer_id: organizerId,
       event_id: opts.eventId,
       payment_method: opts.paymentMethod === "tap" ? "tap" : "online",
       status: "pending",
+      ...(pointsUsed > 0 && opts.points
+        ? { points_used: pointsUsed, points_user_id: opts.points.userId }
+        : {}),
+      ...(discountYen > 0 ? { points_discount_yen: discountYen } : {}),
       total_yen: totalYen,
       platform_fee_yen: platformFeeYen,
       organizer_net_yen: organizerNetYen,
@@ -417,6 +418,7 @@ export async function createPendingOnlineSale(
       ((itemRows ?? []) as SaleItemRow[]).map(mapSaleItem)
     ),
     platformFeeYen,
+    listYen,
   };
 }
 
@@ -551,6 +553,51 @@ export async function markPosSaleRefundedByPaymentIntent(
     .update({ status: "refunded" })
     .eq("stripe_payment_intent_id", paymentIntentId)
     .eq("status", "paid");
+}
+
+/** Stripe の決済（Checkout セッション or PaymentIntent）から POS の会計を探す（Webhook・取り消し用） */
+export async function getPosSaleByStripeRef(
+  supabase: DbClient,
+  ref: { sessionId?: string | null; paymentIntentId?: string | null }
+): Promise<PosSale | null> {
+  let q = supabase.from("pos_sales").select("*");
+  if (ref.sessionId) q = q.eq("stripe_checkout_session_id", ref.sessionId);
+  else if (ref.paymentIntentId) q = q.eq("stripe_payment_intent_id", ref.paymentIntentId);
+  else return null;
+  const { data, error } = await q.maybeSingle();
+  if (error) throw error;
+  return data ? mapSale(data as SaleRow) : null;
+}
+
+/** 支払い待ちの会計を「取り消し」にする。支払い待ちでなければ何もしない（取り消したら true） */
+export async function markPosSaleCancelledIfPending(supabase: DbClient, saleId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("pos_sales")
+    .update({ status: "cancelled" })
+    .eq("id", saleId)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}
+
+/** ポイントを預かったまま、しばらく支払い待ちの会計（レジを開いたときに片づける） */
+export async function listStalePendingPointSales(
+  supabase: DbClient,
+  organizerId: string,
+  olderThanIso: string
+): Promise<PosSale[]> {
+  const { data, error } = await supabase
+    .from("pos_sales")
+    .select("*")
+    .eq("organizer_id", organizerId)
+    .eq("status", "pending")
+    .gt("points_used", 0)
+    .lt("created_at", olderThanIso)
+    .limit(20);
+  if (error) throw error;
+  return ((data ?? []) as SaleRow[]).map((row) => mapSale(row));
 }
 
 export async function getPosSaleById(

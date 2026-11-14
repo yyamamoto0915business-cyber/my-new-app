@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, getStripeSecretKey } from "@/lib/stripe";
 import { markPosSalePaidByPaymentIntent, markPosSalePaidBySession, markPosSaleRefundedByPaymentIntent } from "@/lib/db/pos";
 import { POS_TAP_PAYMENT_TYPE } from "@/lib/pos/tap-app";
+import { cancelPosSaleFromStripe, restorePointsForRefundedStripeSale } from "@/lib/pos/pending-sales";
 import { organizerPlanColumnForPrice } from "@/lib/organizer-plan-prices";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -251,6 +252,24 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      // レジのスマホ払い：決済ページが切れた → 会計を取り消して、預かっていたポイントを戻す
+      case "checkout.session.expired": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.type === "pos") {
+          await cancelPosSaleFromStripe(supabase, { sessionId: session.id });
+        }
+        break;
+      }
+
+      // レジのカードタッチ：取り消された → 同じく取り消してポイントを戻す
+      case "payment_intent.canceled": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        if (pi.metadata?.type === POS_TAP_PAYMENT_TYPE) {
+          await cancelPosSaleFromStripe(supabase, { paymentIntentId: pi.id });
+        }
+        break;
+      }
+
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const sub = event.data.object as Stripe.Subscription;
@@ -332,6 +351,8 @@ export async function POST(request: NextRequest) {
             .update({ status: "refunded", updated_at: now })
             .eq("stripe_payment_intent_id", piId);
           await markPosSaleRefundedByPaymentIntent(supabase, piId);
+          // レジの会計でポイントを使っていたら戻す（二重には戻らない）
+          await restorePointsForRefundedStripeSale(supabase, piId);
         }
         break;
       }

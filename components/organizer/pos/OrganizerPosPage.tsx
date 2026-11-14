@@ -76,6 +76,9 @@ function quickCashAmounts(totalYen: number): number[] {
   return [...new Set(candidates)].filter((v) => v > totalYen).slice(0, 3);
 }
 
+/** スマホ払い・カードタッチの支払い待ちで預かっているポイント（画面案 ⑧） */
+type PendingPoints = { pointsUsed: number; discountYen: number; name: string };
+
 function emptySummary(): PosSalesSummary {
   return {
     totalYen: 0,
@@ -114,11 +117,16 @@ export function OrganizerPosPage() {
   const [pendingOnline, setPendingOnline] = useState<{
     saleId: string;
     checkoutUrl: string;
+    payYen: number;
+    points: PendingPoints | null;
   } | null>(null);
   const [pendingTap, setPendingTap] = useState<{
     saleId: string;
     appLink: string;
+    payYen: number;
+    points: PendingPoints | null;
   } | null>(null);
+  const [cancellingPending, setCancellingPending] = useState(false);
   const [stripeReady, setStripeReady] = useState(false);
   const [stripeSubmitted, setStripeSubmitted] = useState(false);
   const [stripeConfigured, setStripeConfigured] = useState(true);
@@ -309,6 +317,14 @@ export function OrganizerPosPage() {
           setMessage(pendingTap ? "カードタッチが完了しました。" : "スマホ決済が完了しました。");
           setCart([]);
           setCashReceived("");
+          setPointsHolder(null);
+          setPendingOnline(null);
+          setPendingTap(null);
+          await loadSales(eventId);
+        } else if (res.ok && json.sale?.status === "cancelled") {
+          // 決済ページが切れた・カードタッチが取り消された（ポイントはサーバーで戻している）
+          const used = Number(json.sale.pointsUsed) || 0;
+          setMessage(`支払いが行われなかったため、会計を取り消しました。${used > 0 ? `${used}ptを戻しました。` : ""}`);
           setPendingOnline(null);
           setPendingTap(null);
           await loadSales(eventId);
@@ -360,8 +376,8 @@ export function OrganizerPosPage() {
   );
   /** ポイントで交換・割引したあとに払うお金 */
   const payYen = pointsPlan ? pointsPlan.payYen : discountPlan ? discountPlan.payYen : subtotal;
-  // ポイントを使う会計は、いまは現金だけ（スマホ払いは途中でやめられるため）
-  const pointsBlockNonCash = pointsUsed > 0 && paymentMethod !== "cash";
+  // ポイントだけで払える（¥0）ときは、スマホ払い・カードタッチではなく現金の ¥0 会計にする
+  const pointsBlockNonCash = pointsUsed > 0 && payYen <= 0 && paymentMethod !== "cash";
   const qtyByProduct = useMemo(
     () => new Map(cart.map((line) => [line.productId, line.quantity])),
     [cart]
@@ -470,10 +486,47 @@ export function OrganizerPosPage() {
     }
   }
 
+  function pendingPointsOf(json: { points?: { pointsUsed?: number; discountYen?: number } | null }): PendingPoints | null {
+    const used = Number(json.points?.pointsUsed) || 0;
+    if (used <= 0) return null;
+    return { pointsUsed: used, discountYen: Number(json.points?.discountYen) || 0, name: pointsHolder?.name ?? "お客様" };
+  }
+
+  /** 支払い待ちを「やめる」。Stripe 側で支払いを止めてから、会計を取り消してポイントを戻す */
+  async function cancelPending() {
+    const pending = pendingOnline ?? pendingTap;
+    if (!pending || cancellingPending) return;
+    setCancellingPending(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/organizer/pos/sales/${pending.saleId}/cancel`, { method: "POST" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error || "やめる処理に失敗しました。もう一度押してください。");
+        return;
+      }
+      if (json.outcome === "paid") {
+        setMessage("お支払いはもう終わっていました。");
+        setCart([]);
+        setCashReceived("");
+        setPointsHolder(null);
+      } else {
+        setMessage(json.message || "支払いをやめました。");
+      }
+      setPendingOnline(null);
+      setPendingTap(null);
+      await loadSales(eventId);
+    } catch {
+      setError("やめる処理に失敗しました。もう一度押してください。");
+    } finally {
+      setCancellingPending(false);
+    }
+  }
+
   async function handleCheckout() {
     if (cart.length === 0 || checkingOut) return;
     if (pointsBlockNonCash) {
-      setError("ポイントを使う会計は、いまは現金だけです。お支払い方法を現金にしてください。");
+      setError("ポイントだけで払えるので、お支払い方法を現金にしてください（お預かり ¥0）。");
       return;
     }
     if ((paymentMethod === "online" || paymentMethod === "tap") && !stripeReady) {
@@ -509,14 +562,14 @@ export function OrganizerPosPage() {
         await loadSales(eventId);
       } else if (paymentMethod === "tap") {
         const appLink = json.appLink as string;
-        setPendingTap({ saleId: json.sale.id, appLink });
+        setPendingTap({ saleId: json.sale.id, appLink, payYen: Number(json.sale.totalYen) || 0, points: pendingPointsOf(json) });
         setMessage("iPhoneアプリを開き、カードをかざしてください。");
         if (appLink) {
           window.location.href = appLink;
         }
       } else {
         const url = json.checkoutUrl as string;
-        setPendingOnline({ saleId: json.sale.id, checkoutUrl: url });
+        setPendingOnline({ saleId: json.sale.id, checkoutUrl: url, payYen: Number(json.sale.totalYen) || 0, points: pendingPointsOf(json) });
         setMessage("QRをお客様のスマホで読み取ってもらい、Apple Pay または Google Pay で支払ってもらってください。");
       }
     } catch {
@@ -737,6 +790,7 @@ export function OrganizerPosPage() {
             <p className="org-pos__muted">
               主催者用 iPhone アプリを開き、Visa などのカードを端末の上部にかざしてください。Suica・iD・QUICPay は使えません。
             </p>
+            <PendingPointsNote payYen={pendingTap.payYen} points={pendingTap.points} />
             <div className="org-pos__online-wait-actions">
               <a href={pendingTap.appLink} className="org-pos__link-btn">
                 iPhoneアプリを開く
@@ -744,10 +798,11 @@ export function OrganizerPosPage() {
               </a>
               <button
                 type="button"
-                className="org-pos__text-btn"
-                onClick={() => setPendingTap(null)}
+                className="org-pos__cancel-pending"
+                disabled={cancellingPending}
+                onClick={() => void cancelPending()}
               >
-                閉じる
+                {cancellingPending ? "やめています…" : pendingTap.points ? "やめてポイントを戻す" : "やめる"}
               </button>
             </div>
           </div>
@@ -761,6 +816,7 @@ export function OrganizerPosPage() {
             <p className="org-pos__muted">
               QRをお客様のスマホで読み取ってもらってください。決済画面では Apple Pay または Google Pay を選ぶと、カード番号の入力は不要です。
             </p>
+            <PendingPointsNote payYen={pendingOnline.payYen} points={pendingOnline.points} />
             <div className="org-pos__online-wait-actions">
               <a
                 href={pendingOnline.checkoutUrl}
@@ -773,10 +829,11 @@ export function OrganizerPosPage() {
               </a>
               <button
                 type="button"
-                className="org-pos__text-btn"
-                onClick={() => setPendingOnline(null)}
+                className="org-pos__cancel-pending"
+                disabled={cancellingPending}
+                onClick={() => void cancelPending()}
               >
-                閉じる
+                {cancellingPending ? "やめています…" : pendingOnline.points ? "やめてポイントを戻す" : "やめる"}
               </button>
             </div>
           </div>
@@ -1177,7 +1234,7 @@ export function OrganizerPosPage() {
                               : pointsPlan?.hasExchangeable
                                 ? "ポイントが足りないため、交換できる商品がありません。"
                                 : "カートに、ポイントで交換できる商品がありません。"}
-                          {pointsBlockNonCash ? " ポイントを使う会計は、いまは現金だけです。" : ""}
+                          {pointsBlockNonCash ? " ポイントだけで払えるので、お支払い方法は現金にしてください。" : ""}
                         </p>
                         <div className="org-pos__points-actions">
                           <button type="button" className="org-pos__points-rescan" onClick={() => setPointsScanOpen(true)}>
@@ -1333,7 +1390,10 @@ export function OrganizerPosPage() {
 
                 {pointsUsed > 0 && !pointsBlockNonCash && (
                   <p className="org-pos__points-sum">
-                    {payYen > 0 ? `現金 ${formatYen(payYen)} ・ ` : "お支払いなし ・ "}ポイント {pointsUsed}pt
+                    {payYen > 0
+                      ? `${paymentMethod === "cash" ? "現金" : paymentMethod === "tap" ? "カードタッチ" : "スマホ払い"} ${formatYen(payYen)} ・ `
+                      : "お支払いなし ・ "}
+                    ポイント {pointsUsed}pt
                     {discountPlan && discountPlan.discountYen > 0 ? `（−${formatYen(discountPlan.discountYen)}）` : ""}
                   </p>
                 )}
@@ -1352,7 +1412,7 @@ export function OrganizerPosPage() {
                   {checkingOut
                     ? "処理中…"
                     : pointsBlockNonCash
-                      ? "ポイントを使うときは現金を選んでください"
+                      ? "ポイントだけで払うときは現金を選んでください"
                       : paymentMethod === "cash"
                       ? pointsUsed > 0
                         ? payYen > 0
@@ -1366,9 +1426,9 @@ export function OrganizerPosPage() {
                           ? "受取設定が必要です"
                           : !posTapConfigured
                             ? "店舗設定が必要です"
-                            : `${formatYen(subtotal)}でカードを待つ`
+                            : `${formatYen(payYen)}でカードを待つ${pointsUsed > 0 ? `（${pointsUsed}pt 使う）` : ""}`
                         : stripeReady
-                          ? `${formatYen(subtotal)}のQRを出す`
+                          ? `${formatYen(payYen)}のQRを出す${pointsUsed > 0 ? `（${pointsUsed}pt 使う）` : ""}`
                           : "受取設定が必要です"}
                 </button>
               </div>
@@ -1523,6 +1583,26 @@ export function OrganizerPosPage() {
             document.body
           )
         : null}
+    </div>
+  );
+}
+
+/** 支払い待ちの画面に出す、預かっているポイントの説明（画面案 ⑧） */
+function PendingPointsNote({ payYen, points }: { payYen: number; points: PendingPoints | null }) {
+  if (!points) return null;
+  return (
+    <div className="org-pos__pending-points">
+      <p className="org-pos__pending-points-pay">
+        お支払い <strong>{formatYen(payYen)}</strong>
+        {points.discountYen > 0 ? (
+          <span>
+            ポイント −{formatYen(points.discountYen)}（{points.pointsUsed}pt）
+          </span>
+        ) : null}
+      </p>
+      <p className="org-pos__pending-points-note">
+        {points.name}さんの {points.pointsUsed}pt をお預かり中です。支払いが終わると使ったことになります。やめたとき・30分たっても払われないときは、自動で戻ります。
+      </p>
     </div>
   );
 }
