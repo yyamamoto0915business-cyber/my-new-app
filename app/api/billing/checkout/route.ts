@@ -28,7 +28,7 @@ function stripeErrorToUserMessage(err: Stripe.errors.StripeError): string {
 
 /**
  * POST: 主催者サブスク（STANDARD 月980円 / GAME 月2,980円）
- * body: { plan?: "standard" | "game" }
+ * body: { plan?: "standard" | "game" | "team" }
  * 未契約なら Checkout Session を作成、契約中なら同じサブスクの Price を差し替える（日割り）
  */
 export async function POST(request: NextRequest) {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     );
   }
   const body = (await request.json().catch(() => ({}))) as { plan?: unknown };
-  const plan = body.plan === "game" ? "game" : "standard";
+  const plan = body.plan === "game" || body.plan === "team" ? body.plan : "standard";
   const stripeKey = getStripeSecretKey();
   const priceId = getOrganizerPlanPriceId(plan);
   if (!stripeKey || !priceId) {

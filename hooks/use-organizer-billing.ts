@@ -83,7 +83,7 @@ export function useOrganizerBilling() {
 
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
-  const handleCheckout = async (plan: "standard" | "game" = "standard") => {
+  const handleCheckout = async (plan: "standard" | "game" | "team" = "standard") => {
     setCheckoutLoading(true);
     setActionError(null);
     setActionMessage(null);
@@ -104,7 +104,7 @@ export function useOrganizerBilling() {
       }
       if (json.updated === true) {
         setActionMessage(
-          `${plan === "game" ? "GAME" : "STANDARD"}プランに変更しました。差額は次回の請求で日割り精算されます。`
+          `${plan === "team" ? "TEAM" : plan === "game" ? "GAME" : "STANDARD"}プランに変更しました。差額は次回の請求で日割り精算されます。`
         );
         await fetchBilling();
         return;

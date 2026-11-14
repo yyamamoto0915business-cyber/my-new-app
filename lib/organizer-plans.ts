@@ -25,8 +25,10 @@ export type OrganizerCatalogPlan = {
   features: readonly string[];
   ctaLabel: string;
   recommended: boolean;
-  /** true のとき Checkout 可能（STRIPE_PRICE_ORGANIZER_980 / STRIPE_PRICE_ORGANIZER_GAME_2980） */
+  /** true のとき Web で申し込める（STRIPE_PRICE_ORGANIZER_980 / _GAME_2980 / _TEAM_5980） */
   checkoutEnabled: boolean;
+  /** iPhone アプリ（App Store）で申し込めるか。省略時は checkoutEnabled と同じ */
+  appleEnabled?: boolean;
   tone: OrganizerCatalogPlanTone;
 };
 
@@ -115,7 +117,9 @@ export const ORGANIZER_CATALOG_PLANS: readonly OrganizerCatalogPlan[] = [
     ],
     ctaLabel: "TEAMをはじめる",
     recommended: false,
-    checkoutEnabled: false,
+    checkoutEnabled: true,
+    // App Store の商品（jp.machiglyph.app.organizer.team.monthly）ができるまで、アプリでは申し込めない
+    appleEnabled: false,
     tone: "team",
   },
 ];
