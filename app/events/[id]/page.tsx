@@ -42,6 +42,8 @@ function participationReceptionText(
   return "事前申込・当日受付";
 }
 
+import { ListingViewBeacon } from "@/components/analytics/ListingViewBeacon";
+
 export default async function EventDetailPage({ params }: Props) {
   const { id } = await params;
   const event = await getEventForPublicPage(id);
@@ -259,6 +261,7 @@ export default async function EventDetailPage({ params }: Props) {
 
   return (
     <div className="min-h-screen-dvh bg-white min-[900px]:bg-[var(--mg-paper)]">
+      <ListingViewBeacon kind="event" id={event.id} disabled={isOrganizerPreview} />
       {isOrganizerPreview ? (
         <div className="border-b border-amber-200/80 bg-amber-50 px-4 py-2.5 text-center text-[13px] text-amber-900 min-[900px]:text-sm">
           プレビュー表示です。未公開のため、一般ユーザーには表示されません。

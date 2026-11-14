@@ -17,6 +17,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+import { ListingViewBeacon } from "@/components/analytics/ListingViewBeacon";
+
 export default async function PublicKitchenCarPage({ params }: Props) {
   const { id } = await params;
   const data = await getStoreForPublicPage(id);
@@ -24,6 +26,7 @@ export default async function PublicKitchenCarPage({ params }: Props) {
 
   return (
     <main className="min-h-[70vh] bg-[#f7f9f6]">
+      <ListingViewBeacon kind="store" id={id} />
       <StorePublicDetail
         store={data.store}
         news={data.news}
