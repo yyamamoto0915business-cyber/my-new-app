@@ -45,10 +45,20 @@ export async function getOrganizerAccess(
     .order("created_at", { ascending: true })
     .limit(10);
   if (error || !rows?.length) return null;
-  const best = (rows as { organizer_id: string; role: string }[])
+  const candidates = (rows as { organizer_id: string; role: string }[])
     .filter((r) => r.role === "admin" || r.role === "editor" || r.role === "staff")
-    .sort((a, b) => RANK[b.role as OrganizerRole] - RANK[a.role as OrganizerRole])[0];
-  return best ? { organizerId: best.organizer_id, role: best.role as OrganizerRole } : null;
+    .sort((a, b) => RANK[b.role as OrganizerRole] - RANK[a.role as OrganizerRole]);
+  // メンバーとして使えるのは、その主催者が TEAM プランのあいだだけ（00133。データベースのルールも同じ）
+  for (const r of candidates) {
+    const { data: active, error: rpcError } = await supabase.rpc("organizer_team_plan_active", {
+      p_organizer_id: r.organizer_id,
+    });
+    // 00133 の適用前は関数がない。そのときは今までどおり使える扱い
+    if (rpcError ? /organizer_team_plan_active|does not exist|Could not find/i.test(rpcError.message ?? "") : active === true) {
+      return { organizerId: r.organizer_id, role: r.role as OrganizerRole };
+    }
+  }
+  return null;
 }
 
 /** 本人の主催者だけ（プランの変更・売上の受取設定など、お金と契約にかかわる操作はオーナーだけ） */
