@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { OrganizerGameTypeId } from "@/lib/organizer/game-types";
 import type { OrganizerGame } from "@/lib/organizer/games";
+import { GamePurposePicker } from "@/components/organizer/games/GamePurposePicker";
 
 type HubTheme = "stamp" | "quiz" | "mystery" | "mission" | "photo" | "coupon" | "checkin" | "vote" | "lottery" | "survey" | "tournament";
 type GameFilter = "draft" | "published" | "archived";
@@ -386,13 +387,13 @@ export function OrganizerGamesHub() {
     return pcFilter === "all" ? sorted : sorted.filter((game) => game.status === pcFilter);
   }, [games, pcFilter]);
   const pcShownGames = pcShowAllGames ? pcRecentGames : pcRecentGames.slice(0, PC_RECENT_LIMIT);
-  const pcTemplates = pcShowAllTemplates ? PC_TEMPLATES : PC_TEMPLATES.filter((item) => !item.extra);
+  const pcTemplates = PC_TEMPLATES;
 
   const scrollToPcList = () => {
     pcListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const mobileTemplates = showAllTemplates ? HUB_TYPES : HUB_TYPES.filter((type) => type.id !== "checkin");
+  const mobileTemplates = HUB_TYPES;
 
   const openGameList = () => {
     setShowGameList(true);
@@ -470,13 +471,13 @@ export function OrganizerGamesHub() {
               aria-expanded={showAllTemplates}
               onClick={() => setShowAllTemplates((open) => !open)}
             >
-              {showAllTemplates ? "閉じる" : "すべて見る"}
+              {showAllTemplates ? "やりたいことから選ぶ" : "すべての種類から選ぶ"}
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </button>
           </div>
-          <p className="org-hub__mobile-hint">
-            {picking ? "作りたいゲームをタップしてください" : "種類を選ぶと、作成が始まります。"}
-          </p>
+          {/* まず「やりたいこと」から選ぶ（画面案 ①）。全部の種類は「すべての種類から選ぶ」で今までどおり */}
+          {!showAllTemplates ? <GamePurposePicker className="pt-1" /> : null}
+          {showAllTemplates ? (
           <ul className="org-hub__mobile-grid">
             {mobileTemplates.map((type) => (
               <li key={type.id}>
@@ -515,6 +516,7 @@ export function OrganizerGamesHub() {
               </li>
             ))}
           </ul>
+          ) : null}
         </section>
         ) : null}
       </div>
@@ -612,10 +614,12 @@ export function OrganizerGamesHub() {
               aria-expanded={pcShowAllTemplates}
               onClick={() => setPcShowAllTemplates((open) => !open)}
             >
-              {pcShowAllTemplates ? "閉じる" : "すべて見る"}
+              {pcShowAllTemplates ? "やりたいことから選ぶ" : "すべての種類から選ぶ"}
               <ArrowUpRight className="h-4 w-4" aria-hidden />
             </button>
           </div>
+          {!pcShowAllTemplates ? <GamePurposePicker /> : null}
+          {pcShowAllTemplates ? (
           <ul className="org-hub-pc__templates">
             {pcTemplates.map((item, index) => (
               <li key={item.id}>
@@ -632,6 +636,7 @@ export function OrganizerGamesHub() {
               </li>
             ))}
           </ul>
+          ) : null}
         </section>
 
         <section
