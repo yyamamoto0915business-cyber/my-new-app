@@ -716,16 +716,7 @@ export function OrganizerEventCard({
                     <FileText className="h-4 w-4" />
                     {payoutsLabel}
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      closeAllMenus();
-                      nav(`/organizer/events/${event.id}/points`);
-                    }}
-                    className="min-h-11 cursor-pointer gap-2 px-3 py-2.5"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    イベントポイント
-                  </DropdownMenuItem>
+                  {/* イベントポイントの入口は、スマホでは掲載管理の一覧のカード（PC はこのカードのメニュー） */}
                   {isVisible ? (
                     <DropdownMenuItem
                       onClick={handleTogglePublish}
