@@ -12,6 +12,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { EventOrganizerConsultModal } from "@/components/events/detail/EventOrganizerConsultModal";
 import { createClient } from "@/lib/supabase/client";
+import { showToast } from "@/lib/toast";
 
 const CREATE_CONVERSATION_URL = "/api/conversations";
 const API_CREDENTIALS: RequestInit = { credentials: "include" };
@@ -127,7 +128,7 @@ export function EventOrganizerConsultProvider({
       if (opening || authState === "loading") return;
 
       if (authState === "no_supabase") {
-        window.alert("主催者への質問は Supabase 連携時にご利用ください。");
+        showToast("主催者への質問は Supabase 連携時にご利用ください。");
         return;
       }
 
@@ -176,7 +177,7 @@ export function EventOrganizerConsultProvider({
       } catch (e) {
         const msg =
           e instanceof Error ? e.message : "開けませんでした。もう一度お試しください。";
-        window.alert(msg);
+        showToast(msg);
       } finally {
         setOpening(false);
       }

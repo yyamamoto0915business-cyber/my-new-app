@@ -10,6 +10,7 @@ import {
   MOBILE_BOTTOM_NAV_CLEARANCE_PX,
   MOBILE_EVENT_BOTTOM_ACTION_BAR_PX,
 } from "./layout-constants";
+import { showToast } from "@/lib/toast";
 
 type ParticipationMode = "required" | "optional" | "none";
 
@@ -83,7 +84,7 @@ export function EventBottomActionBar({
           window.location.href = j.url;
           return;
         }
-        alert(j.error ?? "申し込みに失敗しました");
+        showToast(j.error ?? "申し込みに失敗しました");
       } else {
         const res = await fetchWithTimeout(`/api/events/${eventId}/join`, {
           method: "POST",
@@ -91,11 +92,11 @@ export function EventBottomActionBar({
         if (res.ok) setApplied(true);
         else {
           const j = await res.json();
-          alert(j.error ?? "申し込みに失敗しました");
+          showToast(j.error ?? "申し込みに失敗しました");
         }
       }
     } catch {
-      alert("申し込みに失敗しました");
+      showToast("申し込みに失敗しました");
     } finally {
       setJoining(false);
     }

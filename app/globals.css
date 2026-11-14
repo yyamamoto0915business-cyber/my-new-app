@@ -24357,6 +24357,8 @@ button.sd-highlight:hover {
 /* ===== みんなの投稿（掲示板 / スクラップブック） ===== */
 .posts-board-page {
   min-height: 100vh;
+  /* iPhone のアドレス帯・ホームバーの分がずれないよう dvh（ない端末は上の 100vh） */
+  min-height: 100dvh;
   background: #ffffff;
 }
 
@@ -29584,6 +29586,8 @@ button.posts-tab--active:not([disabled]):active {
 .posts-detail-mobile {
   --post-category-color: #c9a227;
   min-height: 100vh;
+  /* iPhone のアドレス帯・ホームバーの分がずれないよう dvh（ない端末は上の 100vh） */
+  min-height: 100dvh;
   background:
     radial-gradient(
       circle at 88% 6%,

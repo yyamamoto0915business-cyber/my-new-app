@@ -9,6 +9,7 @@ import {
   ReportDialog,
   type ReportTargetType,
 } from "@/components/moderation/ReportDialog";
+import { showToast } from "@/lib/toast";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -115,7 +116,7 @@ export function ModerationMenu({
       setOpen(false);
       ownerActions?.onDeleted?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "削除できませんでした");
+      showToast(err instanceof Error ? err.message : "削除できませんでした");
     } finally {
       setBusy(false);
     }
@@ -151,7 +152,7 @@ export function ModerationMenu({
       setOpen(false);
       onBlockChange?.(next);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "うまくいきませんでした");
+      showToast(err instanceof Error ? err.message : "うまくいきませんでした");
     } finally {
       setBusy(false);
     }

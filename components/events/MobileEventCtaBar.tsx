@@ -6,6 +6,7 @@ import { isBookmarked, toggleBookmark } from "@/lib/bookmark-storage";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { getLoginUrl } from "@/lib/auth-utils";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
+import { showToast } from "@/lib/toast";
 
 type ParticipationMode = "required" | "optional" | "none";
 type Availability = "available" | "full" | "ended" | "unknown";
@@ -94,7 +95,7 @@ export function MobileEventCtaBar({
             window.location.href = j.url;
             return;
           }
-          alert(j.error ?? "申し込みに失敗しました");
+          showToast(j.error ?? "申し込みに失敗しました");
         } else {
           const res = await fetchWithTimeout(`/api/events/${eventId}/join`, {
             method: "POST",
@@ -102,11 +103,11 @@ export function MobileEventCtaBar({
           if (res.ok) setApplied(true);
           else {
             const j = await res.json().catch(() => ({}));
-            alert(j.error ?? "申し込みに失敗しました");
+            showToast(j.error ?? "申し込みに失敗しました");
           }
         }
       } catch {
-        alert("申し込みに失敗しました");
+        showToast("申し込みに失敗しました");
       } finally {
         setJoining(false);
       }

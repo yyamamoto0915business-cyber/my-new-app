@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { MyPostItem } from "@/app/api/me/posts/route";
+import { showToast } from "@/lib/toast";
 
 export type PostMutation =
   | { status: MyPostItem["status"] }
@@ -75,7 +76,7 @@ export function PostCardMenu({ post, onMutated, popDirection = "up" }: Props) {
         onMutated?.(post.id, { status });
         setOpen(false);
       } catch (err) {
-        alert(err instanceof Error ? err.message : "更新に失敗しました");
+        showToast(err instanceof Error ? err.message : "更新に失敗しました");
       } finally {
         setBusy(false);
       }
@@ -102,7 +103,7 @@ export function PostCardMenu({ post, onMutated, popDirection = "up" }: Props) {
       onMutated?.(post.id, { deleted: true });
       setOpen(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "削除に失敗しました");
+      showToast(err instanceof Error ? err.message : "削除に失敗しました");
     } finally {
       setBusy(false);
     }

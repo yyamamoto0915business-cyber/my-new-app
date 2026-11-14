@@ -17,6 +17,7 @@ import { PushRegistration } from "@/components/native/PushRegistration";
 import "./globals.css";
 import localFont from "next/font/local";
 import { cn } from "@/lib/utils";
+import { AppToaster } from "@/components/ui/AppToaster";
 
 /*
  * フォント：ビルドのたびに Google から取りに行くと、つながらないときにビルドが止まる。
@@ -121,6 +122,8 @@ export default function RootLayout({
             <MobileBottomNav />
             <BottomNav />
           </Suspense>
+          {/* 画面の中の通知（alert の代わり。lib/toast.ts の showToast で出す） */}
+          <AppToaster />
         </LanguageProvider>
       </body>
     </html>

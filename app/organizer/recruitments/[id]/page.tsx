@@ -17,6 +17,7 @@ import {
   parseApplicationFormConfig,
   type ApplicationFormConfig,
 } from "@/lib/recruitment-application-form";
+import { showToast } from "@/lib/toast";
 
 type Recruitment = {
   id: string;
@@ -134,7 +135,7 @@ function OrganizerRecruitmentDetailContent({
       if (!resolvedId || !participantId) return;
       const organizerId = (recruitment as { organizer_id?: string } | null)?.organizer_id ?? null;
       if (!organizerId) {
-        alert("主催者情報の取得に失敗しました");
+        showToast("主催者情報の取得に失敗しました");
         return;
       }
       try {
@@ -149,12 +150,12 @@ function OrganizerRecruitmentDetailContent({
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data?.conversationId) {
-          alert(data?.error ?? "チャットの準備に失敗しました");
+          showToast(data?.error ?? "チャットの準備に失敗しました");
           return;
         }
         router.push(`/messages/${data.conversationId}`);
       } catch {
-        alert("チャットの準備に失敗しました");
+        showToast("チャットの準備に失敗しました");
       }
     },
     [recruitment, resolvedId, router]
@@ -255,7 +256,7 @@ function OrganizerRecruitmentDetailContent({
     const content =
       (contentOverride ?? bulkMessage).trim() || BULK_TEMPLATE_TEXTS[bulkTemplate] || "";
     if (!content) {
-      alert("送信するメッセージを入力してください");
+      showToast("送信するメッセージを入力してください");
       return false;
     }
     const targetCount =
@@ -284,9 +285,9 @@ function OrganizerRecruitmentDetailContent({
         const sent = Number(data.sent ?? 0);
         const failed = Number(data.failed ?? Math.max(0, total - sent));
         if (failed > 0) {
-          alert(`通知送信が完了しました\n成功: ${sent}件 / 失敗: ${failed}件`);
+          showToast(`通知送信が完了しました\n成功: ${sent}件 / 失敗: ${failed}件`, { type: "info" });
         } else {
-          alert(data.message ?? `${sent}件のスタッフに通知を送信しました`);
+          showToast(data.message ?? `${sent}件のスタッフに通知を送信しました`, { type: "success" });
         }
         setBulkResult({
           sent,
@@ -299,7 +300,7 @@ function OrganizerRecruitmentDetailContent({
         setBulkMessage("");
         return true;
       } else {
-        alert(data.error ?? "送信に失敗しました");
+        showToast(data.error ?? "送信に失敗しました");
         return false;
       }
     } finally {
