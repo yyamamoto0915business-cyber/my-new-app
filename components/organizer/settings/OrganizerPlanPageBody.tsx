@@ -120,7 +120,9 @@ function CatalogPlanCard({
 }) {
   const cardRef = useRef<HTMLElement>(null);
   const isCurrent = plan.id === currentId;
-  const showCheckoutForm = plan.checkoutEnabled && !isCurrent;
+  // アプリでは App Store の商品があるプランだけ申し込める（TEAM は Web だけ）
+  const purchasable = iosApp ? (plan.appleEnabled ?? plan.checkoutEnabled) : plan.checkoutEnabled;
+  const showCheckoutForm = purchasable && !isCurrent;
 
   useEffect(() => {
     if (!expanded || !cardRef.current) return;
@@ -132,7 +134,7 @@ function CatalogPlanCard({
   }, [expanded]);
 
   let cta: ReactNode;
-  if (iosApp && isCurrent && plan.checkoutEnabled && apple.managedByApple) {
+  if (iosApp && isCurrent && purchasable && apple.managedByApple) {
     cta = (
       <button
         type="button"
@@ -400,7 +402,9 @@ export function OrganizerPlanPageBody() {
     paid && !managedByApple && Boolean(data?.organizer.subscription_status);
   /** アプリでは、まだ申し込めないプラン（TEAM など）は出さない */
   const visiblePlans = iosApp
-    ? ORGANIZER_CATALOG_PLANS.filter((plan) => plan.id === "free" || plan.checkoutEnabled || plan.id === currentId)
+    ? ORGANIZER_CATALOG_PLANS.filter(
+        (plan) => plan.id === "free" || (plan.appleEnabled ?? plan.checkoutEnabled) || plan.id === currentId
+      )
     : ORGANIZER_CATALOG_PLANS;
 
   const shellClass = [
@@ -553,7 +557,9 @@ export function OrganizerPlanPageBody() {
                   pastDue={pastDue}
                   billingAgreed={billingAgreed}
                   setBillingAgreed={setBillingAgreed}
-                  onCheckout={() => handleCheckout(plan.id === "game" ? "game" : "standard")}
+                  onCheckout={() =>
+                    handleCheckout(plan.id === "game" || plan.id === "team" ? plan.id : "standard")
+                  }
                   onPortal={handlePortal}
                   iosApp={iosApp}
                   apple={{
