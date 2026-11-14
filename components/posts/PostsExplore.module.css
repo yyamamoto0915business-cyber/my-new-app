@@ -646,6 +646,8 @@
 /* 上部の帯の下端（#fbfcf9）と同じ色にして、境目で色が変わらないようにする（まちの情報と同じ） */
 .mobileMain {
   min-height: 100vh;
+  /* iPhone のアドレス帯・ホームバーの分がずれないよう dvh（ない端末は上の 100vh） */
+  min-height: 100dvh;
   background: #fbfcf9;
 }
 

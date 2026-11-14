@@ -27,6 +27,7 @@ import type {
   RecruitmentsSortOption,
   RecruitmentsStatusFilter,
 } from "@/components/organizer/recruitments/OrganizerRecruitmentsPcView";
+import { showToast } from "@/lib/toast";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "下書き",
@@ -191,7 +192,7 @@ function RecruitmentListCard({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert((data as { error?: string }).error ?? "終了に失敗しました");
+        showToast((data as { error?: string }).error ?? "終了に失敗しました");
         return;
       }
       setMenuOpen(false);

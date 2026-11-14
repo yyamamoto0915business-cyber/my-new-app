@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { showToast } from "@/lib/toast";
 
 /** クリア対象の localStorage / sessionStorage キー（主催者・認証関連） */
 const ORGANIZER_STORAGE_KEYS = [
@@ -55,7 +56,7 @@ function OrganizerLogoutButton({ variant = "header" }: Props) {
       router.replace("/login");
       router.refresh();
     } catch {
-      alert("ログアウトに失敗しました");
+      showToast("ログアウトに失敗しました");
     } finally {
       setLoading(false);
     }

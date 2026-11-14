@@ -24,6 +24,7 @@ import {
 } from "@/components/events/detail/EventApplyConfirmSheet";
 import { cn } from "@/lib/utils";
 import type { EventAnswers } from "@/lib/event-questions";
+import { showToast } from "@/lib/toast";
 
 type Props = {
   event: Event | EventPurchaseData;
@@ -203,7 +204,7 @@ export function EventPurchasePrimaryCta({
           keepOpen = true;
           return;
         }
-        alert(j.error ?? "購入手続きに失敗しました");
+        showToast(j.error ?? "購入手続きに失敗しました");
         return;
       }
 
@@ -225,7 +226,7 @@ export function EventPurchasePrimaryCta({
             keepOpen = true;
             return;
           }
-          alert(j.error ?? "申し込みに失敗しました");
+          showToast(j.error ?? "申し込みに失敗しました");
         }
         return;
       }
@@ -242,10 +243,10 @@ export function EventPurchasePrimaryCta({
         setIsPurchased(true);
       } else {
         const j = await res.json();
-        alert(j.error ?? "申し込みに失敗しました");
+        showToast(j.error ?? "申し込みに失敗しました");
       }
     } catch {
-      alert(
+      showToast(
         onlineCheckout ? "購入手続きに失敗しました" : "申し込みに失敗しました"
       );
     } finally {

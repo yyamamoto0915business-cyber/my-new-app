@@ -17,6 +17,7 @@ import { getLoginUrl } from "@/lib/auth-utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { cn } from "@/lib/utils";
 import { useEventOrganizerConsultOptional } from "@/app/events/[id]/event-organizer-consult-provider";
+import { showToast } from "@/lib/toast";
 
 function buildCalendarUrl(
   title: string,
@@ -150,7 +151,7 @@ export function EventPrimaryActions({
           window.location.href = j.url;
           return;
         }
-        alert(j.error ?? "申し込みに失敗しました");
+        showToast(j.error ?? "申し込みに失敗しました");
       } else {
         const res = await fetchWithTimeout(`/api/events/${eventId}/join`, {
           method: "POST",
@@ -158,11 +159,11 @@ export function EventPrimaryActions({
         if (res.ok) setApplied(true);
         else {
           const j = await res.json();
-          alert(j.error ?? "申し込みに失敗しました");
+          showToast(j.error ?? "申し込みに失敗しました");
         }
       }
     } catch {
-      alert("申し込みに失敗しました");
+      showToast("申し込みに失敗しました");
     } finally {
       setJoining(false);
     }

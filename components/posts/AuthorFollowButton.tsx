@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookOpen, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { showToast } from "@/lib/toast";
 
 type FollowUiStatus = "none" | "pending" | "accepted" | "self" | "rejected";
 
@@ -161,12 +162,12 @@ export function AuthorFollowButton({
         error?: string;
       };
       if (!res.ok || !json.conversationId) {
-        window.alert(json.error ?? "チャットの準備に失敗しました");
+        showToast(json.error ?? "チャットの準備に失敗しました");
         return;
       }
       router.push(`/messages/${json.conversationId}`);
     } catch {
-      window.alert("チャットの準備に失敗しました");
+      showToast("チャットの準備に失敗しました");
     } finally {
       setChatBusy(false);
     }
