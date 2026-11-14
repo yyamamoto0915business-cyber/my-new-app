@@ -14,7 +14,7 @@ export async function grantOrganizerPlan(
   params: {
     organizerId: string;
     grantType: "30_days" | "90_days" | "unlimited";
-    plan?: "standard" | "game";
+    plan?: "standard" | "game" | "team";
     reason?: string;
     adminUserId: string;
   }
@@ -22,7 +22,7 @@ export async function grantOrganizerPlan(
   const { organizerId, grantType, reason, adminUserId } = params;
   const plan = params.plan ?? "standard";
   /** DB では STANDARD を 'organizer' と保存している */
-  const dbPlan = plan === "game" ? "game" : "organizer";
+  const dbPlan = plan === "game" || plan === "team" ? plan : "organizer";
 
   try {
     if (grantType === "unlimited") {

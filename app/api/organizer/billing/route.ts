@@ -8,6 +8,7 @@ import {
   FOUNDER_BONUS_SLOTS,
   isPaidOrganizerWithPlanState,
   getOrganizerPlanTierWithPlanState,
+  isTeamPlanWithPlanState,
 } from "@/lib/billing";
 import { isStripeServerConfigured } from "@/lib/stripe";
 import { getStripeTerminalLocationId } from "@/lib/pos/tap-app";
@@ -61,9 +62,12 @@ export async function GET() {
         : FREE_PLAN_NORMAL_SLOTS; // 1
 
     const planTier = getOrganizerPlanTierWithPlanState(organizer, planState);
+    // TEAM は GAME の機能をすべて含むので planTier は "game"。プランの表示だけ TEAM にする
+    const isTeam = isTeamPlanWithPlanState(organizer, planState);
 
     return NextResponse.json({
       planTier,
+      isTeam,
       stripeConnectConfigured: isStripeServerConfigured(),
       posTapConfigured: Boolean(getStripeTerminalLocationId()),
       organizer: {

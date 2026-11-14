@@ -12,7 +12,7 @@ export function AdminOrganizerActions({
   currentReason: string;
 }) {
   const [reason, setReason] = useState(currentReason);
-  const [grantPlan, setGrantPlan] = useState<"standard" | "game">("standard");
+  const [grantPlan, setGrantPlan] = useState<"standard" | "game" | "team">("standard");
   const [submitting, setSubmitting] = useState<null | string>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,7 @@ export function AdminOrganizerActions({
     const confirmText =
       action === "cancel" || action === "free"
         ? `本当にこの主催者の ${label} を実行しますか？`
-        : `この主催者に ${grantPlan === "game" ? "GAME" : "STANDARD"} プランの ${label} を実行します。よろしいですか？`;
+        : `この主催者に ${grantPlan === "team" ? "TEAM" : grantPlan === "game" ? "GAME" : "STANDARD"} プランの ${label} を実行します。よろしいですか？`;
 
     if (!window.confirm(confirmText)) return;
 
@@ -95,7 +95,7 @@ export function AdminOrganizerActions({
 
       <fieldset className="flex flex-wrap items-center gap-3 text-xs text-slate-700">
         <legend className="mb-1 text-xs text-slate-500">付与するプラン</legend>
-        {(["standard", "game"] as const).map((p) => (
+        {(["standard", "game", "team"] as const).map((p) => (
           <label key={p} className="flex items-center gap-1">
             <input
               type="radio"
@@ -103,7 +103,7 @@ export function AdminOrganizerActions({
               checked={grantPlan === p}
               onChange={() => setGrantPlan(p)}
             />
-            {p === "game" ? "GAME（ゲーム機能つき）" : "STANDARD"}
+            {p === "team" ? "TEAM（メンバー招待つき）" : p === "game" ? "GAME（ゲーム機能つき）" : "STANDARD"}
           </label>
         ))}
       </fieldset>

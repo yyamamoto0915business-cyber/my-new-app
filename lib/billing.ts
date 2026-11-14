@@ -161,9 +161,24 @@ type PlanTierSource = PaidSource & {
 };
 
 export function getOrganizerPlanTier(organizer: PlanTierSource): OrganizerPlanTier {
+  // TEAM は GAME の機能をすべて含む（メンバー招待・権限設定は isTeamPlan で別に見る）
+  if (isTeamPlanSource(organizer)) return "game";
   if (isManualGrantActive(organizer) && organizer.manual_grant_plan === "game") return "game";
   if (hasPaidStripeStatus(organizer) && organizer.plan === "game") return "game";
   return isPaidOrganizer(organizer) ? "standard" : "free";
+}
+
+function isTeamPlanSource(organizer: PlanTierSource): boolean {
+  if (isManualGrantActive(organizer) && organizer.manual_grant_plan === "team") return true;
+  return hasPaidStripeStatus(organizer) && organizer.plan === "team";
+}
+
+/** TEAM プランか（メンバーの招待・権限設定が使える）。organizer_plan_state も同じ優先度で見る */
+export function isTeamPlanWithPlanState(
+  organizer: PlanTierSource,
+  planState?: PlanStateRow | null
+): boolean {
+  return isTeamPlanSource(mergePlanState(organizer, planState));
 }
 
 /** プランで使える範囲を分ける機能 */
