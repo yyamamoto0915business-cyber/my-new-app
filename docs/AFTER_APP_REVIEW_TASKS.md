@@ -244,10 +244,10 @@ PC・タブレット・スマホの3つの画面幅で確認する。
 
 ## 週次チェックで見つかったこと（2026-11-09）
 
-- [ ] **「画面の高さ」を 100vh のまま使っている所が、CSS ファイルに残っている。** 先週 Tailwind の `min-h-screen` は直したが、CSS 側の `min-height: 100vh` は手つかず。iPhone ではアドレス帯やホームバーの分だけ高さがずれ、下が切れたり余計にスクロールしたりする。`min-height: 100dvh`（古い端末用に 100vh も残す）にする。場所：`components/posts/PostsExplore.module.css`（`.mobileMain`）、`app/globals.css`（`.posts-board-page`、`.posts-detail-mobile`）
+- [x] **「画面の高さ」を 100vh のまま使っている所が、CSS ファイルに残っている。**（2026-11-14：3か所に 100dvh を足した） 先週 Tailwind の `min-h-screen` は直したが、CSS 側の `min-height: 100vh` は手つかず。iPhone ではアドレス帯やホームバーの分だけ高さがずれ、下が切れたり余計にスクロールしたりする。`min-height: 100dvh`（古い端末用に 100vh も残す）にする。場所：`components/posts/PostsExplore.module.css`（`.mobileMain`）、`app/globals.css`（`.posts-board-page`、`.posts-detail-mobile`）
 - [x] **画面幅の目安の表と、コードの区切りが合っていない。**（2026-11-14：表をコードの決まり（600px / 900px）にそろえた） このファイルの表は「タブレット 768px、PC 1100px」だが、実際の決まりは `tablet: 600px` / `pc: 900px`。直す人が迷う。どちらかにそろえて、表を直す。場所：`app/globals.css`（`--breakpoint-tablet` `--breakpoint-pc`）、このファイルの「全体の方針」
 - [ ] **まだ約580か所が `min-[900px]` のまま。** タブレット用の形は 18 か所しか使われていない。新しく作ったゲーム（投票・抽選・アンケート）の作成画面と主催者の画面は、タブレットの形が無いか確かめる。場所：`components/organizer/games/OrganizerSurveyCreateForm.tsx`、`OrganizerLotteryCreateForm.tsx`、`OrganizerVoteCreateForm.tsx`、`OrganizerGamesHub.tsx`
-- [ ] **エラーを `alert()` で出している所が多い（約66か所）。** アプリの中では、サイトの名前つきの味気ない小窓が出て、消すまで操作できない。主催者の募集ページだけで8か所ある。画面の中の通知（トースト）にそろえる。場所：`app/organizer/recruitments/[id]/page.tsx`、`components/organizer/games/OrganizerLotteryDesk.tsx`、`components/events/detail/purchase/EventPurchasePrimaryCta.tsx`
+- [x] **エラーを `alert()` で出している所が多い（約66か所）。**（2026-11-14：残っていた31か所を画面の中の通知 showToast にそろえた。lib/toast.ts） アプリの中では、サイトの名前つきの味気ない小窓が出て、消すまで操作できない。主催者の募集ページだけで8か所ある。画面の中の通知（トースト）にそろえる。場所：`app/organizer/recruitments/[id]/page.tsx`、`components/organizer/games/OrganizerLotteryDesk.tsx`、`components/events/detail/purchase/EventPurchasePrimaryCta.tsx`
 
 ## 6. そのほか検討すること
 
