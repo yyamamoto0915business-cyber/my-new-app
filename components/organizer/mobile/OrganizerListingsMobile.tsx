@@ -6,7 +6,6 @@ import {
   CalendarDays,
   ChevronRight,
   Heart,
-  Pencil,
   Plus,
   Search,
   SlidersHorizontal,
@@ -19,7 +18,6 @@ import type { DashboardResponse } from "@/app/api/organizer/dashboard/route";
 import type { RecruitmentDashboardResponse } from "@/app/api/organizer/recruitments-dashboard/route";
 import type { StoreRecord } from "@/lib/stores/types";
 import { EventThumbnail } from "@/components/event-thumbnail";
-import { OrganizerPageTitle } from "@/components/organizer/mobile/OrganizerPageTitle";
 import { cn } from "@/lib/utils";
 
 /** まちに載せるものだけ。ゲームはイベントの中で使う道具なので「運営 → ゲーム」で管理する */
@@ -44,11 +42,12 @@ type Listing = {
   pointsHref?: string;
 };
 
-const KIND_META: Record<Kind, { label: string; Icon: LucideIcon }> = {
-  event: { label: "イベント", Icon: CalendarDays },
-  store: { label: "お店", Icon: Store },
-  kitchen: { label: "キッチンカー", Icon: Truck },
-  volunteer: { label: "募集", Icon: Heart },
+/** 種類ごとの色（写真がないときのアイコンの丸と、種類の文字に使う） */
+const KIND_META: Record<Kind, { label: string; Icon: LucideIcon; color: string; bg: string }> = {
+  event: { label: "イベント", Icon: CalendarDays, color: "#c7742c", bg: "#fdf1e4" },
+  store: { label: "お店", Icon: Store, color: "#2f7d4e", bg: "#e6f3ea" },
+  kitchen: { label: "キッチンカー", Icon: Truck, color: "#2f6fae", bg: "#e6f1fa" },
+  volunteer: { label: "募集", Icon: Heart, color: "#c0507a", bg: "#fbe9f0" },
 };
 
 const TABS: { id: Tab; label: string }[] = [
@@ -139,71 +138,79 @@ function fromRecruitments(data: RecruitmentDashboardResponse | null): Listing[] 
   });
 }
 
-function StatusBadge({ item }: { item: Listing }) {
-  const label =
-    item.status === "public" ? "公開中" : item.status === "draft" ? "下書き" : item.statusLabel || "終了";
-  return (
-    <span
-      className={cn(
-        "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold",
-        item.status === "public" && "bg-[#e3f2e7] text-[#1f7a4a]",
-        item.status === "draft" && "bg-[#fdf1d8] text-[#a26a10]",
-        item.status === "ended" && "bg-[#eef0ec] text-[#6b776f]"
-      )}
-    >
-      {label}
-    </span>
-  );
+const STATUS_STYLE: Record<Status, string> = {
+  public: "bg-[#e3f2e7] text-[#1f7a4a]",
+  draft: "bg-[#fdf1d8] text-[#a26a10]",
+  ended: "bg-[#eef0ec] text-[#6b776f]",
+};
+
+function statusText(item: Listing): string {
+  return item.status === "public" ? "公開中" : item.status === "draft" ? "下書き" : item.statusLabel || "終了";
 }
 
-function ListingCard({ item }: { item: Listing }) {
-  const { Icon } = KIND_META[item.kind];
-  // カード全体は編集へのリンク。イベントだけ、下の行に「ポイント」を並べる（リンクの入れ子にしないよう、上に重ねる）
+/**
+ * 1件ぶんの行（低くして1画面に多く並べる）。
+ * 行全体は編集へのリンク。イベントだけ右に「ポイント」を重ねる（リンクの入れ子にしない）。
+ */
+function ListingRow({ item }: { item: Listing }) {
+  const { label: kindLabel, Icon, color, bg } = KIND_META[item.kind];
+  const sub = item.sub.startsWith(kindLabel) ? item.sub.slice(kindLabel.length).replace(/^・/, "") : item.sub;
   return (
-    <div className="relative h-full">
+    <div className="relative">
       <Link
         href={item.href}
-        className="flex h-full items-stretch gap-3 rounded-[20px] border border-[#ebeee8] bg-white p-2.5 pr-3.5 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:bg-[#fafcf9]"
+        className={cn(
+          "flex items-center gap-3 px-3 py-2.5 active:bg-[#f6f9f5]",
+          item.pointsHref ? "pr-[76px]" : "pr-3"
+        )}
       >
-        <span className="relative h-[92px] w-[92px] shrink-0 overflow-hidden rounded-[14px] bg-[#eef3ef]">
+        <span
+          className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[14px]"
+          style={item.imageUrl ? undefined : { background: bg, color }}
+        >
           {item.imageUrl ? (
             <EventThumbnail imageUrl={item.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
           ) : (
-            <span className="flex h-full w-full items-center justify-center text-[#7fa08c]">
-              <Icon className="h-8 w-8" aria-hidden />
+            <span className="flex h-full w-full items-center justify-center">
+              <Icon className="h-6 w-6" aria-hidden />
             </span>
           )}
         </span>
-        <span className="flex min-w-0 flex-1 flex-col py-0.5">
-          <span className="flex items-start justify-between gap-2">
-            <span className="line-clamp-2 text-[15px] font-bold leading-snug text-[#163828] [overflow-wrap:anywhere]">
-              {item.title}
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            <span className={cn("shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold", STATUS_STYLE[item.status])}>
+              {statusText(item)}
             </span>
-            <StatusBadge item={item} />
+            <span className="truncate text-[14.5px] font-bold text-[#163828]">{item.title}</span>
           </span>
-          <span className="mt-1 truncate text-[12px] text-[#6b776f]">{item.sub}</span>
-          <span className="mt-auto flex items-center justify-between gap-2 pt-1.5">
-            <span className="truncate text-[12.5px] text-[#4f5d54]">{item.metric ?? ""}</span>
-            <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-bold text-[#1f7a4a]">
-              <Pencil className="h-4 w-4" aria-hidden />
-              編集
+          <span className="mt-1 block truncate text-[12px] text-[#6b776f]">
+            <span className="font-bold" style={{ color }}>
+              {kindLabel}
             </span>
+            {sub ? `・${sub}` : ""}
+            {item.metric ? `・${item.metric}` : ""}
           </span>
         </span>
+        {item.pointsHref ? null : <ChevronRight className="h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />}
       </Link>
       {item.pointsHref ? (
-        <Link
-          href={item.pointsHref}
-          aria-label={`${item.title}のイベントポイント`}
-          className="absolute bottom-2 right-[74px] inline-flex min-h-[36px] items-center gap-1 rounded-full border border-[#ecd9a6] bg-[#fffaf0] px-2.5 text-[12.5px] font-bold text-[#8a6a1c]"
-        >
-          <Sparkles className="h-3.5 w-3.5" aria-hidden />
-          ポイント
-        </Link>
+        <div className="absolute inset-y-0 right-2 flex items-center gap-0.5">
+          <Link
+            href={item.pointsHref}
+            aria-label={`${item.title}のイベントポイント`}
+            className="flex h-[48px] w-[50px] flex-col items-center justify-center gap-0.5 rounded-[12px] border border-[#ecd9a6] bg-[#fffaf0] text-[#8a6a1c] active:scale-[0.97]"
+          >
+            <Sparkles className="h-4 w-4" aria-hidden />
+            <span className="text-[10px] font-bold leading-none">ポイント</span>
+          </Link>
+          <ChevronRight className="pointer-events-none h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />
+        </div>
       ) : null}
     </div>
   );
 }
+
+const SERIF = "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif";
 
 /** 種類ごとの管理画面（申込者の確認・CSV など、一覧より細かい操作はここから） */
 const KIND_PAGES: { href: string; label: string; kind: Kind }[] = [
@@ -220,6 +227,7 @@ export function OrganizerListingsMobile() {
   const [query, setQuery] = useState("");
   const [kindFilter, setKindFilter] = useState<Kind | "all">("all");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -252,69 +260,118 @@ export function OrganizerListingsMobile() {
     );
   }, [items, tab, query, kindFilter]);
 
+  const counts = useMemo(() => {
+    const c: Record<Tab, number> = { all: 0, public: 0, draft: 0, ended: 0 };
+    for (const i of items ?? []) {
+      if (kindFilter !== "all" && i.kind !== kindFilter) continue;
+      c.all += 1;
+      c[i.status] += 1;
+    }
+    return c;
+  }, [items, kindFilter]);
+
+  const searching = searchOpen || query.length > 0;
+
   return (
-    <div className="mx-auto w-full max-w-xl space-y-4 pb-6 tablet:max-w-[860px]">
-      <OrganizerPageTitle
-        title="掲載管理"
-        subtitle="イベント・店舗・募集をまとめて管理"
-        Icon={CalendarDays}
-      />
-
-      <Link
-        href="/organizer/new"
-        className="flex h-14 items-center justify-center gap-2 rounded-[18px] bg-gradient-to-b from-[#2f7d4e] to-[#1f6a42] text-[16px] font-bold text-white shadow-[0_6px_16px_rgba(22,56,40,0.22)] active:scale-[0.99]"
-      >
-        <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
-        新しく掲載する
-      </Link>
-
-      <div role="tablist" aria-label="掲載の状態" className="flex gap-1 rounded-full border border-[#e3ece5] bg-[#f3f6f2] p-1">
-        {TABS.map((t) => (
+    <div className="mx-auto w-full max-w-xl pb-6 tablet:max-w-[860px]">
+      {/* 見出し1行：右に検索と種類の絞り込み。新しく掲載するのは下のナビの「＋」だけにする */}
+      <header className="flex items-end justify-between gap-3 pt-1">
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 text-[9.5px] font-medium tracking-[0.24em] text-[#a08a68]">
+            <span className="h-px w-4 bg-[#cbbba0]" aria-hidden />
+            LISTINGS
+          </p>
+          <h1
+            className="mt-0.5 flex items-baseline gap-2 text-[22px] font-bold tracking-[0.04em] text-[#163828]"
+            style={{ fontFamily: SERIF }}
+          >
+            掲載管理
+            {items ? (
+              <span className="font-sans text-[13px] font-bold tracking-normal text-[#6b776f]">{items.length}件</span>
+            ) : null}
+          </h1>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
           <button
-            key={t.id}
             type="button"
-            role="tab"
-            aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => setSearchOpen((v) => !v)}
+            aria-expanded={searching}
+            aria-label="掲載を検索"
             className={cn(
-              "min-h-[40px] flex-1 rounded-full text-[13px] font-bold transition",
-              tab === t.id ? "bg-[#1f6a42] text-white shadow-[0_3px_8px_rgba(22,56,40,0.2)]" : "text-[#5f6d64]"
+              "flex h-10 w-10 items-center justify-center rounded-full border border-[#e3ece5] bg-white text-[#1f5e3a] shadow-[0_2px_6px_rgba(22,56,40,0.05)]",
+              searching && "border-[#1f6a42] bg-[#eaf4ed]"
             )}
           >
-            {t.label}
+            <Search className="h-[18px] w-[18px]" aria-hidden />
           </button>
-        ))}
-      </div>
-
-      <div className="space-y-2">
-        <label className="flex h-12 items-center gap-2 rounded-[16px] border border-[#e3ece5] bg-white pl-4 pr-1.5">
-          <Search className="h-5 w-5 shrink-0 text-[#8a958d]" aria-hidden />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="タイトル・掲載内容を検索"
-            aria-label="掲載を検索"
-            className="min-w-0 flex-1 bg-transparent text-[16px] text-[#163828] outline-none placeholder:text-[14px] placeholder:text-[#9aa49d]"
-          />
           <button
             type="button"
             onClick={() => setFilterOpen((v) => !v)}
             aria-expanded={filterOpen}
             aria-label="種類で絞り込む"
             className={cn(
-              "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#1f5e3a]",
-              filterOpen && "bg-[#eaf4ed]"
+              "relative flex h-10 w-10 items-center justify-center rounded-full border border-[#e3ece5] bg-white text-[#1f5e3a] shadow-[0_2px_6px_rgba(22,56,40,0.05)]",
+              filterOpen && "border-[#1f6a42] bg-[#eaf4ed]"
             )}
           >
-            <SlidersHorizontal className="h-5 w-5" aria-hidden />
+            <SlidersHorizontal className="h-[18px] w-[18px]" aria-hidden />
             {kindFilter !== "all" && (
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#e66b27]" aria-hidden />
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#e66b27]" aria-hidden />
             )}
           </button>
-        </label>
+        </div>
+      </header>
+
+      {/* 状態の切り替え・検索・種類は、スクロールしても上に残す */}
+      <div className="sticky top-[calc(var(--mg-mobile-top-header-h,52px)+env(safe-area-inset-top,0px))] z-10 -mx-4 mt-3 space-y-2 bg-white/70 px-4 pb-2.5 pt-2 backdrop-blur-md min-[900px]:static min-[900px]:mx-0 min-[900px]:px-0">
+        <div role="tablist" aria-label="掲載の状態" className="flex gap-1 rounded-full bg-[#eef3ef] p-1">
+          {TABS.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "flex min-h-[36px] flex-1 items-center justify-center gap-1 rounded-full text-[12.5px] font-bold transition",
+                  active ? "bg-white text-[#1f6a42] shadow-[0_2px_6px_rgba(22,56,40,0.12)]" : "text-[#5f6d64]"
+                )}
+              >
+                {t.label}
+                {items ? (
+                  <span
+                    className={cn(
+                      "min-w-[18px] rounded-full px-1 text-[10.5px] leading-[16px]",
+                      active ? "bg-[#1f6a42] text-white" : "bg-[#dfe8e1] text-[#5f6d64]"
+                    )}
+                  >
+                    {counts[t.id]}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        {searching && (
+          <label className="flex h-11 items-center gap-2 rounded-[14px] border border-[#e3ece5] bg-white px-3.5">
+            <Search className="h-[18px] w-[18px] shrink-0 text-[#8a958d]" aria-hidden />
+            <input
+              type="search"
+              value={query}
+              autoFocus
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="タイトル・場所で検索"
+              aria-label="掲載を検索"
+              className="min-w-0 flex-1 bg-transparent text-[16px] text-[#163828] outline-none placeholder:text-[14px] placeholder:text-[#9aa49d]"
+            />
+          </label>
+        )}
+
         {filterOpen && (
-          <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 scrollbar-hide">
+          <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 scrollbar-hide">
             {(["all", "event", "store", "kitchen", "volunteer"] as const).map((k) => (
               <button
                 key={k}
@@ -335,44 +392,65 @@ export function OrganizerListingsMobile() {
         )}
       </div>
 
-      <section aria-labelledby="listings-heading" className="space-y-3">
-        <h2 id="listings-heading" className="text-[18px] font-bold text-[#163828]">
-          掲載一覧{items ? `・${visible.length}件` : ""}
-        </h2>
+      <section aria-label="掲載一覧" className="mt-1">
         {items === null ? (
-          <div className="space-y-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-[112px] animate-pulse rounded-[20px] bg-[#e8ede4]" />
+          <div className="space-y-px overflow-hidden rounded-[20px] border border-[#ebeee8] bg-white">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-2.5">
+                <div className="h-14 w-14 animate-pulse rounded-[14px] bg-[#e8ede4]" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 w-2/3 animate-pulse rounded bg-[#e8ede4]" />
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-[#eef2ec]" />
+                </div>
+              </div>
             ))}
           </div>
         ) : visible.length === 0 ? (
-          <p className="rounded-[18px] border border-dashed border-[#d6e3da] bg-white px-4 py-6 text-center text-[13px] text-[#6b776f]">
-            {items.length === 0 ? "まだ掲載がありません。「新しく掲載する」から始めましょう。" : "条件に合う掲載はありません"}
-          </p>
+          items.length === 0 ? (
+            <Link
+              href="/organizer/new"
+              className="flex flex-col items-center gap-2 rounded-[20px] border border-dashed border-[#cfe0d4] bg-white px-4 py-7 text-center"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e6f3ea] text-[#1f6a42]">
+                <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+              </span>
+              <span className="text-[14px] font-bold text-[#1f6a42]">最初の掲載をはじめる</span>
+              <span className="text-[12px] text-[#6b776f]">イベント・お店・キッチンカー・募集を載せられます</span>
+            </Link>
+          ) : (
+            <p className="rounded-[20px] border border-dashed border-[#d6e3da] bg-white px-4 py-6 text-center text-[13px] text-[#6b776f]">
+              条件に合う掲載はありません
+            </p>
+          )
         ) : (
-          <ul className="space-y-3 tablet:grid tablet:grid-cols-2 tablet:gap-3 tablet:space-y-0">
+          <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[20px] border border-[#ebeee8] bg-white shadow-[0_3px_12px_rgba(22,56,40,0.05)] tablet:grid tablet:grid-cols-2 tablet:divide-y-0 tablet:[&>li]:border-b tablet:[&>li]:border-[#eef1ec] tablet:[&>li:nth-child(odd)]:border-r">
             {visible.map((item) => (
               <li key={item.id}>
-                <ListingCard item={item} />
+                <ListingRow item={item} />
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      <section aria-labelledby="kind-pages" className="space-y-2 pt-2">
-        <h2 id="kind-pages" className="text-[14px] font-bold text-[#163828]">
+      {/* 種類ごとの管理画面（申込者の確認・CSV など、一覧より細かい操作） */}
+      <section aria-labelledby="kind-pages" className="mt-6">
+        <h2 id="kind-pages" className="mb-2 text-[12px] font-bold tracking-[0.04em] text-[#6b776f]">
           種類ごとの管理画面
         </h2>
-        <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white">
+        <ul className="grid grid-cols-2 gap-2 tablet:grid-cols-4">
           {KIND_PAGES.map(({ href, label, kind }) => {
-            const { Icon } = KIND_META[kind];
+            const { Icon, color, bg } = KIND_META[kind];
             return (
               <li key={href}>
-                <Link href={href} className="flex items-center gap-3 px-4 py-3 active:bg-[#fafcf9]">
-                  <Icon className="h-5 w-5 shrink-0 text-[#2f7d4e]" aria-hidden />
-                  <span className="min-w-0 flex-1 text-[14px] font-bold text-[#163828]">{label}</span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-[#8a958d]" aria-hidden />
+                <Link
+                  href={href}
+                  className="flex min-h-[48px] items-center gap-2 rounded-[14px] border border-[#ebeee8] bg-white px-2.5 py-2 active:bg-[#fafcf9]"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: bg, color }}>
+                    <Icon className="h-4 w-4" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1 text-[12.5px] font-bold leading-tight text-[#163828]">{label}</span>
                 </Link>
               </li>
             );

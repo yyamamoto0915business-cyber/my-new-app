@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  CalendarDays,
+  Check,
   ChevronRight,
   ClipboardList,
   Info,
@@ -53,29 +55,113 @@ const STATUS_LABEL: Record<DashboardEvent["status"], { label: string; className:
   archived: { label: "非公開", className: "bg-[#eef0ec] text-[#6b776f]" },
 };
 
-/** 数字だけを見せる欄。押して移動するのは下の「運営の道具」に任せ、入口を重ねない */
+const SERIF = "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif";
+
+/** 数字1つ（緑のカードの中） */
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 px-1 text-center">
-      <dt className="text-[11px] font-bold text-[#6b776f]">{label}</dt>
-      <dd className="mt-0.5 whitespace-nowrap text-[18px] font-bold leading-tight tracking-tight text-[#163828]">
-        {value}
-      </dd>
+      <dt className="text-[10.5px] font-bold tracking-[0.06em] text-white/70">{label}</dt>
+      <dd className="mt-0.5 whitespace-nowrap text-[20px] font-bold leading-tight tracking-tight text-white">{value}</dd>
     </div>
   );
 }
 
-function SectionHead({ title, href }: { title: string; href?: string }) {
+/** 英字の小さいラベル＋明朝体の見出し（利用者側の見出しとそろえる） */
+function SectionHead({ eyebrow, title, href }: { eyebrow: string; title: string; href?: string }) {
   return (
-    <div className="mb-2.5 flex items-center justify-between gap-2">
-      <h2 className="text-[18px] font-bold text-[#163828]">{title}</h2>
+    <div className="mb-2 flex items-end justify-between gap-2">
+      <div className="min-w-0">
+        <p className="flex items-center gap-1.5 text-[9.5px] font-medium tracking-[0.24em] text-[#a08a68]">
+          <span className="h-px w-4 bg-[#cbbba0]" aria-hidden />
+          {eyebrow}
+        </p>
+        <h2 className="mt-0.5 text-[17px] font-bold tracking-[0.04em] text-[#163828]" style={{ fontFamily: SERIF }}>
+          {title}
+        </h2>
+      </div>
       {href ? (
-        <Link href={href} className="inline-flex items-center gap-0.5 text-[13px] font-bold text-[#1f7a4a]">
+        <Link href={href} className="mb-0.5 inline-flex shrink-0 items-center gap-0.5 text-[12px] font-bold text-[#1f7a4a]">
           すべて見る
-          <ArrowRight className="h-4 w-4" aria-hidden />
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
       ) : null}
     </div>
+  );
+}
+
+/** いちばん上のイベントは写真を大きく見せる */
+function FeaturedEvent({ e }: { e: DashboardEvent }) {
+  const st = STATUS_LABEL[e.status];
+  return (
+    <Link
+      href={`/organizer/events/${e.id}`}
+      className="relative block h-[148px] overflow-hidden rounded-[20px] bg-gradient-to-br from-[#dcebdf] via-[#eef4e8] to-[#f6efe1] shadow-[0_6px_18px_rgba(22,56,40,0.12)] active:scale-[0.99]"
+    >
+      {e.imageUrl ? (
+        <EventThumbnail imageUrl={e.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
+      ) : (
+        <CalendarDays className="absolute right-4 top-4 h-16 w-16 text-[#1f6a42]/15" aria-hidden />
+      )}
+      <span
+        className={cn(
+          "absolute inset-0",
+          e.imageUrl ? "bg-gradient-to-t from-black/70 via-black/25 to-transparent" : ""
+        )}
+        aria-hidden
+      />
+      <span className="absolute inset-x-0 bottom-0 p-3.5">
+        <span className={cn("inline-block rounded-full px-2 py-0.5 text-[10.5px] font-bold", st.className)}>{st.label}</span>
+        <span
+          className={cn(
+            "mt-1 block truncate text-[17px] font-bold",
+            e.imageUrl ? "text-white drop-shadow" : "text-[#163828]"
+          )}
+          style={{ fontFamily: SERIF }}
+        >
+          {e.title}
+        </span>
+        <span className={cn("mt-0.5 flex items-center gap-2 truncate text-[12px]", e.imageUrl ? "text-white/90" : "text-[#4f5d54]")}>
+          <span className="truncate">{formatEventWhen(e)}</span>
+          {e.location ? (
+            <span className="flex min-w-0 items-center gap-0.5">
+              <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+              <span className="truncate">{e.location}</span>
+            </span>
+          ) : null}
+        </span>
+      </span>
+      <ChevronRight
+        className={cn("absolute bottom-4 right-3 h-5 w-5", e.imageUrl ? "text-white" : "text-[#163828]")}
+        aria-hidden
+      />
+    </Link>
+  );
+}
+
+/** 2件目からは低い行で並べる */
+function EventRow({ e }: { e: DashboardEvent }) {
+  const st = STATUS_LABEL[e.status];
+  return (
+    <Link href={`/organizer/events/${e.id}`} className="flex items-center gap-3 px-3 py-2.5 active:bg-[#f6f9f5]">
+      <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[12px] bg-[#fdf1e4] text-[#c7742c]">
+        {e.imageUrl ? (
+          <EventThumbnail imageUrl={e.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center">
+            <CalendarDays className="h-5 w-5" aria-hidden />
+          </span>
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className={cn("shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold", st.className)}>{st.label}</span>
+          <span className="truncate text-[14px] font-bold text-[#163828]">{e.title}</span>
+        </span>
+        <span className="mt-0.5 block truncate text-[12px] text-[#6b776f]">{formatEventWhen(e)}</span>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />
+    </Link>
   );
 }
 
@@ -113,7 +199,16 @@ export function OrganizerHomeClient() {
   }, [reloadKey]);
 
   const loading = !data && !error;
-  const events = (data?.events ?? []).filter((e) => e.status === "public" || e.status === "draft");
+  // いちばん上のイベントを大きく見せるので、公開中 → これからの日付が近い順 → 日付の過ぎたもの（新しい順）に並べる
+  const [today] = useState(() => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10));
+  const rank = (e: DashboardEvent) => (e.status === "public" ? 0 : 2) + (e.date >= today ? 0 : 1);
+  const events = (data?.events ?? [])
+    .filter((e) => e.status === "public" || e.status === "draft")
+    .sort((a, b) => {
+      const r = rank(a) - rank(b);
+      if (r !== 0) return r;
+      return a.date >= today ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date);
+    });
   // 未読メッセージは、主催者として参加している会話の分だけを数える（下のナビの「チャット」と同じ数）。
   // サーバーの数は利用者として参加している会話の未読も含むので、ここで置きかえる。
   const organizerUnread = useOrganizerUnreadCount();
@@ -131,15 +226,40 @@ export function OrganizerHomeClient() {
     ...(data?.todos ?? []).filter((t) => t.id !== "unread-messages"),
   ];
 
+  const canSeeDashboard = role !== "staff";
+  const statsBody = data ? (
+    <>
+      <dl aria-label="運営サマリー" className="grid grid-cols-3 divide-x divide-white/15">
+        <Stat label="公開中" value={`${data.kpis.hosting}件`} />
+        <Stat label="新規申込" value={`${data.kpis.pendingApplications}件`} />
+        <Stat label="今日の売上" value={formatYen(sales?.totalYen ?? 0)} />
+      </dl>
+      {canSeeDashboard ? (
+        <span className="mt-2.5 flex items-center justify-center gap-1 border-t border-white/15 pt-2 text-[12px] font-bold text-white/85">
+          くわしい数字を見る（参加・閲覧・売上）
+          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+        </span>
+      ) : null}
+    </>
+  ) : null;
+  const statsClass =
+    "relative block overflow-hidden rounded-[20px] bg-gradient-to-br from-[#2f7d4e] via-[#246b43] to-[#1a5434] px-2 pb-2.5 pt-3.5 shadow-[0_8px_20px_rgba(22,56,40,0.22)]";
+
   return (
-    <div className="mx-auto w-full max-w-xl space-y-5 pb-6 tablet:max-w-[860px]">
-      {/* 誰の主催者ホームか（写真の帯はやめて1行にする） */}
-      <div className="flex items-baseline justify-between gap-2 pt-1">
-        <h1 className="min-w-0 truncate text-[20px] font-bold text-[#163828]">
+    <div className="mx-auto w-full max-w-xl space-y-4 pb-6 tablet:max-w-[860px]">
+      {/* 誰の主催者ホームか */}
+      <header className="pt-1">
+        <p className="flex items-center gap-1.5 text-[9.5px] font-medium tracking-[0.24em] text-[#a08a68]">
+          <span className="h-px w-4 bg-[#cbbba0]" aria-hidden />
+          ORGANIZER HOME
+        </p>
+        <h1
+          className="mt-0.5 truncate text-[22px] font-bold tracking-[0.04em] text-[#163828]"
+          style={{ fontFamily: SERIF }}
+        >
           {data?.organizationName ?? "主催者ホーム"}
         </h1>
-        <span className="shrink-0 text-[11px] font-bold tracking-[0.08em] text-[#6b8a76]">主催者モード</span>
-      </div>
+      </header>
 
       {error ? (
         <div className="rounded-[18px] border border-[#f1d9c4] bg-[#fdf6ef] px-4 py-4 text-center">
@@ -155,141 +275,103 @@ export function OrganizerHomeClient() {
       ) : null}
 
       {/* タブレットでは2列：左に「今やること」、右に管理中のイベント */}
-      <div className="space-y-5 tablet:grid tablet:grid-cols-2 tablet:items-start tablet:gap-6 tablet:space-y-0">
-      <div className="min-w-0 space-y-5">
-      {/* 対応が必要なこと（いちばん上に置く） */}
-      {loading ? (
-        <div className="h-[72px] animate-pulse rounded-[18px] bg-[#e8ede4]" />
-      ) : data ? (
-        <section aria-labelledby="org-todos">
-          <h2 id="org-todos" className="mb-2 flex items-center gap-2 text-[16px] font-bold text-[#163828]">
-            対応が必要なこと
-            {todos.length > 0 ? (
-              <span className="rounded-full bg-[#d0567a] px-2 py-0.5 text-[11px] font-bold leading-none text-white">
-                {todos.length}
-              </span>
-            ) : null}
-          </h2>
-          {todos.length === 0 ? (
-            <p className="rounded-[18px] border border-[#ebeee8] bg-white px-4 py-3.5 text-[13px] text-[#6b776f]">
-              いま対応が必要なことはありません
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {todos.slice(0, 3).map((todo) => (
-                <li key={todo.id}>
-                  <Link
-                    href={todo.href}
-                    className="flex items-center gap-3 rounded-[18px] border border-[#f3dcc6] bg-white px-3.5 py-3 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:bg-[#fafcf9]"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fdf1e4] text-[#d4843a]" aria-hidden>
-                      <Info className="h-[18px] w-[18px]" />
-                    </span>
-                    <span className="min-w-0 flex-1 text-[14px] font-bold leading-snug text-[#163828]">
-                      {todo.title}
-                    </span>
-                    <ChevronRight className="h-5 w-5 shrink-0 text-[#163828]" aria-hidden />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ) : null}
-
-      {/* 数字（横1行。見るだけ） */}
-      {loading ? (
-        <div className="h-[64px] animate-pulse rounded-[18px] bg-[#e8ede4]" />
-      ) : data ? (
-        <dl
-          aria-label="運営サマリー"
-          className="grid grid-cols-3 divide-x divide-[#eef1ec] rounded-[18px] border border-[#ebeee8] bg-white py-3 shadow-[0_3px_10px_rgba(22,56,40,0.05)]"
-        >
-          <Stat label="公開中" value={`${data.kpis.hosting}件`} />
-          <Stat label="新規申込" value={`${data.kpis.pendingApplications}件`} />
-          <Stat label="今日の売上" value={formatYen(sales?.totalYen ?? 0)} />
-        </dl>
-      ) : null}
-      {/* くわしい数字（ダッシュボード）の入口はここだけ */}
-      {!loading && data && role !== "staff" ? (
-        <Link
-          href="/organizer/dashboard"
-          className="-mt-2 flex min-h-[44px] items-center justify-end gap-1 text-[13px] font-bold text-[#1f7a4a]"
-        >
-          くわしい数字を見る（参加・閲覧・売上）
-          <ChevronRight className="h-4 w-4" aria-hidden />
-        </Link>
-      ) : null}
-
-      {/* 運営の道具 */}
-      <nav aria-label="運営の道具" className="grid grid-cols-4 gap-2">
-        {QUICK_ACTIONS.map(({ href, label, Icon, color, bg }) => (
-          <Link
-            key={href}
-            href={href}
-            className="flex flex-col items-center gap-1.5 rounded-[18px] border border-[#ebeee8] bg-white px-1 py-3 text-center shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:scale-[0.97]"
-          >
-            <span
-              className="flex h-10 w-10 items-center justify-center rounded-full"
-              style={{ background: bg, color }}
-              aria-hidden
-            >
-              <Icon className="h-5 w-5" />
-            </span>
-            <span className="whitespace-nowrap text-[11px] font-bold leading-tight text-[#163828]">{label}</span>
-          </Link>
-        ))}
-      </nav>
-
-      </div>
-      <div className="min-w-0">
-      {/* 管理中のイベント */}
-      {data ? (
-        <section aria-labelledby="org-events">
-          <SectionHead title="管理中のイベント" href="/organizer/listings" />
-          {events.length === 0 ? (
-            <Link
-              href="/organizer/new"
-              className="block rounded-[18px] border border-dashed border-[#cfe0d4] bg-white px-4 py-5 text-center text-[13px] font-bold text-[#1f7a4a]"
-            >
-              ＋ 最初の掲載をはじめる
-            </Link>
-          ) : (
-            <ul className="space-y-2.5">
-              {events.slice(0, 3).map((e) => {
-                const st = STATUS_LABEL[e.status];
-                return (
-                  <li key={e.id}>
-                    <Link
-                      href={`/organizer/events/${e.id}`}
-                      className="flex items-center gap-3 rounded-[20px] border border-[#ebeee8] bg-white p-2.5 pr-4 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:bg-[#fafcf9]"
-                    >
-                      <span className="relative h-[72px] w-[96px] shrink-0 overflow-hidden rounded-[14px] bg-[#e8ede4]">
-                        <EventThumbnail imageUrl={e.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className={cn("inline-block rounded-full px-2 py-0.5 text-[10.5px] font-bold", st.className)}>
-                          {st.label}
+      <div className="space-y-4 tablet:grid tablet:grid-cols-2 tablet:items-start tablet:gap-6 tablet:space-y-0">
+        <div className="min-w-0 space-y-4">
+          {/* 対応が必要なこと（いちばん上）。何もないときは1行だけ */}
+          {loading ? (
+            <div className="h-[44px] animate-pulse rounded-full bg-[#e8ede4]" />
+          ) : data ? (
+            todos.length === 0 ? (
+              <p className="flex items-center gap-2 rounded-full border border-[#dcebdf] bg-[#f1f8f2] px-3.5 py-2.5 text-[12.5px] font-bold text-[#2f6b47]">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2f7d4e] text-white" aria-hidden>
+                  <Check className="h-3 w-3" strokeWidth={3} />
+                </span>
+                いま対応が必要なことはありません
+              </p>
+            ) : (
+              <section aria-labelledby="org-todos">
+                <h2 id="org-todos" className="mb-1.5 flex items-center gap-2 text-[13px] font-bold text-[#163828]">
+                  対応が必要なこと
+                  <span className="rounded-full bg-[#d0567a] px-2 py-0.5 text-[11px] font-bold leading-none text-white">
+                    {todos.length}
+                  </span>
+                </h2>
+                <ul className="divide-y divide-[#f6e7d8] overflow-hidden rounded-[18px] border border-[#f3dcc6] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
+                  {todos.slice(0, 3).map((todo) => (
+                    <li key={todo.id}>
+                      <Link href={todo.href} className="flex items-center gap-2.5 px-3.5 py-2.5 active:bg-[#fffaf5]">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fdf1e4] text-[#d4843a]" aria-hidden>
+                          <Info className="h-4 w-4" />
                         </span>
-                        <span className="mt-1 block truncate text-[15px] font-bold text-[#163828]">{e.title}</span>
-                        <span className="mt-0.5 block truncate text-[12px] text-[#6b776f]">{formatEventWhen(e)}</span>
-                        {e.location ? (
-                          <span className="mt-0.5 flex items-center gap-1 truncate text-[11.5px] text-[#8a958d]">
-                            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-                            <span className="truncate">{e.location}</span>
-                          </span>
-                        ) : null}
-                      </span>
-                      <ChevronRight className="h-5 w-5 shrink-0 text-[#163828]" aria-hidden />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-      ) : null}
-      </div>
+                        <span className="min-w-0 flex-1 text-[13.5px] font-bold leading-snug text-[#163828]">{todo.title}</span>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )
+          ) : null}
+
+          {/* 数字（緑のカード）。くわしい数字（ダッシュボード）の入口はここだけ */}
+          {loading ? (
+            <div className="h-[104px] animate-pulse rounded-[20px] bg-[#e8ede4]" />
+          ) : data ? (
+            canSeeDashboard ? (
+              <Link href="/organizer/dashboard" className={cn(statsClass, "active:scale-[0.99]")}>
+                {statsBody}
+              </Link>
+            ) : (
+              <div className={statsClass}>{statsBody}</div>
+            )
+          ) : null}
+
+          {/* 運営の道具 */}
+          <nav aria-label="運営の道具" className="grid grid-cols-4 gap-2">
+            {QUICK_ACTIONS.map(({ href, label, Icon, color, bg }) => (
+              <Link
+                key={href}
+                href={href}
+                className="flex flex-col items-center gap-1 rounded-[16px] border border-[#ebeee8] bg-white px-1 pb-2 pt-2.5 text-center shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:scale-[0.97]"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: bg, color }} aria-hidden>
+                  <Icon className="h-[18px] w-[18px]" />
+                </span>
+                <span className="whitespace-nowrap text-[11px] font-bold leading-tight text-[#163828]">{label}</span>
+              </Link>
+            ))}
+          </nav>
+        </div>
+
+        <div className="min-w-0">
+          {/* 管理中のイベント：1件目は写真を大きく、残りは低い行 */}
+          {data ? (
+            <section aria-label="管理中のイベント">
+              <SectionHead eyebrow="EVENTS" title="管理中のイベント" href="/organizer/listings" />
+              {events.length === 0 ? (
+                <Link
+                  href="/organizer/new"
+                  className="block rounded-[18px] border border-dashed border-[#cfe0d4] bg-white px-4 py-5 text-center text-[13px] font-bold text-[#1f7a4a]"
+                >
+                  ＋ 最初の掲載をはじめる
+                </Link>
+              ) : (
+                <div className="space-y-2.5">
+                  <FeaturedEvent e={events[0]} />
+                  {events.length > 1 ? (
+                    <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
+                      {events.slice(1, 4).map((e) => (
+                        <li key={e.id}>
+                          <EventRow e={e} />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              )}
+            </section>
+          ) : null}
+        </div>
       </div>
     </div>
   );
