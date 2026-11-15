@@ -53,20 +53,6 @@ export function TeamJoinPage({ token }: { token: string }) {
         <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#e6f3ea] text-[#2f7d4e]" aria-hidden>
           <UsersRound className="h-8 w-8" />
         </span>
-        {iosBrowser && info?.usable && !joined ? (
-          <div className="w-full rounded-[16px] border border-[#cfe3d6] bg-[#f3f9f5] px-3.5 py-3 text-left">
-            <a
-              href={appSchemeLink(next)}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#163828] text-[14.5px] font-bold text-white"
-            >
-              <Smartphone className="h-[18px] w-[18px]" aria-hidden />
-              MachiGlyph アプリで開く
-            </a>
-            <p className="mt-1.5 text-[11.5px] leading-relaxed text-[#5f6d64]">
-              アプリを入れていれば、アプリで参加できます。入れていなければ、このまま下から参加できます（あとでアプリを入れても使えます）。
-            </p>
-          </div>
-        ) : null}
         {error && !info ? (
           <p className="text-[14px] text-[#7a5a3a]">{error}</p>
         ) : !info ? (
@@ -87,6 +73,20 @@ export function TeamJoinPage({ token }: { token: string }) {
               招待されています
             </h1>
             <p className="text-[13px] text-[#5f6d64]">権限：{info.roleLabel}</p>
+            {iosBrowser && info.usable ? (
+              <div className="w-full rounded-[16px] border border-[#cfe3d6] bg-[#f3f9f5] px-3.5 py-3 text-left">
+                <a
+                  href={appSchemeLink(next)}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#163828] text-[14.5px] font-bold text-white"
+                >
+                  <Smartphone className="h-[18px] w-[18px]" aria-hidden />
+                  MachiGlyph アプリで開く
+                </a>
+                <p className="mt-1.5 text-[11.5px] leading-relaxed text-[#5f6d64]">
+                  アプリを入れていれば、アプリで参加できます。入れていなければ、このまま下から参加できます（あとでアプリを入れても使えます）。
+                </p>
+              </div>
+            ) : null}
             {!info.usable ? (
               <p className="text-[13px] text-[#7a5a3a]">{info.message}</p>
             ) : loading ? null : !user ? (
