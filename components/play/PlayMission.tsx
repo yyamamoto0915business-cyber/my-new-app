@@ -194,8 +194,9 @@ export function PlayMission({ token, mission, progress, onProgress, previewOpen 
       setNote(null);
       setActiveIndex(null);
       if (json.poll && Array.isArray(json.poll.choices) && Array.isArray(json.poll.percents)) {
-        // 結果を見てから進む（クリアした場合も、結果のあとでクリア画面へ）。
+        // 結果を見てから進む。上の進み具合はすぐ進める（クリアした場合だけ、結果のあとでクリア画面へ）。
         setPollView({ result: json.poll, name: item.name, next: json.progress });
+        if (!json.progress.completed) onProgress(json.progress);
         return;
       }
       onProgress(json.progress);
