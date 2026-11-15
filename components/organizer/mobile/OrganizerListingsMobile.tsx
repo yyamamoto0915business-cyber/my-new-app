@@ -59,7 +59,7 @@ const KIND_META: Record<Kind, { label: string; Icon: LucideIcon; color: string; 
   event: { label: "イベント", Icon: CalendarDays, color: "#c7742c", bg: "#fdf1e4" },
   store: { label: "お店", Icon: Store, color: "#2f7d4e", bg: "#e6f3ea" },
   kitchen: { label: "キッチンカー", Icon: Truck, color: "#2f6fae", bg: "#e6f1fa" },
-  volunteer: { label: "募集", Icon: Heart, color: "#c0507a", bg: "#fbe9f0" },
+  volunteer: { label: "ボランティア募集", Icon: Heart, color: "#c0507a", bg: "#fbe9f0" },
 };
 
 const TABS: { id: Tab; label: string }[] = [
@@ -150,7 +150,7 @@ function fromRecruitments(data: RecruitmentDashboardResponse | null): Listing[] 
       imageUrl: r.image_url || r.gallery_images?.[0] || null,
       status,
       statusLabel: status === "ended" ? "締切" : "",
-      sub: joinSub("募集", shortDate(r.start_at)),
+      sub: joinSub("ボランティア募集", shortDate(r.start_at)),
       metric: `応募 ${r.applicationCount}件`,
       href: `/organizer/recruitments/${r.id}`,
       publicHref: `/recruitments/${r.id}`,
@@ -178,10 +178,13 @@ function ListingRow({
   today,
   onOpenEvent,
   onMore,
+  showKind = false,
 }: {
   item: Listing;
   today: string;
   onOpenEvent: (eventId: string) => void;
+  /** 種類が混ざるまとまり（終わったもの）では、行に種類の名前を出す */
+  showKind?: boolean;
   /** イベント以外：右の「…」で、編集・公開ページのメニューを出す */
   onMore?: (item: Listing) => void;
 }) {
@@ -222,6 +225,11 @@ function ListingRow({
               {statusText(item)}
             </span>
             <span className="min-w-0 truncate">
+              {showKind ? (
+                <span className="font-bold" style={{ color }}>
+                  {kindLabel}・
+                </span>
+              ) : null}
               {item.event ? (
                 <>
                   {timing?.multiDay ? `〜${timing.endLabel}・` : ""}
@@ -229,13 +237,8 @@ function ListingRow({
                   {timing ? <span className={cn("font-bold", timing.tag.textClassName)}>・{timing.tag.label}</span> : null}
                 </>
               ) : (
-                <>
-                  <span className="font-bold" style={{ color }}>
-                    {kindLabel}
-                  </span>
-                  {sub ? `・${sub}` : ""}
-                  {item.metric ? `・${item.metric}` : ""}
-                </>
+                // 種類は見出し（または上の種類の名前）で分かるので、ここには書かない
+                <>{[sub, item.metric].filter(Boolean).join("・")}</>
               )}
             </span>
           </span>
@@ -331,18 +334,28 @@ function ListingMenu({ item, onClose }: { item: Listing | null; onClose: () => v
   );
 }
 
-/** 一覧のまとまり（開催中・これから／お店・募集／終わったもの） */
-type GroupId = "upcoming" | "undated" | "ended";
-const GROUP_META: Record<GroupId, { title: string; en: string }> = {
-  upcoming: { title: "開催中・これから", en: "UPCOMING" },
-  undated: { title: "お店・キッチンカー・募集", en: "ALWAYS ON" },
-  ended: { title: "終わったもの", en: "ARCHIVE" },
+/**
+ * 一覧のまとまり。どれがどの種類か分かるよう、種類ごとに分ける：
+ * イベント（開催中・これから）／お店／キッチンカー／ボランティア募集／終わったもの（種類が混ざるので行に種類を出す）
+ */
+type GroupId = "upcoming" | "store" | "kitchen" | "volunteer" | "ended";
+// 期限のあるもの（イベント・ボランティア募集）→ ずっと載せるもの（お店・キッチンカー）→ 終わったもの
+const GROUP_ORDER: GroupId[] = ["upcoming", "volunteer", "store", "kitchen", "ended"];
+/** note：見出しの横の札。期限があるか（いつまで載るか）が一目で分かるように */
+const GROUP_META: Record<GroupId, { title: string; en: string; kind: Kind | null; note: string | null; always?: boolean }> = {
+  upcoming: { title: "イベント", en: "EVENTS", kind: "event", note: "開催日まで" },
+  volunteer: { title: "ボランティア募集", en: "VOLUNTEERS", kind: "volunteer", note: "締切まで" },
+  store: { title: "お店", en: "SHOPS", kind: "store", note: "期限なし・ずっと掲載", always: true },
+  kitchen: { title: "キッチンカー", en: "KITCHEN CARS", kind: "kitchen", note: "期限なし・ずっと掲載", always: true },
+  ended: { title: "終わったもの", en: "ARCHIVE", kind: null, note: null },
 };
 
 function groupOf(item: Listing, today: string): GroupId {
+  // お店・キッチンカーは期限なしでずっと載せるもの。非公開にしても「終わったもの」には入れない
+  if (item.kind === "store" || item.kind === "kitchen") return item.kind;
   if (item.status === "ended") return "ended";
   if (item.event) return (item.event.endDate ?? item.event.date).slice(0, 10) < today ? "ended" : "upcoming";
-  return "undated";
+  return item.kind === "event" ? "upcoming" : item.kind;
 }
 
 const SERIF = ORG_SERIF;
@@ -351,7 +364,7 @@ const SERIF = ORG_SERIF;
 const KIND_PAGES: { href: string; label: string; kind: Kind }[] = [
   { href: "/organizer/stores", label: "お店の管理", kind: "store" },
   { href: "/organizer/kitchen-cars", label: "キッチンカーの管理", kind: "kitchen" },
-  { href: "/organizer/recruitments", label: "募集の管理", kind: "volunteer" },
+  { href: "/organizer/recruitments", label: "ボランティア募集の管理", kind: "volunteer" },
 ];
 
 /** 主催者：掲載管理（スマホ、見本「02_掲載管理」）。種類をまたいで1つの一覧にする */
@@ -481,12 +494,12 @@ export function OrganizerListingsMobile() {
 
   /** まとまりごとに分ける（中の並びは、これから＝日付の近い順・終わったもの＝新しい順） */
   const groups = useMemo(() => {
-    const g: Record<GroupId, Listing[]> = { upcoming: [], undated: [], ended: [] };
+    const g: Record<GroupId, Listing[]> = { upcoming: [], store: [], kitchen: [], volunteer: [], ended: [] };
     for (const i of visible) g[groupOf(i, today)].push(i);
     const lastDay = (i: Listing) => (i.event ? (i.event.endDate ?? i.event.date).slice(0, 10) : "");
     g.upcoming.sort((a, b) => (a.event?.date ?? "").localeCompare(b.event?.date ?? ""));
     g.ended.sort((a, b) => lastDay(b).localeCompare(lastDay(a)));
-    return (["upcoming", "undated", "ended"] as const).filter((id) => g[id].length > 0).map((id) => ({ id, items: g[id] }));
+    return GROUP_ORDER.filter((id) => g[id].length > 0).map((id) => ({ id, items: g[id] }));
   }, [visible, today]);
 
   const searching = searchOpen || query.length > 0;
@@ -707,7 +720,7 @@ export function OrganizerListingsMobile() {
                 <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
               </span>
               <span className="text-[14px] font-bold text-[#1f6a42]">最初の掲載をはじめる</span>
-              <span className="text-[12px] text-[#6b776f]">イベント・お店・キッチンカー・募集を載せられます</span>
+              <span className="text-[12px] text-[#6b776f]">イベント・お店・キッチンカー・ボランティア募集を載せられます</span>
             </Link>
           ) : (
             <p className="rounded-[20px] border border-dashed border-[#d6e3da] bg-white px-4 py-6 text-center text-[13px] text-[#6b776f]">
@@ -726,12 +739,37 @@ export function OrganizerListingsMobile() {
                     className="sticky z-10 -mx-4 flex items-end gap-2 bg-[#f9f9f6]/90 px-5 pb-1.5 pt-2 backdrop-blur-md min-[900px]:static min-[900px]:mx-0 min-[900px]:px-1"
                     style={{ top: `calc(var(--mg-mobile-top-header-h,52px) + env(safe-area-inset-top,0px) + ${barH}px)` }}
                   >
+                    {meta.kind ? (
+                      <span
+                        className="mb-[1px] flex h-6 w-6 shrink-0 items-center justify-center self-center rounded-full"
+                        style={{ background: KIND_META[meta.kind].bg, color: KIND_META[meta.kind].color }}
+                        aria-hidden
+                      >
+                        {(() => {
+                          const KindIcon = KIND_META[meta.kind].Icon;
+                          return <KindIcon className="h-[13px] w-[13px]" />;
+                        })()}
+                      </span>
+                    ) : null}
                     <h2 id={`group-${id}`} className="text-[15px] font-semibold tracking-[0.06em] text-[#173f2c]" style={{ fontFamily: SERIF }}>
                       {meta.title}
                     </h2>
                     <span className="pb-[2px] text-[11.5px] font-bold tabular-nums text-[#a3812f]">{list.length}</span>
+                    {meta.note ? (
+                      <span
+                        className={cn(
+                          "mb-[1px] shrink-0 self-center rounded-full px-2 py-[2px] text-[10.5px] font-bold",
+                          meta.always ? "bg-[#e6f3ea] text-[#1f6a42]" : "bg-[#fdf1e4] text-[#b0641f]"
+                        )}
+                      >
+                        {meta.always ? "∞ " : "⏱ "}
+                        {meta.note}
+                      </span>
+                    ) : null}
                     <span className="mb-[7px] h-px flex-1 bg-gradient-to-r from-[#e6d6a8] to-transparent" aria-hidden />
-                    <span className="pb-[2px] text-[9px] font-semibold tracking-[0.22em] text-[#b8a26a]">{meta.en}</span>
+                    {meta.note ? null : (
+                      <span className="pb-[2px] text-[9px] font-semibold tracking-[0.22em] text-[#b8a26a]">{meta.en}</span>
+                    )}
                   </div>
                   {folded ? (
                     <button
@@ -743,10 +781,26 @@ export function OrganizerListingsMobile() {
                       <ChevronDown className="h-4 w-4" aria-hidden />
                     </button>
                   ) : (
-                    <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[20px] border border-[#ebeee8] bg-white shadow-[0_3px_12px_rgba(22,56,40,0.05)] tablet:grid tablet:grid-cols-2 tablet:divide-y-0 tablet:[&>li]:border-b tablet:[&>li]:border-[#eef1ec] tablet:[&>li:nth-child(odd)]:border-r">
+                    <ul
+                      className={cn(
+                        "divide-y divide-[#eef1ec] overflow-hidden rounded-[20px] border border-[#ebeee8] bg-white shadow-[0_3px_12px_rgba(22,56,40,0.05)]",
+                        // 種類のまとまりは、左に種類の色の線（終わったものは種類が混ざるので付けない）
+                        meta.kind && "border-l-[3px]",
+                        // タブレットは2列。1件だけのときは横幅いっぱい（右半分が空かないように）
+                        list.length > 1 &&
+                          "tablet:grid tablet:grid-cols-2 tablet:divide-y-0 tablet:[&>li]:border-b tablet:[&>li]:border-[#eef1ec] tablet:[&>li:nth-child(odd)]:border-r"
+                      )}
+                      style={meta.kind ? { borderLeftColor: KIND_META[meta.kind].color } : undefined}
+                    >
                       {list.map((item) => (
                         <li key={item.id}>
-                          <ListingRow item={item} today={today} onOpenEvent={setSheetEventId} onMore={setMenuItem} />
+                          <ListingRow
+                            item={item}
+                            today={today}
+                            onOpenEvent={setSheetEventId}
+                            onMore={setMenuItem}
+                            showKind={!meta.kind}
+                          />
                         </li>
                       ))}
                     </ul>
