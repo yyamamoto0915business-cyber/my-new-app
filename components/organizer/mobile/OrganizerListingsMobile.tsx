@@ -19,6 +19,7 @@ import type { RecruitmentDashboardResponse } from "@/app/api/organizer/recruitme
 import type { StoreRecord } from "@/lib/stores/types";
 import { EventThumbnail } from "@/components/event-thumbnail";
 import { cn } from "@/lib/utils";
+import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
 
 /** まちに載せるものだけ。ゲームはイベントの中で使う道具なので「運営 → ゲーム」で管理する */
 type Kind = "event" | "store" | "kitchen" | "volunteer";
@@ -210,7 +211,7 @@ function ListingRow({ item }: { item: Listing }) {
   );
 }
 
-const SERIF = "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif";
+const SERIF = ORG_SERIF;
 
 /** 種類ごとの管理画面（申込者の確認・CSV など、一覧より細かい操作はここから） */
 const KIND_PAGES: { href: string; label: string; kind: Kind }[] = [
@@ -280,10 +281,7 @@ export function OrganizerListingsMobile() {
       {/* 見出し1行：右に検索と種類の絞り込み。新しく掲載するのは下のナビの「＋」だけにする */}
       <header className="flex items-end justify-between gap-3 pt-1">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-[9.5px] font-medium tracking-[0.24em] text-[#a08a68]">
-            <span className="h-px w-4 bg-[#cbbba0]" aria-hidden />
-            LISTINGS
-          </p>
+          <OrgEyebrow>LISTINGS</OrgEyebrow>
           <h1
             className="mt-0.5 flex items-baseline gap-2 text-[22px] font-bold tracking-[0.04em] text-[#163828]"
             style={{ fontFamily: SERIF }}
@@ -339,7 +337,7 @@ export function OrganizerListingsMobile() {
                 onClick={() => setTab(t.id)}
                 className={cn(
                   "flex min-h-[36px] flex-1 items-center justify-center gap-1 rounded-full text-[12.5px] font-bold transition",
-                  active ? "bg-white text-[#1f6a42] shadow-[0_2px_6px_rgba(22,56,40,0.12)]" : "text-[#5f6d64]"
+                  active ? "bg-[#173f2c] text-[#f3e6bf] shadow-[0_3px_8px_rgba(14,42,29,0.25)]" : "text-[#5f6d64]"
                 )}
               >
                 {t.label}
@@ -347,7 +345,7 @@ export function OrganizerListingsMobile() {
                   <span
                     className={cn(
                       "min-w-[18px] rounded-full px-1 text-[10.5px] leading-[16px]",
-                      active ? "bg-[#1f6a42] text-white" : "bg-[#dfe8e1] text-[#5f6d64]"
+                      active ? "bg-[#c9a54e] text-[#0e2a1d]" : "bg-[#dfe8e1] text-[#5f6d64]"
                     )}
                   >
                     {counts[t.id]}
@@ -384,7 +382,7 @@ export function OrganizerListingsMobile() {
                 className={cn(
                   "shrink-0 rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold",
                   kindFilter === k
-                    ? "border-[#1f6a42] bg-[#1f6a42] text-white"
+                    ? "border-[#173f2c] bg-[#173f2c] text-[#f3e6bf]"
                     : "border-[#e3ece5] bg-white text-[#4f5d54]"
                 )}
               >
