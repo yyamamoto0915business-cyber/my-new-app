@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { OrganizerTeamSwitcher } from "@/components/organizer/team/OrganizerTeamSwitcher";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
@@ -279,6 +280,9 @@ export function OrganizerTeamPage() {
           {message}
         </p>
       ) : null}
+
+      {/* いくつかのチームに入っているときだけ出る */}
+      <OrganizerTeamSwitcher />
 
       {error ? (
         <p className="rounded-[16px] border border-[#f1d9c4] bg-[#fdf6ef] px-4 py-4 text-[13px] text-[#7a5a3a]">{error}</p>
