@@ -222,7 +222,8 @@ export function getEventDayPhase(input: {
   // 期間イベントは最終日まで毎日「開催中」
   if (lastDay > today) return "live";
 
-  const endTime = (input.endTime?.trim() || input.startTime?.trim() || "23:59");
+  // データベースの時刻は秒つき（15:00:00）で返るので「時:分」にそろえる
+  const endTime = (input.endTime?.trim() || input.startTime?.trim() || "23:59").slice(0, 5);
   const endTs = Date.parse(`${lastDay}T${endTime}:00+09:00`);
   if (!Number.isNaN(endTs) && Date.now() > endTs) return "past";
 
