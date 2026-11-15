@@ -188,13 +188,13 @@ function EventRow({ e, today }: { e: DashboardEvent; today: string }) {
         {/* palt：「【」などの左の空きを詰めて、題名の左端をそろえる */}
         <span
           className={cn(
-            "block truncate text-[14.5px] font-bold [font-feature-settings:'palt']",
+            "block truncate text-[14px] font-semibold [font-feature-settings:'palt']",
             past ? "text-[#7b877f]" : "text-[#163828]"
           )}
         >
           {e.title}
         </span>
-        <span className="mt-0.5 block truncate text-[11.5px] text-[#7b877f]">{sub}</span>
+        <span className="mt-[3px] block truncate text-[12px] text-[#7b877f]">{sub}</span>
       </span>
       <span className={cn("shrink-0 rounded-full px-2 py-[3px] text-[11px] font-bold", tag.className)}>{tag.label}</span>
     </Link>
