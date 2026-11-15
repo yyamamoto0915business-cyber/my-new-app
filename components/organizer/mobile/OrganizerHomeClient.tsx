@@ -133,67 +133,70 @@ function formatTimeRange(e: DashboardEvent): string {
 }
 
 /**
- * イベントの行。左は日付のカレンダー（月・日・曜日）で、どの日のイベントか一目で分かるようにする。
- * 2行目に時刻・状態と「あと◯日」。日付の過ぎたものは灰色にして、これからのものと見分ける。
+ * イベントの行。左は日付のカレンダー（月・日・曜日）、右端に「あと◯日」などの札。
+ * 2行目は状態・時刻を控えめに（何日も続くイベントは終わりの日も）。日付の過ぎたものは灰色。
  */
 function EventRow({ e, today }: { e: DashboardEvent; today: string }) {
   const st = STATUS_LABEL[e.status];
-  const [, m, d] = e.date.split("-").map(Number);
-  const wd = WEEKDAY_JA[new Date(`${e.date}T12:00:00+09:00`).getUTCDay()];
+  const startDay = e.date.slice(0, 10);
+  const [, m, d] = startDay.split("-").map(Number);
+  const wd = WEEKDAY_JA[new Date(`${startDay}T12:00:00+09:00`).getUTCDay()];
   const lastDay = (e.endDate ?? e.date).slice(0, 10);
+  const multiDay = lastDay > startDay;
   const past = lastDay < today;
-  const diff = daysBetween(today, e.date.slice(0, 10));
-  const soon = !past && diff <= 7;
-  const when = past
-    ? "日付が過ぎています"
-    : diff <= 0
-      ? "開催中・今日"
-      : diff === 1
-        ? "明日"
-        : `あと${diff}日`;
+  const diff = daysBetween(today, startDay);
+  const ongoing = !past && diff < 0;
+  const tag = past
+    ? { label: "終了", className: "bg-[#eef0ec] text-[#8a958d]" }
+    : ongoing
+      ? { label: "開催中", className: "bg-[#173f2c] text-[#f3e6bf]" }
+      : diff === 0
+        ? { label: "今日", className: "bg-[#c0572a] text-white" }
+        : diff === 1
+          ? { label: "明日", className: "bg-[#fbe7dc] text-[#b04c22]" }
+          : diff <= 7
+            ? { label: `あと${diff}日`, className: "bg-[#fbe7dc] text-[#b04c22]" }
+            : { label: `あと${diff}日`, className: "bg-[#eef4ef] text-[#3f6250]" };
   const time = formatTimeRange(e);
+  const [, em, ed] = lastDay.split("-").map(Number);
+  const sub = [st.label, multiDay ? `〜${em}/${ed}` : null, time || null].filter(Boolean).join("・");
   return (
     <Link href={`/organizer/events/${e.id}`} className="flex items-center gap-3 px-3 py-2.5 active:bg-[#f6f9f5]">
       <span
         className={cn(
-          "flex h-[52px] w-[48px] shrink-0 flex-col items-center justify-center rounded-[14px] border leading-none",
+          "flex h-[46px] w-[42px] shrink-0 flex-col items-center justify-center rounded-[12px] leading-none",
           past
-            ? "border-[#e6e8e3] bg-[#f3f4f1] text-[#9aa29c]"
+            ? "bg-[#f1f2ef] text-[#a3aaa5]"
             : e.status === "public"
-              ? "border-[#173f2c] bg-[#173f2c] text-white"
-              : "border-[#eedcb0] bg-[#fdf6e6] text-[#6e5312]"
+              ? "bg-[#173f2c] text-white"
+              : "bg-[#fbf3e1] text-[#5f4810]"
         )}
         aria-hidden
       >
         <span
           className={cn(
-            "text-[10px] font-bold",
+            "text-[9.5px] font-bold",
             past ? "" : e.status === "public" ? "text-[#e6d29b]" : "text-[#a3812f]"
           )}
         >
           {m}月
         </span>
-        <span className="mt-0.5 text-[19px] font-bold tracking-tight">{d}</span>
-        <span className="mt-0.5 text-[9.5px] font-bold">{wd}</span>
+        <span className="mt-[3px] text-[17px] font-bold tracking-tight">{d}</span>
+        <span className="mt-[3px] text-[9px] font-bold opacity-80">{wd}</span>
       </span>
       <span className="min-w-0 flex-1">
-        <span className={cn("block truncate text-[14.5px] font-bold", past ? "text-[#6b776f]" : "text-[#163828]")}>
+        {/* palt：「【」などの左の空きを詰めて、題名の左端をそろえる */}
+        <span
+          className={cn(
+            "block truncate text-[14.5px] font-bold [font-feature-settings:'palt']",
+            past ? "text-[#7b877f]" : "text-[#163828]"
+          )}
+        >
           {e.title}
         </span>
-        <span className="mt-1 flex items-center gap-1.5 text-[11.5px]">
-          <span className={cn("shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold", st.className)}>{st.label}</span>
-          {time ? <span className="shrink-0 text-[#6b776f]">{time}</span> : null}
-          <span
-            className={cn(
-              "truncate font-bold",
-              past ? "font-medium text-[#9aa29c]" : soon ? "text-[#c0572a]" : "text-[#4f6b5a]"
-            )}
-          >
-            {when}
-          </span>
-        </span>
+        <span className="mt-0.5 block truncate text-[11.5px] text-[#7b877f]">{sub}</span>
       </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />
+      <span className={cn("shrink-0 rounded-full px-2 py-[3px] text-[11px] font-bold", tag.className)}>{tag.label}</span>
     </Link>
   );
 }
@@ -358,10 +361,10 @@ export function OrganizerHomeClient() {
               <Link
                 key={href}
                 href={href}
-                className="flex flex-col items-center gap-1 rounded-[16px] border border-[#ebeee8] bg-white px-1 pb-2 pt-2.5 text-center shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:scale-[0.97]"
+                className="flex flex-col items-center gap-1 rounded-[16px] border border-[#ebeee8] bg-white px-1 pb-1.5 pt-2 text-center shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:scale-[0.97]"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: bg, color }} aria-hidden>
-                  <Icon className="h-[18px] w-[18px]" />
+                <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: bg, color }} aria-hidden>
+                  <Icon className="h-[17px] w-[17px]" />
                 </span>
                 <span className="whitespace-nowrap text-[11px] font-bold leading-tight text-[#163828]">{label}</span>
               </Link>
