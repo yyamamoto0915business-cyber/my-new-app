@@ -1,16 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   CalendarDays,
-  ChevronRight,
+  ChevronDown,
+  ExternalLink,
   Heart,
+  LayoutGrid,
+  MoreHorizontal,
+  PenLine,
   Plus,
   Search,
-  SlidersHorizontal,
   Store,
   Truck,
+  X,
   type LucideIcon,
   Sparkles,
 } from "lucide-react";
@@ -40,7 +45,9 @@ type Listing = {
   /** 申込数など、実データのある数だけ */
   metric: string | null;
   href: string;
-  /** イベントだけ：ポイントの設定（スマホではここが入口。PC はイベント管理のメニュー） */
+  /** 公開中のときに見られる、利用者側のページ */
+  publicHref: string;
+  /** イベントだけ：ポイントの設定（スマホでは行の「…」のメニューが入口。PC はイベント管理のメニュー） */
   pointsHref?: string;
   /** イベントだけ：日付（左の日付のカレンダーと「あと◯日」に使う） */
   event?: { date: string; endDate: string | null; status: DashboardEvent["status"] };
@@ -102,6 +109,7 @@ function fromEvents(data: DashboardResponse | null): Listing[] {
       sub: joinSub("イベント", shortDate(e.date)),
       metric: `申込 ${e.applicationCount}件`,
       href: `/organizer/events/${e.id}`,
+      publicHref: `/events/${e.id}`,
       pointsHref: `/organizer/events/${e.id}/points`,
       event: { date: e.date, endDate: e.endDate ?? null, status: e.status },
     };
@@ -122,6 +130,7 @@ function fromStores(stores: StoreRecord[] | null): Listing[] {
       sub: joinSub(kitchen ? "キッチンカー" : "お店", s.category, s.address?.split(/[\s　]/)[0]),
       metric: null,
       href: kitchen ? `/organizer/kitchen-cars/${s.id}` : `/organizer/stores/${s.id}`,
+      publicHref: kitchen ? `/kitchen-cars/${s.id}` : `/stores/${s.id}`,
     };
   });
 }
@@ -139,6 +148,7 @@ function fromRecruitments(data: RecruitmentDashboardResponse | null): Listing[] 
       sub: joinSub("募集", shortDate(r.start_at)),
       metric: `応募 ${r.applicationCount}件`,
       href: `/organizer/recruitments/${r.id}`,
+      publicHref: `/recruitments/${r.id}`,
     };
   });
 }
@@ -155,28 +165,22 @@ function statusText(item: Listing): string {
 
 /**
  * 1件ぶんの行（低くして1画面に多く並べる）。行全体は編集へのリンク。
- * イベントは左を日付のカレンダーにし、2行目に「あと◯日」。ポイントは右の小さな丸いボタン（リンクの入れ子にしないよう上に重ねる）。
- * 状態の札は2行目の頭に置いて、題名の左端をそろえる。
+ * イベントは左を日付のカレンダーにし、2行目に「あと◯日」。状態の札は2行目の頭に置いて、題名の左端をそろえる。
+ * 右の「…」で、編集・イベントポイント・公開ページのメニューを出す（リンクの入れ子にしないよう上に重ねる）。
  */
-function ListingRow({ item, today }: { item: Listing; today: string }) {
+function ListingRow({ item, today, onMore }: { item: Listing; today: string; onMore: (item: Listing) => void }) {
   const { label: kindLabel, Icon, color, bg } = KIND_META[item.kind];
   const sub = item.sub.startsWith(kindLabel) ? item.sub.slice(kindLabel.length).replace(/^・/, "") : item.sub;
   const timing = item.event ? eventTiming(today, item.event.date, item.event.endDate) : null;
-  const dim = timing?.past ?? false;
+  const dim = (timing?.past ?? false) || item.status === "ended";
   return (
     <div className="relative">
-      <Link
-        href={item.href}
-        className={cn(
-          "flex items-center gap-3 px-3 py-2.5 active:bg-[#f6f9f5]",
-          item.pointsHref ? "pr-[62px]" : "pr-3"
-        )}
-      >
+      <Link href={item.href} className="flex items-center gap-3 py-2.5 pl-3 pr-[52px] active:bg-[#f6f9f5]">
         {item.event && timing ? (
           <EventDateTile date={item.event.date} status={item.event.status} past={timing.past} />
         ) : (
           <span
-            className="relative h-[46px] w-[46px] shrink-0 overflow-hidden rounded-[12px]"
+            className={cn("relative h-[46px] w-[42px] shrink-0 overflow-hidden rounded-[12px]", dim && "opacity-60")}
             style={item.imageUrl ? undefined : { background: bg, color }}
           >
             {item.imageUrl ? (
@@ -221,20 +225,88 @@ function ListingRow({ item, today }: { item: Listing; today: string }) {
             </span>
           </span>
         </span>
-        {item.pointsHref ? null : <ChevronRight className="h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />}
       </Link>
-      {item.pointsHref ? (
-        <Link
-          href={item.pointsHref}
-          aria-label={`${item.title}のイベントポイント`}
-          className="absolute right-2.5 top-1/2 flex h-[44px] w-[44px] -translate-y-1/2 flex-col items-center justify-center gap-[3px] rounded-[12px] border border-[#ecd9a6] bg-[#fffaf0] text-[#a3812f]"
-        >
-          <Sparkles className="h-4 w-4" aria-hidden />
-          <span className="text-[8.5px] font-bold leading-none">ポイント</span>
-        </Link>
-      ) : null}
+      <button
+        type="button"
+        onClick={() => onMore(item)}
+        aria-label={`${item.title}のメニュー`}
+        className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-[#8a958d] active:bg-[#eef3ef]"
+      >
+        <MoreHorizontal className="h-5 w-5" aria-hidden />
+      </button>
     </div>
   );
+}
+
+/** 行の「…」から出すメニュー（下から出る）。よく使う操作だけ */
+function ListingMenu({ item, onClose }: { item: Listing | null; onClose: () => void }) {
+  useEffect(() => {
+    if (!item) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [item, onClose]);
+  if (!item || typeof document === "undefined") return null;
+  const actions: { href: string; label: string; sub: string; Icon: LucideIcon; tone: string; external?: boolean }[] = [
+    { href: item.href, label: "編集する", sub: "内容・写真・公開の設定", Icon: PenLine, tone: "bg-[#eaf4ed] text-[#1f6a42]" },
+    ...(item.pointsHref
+      ? [{ href: item.pointsHref, label: "イベントポイント", sub: "ためる・使うの設定", Icon: Sparkles, tone: "bg-[#fbf3e1] text-[#a3812f]" }]
+      : []),
+    ...(item.status === "public"
+      ? [{ href: item.publicHref, label: "公開ページを見る", sub: "利用者に見えている画面", Icon: ExternalLink, tone: "bg-[#eef1f5] text-[#3d5a80]", external: true }]
+      : []),
+  ];
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/35" role="dialog" aria-modal="true" aria-label={`${item.title}のメニュー`} onClick={onClose}>
+      <div
+        className="w-full max-w-lg rounded-t-[22px] bg-[#fbfcf9] px-4 pb-[calc(16px+env(safe-area-inset-bottom,0px))] pt-2.5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-[#d5dbd6]" aria-hidden />
+        <div className="mb-2 flex items-start gap-2">
+          <p className="min-w-0 flex-1 pt-2 text-[15px] font-bold leading-snug text-[#163828] [font-feature-settings:'palt']">{item.title}</p>
+          <button type="button" onClick={onClose} aria-label="閉じる" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#5f6d64]">
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
+        <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[16px] border border-[#ebeee8] bg-white">
+          {actions.map((a) => (
+            <li key={a.label}>
+              <Link
+                href={a.href}
+                onClick={onClose}
+                {...(a.external ? { target: "_blank", rel: "noopener" } : {})}
+                className="flex min-h-[56px] items-center gap-3 px-3.5 py-2.5 active:bg-[#f6f9f5]"
+              >
+                <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", a.tone)}>
+                  <a.Icon className="h-[18px] w-[18px]" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14.5px] font-bold text-[#163828]">{a.label}</span>
+                  <span className="block text-[11.5px] text-[#7b877f]">{a.sub}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+/** 一覧のまとまり（開催中・これから／お店・募集／終わったもの） */
+type GroupId = "upcoming" | "undated" | "ended";
+const GROUP_META: Record<GroupId, { title: string; en: string }> = {
+  upcoming: { title: "開催中・これから", en: "UPCOMING" },
+  undated: { title: "お店・キッチンカー・募集", en: "ALWAYS ON" },
+  ended: { title: "終わったもの", en: "ARCHIVE" },
+};
+
+function groupOf(item: Listing, today: string): GroupId {
+  if (item.status === "ended") return "ended";
+  if (item.event) return (item.event.endDate ?? item.event.date).slice(0, 10) < today ? "ended" : "upcoming";
+  return "undated";
 }
 
 const SERIF = ORG_SERIF;
@@ -253,9 +325,24 @@ export function OrganizerListingsMobile() {
   const [tab, setTab] = useState<Tab>("all");
   const [query, setQuery] = useState("");
   const [kindFilter, setKindFilter] = useState<Kind | "all">("all");
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [pagesOpen, setPagesOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [today] = useState(todayJst);
+  /** 行の「…」で開いているもの */
+  const [menuItem, setMenuItem] = useState<Listing | null>(null);
+  /** 「終わったもの」を開いているか（ふだんはたたむ） */
+  const [endedOpen, setEndedOpen] = useState(false);
+  /** 上に残る切り替えの高さ（まとまりの見出しを、その下に残すため） */
+  const barRef = useRef<HTMLDivElement>(null);
+  const [barH, setBarH] = useState(0);
+  useLayoutEffect(() => {
+    const el = barRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setBarH(el.offsetHeight));
+    ro.observe(el);
+    setBarH(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -292,15 +379,19 @@ export function OrganizerListingsMobile() {
     return () => controller.abort();
   }, []);
 
+  /** タブで使う状態：日付の過ぎたイベントは、下書きでも「終了」に数える（下の「終わったもの」とそろえる） */
+  const tabStatus = (i: Listing): Status => (groupOf(i, today) === "ended" ? "ended" : i.status);
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (items ?? []).filter(
       (i) =>
-        (tab === "all" || i.status === tab) &&
+        (tab === "all" || tabStatus(i) === tab) &&
         (kindFilter === "all" || i.kind === kindFilter) &&
         (!q || i.title.toLowerCase().includes(q) || i.sub.toLowerCase().includes(q))
     );
-  }, [items, tab, query, kindFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tabStatus は today だけで決まる
+  }, [items, tab, query, kindFilter, today]);
 
   const counts = useMemo(() => {
     // 種類の絞り込みと検索の文字に合う件数（タブの状態だけは問わない）
@@ -310,12 +401,40 @@ export function OrganizerListingsMobile() {
       if (kindFilter !== "all" && i.kind !== kindFilter) continue;
       if (q && !i.title.toLowerCase().includes(q) && !i.sub.toLowerCase().includes(q)) continue;
       c.all += 1;
-      c[i.status] += 1;
+      c[tabStatus(i)] += 1;
     }
     return c;
-  }, [items, kindFilter, query]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tabStatus は today だけで決まる
+  }, [items, kindFilter, query, today]);
+
+  const kindCounts = useMemo(() => {
+    // 状態のタブと検索の文字に合う、種類ごとの件数
+    const q = query.trim().toLowerCase();
+    const c: Record<Kind | "all", number> = { all: 0, event: 0, store: 0, kitchen: 0, volunteer: 0 };
+    for (const i of items ?? []) {
+      if (tab !== "all" && tabStatus(i) !== tab) continue;
+      if (q && !i.title.toLowerCase().includes(q) && !i.sub.toLowerCase().includes(q)) continue;
+      c.all += 1;
+      c[i.kind] += 1;
+    }
+    return c;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tabStatus は today だけで決まる
+  }, [items, tab, query, today]);
+
+  /** まとまりごとに分ける（中の並びは、これから＝日付の近い順・終わったもの＝新しい順） */
+  const groups = useMemo(() => {
+    const g: Record<GroupId, Listing[]> = { upcoming: [], undated: [], ended: [] };
+    for (const i of visible) g[groupOf(i, today)].push(i);
+    const lastDay = (i: Listing) => (i.event ? (i.event.endDate ?? i.event.date).slice(0, 10) : "");
+    g.upcoming.sort((a, b) => (a.event?.date ?? "").localeCompare(b.event?.date ?? ""));
+    g.ended.sort((a, b) => lastDay(b).localeCompare(lastDay(a)));
+    return (["upcoming", "undated", "ended"] as const).filter((id) => g[id].length > 0).map((id) => ({ id, items: g[id] }));
+  }, [visible, today]);
 
   const searching = searchOpen || query.length > 0;
+  /** 検索中・「終了」のタブ・終わったものしかないときは、たたまずに出す */
+  const endedShown = endedOpen || searching || tab === "ended" || groups.every((gr) => gr.id === "ended");
+  const kindsInUse = (["event", "store", "kitchen", "volunteer"] as const).filter((k) => (items ?? []).some((i) => i.kind === k));
 
   return (
     <div className="mx-auto w-full max-w-xl pb-6 tablet:max-w-[860px]">
@@ -348,24 +467,46 @@ export function OrganizerListingsMobile() {
           </button>
           <button
             type="button"
-            onClick={() => setFilterOpen((v) => !v)}
-            aria-expanded={filterOpen}
-            aria-label="種類で絞り込む"
+            onClick={() => setPagesOpen((v) => !v)}
+            aria-expanded={pagesOpen}
+            aria-label="種類ごとの管理画面"
             className={cn(
-              "relative flex h-10 w-10 items-center justify-center rounded-full border border-[#e3ece5] bg-white text-[#1f5e3a] shadow-[0_2px_6px_rgba(22,56,40,0.05)]",
-              filterOpen && "border-[#1f6a42] bg-[#eaf4ed]"
+              "flex h-10 w-10 items-center justify-center rounded-full border border-[#e3ece5] bg-white text-[#1f5e3a] shadow-[0_2px_6px_rgba(22,56,40,0.05)]",
+              pagesOpen && "border-[#1f6a42] bg-[#eaf4ed]"
             )}
           >
-            <SlidersHorizontal className="h-[18px] w-[18px]" aria-hidden />
-            {kindFilter !== "all" && (
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#e66b27]" aria-hidden />
-            )}
+            <LayoutGrid className="h-[18px] w-[18px]" aria-hidden />
           </button>
         </div>
       </header>
 
+      {/* 種類ごとの管理画面（申込者の確認・CSV など、一覧より細かい操作）。右上のボタンで開く */}
+      {pagesOpen ? (
+        <nav aria-label="種類ごとの管理画面" className="mt-3 rounded-[18px] border border-[#ebeee8] bg-white p-2 shadow-[0_3px_12px_rgba(22,56,40,0.05)]">
+          <p className="px-1.5 pb-1.5 pt-0.5 text-[11.5px] font-bold text-[#6b776f]">種類ごとの管理画面（申込者の確認・CSV など）</p>
+          <ul className="grid grid-cols-2 gap-1.5 tablet:grid-cols-4">
+            {KIND_PAGES.map(({ href, label, kind }) => {
+              const { Icon, color, bg } = KIND_META[kind];
+              return (
+                <li key={href}>
+                  <Link href={href} className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-[#f7f9f6] px-2.5 py-2 active:bg-[#eef3ef]">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ background: bg, color }}>
+                      <Icon className="h-[15px] w-[15px]" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1 text-[12.5px] font-bold leading-tight text-[#163828]">{label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      ) : null}
+
       {/* 状態の切り替え・検索・種類は、スクロールしても上に残す */}
-      <div className="sticky top-[calc(var(--mg-mobile-top-header-h,52px)+env(safe-area-inset-top,0px))] z-10 -mx-4 mt-3 space-y-2 bg-white/70 px-4 pb-2.5 pt-2 backdrop-blur-md min-[900px]:static min-[900px]:mx-0 min-[900px]:px-0">
+      <div
+        ref={barRef}
+        className="sticky top-[calc(var(--mg-mobile-top-header-h,52px)+env(safe-area-inset-top,0px))] z-20 -mx-4 mt-3 space-y-2 bg-[#f9f9f6]/85 px-4 pb-2.5 pt-2 backdrop-blur-md min-[900px]:static min-[900px]:mx-0 min-[900px]:px-0"
+      >
         <div role="tablist" aria-label="掲載の状態" className="flex gap-1 rounded-full bg-[#eef3ef] p-1">
           {TABS.map((t) => {
             const active = tab === t.id;
@@ -412,26 +553,31 @@ export function OrganizerListingsMobile() {
           </label>
         )}
 
-        {filterOpen && (
-          <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 scrollbar-hide">
-            {(["all", "event", "store", "kitchen", "volunteer"] as const).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setKindFilter(k)}
-                aria-pressed={kindFilter === k}
-                className={cn(
-                  "shrink-0 rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold",
-                  kindFilter === k
-                    ? "border-[#173f2c] bg-[#173f2c] text-[#f3e6bf]"
-                    : "border-[#e3ece5] bg-white text-[#4f5d54]"
-                )}
-              >
-                {k === "all" ? "すべての種類" : KIND_META[k].label}
-              </button>
-            ))}
+        {/* 種類（使っている種類が2つ以上のときだけ出す） */}
+        {kindsInUse.length > 1 ? (
+          <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 scrollbar-hide" role="group" aria-label="種類で絞り込む">
+            {(["all", ...kindsInUse] as const).map((k) => {
+              const on = kindFilter === k;
+              const meta = k === "all" ? null : KIND_META[k];
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setKindFilter(k)}
+                  aria-pressed={on}
+                  className={cn(
+                    "flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-bold transition",
+                    on ? "border-[#c9a54e] bg-[#fffaf0] text-[#173f2c]" : "border-[#e3ece5] bg-white text-[#4f5d54]"
+                  )}
+                >
+                  {meta ? <span className="h-2 w-2 rounded-full" style={{ background: meta.color }} aria-hidden /> : null}
+                  {meta ? meta.label : "すべての種類"}
+                  <span className={cn("text-[11px] tabular-nums", on ? "text-[#a3812f]" : "text-[#9aa49d]")}>{kindCounts[k]}</span>
+                </button>
+              );
+            })}
           </div>
-        )}
+        ) : null}
       </div>
 
       <section aria-label="掲載一覧" className="mt-1">
@@ -465,40 +611,50 @@ export function OrganizerListingsMobile() {
             </p>
           )
         ) : (
-          <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[20px] border border-[#ebeee8] bg-white shadow-[0_3px_12px_rgba(22,56,40,0.05)] tablet:grid tablet:grid-cols-2 tablet:divide-y-0 tablet:[&>li]:border-b tablet:[&>li]:border-[#eef1ec] tablet:[&>li:nth-child(odd)]:border-r">
-            {visible.map((item) => (
-              <li key={item.id}>
-                <ListingRow item={item} today={today} />
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-5">
+            {groups.map(({ id, items: list }) => {
+              const meta = GROUP_META[id];
+              const folded = id === "ended" && !endedShown;
+              return (
+                <section key={id} aria-labelledby={`group-${id}`}>
+                  {/* まとまりの見出し：上に残る切り替えのすぐ下に残す */}
+                  <div
+                    className="sticky z-10 -mx-4 flex items-end gap-2 bg-[#f9f9f6]/90 px-5 pb-1.5 pt-2 backdrop-blur-md min-[900px]:static min-[900px]:mx-0 min-[900px]:px-1"
+                    style={{ top: `calc(var(--mg-mobile-top-header-h,52px) + env(safe-area-inset-top,0px) + ${barH}px)` }}
+                  >
+                    <h2 id={`group-${id}`} className="text-[15px] font-semibold tracking-[0.06em] text-[#173f2c]" style={{ fontFamily: SERIF }}>
+                      {meta.title}
+                    </h2>
+                    <span className="pb-[2px] text-[11.5px] font-bold tabular-nums text-[#a3812f]">{list.length}</span>
+                    <span className="mb-[7px] h-px flex-1 bg-gradient-to-r from-[#e6d6a8] to-transparent" aria-hidden />
+                    <span className="pb-[2px] text-[9px] font-semibold tracking-[0.22em] text-[#b8a26a]">{meta.en}</span>
+                  </div>
+                  {folded ? (
+                    <button
+                      type="button"
+                      onClick={() => setEndedOpen(true)}
+                      className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-[18px] border border-dashed border-[#d9dfd8] bg-white/60 text-[13px] font-bold text-[#5f6d64]"
+                    >
+                      終わった{list.length}件を見る
+                      <ChevronDown className="h-4 w-4" aria-hidden />
+                    </button>
+                  ) : (
+                    <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[20px] border border-[#ebeee8] bg-white shadow-[0_3px_12px_rgba(22,56,40,0.05)] tablet:grid tablet:grid-cols-2 tablet:divide-y-0 tablet:[&>li]:border-b tablet:[&>li]:border-[#eef1ec] tablet:[&>li:nth-child(odd)]:border-r">
+                      {list.map((item) => (
+                        <li key={item.id}>
+                          <ListingRow item={item} today={today} onMore={setMenuItem} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              );
+            })}
+          </div>
         )}
       </section>
 
-      {/* 種類ごとの管理画面（申込者の確認・CSV など、一覧より細かい操作） */}
-      <section aria-labelledby="kind-pages" className="mt-6">
-        <h2 id="kind-pages" className="mb-2 text-[12px] font-bold tracking-[0.04em] text-[#6b776f]">
-          種類ごとの管理画面
-        </h2>
-        <ul className="grid grid-cols-2 gap-2 tablet:grid-cols-4">
-          {KIND_PAGES.map(({ href, label, kind }) => {
-            const { Icon, color, bg } = KIND_META[kind];
-            return (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className="flex min-h-[48px] items-center gap-2 rounded-[14px] border border-[#ebeee8] bg-white px-2.5 py-2 active:bg-[#fafcf9]"
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: bg, color }}>
-                    <Icon className="h-4 w-4" aria-hidden />
-                  </span>
-                  <span className="min-w-0 flex-1 text-[12.5px] font-bold leading-tight text-[#163828]">{label}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
+      <ListingMenu item={menuItem} onClose={() => setMenuItem(null)} />
     </div>
   );
 }
