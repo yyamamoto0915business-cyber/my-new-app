@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { refreshConnectFlagsIfPending } from "@/lib/organizer/connect-sync";
 import Stripe from "stripe";
 import { getApiUser } from "@/lib/api-auth";
 import { createClient } from "@/lib/supabase/server";
@@ -95,6 +96,11 @@ export async function POST(request: NextRequest) {
       .eq("id", organizerId)
       .single();
     organizer = data;
+    if (organizer?.stripe_account_id && !organizer.stripe_account_charges_enabled) {
+      // 記録がまだでも、Stripe 側で設定が済んでいれば使えるようにする
+      const connect = await refreshConnectFlagsIfPending(organizer);
+      organizer = { ...organizer, stripe_account_charges_enabled: connect.chargesEnabled };
+    }
     if (!organizer?.stripe_account_id || !organizer?.stripe_account_charges_enabled) {
       return NextResponse.json(
         {
