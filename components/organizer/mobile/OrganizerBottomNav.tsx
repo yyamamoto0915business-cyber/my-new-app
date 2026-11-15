@@ -68,9 +68,9 @@ export function OrganizerBottomNav() {
                 key={id}
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className="flex min-h-[52px] flex-1 touch-manipulation flex-col items-center justify-end gap-0.5 pb-1 text-[10px] font-bold text-[#1f5e3a]"
+                className="flex min-h-[52px] flex-1 touch-manipulation flex-col items-center justify-end gap-0.5 pb-1 text-[10px] font-bold text-[#173f2c]"
               >
-                <span className="-mt-6 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-gradient-to-b from-[#2f7d4e] to-[#1f5e3a] text-white shadow-[0_6px_16px_rgba(22,56,40,0.32)] ring-4 ring-white">
+                <span className="-mt-6 flex h-[52px] w-[52px] items-center justify-center rounded-full border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#0e2a1d] text-[#f6ebc8] shadow-[0_6px_16px_rgba(14,42,29,0.35)] ring-4 ring-white">
                   <Icon className="h-6 w-6" strokeWidth={2.5} aria-hidden />
                 </span>
                 <span className="whitespace-nowrap leading-tight">{label}</span>
@@ -85,7 +85,7 @@ export function OrganizerBottomNav() {
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex min-h-[52px] flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-[20px] px-0.5 py-1 text-[10px] transition-colors",
-                active ? "bg-[#eaf4ed] font-bold text-[#1f5e3a]" : "font-medium text-[#7a8a80]"
+                active ? "bg-[#e9f0eb] font-bold text-[#173f2c] shadow-[inset_0_-2px_0_#c9a54e]" : "font-medium text-[#7a8a80]"
               )}
             >
               <span className="relative">

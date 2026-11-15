@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useOrganizerUnreadCount } from "@/hooks/use-scoped-unread-count";
 import type { DashboardTodo } from "@/app/api/organizer/dashboard/route";
 import { useOrganizerRole } from "@/hooks/use-organizer-role";
+import { ORG_GOLD_PATTERN, ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
 
 const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
@@ -55,13 +56,13 @@ const STATUS_LABEL: Record<DashboardEvent["status"], { label: string; className:
   archived: { label: "非公開", className: "bg-[#eef0ec] text-[#6b776f]" },
 };
 
-const SERIF = "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif";
+const SERIF = ORG_SERIF;
 
 /** 数字1つ（緑のカードの中） */
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 px-1 text-center">
-      <dt className="text-[10.5px] font-bold tracking-[0.06em] text-white/70">{label}</dt>
+      <dt className="text-[10.5px] font-bold tracking-[0.08em] text-[#e6d29b]">{label}</dt>
       <dd className="mt-0.5 whitespace-nowrap text-[20px] font-bold leading-tight tracking-tight text-white">{value}</dd>
     </div>
   );
@@ -72,16 +73,13 @@ function SectionHead({ eyebrow, title, href }: { eyebrow: string; title: string;
   return (
     <div className="mb-2 flex items-end justify-between gap-2">
       <div className="min-w-0">
-        <p className="flex items-center gap-1.5 text-[9.5px] font-medium tracking-[0.24em] text-[#a08a68]">
-          <span className="h-px w-4 bg-[#cbbba0]" aria-hidden />
-          {eyebrow}
-        </p>
+        <OrgEyebrow>{eyebrow}</OrgEyebrow>
         <h2 className="mt-0.5 text-[17px] font-bold tracking-[0.04em] text-[#163828]" style={{ fontFamily: SERIF }}>
           {title}
         </h2>
       </div>
       {href ? (
-        <Link href={href} className="mb-0.5 inline-flex shrink-0 items-center gap-0.5 text-[12px] font-bold text-[#1f7a4a]">
+        <Link href={href} className="mb-0.5 inline-flex shrink-0 items-center gap-0.5 text-[12px] font-bold text-[#173f2c]">
           すべて見る
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
@@ -96,17 +94,30 @@ function FeaturedEvent({ e }: { e: DashboardEvent }) {
   return (
     <Link
       href={`/organizer/events/${e.id}`}
-      className="relative block h-[148px] overflow-hidden rounded-[20px] bg-gradient-to-br from-[#dcebdf] via-[#eef4e8] to-[#f6efe1] shadow-[0_6px_18px_rgba(22,56,40,0.12)] active:scale-[0.99]"
+      className={cn(
+        "relative block h-[148px] overflow-hidden rounded-[20px] shadow-[0_8px_20px_rgba(14,42,29,0.2)]",
+        e.imageUrl ? "bg-[#173f2c]" : "border border-[#c9a54e]/40 bg-gradient-to-br from-[#245a3e] via-[#173f2c] to-[#0e2a1d]"
+      )}
     >
       {e.imageUrl ? (
         <EventThumbnail imageUrl={e.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
       ) : (
-        <CalendarDays className="absolute right-4 top-4 h-16 w-16 text-[#1f6a42]/15" aria-hidden />
+        <>
+          {/* 写真がないときは、深い緑に金色の模様 */}
+          <span
+            className="absolute inset-0 opacity-80 [mask-image:linear-gradient(110deg,transparent_25%,black_90%)]"
+            style={{ backgroundImage: ORG_GOLD_PATTERN }}
+            aria-hidden
+          />
+          <span className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full border border-[#c9a54e]/50 bg-[#0e2a1d]/40 text-[#e6d29b]" aria-hidden>
+            <CalendarDays className="h-6 w-6" />
+          </span>
+        </>
       )}
       <span
         className={cn(
           "absolute inset-0",
-          e.imageUrl ? "bg-gradient-to-t from-black/70 via-black/25 to-transparent" : ""
+          e.imageUrl ? "bg-gradient-to-t from-black/70 via-black/25 to-transparent" : "bg-gradient-to-t from-[#0e2a1d]/60 to-transparent"
         )}
         aria-hidden
       />
@@ -115,13 +126,13 @@ function FeaturedEvent({ e }: { e: DashboardEvent }) {
         <span
           className={cn(
             "mt-1 block truncate text-[17px] font-bold",
-            e.imageUrl ? "text-white drop-shadow" : "text-[#163828]"
+            "text-white drop-shadow"
           )}
           style={{ fontFamily: SERIF }}
         >
           {e.title}
         </span>
-        <span className={cn("mt-0.5 flex items-center gap-2 truncate text-[12px]", e.imageUrl ? "text-white/90" : "text-[#4f5d54]")}>
+        <span className="mt-0.5 flex items-center gap-2 truncate text-[12px] text-white/90">
           <span className="truncate">{formatEventWhen(e)}</span>
           {e.location ? (
             <span className="flex min-w-0 items-center gap-0.5">
@@ -132,7 +143,7 @@ function FeaturedEvent({ e }: { e: DashboardEvent }) {
         </span>
       </span>
       <ChevronRight
-        className={cn("absolute bottom-4 right-3 h-5 w-5", e.imageUrl ? "text-white" : "text-[#163828]")}
+        className="absolute bottom-4 right-3 h-5 w-5 text-white"
         aria-hidden
       />
     </Link>
@@ -231,10 +242,7 @@ export function OrganizerHomeClient() {
     <div className="mx-auto w-full max-w-xl space-y-4 pb-6 tablet:max-w-[860px]">
       {/* 誰の主催者ホームか */}
       <header className="pt-1">
-        <p className="flex items-center gap-1.5 text-[9.5px] font-medium tracking-[0.24em] text-[#a08a68]">
-          <span className="h-px w-4 bg-[#cbbba0]" aria-hidden />
-          ORGANIZER HOME
-        </p>
+        <OrgEyebrow>ORGANIZER HOME</OrgEyebrow>
         <h1
           className="mt-0.5 truncate text-[22px] font-bold tracking-[0.04em] text-[#163828]"
           style={{ fontFamily: SERIF }}
@@ -265,7 +273,7 @@ export function OrganizerHomeClient() {
           ) : data ? (
             todos.length === 0 ? (
               <p className="flex items-center gap-2 rounded-full border border-[#dcebdf] bg-[#f1f8f2] px-3.5 py-2.5 text-[12.5px] font-bold text-[#2f6b47]">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2f7d4e] text-white" aria-hidden>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#173f2c] text-[#ecdcab]" aria-hidden>
                   <Check className="h-3 w-3" strokeWidth={3} />
                 </span>
                 いま対応が必要なことはありません
@@ -299,8 +307,17 @@ export function OrganizerHomeClient() {
           {loading ? (
             <div className="h-[104px] animate-pulse rounded-[20px] bg-[#e8ede4]" />
           ) : data ? (
-            <div className="overflow-hidden rounded-[20px] bg-gradient-to-br from-[#2f7d4e] via-[#246b43] to-[#1a5434] shadow-[0_8px_20px_rgba(22,56,40,0.22)]">
-              <dl aria-label="運営サマリー" className="grid grid-cols-3 divide-x divide-white/15 px-2 pb-3 pt-3.5">
+            <div
+              className="relative overflow-hidden rounded-[20px] border border-[#c9a54e]/45 bg-gradient-to-br from-[#1f4d36] via-[#173f2c] to-[#0e2a1d] shadow-[0_10px_24px_rgba(14,42,29,0.28)]"
+            >
+              {/* 金色の模様（右上だけ、うっすら） */}
+              <span
+                className="pointer-events-none absolute -right-6 -top-6 h-32 w-40 opacity-70 [mask-image:radial-gradient(closest-side,black,transparent)]"
+                style={{ backgroundImage: ORG_GOLD_PATTERN }}
+                aria-hidden
+              />
+              <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-[#e6d29b]/80 to-transparent" aria-hidden />
+              <dl aria-label="運営サマリー" className="relative grid grid-cols-3 divide-x divide-[#c9a54e]/25 px-2 pb-3 pt-3.5">
                 <Stat label="公開中" value={`${data.kpis.hosting}件`} />
                 <Stat label="新規申込" value={`${data.kpis.pendingApplications}件`} />
                 <Stat label="今日の売上" value={formatYen(sales?.totalYen ?? 0)} />
@@ -308,7 +325,7 @@ export function OrganizerHomeClient() {
               {canSeeDashboard ? (
                 <Link
                   href="/organizer/dashboard"
-                  className="mx-2 mb-2 flex min-h-[40px] items-center justify-center gap-1 rounded-[14px] bg-white/12 text-[12px] font-bold text-white active:bg-white/20"
+                  className="relative mx-2 mb-2 flex min-h-[40px] items-center justify-center gap-1 rounded-[14px] border border-[#c9a54e]/30 bg-white/[0.07] text-[12px] font-bold text-[#f3e6bf] active:bg-white/15"
                 >
                   くわしい数字を見る（参加・閲覧・売上）
                   <ChevronRight className="h-3.5 w-3.5" aria-hidden />
