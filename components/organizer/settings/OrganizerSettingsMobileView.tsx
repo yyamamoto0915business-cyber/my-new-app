@@ -12,6 +12,7 @@ import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { ProfileBannerAvatar } from "@/components/profile/profile-banner-avatar";
 import { OrganizerLogoutButton } from "@/components/organizer/OrganizerLogoutButton";
 import { cn } from "@/lib/utils";
+import { useOrganizerTeams } from "@/components/organizer/team/OrganizerTeamSwitcher";
 import type { DashboardResponse } from "@/app/api/organizer/dashboard/route";
 
 /** 利用者のマイページと同じ帯の絵（モードを切り替えても同じ形に見えるようにする） */
@@ -200,6 +201,10 @@ export function OrganizerSettingsMobileView({
   // 売上の受け取りが「未設定」のときは、気づけるように最初から開いておく（「決済未対応」は本人の設定もれではないので開かない）
   const needsPayoutSetup = !billingLoading && receiving === "未設定";
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const teams = useOrganizerTeams();
+  const currentTeam = teams && teams.teams.length > 1 ? teams.teams.find((t) => t.organizerId === teams.current) : undefined;
+  const teamLine = currentTeam ? `使用中：${currentTeam.name}（ここで切りかえ）` : null;
+
   useEffect(() => {
     if (needsPayoutSetup) setSettingsOpen(true);
   }, [needsPayoutSetup]);
@@ -317,7 +322,7 @@ export function OrganizerSettingsMobileView({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] font-bold text-[#163828]">チーム・メンバー</span>
-          <span className="block truncate text-[12px] text-[#5f6d64]">メンバーを招待して、一緒に運営する</span>
+          <span className="block truncate text-[12px] text-[#5f6d64]">{teamLine ?? "メンバーを招待して、一緒に運営する"}</span>
         </span>
         <ChevronRight className="h-5 w-5 shrink-0 text-[#163828]" aria-hidden />
       </Link>

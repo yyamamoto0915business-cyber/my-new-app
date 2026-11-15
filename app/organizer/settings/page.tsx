@@ -1,5 +1,6 @@
 "use client";
 
+import { useOrganizerTeams } from "@/components/organizer/team/OrganizerTeamSwitcher";
 import { getOrganizerAccess } from "@/lib/organizer/team";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -143,6 +144,10 @@ export default function OrganizerSettingsPage() {
     contact_phone: string | null;
   } | null>(null);
   const [orgLoading, setOrgLoading] = useState(true);
+  const teams = useOrganizerTeams();
+  const currentTeam = teams && teams.teams.length > 1 ? teams.teams.find((t) => t.organizerId === teams.current) : undefined;
+  const teamLine = currentTeam ? `使用中：${currentTeam.name}（ここで切りかえ）` : null;
+
 
   const [billing, setBilling] = useState<OrganizerBillingData | null>(null);
   const [billingLoading, setBillingLoading] = useState(true);
@@ -225,7 +230,7 @@ export default function OrganizerSettingsPage() {
         className="hidden items-center gap-3 rounded-lg border border-[#d9eadf] bg-white px-4 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_2px_10px_rgba(0,0,0,0.06)] min-[900px]:flex"
       >
         <span className="text-[13px] font-bold text-[#163828]">チーム・メンバー</span>
-        <span className="text-[12px] text-[#5f6d64]">メンバーを招待して、一緒に運営する（TEAM プラン）</span>
+        <span className="text-[12px] text-[#5f6d64]">{teamLine ?? "メンバーを招待して、一緒に運営する（TEAM プラン）"}</span>
         <span className="ml-auto text-[12px] font-bold text-[#1f7a4a]">開く ›</span>
       </Link>
 
