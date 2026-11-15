@@ -3,7 +3,8 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
-import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
+import { EventsMobileTop } from "@/components/organizer/events/EventsMobileTop";
+import { ChevronRight, Sparkles } from "lucide-react";
 import { EventSummaryCards } from "@/components/organizer/events/EventSummaryCards";
 import {
   EventListFilterTabs,
@@ -35,7 +36,14 @@ function isArchivedEvent(event: DashboardEvent): boolean {
 function sortEvents(list: DashboardEvent[], sortBy: SortOption): DashboardEvent[] {
   const sorted = [...list];
   if (sortBy === "date_asc") {
-    sorted.sort((a, b) => a.date.localeCompare(b.date));
+    // 開催日が近い順：開催中・これからのものを日付の近い順に、日付の過ぎたものはその後ろ（新しい順）
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    const isPast = (e: DashboardEvent) => (e.endDate ?? e.date).slice(0, 10) < today;
+    sorted.sort((a, b) => {
+      const p = Number(isPast(a)) - Number(isPast(b));
+      if (p !== 0) return p;
+      return isPast(a) ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
+    });
   } else if (sortBy === "date_desc") {
     sorted.sort((a, b) => b.date.localeCompare(a.date));
   } else if (sortBy === "created_desc") {
@@ -90,6 +98,15 @@ export default function OrganizerEventsPage() {
   useEffect(() => {
     fetchDashboard();
   }, [fetchDashboard]);
+
+  // スマホ・タブレットではページに分けず、全件を並べる（PC は5件ずつのまま）
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 899px)");
+    const apply = () => setPageSize(mq.matches ? 1000 : DEFAULT_PAGE_SIZE);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   const nonArchivedEvents = useMemo(
     () => events.filter((e) => !isArchivedEvent(e)),
@@ -259,22 +276,17 @@ export default function OrganizerEventsPage() {
         contentClassName="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col pb-16 min-[900px]:pb-0"
       >
         <div className="org-events-mgmt org-events-mgmt--compact flex min-h-0 flex-1 flex-col space-y-2 min-[900px]:space-y-0">
-        <OrganizerWorkspacePageHeader
-          className="min-[900px]:hidden"
-          compact
-          title="イベント管理"
-          subtitle="公開・編集・募集・売上受取の設定をまとめて管理できます。"
-          actions={
-            <Link
-              href="/organizer/events/new"
-              className="inline-flex items-center gap-1 rounded-lg bg-[#2D7A4F] px-2.5 py-1.5 text-[11px] font-semibold leading-none text-white shadow-[0_2px_8px_rgba(45,122,79,0.24)] transition-opacity hover:opacity-90"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              イベントを作成
-            </Link>
-          }
+        <EventsMobileTop
+          total={listTabCounts.all}
+          counts={listTabCounts}
+          listTab={listTab}
+          onTabChange={handleListTabChange}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          archivedCount={archivedCount}
+          onArchiveClick={() => handleListTabChange(listTab === "archived" ? "all" : "archived")}
         />
 
         <EventsManagementHero actions={createEventButton} />
@@ -294,13 +306,21 @@ export default function OrganizerEventsPage() {
               {!stripeNotOk && nextAction.href !== PAYOUTS_HREF && (
                 <Link
                   href={nextAction.href}
-                  className="flex items-center gap-2 rounded-lg border border-[#e8e6e0] bg-white px-2.5 py-1.5"
+                  className="flex items-center gap-2.5 rounded-[14px] border border-[#ecd9a6] bg-[#fffaf0] px-3 py-2"
                 >
-                  <span className="block font-semibold text-[#1a1a1a]">{nextAction.label}</span>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f6e9c4] text-[#a3812f]" aria-hidden>
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-bold text-[#5f4810]">{nextAction.label}</span>
+                    <span className="block truncate text-[11px] text-[#8a7440]">{nextAction.description}</span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[#b89a55]" aria-hidden />
                 </Link>
               )}
             </div>
 
+            <div className="max-[899px]:hidden">
             <EventSummaryCards
               total={summaryCounts.activeCount}
               publicCount={summaryCounts.publicCount}
@@ -309,6 +329,7 @@ export default function OrganizerEventsPage() {
               onStatusClick={handleSummaryClick}
               activeFilter={summaryActiveFilter}
             />
+            </div>
 
             {todos.length > 0 && (
               <section ref={needsActionRef} id="needs-action-section" className="min-[900px]:hidden">
@@ -347,6 +368,7 @@ export default function OrganizerEventsPage() {
                 />
               </div>
 
+              <div className="max-[899px]:hidden">
               <EventListToolbar
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
@@ -364,6 +386,7 @@ export default function OrganizerEventsPage() {
                   handleListTabChange(listTab === "archived" ? "all" : "archived")
                 }
               />
+              </div>
 
               {listTab === "archived" ? (
                 <p className="org-events-list-shell__archive-hint">
