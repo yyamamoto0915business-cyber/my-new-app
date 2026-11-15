@@ -261,14 +261,17 @@ export function OrganizerListingsMobile() {
   }, [items, tab, query, kindFilter]);
 
   const counts = useMemo(() => {
+    // 種類の絞り込みと検索の文字に合う件数（タブの状態だけは問わない）
+    const q = query.trim().toLowerCase();
     const c: Record<Tab, number> = { all: 0, public: 0, draft: 0, ended: 0 };
     for (const i of items ?? []) {
       if (kindFilter !== "all" && i.kind !== kindFilter) continue;
+      if (q && !i.title.toLowerCase().includes(q) && !i.sub.toLowerCase().includes(q)) continue;
       c.all += 1;
       c[i.status] += 1;
     }
     return c;
-  }, [items, kindFilter]);
+  }, [items, kindFilter, query]);
 
   const searching = searchOpen || query.length > 0;
 
