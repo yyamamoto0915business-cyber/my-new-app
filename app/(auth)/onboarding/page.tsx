@@ -124,8 +124,8 @@ export default function OnboardingPage() {
 
       setModeCookie(roleToMode(role));
       redirectingRef.current = true;
-      router.push(destination);
-      router.refresh();
+      // ページごと開き直す（router.push のすぐあとに router.refresh を呼ぶと、移動が打ち消されて読み込み中のまま止まることがあった）
+      window.location.assign(destination);
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました");
       setSubmitting(null);
