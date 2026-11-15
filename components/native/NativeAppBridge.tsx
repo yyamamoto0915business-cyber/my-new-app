@@ -68,6 +68,20 @@ export function NativeAppBridge() {
         await handle.remove();
         return;
       }
+      // アプリが閉じていたところをリンクで起こされたとき：起こしたリンクの画面を開く（1回だけ）
+      const launch = await App.getLaunchUrl().catch(() => undefined);
+      const launchPath = launch?.url ? inAppLinkPath(launch.url) : null;
+      if (launchPath && window.location.pathname !== launchPath) {
+        const key = "mg-launch-link";
+        let seen: string | null = null;
+        try {
+          seen = sessionStorage.getItem(key);
+          sessionStorage.setItem(key, launch!.url);
+        } catch {
+          /* 保存できなくても開く */
+        }
+        if (seen !== launch!.url) window.location.assign(launchPath);
+      }
       remove = () => {
         void handle.remove();
       };

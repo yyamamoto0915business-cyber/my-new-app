@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { UsersRound } from "lucide-react";
+import { Smartphone, UsersRound } from "lucide-react";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
+import { appSchemeLink, isIosBrowser } from "@/lib/native/app-shell";
 
 type Info = { organizationName: string; roleLabel: string; usable: boolean; message: string | null; expiresAt: string };
 
@@ -14,6 +15,11 @@ export function TeamJoinPage({ token }: { token: string }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [joined, setJoined] = useState(false);
+  /** iPhone のブラウザ（LINE の中を含む）で開いたときだけ「アプリで開く」を出す */
+  const [iosBrowser, setIosBrowser] = useState(false);
+  useEffect(() => {
+    setIosBrowser(isIosBrowser());
+  }, []);
 
   useEffect(() => {
     fetch(`/api/team-invites/${encodeURIComponent(token)}`, { cache: "no-store" })
@@ -47,6 +53,20 @@ export function TeamJoinPage({ token }: { token: string }) {
         <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#e6f3ea] text-[#2f7d4e]" aria-hidden>
           <UsersRound className="h-8 w-8" />
         </span>
+        {iosBrowser && info?.usable && !joined ? (
+          <div className="w-full rounded-[16px] border border-[#cfe3d6] bg-[#f3f9f5] px-3.5 py-3 text-left">
+            <a
+              href={appSchemeLink(next)}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#163828] text-[14.5px] font-bold text-white"
+            >
+              <Smartphone className="h-[18px] w-[18px]" aria-hidden />
+              MachiGlyph アプリで開く
+            </a>
+            <p className="mt-1.5 text-[11.5px] leading-relaxed text-[#5f6d64]">
+              アプリを入れていれば、アプリで参加できます。入れていなければ、このまま下から参加できます（あとでアプリを入れても使えます）。
+            </p>
+          </div>
+        ) : null}
         {error && !info ? (
           <p className="text-[14px] text-[#7a5a3a]">{error}</p>
         ) : !info ? (

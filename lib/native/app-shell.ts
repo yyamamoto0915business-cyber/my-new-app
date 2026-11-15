@@ -33,18 +33,39 @@ export function nativeAuthRedirect(returnTo: string): string {
   return NATIVE_AUTH_CALLBACK;
 }
 
-/** アプリで開くリンクのうち、そのままアプリの中で開く画面（apple-app-site-association と同じ一覧）。それ以外は null */
+const APP_SCHEME = "jp.machiglyph.app://";
+/** アプリの中でそのまま開く画面（apple-app-site-association と同じ一覧） */
+const IN_APP_LINK = /^\/team\/join\/[A-Za-z0-9_-]{8,128}\/?$/;
+
+/**
+ * アプリで開くリンクのうち、アプリの中で開く画面の道。それ以外は null。
+ * https://www.machiglyph.jp/team/join/… （Universal Link）と、jp.machiglyph.app://team/join/… （「アプリで開く」ボタン）の両方を受ける。
+ */
 export function inAppLinkPath(url: string): string | null {
+  if (url.startsWith(APP_SCHEME)) {
+    const path = "/" + url.slice(APP_SCHEME.length).split(/[?#]/)[0];
+    return IN_APP_LINK.test(path) ? path : null;
+  }
   try {
     const parsed = new URL(url);
     const hostOk = parsed.protocol === "https:" && (parsed.hostname === "www.machiglyph.jp" || parsed.hostname === "machiglyph.jp");
     if (!hostOk) return null;
-    // チームの招待リンク：/team/join/<トークン>
-    if (/^\/team\/join\/[A-Za-z0-9_-]{8,128}\/?$/.test(parsed.pathname)) return parsed.pathname;
-    return null;
+    return IN_APP_LINK.test(parsed.pathname) ? parsed.pathname : null;
   } catch {
     return null;
   }
+}
+
+/** ブラウザから「アプリで開く」ためのアドレス（LINE の中のブラウザからでもアプリが開く）。 */
+export function appSchemeLink(path: string): string {
+  return APP_SCHEME + path.replace(/^\/+/, "");
+}
+
+/** iPhone・iPad のブラウザ（アプリの中ではない）かどうか。 */
+export function isIosBrowser(): boolean {
+  if (typeof window === "undefined" || isIosAppShell()) return false;
+  const ua = navigator.userAgent;
+  return /iPhone|iPad|iPod/.test(ua) || (ua.includes("Macintosh") && navigator.maxTouchPoints > 1);
 }
 
 export function safeInAppPath(raw: string | null | undefined): string {
