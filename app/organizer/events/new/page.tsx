@@ -8,7 +8,6 @@ import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegis
 import type { Event, EventFormData } from "@/lib/events";
 import { eventToForm } from "@/lib/organizer-event-to-form";
 import { EVENT_TAGS } from "@/lib/db/types";
-import { DraftSaveButton } from "@/components/organizer/events/DraftSaveButtonWithHint";
 import { EventFormStepContent } from "@/components/organizer/events/EventFormStepContent";
 import { PassSettingsPcView } from "@/components/organizer/events/PassSettingsPcView";
 import {
@@ -92,6 +91,22 @@ function validateForm(data: EventFormData): FormErrors {
   return errors;
 }
 
+/** 足りない項目の呼び名（確認の段階の「あと◯つ」に出す） */
+const FIELD_LABEL: Partial<Record<keyof EventFormData, string>> = {
+  title: "イベント名",
+  description: "イベント概要",
+  organizerName: "主催者名",
+  date: "開催日",
+  startTime: "開始時刻",
+  endTime: "終了時刻",
+  location: "開催場所",
+  address: "住所",
+  prefecture: "都道府県",
+  recurrenceCount: "繰り返し回数",
+  endDate: "終了日",
+  price: "参加費",
+};
+
 /** 入力が足りない項目が、どのステップにあるか */
 const FIELD_STEP: Partial<Record<keyof EventFormData, Step>> = {
   title: 1,
@@ -128,7 +143,7 @@ function PcStepBar({
         <button
           type="button"
           onClick={onBack}
-          className="flex w-[9rem] shrink-0 items-center gap-1 text-left text-[11px] font-medium text-[#4a4844] hover:text-[#2B3A6B]"
+          className="flex w-[9rem] shrink-0 items-center gap-1 text-left text-[11px] font-medium text-[#4a4844] hover:text-[#173f2c]"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           <span className="truncate">{backLabel}</span>
@@ -167,7 +182,7 @@ function PcStepBar({
             className={[
               "min-w-[6rem] rounded-[8px] px-4 py-1.5 text-[11px] font-semibold transition",
               canPublish
-                ? "bg-[#2B3A6B] text-white hover:bg-[#243159]"
+                ? "bg-[#173f2c] text-white hover:bg-[#0e2a1d]"
                 : "cursor-not-allowed bg-[#ebe8e2] text-[#8a8680]",
             ].join(" ")}
           >
@@ -421,6 +436,25 @@ function NewEventPageContent() {
     setShowPassSettings(false);
     setCurrentStep(s);
   };
+  /** 足りない項目を押したとき：そのステップへ移って、入力欄までスクロールして選ぶ */
+  const goToField = (field: keyof EventFormData, step: Step) => {
+    if (publishDone) return;
+    setShowPassSettings(false);
+    setCurrentStep(step);
+    window.setTimeout(() => {
+      const root = formTopRef.current;
+      if (!root) return;
+      const el = Array.from(root.querySelectorAll<HTMLElement>(`[name="${String(field)}"]`)).find(
+        (n) => n.offsetParent !== null
+      );
+      if (!el) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus({ preventScroll: true });
+    }, 120);
+  };
   const goNext = () => {
     if (publishDone) return;
     setShowPassSettings(false);
@@ -461,8 +495,37 @@ function NewEventPageContent() {
   const missingList = (Object.entries(formErrors) as [keyof EventFormData, string][]).map(([field, message]) => ({
     field,
     message,
+    label: FIELD_LABEL[field] ?? message,
     step: FIELD_STEP[field] ?? 2,
   }));
+  const missingCount = missingList.length;
+  const missingRef = useRef<HTMLDivElement>(null);
+
+  /** 足りない項目のお知らせ（スマホは確認の段階のいちばん上、PC は右の列） */
+  const missingBox = (
+    <div className="rounded-[14px] border border-[#f3d3c2] bg-[#fff7f2] p-3">
+      <p className="flex items-center gap-1.5 text-[13.5px] font-bold text-[#a8481c]">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        あと{missingCount}つ入れると公開できます
+      </p>
+      <p className="mt-0.5 text-[11.5px] text-[#9a6a52]">押すと、その入力欄へ移ります。下書き保存はいつでもできます。</p>
+      <ul className="mt-2 flex flex-wrap gap-1.5">
+        {missingList.map((m) => (
+          <li key={m.field}>
+            <button
+              type="button"
+              onClick={() => goToField(m.field, m.step)}
+              title={m.message}
+              className="inline-flex min-h-[36px] items-center gap-1 rounded-full border border-[#f0c2aa] bg-white px-3 text-[12.5px] font-bold text-[#a8481c] active:bg-[#fff0e6]"
+            >
+              {m.label}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 
   return (
     <div
@@ -574,11 +637,16 @@ function NewEventPageContent() {
               </div>
             ) : (
             <div className="p-4 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden min-[900px]:p-0">
+              {missingRequired ? (
+                <div ref={missingRef} className="mb-4 scroll-mt-28 min-[900px]:hidden">
+                  {missingBox}
+                </div>
+              ) : null}
               {/* 基本情報確認 */}
               <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7">
                 <div className="mb-[10px] flex items-center justify-between">
                   <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">基本情報</span>
-                  <button type="button" onClick={() => goToStep(1)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#2B3A6B] hover:bg-[#f0f2f8]">編集</button>
+                  <button type="button" onClick={() => goToStep(1)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#173f2c] hover:bg-[#eef5f0]">編集</button>
                 </div>
                 {[
                   { label: "イベント名", val: form.title || null },
@@ -599,7 +667,7 @@ function NewEventPageContent() {
               <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7">
                 <div className="mb-[10px] flex items-center justify-between">
                   <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">開催情報</span>
-                  <button type="button" onClick={() => goToStep(2)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#2B3A6B] hover:bg-[#f0f2f8]">編集</button>
+                  <button type="button" onClick={() => goToStep(2)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#173f2c] hover:bg-[#eef5f0]">編集</button>
                 </div>
                 {[
                   { label: "開催日時", val: dateStr !== "—" ? dateStr : null },
@@ -626,7 +694,7 @@ function NewEventPageContent() {
                 ))}
                 <div className="mt-[20px] mb-[10px] flex items-center justify-between">
                   <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">詳細情報</span>
-                  <button type="button" onClick={() => goToStep(3)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#2B3A6B] hover:bg-[#f0f2f8]">編集</button>
+                  <button type="button" onClick={() => goToStep(3)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#173f2c] hover:bg-[#eef5f0]">編集</button>
                 </div>
                 {[
                   { label: "定員", val: form.capacity ? `${form.capacity}人` : "未設定（無制限）" },
@@ -644,28 +712,7 @@ function NewEventPageContent() {
               {/* 公開アクション */}
               <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:p-6 pb-20 min-[900px]:pb-7">
                 <div className="mb-[10px] text-[12px] font-[600] tracking-[.05em] text-[#888]">公開の確認</div>
-                {missingRequired && (
-                  <div className="mb-[16px] flex gap-[9px] rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] p-[14px]">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E8708A" strokeWidth="2" strokeLinecap="round" className="mt-[1px] shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-[600] leading-[1.6] text-[#c04060]">公開する前に、次の項目を入れてください</p>
-                      <ul className="mt-[6px] space-y-[4px]">
-                        {missingList.map((m) => (
-                          <li key={m.field} className="flex items-center justify-between gap-[8px] text-[12.5px] text-[#c04060]">
-                            <span className="min-w-0">・{m.message}</span>
-                            <button
-                              type="button"
-                              onClick={() => goToStep(m.step)}
-                              className="shrink-0 rounded-full border border-[#f2b8c4] bg-white px-[12px] py-[6px] text-[12px] font-[600] text-[#c04060]"
-                            >
-                              入力する
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
+                {missingRequired && <div className="mb-[16px] hidden min-[900px]:block">{missingBox}</div>}
                 <div className="mb-[16px] rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] p-[14px]">
                   <p className="mb-[8px] text-[13px] leading-[1.7] text-[#555]">
                     保存は下書きとして行われます。
@@ -673,7 +720,7 @@ function NewEventPageContent() {
                     下書きは「イベント管理」から編集できます。
                   </p>
                   <label className="flex cursor-pointer items-start gap-[6px]">
-                    <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="mt-[1px] h-[18px] w-[18px] shrink-0" style={{ accentColor: "#2B3A6B" }} />
+                    <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="mt-[1px] h-[18px] w-[18px] shrink-0" style={{ accentColor: "#173f2c" }} />
                     <span className="text-[13px] leading-[1.5] text-[#555]">掲載内容の責任を理解し、<Link href="/terms" target="_blank" className="text-[#c8a84b]">利用規約</Link>に同意する</span>
                   </label>
                 </div>
@@ -686,7 +733,7 @@ function NewEventPageContent() {
                     onClick={() => { if (!agreedToTerms) { showToast("error","利用規約への同意が必要です"); return; } if (missingRequired) { showToast("error","必須項目を入力してください"); return; } setShowPublishConfirm(true); }}
                     disabled={!!submitting}
                     className="w-full rounded-[9px] py-[12px] text-[14px] font-[600] text-white transition disabled:opacity-50 max-[899px]:hidden"
-                    style={{ background: !missingRequired && agreedToTerms ? "#6BBF3E" : "#bbb" }}
+                    style={{ background: !missingRequired && agreedToTerms ? "#2f7d4e" : "#bbb" }}
                   >
                     {submitting === "publish" ? "公開中…" : "公開する"}
                   </button>
@@ -718,56 +765,77 @@ function NewEventPageContent() {
       {/* ── Footer nav (mobile step 1–3) ── */}
       {currentStep < 4 && !showPassSettings && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#e8e6e0] bg-white/95 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] backdrop-blur min-[900px]:hidden">
-          <div className="mx-auto flex max-w-[680px] items-center justify-between gap-2">
-            <div className="shrink-0">
-              {currentStep > 1 ? (
-                <button
-                  type="button"
-                  onClick={goPrev}
-                  className="inline-flex h-11 items-center gap-0.5 rounded-[10px] border border-[#e8e6e0] bg-white px-3 text-[13px] font-[500]"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  戻る
-                </button>
-              ) : (
-                <span className="inline-block h-11 w-[4.5rem]" aria-hidden />
-              )}
-            </div>
-            <div className="flex min-w-0 flex-1 justify-center">
-              <DraftSaveButton
-                onClick={saveDraft}
-                submitting={submitting === "draft"}
-              />
-            </div>
-            <div className="shrink-0">
+          <div className="mx-auto flex max-w-[680px] items-center gap-2">
+            {/* 戻る（2ページ目から）・下書き保存は控えめに、「次へ」をいちばん目立たせる */}
+            {currentStep > 1 ? (
               <button
                 type="button"
-                onClick={goNext}
-                className="inline-flex h-11 max-w-full items-center gap-1 rounded-[10px] border-none bg-[#2B3A6B] px-4 text-[14px] font-[600] text-white"
+                onClick={goPrev}
+                aria-label="戻る"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] border border-[#e3ece5] bg-white text-[#2f4a3a]"
               >
-                <span className="truncate">{nextLabels[currentStep]}</span>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
-            </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={saveDraft}
+              disabled={submitting === "draft"}
+              className="flex h-12 shrink-0 flex-col items-center justify-center rounded-[14px] border border-[#e3ece5] bg-white px-3 text-[#2f4a3a] disabled:opacity-50"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+              <span className="mt-0.5 text-[10px] font-bold leading-none">{submitting === "draft" ? "保存中" : "下書き"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1 rounded-[14px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] px-4 text-[15px] font-bold text-[#f6ebc8] shadow-[0_4px_12px_rgba(14,42,29,0.22)]"
+            >
+              <span className="truncate">{nextLabels[currentStep]}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
         </div>
       )}
       {currentStep === 4 && !publishDone && (
-        <div className="fixed inset-x-0 bottom-0 z-30 flex gap-[8px] border-t border-[#e8e6e0] bg-white/95 px-4 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] backdrop-blur min-[900px]:hidden">
-          <button type="button" onClick={goPrev} className="flex items-center rounded-[10px] border border-[#e8e6e0] bg-white px-[18px] py-[11px] text-[13px] font-[500]">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-            戻る
-          </button>
-          <button
-            type="button"
-            onClick={() => { if (!agreedToTerms) { showToast("error","利用規約への同意が必要です"); return; } if (missingRequired) { showToast("error","必須項目を入力してください"); return; } setShowPublishConfirm(true); }}
-            disabled={!!submitting}
-            className="flex flex-1 items-center justify-center gap-[6px] rounded-[10px] py-[11px] text-[13px] font-[600] text-white disabled:opacity-50"
-            style={{ background: !missingRequired && agreedToTerms ? "#6BBF3E" : "#bbb" }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-            {submitting === "publish" ? "公開中…" : "公開する"}
-          </button>
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#e8e6e0] bg-white/95 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] backdrop-blur min-[900px]:hidden">
+          <div className="mx-auto flex max-w-[680px] items-center gap-2">
+            <button
+              type="button"
+              onClick={goPrev}
+              aria-label="戻る"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] border border-[#e3ece5] bg-white text-[#2f4a3a]"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            {missingRequired ? (
+              // 足りない項目があるときは、押すと上のお知らせへ（何が足りないか分かるように）
+              <button
+                type="button"
+                onClick={() => {
+                  missingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[14px] border border-[#f0c2aa] bg-[#fff7f2] px-3 text-[14px] font-bold text-[#a8481c]"
+              >
+                あと{missingCount}つ入れると公開できます
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { if (!agreedToTerms) { showToast("error","利用規約への同意が必要です"); return; } setShowPublishConfirm(true); }}
+                disabled={!!submitting}
+                className={[
+                  "flex h-12 min-w-0 flex-1 items-center justify-center gap-[6px] rounded-[14px] text-[15px] font-bold disabled:opacity-50",
+                  agreedToTerms
+                    ? "border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] text-[#f6ebc8] shadow-[0_4px_12px_rgba(14,42,29,0.22)]"
+                    : "border border-[#e3ece5] bg-[#eef1ec] text-[#7b877f]",
+                ].join(" ")}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {submitting === "publish" ? "公開中…" : agreedToTerms ? "公開する" : "同意して公開する"}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -785,7 +853,7 @@ function NewEventPageContent() {
                 onClick={() => { setShowPublishConfirm(false); publishEvent(); }}
                 disabled={submitting !== null}
                 className="flex-1 rounded-[10px] py-2 text-[13px] font-[600] text-white transition disabled:opacity-50"
-                style={{ background: "#6BBF3E" }}
+                style={{ background: "#2f7d4e" }}
               >
                 {submitting === "publish" ? "公開中..." : "公開する"}
               </button>

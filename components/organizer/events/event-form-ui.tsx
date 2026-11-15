@@ -15,10 +15,10 @@ import {
 export type EventFormStep = 1 | 2 | 3 | 4;
 
 export const eventFormInp =
-  "box-border block w-full max-w-full min-w-0 rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[14px] py-[10px] min-[900px]:py-2 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
+  "box-border block w-full max-w-full min-w-0 rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[14px] py-[10px] min-[900px]:py-2 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#173f2c] focus:bg-white";
 export const eventFormInpErr = "!border-[#E8708A]";
 export const eventFormInpSm =
-  "box-border block w-full max-w-full min-w-0 rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-3 py-2 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
+  "box-border block w-full max-w-full min-w-0 rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-3 py-2 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#173f2c] focus:bg-white";
 export const eventFormFieldSubLbl = "mb-1.5 text-[11px] text-[#888]";
 export const eventFormDateTimeStack = "min-w-0 space-y-3";
 export const eventFormDateTimeRow =
@@ -27,7 +27,7 @@ export const eventFormStackedFields = "min-w-0 space-y-3.5";
 export const eventFormFieldM = "mb-2 min-w-0 min-[900px]:mb-2.5";
 export const eventFormPcSectionHead =
   "hidden min-[900px]:block mb-2.5 pb-2 border-b border-[#e8e6e0]";
-export const eventFormPcSectionTitle = "text-[14px] font-semibold text-[#2B3A6B] mb-0.5";
+export const eventFormPcSectionTitle = "text-[14px] font-semibold text-[#173f2c] mb-0.5";
 export const eventFormPcSectionSub = "text-[11.5px] text-[#5c5a54]";
 export const eventFormPcFieldStack = "hidden min-[900px]:block space-y-2";
 
@@ -203,16 +203,16 @@ function EventFormTagPill({
       onClick={onToggle}
       className="flex items-center gap-[5px] rounded-full border px-[12px] py-[6px] text-[12px] transition min-[900px]:px-2.5 min-[900px]:py-1 min-[900px]:text-[11.5px]"
       style={{
-        background: on ? "#EEF2FF" : "#fff",
-        borderColor: on ? "#2B3A6B" : "#e8e6e0",
-        color: on ? "#2B3A6B" : "#1a1a1a",
+        background: on ? "#eef5f0" : "#fff",
+        borderColor: on ? "#173f2c" : "#e8e6e0",
+        color: on ? "#173f2c" : "#1a1a1a",
       }}
     >
       <div
         className="flex h-[12px] w-[12px] shrink-0 items-center justify-center rounded-[3px] border-[1.5px]"
         style={{
-          borderColor: on ? "#2B3A6B" : "#888",
-          background: on ? "#2B3A6B" : "transparent",
+          borderColor: on ? "#173f2c" : "#888",
+          background: on ? "#173f2c" : "transparent",
           opacity: on ? 1 : 0.5,
         }}
       >
@@ -300,15 +300,15 @@ export function EventFormStepIndicator({
         const isUpcoming = !isDone && !isActive;
 
         const circleClass = isDone
-          ? "border-transparent bg-[#6BBF3E] text-white"
+          ? "border-transparent bg-[#2f7d4e] text-white"
           : isActive
-            ? "border-transparent bg-[#2B3A6B] text-white shadow-[0_0_0_3px_rgba(43,58,107,0.14)]"
+            ? "border-transparent bg-[#173f2c] text-white shadow-[0_0_0_3px_rgba(23,63,44,0.16)]"
             : "border-[#c8c4bc] bg-white text-[#5c5a54]";
 
         const labelClass = isDone
           ? "font-semibold text-[#3d8a24]"
           : isActive
-            ? "font-semibold text-[#2B3A6B]"
+            ? "font-semibold text-[#173f2c]"
             : "font-medium text-[#5c5a54]";
 
         return (
@@ -318,7 +318,7 @@ export function EventFormStepIndicator({
               onClick={() => onGo(n)}
               className={[
                 "flex shrink-0 cursor-pointer items-center gap-[3px] rounded-full transition-colors min-[900px]:gap-2 min-[900px]:px-2 min-[900px]:py-1",
-                isActive ? "min-[900px]:bg-[#EEF2FF]" : "hover:bg-[#f5f4f0]",
+                isActive ? "min-[900px]:bg-[#eef5f0]" : "hover:bg-[#f5f4f0]",
                 "flex-col min-[900px]:flex-row",
               ].join(" ")}
             >
@@ -372,7 +372,7 @@ export function EventFormStepIndicator({
               <div
                 className={[
                   "mx-1 h-[2px] flex-1 min-[900px]:mx-3 min-[900px]:h-[2px]",
-                  current > n ? "bg-[#6BBF3E]" : "bg-[#d8d4cc]",
+                  current > n ? "bg-[#2f7d4e]" : "bg-[#d8d4cc]",
                 ].join(" ")}
               />
             )}
@@ -410,15 +410,15 @@ export function EventFormPcStepIndicator({
         const isUpcoming = !isDone && !isActive;
 
         const circleClass = isDone
-          ? "border-transparent bg-[#6BBF3E] text-white"
+          ? "border-transparent bg-[#2f7d4e] text-white"
           : isActive
-            ? "border-transparent bg-[#2B3A6B] text-white shadow-[0_0_0_3px_rgba(43,58,107,0.14)]"
+            ? "border-transparent bg-[#173f2c] text-white shadow-[0_0_0_3px_rgba(23,63,44,0.16)]"
             : "border-[#c8c4bc] bg-white text-[#5c5a54]";
 
         const labelClass = isDone
           ? "font-semibold text-[#3d8a24]"
           : isActive
-            ? "font-semibold text-[#2B3A6B]"
+            ? "font-semibold text-[#173f2c]"
             : "font-medium text-[#5c5a54]";
 
         return (
@@ -428,7 +428,7 @@ export function EventFormPcStepIndicator({
                 aria-hidden
                 className={[
                   "h-0.5 w-6 shrink-0 rounded-full sm:w-8",
-                  current > n - 1 ? "bg-[#6BBF3E]" : "bg-[#d8d4cc]",
+                  current > n - 1 ? "bg-[#2f7d4e]" : "bg-[#d8d4cc]",
                 ].join(" ")}
               />
             )}
@@ -437,7 +437,7 @@ export function EventFormPcStepIndicator({
               onClick={() => onGo(n)}
               className={[
                 "flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-2 py-0.5 transition-colors",
-                isActive ? "bg-[#EEF2FF]" : "hover:bg-[#f5f4f0]",
+                isActive ? "bg-[#eef5f0]" : "hover:bg-[#f5f4f0]",
               ].join(" ")}
             >
               <div
@@ -550,13 +550,13 @@ export function EventFormSidePanel({
         <div className="rounded-[10px] border border-[#e8e6e0] bg-white p-2.5 shadow-sm">
           <div className="mb-2 flex items-center text-[12px] font-semibold text-[#1a1a1a]">
             入力の進捗
-            <span className="ml-auto tabular-nums text-[#2B3A6B]">
+            <span className="ml-auto tabular-nums text-[#173f2c]">
               {filled}/{prog.length}
             </span>
           </div>
           <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-[#f0eeea]">
             <div
-              className="h-full rounded-full bg-[#6BBF3E] transition-all duration-500"
+              className="h-full rounded-full bg-[#2f7d4e] transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -568,7 +568,7 @@ export function EventFormSidePanel({
               >
                 <div
                   className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                  style={{ background: done ? "#6BBF3E" : "#E8708A" }}
+                  style={{ background: done ? "#2f7d4e" : "#E8708A" }}
                   aria-hidden
                 >
                   {done ? "✓" : "!"}
@@ -622,7 +622,7 @@ export function EventFormSidePanel({
         <button
           type="button"
           onClick={onNext}
-          className="flex w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#2B3A6B] px-3 py-1.5 text-[12.5px] font-semibold text-white hover:bg-[#243159]"
+          className="flex w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#173f2c] px-3 py-1.5 text-[12.5px] font-semibold text-white hover:bg-[#0e2a1d]"
         >
           {nextLabel}
           <svg
@@ -641,5 +641,51 @@ export function EventFormSidePanel({
         <p className="text-center text-[10.5px] text-[#888]">STEP {currentStep} / 4</p>
       </div>
     </aside>
+  );
+}
+
+/**
+ * 日付・時刻の入力欄（スマホで見やすく）。
+ * iPhone の type=date/time は、空のとき中身のない白い箱になり、幅も枠からはみ出すことがある。
+ * 空のときは「日付を選ぶ」などの文字を重ね、右にアイコンを出す。押すと端末の選ぶ画面が開く。
+ */
+export function EventFormPickerInput({
+  type,
+  className,
+  placeholder,
+  ...rest
+}: Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
+  type: "date" | "time";
+  placeholder?: string;
+}) {
+  const empty = !rest.value;
+  const label = placeholder ?? (type === "date" ? "日付を選ぶ" : "時刻を選ぶ");
+  return (
+    <div className="mg-picker relative min-w-0" data-empty={empty ? "true" : undefined}>
+      <input type={type} {...rest} className={`${className ?? ""} mg-picker-input pr-9`} />
+      {empty ? (
+        <span
+          className="mg-picker-placeholder pointer-events-none absolute inset-y-0 left-3 flex items-center text-[14px] text-[#9aa49d] min-[900px]:hidden"
+          aria-hidden
+        >
+          {label}
+        </span>
+      ) : null}
+      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#5f6d64] min-[900px]:hidden" aria-hidden>
+        {type === "date" ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="12" cy="12" r="9" />
+            <polyline points="12 7 12 12 15 14" />
+          </svg>
+        )}
+      </span>
+    </div>
   );
 }

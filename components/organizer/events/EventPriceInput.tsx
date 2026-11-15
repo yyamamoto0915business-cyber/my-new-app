@@ -86,7 +86,7 @@ export function EventPriceInput({
               }
               className={`min-h-9 rounded-full border px-3 py-1.5 text-[12.5px] transition ${
                 pressed
-                  ? "border-[#2B3A6B] bg-[#eef0f6] font-semibold text-[#2B3A6B]"
+                  ? "border-[#173f2c] bg-[#eef0f6] font-semibold text-[#173f2c]"
                   : "border-[#e8e6e0] bg-white text-[#1a1a1a] hover:border-[#cfcbc2]"
               }`}
             >

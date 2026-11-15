@@ -89,7 +89,7 @@ export function EventGalleryImagesInput({ urls, onChange, compact = false }: Pro
           </span>
         </p>
         {uploading ? (
-          <p className="text-[10.5px] font-medium text-[#2B3A6B]">アップロード中…</p>
+          <p className="text-[10.5px] font-medium text-[#173f2c]">アップロード中…</p>
         ) : null}
       </div>
 
@@ -113,7 +113,7 @@ export function EventGalleryImagesInput({ urls, onChange, compact = false }: Pro
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className={`${tileCls} flex items-center justify-center border-dashed border-[#d8d4cc] bg-[#fafaf8] text-[18px] text-[#8c8a84] transition hover:border-[#2B3A6B] hover:text-[#2B3A6B] disabled:opacity-50`}
+            className={`${tileCls} flex items-center justify-center border-dashed border-[#d8d4cc] bg-[#fafaf8] text-[18px] text-[#8c8a84] transition hover:border-[#173f2c] hover:text-[#173f2c] disabled:opacity-50`}
             aria-label="画像を追加"
           >
             ＋
