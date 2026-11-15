@@ -47,6 +47,7 @@ import {
   type QuizGate,
 } from "@/lib/organizer/quiz-play";
 import { missionAwardPoints, normalizeMissionDone, readStoredMission } from "@/lib/organizer/mission-play";
+import { MISSION_TEXT_MAX } from "@/lib/organizer/mission";
 import { normalizePhotoDone, readStoredPhoto } from "@/lib/organizer/photo-play";
 import { normalizeCouponDone, readStoredCoupon } from "@/lib/organizer/coupon-play";
 import { normalizeCheckinDone, readStoredCheckin } from "@/lib/organizer/checkin-play";
@@ -96,6 +97,7 @@ type PlayerRow = {
   quiz_cleared_at?: string | null;
   coupon_code?: string | null;
   mission_photos?: Record<string, { path?: string; url?: string; at: string }> | null;
+  mission_texts?: Record<string, { text: string; at: string }> | null;
   mission_pairs?: Record<string, { hash: string; at: string }> | null;
 };
 
@@ -1458,12 +1460,29 @@ export async function completePlayMission(
     }
   }
 
+  // 「文字で送る」は、送った文字を残して達成にする（主催者が一覧で見る）。
+  let texts: Record<string, { text: string; at: string }> | null = null;
+  if (mission.kind === "text") {
+    const text = keywordRaw.replace(/\r\n?/g, "\n").trim();
+    if (!text) return { ok: false, status: 400, error: "文字を入れてください" };
+    if (text.length > MISSION_TEXT_MAX) {
+      return { ok: false, status: 400, error: `${MISSION_TEXT_MAX}文字までで送ってください` };
+    }
+    texts = { ...(player.mission_texts ?? {}), [String(mission.index)]: { text, at: new Date().toISOString() } };
+  }
+
   const nextDone = [...done, mission.index].sort((left, right) => left - right);
   const { error } = await db
     .from("organizer_game_players")
-    .update({ mission_done: nextDone, last_seen_at: new Date().toISOString() })
+    .update({ mission_done: nextDone, ...(texts ? { mission_texts: texts } : {}), last_seen_at: new Date().toISOString() })
     .eq("id", player.id);
-  if (error) throw error;
+  if (error) {
+    if (texts && /mission_texts/.test(error.message)) {
+      console.error("mission_texts column missing:", error.message);
+      return { ok: false, status: 503, error: "まだ文字を受け取る準備ができていません" };
+    }
+    throw error;
+  }
 
   return {
     ok: true,
@@ -1735,6 +1754,50 @@ export async function uploadPlayPhotoSpot(
   }
   if (error) throw error;
   return { ok: true, progress: await loadProgress(db, { ...player, photo_done: nextDone, mission_photos: photos }, userId) };
+}
+
+export type OrganizerMissionText = { playerId: string; nickname: string; missionIndex: number; missionName: string; text: string; at: string };
+
+/** 主催者が見る、ミッションの「文字で送る」で届いた文字（新しい順）。 */
+export async function listOrganizerMissionTexts(
+  supabase: SupabaseClient,
+  gameId: string,
+): Promise<{ enabled: boolean; ready: boolean; texts: OrganizerMissionText[] }> {
+  const { data: gameRow } = await supabase.from("organizer_games").select("type, settings").eq("id", gameId).maybeSingle();
+  const row = gameRow as { type?: string; settings?: unknown } | null;
+  if (row?.type !== "mission") return { enabled: false, ready: true, texts: [] };
+  const stored = readStoredMission(row.settings);
+  if (!stored?.missions.some((mission) => mission.kind === "text")) return { enabled: false, ready: true, texts: [] };
+  const names = new Map(stored.missions.map((mission) => [mission.index, mission.name]));
+  const { data, error } = await supabase
+    .from("organizer_game_players")
+    .select("id, nickname, mission_texts")
+    .eq("game_id", gameId);
+  if (error) {
+    if (/mission_texts/.test(error.message)) return { enabled: true, ready: false, texts: [] };
+    throw error;
+  }
+  const texts: OrganizerMissionText[] = [];
+  for (const player of (data ?? []) as {
+    id: string;
+    nickname: string;
+    mission_texts?: Record<string, { text?: unknown; at?: unknown }> | null;
+  }[]) {
+    for (const [key, item] of Object.entries(player.mission_texts ?? {})) {
+      const index = Number(key);
+      if (!Number.isInteger(index) || typeof item?.text !== "string" || !item.text) continue;
+      texts.push({
+        playerId: player.id,
+        nickname: player.nickname,
+        missionIndex: index,
+        missionName: names.get(index) ?? `ミッション ${index + 1}`,
+        text: item.text,
+        at: typeof item.at === "string" ? item.at : "",
+      });
+    }
+  }
+  texts.sort((a, b) => b.at.localeCompare(a.at));
+  return { enabled: true, ready: true, texts };
 }
 
 export type OrganizerMissionPhoto = { playerId: string; nickname: string; missionIndex: number; missionName: string; url: string; at: string };

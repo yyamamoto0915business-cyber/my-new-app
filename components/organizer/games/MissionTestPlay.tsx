@@ -25,6 +25,7 @@ function actionLabel(kind: MissionItem["kind"]): string {
   if (kind === "checkin") return "チェックインする";
   if (kind === "quiz") return "答えた";
   if (kind === "friends") return "一緒に参加した";
+  if (kind === "text") return "送る";
   return "着いた";
 }
 
@@ -144,6 +145,22 @@ export function MissionTestPlay({
               {note ? <p className="game-test__note">{note}</p> : null}
               <button type="button" className="play-start__go" onClick={tryKeyword}>
                 答える
+              </button>
+            </>
+          ) : active.kind === "text" ? (
+            <>
+              {active.question ? <p style={{ margin: "0.4rem 0 0", fontWeight: 800 }}>{active.question}</p> : null}
+              <textarea
+                className="game-test__field"
+                value={keyword}
+                rows={4}
+                maxLength={400}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder="ここに書いて送ってください"
+                aria-label={active.question || active.name}
+              />
+              <button type="button" className="play-start__go" disabled={!keyword.trim()} onClick={() => complete(active.key)}>
+                送る（試しなので残りません）
               </button>
             </>
           ) : (

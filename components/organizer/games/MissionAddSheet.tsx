@@ -11,7 +11,7 @@ import { MISSION_KINDS, type MissionKindId } from "@/lib/organizer/mission";
 const GROUPS: { label: string; color: string; kinds: MissionKindId[] }[] = [
   { label: "行く", color: "#2f7d4e", kinds: ["visit", "checkin", "keyword"] },
   { label: "答える", color: "#a26a10", kinds: ["quiz"] },
-  { label: "集める", color: "#2f6fae", kinds: ["photo", "friends"] },
+  { label: "集める", color: "#2f6fae", kinds: ["photo", "text", "friends"] },
 ];
 
 /** 部品の短い説明（カードの2行目） */
@@ -21,6 +21,7 @@ const SHORT: Record<MissionKindId, string> = {
   keyword: "見つけた合言葉を入れる",
   quiz: "正解したら達成",
   photo: "撮って投稿する",
+  text: "アイデア・感想",
   friends: "友だちと一緒に参加",
 };
 

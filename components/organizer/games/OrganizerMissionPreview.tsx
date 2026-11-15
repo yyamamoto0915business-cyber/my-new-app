@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Camera, CircleHelp, Flag, KeyRound, MapPin, Smartphone, Tablet, Users, type LucideIcon } from "lucide-react";
+import { Camera, CircleHelp, Flag, KeyRound, MapPin, MessageSquareText, Smartphone, Tablet, Users, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   MISSION_TIPS,
@@ -17,6 +17,7 @@ const KIND_ICONS: Record<MissionKindId, LucideIcon> = {
   checkin: Flag,
   quiz: CircleHelp,
   friends: Users,
+  text: MessageSquareText,
 };
 
 type Props = {

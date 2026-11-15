@@ -24,6 +24,7 @@ import {
   Trash2,
   Trophy,
   Users,
+  MessageSquareText,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,7 @@ const KIND_ICONS: Record<MissionKindId, LucideIcon> = {
   checkin: Flag,
   quiz: CircleHelp,
   friends: Users,
+  text: MessageSquareText,
 };
 
 const REWARD_OPTIONS: { id: "coupon" | "points" | "stamp"; label: string; blurb: string }[] = [
@@ -133,6 +135,7 @@ function missionTodo(mission: MissionItem): string | null {
   if (mission.kind === "quiz" && (!mission.question.trim() || mission.choices.filter((choice) => choice.trim()).length < 2)) {
     return "問題が未入力";
   }
+  if (mission.kind === "text" && !mission.question.trim()) return "お題が未入力";
   return null;
 }
 
@@ -461,6 +464,23 @@ export function OrganizerMissionCreateForm() {
                   <p style={{ margin: 0, padding: "0.6rem 0.7rem", borderRadius: "0.7rem", background: "#f8fcf9", border: "1px dashed #cfe3d6", fontSize: "0.75rem", color: "#3c4a40", lineHeight: 1.6 }}>
                     参加者が写真を撮って送ると達成になります。届いた写真は、公開後のゲーム管理画面の「届いた写真」で見られます。
                   </p>
+                ) : null}
+                {editing.kind === "text" ? (
+                  <>
+                    <label>
+                      お題
+                      <textarea
+                        value={editing.question}
+                        maxLength={120}
+                        rows={2}
+                        placeholder="例：このまちで好きな場所と、その理由を教えてください"
+                        onChange={(e) => updateMission(editing.key, { question: e.target.value })}
+                      />
+                    </label>
+                    <p style={{ margin: 0, padding: "0.6rem 0.7rem", borderRadius: "0.7rem", background: "#f8fcf9", border: "1px dashed #cfe3d6", fontSize: "0.75rem", color: "#3c4a40", lineHeight: 1.6 }}>
+                      参加者がお題に答えて送ると達成になります（400文字まで）。届いた文字は、公開後のゲーム管理画面の「届いた文字」で見られ、CSV で保存できます。
+                    </p>
+                  </>
                 ) : null}
                 {editing.kind === "quiz" ? (
                   <MissionQuizFields

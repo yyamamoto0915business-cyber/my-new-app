@@ -15632,7 +15632,8 @@ a.org-games__card:hover {
 }
 
 .org-mission__editor input,
-.org-mission__editor select {
+.org-mission__editor select,
+.org-mission__editor textarea {
   border-radius: 0.7rem;
   border: 1px solid #d5e2d8;
   padding: 0.45rem 0.6rem;
