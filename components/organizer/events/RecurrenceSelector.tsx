@@ -1,5 +1,6 @@
 "use client";
 
+import { EventFormPickerInput } from "@/components/organizer/events/event-form-ui";
 import { useState } from "react";
 
 import {
@@ -96,7 +97,7 @@ export function RecurrenceSelector({
                 "min-h-[40px] rounded-[8px] px-1 text-center transition min-[900px]:min-h-0",
                 compact ? "py-1.5" : "py-2",
                 selected
-                  ? "bg-[#2B3A6B] text-white shadow-sm"
+                  ? "bg-[#173f2c] text-white shadow-sm"
                   : "text-[#5c5a54] hover:bg-[#f5f4f0]",
               ].join(" ")}
             >
@@ -129,16 +130,19 @@ export function RecurrenceSelector({
             終了日
             <span className="ml-1 text-[10px] font-semibold text-[#c8a84b]">必須</span>
           </label>
-          <input
+          <div className="min-w-0 flex-1">
+          <EventFormPickerInput
             id="eventEndDate"
+            name="endDate"
             type="date"
             value={endDate ?? ""}
             min={startDate || undefined}
             onChange={(e) => onEndDateChange?.(e.target.value || null)}
-            className={`min-w-0 flex-1 rounded-[8px] border bg-white px-2 py-1.5 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B] ${
+            className={`w-full rounded-[8px] border bg-white px-2 py-1.5 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#173f2c] ${
               endDateError ? "border-[#e05060]" : "border-[#e8e6e0]"
             }`}
           />
+          </div>
           {endDateError ? (
             <p className="w-full text-[11px] text-[#e05060]">{endDateError}</p>
           ) : (
@@ -163,7 +167,7 @@ export function RecurrenceSelector({
             id="recurrenceCount"
             value={effectiveCount}
             onChange={(e) => onCountChange(Number(e.target.value))}
-            className="min-w-0 flex-1 rounded-[8px] border border-[#e8e6e0] bg-white px-2 py-1.5 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B]"
+            className="min-w-0 flex-1 rounded-[8px] border border-[#e8e6e0] bg-white px-2 py-1.5 text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#173f2c]"
           >
             {RECURRENCE_COUNT_OPTIONS.map((n) => (
               <option key={n} value={n}>

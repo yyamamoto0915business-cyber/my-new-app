@@ -17,7 +17,7 @@ type Props = {
 };
 
 const btnClass =
-  "inline-flex min-h-[34px] w-full items-center justify-center gap-1.5 rounded-[9px] border border-[#d0ccc4] bg-white px-2.5 text-[12px] font-medium text-[#1a1a1a] shadow-sm transition hover:border-[#2B3A6B] hover:bg-[#f5f4f0] disabled:opacity-50 min-[900px]:min-h-[40px] min-[900px]:gap-2 min-[900px]:rounded-[10px] min-[900px]:px-3 min-[900px]:text-[13px]";
+  "inline-flex min-h-[34px] w-full items-center justify-center gap-1.5 rounded-[9px] border border-[#d0ccc4] bg-white px-2.5 text-[12px] font-medium text-[#1a1a1a] shadow-sm transition hover:border-[#173f2c] hover:bg-[#f5f4f0] disabled:opacity-50 min-[900px]:min-h-[40px] min-[900px]:gap-2 min-[900px]:rounded-[10px] min-[900px]:px-3 min-[900px]:text-[13px]";
 
 /** イベントのアイキャッチ画像入力。URL入力に加えて、ファイル/写真からアップロード可能。 */
 export function EventImageInput({
@@ -124,7 +124,7 @@ export function EventImageInput({
   const statusLines = (
     <>
       {uploading && (
-        <p className="rounded-[8px] bg-[#EEF2FF] px-3 py-2 text-[12px] font-medium text-[#2B3A6B]">
+        <p className="rounded-[8px] bg-[#eef5f0] px-3 py-2 text-[12px] font-medium text-[#173f2c]">
           アップロード中…
         </p>
       )}
@@ -183,7 +183,7 @@ export function EventImageInput({
                 type="button"
                 onClick={openGallery}
                 disabled={uploading}
-                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#2B3A6B] px-3 text-[12px] font-medium text-white transition hover:bg-[#243159] disabled:opacity-50"
+                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[#173f2c] px-3 text-[12px] font-medium text-white transition hover:bg-[#0e2a1d] disabled:opacity-50"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
                   <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -196,7 +196,7 @@ export function EventImageInput({
                 type="button"
                 onClick={openCamera}
                 disabled={uploading}
-                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#d0ccc4] bg-white px-2.5 text-[12px] font-medium text-[#1a1a1a] transition hover:border-[#2B3A6B] hover:bg-[#f5f4f0] disabled:opacity-50"
+                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#d0ccc4] bg-white px-2.5 text-[12px] font-medium text-[#1a1a1a] transition hover:border-[#173f2c] hover:bg-[#f5f4f0] disabled:opacity-50"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
                   <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
@@ -265,7 +265,7 @@ export function EventImageInput({
             value={url}
             onChange={handleUrlChange}
             placeholder="https://example.com/image.jpg"
-            className="w-full rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-3 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#aaa] outline-none transition focus:border-[#2B3A6B] focus:bg-white"
+            className="w-full rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-3 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#aaa] outline-none transition focus:border-[#173f2c] focus:bg-white"
           />
         </div>
       </details>

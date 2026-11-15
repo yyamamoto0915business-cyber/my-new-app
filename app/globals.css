@@ -38934,3 +38934,40 @@ button.mg-album-place {
     gap: 12px;
   }
 }
+
+/*
+ * イベントの作成・編集（スマホ）：日付・時刻の入力欄。
+ * iPhone Safari の type=date/time は、中身のない白い箱になり、横にはみ出すことがある。
+ */
+@media (max-width: 899px) {
+  .mg-picker-input {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 44px;
+    text-align: left;
+  }
+  .mg-picker-input::-webkit-date-and-time-value {
+    text-align: left;
+    margin: 0;
+  }
+  .mg-picker-input::-webkit-calendar-picker-indicator {
+    opacity: 0;
+  }
+  /* 空のときは端末の「年/月/日」などを隠し、重ねた「日付を選ぶ」を見せる */
+  .mg-picker[data-empty="true"] .mg-picker-input {
+    color: transparent;
+  }
+  .mg-picker[data-empty="true"] .mg-picker-input:focus {
+    color: #1a1a1a;
+  }
+}
+@media (max-width: 899px) {
+  /* 選んでいる間は、重ねた「日付を選ぶ」を消す */
+  .mg-picker-input:focus ~ .mg-picker-placeholder {
+    display: none;
+  }
+}

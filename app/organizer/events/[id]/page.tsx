@@ -118,7 +118,7 @@ function EditPcStepBar({
         <button
           type="button"
           onClick={onBack}
-          className="flex w-[9rem] shrink-0 items-center gap-1 text-left text-[11px] font-medium text-[#4a4844] hover:text-[#2B3A6B]"
+          className="flex w-[9rem] shrink-0 items-center gap-1 text-left text-[11px] font-medium text-[#4a4844] hover:text-[#173f2c]"
         >
           <svg
             width="12"
@@ -159,7 +159,7 @@ function EditPcStepBar({
             type="button"
             onClick={onSave}
             disabled={submitting}
-            className="min-w-[6rem] rounded-[8px] bg-[#2B3A6B] px-4 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#243159] disabled:opacity-50"
+            className="min-w-[6rem] rounded-[8px] bg-[#173f2c] px-4 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#0e2a1d] disabled:opacity-50"
           >
             {submitting ? "保存中…" : "変更を保存"}
           </button>
@@ -423,7 +423,7 @@ export default function EditEventPage() {
             type="button"
             onClick={saveChanges}
             disabled={submitting}
-            className="shrink-0 rounded-[8px] bg-[#2B3A6B] px-2.5 py-1 text-[11px] font-[500] text-white disabled:opacity-50"
+            className="shrink-0 rounded-[8px] bg-[#173f2c] px-2.5 py-1 text-[11px] font-[500] text-white disabled:opacity-50"
           >
             {submitting ? "保存中…" : "保存"}
           </button>
@@ -566,7 +566,7 @@ export default function EditEventPage() {
                   <button
                     type="button"
                     onClick={() => goToStep(1)}
-                    className="text-[12px] font-[500] text-[#2B3A6B]"
+                    className="text-[12px] font-[500] text-[#173f2c]"
                   >
                     編集
                   </button>
@@ -610,7 +610,7 @@ export default function EditEventPage() {
                   <button
                     type="button"
                     onClick={() => goToStep(2)}
-                    className="text-[12px] font-[500] text-[#2B3A6B]"
+                    className="text-[12px] font-[500] text-[#173f2c]"
                   >
                     編集
                   </button>
@@ -663,7 +663,7 @@ export default function EditEventPage() {
                   <button
                     type="button"
                     onClick={() => goToStep(3)}
-                    className="text-[12px] font-[500] text-[#2B3A6B]"
+                    className="text-[12px] font-[500] text-[#173f2c]"
                   >
                     編集
                   </button>
@@ -739,7 +739,7 @@ export default function EditEventPage() {
                     type="button"
                     onClick={saveChanges}
                     disabled={submitting || missingRequired}
-                    className="w-full rounded-[9px] bg-[#2B3A6B] py-[12px] text-[14px] font-[600] text-white transition hover:bg-[#243159] disabled:opacity-50"
+                    className="w-full rounded-[9px] bg-[#173f2c] py-[12px] text-[14px] font-[600] text-white transition hover:bg-[#0e2a1d] disabled:opacity-50"
                   >
                     {submitting ? "保存中…" : "変更を保存"}
                   </button>
@@ -829,7 +829,7 @@ export default function EditEventPage() {
           <button
             type="button"
             onClick={goNext}
-            className="flex items-center gap-1 rounded-[9px] border-none bg-[#2B3A6B] px-4 py-2 text-[13px] font-[600] text-white min-[900px]:gap-[6px] min-[900px]:px-6 min-[900px]:py-[9px]"
+            className="flex items-center gap-1 rounded-[9px] border-none bg-[#173f2c] px-4 py-2 text-[13px] font-[600] text-white min-[900px]:gap-[6px] min-[900px]:px-6 min-[900px]:py-[9px]"
           >
             {nextLabels[currentStep]}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -850,7 +850,7 @@ export default function EditEventPage() {
             type="button"
             onClick={saveChanges}
             disabled={submitting || missingRequired}
-            className="flex flex-1 items-center justify-center gap-[6px] rounded-[10px] bg-[#2B3A6B] py-[11px] text-[13px] font-[600] text-white disabled:opacity-50"
+            className="flex flex-1 items-center justify-center gap-[6px] rounded-[10px] bg-[#173f2c] py-[11px] text-[13px] font-[600] text-white disabled:opacity-50"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
             {submitting ? "保存中…" : "変更を保存"}

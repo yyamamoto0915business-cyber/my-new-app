@@ -82,7 +82,7 @@ export function EventQuestionsEditor({ value, onChange, inputClassName }: Props)
                       options: type === "select" ? (q.options?.length ? q.options : ["", ""]) : undefined,
                     })
                   }
-                  className={`px-2.5 py-1 font-semibold ${q.type === type ? "bg-[#2B3A6B] text-white" : "bg-white text-[#5c5a54]"}`}
+                  className={`px-2.5 py-1 font-semibold ${q.type === type ? "bg-[#173f2c] text-white" : "bg-white text-[#5c5a54]"}`}
                 >
                   {label}
                 </button>
@@ -127,7 +127,7 @@ export function EventQuestionsEditor({ value, onChange, inputClassName }: Props)
                 <button
                   type="button"
                   onClick={() => update(q.id, { options: [...(q.options ?? []), ""] })}
-                  className="text-[12px] font-semibold text-[#2B3A6B]"
+                  className="text-[12px] font-semibold text-[#173f2c]"
                 >
                   ＋ 選択肢を足す
                 </button>
@@ -145,7 +145,7 @@ export function EventQuestionsEditor({ value, onChange, inputClassName }: Props)
                 key={p.label}
                 type="button"
                 onClick={() => add(p)}
-                className="min-h-[34px] rounded-full border border-[#e0ddd5] bg-white px-3 py-1.5 text-[12px] text-[#5c5a54] hover:border-[#2B3A6B] min-[900px]:min-h-0 min-[900px]:px-2.5 min-[900px]:py-1 min-[900px]:text-[11.5px]"
+                className="min-h-[34px] rounded-full border border-[#e0ddd5] bg-white px-3 py-1.5 text-[12px] text-[#5c5a54] hover:border-[#173f2c] min-[900px]:min-h-0 min-[900px]:px-2.5 min-[900px]:py-1 min-[900px]:text-[11.5px]"
               >
                 ＋ {p.label.length > 16 ? `${p.label.slice(0, 16)}…` : p.label}
               </button>
@@ -154,7 +154,7 @@ export function EventQuestionsEditor({ value, onChange, inputClassName }: Props)
           <button
             type="button"
             onClick={() => add({ label: "", type: "text", required: false })}
-            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-[#c9c5bb] px-3 py-1.5 text-[12.5px] font-semibold text-[#2B3A6B]"
+            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-[#c9c5bb] px-3 py-1.5 text-[12.5px] font-semibold text-[#173f2c]"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             質問を足す（あと{EVENT_QUESTION_MAX - value.length}つ）
