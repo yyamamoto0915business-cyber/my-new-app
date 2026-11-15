@@ -1,31 +1,34 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   CalendarDays,
+  ChevronRight,
+  Heart,
+  Plus,
+  Search,
   ChevronDown,
   ExternalLink,
-  Heart,
   LayoutGrid,
   MoreHorizontal,
   PenLine,
-  Plus,
-  Search,
+  X,
   Store,
   Truck,
-  X,
   type LucideIcon,
-  Sparkles,
+  Archive,
+  ArrowLeft,
 } from "lucide-react";
-import type { DashboardEvent, DashboardResponse } from "@/app/api/organizer/dashboard/route";
+import type { BillingSummary, DashboardEvent, DashboardResponse } from "@/app/api/organizer/dashboard/route";
 import type { RecruitmentDashboardResponse } from "@/app/api/organizer/recruitments-dashboard/route";
 import type { StoreRecord } from "@/lib/stores/types";
 import { EventThumbnail } from "@/components/event-thumbnail";
 import { cn } from "@/lib/utils";
 import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
 import { EventDateTile, eventTiming, todayJst } from "@/components/organizer/mobile/event-date";
+import { EventActionsSheet } from "@/components/organizer/mobile/EventActionsSheet";
 
 /** まちに載せるものだけ。ゲームはイベントの中で使う道具なので「運営 → ゲーム」で管理する */
 type Kind = "event" | "store" | "kitchen" | "volunteer";
@@ -47,10 +50,8 @@ type Listing = {
   href: string;
   /** 公開中のときに見られる、利用者側のページ */
   publicHref: string;
-  /** イベントだけ：ポイントの設定（スマホでは行の「…」のメニューが入口。PC はイベント管理のメニュー） */
-  pointsHref?: string;
-  /** イベントだけ：日付（左の日付のカレンダーと「あと◯日」に使う） */
-  event?: { date: string; endDate: string | null; status: DashboardEvent["status"] };
+  /** イベントだけ：日付（左の日付のカレンダーと「あと◯日」）と、押したときに出す操作のシートの対象 */
+  event?: { id: string; date: string; endDate: string | null; status: DashboardEvent["status"] };
 };
 
 /** 種類ごとの色（写真がないときのアイコンの丸と、種類の文字に使う） */
@@ -96,8 +97,13 @@ async function getJson<T>(url: string, signal: AbortSignal): Promise<T | null> {
   }
 }
 
-function fromEvents(data: DashboardResponse | null): Listing[] {
-  return (data?.events ?? []).map((e) => {
+function isArchivedEvent(e: DashboardEvent): boolean {
+  return e.visibilityStatus === "archived";
+}
+
+/** イベント → 一覧の行（アーカイブしたものは別に分けるので、呼ぶ側で絞る） */
+function fromEvents(events: DashboardEvent[]): Listing[] {
+  return events.map((e) => {
     const status: Status = e.status === "public" ? "public" : e.status === "draft" ? "draft" : "ended";
     return {
       id: `event-${e.id}`,
@@ -110,8 +116,7 @@ function fromEvents(data: DashboardResponse | null): Listing[] {
       metric: `申込 ${e.applicationCount}件`,
       href: `/organizer/events/${e.id}`,
       publicHref: `/events/${e.id}`,
-      pointsHref: `/organizer/events/${e.id}/points`,
-      event: { date: e.date, endDate: e.endDate ?? null, status: e.status },
+      event: { id: e.id, date: e.date, endDate: e.endDate ?? null, status: e.status },
     };
   });
 }
@@ -165,22 +170,32 @@ function statusText(item: Listing): string {
 
 /**
  * 1件ぶんの行（低くして1画面に多く並べる）。行全体は編集へのリンク。
- * イベントは左を日付のカレンダーにし、2行目に「あと◯日」。状態の札は2行目の頭に置いて、題名の左端をそろえる。
- * 右の「…」で、編集・イベントポイント・公開ページのメニューを出す（リンクの入れ子にしないよう上に重ねる）。
+ * イベントは左を日付のカレンダーにし、2行目に「あと◯日」。ポイントは右の小さな丸いボタン（リンクの入れ子にしないよう上に重ねる）。
+ * 状態の札は2行目の頭に置いて、題名の左端をそろえる。
  */
-function ListingRow({ item, today, onMore }: { item: Listing; today: string; onMore: (item: Listing) => void }) {
+function ListingRow({
+  item,
+  today,
+  onOpenEvent,
+  onMore,
+}: {
+  item: Listing;
+  today: string;
+  onOpenEvent: (eventId: string) => void;
+  /** イベント以外：右の「…」で、編集・公開ページのメニューを出す */
+  onMore?: (item: Listing) => void;
+}) {
   const { label: kindLabel, Icon, color, bg } = KIND_META[item.kind];
   const sub = item.sub.startsWith(kindLabel) ? item.sub.slice(kindLabel.length).replace(/^・/, "") : item.sub;
   const timing = item.event ? eventTiming(today, item.event.date, item.event.endDate) : null;
   const dim = (timing?.past ?? false) || item.status === "ended";
-  return (
-    <div className="relative">
-      <Link href={item.href} className="flex items-center gap-3 py-2.5 pl-3 pr-[52px] active:bg-[#f6f9f5]">
+  const body = (
+    <>
         {item.event && timing ? (
           <EventDateTile date={item.event.date} status={item.event.status} past={timing.past} />
         ) : (
           <span
-            className={cn("relative h-[46px] w-[42px] shrink-0 overflow-hidden rounded-[12px]", dim && "opacity-60")}
+            className="relative h-[46px] w-[46px] shrink-0 overflow-hidden rounded-[12px]"
             style={item.imageUrl ? undefined : { background: bg, color }}
           >
             {item.imageUrl ? (
@@ -225,6 +240,30 @@ function ListingRow({ item, today, onMore }: { item: Listing; today: string; onM
             </span>
           </span>
         </span>
+      {item.event || !onMore ? <ChevronRight className="h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden /> : null}
+    </>
+  );
+  const rowClass = "flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-[#f6f9f5]";
+  // イベントは、押すと操作のシート（公開・スタッフ募集・編集・ポイントなど）を出す。ほかは編集の画面へ
+  if (item.event) {
+    const eventId = item.event.id;
+    return (
+      <button type="button" onClick={() => onOpenEvent(eventId)} className={rowClass} aria-haspopup="dialog">
+        {body}
+      </button>
+    );
+  }
+  if (!onMore) {
+    return (
+      <Link href={item.href} className={rowClass}>
+        {body}
+      </Link>
+    );
+  }
+  return (
+    <div className="relative">
+      <Link href={item.href} className={cn(rowClass, "pr-[52px]")}>
+        {body}
       </Link>
       <button
         type="button"
@@ -238,7 +277,7 @@ function ListingRow({ item, today, onMore }: { item: Listing; today: string; onM
   );
 }
 
-/** 行の「…」から出すメニュー（下から出る）。よく使う操作だけ */
+/** お店・キッチンカー・募集の行の「…」から出すメニュー（下から出る）。イベントは行を押すと操作のシート（EventActionsSheet） */
 function ListingMenu({ item, onClose }: { item: Listing | null; onClose: () => void }) {
   useEffect(() => {
     if (!item) return;
@@ -249,9 +288,6 @@ function ListingMenu({ item, onClose }: { item: Listing | null; onClose: () => v
   if (!item || typeof document === "undefined") return null;
   const actions: { href: string; label: string; sub: string; Icon: LucideIcon; tone: string; external?: boolean }[] = [
     { href: item.href, label: "編集する", sub: "内容・写真・公開の設定", Icon: PenLine, tone: "bg-[#eaf4ed] text-[#1f6a42]" },
-    ...(item.pointsHref
-      ? [{ href: item.pointsHref, label: "イベントポイント", sub: "ためる・使うの設定", Icon: Sparkles, tone: "bg-[#fbf3e1] text-[#a3812f]" }]
-      : []),
     ...(item.status === "public"
       ? [{ href: item.publicHref, label: "公開ページを見る", sub: "利用者に見えている画面", Icon: ExternalLink, tone: "bg-[#eef1f5] text-[#3d5a80]", external: true }]
       : []),
@@ -313,7 +349,6 @@ const SERIF = ORG_SERIF;
 
 /** 種類ごとの管理画面（申込者の確認・CSV など、一覧より細かい操作はここから） */
 const KIND_PAGES: { href: string; label: string; kind: Kind }[] = [
-  { href: "/organizer/events", label: "イベント管理", kind: "event" },
   { href: "/organizer/stores", label: "お店の管理", kind: "store" },
   { href: "/organizer/kitchen-cars", label: "キッチンカーの管理", kind: "kitchen" },
   { href: "/organizer/recruitments", label: "募集の管理", kind: "volunteer" },
@@ -327,21 +362,29 @@ export function OrganizerListingsMobile() {
   const [kindFilter, setKindFilter] = useState<Kind | "all">("all");
   const [pagesOpen, setPagesOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [today] = useState(todayJst);
-  /** 行の「…」で開いているもの */
+  /** お店・募集の行の「…」で開いているもの */
   const [menuItem, setMenuItem] = useState<Listing | null>(null);
+  const closeMenu = useCallback(() => setMenuItem(null), []);
   /** 「終わったもの」を開いているか（ふだんはたたむ） */
   const [endedOpen, setEndedOpen] = useState(false);
   /** 上に残る切り替えの高さ（まとまりの見出しを、その下に残すため） */
   const barRef = useRef<HTMLDivElement>(null);
   const [barH, setBarH] = useState(0);
-  useLayoutEffect(() => {
-    const el = barRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => setBarH(el.offsetHeight));
-    ro.observe(el);
-    setBarH(el.offsetHeight);
-    return () => ro.disconnect();
+  const [today] = useState(todayJst);
+  const [rawEvents, setRawEvents] = useState<DashboardEvent[]>([]);
+  const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
+  const [archiveMode, setArchiveMode] = useState(false);
+  const [sheetEventId, setSheetEventId] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const reload = useCallback(() => setReloadKey((n) => n + 1), []);
+  const closeSheet = useCallback(() => setSheetEventId(null), []);
+
+  // イベント管理（スマホ）から移ってきたとき（?kind=event）は、イベントだけに絞って開く
+  useEffect(() => {
+    const kind = new URLSearchParams(window.location.search).get("kind");
+    if (kind === "event" || kind === "store" || kind === "kitchen" || kind === "volunteer") {
+      setKindFilter(kind);
+    }
   }, []);
 
   useEffect(() => {
@@ -353,8 +396,10 @@ export function OrganizerListingsMobile() {
       getJson<RecruitmentDashboardResponse>("/api/organizer/recruitments-dashboard", signal),
     ]).then(([events, stores, recruitments]) => {
       if (signal.aborted) return;
+      setRawEvents(events?.events ?? []);
+      setBillingSummary(events?.billingSummary ?? null);
       const all = [
-        ...fromEvents(events),
+        ...fromEvents((events?.events ?? []).filter((e) => !isArchivedEvent(e))),
         ...fromStores(stores?.stores ?? null),
         ...fromRecruitments(recruitments),
       ];
@@ -377,7 +422,20 @@ export function OrganizerListingsMobile() {
       setItems(all);
     });
     return () => controller.abort();
-  }, []);
+  }, [reloadKey]);
+
+  // 切り替えの部分の高さを追う（アーカイブの画面から戻ったときに作り直されるので、そのたびに見張り直す）
+  useLayoutEffect(() => {
+    const el = barRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setBarH(el.offsetHeight));
+    ro.observe(el);
+    setBarH(el.offsetHeight);
+    return () => ro.disconnect();
+  }, [archiveMode]);
+
+  const archivedEvents = useMemo(() => rawEvents.filter(isArchivedEvent), [rawEvents]);
+  const sheetEvent = sheetEventId ? rawEvents.find((e) => e.id === sheetEventId) ?? null : null;
 
   /** タブで使う状態：日付の過ぎたイベントは、下書きでも「終了」に数える（下の「終わったもの」とそろえる） */
   const tabStatus = (i: Listing): Status => (groupOf(i, today) === "ended" ? "ended" : i.status);
@@ -453,6 +511,23 @@ export function OrganizerListingsMobile() {
           </h1>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
+          {archivedEvents.length > 0 || archiveMode ? (
+            <button
+              type="button"
+              onClick={() => setArchiveMode((v) => !v)}
+              aria-pressed={archiveMode}
+              aria-label={`アーカイブしたイベント ${archivedEvents.length}件`}
+              className={cn(
+                "relative flex h-10 w-10 items-center justify-center rounded-full border border-[#e3ece5] bg-white text-[#1f5e3a] shadow-[0_2px_6px_rgba(22,56,40,0.05)]",
+                archiveMode && "border-[#173f2c] bg-[#173f2c] text-[#f3e6bf]"
+              )}
+            >
+              <Archive className="h-[18px] w-[18px]" aria-hidden />
+              <span className="absolute -right-0.5 -top-0.5 min-w-[16px] rounded-full bg-[#c9a54e] px-1 text-[9.5px] font-bold leading-[16px] text-[#0e2a1d]">
+                {archivedEvents.length}
+              </span>
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => setSearchOpen((v) => !v)}
@@ -484,16 +559,16 @@ export function OrganizerListingsMobile() {
       {pagesOpen ? (
         <nav aria-label="種類ごとの管理画面" className="mt-3 rounded-[18px] border border-[#ebeee8] bg-white p-2 shadow-[0_3px_12px_rgba(22,56,40,0.05)]">
           <p className="px-1.5 pb-1.5 pt-0.5 text-[11.5px] font-bold text-[#6b776f]">種類ごとの管理画面（申込者の確認・CSV など）</p>
-          <ul className="grid grid-cols-2 gap-1.5 tablet:grid-cols-4">
+          <ul className="grid grid-cols-3 gap-1.5">
             {KIND_PAGES.map(({ href, label, kind }) => {
               const { Icon, color, bg } = KIND_META[kind];
               return (
                 <li key={href}>
-                  <Link href={href} className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-[#f7f9f6] px-2.5 py-2 active:bg-[#eef3ef]">
+                  <Link href={href} className="flex min-h-[44px] flex-col items-start gap-1 rounded-[12px] bg-[#f7f9f6] px-2.5 py-2 active:bg-[#eef3ef] tablet:flex-row tablet:items-center tablet:gap-2">
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ background: bg, color }}>
                       <Icon className="h-[15px] w-[15px]" aria-hidden />
                     </span>
-                    <span className="min-w-0 flex-1 text-[12.5px] font-bold leading-tight text-[#163828]">{label}</span>
+                    <span className="min-w-0 text-[12px] font-bold leading-tight text-[#163828]">{label}</span>
                   </Link>
                 </li>
               );
@@ -502,6 +577,35 @@ export function OrganizerListingsMobile() {
         </nav>
       ) : null}
 
+      {archiveMode ? (
+        <section aria-label="アーカイブしたイベント" className="mt-3">
+          <button
+            type="button"
+            onClick={() => setArchiveMode(false)}
+            className="mb-2 inline-flex min-h-[40px] items-center gap-1 text-[13px] font-bold text-[#173f2c]"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            掲載一覧にもどる
+          </button>
+          <p className="mb-2 text-[12px] leading-relaxed text-[#6b776f]">
+            アーカイブしたイベントです。押すと、下書きに戻す（復元）か、完全に削除できます。
+          </p>
+          {archivedEvents.length === 0 ? (
+            <p className="rounded-[20px] border border-dashed border-[#d6e3da] bg-white px-4 py-6 text-center text-[13px] text-[#6b776f]">
+              アーカイブしたイベントはありません
+            </p>
+          ) : (
+            <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[20px] border border-[#ebeee8] bg-white">
+              {fromEvents(archivedEvents).map((item) => (
+                <li key={item.id}>
+                  <ListingRow item={item} today={today} onOpenEvent={setSheetEventId} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : (
+        <>
       {/* 状態の切り替え・検索・種類は、スクロールしても上に残す */}
       <div
         ref={barRef}
@@ -642,7 +746,7 @@ export function OrganizerListingsMobile() {
                     <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[20px] border border-[#ebeee8] bg-white shadow-[0_3px_12px_rgba(22,56,40,0.05)] tablet:grid tablet:grid-cols-2 tablet:divide-y-0 tablet:[&>li]:border-b tablet:[&>li]:border-[#eef1ec] tablet:[&>li:nth-child(odd)]:border-r">
                       {list.map((item) => (
                         <li key={item.id}>
-                          <ListingRow item={item} today={today} onMore={setMenuItem} />
+                          <ListingRow item={item} today={today} onOpenEvent={setSheetEventId} onMore={setMenuItem} />
                         </li>
                       ))}
                     </ul>
@@ -654,7 +758,19 @@ export function OrganizerListingsMobile() {
         )}
       </section>
 
-      <ListingMenu item={menuItem} onClose={() => setMenuItem(null)} />
+        </>
+      )}
+
+      <ListingMenu item={menuItem} onClose={closeMenu} />
+      {sheetEvent ? (
+        <EventActionsSheet
+          event={sheetEvent}
+          billingSummary={billingSummary}
+          archiveBoxMode={isArchivedEvent(sheetEvent)}
+          onClose={closeSheet}
+          onRefresh={reload}
+        />
+      ) : null}
     </div>
   );
 }
