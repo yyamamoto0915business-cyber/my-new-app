@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  CalendarDays,
   Check,
   ChevronRight,
   ClipboardList,
@@ -118,26 +117,81 @@ function FeaturedEvent({ e, imageUrl }: { e: DashboardEvent; imageUrl: string })
   );
 }
 
-/** 2件目からは低い行で並べる */
-function EventRow({ e }: { e: DashboardEvent }) {
+/** 2026-11-29 と今日（YYYY-MM-DD）の日数の差 */
+function daysBetween(today: string, ymd: string): number {
+  const a = Date.UTC(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10));
+  const b = Date.UTC(+ymd.slice(0, 4), +ymd.slice(5, 7) - 1, +ymd.slice(8, 10));
+  return Math.round((b - a) / 86400000);
+}
+
+/** 10:00〜16:00（時刻がなければ空） */
+function formatTimeRange(e: DashboardEvent): string {
+  const start = e.startTime?.slice(0, 5);
+  const end = e.endTime?.slice(0, 5);
+  if (!start) return "";
+  return `${start}〜${end ?? ""}`;
+}
+
+/**
+ * イベントの行。左は日付のカレンダー（月・日・曜日）で、どの日のイベントか一目で分かるようにする。
+ * 2行目に時刻・状態と「あと◯日」。日付の過ぎたものは灰色にして、これからのものと見分ける。
+ */
+function EventRow({ e, today }: { e: DashboardEvent; today: string }) {
   const st = STATUS_LABEL[e.status];
+  const [, m, d] = e.date.split("-").map(Number);
+  const wd = WEEKDAY_JA[new Date(`${e.date}T12:00:00+09:00`).getUTCDay()];
+  const lastDay = (e.endDate ?? e.date).slice(0, 10);
+  const past = lastDay < today;
+  const diff = daysBetween(today, e.date.slice(0, 10));
+  const soon = !past && diff <= 7;
+  const when = past
+    ? "日付が過ぎています"
+    : diff <= 0
+      ? "開催中・今日"
+      : diff === 1
+        ? "明日"
+        : `あと${diff}日`;
+  const time = formatTimeRange(e);
   return (
     <Link href={`/organizer/events/${e.id}`} className="flex items-center gap-3 px-3 py-2.5 active:bg-[#f6f9f5]">
-      <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[12px] bg-[#fdf1e4] text-[#c7742c]">
-        {e.imageUrl ? (
-          <EventThumbnail imageUrl={e.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
-        ) : (
-          <span className="flex h-full w-full items-center justify-center">
-            <CalendarDays className="h-5 w-5" aria-hidden />
-          </span>
+      <span
+        className={cn(
+          "flex h-[52px] w-[48px] shrink-0 flex-col items-center justify-center rounded-[14px] border leading-none",
+          past
+            ? "border-[#e6e8e3] bg-[#f3f4f1] text-[#9aa29c]"
+            : e.status === "public"
+              ? "border-[#173f2c] bg-[#173f2c] text-white"
+              : "border-[#eedcb0] bg-[#fdf6e6] text-[#6e5312]"
         )}
+        aria-hidden
+      >
+        <span
+          className={cn(
+            "text-[10px] font-bold",
+            past ? "" : e.status === "public" ? "text-[#e6d29b]" : "text-[#a3812f]"
+          )}
+        >
+          {m}月
+        </span>
+        <span className="mt-0.5 text-[19px] font-bold tracking-tight">{d}</span>
+        <span className="mt-0.5 text-[9.5px] font-bold">{wd}</span>
       </span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5">
-          <span className={cn("shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold", st.className)}>{st.label}</span>
-          <span className="truncate text-[14px] font-bold text-[#163828]">{e.title}</span>
+        <span className={cn("block truncate text-[14.5px] font-bold", past ? "text-[#6b776f]" : "text-[#163828]")}>
+          {e.title}
         </span>
-        <span className="mt-0.5 block truncate text-[12px] text-[#6b776f]">{formatEventWhen(e)}</span>
+        <span className="mt-1 flex items-center gap-1.5 text-[11.5px]">
+          <span className={cn("shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold", st.className)}>{st.label}</span>
+          {time ? <span className="shrink-0 text-[#6b776f]">{time}</span> : null}
+          <span
+            className={cn(
+              "truncate font-bold",
+              past ? "font-medium text-[#9aa29c]" : soon ? "text-[#c0572a]" : "text-[#4f6b5a]"
+            )}
+          >
+            {when}
+          </span>
+        </span>
       </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />
     </Link>
@@ -334,7 +388,7 @@ export function OrganizerHomeClient() {
                     <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
                       {rowEvents.map((e) => (
                         <li key={e.id}>
-                          <EventRow e={e} />
+                          <EventRow e={e} today={today} />
                         </li>
                       ))}
                     </ul>
