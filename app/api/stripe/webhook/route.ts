@@ -6,9 +6,12 @@ import { getStripe, getStripeSecretKey } from "@/lib/stripe";
 import { markPosSalePaidByPaymentIntent, markPosSalePaidBySession, markPosSaleRefundedByPaymentIntent } from "@/lib/db/pos";
 import { POS_TAP_PAYMENT_TYPE } from "@/lib/pos/tap-app";
 import { cancelPosSaleFromStripe, restorePointsForRefundedStripeSale } from "@/lib/pos/pending-sales";
+import { writeConnectFlags } from "@/lib/organizer/connect-sync";
 import { organizerPlanColumnForPrice } from "@/lib/organizer-plan-prices";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+/** Connect 用の通知先（主催者アカウントの変化 account.updated など）の署名の鍵。同じ URL に届くので、どちらかで確かめる */
+const connectWebhookSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
 
 async function isAppleManagedOrganizer(
   supabase: NonNullable<ReturnType<typeof createAdminClient>>,
@@ -112,11 +115,19 @@ export async function POST(request: NextRequest) {
   }
 
   const stripe = getStripe()!;
-  let event: Stripe.Event;
-  try {
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
-  } catch (err) {
-    console.error("Webhook signature verification failed:", err);
+  let event: Stripe.Event | null = null;
+  let lastError: unknown = null;
+  for (const secret of [webhookSecret, connectWebhookSecret]) {
+    if (!secret) continue;
+    try {
+      event = stripe.webhooks.constructEvent(body, sig, secret);
+      break;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  if (!event) {
+    console.error("Webhook signature verification failed:", lastError);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -315,21 +326,9 @@ export async function POST(request: NextRequest) {
       }
 
       case "account.updated": {
+        // 主催者の Stripe アカウントの変化（Connect 用の通知先から届く）
         const account = event.data.object as Stripe.Account;
-        const { data: rows } = await supabase
-          .from("organizers")
-          .select("id")
-          .eq("stripe_account_id", account.id);
-        if (rows?.[0]) {
-          await supabase
-            .from("organizers")
-            .update({
-              stripe_account_charges_enabled: account.charges_enabled ?? false,
-              stripe_account_details_submitted: account.details_submitted ?? false,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("stripe_account_id", account.id);
-        }
+        await writeConnectFlags(supabase, account.id, account);
         break;
       }
 

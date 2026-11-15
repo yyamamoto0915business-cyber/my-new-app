@@ -11,6 +11,7 @@ import {
   isTeamPlanWithPlanState,
 } from "@/lib/billing";
 import { isStripeServerConfigured } from "@/lib/stripe";
+import { refreshConnectFlagsIfPending } from "@/lib/organizer/connect-sync";
 import { getStripeTerminalLocationId } from "@/lib/pos/tap-app";
 
 /**
@@ -42,6 +43,10 @@ export async function GET() {
     if (!organizer) {
       return NextResponse.json({ error: "主催者情報を取得できません" }, { status: 500 });
     }
+    // 受け取り設定がまだの記録なら、Stripe に今の状態を聞いて合わせる（設定を終えて戻ってきたとき用）
+    const connect = await refreshConnectFlagsIfPending(organizer);
+    organizer.stripe_account_charges_enabled = connect.chargesEnabled;
+    organizer.stripe_account_details_submitted = connect.detailsSubmitted;
 
     const { data: planState } = await supabase
       .from("organizer_plan_state")
