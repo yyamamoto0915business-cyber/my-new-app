@@ -22,7 +22,8 @@ import { buildPlanSummary, type PlanSummary } from "@/lib/organizer-plan-summary
 const MOCK_ORGANIZER_NAME = "地域振興会";
 
 function getEventEndAtJst(date: string, endTime?: string | null): Date {
-  const t = endTime && endTime.trim() ? endTime : "23:59";
+  // データベースの時刻は「15:00:00」のように秒つきで返る。「時:分」にそろえてから日時にする（秒つきのままだと日時が作れず、公開中が「終了」になっていた）
+  const t = endTime && endTime.trim() ? endTime.trim().slice(0, 5) : "23:59";
   return new Date(`${date}T${t}:00+09:00`);
 }
 
