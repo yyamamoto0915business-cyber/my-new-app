@@ -496,6 +496,22 @@ export function OrganizerMissionCreateForm() {
                     onChange={(patch) => updateMission(editing.key, patch)}
                   />
                 ) : null}
+                {editing.kind === "survey" ? (
+                  <label style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", fontWeight: 600 }}>
+                    <input
+                      type="checkbox"
+                      checked={editing.showResults}
+                      onChange={(e) => updateMission(editing.key, { showResults: e.target.checked })}
+                      style={{ width: "1.1rem", minWidth: "1.1rem", height: "1.1rem", marginTop: "0.1rem" }}
+                    />
+                    <span>
+                      答えたら、みんなの結果を見せる
+                      <small style={{ display: "block", fontWeight: 400, color: "#6a7568" }}>
+                        答えたあとに、選択肢ごとの割合（%）が出ます。人数は出しません。
+                      </small>
+                    </span>
+                  </label>
+                ) : null}
                 {editing.kind === "quiz" ? (
                   <MissionQuizFields
                     question={editing.question}

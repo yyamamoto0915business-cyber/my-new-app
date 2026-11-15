@@ -53,6 +53,8 @@ export type MissionItem = {
   question: string;
   choices: string[];
   correctIndex: number;
+  /** 「アンケート」：答えたあと、みんなの結果（割合）を見せる。 */
+  showResults: boolean;
 };
 
 /** 場所の確かめを使うミッション。 */
@@ -68,6 +70,7 @@ const PLACE_DEFAULTS = {
   question: "",
   choices: ["", ""],
   correctIndex: 0,
+  showResults: false,
 };
 
 export function isMissionKindId(value: string): value is MissionKindId {
@@ -186,6 +189,7 @@ export function sanitizeMissionSettings(raw: unknown): MissionSettings | null {
               : ["", ""],
             correctIndex:
               typeof row.correctIndex === "number" ? Math.min(3, Math.max(0, Math.round(row.correctIndex))) : 0,
+            showResults: row.showResults === true,
           },
         ];
       })

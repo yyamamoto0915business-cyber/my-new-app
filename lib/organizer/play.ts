@@ -46,7 +46,7 @@ import {
   type PublicQuizQuestion,
   type QuizGate,
 } from "@/lib/organizer/quiz-play";
-import { missionAwardPoints, normalizeMissionDone, readStoredMission } from "@/lib/organizer/mission-play";
+import { missionAwardPoints, normalizeMissionDone, readStoredMission, type MissionPollResult } from "@/lib/organizer/mission-play";
 import { MISSION_TEXT_MAX } from "@/lib/organizer/mission";
 import { normalizePhotoDone, readStoredPhoto } from "@/lib/organizer/photo-play";
 import { normalizeCouponDone, readStoredCoupon } from "@/lib/organizer/coupon-play";
@@ -1365,6 +1365,27 @@ export async function answerPlayQuiz(
   };
 }
 
+/** 「アンケート」の、いまの答えの割合（参加者に見せる）。 */
+async function loadMissionPollResult(
+  db: SupabaseClient,
+  gameId: string,
+  missionIndex: number,
+  question: string,
+  choices: string[],
+  mine: number,
+): Promise<MissionPollResult> {
+  const counts = choices.map(() => 0);
+  const { data } = await db.from("organizer_game_players").select("mission_texts").eq("game_id", gameId);
+  for (const row of (data ?? []) as { mission_texts?: Record<string, { text?: unknown; choice?: unknown }> | null }[]) {
+    const item = row.mission_texts?.[String(missionIndex)];
+    if (!item || typeof item.text !== "string") continue;
+    const at = typeof item.choice === "number" && choices[item.choice] === item.text ? item.choice : choices.indexOf(item.text);
+    if (at >= 0) counts[at] += 1;
+  }
+  const total = counts.reduce((a, b) => a + b, 0);
+  return { question, choices, percents: counts.map((n) => (total > 0 ? Math.round((n / total) * 100) : 0)), mine };
+}
+
 export async function completePlayMission(
   db: SupabaseClient,
   joinToken: string,
@@ -1375,7 +1396,7 @@ export async function completePlayMission(
   proof: QuizArrivalProof = { here: null, keyword: "" },
   choice: number | null = null,
 ): Promise<
-  | { ok: true; done: boolean; already: boolean; note: string; progress: PlayProgress }
+  | { ok: true; done: boolean; already: boolean; note: string; progress: PlayProgress; poll?: MissionPollResult }
   | { ok: false; status: number; error: string }
 > {
   if (!deviceToken || deviceToken.length < 16) {
@@ -1494,12 +1515,19 @@ export async function completePlayMission(
     throw error;
   }
 
+  // 「アンケート」で「みんなの結果を見せる」なら、答えたあとに割合を返す（人数は出さない）。
+  let poll: MissionPollResult | undefined;
+  if (mission.kind === "survey" && mission.showResults && mission.choices && choice != null) {
+    poll = await loadMissionPollResult(db, game.id, mission.index, mission.question ?? "", mission.choices, choice);
+  }
+
   return {
     ok: true,
     done: true,
     already: false,
     note: "",
     progress: await loadProgress(db, { ...player, mission_done: nextDone }, userId),
+    ...(poll ? { poll } : {}),
   };
 }
 

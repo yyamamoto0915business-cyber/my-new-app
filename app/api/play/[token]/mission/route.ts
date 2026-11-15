@@ -47,6 +47,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       already: result.already,
       note: result.note,
       progress: result.progress,
+      ...(result.poll ? { poll: result.poll } : {}),
     });
   } catch (error) {
     console.error("play mission POST:", error);
