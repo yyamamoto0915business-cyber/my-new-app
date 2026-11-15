@@ -33,6 +33,20 @@ export function nativeAuthRedirect(returnTo: string): string {
   return NATIVE_AUTH_CALLBACK;
 }
 
+/** アプリで開くリンクのうち、そのままアプリの中で開く画面（apple-app-site-association と同じ一覧）。それ以外は null */
+export function inAppLinkPath(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const hostOk = parsed.protocol === "https:" && (parsed.hostname === "www.machiglyph.jp" || parsed.hostname === "machiglyph.jp");
+    if (!hostOk) return null;
+    // チームの招待リンク：/team/join/<トークン>
+    if (/^\/team\/join\/[A-Za-z0-9_-]{8,128}\/?$/.test(parsed.pathname)) return parsed.pathname;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function safeInAppPath(raw: string | null | undefined): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/";
   return raw;
