@@ -1,4 +1,4 @@
-export const MISSION_KIND_IDS = ["visit", "photo", "keyword", "checkin", "quiz", "friends"] as const;
+export const MISSION_KIND_IDS = ["visit", "photo", "keyword", "checkin", "quiz", "friends", "text"] as const;
 
 export type MissionKindId = (typeof MISSION_KIND_IDS)[number];
 
@@ -15,6 +15,7 @@ export const MISSION_KINDS: {
   { id: "checkin", label: "チェックイン", blurb: "指定の場所に来てチェックイン" },
   { id: "quiz", label: "クイズに答える", blurb: "まちに関するクイズに挑戦" },
   { id: "friends", label: "友だちと参加", blurb: "友だちと一緒に参加して達成" },
+  { id: "text", label: "文字で送る", blurb: "アイデアや感想を文字で送って達成" },
 ];
 
 export const MISSION_TIPS: Record<MissionKindId, string> = {
@@ -24,7 +25,11 @@ export const MISSION_TIPS: Record<MissionKindId, string> = {
   checkin: "その場所でチェックインすると達成だよ！",
   quiz: "クイズに正解すると達成だよ！",
   friends: "友だちと一緒に参加すると達成だよ！",
+  text: "お題に答えて送ると達成だよ！",
 };
+
+/** 「文字で送る」で参加者が送れる文字数 */
+export const MISSION_TEXT_MAX = 400;
 
 export type MissionItem = {
   key: string;
@@ -42,7 +47,7 @@ export type MissionItem = {
   radius: number;
   /** 現地の看板などに書いた合言葉（確かめ方が合言葉のとき）。 */
   keyword: string;
-  /** 「クイズに答える」の問題文・選択肢・正解（選択肢の番号）。 */
+  /** 「クイズに答える」の問題文・選択肢・正解（選択肢の番号）。「文字で送る」はお題を question に入れる。 */
   question: string;
   choices: string[];
   correctIndex: number;

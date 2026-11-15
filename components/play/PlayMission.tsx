@@ -6,6 +6,7 @@ import { shrinkPhoto } from "@/components/play/shrinkPhoto";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { PublicMission, PublicMissionPlay } from "@/lib/organizer/mission-play";
+import { MISSION_TEXT_MAX } from "@/lib/organizer/mission";
 import type { PlayProgress } from "@/lib/organizer/play-types";
 import { readPlaySession } from "@/lib/organizer/play-session";
 import { usePlayCopy } from "@/components/play/usePlayCopy";
@@ -286,6 +287,24 @@ export function PlayMission({ token, mission, progress, onProgress, previewOpen 
             aria-label={active.arrival === "keyword" ? copy.msg("現地の合言葉") : copy.passphrase}
           />
         ) : null}
+        {active.kind === "text" ? (
+          <>
+            {active.prompt ? <p style={{ margin: "0.4rem 0 0", fontWeight: 800 }}>{active.prompt}</p> : null}
+            <textarea
+              className="game-test__field"
+              value={keyword}
+              maxLength={MISSION_TEXT_MAX}
+              rows={5}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder={copy.msg("ここに書いて送ってください")}
+              aria-label={active.prompt || active.name}
+              style={{ minHeight: "8rem", resize: "vertical", lineHeight: 1.6 }}
+            />
+            <p className="game-test__meta" style={{ textAlign: "right" }}>
+              {keyword.trim().length} / {MISSION_TEXT_MAX}
+            </p>
+          </>
+        ) : null}
         {note ? <p className="game-test__note">{copy.msg(note)}</p> : null}
         {error ? <p className="play-join__error">{copy.msg(error)}</p> : null}
         <div className="play-dock play-dock--pair">
@@ -318,7 +337,7 @@ export function PlayMission({ token, mission, progress, onProgress, previewOpen 
           <button
             type="button"
             className="play-dock__go"
-            disabled={saving || (Boolean(active.choices) && picked == null)}
+            disabled={saving || (Boolean(active.choices) && picked == null) || (active.kind === "text" && !keyword.trim())}
             onClick={() => (active.arrival === "gps" ? completeHere(active) : void complete(active))}
           >
             {saving ? copy.recording : copy.msg(active.actionLabel)}

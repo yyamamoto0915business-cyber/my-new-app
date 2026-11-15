@@ -27,6 +27,7 @@ import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWo
 import { GameQrCard } from "@/components/organizer/games/GameQrCard";
 import { OrganizerCouponUses } from "@/components/organizer/games/OrganizerCouponUses";
 import { OrganizerMissionPhotos } from "@/components/organizer/games/OrganizerMissionPhotos";
+import { OrganizerMissionTexts } from "@/components/organizer/games/OrganizerMissionTexts";
 import { OrganizerVoteDesk } from "@/components/organizer/games/OrganizerVoteDesk";
 import { OrganizerLotteryDesk } from "@/components/organizer/games/OrganizerLotteryDesk";
 import { OrganizerSurveyDesk } from "@/components/organizer/games/OrganizerSurveyDesk";
@@ -568,6 +569,7 @@ export function OrganizerGameEditor() {
 
       <OrganizerCouponUses gameId={game.id} gameType={game.type} />
       <OrganizerMissionPhotos gameId={game.id} gameType={game.type} />
+      <OrganizerMissionTexts gameId={game.id} gameType={game.type} />
       <OrganizerVoteDesk gameId={game.id} gameType={game.type} />
       <OrganizerLotteryDesk gameId={game.id} gameType={game.type} />
       <OrganizerSurveyDesk gameId={game.id} gameType={game.type} />

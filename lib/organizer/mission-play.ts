@@ -15,6 +15,8 @@ export type PublicMission = {
   /** 「クイズに答える」の問題と選択肢（正解は渡さない）。 */
   question?: string;
   choices?: string[];
+  /** 「文字で送る」のお題（空なら名前だけ見せる）。 */
+  prompt?: string;
 };
 
 export type PublicMissionPlay = {
@@ -53,6 +55,7 @@ function actionLabel(kind: MissionKindId): string {
   if (kind === "quiz") return "答えた";
   if (kind === "friends") return "合言葉を送る";
   if (kind === "keyword") return "答える";
+  if (kind === "text") return "送る";
   return "着いた";
 }
 
@@ -112,6 +115,7 @@ export function readStoredMission(settings: unknown): StoredMissionPlay | null {
             ...(gate ? { arrival: gate.arrival, place } : {}),
             correctIndex: quizOn ? filled.findIndex((item) => item.i === correctRaw) : -1,
             ...(quizOn ? { question, choices: filled.map((item) => item.choice) } : {}),
+            ...(kind === "text" ? { prompt: question } : {}),
           },
         ];
       })
@@ -182,6 +186,7 @@ export function readPublicMission(raw: unknown): PublicMissionPlay | null {
                   choices: row.choices.filter((choice): choice is string => typeof choice === "string"),
                 }
               : {}),
+            ...(kind === "text" ? { prompt: typeof row.prompt === "string" ? row.prompt : "" } : {}),
             ...(row.arrival === "gps" || row.arrival === "keyword"
               ? { arrival: row.arrival as "gps" | "keyword", place: typeof row.place === "string" ? row.place : "" }
               : {}),
