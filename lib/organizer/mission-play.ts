@@ -17,7 +17,12 @@ export type PublicMission = {
   choices?: string[];
   /** 「文字で送る」のお題（空なら名前だけ見せる）。 */
   prompt?: string;
+  /** 「アンケート」：答えたあと、みんなの結果を見せる。 */
+  showResults?: boolean;
 };
+
+/** 「アンケート」で答えたあとに見せる、みんなの結果（人数は出さず割合だけ）。 */
+export type MissionPollResult = { question: string; choices: string[]; percents: number[]; mine: number };
 
 export type PublicMissionPlay = {
   clearCount: number;
@@ -119,6 +124,7 @@ export function readStoredMission(settings: unknown): StoredMissionPlay | null {
             correctIndex: quizOn ? filled.findIndex((item) => item.i === correctRaw) : -1,
             ...(quizOn || pollOn ? { question, choices: filled.map((item) => item.choice) } : {}),
             ...(kind === "text" ? { prompt: question } : {}),
+            ...(pollOn && row.showResults === true ? { showResults: true } : {}),
           },
         ];
       })
@@ -190,6 +196,7 @@ export function readPublicMission(raw: unknown): PublicMissionPlay | null {
                 }
               : {}),
             ...(kind === "text" ? { prompt: typeof row.prompt === "string" ? row.prompt : "" } : {}),
+            ...(row.showResults === true ? { showResults: true } : {}),
             ...(row.arrival === "gps" || row.arrival === "keyword"
               ? { arrival: row.arrival as "gps" | "keyword", place: typeof row.place === "string" ? row.place : "" }
               : {}),

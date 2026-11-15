@@ -20,7 +20,7 @@ const SHORT: Record<MissionKindId, string> = {
   checkin: "その場所でチェックイン",
   keyword: "見つけた合言葉を入れる",
   quiz: "正解したら達成",
-  survey: "選んで答える",
+  survey: "選んで答える・結果も見せられる",
   photo: "撮って投稿する",
   text: "アイデア・感想",
   friends: "友だちと一緒に参加",

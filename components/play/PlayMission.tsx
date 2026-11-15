@@ -5,7 +5,7 @@ import { RewardLine } from "@/components/play/RewardLine";
 import { shrinkPhoto } from "@/components/play/shrinkPhoto";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { PublicMission, PublicMissionPlay } from "@/lib/organizer/mission-play";
+import type { MissionPollResult, PublicMission, PublicMissionPlay } from "@/lib/organizer/mission-play";
 import { MISSION_TEXT_MAX } from "@/lib/organizer/mission";
 import type { PlayProgress } from "@/lib/organizer/play-types";
 import { readPlaySession } from "@/lib/organizer/play-session";
@@ -33,6 +33,8 @@ export function PlayMission({ token, mission, progress, onProgress, previewOpen 
   const [note, setNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** 「アンケート」で答えたあとに見せる、みんなの結果と、そのあと進める進み具合。 */
+  const [pollView, setPollView] = useState<{ result: MissionPollResult; name: string; next: PlayProgress } | null>(null);
   const copy = usePlayCopy();
 
   const active = mission.missions.find((item) => item.index === activeIndex) ?? null;
@@ -177,6 +179,7 @@ export function PlayMission({ token, mission, progress, onProgress, previewOpen 
         note?: string;
         progress?: PlayProgress;
         error?: string;
+        poll?: MissionPollResult;
       };
       if (!res.ok || !json.progress) {
         setError(json.error ?? "達成を保存できませんでした");
@@ -190,12 +193,61 @@ export function PlayMission({ token, mission, progress, onProgress, previewOpen 
       setPicked(null);
       setNote(null);
       setActiveIndex(null);
+      if (json.poll && Array.isArray(json.poll.choices) && Array.isArray(json.poll.percents)) {
+        // 結果を見てから進む（クリアした場合も、結果のあとでクリア画面へ）。
+        setPollView({ result: json.poll, name: item.name, next: json.progress });
+        return;
+      }
       onProgress(json.progress);
     } catch {
       setError("通信エラーが発生しました");
     } finally {
       setSaving(false);
     }
+  }
+
+  if (pollView) {
+    const { result } = pollView;
+    return (
+      <div className="play-quiz">
+        <p className="game-test__kicker">{copy.msg("みんなの結果")}</p>
+        <h2>{pollView.name}</h2>
+        {result.question ? <p style={{ margin: "0.4rem 0 0", fontWeight: 800 }}>{result.question}</p> : null}
+        <ul style={{ display: "grid", gap: "0.7rem", margin: "0.8rem 0 0", padding: 0, listStyle: "none" }}>
+          {result.choices.map((choice, i) => {
+            const pct = result.percents[i] ?? 0;
+            const mine = i === result.mine;
+            return (
+              <li key={`${i}-${choice}`}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", fontSize: "0.92rem", fontWeight: mine ? 800 : 500 }}>
+                  <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                    {choice}
+                    {mine ? <small style={{ marginLeft: "0.4rem", color: "#2f7d4e" }}>{copy.msg("あなたの答え")}</small> : null}
+                  </span>
+                  <span style={{ flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{pct}%</span>
+                </div>
+                <div aria-hidden style={{ marginTop: "0.3rem", height: "0.55rem", borderRadius: 999, background: "#e8ece7", overflow: "hidden" }}>
+                  <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: mine ? "#2f7d4e" : "#9cc3aa" }} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="play-dock">
+          <button
+            type="button"
+            className="play-dock__go"
+            onClick={() => {
+              const next = pollView.next;
+              setPollView(null);
+              onProgress(next);
+            }}
+          >
+            {copy.msg("つづける")}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (progress.completed) {
