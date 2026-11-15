@@ -13,6 +13,7 @@ import { ProfileBannerAvatar } from "@/components/profile/profile-banner-avatar"
 import { OrganizerLogoutButton } from "@/components/organizer/OrganizerLogoutButton";
 import { cn } from "@/lib/utils";
 import { useOrganizerTeams } from "@/components/organizer/team/OrganizerTeamSwitcher";
+import { useOrganizerRole } from "@/hooks/use-organizer-role";
 import type { DashboardResponse } from "@/app/api/organizer/dashboard/route";
 
 /** 利用者のマイページと同じ帯の絵（モードを切り替えても同じ形に見えるようにする） */
@@ -202,6 +203,8 @@ export function OrganizerSettingsMobileView({
   const needsPayoutSetup = !billingLoading && receiving === "未設定";
   const [settingsOpen, setSettingsOpen] = useState(false);
   const teams = useOrganizerTeams();
+  /** 団体のプロフィールを変えられるのはオーナーだけ（メンバーには「編集」を出さない） */
+  const canEditProfile = useOrganizerRole() === "owner";
   const currentTeam = teams && teams.teams.length > 1 ? teams.teams.find((t) => t.organizerId === teams.current) : undefined;
   const teamLine = currentTeam ? `使用中：${currentTeam.name}（ここで切りかえ）` : null;
 
@@ -238,14 +241,23 @@ export function OrganizerSettingsMobileView({
           />
           <div className="relative z-[1] flex items-center justify-between gap-3 px-3 pb-2.5 pt-2.5">
             <div className="flex min-w-0 flex-1 items-center gap-2.5">
-              <Link href="/organizer/settings/profile" className="relative shrink-0" aria-label="主催者のプロフィールを編集">
-                <div
-                  className="relative h-14 w-14 overflow-hidden rounded-full"
-                  style={{ border: "2px solid rgba(255,255,255,.9)", boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}
-                >
-                  <ProfileBannerAvatar avatarUrl={avatarUrl} displayName={organizationName || displayName} />
-                </div>
-              </Link>
+              {(() => {
+                const avatar = (
+                  <div
+                    className="relative h-14 w-14 overflow-hidden rounded-full"
+                    style={{ border: "2px solid rgba(255,255,255,.9)", boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}
+                  >
+                    <ProfileBannerAvatar avatarUrl={avatarUrl} displayName={organizationName || displayName} />
+                  </div>
+                );
+                return canEditProfile ? (
+                  <Link href="/organizer/settings/profile" className="relative shrink-0" aria-label="主催者のプロフィールを編集">
+                    {avatar}
+                  </Link>
+                ) : (
+                  <span className="relative shrink-0">{avatar}</span>
+                );
+              })()}
               <div className="min-w-0">
                 <p className="text-[9px] font-semibold tracking-[0.22em]" style={{ color: ORG_GREEN_DARK }}>
                   ORGANIZER
@@ -272,13 +284,15 @@ export function OrganizerSettingsMobileView({
                 ) : null}
               </div>
             </div>
-            <Link
-              href="/organizer/settings/profile"
-              className="inline-flex min-h-[30px] shrink-0 items-center gap-1 self-start rounded-full border bg-white px-2.5 py-0.5 text-[11px] font-semibold shadow-sm"
-              style={{ borderColor: ORG_GREEN, color: ORG_GREEN_DARK }}
-            >
-              編集
-            </Link>
+            {canEditProfile ? (
+              <Link
+                href="/organizer/settings/profile"
+                className="inline-flex min-h-[30px] shrink-0 items-center gap-1 self-start rounded-full border bg-white px-2.5 py-0.5 text-[11px] font-semibold shadow-sm"
+                style={{ borderColor: ORG_GREEN, color: ORG_GREEN_DARK }}
+              >
+                編集
+              </Link>
+            ) : null}
           </div>
         </div>
 

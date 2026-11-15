@@ -61,9 +61,10 @@ export function TeamJoinPage({ token }: { token: string }) {
           <>
             <h1 className="text-[19px] font-bold text-[#163828]">{info.organizationName}のチームに参加しました</h1>
             <p className="text-[13px] text-[#5f6d64]">{info.roleLabel}として、主催者モードで一緒に運営できます。</p>
-            <Link href="/organizer/home" className="mt-2 flex h-12 w-full items-center justify-center rounded-[14px] bg-[#2f7d4e] text-[15px] font-bold text-white">
+            {/* 開き直して、役割・使うチームを読み直す（画面の切りかえだけだと前の役割が残ることがある） */}
+            <a href="/organizer/home" className="mt-2 flex h-12 w-full items-center justify-center rounded-[14px] bg-[#2f7d4e] text-[15px] font-bold text-white">
               主催者モードを開く
-            </Link>
+            </a>
           </>
         ) : (
           <>

@@ -149,5 +149,10 @@ export async function acceptInvite(admin: SupabaseClient, token: string, profile
     console.error("accept invite:", error);
     return { ok: false, status: 500, error: "参加できませんでした。時間をおいてお試しください" };
   }
+  // 参加したら、使うチームをこの団体にする（自分の団体も持っている人が、参加した直後に自分の団体の画面のままにならないように）
+  const { error: choiceError } = await admin
+    .from("organizer_choices")
+    .upsert({ profile_id: profileId, organizer_id: inv.organizer_id, updated_at: new Date().toISOString() }, { onConflict: "profile_id" });
+  if (choiceError) console.error("accept invite choice:", choiceError.message);
   return { ok: true, organizerId: inv.organizer_id, role: inv.role };
 }
