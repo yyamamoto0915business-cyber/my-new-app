@@ -97,7 +97,7 @@ type PlayerRow = {
   quiz_cleared_at?: string | null;
   coupon_code?: string | null;
   mission_photos?: Record<string, { path?: string; url?: string; at: string }> | null;
-  mission_texts?: Record<string, { text: string; at: string }> | null;
+  mission_texts?: Record<string, { text: string; at: string; choice?: number }> | null;
   mission_pairs?: Record<string, { hash: string; at: string }> | null;
 };
 
@@ -1461,7 +1461,7 @@ export async function completePlayMission(
   }
 
   // 「文字で送る」は、送った文字を残して達成にする（主催者が一覧で見る）。
-  let texts: Record<string, { text: string; at: string }> | null = null;
+  let texts: Record<string, { text: string; at: string; choice?: number }> | null = null;
   if (mission.kind === "text") {
     const text = keywordRaw.replace(/\r\n?/g, "\n").trim();
     if (!text) return { ok: false, status: 400, error: "文字を入れてください" };
@@ -1469,6 +1469,16 @@ export async function completePlayMission(
       return { ok: false, status: 400, error: `${MISSION_TEXT_MAX}文字までで送ってください` };
     }
     texts = { ...(player.mission_texts ?? {}), [String(mission.index)]: { text, at: new Date().toISOString() } };
+  }
+  // 「アンケート」は、選んだ答えを残して達成にする（正解はない）。選択肢がなければ押すだけで達成。
+  if (mission.kind === "survey" && mission.choices && mission.choices.length > 0) {
+    if (choice == null || !Number.isInteger(choice) || choice < 0 || choice >= mission.choices.length) {
+      return { ok: false, status: 400, error: "答えを選んでください" };
+    }
+    texts = {
+      ...(player.mission_texts ?? {}),
+      [String(mission.index)]: { text: mission.choices[choice], choice, at: new Date().toISOString() },
+    };
   }
 
   const nextDone = [...done, mission.index].sort((left, right) => left - right);
@@ -1756,48 +1766,87 @@ export async function uploadPlayPhotoSpot(
   return { ok: true, progress: await loadProgress(db, { ...player, photo_done: nextDone, mission_photos: photos }, userId) };
 }
 
-export type OrganizerMissionText = { playerId: string; nickname: string; missionIndex: number; missionName: string; text: string; at: string };
+export type OrganizerMissionText = {
+  playerId: string;
+  nickname: string;
+  missionIndex: number;
+  missionName: string;
+  /** 「文字で送る」は送った文字、「アンケート」は選んだ選択肢。 */
+  kind: "text" | "survey";
+  text: string;
+  at: string;
+};
 
-/** 主催者が見る、ミッションの「文字で送る」で届いた文字（新しい順）。 */
+/** 「アンケート」の部品ごとの集計（選択肢ごとの人数）。 */
+export type OrganizerMissionPoll = { missionIndex: number; missionName: string; question: string; choices: string[]; counts: number[]; total: number };
+
+/** 主催者が見る、ミッションの「文字で送る」「アンケート」で届いた答え（新しい順）と、アンケートの集計。 */
 export async function listOrganizerMissionTexts(
   supabase: SupabaseClient,
   gameId: string,
-): Promise<{ enabled: boolean; ready: boolean; texts: OrganizerMissionText[] }> {
+): Promise<{ enabled: boolean; ready: boolean; texts: OrganizerMissionText[]; polls: OrganizerMissionPoll[] }> {
+  const off = { enabled: false, ready: true, texts: [], polls: [] };
   const { data: gameRow } = await supabase.from("organizer_games").select("type, settings").eq("id", gameId).maybeSingle();
   const row = gameRow as { type?: string; settings?: unknown } | null;
-  if (row?.type !== "mission") return { enabled: false, ready: true, texts: [] };
+  if (row?.type !== "mission") return off;
   const stored = readStoredMission(row.settings);
-  if (!stored?.missions.some((mission) => mission.kind === "text")) return { enabled: false, ready: true, texts: [] };
-  const names = new Map(stored.missions.map((mission) => [mission.index, mission.name]));
+  const asked = stored?.missions.filter((mission) => mission.kind === "text" || mission.kind === "survey") ?? [];
+  if (asked.length === 0) return off;
+  const byIndex = new Map(asked.map((mission) => [mission.index, mission]));
+  const polls: OrganizerMissionPoll[] = asked
+    .filter((mission) => mission.kind === "survey" && mission.choices && mission.choices.length > 0)
+    .map((mission) => ({
+      missionIndex: mission.index,
+      missionName: mission.name,
+      question: mission.question ?? "",
+      choices: mission.choices ?? [],
+      counts: (mission.choices ?? []).map(() => 0),
+      total: 0,
+    }));
   const { data, error } = await supabase
     .from("organizer_game_players")
     .select("id, nickname, mission_texts")
     .eq("game_id", gameId);
   if (error) {
-    if (/mission_texts/.test(error.message)) return { enabled: true, ready: false, texts: [] };
+    if (/mission_texts/.test(error.message)) return { enabled: true, ready: false, texts: [], polls };
     throw error;
   }
   const texts: OrganizerMissionText[] = [];
   for (const player of (data ?? []) as {
     id: string;
     nickname: string;
-    mission_texts?: Record<string, { text?: unknown; at?: unknown }> | null;
+    mission_texts?: Record<string, { text?: unknown; at?: unknown; choice?: unknown }> | null;
   }[]) {
     for (const [key, item] of Object.entries(player.mission_texts ?? {})) {
       const index = Number(key);
+      const mission = byIndex.get(index);
       if (!Number.isInteger(index) || typeof item?.text !== "string" || !item.text) continue;
+      const kind = mission?.kind === "survey" ? "survey" : "text";
+      if (kind === "survey") {
+        const poll = polls.find((p) => p.missionIndex === index);
+        // 選んだときの番号が今の選択肢と合わなければ、文字で探す（あとで選択肢を並べ替えたとき用）。
+        const choice =
+          typeof item.choice === "number" && poll?.choices[item.choice] === item.text
+            ? item.choice
+            : (poll?.choices.indexOf(item.text) ?? -1);
+        if (poll) {
+          poll.total += 1;
+          if (choice >= 0) poll.counts[choice] += 1;
+        }
+      }
       texts.push({
         playerId: player.id,
         nickname: player.nickname,
         missionIndex: index,
-        missionName: names.get(index) ?? `ミッション ${index + 1}`,
+        missionName: mission?.name ?? `ミッション ${index + 1}`,
+        kind,
         text: item.text,
         at: typeof item.at === "string" ? item.at : "",
       });
     }
   }
   texts.sort((a, b) => b.at.localeCompare(a.at));
-  return { enabled: true, ready: true, texts };
+  return { enabled: true, ready: true, texts, polls };
 }
 
 export type OrganizerMissionPhoto = { playerId: string; nickname: string; missionIndex: number; missionName: string; url: string; at: string };

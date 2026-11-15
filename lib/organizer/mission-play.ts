@@ -56,6 +56,7 @@ function actionLabel(kind: MissionKindId): string {
   if (kind === "friends") return "合言葉を送る";
   if (kind === "keyword") return "答える";
   if (kind === "text") return "送る";
+  if (kind === "survey") return "答える";
   return "着いた";
 }
 
@@ -95,6 +96,8 @@ export function readStoredMission(settings: unknown): StoredMissionPlay | null {
         const correctRaw = typeof row.correctIndex === "number" ? Math.round(row.correctIndex) : 0;
         const filled = rawChoices.map((choice, i) => ({ choice, i })).filter((item) => item.choice);
         const quizOn = kind === "quiz" && question && filled.length >= 2 && filled.some((item) => item.i === correctRaw);
+        // 「アンケート」：正解はなく、どれかを選べば達成。
+        const pollOn = kind === "survey" && question && filled.length >= 2;
         return [
           {
             index: 0,
@@ -106,7 +109,7 @@ export function readStoredMission(settings: unknown): StoredMissionPlay | null {
               ? gate.arrival === "gps"
                 ? "現在地で確かめる"
                 : "合言葉で確かめる"
-              : quizOn
+              : quizOn || pollOn
                 ? "答える"
                 : actionLabel(kind),
             keyword: kind === "keyword" ? quotedKeyword(condition) : "",
@@ -114,7 +117,7 @@ export function readStoredMission(settings: unknown): StoredMissionPlay | null {
             gate,
             ...(gate ? { arrival: gate.arrival, place } : {}),
             correctIndex: quizOn ? filled.findIndex((item) => item.i === correctRaw) : -1,
-            ...(quizOn ? { question, choices: filled.map((item) => item.choice) } : {}),
+            ...(quizOn || pollOn ? { question, choices: filled.map((item) => item.choice) } : {}),
             ...(kind === "text" ? { prompt: question } : {}),
           },
         ];

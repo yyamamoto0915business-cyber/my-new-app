@@ -26,6 +26,7 @@ function actionLabel(kind: MissionItem["kind"]): string {
   if (kind === "quiz") return "答えた";
   if (kind === "friends") return "一緒に参加した";
   if (kind === "text") return "送る";
+  if (kind === "survey") return "答える";
   return "着いた";
 }
 
@@ -146,6 +147,19 @@ export function MissionTestPlay({
               <button type="button" className="play-start__go" onClick={tryKeyword}>
                 答える
               </button>
+            </>
+          ) : active.kind === "survey" && active.choices.some((c) => c.trim()) ? (
+            <>
+              {active.question ? <p style={{ margin: "0.4rem 0 0", fontWeight: 800 }}>{active.question}</p> : null}
+              <div className="game-test__choices">
+                {active.choices
+                  .filter((c) => c.trim())
+                  .map((choice, i) => (
+                    <button key={`${i}-${choice}`} type="button" className="game-test__choice" onClick={() => complete(active.key)}>
+                      {choice}
+                    </button>
+                  ))}
+              </div>
             </>
           ) : active.kind === "text" ? (
             <>
