@@ -23,6 +23,7 @@ import { useOrganizerUnreadCount } from "@/hooks/use-scoped-unread-count";
 import type { DashboardTodo } from "@/app/api/organizer/dashboard/route";
 import { useOrganizerRole } from "@/hooks/use-organizer-role";
 import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
+import { EventDateTile, eventTiming, todayJst } from "@/components/organizer/mobile/event-date";
 
 const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
@@ -117,13 +118,6 @@ function FeaturedEvent({ e, imageUrl }: { e: DashboardEvent; imageUrl: string })
   );
 }
 
-/** 2026-11-29 と今日（YYYY-MM-DD）の日数の差 */
-function daysBetween(today: string, ymd: string): number {
-  const a = Date.UTC(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10));
-  const b = Date.UTC(+ymd.slice(0, 4), +ymd.slice(5, 7) - 1, +ymd.slice(8, 10));
-  return Math.round((b - a) / 86400000);
-}
-
 /** 10:00〜16:00（時刻がなければ空） */
 function formatTimeRange(e: DashboardEvent): string {
   const start = e.startTime?.slice(0, 5);
@@ -138,65 +132,27 @@ function formatTimeRange(e: DashboardEvent): string {
  */
 function EventRow({ e, today }: { e: DashboardEvent; today: string }) {
   const st = STATUS_LABEL[e.status];
-  const startDay = e.date.slice(0, 10);
-  const [, m, d] = startDay.split("-").map(Number);
-  const wd = WEEKDAY_JA[new Date(`${startDay}T12:00:00+09:00`).getUTCDay()];
-  const lastDay = (e.endDate ?? e.date).slice(0, 10);
-  const multiDay = lastDay > startDay;
-  const past = lastDay < today;
-  const diff = daysBetween(today, startDay);
-  const ongoing = !past && diff < 0;
-  const tag = past
-    ? { label: "終了", className: "bg-[#eef0ec] text-[#8a958d]" }
-    : ongoing
-      ? { label: "開催中", className: "bg-[#173f2c] text-[#f3e6bf]" }
-      : diff === 0
-        ? { label: "今日", className: "bg-[#c0572a] text-white" }
-        : diff === 1
-          ? { label: "明日", className: "bg-[#fbe7dc] text-[#b04c22]" }
-          : diff <= 7
-            ? { label: `あと${diff}日`, className: "bg-[#fbe7dc] text-[#b04c22]" }
-            : { label: `あと${diff}日`, className: "bg-[#eef4ef] text-[#3f6250]" };
+  const timing = eventTiming(today, e.date, e.endDate);
   const time = formatTimeRange(e);
-  const [, em, ed] = lastDay.split("-").map(Number);
-  const sub = [st.label, multiDay ? `〜${em}/${ed}` : null, time || null].filter(Boolean).join("・");
+  const sub = [st.label, timing.multiDay ? `〜${timing.endLabel}` : null, time || null].filter(Boolean).join("・");
   return (
     <Link href={`/organizer/events/${e.id}`} className="flex items-center gap-3 px-3 py-2.5 active:bg-[#f6f9f5]">
-      <span
-        className={cn(
-          "flex h-[46px] w-[42px] shrink-0 flex-col items-center justify-center rounded-[12px] leading-none",
-          past
-            ? "bg-[#f1f2ef] text-[#a3aaa5]"
-            : e.status === "public"
-              ? "bg-[#173f2c] text-white"
-              : "bg-[#fbf3e1] text-[#5f4810]"
-        )}
-        aria-hidden
-      >
-        <span
-          className={cn(
-            "text-[9.5px] font-bold",
-            past ? "" : e.status === "public" ? "text-[#e6d29b]" : "text-[#a3812f]"
-          )}
-        >
-          {m}月
-        </span>
-        <span className="mt-[3px] text-[17px] font-bold tracking-tight">{d}</span>
-        <span className="mt-[3px] text-[9px] font-bold opacity-80">{wd}</span>
-      </span>
+      <EventDateTile date={e.date} status={e.status} past={timing.past} />
       <span className="min-w-0 flex-1">
         {/* palt：「【」などの左の空きを詰めて、題名の左端をそろえる */}
         <span
           className={cn(
             "block truncate text-[14px] font-semibold [font-feature-settings:'palt']",
-            past ? "text-[#7b877f]" : "text-[#163828]"
+            timing.past ? "text-[#7b877f]" : "text-[#163828]"
           )}
         >
           {e.title}
         </span>
         <span className="mt-[3px] block truncate text-[12px] text-[#7b877f]">{sub}</span>
       </span>
-      <span className={cn("shrink-0 rounded-full px-2 py-[3px] text-[11px] font-bold", tag.className)}>{tag.label}</span>
+      <span className={cn("shrink-0 rounded-full px-2 py-[3px] text-[11px] font-bold", timing.tag.className)}>
+        {timing.tag.label}
+      </span>
     </Link>
   );
 }
@@ -236,7 +192,7 @@ export function OrganizerHomeClient() {
 
   const loading = !data && !error;
   // 公開中 → これからの日付が近い順 → 日付の過ぎたもの（新しい順）に並べる
-  const [today] = useState(() => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10));
+  const [today] = useState(todayJst);
   const rank = (e: DashboardEvent) => (e.status === "public" ? 0 : 2) + (e.date >= today ? 0 : 1);
   const events = (data?.events ?? [])
     .filter((e) => e.status === "public" || e.status === "draft")
