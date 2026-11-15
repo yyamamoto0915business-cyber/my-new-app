@@ -18,11 +18,6 @@ export const ORG_COLORS = {
 
 export const ORG_SERIF = "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif";
 
-/** 深い緑の上にうっすら重ねる金色の菱形の模様 */
-export const ORG_GOLD_PATTERN = `url("data:image/svg+xml,${encodeURIComponent(
-  "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path d='M12 1 L23 12 L12 23 L1 12 Z' fill='none' stroke='#c9a54e' stroke-width='0.7' opacity='0.35'/></svg>"
-)}")`;
-
 /** 見出しの上の小さな英字ラベル（金色の細い線つき） */
 export function OrgEyebrow({ children }: { children: ReactNode }) {
   return (

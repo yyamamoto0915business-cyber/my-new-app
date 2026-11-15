@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { useOrganizerUnreadCount } from "@/hooks/use-scoped-unread-count";
 import type { DashboardTodo } from "@/app/api/organizer/dashboard/route";
 import { useOrganizerRole } from "@/hooks/use-organizer-role";
-import { ORG_GOLD_PATTERN, ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
+import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
 
 const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
@@ -58,12 +58,12 @@ const STATUS_LABEL: Record<DashboardEvent["status"], { label: string; className:
 
 const SERIF = ORG_SERIF;
 
-/** 数字1つ（緑のカードの中） */
+/** 数字1つ（白いカードの中。数字だけ深い緑） */
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 px-1 text-center">
-      <dt className="text-[10.5px] font-bold tracking-[0.08em] text-[#e6d29b]">{label}</dt>
-      <dd className="mt-0.5 whitespace-nowrap text-[20px] font-bold leading-tight tracking-tight text-white">{value}</dd>
+      <dt className="text-[10.5px] font-bold tracking-[0.06em] text-[#7b877f]">{label}</dt>
+      <dd className="mt-0.5 whitespace-nowrap text-[19px] font-bold leading-tight tracking-tight text-[#173f2c]">{value}</dd>
     </div>
   );
 }
@@ -88,52 +88,23 @@ function SectionHead({ eyebrow, title, href }: { eyebrow: string; title: string;
   );
 }
 
-/** いちばん上のイベントは写真を大きく見せる */
-function FeaturedEvent({ e }: { e: DashboardEvent }) {
+/** 公開中で写真のあるイベントだけ、写真を大きく見せる */
+function FeaturedEvent({ e, imageUrl }: { e: DashboardEvent; imageUrl: string }) {
   const st = STATUS_LABEL[e.status];
   return (
     <Link
       href={`/organizer/events/${e.id}`}
-      className={cn(
-        "relative block h-[148px] overflow-hidden rounded-[20px] shadow-[0_8px_20px_rgba(14,42,29,0.2)]",
-        e.imageUrl ? "bg-[#173f2c]" : "border border-[#c9a54e]/40 bg-gradient-to-br from-[#245a3e] via-[#173f2c] to-[#0e2a1d]"
-      )}
+      className="relative block h-[148px] overflow-hidden rounded-[20px] bg-[#173f2c] shadow-[0_8px_20px_rgba(14,42,29,0.18)]"
     >
-      {e.imageUrl ? (
-        <EventThumbnail imageUrl={e.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
-      ) : (
-        <>
-          {/* 写真がないときは、深い緑に金色の模様 */}
-          <span
-            className="absolute inset-0 opacity-80 [mask-image:linear-gradient(110deg,transparent_25%,black_90%)]"
-            style={{ backgroundImage: ORG_GOLD_PATTERN }}
-            aria-hidden
-          />
-          <span className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full border border-[#c9a54e]/50 bg-[#0e2a1d]/40 text-[#e6d29b]" aria-hidden>
-            <CalendarDays className="h-6 w-6" />
-          </span>
-        </>
-      )}
-      <span
-        className={cn(
-          "absolute inset-0",
-          e.imageUrl ? "bg-gradient-to-t from-black/70 via-black/25 to-transparent" : "bg-gradient-to-t from-[#0e2a1d]/60 to-transparent"
-        )}
-        aria-hidden
-      />
-      <span className="absolute inset-x-0 bottom-0 p-3.5">
+      <EventThumbnail imageUrl={imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
+      <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" aria-hidden />
+      <span className="absolute inset-x-0 bottom-0 p-3.5 pr-10">
         <span className={cn("inline-block rounded-full px-2 py-0.5 text-[10.5px] font-bold", st.className)}>{st.label}</span>
-        <span
-          className={cn(
-            "mt-1 block truncate text-[17px] font-bold",
-            "text-white drop-shadow"
-          )}
-          style={{ fontFamily: SERIF }}
-        >
+        <span className="mt-1 block truncate text-[17px] font-bold text-white drop-shadow" style={{ fontFamily: SERIF }}>
           {e.title}
         </span>
         <span className="mt-0.5 flex items-center gap-2 truncate text-[12px] text-white/90">
-          <span className="truncate">{formatEventWhen(e)}</span>
+          <span className="shrink-0">{formatEventWhen(e)}</span>
           {e.location ? (
             <span className="flex min-w-0 items-center gap-0.5">
               <MapPin className="h-3 w-3 shrink-0" aria-hidden />
@@ -142,10 +113,7 @@ function FeaturedEvent({ e }: { e: DashboardEvent }) {
           ) : null}
         </span>
       </span>
-      <ChevronRight
-        className="absolute bottom-4 right-3 h-5 w-5 text-white"
-        aria-hidden
-      />
+      <ChevronRight className="absolute bottom-4 right-3 h-5 w-5 text-white" aria-hidden />
     </Link>
   );
 }
@@ -210,7 +178,7 @@ export function OrganizerHomeClient() {
   }, [reloadKey]);
 
   const loading = !data && !error;
-  // いちばん上のイベントを大きく見せるので、公開中 → これからの日付が近い順 → 日付の過ぎたもの（新しい順）に並べる
+  // 公開中 → これからの日付が近い順 → 日付の過ぎたもの（新しい順）に並べる
   const [today] = useState(() => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10));
   const rank = (e: DashboardEvent) => (e.status === "public" ? 0 : 2) + (e.date >= today ? 0 : 1);
   const events = (data?.events ?? [])
@@ -238,6 +206,9 @@ export function OrganizerHomeClient() {
   ];
 
   const canSeeDashboard = role !== "staff";
+  // 大きく見せるのは「公開中で写真がある」いちばん上のイベントだけ。ほかは同じ低い行で並べる
+  const featured = events[0]?.status === "public" && events[0]?.imageUrl ? events[0] : null;
+  const rowEvents = featured ? events.slice(1, 4) : events.slice(0, 4);
   return (
     <div className="mx-auto w-full max-w-xl space-y-4 pb-6 tablet:max-w-[860px]">
       {/* 誰の主催者ホームか */}
@@ -305,19 +276,12 @@ export function OrganizerHomeClient() {
 
           {/* 数字（緑のカード。見るだけ）。押せるのは下の「くわしい数字を見る」の行だけにして、スクロール中に触れても移らないようにする */}
           {loading ? (
-            <div className="h-[104px] animate-pulse rounded-[20px] bg-[#e8ede4]" />
+            <div className="h-[100px] animate-pulse rounded-[18px] bg-[#e8ede4]" />
           ) : data ? (
-            <div
-              className="relative overflow-hidden rounded-[20px] border border-[#c9a54e]/45 bg-gradient-to-br from-[#1f4d36] via-[#173f2c] to-[#0e2a1d] shadow-[0_10px_24px_rgba(14,42,29,0.28)]"
-            >
-              {/* 金色の模様（右上だけ、うっすら） */}
-              <span
-                className="pointer-events-none absolute -right-6 -top-6 h-32 w-40 opacity-70 [mask-image:radial-gradient(closest-side,black,transparent)]"
-                style={{ backgroundImage: ORG_GOLD_PATTERN }}
-                aria-hidden
-              />
-              <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-[#e6d29b]/80 to-transparent" aria-hidden />
-              <dl aria-label="運営サマリー" className="relative grid grid-cols-3 divide-x divide-[#c9a54e]/25 px-2 pb-3 pt-3.5">
+            <div className="relative overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
+              {/* 金色の細い線（差し色はここだけ） */}
+              <span className="pointer-events-none absolute inset-x-5 top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-[#c9a54e] to-transparent" aria-hidden />
+              <dl aria-label="運営サマリー" className="grid grid-cols-3 divide-x divide-[#eef1ec] px-2 pb-2.5 pt-3">
                 <Stat label="公開中" value={`${data.kpis.hosting}件`} />
                 <Stat label="新規申込" value={`${data.kpis.pendingApplications}件`} />
                 <Stat label="今日の売上" value={formatYen(sales?.totalYen ?? 0)} />
@@ -325,7 +289,7 @@ export function OrganizerHomeClient() {
               {canSeeDashboard ? (
                 <Link
                   href="/organizer/dashboard"
-                  className="relative mx-2 mb-2 flex min-h-[40px] items-center justify-center gap-1 rounded-[14px] border border-[#c9a54e]/30 bg-white/[0.07] text-[12px] font-bold text-[#f3e6bf] active:bg-white/15"
+                  className="flex min-h-[40px] items-center justify-center gap-1 border-t border-[#eef1ec] text-[12px] font-bold text-[#173f2c] active:bg-[#f4f7f3]"
                 >
                   くわしい数字を見る（参加・閲覧・売上）
                   <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -365,10 +329,10 @@ export function OrganizerHomeClient() {
                 </Link>
               ) : (
                 <div className="space-y-2.5">
-                  <FeaturedEvent e={events[0]} />
-                  {events.length > 1 ? (
+                  {featured?.imageUrl ? <FeaturedEvent e={featured} imageUrl={featured.imageUrl} /> : null}
+                  {rowEvents.length > 0 ? (
                     <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
-                      {events.slice(1, 4).map((e) => (
+                      {rowEvents.map((e) => (
                         <li key={e.id}>
                           <EventRow e={e} />
                         </li>
