@@ -14,12 +14,13 @@ import {
   type LucideIcon,
   Sparkles,
 } from "lucide-react";
-import type { DashboardResponse } from "@/app/api/organizer/dashboard/route";
+import type { DashboardEvent, DashboardResponse } from "@/app/api/organizer/dashboard/route";
 import type { RecruitmentDashboardResponse } from "@/app/api/organizer/recruitments-dashboard/route";
 import type { StoreRecord } from "@/lib/stores/types";
 import { EventThumbnail } from "@/components/event-thumbnail";
 import { cn } from "@/lib/utils";
 import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
+import { EventDateTile, eventTiming, todayJst } from "@/components/organizer/mobile/event-date";
 
 /** まちに載せるものだけ。ゲームはイベントの中で使う道具なので「運営 → ゲーム」で管理する */
 type Kind = "event" | "store" | "kitchen" | "volunteer";
@@ -41,6 +42,8 @@ type Listing = {
   href: string;
   /** イベントだけ：ポイントの設定（スマホではここが入口。PC はイベント管理のメニュー） */
   pointsHref?: string;
+  /** イベントだけ：日付（左の日付のカレンダーと「あと◯日」に使う） */
+  event?: { date: string; endDate: string | null; status: DashboardEvent["status"] };
 };
 
 /** 種類ごとの色（写真がないときのアイコンの丸と、種類の文字に使う） */
@@ -100,6 +103,7 @@ function fromEvents(data: DashboardResponse | null): Listing[] {
       metric: `申込 ${e.applicationCount}件`,
       href: `/organizer/events/${e.id}`,
       pointsHref: `/organizer/events/${e.id}/points`,
+      event: { date: e.date, endDate: e.endDate ?? null, status: e.status },
     };
   });
 }
@@ -150,62 +154,84 @@ function statusText(item: Listing): string {
 }
 
 /**
- * 1件ぶんの行（低くして1画面に多く並べる）。
- * 行全体は編集へのリンク。イベントだけ右に「ポイント」を重ねる（リンクの入れ子にしない）。
+ * 1件ぶんの行（低くして1画面に多く並べる）。行全体は編集へのリンク。
+ * イベントは左を日付のカレンダーにし、2行目に「あと◯日」。ポイントは右の小さな丸いボタン（リンクの入れ子にしないよう上に重ねる）。
+ * 状態の札は2行目の頭に置いて、題名の左端をそろえる。
  */
-function ListingRow({ item }: { item: Listing }) {
+function ListingRow({ item, today }: { item: Listing; today: string }) {
   const { label: kindLabel, Icon, color, bg } = KIND_META[item.kind];
   const sub = item.sub.startsWith(kindLabel) ? item.sub.slice(kindLabel.length).replace(/^・/, "") : item.sub;
+  const timing = item.event ? eventTiming(today, item.event.date, item.event.endDate) : null;
+  const dim = timing?.past ?? false;
   return (
     <div className="relative">
       <Link
         href={item.href}
         className={cn(
           "flex items-center gap-3 px-3 py-2.5 active:bg-[#f6f9f5]",
-          item.pointsHref ? "pr-[76px]" : "pr-3"
+          item.pointsHref ? "pr-[62px]" : "pr-3"
         )}
       >
-        <span
-          className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[14px]"
-          style={item.imageUrl ? undefined : { background: bg, color }}
-        >
-          {item.imageUrl ? (
-            <EventThumbnail imageUrl={item.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
-          ) : (
-            <span className="flex h-full w-full items-center justify-center">
-              <Icon className="h-6 w-6" aria-hidden />
-            </span>
-          )}
-        </span>
+        {item.event && timing ? (
+          <EventDateTile date={item.event.date} status={item.event.status} past={timing.past} />
+        ) : (
+          <span
+            className="relative h-[46px] w-[46px] shrink-0 overflow-hidden rounded-[12px]"
+            style={item.imageUrl ? undefined : { background: bg, color }}
+          >
+            {item.imageUrl ? (
+              <EventThumbnail imageUrl={item.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center">
+                <Icon className="h-5 w-5" aria-hidden />
+              </span>
+            )}
+          </span>
+        )}
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-1.5">
+          {/* palt：「【」などの左の空きを詰めて、題名の左端をそろえる */}
+          <span
+            className={cn(
+              "block truncate text-[14px] font-semibold [font-feature-settings:'palt']",
+              dim ? "text-[#7b877f]" : "text-[#163828]"
+            )}
+          >
+            {item.title}
+          </span>
+          <span className="mt-[3px] flex items-center gap-1.5 text-[12px] text-[#7b877f]">
             <span className={cn("shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold", STATUS_STYLE[item.status])}>
               {statusText(item)}
             </span>
-            <span className="truncate text-[14.5px] font-bold text-[#163828]">{item.title}</span>
-          </span>
-          <span className="mt-1 block truncate text-[12px] text-[#6b776f]">
-            <span className="font-bold" style={{ color }}>
-              {kindLabel}
+            <span className="min-w-0 truncate">
+              {item.event ? (
+                <>
+                  {timing?.multiDay ? `〜${timing.endLabel}・` : ""}
+                  {item.metric}
+                  {timing ? <span className={cn("font-bold", timing.tag.textClassName)}>・{timing.tag.label}</span> : null}
+                </>
+              ) : (
+                <>
+                  <span className="font-bold" style={{ color }}>
+                    {kindLabel}
+                  </span>
+                  {sub ? `・${sub}` : ""}
+                  {item.metric ? `・${item.metric}` : ""}
+                </>
+              )}
             </span>
-            {sub ? `・${sub}` : ""}
-            {item.metric ? `・${item.metric}` : ""}
           </span>
         </span>
         {item.pointsHref ? null : <ChevronRight className="h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />}
       </Link>
       {item.pointsHref ? (
-        <div className="absolute inset-y-0 right-2 flex items-center gap-0.5">
-          <Link
-            href={item.pointsHref}
-            aria-label={`${item.title}のイベントポイント`}
-            className="flex h-[48px] w-[50px] flex-col items-center justify-center gap-0.5 rounded-[12px] border border-[#ecd9a6] bg-[#fffaf0] text-[#8a6a1c] active:scale-[0.97]"
-          >
-            <Sparkles className="h-4 w-4" aria-hidden />
-            <span className="text-[10px] font-bold leading-none">ポイント</span>
-          </Link>
-          <ChevronRight className="pointer-events-none h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />
-        </div>
+        <Link
+          href={item.pointsHref}
+          aria-label={`${item.title}のイベントポイント`}
+          className="absolute right-2.5 top-1/2 flex h-[44px] w-[44px] -translate-y-1/2 flex-col items-center justify-center gap-[3px] rounded-[12px] border border-[#ecd9a6] bg-[#fffaf0] text-[#a3812f]"
+        >
+          <Sparkles className="h-4 w-4" aria-hidden />
+          <span className="text-[8.5px] font-bold leading-none">ポイント</span>
+        </Link>
       ) : null}
     </div>
   );
@@ -229,6 +255,7 @@ export function OrganizerListingsMobile() {
   const [kindFilter, setKindFilter] = useState<Kind | "all">("all");
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [today] = useState(todayJst);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -244,8 +271,22 @@ export function OrganizerListingsMobile() {
         ...fromStores(stores?.stores ?? null),
         ...fromRecruitments(recruitments),
       ];
-      // 公開中→下書き→終了の順（同じ状態の中は API の並びのまま）
-      all.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+      // 公開中→下書き→終了の順。同じ状態の中で、イベントは「開催中・これからの日付が近い順 → 日付の過ぎたもの（新しい順）」
+      // （お店・募集など日付のないものは API の並びのまま）
+      const today = todayJst();
+      const lastDay = (i: Listing) => (i.event ? (i.event.endDate ?? i.event.date).slice(0, 10) : null);
+      const isPast = (i: Listing) => {
+        const d = lastDay(i);
+        return d !== null && d < today;
+      };
+      all.sort((a, b) => {
+        const s = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+        if (s !== 0) return s;
+        const p = Number(isPast(a)) - Number(isPast(b));
+        if (p !== 0) return p;
+        if (!a.event || !b.event) return 0;
+        return isPast(a) ? b.event.date.localeCompare(a.event.date) : a.event.date.localeCompare(b.event.date);
+      });
       setItems(all);
     });
     return () => controller.abort();
@@ -427,7 +468,7 @@ export function OrganizerListingsMobile() {
           <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[20px] border border-[#ebeee8] bg-white shadow-[0_3px_12px_rgba(22,56,40,0.05)] tablet:grid tablet:grid-cols-2 tablet:divide-y-0 tablet:[&>li]:border-b tablet:[&>li]:border-[#eef1ec] tablet:[&>li:nth-child(odd)]:border-r">
             {visible.map((item) => (
               <li key={item.id}>
-                <ListingRow item={item} />
+                <ListingRow item={item} today={today} />
               </li>
             ))}
           </ul>
