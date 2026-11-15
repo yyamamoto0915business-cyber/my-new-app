@@ -7,6 +7,7 @@ import { ArrowRight, Check, Images, Loader2, Megaphone, Search } from "lucide-re
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { setModeCookie, type ModePreference } from "@/lib/mode-preference";
+import { safeInAppPath } from "@/lib/native/app-shell";
 
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_AUTH_DISABLED === "true";
 
@@ -67,6 +68,11 @@ export default function OnboardingPage() {
   const [submitting, setSubmitting] = useState<"choose" | "skip" | null>(null);
   // 送信成功時は自前で遷移するため、role 反映後の自動リダイレクトを抑止する
   const redirectingRef = useRef(false);
+  /** 終わったあとの戻り先（proxy が渡す）。チームの招待から来たときは招待の画面 */
+  const [next] = useState(() =>
+    typeof window === "undefined" ? "/" : safeInAppPath(new URLSearchParams(window.location.search).get("next")),
+  );
+  const fromTeamInvite = next.startsWith("/team/join/");
 
   const currentRole = user?.user_metadata?.role as string | undefined;
   const selectedChoice = CHOICES.find((c) => c.role === selected);
@@ -79,9 +85,9 @@ export default function OnboardingPage() {
       return;
     }
     if (currentRole) {
-      router.replace("/");
+      router.replace(next);
     }
-  }, [authLoading, user, currentRole, router]);
+  }, [authLoading, user, currentRole, router, next]);
 
   const saveRole = async (role: Role, destination: string, kind: "choose" | "skip") => {
     setError(null);
@@ -137,7 +143,7 @@ export default function OnboardingPage() {
 
   // role 未設定のままだと proxy にここへ戻されるため、「まずは見てみる」も参加者として保存してから移動する
   const handleSkip = () => {
-    void saveRole("ATTENDEE", "/", "skip");
+    void saveRole("ATTENDEE", next, "skip");
   };
 
   // 読み込み中・未ログイン・role 設定済み（＝上の useEffect でリダイレクト対象）はフォームを描画しない
@@ -150,6 +156,36 @@ export default function OnboardingPage() {
   }
 
   const busy = submitting !== null;
+
+  // チームの招待から来た人：自分の団体はいらないので、選ばせずに利用者として始めて招待の画面へ戻す
+  if (fromTeamInvite) {
+    return (
+      <div className="flex min-h-screen-dvh items-center justify-center bg-[var(--mg-paper)] px-5 dark:bg-zinc-950">
+        <div className="w-full max-w-md rounded-3xl border border-zinc-200/70 bg-white p-6 text-center shadow-xl shadow-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--accent)] uppercase">MachiGlyph</p>
+          <h1 className="mt-3 text-[20px] font-bold leading-snug text-zinc-900 dark:text-zinc-50">チームの招待に参加します</h1>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+            団体の情報の登録はいりません。参加すると、招待してくれた団体の主催者の画面を、一緒に使えるようになります。
+          </p>
+          {error ? (
+            <p className="mt-3 text-sm font-bold text-red-600" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => void saveRole("ATTENDEE", next, "skip")}
+            disabled={busy}
+            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] text-[15px] font-bold text-white disabled:opacity-60"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+            招待の画面へ進む
+            {busy ? null : <ArrowRight className="h-4 w-4" aria-hidden />}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen-dvh overflow-x-clip bg-[var(--mg-paper)] dark:bg-zinc-950">

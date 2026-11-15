@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrganizerTeams } from "@/components/organizer/team/OrganizerTeamSwitcher";
+import { useOrganizerRole } from "@/hooks/use-organizer-role";
 import { getOrganizerAccess } from "@/lib/organizer/team";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -145,6 +146,7 @@ export default function OrganizerSettingsPage() {
   } | null>(null);
   const [orgLoading, setOrgLoading] = useState(true);
   const teams = useOrganizerTeams();
+  const canEditProfile = useOrganizerRole() === "owner";
   const currentTeam = teams && teams.teams.length > 1 ? teams.teams.find((t) => t.organizerId === teams.current) : undefined;
   const teamLine = currentTeam ? `使用中：${currentTeam.name}（ここで切りかえ）` : null;
 
@@ -360,7 +362,11 @@ export default function OrganizerSettingsPage() {
               ]}
             />
           )}
-          <SettingBtn tone="organizer" href="/organizer/settings/profile">主催者プロフィールを編集</SettingBtn>
+          {canEditProfile ? (
+            <SettingBtn tone="organizer" href="/organizer/settings/profile">主催者プロフィールを編集</SettingBtn>
+          ) : (
+            <p className="text-[12px] text-[#5f6d64]">団体の情報は、チームのオーナーが変更できます。</p>
+          )}
         </SectionCard>
 
         <SectionCard

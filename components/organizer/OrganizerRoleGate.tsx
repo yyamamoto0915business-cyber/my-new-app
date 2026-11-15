@@ -27,7 +27,9 @@ export function OrganizerRoleGate({ children }: { children: React.ReactNode }) {
         {need === "owner" ? "だけ" : "以上"}が使えます
       </h1>
       <p className="text-[13px] leading-relaxed text-[#5f6d64]">
-        あなたはチームの「{ORGANIZER_ROLE_LABEL[role]}」です。必要なときは、チームのオーナーか管理者に権限を変えてもらってください。
+        {need === "owner"
+          ? `団体の情報・売上の受け取り・プランは、チームのオーナーだけが変えられます。変えたいときは、オーナーに頼んでください（あなたはチームの「${ORGANIZER_ROLE_LABEL[role]}」です）。`
+          : `あなたはチームの「${ORGANIZER_ROLE_LABEL[role]}」です。必要なときは、チームのオーナーか管理者に権限を変えてもらってください。`}
       </p>
       <Link href="/organizer/home" className="mt-2 flex h-12 w-full items-center justify-center rounded-[14px] bg-[#2f7d4e] text-[15px] font-bold text-white">
         主催者ホームへ

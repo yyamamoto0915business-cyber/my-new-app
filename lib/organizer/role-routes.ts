@@ -3,9 +3,9 @@ import type { OrganizerRole } from "@/lib/organizer/team";
 /**
  * TEAM：主催者の画面ごとに、開くのに必要な役割。データベースのルール（00131）と同じ線を、画面の入口でも引く。
  * - スタッフ：当日の受付・レジ・一覧・マイページ（見るだけ）
- * - 編集者以上：掲載・ゲーム・募集の作成と編集、ダッシュボード、プロフィール、ポイントの設定
+ * - 編集者以上：掲載・ゲーム・募集の作成と編集、ダッシュボード、ポイントの設定
  * - 管理者以上：招待リンク
- * - オーナーだけ：売上の受け取り・支払い・チャット（チャットはデータベースでも本人だけ）
+ * - オーナーだけ：団体のプロフィール・売上の受け取り・支払い・チャット（団体の行とチャットはデータベースでも本人だけ書ける）
  */
 const RULES: { re: RegExp; role: OrganizerRole }[] = [
   { re: /^\/organizer\/(settings\/(payouts|billing))(\/|$)/, role: "owner" },
@@ -14,7 +14,8 @@ const RULES: { re: RegExp; role: OrganizerRole }[] = [
   { re: /^\/organizer\/new(\/|$)/, role: "editor" },
   { re: /^\/organizer\/[^/]+\/new(\/|$)/, role: "editor" },
   { re: /^\/organizer\/dashboard(\/|$)/, role: "editor" },
-  { re: /^\/organizer\/settings\/profile(\/|$)/, role: "editor" },
+  // 団体のプロフィール：中身は開いた人自身のプロフィールの編集なので、メンバーが開くと自分の個人の情報を書きかえてしまう。オーナーだけ
+  { re: /^\/organizer\/settings\/profile(\/|$)/, role: "owner" },
   { re: /^\/organizer\/(articles|stories)(\/|$)/, role: "editor" },
   { re: /^\/organizer\/games\/analytics(\/|$)/, role: "editor" },
   { re: /^\/organizer\/games\/[^/]+\/analytics(\/|$)/, role: "editor" },

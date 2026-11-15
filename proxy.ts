@@ -188,7 +188,10 @@ export async function proxy(request: NextRequest) {
 
   // ログイン済みでロール未設定 → オンボーディングへ（アプリページのみ）
   if (user && !user.user_metadata?.role) {
-    const redirect = NextResponse.redirect(new URL("/onboarding", request.url));
+    // 終わったら元の画面に戻れるように、戻り先を渡す（チームの招待から登録した人が、招待の画面に戻れるように）
+    const onboardingUrl = new URL("/onboarding", request.url);
+    if (path !== "/") onboardingUrl.searchParams.set("next", path + request.nextUrl.search);
+    const redirect = NextResponse.redirect(onboardingUrl);
     mergeSupabaseCookies(response, redirect);
     return redirect;
   }
