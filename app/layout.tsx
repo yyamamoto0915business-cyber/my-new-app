@@ -12,6 +12,7 @@ import { PcTopNav } from "@/components/navigation/pc-top-nav";
 import { ImmersiveAwareFooter } from "@/components/navigation/immersive-aware-footer";
 import { OrganizerProGlobalSyncer } from "@/components/organizer/OrganizerProGlobalSyncer";
 import { AbortErrorRecovery } from "@/components/abort-error-recovery";
+import { TouchTapGuard } from "@/components/touch-tap-guard";
 import { NativeAppBridge } from "@/components/native/NativeAppBridge";
 import { PushRegistration } from "@/components/native/PushRegistration";
 import "./globals.css";
@@ -105,6 +106,7 @@ export default function RootLayout({
       <body className="font-sans antialiased min-h-screen-dvh bg-[#f3f4f1]">
         <LanguageProvider>
           <AbortErrorRecovery />
+          <TouchTapGuard />
           <NativeAppBridge />
           <PushRegistration />
           <OrganizerProGlobalSyncer />
