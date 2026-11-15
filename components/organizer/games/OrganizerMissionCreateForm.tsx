@@ -25,6 +25,7 @@ import {
   Trophy,
   Users,
   MessageSquareText,
+  ListChecks,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -74,6 +75,7 @@ const KIND_ICONS: Record<MissionKindId, LucideIcon> = {
   quiz: CircleHelp,
   friends: Users,
   text: MessageSquareText,
+  survey: ListChecks,
 };
 
 const REWARD_OPTIONS: { id: "coupon" | "points" | "stamp"; label: string; blurb: string }[] = [
@@ -136,6 +138,9 @@ function missionTodo(mission: MissionItem): string | null {
     return "問題が未入力";
   }
   if (mission.kind === "text" && !mission.question.trim()) return "お題が未入力";
+  if (mission.kind === "survey" && (!mission.question.trim() || mission.choices.filter((choice) => choice.trim()).length < 2)) {
+    return "質問が未入力";
+  }
   return null;
 }
 
@@ -478,9 +483,18 @@ export function OrganizerMissionCreateForm() {
                       />
                     </label>
                     <p style={{ margin: 0, padding: "0.6rem 0.7rem", borderRadius: "0.7rem", background: "#f8fcf9", border: "1px dashed #cfe3d6", fontSize: "0.75rem", color: "#3c4a40", lineHeight: 1.6 }}>
-                      参加者がお題に答えて送ると達成になります（400文字まで）。届いた文字は、公開後のゲーム管理画面の「届いた文字」で見られ、CSV で保存できます。
+                      参加者がお題に答えて送ると達成になります（400文字まで）。届いた文字は、公開後のゲーム管理画面の「届いた答え」で見られ、CSV で保存できます。
                     </p>
                   </>
+                ) : null}
+                {editing.kind === "survey" ? (
+                  <MissionQuizFields
+                    poll
+                    question={editing.question}
+                    choices={editing.choices}
+                    correctIndex={0}
+                    onChange={(patch) => updateMission(editing.key, patch)}
+                  />
                 ) : null}
                 {editing.kind === "quiz" ? (
                   <MissionQuizFields
@@ -1017,16 +1031,18 @@ export function OrganizerMissionCreateForm() {
   );
 }
 
-/** 「クイズに答える」の問題文・選択肢・正解。正解した人だけ達成になる。 */
+/** 「クイズに答える」の問題文・選択肢・正解。正解した人だけ達成になる。poll のときは「アンケート」（正解なし・選べば達成）。 */
 function MissionQuizFields({
   question,
   choices,
   correctIndex,
   onChange,
+  poll = false,
 }: {
   question: string;
   choices: string[];
   correctIndex: number;
+  poll?: boolean;
   onChange: (patch: { question?: string; choices?: string[]; correctIndex?: number }) => void;
 }) {
   const list = choices.length >= 2 ? choices : [...choices, "", ""].slice(0, 2);
@@ -1034,25 +1050,27 @@ function MissionQuizFields({
   return (
     <div style={{ display: "grid", gap: "0.5rem", padding: "0.7rem", border: "1px dashed #cfe3d6", borderRadius: "0.8rem", background: "#f8fcf9" }}>
       <label style={{ display: "grid", gap: "0.25rem" }}>
-        問題文
+        {poll ? "聞くこと" : "問題文"}
         <textarea
           value={question}
           maxLength={120}
           rows={2}
-          placeholder="例：中央広場の時計台は、何年にできた？"
+          placeholder={poll ? "例：いちばん楽しかったお店は？" : "例：中央広場の時計台は、何年にできた？"}
           onChange={(event) => onChange({ question: event.target.value })}
         />
       </label>
-      <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#3c4a40" }}>選択肢（正解の ● を押す）</span>
+      <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#3c4a40" }}>{poll ? "選択肢" : "選択肢（正解の ● を押す）"}</span>
       {list.map((choice, index) => (
         <div key={index} style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
-          <input
-            type="radio"
-            name="mission-quiz-correct"
-            checked={correctIndex === index}
-            aria-label={`選択肢${index + 1}を正解にする`}
-            onChange={() => onChange({ correctIndex: index })}
-          />
+          {poll ? null : (
+            <input
+              type="radio"
+              name="mission-quiz-correct"
+              checked={correctIndex === index}
+              aria-label={`選択肢${index + 1}を正解にする`}
+              onChange={() => onChange({ correctIndex: index })}
+            />
+          )}
           <input
             value={choice}
             maxLength={40}
@@ -1086,11 +1104,19 @@ function MissionQuizFields({
           ＋ 選択肢を足す
         </button>
       ) : null}
+      {poll ? (
+        <small style={{ color: !question.trim() || filled < 2 ? "#c0392b" : "#6a7568" }}>
+          {!question.trim() || filled < 2
+            ? "聞くことと、2つ以上の選択肢を入れてください。"
+            : "どれかを選んで答えると達成です。選ばれた数は、公開後のゲーム管理画面の「届いた答え」で見られます。"}
+        </small>
+      ) : (
       <small style={{ color: !question.trim() || filled < 2 || !list[correctIndex]?.trim() ? "#c0392b" : "#6a7568" }}>
         {!question.trim() || filled < 2 || !list[correctIndex]?.trim()
           ? "問題文・2つ以上の選択肢・正解を入れると、正解した人だけ達成になります（それまでは押すだけで達成）。"
           : "正解した人だけ達成になります。まちがえたら、もう一度答えられます。"}
       </small>
+      )}
     </div>
   );
 }

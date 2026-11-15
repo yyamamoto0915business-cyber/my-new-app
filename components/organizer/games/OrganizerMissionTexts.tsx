@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
-type Text = { playerId: string; nickname: string; missionIndex: number; missionName: string; text: string; at: string };
-type Desk = { enabled: boolean; ready: boolean; texts: Text[] };
+type Text = { playerId: string; nickname: string; missionIndex: number; missionName: string; kind?: "text" | "survey"; text: string; at: string };
+type Poll = { missionIndex: number; missionName: string; question: string; choices: string[]; counts: number[]; total: number };
+type Desk = { enabled: boolean; ready: boolean; texts: Text[]; polls: Poll[] };
 
 function csvCell(value: string) {
   return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
@@ -19,7 +20,7 @@ function formatTime(iso: string) {
   }
 }
 
-/** ミッションの「文字で送る」で、参加者から届いた文字の一覧（CSV で保存もできる）。 */
+/** ミッションの「文字で送る」「アンケート」で、参加者から届いた答え（アンケートは集計も。CSV で保存もできる）。 */
 export function OrganizerMissionTexts({ gameId, gameType }: { gameId: string; gameType: string }) {
   const [desk, setDesk] = useState<Desk | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +35,7 @@ export function OrganizerMissionTexts({ gameId, gameType }: { gameId: string; ga
         const json = (await res.json().catch(() => ({}))) as Desk & { error?: string };
         if (!res.ok) throw new Error(json.error || "届いた文字を読み込めませんでした");
         if (!cancelled) {
-          setDesk({ enabled: json.enabled === true, ready: json.ready !== false, texts: Array.isArray(json.texts) ? json.texts : [] });
+          setDesk({ enabled: json.enabled === true, ready: json.ready !== false, texts: Array.isArray(json.texts) ? json.texts : [], polls: Array.isArray(json.polls) ? json.polls : [] });
         }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "届いた文字を読み込めませんでした");
@@ -49,13 +50,16 @@ export function OrganizerMissionTexts({ gameId, gameType }: { gameId: string; ga
   if (!desk && !error) return null;
   if (desk && !desk.enabled) return null;
 
-  const texts = desk?.texts ?? [];
+  const all = desk?.texts ?? [];
+  const polls = desk?.polls ?? [];
+  // 一覧に並べるのは文字の答え。アンケートは上の集計で見せる（CSV にはどちらも入れる）。
+  const texts = all.filter((t) => t.kind !== "survey");
   const missions = [...new Map(texts.map((t) => [t.missionIndex, t.missionName])).entries()].sort((a, b) => a[0] - b[0]);
   const shown = filter === "all" ? texts : texts.filter((t) => t.missionIndex === filter);
 
   function downloadCsv() {
-    const header = ["ニックネーム", "ミッション", "送った文字", "送った日時"];
-    const rows = shown.map((t) => [
+    const header = ["ニックネーム", "ミッション", "答え", "送った日時"];
+    const rows = (filter === "all" ? all : shown).map((t) => [
       t.nickname,
       t.missionName,
       t.text,
@@ -66,7 +70,7 @@ export function OrganizerMissionTexts({ gameId, gameType }: { gameId: string; ga
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "届いた文字.csv";
+    a.download = "届いた答え.csv";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -75,14 +79,49 @@ export function OrganizerMissionTexts({ gameId, gameType }: { gameId: string; ga
     <section className="org-game-editor__panel">
       <div className="org-game-editor__panel-head">
         <div>
-          <h2>届いた文字</h2>
-          {desk?.ready ? <p>{texts.length}件</p> : null}
+          <h2>届いた答え</h2>
+          {desk?.ready ? <p>{all.length}件</p> : null}
         </div>
       </div>
       {desk && !desk.ready ? (
-        <p className="org-game-editor__empty">文字を残す準備ができていません（データベースの更新が必要です）。</p>
+        <p className="org-game-editor__empty">答えを残す準備ができていません（データベースの更新が必要です）。</p>
       ) : null}
-      {desk?.ready && texts.length === 0 ? <p className="org-game-editor__empty">まだ届いていません。</p> : null}
+      {desk?.ready && all.length === 0 ? <p className="org-game-editor__empty">まだ届いていません。</p> : null}
+      {polls.map((poll) => (
+        <div key={poll.missionIndex} className="mb-3 rounded-[14px] border border-[#e3e8e3] bg-white px-3.5 py-3">
+          <p className="m-0 text-[11.5px] font-bold text-[#a26a10]">アンケート・{poll.missionName}</p>
+          <p className="m-0 mt-0.5 text-[14px] font-bold text-[#163828]">{poll.question}</p>
+          <ul className="m-0 mt-2 grid list-none gap-1.5 p-0">
+            {poll.choices.map((choice, i) => {
+              const n = poll.counts[i] ?? 0;
+              const pct = poll.total > 0 ? Math.round((n / poll.total) * 100) : 0;
+              return (
+                <li key={i}>
+                  <div className="flex items-baseline justify-between gap-2 text-[13px] text-[#163828]">
+                    <span className="min-w-0 break-words">{choice}</span>
+                    <span className="shrink-0 tabular-nums text-[#3f5146]">
+                      {n}人{poll.total > 0 ? `（${pct}%）` : ""}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-[#eef1ec]" aria-hidden>
+                    <div className="h-full rounded-full bg-[#2f7d4e]" style={{ width: `${pct}%` }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="m-0 mt-2 text-[11.5px] text-[#6a7568]">答えた人 {poll.total}人</p>
+        </div>
+      ))}
+      {all.length > 0 && texts.length === 0 ? (
+        <button
+          type="button"
+          onClick={downloadCsv}
+          className="inline-flex min-h-[42px] items-center rounded-full border border-[#1e3828] px-4 text-[13px] font-bold text-[#1e3828]"
+        >
+          CSV で保存
+        </button>
+      ) : null}
       {texts.length > 0 ? (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-2">
