@@ -38845,3 +38845,92 @@ button.mg-album-place {
     font-size: 12.5px;
   }
 }
+
+
+/*
+ * イベント管理（スマホ・タブレット 〜899px）：2026-11-15 作り直し。
+ * 一覧を白い大きな枠で囲まず、カードを並べる。カードの操作ボタンは同じ大きさにそろえる。
+ */
+@media (max-width: 899px) {
+  .org-events-mgmt--compact .org-events-list-shell {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .org-events-mgmt--compact .org-events-list-shell__body {
+    border-top: 0;
+    padding: 0;
+  }
+  .org-events-mgmt--compact .org-events-list-shell__hint,
+  .org-events-mgmt--compact .org-events-list-shell__footer {
+    display: none;
+  }
+  .org-events-mgmt--compact .org-events-list {
+    gap: 10px;
+  }
+  .org-events-mgmt--compact .org-events-next-action > a {
+    padding: 8px 12px;
+    font-size: inherit;
+    line-height: 1.35;
+  }
+  .org-events-mgmt--compact .org-event-row-card {
+    border-radius: 18px;
+    border-color: #ebeee8;
+    box-shadow: 0 3px 10px rgba(22, 56, 40, 0.05);
+  }
+  .org-events-mgmt--compact .org-event-row-card__mobile {
+    padding: 12px;
+  }
+  .org-events-mgmt--compact .org-event-row-card__m-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 36px;
+    min-height: 36px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    border: 1px solid #e3ece5;
+    background: #fff;
+    color: #2f4a3a;
+    font-size: 12.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .org-events-mgmt--compact .org-event-row-card__m-btn--primary {
+    border-color: #173f2c;
+    background: #173f2c;
+    color: #f6ebc8;
+  }
+  .org-events-mgmt--compact .org-event-row-card__m-btn--danger {
+    border-color: #f2d4d4;
+    background: #fff6f6;
+    color: #b42318;
+  }
+  .org-events-mgmt--compact .org-event-row-card__m-menu {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    border: 1px solid #e3ece5;
+    background: #fff;
+    color: #5f6d64;
+  }
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  /* タブレット：カードを2列に並べる */
+  .org-events-mgmt--compact .org-events-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}

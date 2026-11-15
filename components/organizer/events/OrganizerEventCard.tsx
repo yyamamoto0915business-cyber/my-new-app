@@ -14,14 +14,15 @@ import {
   Globe,
   GlobeLock,
   Loader2,
+  MapPin,
   MessageCircle,
-  Calendar,
   MoreHorizontal,
   Upload,
   Users,
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EventDateTile, eventTiming, todayJst } from "@/components/organizer/mobile/event-date";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -124,6 +125,7 @@ export function OrganizerEventCard({
   const [publishAgreed, setPublishAgreed] = useState(false);
   const [menuOpenDesktop, setMenuOpenDesktop] = useState(false);
   const [menuOpenMobile, setMenuOpenMobile] = useState(false);
+  const [today] = useState(todayJst);
   const [actionLoading, setActionLoading] = useState<null | "toggle" | "archive" | "restore" | "delete">(null);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -296,6 +298,11 @@ export function OrganizerEventCard({
   const payoutsLabel = !chargesEnabled ? "売上受取設定" : hasPaidContent ? "売上確認" : "売上";
   const staffSlots = event.recruitmentIds?.length ?? 0;
   const thumbSrc = event.imageUrl || "/events/pc-hero-landscape.jpg";
+  // スマホ：日付のカレンダーと「あと◯日」（ホーム・掲載管理と同じ部品）
+  const timing = eventTiming(today, event.date, event.endDate);
+  const timeRange = event.startTime
+    ? `${event.startTime.slice(0, 5)}〜${event.endTime?.slice(0, 5) ?? ""}`
+    : "";
 
   return (
     <article className="org-event-row-card">
@@ -583,44 +590,45 @@ export function OrganizerEventCard({
 
       {/* ── モバイル（募集一覧と同系統のコンパクト行） ── */}
       <div className="org-event-row-card__mobile p-2 min-[900px]:hidden">
-        <div className="flex items-start gap-1.5">
-          <span
-            className="org-event-row-card__mobile-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#e8ede4] bg-[#f0f4ee]"
-            aria-hidden
-          >
-            <Calendar className="h-4 w-4 text-[#7a9488]" strokeWidth={1.75} />
-          </span>
+        {/* 1段目：日付のカレンダー・題名・状態と時刻（右上に「あと◯日」） */}
+        <div className="flex items-start gap-3">
+          <EventDateTile date={event.date} status={displayStatus} past={timing.past} />
           <div className="min-w-0 flex-1">
-            <div className="flex items-start gap-1.5">
+            <div className="flex items-start gap-2">
               <Link
                 href={`/organizer/events/${event.id}`}
-                className="org-event-row-card__mobile-title min-w-0 flex-1 truncate leading-tight hover:underline"
+                className={cn(
+                  "min-w-0 flex-1 truncate text-[14.5px] font-semibold leading-snug [font-feature-settings:'palt']",
+                  timing.past ? "text-[#7b877f]" : "text-[#163828]"
+                )}
               >
                 {event.title}
               </Link>
-              <span
-                className={cn(
-                  "org-event-row-card__mobile-badge inline-flex shrink-0 border px-1 py-px",
-                  statusPillClass
-                )}
-              >
-                {STATUS_LABELS[displayStatus] ?? displayStatus}
-              </span>
-            </div>
-            <div className="org-event-row-card__mobile-meta mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0">
-              <span className="inline-flex items-center gap-0.5 whitespace-nowrap">
-                <Calendar className="h-3 w-3 shrink-0" aria-hidden />
-                {dateTimeStr}
-              </span>
-              <span className="whitespace-nowrap">{billingTag.label}</span>
-              {event.location ? (
-                <span className="max-w-[10rem] truncate">{event.location}</span>
+              {!isArchived ? (
+                <span className={cn("shrink-0 rounded-full px-2 py-[2px] text-[10.5px] font-bold", timing.tag.className)}>
+                  {timing.tag.label}
+                </span>
               ) : null}
             </div>
+            <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-[#7b877f]">
+              <span className={cn("shrink-0 rounded-full border px-1.5 py-px text-[10px] font-bold", statusPillClass)}>
+                {STATUS_LABELS[displayStatus] ?? displayStatus}
+              </span>
+              <span className="min-w-0 truncate">
+                {[timing.multiDay ? `〜${timing.endLabel}` : null, timeRange || null, billingTag.label].filter(Boolean).join("・")}
+              </span>
+            </p>
+            {event.location ? (
+              <p className="mt-0.5 flex min-w-0 items-center gap-1 text-[11.5px] text-[#9aa29c]">
+                <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                <span className="truncate">{event.location}</span>
+              </p>
+            ) : null}
           </div>
         </div>
 
-        <div className="org-event-row-card__mobile-actions mt-1 flex flex-wrap items-center justify-end gap-0.5">
+        {/* 2段目：操作（左から大事な順。押し間違えないよう同じ大きさにそろえる） */}
+        <div className="org-event-row-card__mobile-actions mt-2.5 flex items-center gap-1.5 border-t border-[#eef1ec] pt-2.5">
           {archiveBoxMode ? (
             <>
               <button
