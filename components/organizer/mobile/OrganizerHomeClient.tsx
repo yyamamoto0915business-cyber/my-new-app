@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Check,
   ChevronRight,
-  ClipboardList,
   Info,
   MapPin,
   Gamepad2,
@@ -43,7 +42,6 @@ function formatEventWhen(e: DashboardEvent): string {
  * チャットは下のナビ、プランはマイページから行く。
  */
 const QUICK_ACTIONS: { href: string; label: string; Icon: LucideIcon; color: string; bg: string }[] = [
-  { href: "/organizer/events", label: "イベント管理", Icon: ClipboardList, color: "#d4843a", bg: "#fdf1e4" },
   { href: "/organizer", label: "当日の受付", Icon: QrCode, color: "#2f7d4e", bg: "#e6f3ea" },
   { href: "/organizer/pos", label: "レジ", Icon: Wallet, color: "#2f6fae", bg: "#e6f1fa" },
   { href: "/organizer/games", label: "ゲーム", Icon: Gamepad2, color: "#7a5cc0", bg: "#efeaf9" },
@@ -159,7 +157,8 @@ function EventRow({ e, today }: { e: DashboardEvent; today: string }) {
 
 /**
  * 主催者ホーム：開いてすぐ「今やること」が見える順に並べる。
- * 対応が必要なこと → 数字 → 運営の道具（イベント管理・当日の受付・レジ・ゲーム） → 管理中のイベント
+ * 対応が必要なこと → 数字 → 運営の道具（当日の受付・レジ・ゲーム） → 管理中のイベント
+ * イベントの一覧と操作は、スマホでは掲載管理にまとめた（ホームの「イベント管理」ボタンは外した）
  */
 export function OrganizerHomeClient() {
   const role = useOrganizerRole();
@@ -312,7 +311,7 @@ export function OrganizerHomeClient() {
           ) : null}
 
           {/* 運営の道具 */}
-          <nav aria-label="運営の道具" className="grid grid-cols-4 gap-2">
+          <nav aria-label="運営の道具" className="grid grid-cols-3 gap-2">
             {QUICK_ACTIONS.map(({ href, label, Icon, color, bg }) => (
               <Link
                 key={href}

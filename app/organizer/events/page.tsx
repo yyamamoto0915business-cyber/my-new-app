@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
-import { EventsMobileTop } from "@/components/organizer/events/EventsMobileTop";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { EventSummaryCards } from "@/components/organizer/events/EventSummaryCards";
 import {
@@ -55,6 +55,14 @@ function sortEvents(list: DashboardEvent[], sortBy: SortOption): DashboardEvent[
 }
 
 export default function OrganizerEventsPage() {
+  const router = useRouter();
+  // スマホ・タブレットでは、イベントの一覧は掲載管理にまとめた（イベントだけに絞って開く）。PC はこの画面のまま
+  const [isNarrow, setIsNarrow] = useState<boolean | null>(null);
+  useEffect(() => {
+    const narrow = window.matchMedia("(max-width: 899px)").matches;
+    setIsNarrow(narrow);
+    if (narrow) router.replace("/organizer/listings?kind=event");
+  }, [router]);
   const [kpis, setKpis] = useState<DashboardKpis>({
     hosting: 0,
     needsAction: 0,
@@ -268,6 +276,8 @@ export default function OrganizerEventsPage() {
     </Link>
   );
 
+  if (isNarrow) return null;
+
   return (
     <OrganizerRegistrationGate>
       <OrganizerPageShell
@@ -276,19 +286,6 @@ export default function OrganizerEventsPage() {
         contentClassName="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col pb-16 min-[900px]:pb-0"
       >
         <div className="org-events-mgmt org-events-mgmt--compact flex min-h-0 flex-1 flex-col space-y-2 min-[900px]:space-y-0">
-        <EventsMobileTop
-          total={listTabCounts.all}
-          counts={listTabCounts}
-          listTab={listTab}
-          onTabChange={handleListTabChange}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          archivedCount={archivedCount}
-          onArchiveClick={() => handleListTabChange(listTab === "archived" ? "all" : "archived")}
-        />
-
         <EventsManagementHero actions={createEventButton} />
 
         {loading ? (
