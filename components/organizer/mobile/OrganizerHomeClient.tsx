@@ -227,24 +227,6 @@ export function OrganizerHomeClient() {
   ];
 
   const canSeeDashboard = role !== "staff";
-  const statsBody = data ? (
-    <>
-      <dl aria-label="運営サマリー" className="grid grid-cols-3 divide-x divide-white/15">
-        <Stat label="公開中" value={`${data.kpis.hosting}件`} />
-        <Stat label="新規申込" value={`${data.kpis.pendingApplications}件`} />
-        <Stat label="今日の売上" value={formatYen(sales?.totalYen ?? 0)} />
-      </dl>
-      {canSeeDashboard ? (
-        <span className="mt-2.5 flex items-center justify-center gap-1 border-t border-white/15 pt-2 text-[12px] font-bold text-white/85">
-          くわしい数字を見る（参加・閲覧・売上）
-          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-        </span>
-      ) : null}
-    </>
-  ) : null;
-  const statsClass =
-    "relative block overflow-hidden rounded-[20px] bg-gradient-to-br from-[#2f7d4e] via-[#246b43] to-[#1a5434] px-2 pb-2.5 pt-3.5 shadow-[0_8px_20px_rgba(22,56,40,0.22)]";
-
   return (
     <div className="mx-auto w-full max-w-xl space-y-4 pb-6 tablet:max-w-[860px]">
       {/* 誰の主催者ホームか */}
@@ -313,17 +295,26 @@ export function OrganizerHomeClient() {
             )
           ) : null}
 
-          {/* 数字（緑のカード）。くわしい数字（ダッシュボード）の入口はここだけ */}
+          {/* 数字（緑のカード。見るだけ）。押せるのは下の「くわしい数字を見る」の行だけにして、スクロール中に触れても移らないようにする */}
           {loading ? (
             <div className="h-[104px] animate-pulse rounded-[20px] bg-[#e8ede4]" />
           ) : data ? (
-            canSeeDashboard ? (
-              <Link href="/organizer/dashboard" className={cn(statsClass, "active:scale-[0.99]")}>
-                {statsBody}
-              </Link>
-            ) : (
-              <div className={statsClass}>{statsBody}</div>
-            )
+            <div className="overflow-hidden rounded-[20px] bg-gradient-to-br from-[#2f7d4e] via-[#246b43] to-[#1a5434] shadow-[0_8px_20px_rgba(22,56,40,0.22)]">
+              <dl aria-label="運営サマリー" className="grid grid-cols-3 divide-x divide-white/15 px-2 pb-3 pt-3.5">
+                <Stat label="公開中" value={`${data.kpis.hosting}件`} />
+                <Stat label="新規申込" value={`${data.kpis.pendingApplications}件`} />
+                <Stat label="今日の売上" value={formatYen(sales?.totalYen ?? 0)} />
+              </dl>
+              {canSeeDashboard ? (
+                <Link
+                  href="/organizer/dashboard"
+                  className="mx-2 mb-2 flex min-h-[40px] items-center justify-center gap-1 rounded-[14px] bg-white/12 text-[12px] font-bold text-white active:bg-white/20"
+                >
+                  くわしい数字を見る（参加・閲覧・売上）
+                  <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                </Link>
+              ) : null}
+            </div>
           ) : null}
 
           {/* 運営の道具 */}

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { NATIVE_AUTH_CALLBACK, safeInAppPath } from "@/lib/native/app-shell";
+import { NATIVE_AUTH_CALLBACK, inAppLinkPath, safeInAppPath } from "@/lib/native/app-shell";
 
 function paramsFromCallback(url: string): URLSearchParams | null {
   if (url.startsWith("jp.machiglyph.app://")) {
@@ -36,6 +36,12 @@ export function NativeAppBridge() {
       const { App } = await import("@capacitor/app");
       const { Browser } = await import("@capacitor/browser");
       const handle = await App.addListener("appUrlOpen", async ({ url }) => {
+        // チームの招待リンクなど：アプリの中でその画面を開く
+        const linkPath = inAppLinkPath(url);
+        if (linkPath) {
+          window.location.assign(linkPath);
+          return;
+        }
         if (!url.startsWith(NATIVE_AUTH_CALLBACK) && !url.includes("/auth/callback")) return;
         await Browser.close().catch(() => undefined);
         const params = paramsFromCallback(url);
