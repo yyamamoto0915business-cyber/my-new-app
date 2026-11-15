@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useOrganizerUnreadCount } from "@/hooks/use-scoped-unread-count";
 import type { DashboardTodo } from "@/app/api/organizer/dashboard/route";
 import { useOrganizerRole } from "@/hooks/use-organizer-role";
+import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
 
 const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
@@ -55,14 +56,14 @@ const STATUS_LABEL: Record<DashboardEvent["status"], { label: string; className:
   archived: { label: "非公開", className: "bg-[#eef0ec] text-[#6b776f]" },
 };
 
-const SERIF = "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif";
+const SERIF = ORG_SERIF;
 
-/** 数字1つ（緑のカードの中） */
+/** 数字1つ（白いカードの中。数字だけ深い緑） */
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 px-1 text-center">
-      <dt className="text-[10.5px] font-bold tracking-[0.06em] text-white/70">{label}</dt>
-      <dd className="mt-0.5 whitespace-nowrap text-[20px] font-bold leading-tight tracking-tight text-white">{value}</dd>
+      <dt className="text-[10.5px] font-bold tracking-[0.06em] text-[#7b877f]">{label}</dt>
+      <dd className="mt-0.5 whitespace-nowrap text-[19px] font-bold leading-tight tracking-tight text-[#173f2c]">{value}</dd>
     </div>
   );
 }
@@ -72,16 +73,13 @@ function SectionHead({ eyebrow, title, href }: { eyebrow: string; title: string;
   return (
     <div className="mb-2 flex items-end justify-between gap-2">
       <div className="min-w-0">
-        <p className="flex items-center gap-1.5 text-[9.5px] font-medium tracking-[0.24em] text-[#a08a68]">
-          <span className="h-px w-4 bg-[#cbbba0]" aria-hidden />
-          {eyebrow}
-        </p>
+        <OrgEyebrow>{eyebrow}</OrgEyebrow>
         <h2 className="mt-0.5 text-[17px] font-bold tracking-[0.04em] text-[#163828]" style={{ fontFamily: SERIF }}>
           {title}
         </h2>
       </div>
       {href ? (
-        <Link href={href} className="mb-0.5 inline-flex shrink-0 items-center gap-0.5 text-[12px] font-bold text-[#1f7a4a]">
+        <Link href={href} className="mb-0.5 inline-flex shrink-0 items-center gap-0.5 text-[12px] font-bold text-[#173f2c]">
           すべて見る
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
@@ -90,39 +88,23 @@ function SectionHead({ eyebrow, title, href }: { eyebrow: string; title: string;
   );
 }
 
-/** いちばん上のイベントは写真を大きく見せる */
-function FeaturedEvent({ e }: { e: DashboardEvent }) {
+/** 公開中で写真のあるイベントだけ、写真を大きく見せる */
+function FeaturedEvent({ e, imageUrl }: { e: DashboardEvent; imageUrl: string }) {
   const st = STATUS_LABEL[e.status];
   return (
     <Link
       href={`/organizer/events/${e.id}`}
-      className="relative block h-[148px] overflow-hidden rounded-[20px] bg-gradient-to-br from-[#dcebdf] via-[#eef4e8] to-[#f6efe1] shadow-[0_6px_18px_rgba(22,56,40,0.12)] active:scale-[0.99]"
+      className="relative block h-[148px] overflow-hidden rounded-[20px] bg-[#173f2c] shadow-[0_8px_20px_rgba(14,42,29,0.18)]"
     >
-      {e.imageUrl ? (
-        <EventThumbnail imageUrl={e.imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
-      ) : (
-        <CalendarDays className="absolute right-4 top-4 h-16 w-16 text-[#1f6a42]/15" aria-hidden />
-      )}
-      <span
-        className={cn(
-          "absolute inset-0",
-          e.imageUrl ? "bg-gradient-to-t from-black/70 via-black/25 to-transparent" : ""
-        )}
-        aria-hidden
-      />
-      <span className="absolute inset-x-0 bottom-0 p-3.5">
+      <EventThumbnail imageUrl={imageUrl} alt="" rounded="none" fill placeholderSize="icon" />
+      <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" aria-hidden />
+      <span className="absolute inset-x-0 bottom-0 p-3.5 pr-10">
         <span className={cn("inline-block rounded-full px-2 py-0.5 text-[10.5px] font-bold", st.className)}>{st.label}</span>
-        <span
-          className={cn(
-            "mt-1 block truncate text-[17px] font-bold",
-            e.imageUrl ? "text-white drop-shadow" : "text-[#163828]"
-          )}
-          style={{ fontFamily: SERIF }}
-        >
+        <span className="mt-1 block truncate text-[17px] font-bold text-white drop-shadow" style={{ fontFamily: SERIF }}>
           {e.title}
         </span>
-        <span className={cn("mt-0.5 flex items-center gap-2 truncate text-[12px]", e.imageUrl ? "text-white/90" : "text-[#4f5d54]")}>
-          <span className="truncate">{formatEventWhen(e)}</span>
+        <span className="mt-0.5 flex items-center gap-2 truncate text-[12px] text-white/90">
+          <span className="shrink-0">{formatEventWhen(e)}</span>
           {e.location ? (
             <span className="flex min-w-0 items-center gap-0.5">
               <MapPin className="h-3 w-3 shrink-0" aria-hidden />
@@ -131,10 +113,7 @@ function FeaturedEvent({ e }: { e: DashboardEvent }) {
           ) : null}
         </span>
       </span>
-      <ChevronRight
-        className={cn("absolute bottom-4 right-3 h-5 w-5", e.imageUrl ? "text-white" : "text-[#163828]")}
-        aria-hidden
-      />
+      <ChevronRight className="absolute bottom-4 right-3 h-5 w-5 text-white" aria-hidden />
     </Link>
   );
 }
@@ -199,7 +178,7 @@ export function OrganizerHomeClient() {
   }, [reloadKey]);
 
   const loading = !data && !error;
-  // いちばん上のイベントを大きく見せるので、公開中 → これからの日付が近い順 → 日付の過ぎたもの（新しい順）に並べる
+  // 公開中 → これからの日付が近い順 → 日付の過ぎたもの（新しい順）に並べる
   const [today] = useState(() => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10));
   const rank = (e: DashboardEvent) => (e.status === "public" ? 0 : 2) + (e.date >= today ? 0 : 1);
   const events = (data?.events ?? [])
@@ -227,14 +206,14 @@ export function OrganizerHomeClient() {
   ];
 
   const canSeeDashboard = role !== "staff";
+  // 大きく見せるのは「公開中で写真がある」いちばん上のイベントだけ。ほかは同じ低い行で並べる
+  const featured = events[0]?.status === "public" && events[0]?.imageUrl ? events[0] : null;
+  const rowEvents = featured ? events.slice(1, 4) : events.slice(0, 4);
   return (
     <div className="mx-auto w-full max-w-xl space-y-4 pb-6 tablet:max-w-[860px]">
       {/* 誰の主催者ホームか */}
       <header className="pt-1">
-        <p className="flex items-center gap-1.5 text-[9.5px] font-medium tracking-[0.24em] text-[#a08a68]">
-          <span className="h-px w-4 bg-[#cbbba0]" aria-hidden />
-          ORGANIZER HOME
-        </p>
+        <OrgEyebrow>ORGANIZER HOME</OrgEyebrow>
         <h1
           className="mt-0.5 truncate text-[22px] font-bold tracking-[0.04em] text-[#163828]"
           style={{ fontFamily: SERIF }}
@@ -265,7 +244,7 @@ export function OrganizerHomeClient() {
           ) : data ? (
             todos.length === 0 ? (
               <p className="flex items-center gap-2 rounded-full border border-[#dcebdf] bg-[#f1f8f2] px-3.5 py-2.5 text-[12.5px] font-bold text-[#2f6b47]">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2f7d4e] text-white" aria-hidden>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#173f2c] text-[#ecdcab]" aria-hidden>
                   <Check className="h-3 w-3" strokeWidth={3} />
                 </span>
                 いま対応が必要なことはありません
@@ -297,10 +276,12 @@ export function OrganizerHomeClient() {
 
           {/* 数字（緑のカード。見るだけ）。押せるのは下の「くわしい数字を見る」の行だけにして、スクロール中に触れても移らないようにする */}
           {loading ? (
-            <div className="h-[104px] animate-pulse rounded-[20px] bg-[#e8ede4]" />
+            <div className="h-[100px] animate-pulse rounded-[18px] bg-[#e8ede4]" />
           ) : data ? (
-            <div className="overflow-hidden rounded-[20px] bg-gradient-to-br from-[#2f7d4e] via-[#246b43] to-[#1a5434] shadow-[0_8px_20px_rgba(22,56,40,0.22)]">
-              <dl aria-label="運営サマリー" className="grid grid-cols-3 divide-x divide-white/15 px-2 pb-3 pt-3.5">
+            <div className="relative overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
+              {/* 金色の細い線（差し色はここだけ） */}
+              <span className="pointer-events-none absolute inset-x-5 top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-[#c9a54e] to-transparent" aria-hidden />
+              <dl aria-label="運営サマリー" className="grid grid-cols-3 divide-x divide-[#eef1ec] px-2 pb-2.5 pt-3">
                 <Stat label="公開中" value={`${data.kpis.hosting}件`} />
                 <Stat label="新規申込" value={`${data.kpis.pendingApplications}件`} />
                 <Stat label="今日の売上" value={formatYen(sales?.totalYen ?? 0)} />
@@ -308,7 +289,7 @@ export function OrganizerHomeClient() {
               {canSeeDashboard ? (
                 <Link
                   href="/organizer/dashboard"
-                  className="mx-2 mb-2 flex min-h-[40px] items-center justify-center gap-1 rounded-[14px] bg-white/12 text-[12px] font-bold text-white active:bg-white/20"
+                  className="flex min-h-[40px] items-center justify-center gap-1 border-t border-[#eef1ec] text-[12px] font-bold text-[#173f2c] active:bg-[#f4f7f3]"
                 >
                   くわしい数字を見る（参加・閲覧・売上）
                   <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -348,10 +329,10 @@ export function OrganizerHomeClient() {
                 </Link>
               ) : (
                 <div className="space-y-2.5">
-                  <FeaturedEvent e={events[0]} />
-                  {events.length > 1 ? (
+                  {featured?.imageUrl ? <FeaturedEvent e={featured} imageUrl={featured.imageUrl} /> : null}
+                  {rowEvents.length > 0 ? (
                     <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
-                      {events.slice(1, 4).map((e) => (
+                      {rowEvents.map((e) => (
                         <li key={e.id}>
                           <EventRow e={e} />
                         </li>

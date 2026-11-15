@@ -242,12 +242,13 @@ a[role="button"]:not([aria-disabled="true"]) {
 @media (hover: none) {
   .org-workspace-shell a[href] {
     -webkit-tap-highlight-color: transparent;
-    transition: transform 0.18s ease, filter 0.18s ease, background-color 0.15s ease, color 0.15s ease,
+    transition: transform 0.18s ease, background-color 0.15s ease, color 0.15s ease,
       border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
   }
   .org-workspace-shell a[href]:active {
     transform: scale(0.97);
-    filter: brightness(0.93);
+    /* 灰色ではなく、深い緑をうっすら重ねる（中身の下に塗られるので文字・写真はそのまま） */
+    box-shadow: inset 0 0 0 999px rgba(23, 63, 44, 0.08);
     transition-duration: 0.08s;
     transition-delay: 40ms;
   }
