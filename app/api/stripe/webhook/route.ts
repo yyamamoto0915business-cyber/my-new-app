@@ -337,7 +337,8 @@ export async function POST(request: NextRequest) {
         const charge = event.data.object as Stripe.Charge;
         const piId = charge.payment_intent as string;
         const now = new Date().toISOString();
-        if (piId) {
+        // 一部だけの返金でも届くので、全額返したとき（charge.refunded が true）だけ「返金済み」にする
+        if (piId && charge.refunded) {
           await supabase
             .from("sponsorships")
             .update({ status: "refunded", updated_at: now })
