@@ -3,19 +3,14 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
-  BarChart3,
-  Calendar,
+  ArrowUpDown,
   ChevronDown,
   ChevronRight,
-  Globe,
   MessageCircle,
-  MoreVertical,
+  MoreHorizontal,
   Plus,
   Search,
-  SlidersHorizontal,
-  UserCheck,
   Users,
-  ArrowUpDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -28,15 +23,11 @@ import type {
   RecruitmentsStatusFilter,
 } from "@/components/organizer/recruitments/OrganizerRecruitmentsPcView";
 import { showToast } from "@/lib/toast";
-
-const STATUS_LABELS: Record<string, string> = {
-  draft: "下書き",
-  public: "募集中",
-  closed: "終了",
-};
+import { OrgEyebrow, ORG_SERIF } from "@/components/organizer/mobile/organizer-theme";
+import { EventDateTile, todayJst } from "@/components/organizer/mobile/event-date";
 
 const STATUS_OPTIONS: { value: RecruitmentsStatusFilter; label: string }[] = [
-  { value: "all", label: "すべてのステータス" },
+  { value: "all", label: "すべて" },
   { value: "public", label: "募集中" },
   { value: "draft", label: "下書き" },
   { value: "closed", label: "終了" },
@@ -72,120 +63,96 @@ type Props = {
   onRecruitmentUpdated: () => void;
 };
 
-function formatRolesLabel(roles: { name: string; count: number }[]): string {
-  if (!roles?.length) return "—";
-  const names = roles.map((r) => r.name).filter(Boolean);
-  return names.length ? names.join("・") : "—";
+/** 保存された日時（壁時計の時刻として扱う）から HH:MM を取り出す */
+function timeOf(v: string | null | undefined): string {
+  return typeof v === "string" && v.length > 10 ? v.slice(11, 16) : "";
 }
 
-function formatScheduleShort(
-  startAt: string | null | undefined,
-  endAt: string | null | undefined
-): string {
-  if (!startAt) return "—";
-  const start = new Date(startAt);
-  const date = start.toLocaleDateString("ja-JP", {
-    month: "numeric",
-    day: "numeric",
-    weekday: "short",
-  });
-  const startTime =
-    typeof startAt === "string" && startAt.length > 10 ? startAt.slice(11, 16) : "";
-  const endTime =
-    endAt && typeof endAt === "string" && endAt.length > 10 ? endAt.slice(11, 16) : "";
-  if (startTime && endTime) return `${date} ${startTime}〜${endTime}`;
-  if (startTime) return `${date} ${startTime}`;
-  return date;
+function timeRange(startAt: string | null | undefined, endAt: string | null | undefined): string {
+  const s = timeOf(startAt);
+  const e = timeOf(endAt);
+  if (s && e) return `${s}〜${e}`;
+  return s;
 }
 
-function getStatusBadge(r: RecruitmentDashboardItem): {
-  label: string;
-  className: string;
-} {
-  if ((r.pendingCount ?? 0) > 0) {
-    return {
-      label: "応募確認",
-      className: "bg-white text-[#2B5A8B] border-[#8BB8D8]",
-    };
-  }
-  if (r.status === "public") {
-    return {
-      label: "募集中",
-      className: "bg-[#EAF6DE] text-[#3a7a10] border-[#B8DEB0]",
-    };
-  }
-  if (r.status === "closed") {
-    return { label: "終了", className: "bg-[#f0eeea] text-[#7a6a58] border-[#e8e6e0]" };
-  }
-  return {
-    label: STATUS_LABELS[r.status] ?? r.status,
-    className: "bg-[#FFF8E8] text-[#9a7b20] border-[#E8D9A8]",
-  };
+function statusTag(r: RecruitmentDashboardItem, past: boolean): { label: string; className: string } {
+  if (r.status === "draft") return { label: "下書き", className: "bg-[#fdf1d8] text-[#a26a10]" };
+  if (r.status === "closed" || past) return { label: "終了", className: "bg-[#eef0ec] text-[#6b776f]" };
+  return { label: "募集中", className: "bg-[#e3f2e7] text-[#1f7a4a]" };
 }
 
-function KpiCardMobile({
-  icon,
+/** 上の数字（押すと一覧をその条件で絞る。もう一度押すと戻す） */
+function StatCell({
   value,
   label,
-  tone,
   active,
+  alert,
   onClick,
 }: {
-  icon: React.ReactNode;
   value: number;
   label: string;
-  tone: "danger" | "primary" | "success" | "neutral";
-  active?: boolean;
+  active: boolean;
+  alert?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        "mg-recruitments-m__kpi flex w-full items-center gap-2 rounded-[10px] border border-[#e8e6e0] bg-white p-2 text-left shadow-[0_1px_4px_rgba(26,40,24,0.04)]",
-        `mg-recruitments-m__kpi--${tone}`,
-        active && "is-active"
-      )}
       aria-pressed={active}
+      className={cn(
+        "flex min-w-0 flex-col items-center justify-center rounded-[12px] px-1 py-2 transition-colors active:scale-[0.97]",
+        active ? "bg-[#173f2c] text-[#f6ebc8]" : "text-[#1f2a24]"
+      )}
     >
-      <div className="mg-recruitments-m__kpi-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="mg-recruitments-m__kpi-value leading-none">{value}</p>
-        <p className="mg-recruitments-m__kpi-label mt-0.5">{label}</p>
-      </div>
+      <span
+        className={cn(
+          "text-[20px] font-bold leading-none tabular-nums",
+          !active && alert && value > 0 && "text-[#c0572a]"
+        )}
+        style={{ fontFamily: ORG_SERIF }}
+      >
+        {value}
+      </span>
+      <span className={cn("mt-1 text-[10.5px] font-semibold", active ? "text-[#e6d29b]" : "text-[#6b776f]")}>
+        {label}
+      </span>
     </button>
   );
 }
 
-function RecruitmentListCard({
-  recruitment,
+function RecruitmentRow({
+  recruitment: r,
+  today,
   onUpdated,
 }: {
   recruitment: RecruitmentDashboardItem;
+  today: string;
   onUpdated: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  /** 画面の下のほうの行は、下のメニューに隠れないよう上に開く */
+  const [menuUp, setMenuUp] = useState(false);
   const [closing, setClosing] = useState(false);
 
-  const capacity = recruitment.capacity;
-  const applicantText =
-    capacity != null && capacity > 0
-      ? `${recruitment.applicationCount}/${capacity}人`
-      : `${recruitment.applicationCount}人`;
-
-  const badge = getStatusBadge(recruitment);
-  const rolesLabel = formatRolesLabel(recruitment.roles);
-  const primaryHref = `/organizer/recruitments/${recruitment.id}`;
+  const startDay = r.start_at ? String(r.start_at).slice(0, 10) : "";
+  const lastDay = r.end_at ? String(r.end_at).slice(0, 10) : startDay;
+  const past = Boolean(lastDay) && lastDay < today;
+  const tag = statusTag(r, past);
+  const roles = (r.roles ?? []).map((x) => x.name).filter(Boolean).join("・");
+  const time = timeRange(r.start_at, r.end_at);
+  const sub = [time, roles].filter(Boolean).join(" · ") || r.eventTitle || "";
+  const capacity = r.capacity;
+  const applied =
+    capacity != null && capacity > 0 ? `${r.applicationCount}/${capacity}人` : `${r.applicationCount}人`;
+  const pending = r.pendingCount ?? 0;
 
   const handleClose = async () => {
-    if (recruitment.status !== "public" || closing) return;
+    if (r.status !== "public" || closing) return;
     if (!window.confirm("この募集を終了しますか？")) return;
     setClosing(true);
     try {
-      const res = await fetch(`/api/recruitments/${recruitment.id}`, {
+      const res = await fetch(`/api/recruitments/${r.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "closed" }),
@@ -203,84 +170,122 @@ function RecruitmentListCard({
   };
 
   return (
-    <li className="mg-recruitments-m__card rounded-[10px] border border-[#e8e6e0] bg-white p-2 shadow-[0_1px_5px_rgba(43,58,107,0.05)]">
-      <div className="flex items-start gap-1.5">
-        <span
-          className="mg-recruitments-m__card-icon flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[#e8ede4] bg-[#f0f4ee]"
-          aria-hidden
-        >
-          <Users className="h-3 w-3 text-[#7a9488]" strokeWidth={1.75} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="mg-recruitments-m__card-title truncate leading-tight">{recruitment.title}</p>
-          <div className="mg-recruitments-m__card-meta mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0">
-            <span className="truncate">役割：{rolesLabel}</span>
-            <span className="inline-flex items-center gap-0.5 whitespace-nowrap">
-              <Calendar className="h-2.5 w-2.5 shrink-0" aria-hidden />
-              {formatScheduleShort(recruitment.start_at, recruitment.end_at)}
-            </span>
-            <span className="inline-flex items-center gap-0.5 whitespace-nowrap">
-              <Users className="h-2.5 w-2.5 shrink-0" aria-hidden />
-              {applicantText}
-            </span>
-            <span className={cn("mg-recruitments-m__badge inline-flex border px-1 py-px", badge.className)}>
-              {badge.label}
-            </span>
-          </div>
-        </div>
-      </div>
-      <div className="mg-recruitments-m__card-actions mt-1 flex flex-wrap items-center justify-end gap-0.5">
-        <Link
-          href={primaryHref}
-          className="mg-recruitments-pc__btn-action mg-recruitments-pc__btn-action--primary no-underline"
-        >
-          応募者確認
-        </Link>
-        <Link
-          href={`/organizer/recruitments/new?editId=${recruitment.id}`}
-          className="mg-recruitments-pc__btn-action no-underline"
-        >
-          編集
-        </Link>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setMenuOpen((o) => !o)}
-            className="mg-recruitments-pc__btn-menu"
-            aria-label="メニュー"
+    <li
+      className={cn(
+        "relative flex items-stretch rounded-[14px] border border-[#e6e2d6] bg-white shadow-[0_1px_4px_rgba(23,63,44,0.05)]",
+        pending > 0 && "border-l-[3px] border-l-[#c0572a]"
+      )}
+    >
+      <Link
+        href={`/organizer/recruitments/${r.id}`}
+        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-l-[14px] py-2.5 pl-2.5 pr-1 no-underline"
+      >
+        {startDay ? (
+          <EventDateTile
+            date={startDay}
+            status={r.status === "public" ? "public" : r.status === "draft" ? "draft" : "ended"}
+            past={past}
+          />
+        ) : (
+          <span
+            className="flex h-[46px] w-[42px] shrink-0 items-center justify-center rounded-[12px] bg-[#f4f1e8] text-[10px] font-bold text-[#a3812f]"
+            aria-hidden
           >
-            <MoreVertical className="h-3.5 w-3.5" aria-hidden />
-          </button>
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
-              <div className="absolute right-0 top-full z-20 mt-1 min-w-[148px] overflow-hidden rounded-lg border border-[#e8e6e0] bg-white py-1 shadow-lg">
-                <Link
-                  href={`/organizer/recruitments/new?copyFrom=${recruitment.id}`}
-                  className="block px-3 py-2 text-[12px] text-[#3a3428] no-underline hover:bg-[#f5f4f0]"
-                  onClick={() => setMenuOpen(false)}
+            未定
+          </span>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            <span
+              className={cn("shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold leading-[16px]", tag.className)}
+            >
+              {tag.label}
+            </span>
+            <span
+              className="truncate text-[14px] font-semibold leading-snug text-[#1f2a24]"
+              style={{ fontFeatureSettings: '"palt"' }}
+            >
+              {r.title}
+            </span>
+          </span>
+          {sub && <span className="mt-0.5 block truncate text-[12px] text-[#6b776f]">{sub}</span>}
+          <span className="mt-1 flex items-center gap-2 text-[12px]">
+            <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-[#3f6250]">
+              <Users className="h-3 w-3" aria-hidden />
+              応募 {applied}
+            </span>
+            {pending > 0 && (
+              <span className="rounded-full bg-[#fbe7dc] px-1.5 py-px text-[10.5px] font-bold text-[#b04c22]">
+                承認待ち {pending}
+              </span>
+            )}
+          </span>
+        </span>
+      </Link>
+      <div className="relative flex shrink-0 items-center pr-1">
+        <button
+          type="button"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setMenuUp(rect.bottom > window.innerHeight - 280);
+            setMenuOpen((o) => !o);
+          }}
+          className="flex h-10 w-9 items-center justify-center rounded-[10px] text-[#6b776f] active:bg-[#f1f2ef]"
+          aria-label={`${r.title}のメニュー`}
+          aria-expanded={menuOpen}
+        >
+          <MoreHorizontal className="h-4.5 w-4.5" aria-hidden />
+        </button>
+        {menuOpen && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} aria-hidden />
+            <div
+              className={cn(
+                "absolute right-1 z-40",
+                menuUp ? "bottom-[calc(50%+18px)]" : "top-[calc(50%+18px)]",
+                " min-w-[160px] overflow-hidden rounded-[12px] border border-[#e6e2d6] bg-white py-1 shadow-[0_8px_24px_rgba(14,42,29,0.16)]"
+              )}
+            >
+              <Link
+                href={`/organizer/recruitments/${r.id}`}
+                className="block px-3.5 py-2.5 text-[13px] font-semibold text-[#173f2c] no-underline active:bg-[#f5f4f0]"
+                onClick={() => setMenuOpen(false)}
+              >
+                応募者を見る
+              </Link>
+              <Link
+                href={`/organizer/recruitments/new?editId=${r.id}`}
+                className="block px-3.5 py-2.5 text-[13px] text-[#1f2a24] no-underline active:bg-[#f5f4f0]"
+                onClick={() => setMenuOpen(false)}
+              >
+                編集
+              </Link>
+              <Link
+                href={`/organizer/recruitments/new?copyFrom=${r.id}`}
+                className="block px-3.5 py-2.5 text-[13px] text-[#1f2a24] no-underline active:bg-[#f5f4f0]"
+                onClick={() => setMenuOpen(false)}
+              >
+                複製して新しく作る
+              </Link>
+              {r.status === "public" && (
+                <button
+                  type="button"
+                  disabled={closing}
+                  className="block w-full border-t border-[#f0ede4] px-3.5 py-2.5 text-left text-[13px] text-[#a8481c] active:bg-[#fff7f2] disabled:opacity-50"
+                  onClick={() => void handleClose()}
                 >
-                  複製
-                </Link>
-                {recruitment.status === "public" && (
-                  <button
-                    type="button"
-                    disabled={closing}
-                    className="block w-full px-3 py-2 text-left text-[12px] text-[#8a2c20] hover:bg-[#fef0ee] disabled:opacity-50"
-                    onClick={() => void handleClose()}
-                  >
-                    {closing ? "処理中…" : "募集を終了"}
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
+                  {closing ? "処理中…" : "募集を終了する"}
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </li>
   );
 }
 
+/** 主催者：ボランティア募集の管理（スマホ・タブレット）。掲載管理の行と同じ並び・色にそろえる */
 export function OrganizerRecruitmentsMobileView({
   kpis,
   filteredRecruitments,
@@ -298,234 +303,204 @@ export function OrganizerRecruitmentsMobileView({
   nextAction,
   onRecruitmentUpdated,
 }: Props) {
+  const [today] = useState(todayJst);
+
   const sortedList = useMemo(() => {
     const list = [...filteredRecruitments];
     if (sortBy === "created_asc") {
       list.sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""));
     } else if (sortBy === "start_asc") {
-      list.sort((a, b) => (a.start_at ?? "").localeCompare(b.start_at ?? ""));
+      // 日程が近い順。終わったもの・日程のないものは後ろ
+      const key = (r: RecruitmentDashboardItem) => {
+        const d = r.start_at ? String(r.start_at) : "";
+        const last = (r.end_at ? String(r.end_at) : d).slice(0, 10);
+        if (!d) return "2";
+        return (last < today ? "1" : "0") + d;
+      };
+      list.sort((a, b) => key(a).localeCompare(key(b)));
     } else {
       list.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
     }
     return list;
-  }, [filteredRecruitments, sortBy]);
+  }, [filteredRecruitments, sortBy, today]);
 
-  const monthStats = useMemo(() => {
-    const approved = allRecruitments.reduce((s, r) => s + (r.approvedCount ?? 0), 0);
-    const scheduled = allRecruitments.filter((r) => {
-      const d = r.start_at ? String(r.start_at).slice(0, 10) : "";
-      return d && d >= new Date().toISOString().slice(0, 10);
-    }).length;
-    return {
-      applications: kpis.totalApplications,
-      approved,
-      scheduled,
-    };
-  }, [allRecruitments, kpis.totalApplications]);
-
-  const statusLabel =
-    statusFilter === "all"
-      ? "ステータス"
-      : (STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label ?? "ステータス");
   const sortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "新しい順";
+  const statusLabel = STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label ?? "すべて";
 
-  const nextButtonLabel =
-    nextAction.href === "/organizer/recruitments/new"
-      ? "スタッフ募集を作成する"
-      : nextAction.label;
-
-  const showNextActionBanner =
+  /** 承認待ちがあるときだけ、上にお知らせを出す */
+  const showAttention =
+    kpis.pendingApproval > 0 &&
     nextAction.href !== "/organizer/recruitments/new" &&
     nextAction.href !== "#recruitments-list";
 
   return (
-    <div className="mg-recruitments-m flex flex-col gap-2 pb-20">
-      <header className="mg-recruitments-m__hero relative overflow-hidden rounded-[10px] px-2.5 pb-2.5 pt-2">
-        <nav className="mg-recruitments-m__crumb text-[10px] text-[#8a9e80]" aria-label="パンくず">
-          <Link href="/organizer/listings" className="hover:text-[#2B3A6B] hover:underline">
-            主催者管理
-          </Link>
-          <span className="mx-1 text-[#d4e0d0]">›</span>
-          <span className="text-[#526448]">ボランティア募集管理</span>
-        </nav>
-        <h1 className="mg-recruitments-m__title mt-1">ボランティア募集管理</h1>
-        <p className="mg-recruitments-m__desc mt-0.5 line-clamp-2">
-          イベントごとのボランティア募集を管理し、応募確認まで行えます。
-        </p>
-        <div className="mt-2 grid grid-cols-2 gap-1.5">
-          <Link
-            href="/organizer/messages"
-            className="mg-recruitments-m__btn-outline inline-flex items-center justify-center gap-1 rounded-lg border border-[#c5dbe8] bg-white px-2 py-2 text-[11px] font-medium text-[#2b3a6b] no-underline shadow-sm"
-          >
-            <MessageCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            メッセージ
-          </Link>
-          <Link
-            href="/organizer/recruitments/new"
-            className="mg-recruitments-m__btn-primary touch-manipulation inline-flex items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-semibold text-white no-underline shadow-sm"
-          >
-            <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
-            募集を作成
-          </Link>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-2 gap-1.5">
-        <KpiCardMobile
-          icon={<UserCheck className="h-3.5 w-3.5 text-[#D45A72]" />}
-          value={kpis.pendingApproval}
-          label="承認待ち"
-          tone="danger"
-          active={kpiFilter === "pending_approval"}
-          onClick={() => onKpiClick("pending_approval")}
-        />
-        <KpiCardMobile
-          icon={<Users className="h-3.5 w-3.5 text-[#2B3A6B]" />}
-          value={kpis.totalApplications}
-          label="応募あり"
-          tone="primary"
-          active={kpiFilter === "has_applications"}
-          onClick={() => onKpiClick("has_applications")}
-        />
-        <KpiCardMobile
-          icon={<Calendar className="h-3.5 w-3.5 text-[#4A9A2E]" />}
-          value={kpis.todayCount}
-          label="今日の募集"
-          tone="success"
-          active={kpiFilter === "today"}
-          onClick={() => onKpiClick("today")}
-        />
-        <KpiCardMobile
-          icon={<Globe className="h-3.5 w-3.5 text-[#8a9e80]" />}
-          value={kpis.active}
-          label="公開中"
-          tone="neutral"
-          active={kpiFilter === "public"}
-          onClick={() => onKpiClick("public")}
-        />
-      </div>
-
-      {showNextActionBanner && (
-        <section className="mg-recruitments-m__next flex items-center gap-2 rounded-[10px] border border-[#c5dbe8] px-2.5 py-2">
-          <div className="min-w-0 flex-1">
-            <p className="mg-recruitments-m__next-label">次のアクション</p>
-            <p className="mg-recruitments-m__next-desc mt-0.5 line-clamp-2">{nextAction.description}</p>
+    <div className="flex flex-col gap-3 pb-20">
+      <header className="pt-1">
+        <div className="flex items-end justify-between gap-2">
+          <div className="min-w-0">
+            <OrgEyebrow>VOLUNTEER</OrgEyebrow>
+            <h1
+              className="mt-1 text-[21px] font-bold leading-tight tracking-[0.02em] text-[#173f2c]"
+              style={{ fontFamily: ORG_SERIF }}
+            >
+              ボランティア募集
+            </h1>
           </div>
           <Link
-            href={nextAction.href}
-            className="mg-recruitments-m__btn-primary touch-manipulation inline-flex max-w-[7.5rem] shrink-0 items-center justify-center rounded-lg px-2.5 py-1.5 text-center text-[10px] font-semibold leading-tight text-white no-underline"
+            href="/organizer/messages"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#e1d6b4] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#173f2c] no-underline"
           >
-            {nextButtonLabel}
+            <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+            メッセージ
           </Link>
-        </section>
+        </div>
+        <Link
+          href="/organizer/recruitments/new"
+          className="mt-3 flex h-12 items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] text-[14px] font-bold text-[#f6ebc8] no-underline shadow-[0_2px_8px_rgba(14,42,29,0.18)]"
+        >
+          <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+          募集を作成する
+        </Link>
+      </header>
+
+      <section
+        className="relative overflow-hidden rounded-[16px] border border-[#e6e2d6] bg-white p-1 shadow-[0_1px_4px_rgba(23,63,44,0.05)]"
+        aria-label="数字で絞りこむ"
+      >
+        <span className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#c9a54e] via-[#e6d29b] to-[#c9a54e]" aria-hidden />
+        <div className="grid grid-cols-4 gap-1">
+          <StatCell
+            value={kpis.pendingApproval}
+            label="承認待ち"
+            alert
+            active={kpiFilter === "pending_approval"}
+            onClick={() => onKpiClick("pending_approval")}
+          />
+          <StatCell
+            value={kpis.totalApplications}
+            label="応募"
+            active={kpiFilter === "has_applications"}
+            onClick={() => onKpiClick("has_applications")}
+          />
+          <StatCell
+            value={kpis.todayCount}
+            label="今日"
+            active={kpiFilter === "today"}
+            onClick={() => onKpiClick("today")}
+          />
+          <StatCell
+            value={kpis.active}
+            label="募集中"
+            active={kpiFilter === "public"}
+            onClick={() => onKpiClick("public")}
+          />
+        </div>
+      </section>
+
+      {showAttention && (
+        <Link
+          href={nextAction.href}
+          className="flex items-center gap-2 rounded-[14px] border border-[#f0c2aa] bg-[#fff7f2] px-3 py-2.5 no-underline"
+        >
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#c0572a] text-[13px] font-bold text-white tabular-nums">
+            {kpis.pendingApproval}
+          </span>
+          <span className="min-w-0 flex-1 text-[13px] font-semibold text-[#a8481c]">
+            承認を待っている応募があります
+          </span>
+          <span className="inline-flex shrink-0 items-center text-[12px] font-bold text-[#a8481c]">
+            確認する
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </span>
+        </Link>
       )}
 
-      <section className="flex flex-col gap-1.5">
-        <div className="relative">
+      <section className="flex items-center gap-1.5" id="recruitments-list">
+        <div className="relative min-w-0 flex-1">
           <Search
-            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#bbb]"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a3aaa5]"
             aria-hidden
           />
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="募集名で検索"
-            className="mg-recruitments-m__input w-full rounded-lg border border-[#e8e6e0] bg-white py-2 pl-8 pr-2 text-[11px] outline-none"
+            placeholder="募集名・役割で探す"
+            className="h-10 w-full rounded-[12px] border border-[#e6e2d6] bg-white pl-9 pr-2 text-[16px] text-[#1f2a24] outline-none placeholder:text-[13px] placeholder:text-[#a3aaa5] focus:border-[#c9a54e]"
           />
         </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          <label className="relative flex items-center gap-1 rounded-lg border border-[#e8e6e0] bg-white px-2 py-2 text-[10px] font-medium text-[#526448]">
-            <SlidersHorizontal className="h-3 w-3 shrink-0 text-[#8a9e80]" aria-hidden />
-            <span className="min-w-0 flex-1 truncate">{statusLabel}</span>
-            <ChevronDown className="h-3 w-3 shrink-0 text-[#bbb]" aria-hidden />
-            <select
-              value={statusFilter}
-              onChange={(e) => onStatusFilterChange(e.target.value as RecruitmentsStatusFilter)}
-              className="absolute inset-0 cursor-pointer opacity-0"
-              aria-label="ステータス"
-            >
-              {STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="relative flex items-center gap-1 rounded-lg border border-[#e8e6e0] bg-white px-2 py-2 text-[10px] font-medium text-[#526448]">
-            <ArrowUpDown className="h-3 w-3 shrink-0 text-[#8a9e80]" aria-hidden />
-            <span className="min-w-0 flex-1 truncate">{sortLabel}</span>
-            <ChevronDown className="h-3 w-3 shrink-0 text-[#bbb]" aria-hidden />
-            <select
-              value={sortBy}
-              onChange={(e) => onSortChange(e.target.value as RecruitmentsSortOption)}
-              className="absolute inset-0 cursor-pointer opacity-0"
-              aria-label="並び替え"
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        {hasActiveFilters && (
-          <button
-            type="button"
-            onClick={onResetFilters}
-            className="self-start text-[10px] text-[#8a9e80] underline-offset-2 hover:underline"
+        <label
+          className={cn(
+            "relative flex h-10 shrink-0 items-center gap-0.5 rounded-[12px] border px-2.5 text-[12px] font-semibold",
+            statusFilter !== "all"
+              ? "border-[#173f2c] bg-[#173f2c] text-[#f6ebc8]"
+              : "border-[#e6e2d6] bg-white text-[#3f6250]"
+          )}
+        >
+          {statusLabel}
+          <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+          <select
+            value={statusFilter}
+            onChange={(e) => onStatusFilterChange(e.target.value as RecruitmentsStatusFilter)}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            aria-label="状態で絞りこむ"
           >
-            フィルタをリセット
-          </button>
-        )}
+            {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[#e6e2d6] bg-white text-[#3f6250]">
+          <ArrowUpDown className="h-4 w-4" aria-hidden />
+          <span className="sr-only">{sortLabel}</span>
+          <select
+            value={sortBy}
+            onChange={(e) => onSortChange(e.target.value as RecruitmentsSortOption)}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            aria-label="並び替え"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </section>
+
+      {(hasActiveFilters || sortBy !== "created_desc") && (
+        <div className="-mt-1 flex items-center justify-between px-0.5 text-[12px] text-[#6b776f]">
+          <span>
+            {sortedList.length}件{sortBy !== "created_desc" && ` · ${sortLabel}`}
+          </span>
+          {hasActiveFilters && (
+            <button type="button" onClick={onResetFilters} className="font-semibold text-[#a3812f]">
+              条件を外す
+            </button>
+          )}
+        </div>
+      )}
 
       <section>
         {sortedList.length === 0 ? (
-          <div className="mg-recruitments-m__empty rounded-[10px] border border-dashed border-[#e8e6e0] bg-white px-3 py-5 text-center">
-            <p className="text-[12px] font-medium text-[#526448]">
-              {allRecruitments.length === 0 ? "募集がまだありません" : "該当する募集がありません"}
+          <div className="rounded-[14px] border border-dashed border-[#e1d6b4] bg-white px-4 py-7 text-center">
+            <p className="text-[14px] font-semibold text-[#3f6250]">
+              {allRecruitments.length === 0 ? "募集はまだありません" : "条件に合う募集がありません"}
             </p>
             {allRecruitments.length === 0 && (
-              <Link
-                href="/organizer/recruitments/new"
-                className="mg-recruitments-m__btn-primary touch-manipulation mt-2 inline-flex items-center gap-1 rounded-lg px-3 py-2 text-[11px] font-semibold text-white no-underline"
-              >
-                <Plus className="h-3.5 w-3.5" aria-hidden />
-                スタッフ募集を作成
-              </Link>
+              <p className="mt-1 text-[12px] text-[#6b776f]">受付・誘導などの役割ごとに、手伝ってくれる人を募れます</p>
             )}
           </div>
         ) : (
-          <ul className="flex flex-col gap-1">
+          <ul className="grid grid-cols-1 gap-2 tablet:grid-cols-2">
             {sortedList.map((r) => (
-              <RecruitmentListCard key={r.id} recruitment={r} onUpdated={onRecruitmentUpdated} />
+              <RecruitmentRow key={r.id} recruitment={r} today={today} onUpdated={onRecruitmentUpdated} />
             ))}
           </ul>
         )}
       </section>
-
-      <footer className="mg-recruitments-m__footer flex items-center justify-between gap-2 rounded-lg border border-[#d4e8c8] px-2.5 py-2">
-        <div className="flex min-w-0 flex-1 items-center gap-1.5">
-          <BarChart3 className="h-3.5 w-3.5 shrink-0 text-[#6BBF3E]" aria-hidden />
-          <p className="min-w-0 text-[10px] leading-snug text-[#526448]">
-            <span className="font-medium text-[#2e3d2c]">今月の応募状況</span>
-            <span className="tabular-nums">
-              {" "}
-              応募{monthStats.applications} · 承認{monthStats.approved} · 予定
-              {monthStats.scheduled}
-            </span>
-          </p>
-        </div>
-        <Link
-          href="/organizer"
-          className="mg-recruitments-m__footer-link inline-flex shrink-0 items-center gap-0.5 text-[10px] font-medium text-[#2b3a6b] no-underline"
-        >
-          レポートを見る
-          <ChevronRight className="h-3 w-3" aria-hidden />
-        </Link>
-      </footer>
     </div>
   );
 }
