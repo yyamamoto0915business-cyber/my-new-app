@@ -168,9 +168,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   const t = String(title ?? "").trim();
   const d = String(description ?? "").trim();
-  if (!t || !d || !date || !startTime) {
+  if (!t || !date || !startTime) {
     return NextResponse.json(
-      { error: "タイトル・説明・日付・開始時刻は必須です" },
+      { error: "イベント名・開催日・開始時刻は必須です" },
       { status: 400 }
     );
   }
@@ -185,12 +185,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     address: addressValue,
     startTime,
   });
-  if (Object.keys(onlineErrors).length > 0) {
-    return NextResponse.json(
-      { error: Object.values(onlineErrors)[0], errors: onlineErrors },
-      { status: 400 }
-    );
-  }
+  // 概要や会場などは、下書きなら空でもよい（公開中のイベントだけ、あとで確かめる）
+  const strictErrors: Record<string, string> = { ...onlineErrors };
+  if (!d) strictErrors.description = "イベント概要を入力してください";
 
   const normalizedRecurrence = normalizeEventRecurrence(recurrence);
   const normalizedRecurrenceCount =
@@ -286,6 +283,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       const existing = await fetchEventById(supabase, id);
       if (!existing) {
         return NextResponse.json({ error: "イベントが見つかりません" }, { status: 404 });
+      }
+
+      if (existing.status !== "draft" && Object.keys(strictErrors).length > 0) {
+        return NextResponse.json(
+          { error: Object.values(strictErrors)[0], errors: strictErrors },
+          { status: 400 }
+        );
       }
 
       const scheduleChanged =

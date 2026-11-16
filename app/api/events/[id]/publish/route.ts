@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerRowById } from "@/lib/db/organizers";
-import { publishEvent, getOrganizerIdByEventId } from "@/lib/db/events";
+import { publishEvent, getOrganizerIdByEventId, fetchEventById } from "@/lib/db/events";
+import { missingForPublish, missingForPublishMessage } from "@/lib/event-publish-check";
 import { canPublishEvent, isEventPublishedThisMonthJst } from "@/lib/billing";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -34,6 +35,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   const eventOrganizerId = await getOrganizerIdByEventId(supabase, eventId);
   if (eventOrganizerId !== organizerId) {
     return NextResponse.json({ error: "このイベントの主催者ではありません" }, { status: 403 });
+  }
+
+  // 下書きは必須が足りないまま保存できるので、公開の前に確かめる
+  {
+    const current = await fetchEventById(supabase, eventId);
+    const missing = current ? missingForPublish(current) : [];
+    if (missing.length > 0) {
+      return NextResponse.json(
+        { error: missingForPublishMessage(missing), code: "MISSING_REQUIRED", missing },
+        { status: 400 }
+      );
+    }
   }
 
   const organizer = await getOrganizerRowById(supabase, organizerId) /* TEAM のメンバーも、所属する主催者で数える */;

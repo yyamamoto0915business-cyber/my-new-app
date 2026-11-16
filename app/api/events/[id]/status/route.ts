@@ -4,7 +4,8 @@ import { getApiUser } from "@/lib/api-auth";
 import { getOrganizerIdByProfileId } from "@/lib/db/recruitments-mvp";
 import { getOrganizerRowById } from "@/lib/db/organizers";
 import { canPublishEvent, isEventPublishedThisMonthJst } from "@/lib/billing";
-import { getOrganizerIdByEventId, updateEventStatus } from "@/lib/db/events";
+import { fetchEventById, getOrganizerIdByEventId, updateEventStatus } from "@/lib/db/events";
+import { missingForPublish, missingForPublishMessage } from "@/lib/event-publish-check";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -47,6 +48,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   if (status === "published") {
+    // 下書きは必須が足りないまま保存できるので、公開の前に確かめる
+    {
+      const current = await fetchEventById(supabase, eventId);
+      const missing = current ? missingForPublish(current) : [];
+      if (missing.length > 0) {
+        return NextResponse.json(
+          { error: missingForPublishMessage(missing), code: "MISSING_REQUIRED", missing },
+          { status: 400 }
+        );
+      }
+    }
     // 同月内に一度公開済みのイベントは「再公開」扱いにして枠チェックをスキップ
     const alreadyPublishedThisMonth = await isEventPublishedThisMonthJst(supabase, eventId);
     if (!alreadyPublishedThisMonth) {
