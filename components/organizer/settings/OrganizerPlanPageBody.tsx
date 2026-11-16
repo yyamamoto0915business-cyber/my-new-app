@@ -203,7 +203,8 @@ function CatalogPlanCard({
       </>
     );
   } else if (isCurrent) {
-    cta = <span className="org-plan-tier__cta org-plan-tier__cta--current">{plan.ctaLabel}</span>;
+    // いま使っているプラン（FREE など）は、押せるボタンに見えないよう「利用中」と出す
+    cta = <span className="org-plan-tier__cta org-plan-tier__cta--current">利用中</span>;
   } else if (showCheckoutForm && apple.managedByApple) {
     cta = (
       <p className="org-plan-tier__legal">
@@ -249,7 +250,8 @@ function CatalogPlanCard({
       </>
     );
   } else if (plan.id === "free") {
-    cta = <span className="org-plan-tier__cta org-plan-tier__cta--ghost">{plan.ctaLabel}</span>;
+    // 有料プランを使っているときに FREE の「続ける」を出すと、押せそうで意味が分からないので出さない
+    cta = null;
   } else {
     cta = (
       <button type="button" disabled className="org-plan-tier__cta org-plan-tier__cta--soon">
@@ -412,6 +414,15 @@ export function OrganizerPlanPageBody() {
     ? ORGANIZER_CATALOG_PLANS.filter((plan) => plan.id === "free" || appleProductAvailable(plan) || plan.id === currentId)
     : ORGANIZER_CATALOG_PLANS;
 
+  /**
+   * スマホでは、各プランのカードの中の「同意」がカードを開くまで隠れていて、申し込むボタンが灰色のまま押せなかった。
+   * 同意はどのプランでも同じなので、スマホではプラン一覧の上に1つだけ出す。
+   */
+  const showSharedAgreement =
+    !iosApp &&
+    !managedByApple &&
+    visiblePlans.some((plan) => plan.checkoutEnabled && plan.id !== currentId);
+
   const shellClass = [
     "org-plan-page",
     "org-plan-page--compact",
@@ -546,6 +557,34 @@ export function OrganizerPlanPageBody() {
                 FREEから始まり、プランが上がるごとに新しい機能が追加されます。
               </p>
             </section>
+
+            {showSharedAgreement ? (
+              <div className="org-plan-agree-mobile min-[900px]:hidden">
+                <p>
+                  お申し込み前に、
+                  <Link href="/terms" target="_blank" className="org-plan-tier__legal-link">
+                    利用規約
+                  </Link>
+                  、
+                  <Link href="/commerce" target="_blank" className="org-plan-tier__legal-link">
+                    特定商取引法に基づく表記
+                  </Link>
+                  、
+                  <Link href="/terms#cancellation" target="_blank" className="org-plan-tier__legal-link">
+                    キャンセル条件
+                  </Link>
+                  をご確認ください。
+                </p>
+                <label className="org-plan-agree-mobile__check">
+                  <input
+                    type="checkbox"
+                    checked={billingAgreed}
+                    onChange={(e) => setBillingAgreed(e.target.checked)}
+                  />
+                  <span>上記に同意して申し込む</span>
+                </label>
+              </div>
+            ) : null}
 
             <div className="org-plan-tier-grid">
               {visiblePlans.map((plan) => (
