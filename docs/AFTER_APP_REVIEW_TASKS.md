@@ -237,6 +237,13 @@ PC・タブレット・スマホの3つの画面幅で確認する。
 - [ ] **まだ約580か所が `min-[900px]` のまま。** タブレット用の形は 18 か所しか使われていない。新しく作ったゲーム（投票・抽選・アンケート）の作成画面と主催者の画面は、タブレットの形が無いか確かめる。場所：`components/organizer/games/OrganizerSurveyCreateForm.tsx`、`OrganizerLotteryCreateForm.tsx`、`OrganizerVoteCreateForm.tsx`、`OrganizerGamesHub.tsx`
 - [ ] **エラーを `alert()` で出している所が多い（約66か所）。** アプリの中では、サイトの名前つきの味気ない小窓が出て、消すまで操作できない。主催者の募集ページだけで8か所ある。画面の中の通知（トースト）にそろえる。場所：`app/organizer/recruitments/[id]/page.tsx`、`components/organizer/games/OrganizerLotteryDesk.tsx`、`components/events/detail/purchase/EventPurchasePrimaryCta.tsx`
 
+## 週次チェックで見つかったこと（2026-11-16）
+
+- [ ] **イベント作成の「公開しますか？」の小窓だけ、色が古いまま。** 11/16 に作成画面を深い緑＋金にそろえたが、この小窓のボタンは昔の緑（`#2f7d4e`）と灰色の文字のままで、ほかの部分から浮く。また、画面が低い端末（スマホを横向き）だと小窓が切れる、背景を押しても閉じる以外の操作（Esc キー・読み上げ用の印）が無い。新しい色にそろえ、`max-h` とスクロールを付ける。場所：`app/organizer/events/new/page.tsx`（「Publish confirm modal」）
+- [ ] **イベント作成が、タブレット（600〜899px）ではスマホの形のまま。** 作成画面の切り替えは `min-[900px]` だけ（14か所）で、`tablet:` は0か所。iPad 縦では下に固定したボタン列と1列の入力欄が幅いっぱいに伸びる。ボタン列は 680px で止めているが、入力欄は止めていない。確かめて、タブレットの幅制限か2列の形を足す。場所：`app/organizer/events/new/page.tsx`、`components/organizer/events/event-form-ui.tsx`
+- [ ] **下から出る共通の「シート」に、ホームバー用の余白が無いか確かめる。** `components/ui/sheet.tsx` と `components/EventQuickView.tsx` には `env(safe-area-inset-bottom)` が見当たらず、下に置いたボタンがホームバーに重なるおそれ。シートを使う画面で、下端のボタンが押せるか実機で見る。場所：`components/ui/sheet.tsx`、`components/EventQuickView.tsx`
+- [ ] **確認のための `confirm()` 小窓が約39か所ある。** `alert()` と同じく、アプリの中では味気ない小窓で、押すまで他の操作ができない。削除・取り消しなど大事な操作は、画面の中の確認シートにそろえる（文言も「元に戻せません」など分かりやすく）。例：主催者の募集ページ。場所：`app/organizer/recruitments/[id]/page.tsx`
+
 ## 6. そのほか検討すること
 
 - [ ] イベントへのコメント機能（質問などに便利。ただし通報・ブロック・削除の仕組みが必要になる）
