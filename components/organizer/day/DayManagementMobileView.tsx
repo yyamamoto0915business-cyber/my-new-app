@@ -164,13 +164,13 @@ export function DayManagementMobileView({
     },
     {
       key: "announce",
-      label: "スタッフに送信",
+      label: "スタッフへ連絡",
       icon: <Megaphone size={14} className="text-[#2D7A4F]" />,
       iconBg: "bg-[#EAF4ED]",
     },
     {
       key: "message",
-      label: "来場者にメッセージ",
+      label: "来場者へ連絡",
       icon: <MessageCircle size={14} className="text-[#1976D2]" />,
       iconBg: "bg-[#E3F2FD]",
     },
@@ -184,7 +184,7 @@ export function DayManagementMobileView({
     },
     {
       key: "memo",
-      label: "記録・メモ",
+      label: "メモ",
       icon: <FileText size={14} className="text-[#CF9010]" />,
       iconBg: "bg-[#FDF6E3]",
     },
@@ -241,8 +241,8 @@ export function DayManagementMobileView({
               className={cn(
                 "flex min-h-[64px] items-center justify-center gap-2 rounded-[14px] px-3 text-[14px] font-bold shadow-[0_3px_10px_rgba(22,56,40,0.12)] active:scale-[0.98]",
                 action.key === "qr_scan"
-                  ? "bg-[#2D7A4F] text-white"
-                  : "border border-[#cfe3d5] bg-white text-[#1f5e3a]"
+                  ? "border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] text-[#f6ebc8]"
+                  : "border border-[#cfe3d5] bg-white text-[#173f2c]"
               )}
             >
               {action.key === "qr_scan" ? <ScanLine size={20} aria-hidden /> : <QrCode size={20} aria-hidden />}
@@ -266,7 +266,7 @@ export function DayManagementMobileView({
               <span className={cn("flex h-8 w-8 items-center justify-center rounded-full", action.iconBg)}>
                 {action.icon}
               </span>
-              <span className={cn("text-[10.5px] font-semibold leading-tight text-[#1A2214]", action.labelClass)}>
+              <span className={cn("whitespace-nowrap text-[11px] font-bold leading-tight text-[#1A2214]", action.labelClass)}>
                 {action.label}
               </span>
             </button>
@@ -300,8 +300,29 @@ export function DayManagementMobileView({
         />
       </section>
 
+      {/* 受付リストは上の数字のすぐ下から開く（来場の数は上の箱と重なるので、くわしい数字はたたむ） */}
+      {!emptyMode ? (
+        <button
+          type="button"
+          onClick={() => onOpenModal("checkin_list")}
+          className="flex min-h-[44px] items-center justify-between gap-2 rounded-[12px] border border-[#dde8df] bg-white px-3.5 text-[13px] font-bold text-[#173f2c] active:bg-[#f5f8f5]"
+        >
+          <span className="flex items-center gap-2">
+            <UserCheck size={16} aria-hidden />
+            受付リストを開く（来場・未来場）
+          </span>
+          <ChevronRight size={16} className="text-[#8a958d]" aria-hidden />
+        </button>
+      ) : null}
+
       {/* タブレットでは2列：左にチケット・来場状況、右にスタッフとお知らせ */}
       <div className="flex flex-col gap-2.5 tablet:grid tablet:grid-cols-2 tablet:items-start">
+      <details className="group mg-day-mgmt-m__panel !p-0">
+        <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-2 px-3.5 text-[14px] font-bold text-[#1A2214] [&::-webkit-details-marker]:hidden">
+          <span>チケット販売・来場のくわしい数字</span>
+          <ChevronRight size={16} className="text-[#8a958d] transition-transform group-open:rotate-90" aria-hidden />
+        </summary>
+        <div className="border-t border-[#eef1ec] p-2">
       <TicketSalesAttendanceCard
         eventId={eventId}
         emptyMode={emptyMode}
@@ -313,6 +334,8 @@ export function DayManagementMobileView({
         summaryRefreshing={dayOpsRefreshing}
         onRefreshSummary={reloadDayOps}
       />
+        </div>
+      </details>
 
       {/* プログラム進行は仮データ（MOCK_SCHEDULE）しかなかったので外した */}
       <div className="flex min-w-0 flex-col gap-2.5">
@@ -329,15 +352,13 @@ export function DayManagementMobileView({
 
       <section className="mg-day-mgmt-m__panel">
         <PanelHeader
-          title="お知らせ"
-          subtitle="参加者の画面にも表示されます"
-          actionLabel={emptyMode ? undefined : "すべて見る"}
-          onAction={() => onOpenModal("announce")}
+          title="送った連絡"
+          subtitle="この画面から送った連絡（スタッフ・来場者・緊急）"
         />
         {emptyMode || notices.length === 0 ? (
           <div className="mt-2 flex flex-col items-center rounded-lg bg-[#F5F8F5] py-3 text-center">
             <Megaphone size={18} className="text-[#DDE8DF]" aria-hidden />
-            <p className="mt-1.5 text-[12px] text-[#566358]">現在、お知らせはありません</p>
+            <p className="mt-1.5 text-[12px] text-[#566358]">まだ送った連絡はありません</p>
           </div>
         ) : (
           <ul className="mt-2 space-y-1.5">

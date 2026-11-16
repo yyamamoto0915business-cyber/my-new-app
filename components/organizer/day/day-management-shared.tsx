@@ -180,10 +180,6 @@ export type DayNotice = {
   time: string;
 };
 
-export const MOCK_NOTICES: DayNotice[] = [
-  { type: "urg", text: "ワークショップ会場をBからAに変更しました", time: "9:15" },
-  { type: "info", text: "お昼休憩は12:00〜13:00です", time: "8:45" },
-];
 
 export function formatNoticeTime(baseDate: Date = new Date()): string {
   const hm = getJstNowHm(baseDate);

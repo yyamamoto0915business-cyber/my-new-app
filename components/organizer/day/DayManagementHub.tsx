@@ -12,7 +12,6 @@ import { DayManagementMobileView } from "@/components/organizer/day/DayManagemen
 import {
   EMPTY_DAY_EVENT,
   MOCK_EVENT,
-  MOCK_NOTICES,
   DayManagementModals,
   formatNoticeTime,
   getEventDayPhase,
@@ -23,6 +22,20 @@ import {
   type ModalType,
   organizerDayEventHref,
 } from "@/components/organizer/day/day-management-shared";
+
+const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"] as const;
+
+/** 2026-11-17 / 17:00:00 / 21:00:00 → 11月17日（火）17:00〜21:00（時刻は秒を落とす） */
+function formatDayEventWhen(date: string, startTime?: string | null, endTime?: string | null): string {
+  const day = date.slice(0, 10);
+  const [, m, d] = day.split("-").map(Number);
+  const wd = WEEKDAY_JA[new Date(`${day}T12:00:00+09:00`).getUTCDay()];
+  const head = m && d ? `${m}月${d}日（${wd}）` : day;
+  const start = startTime?.slice(0, 5);
+  const end = endTime?.slice(0, 5);
+  if (!start) return head;
+  return `${head} ${start}〜${end ?? ""}`;
+}
 
 export function DayManagementHub({
   initialEvents,
@@ -81,9 +94,7 @@ export function DayManagementHub({
         setDayPhase(phase);
         setEvent({
           title: data.title ?? MOCK_EVENT.title,
-          date: data.date
-            ? `${data.date} ${data.startTime ?? ""}〜${data.endTime ?? ""}`
-            : MOCK_EVENT.date,
+          date: data.date ? formatDayEventWhen(data.date, data.startTime, data.endTime) : MOCK_EVENT.date,
           venue: data.location ?? MOCK_EVENT.venue,
           status: eventDayPhaseLabel(phase),
           eventFormat: data.eventFormat ?? "onsite",
@@ -102,7 +113,8 @@ export function DayManagementHub({
   }, [eventId]);
 
   useEffect(() => {
-    setNotices(eventId ? MOCK_NOTICES : []);
+    // お知らせは、この画面から送った連絡だけを出す（前は仮のデータを本物のように出していた）
+    setNotices([]);
   }, [eventId]);
 
   const openModal = (type: ModalType) => setModal(type);
