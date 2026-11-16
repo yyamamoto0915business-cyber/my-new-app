@@ -61,7 +61,7 @@ function RequiredToggle({
         onClick={() => onChange(!checked)}
         className={cn(
           "relative h-4 w-7 rounded-full transition-colors",
-          checked ? "bg-[#6BBF3E]" : "bg-[#d8d6d0]"
+          checked ? "bg-[#2f7d4e]" : "bg-[#d8d6d0]"
         )}
       >
         <span
@@ -95,7 +95,7 @@ function FieldRow({
             checked={field.enabled}
             disabled={field.locked}
             onChange={onToggleEnabled}
-            className="h-3.5 w-3.5 rounded border-[#d0d6cc] text-[#3d6b2f] focus:ring-[#6BBF3E]"
+            className="h-3.5 w-3.5 rounded border-[#d0d6cc] text-[#3d6b2f] focus:ring-[#2f7d4e]"
           />
           <span className="truncate text-[12px] font-medium text-[#1a2818]">{field.label}</span>
           {field.locked ? (
@@ -125,7 +125,7 @@ function FieldRow({
           value={field.placeholder ?? ""}
           onChange={(e) => onPlaceholderChange(e.target.value)}
           placeholder="応募者への案内文"
-          className="mt-1 w-full rounded-md border border-[#e8e6e0] bg-[#fafaf8] px-2 py-1 text-[11px] outline-none focus:border-[#2B3A6B] focus:bg-white"
+          className="mt-1 w-full rounded-md border border-[#e8e6e0] bg-[#fafaf8] px-2 py-1 text-[11px] outline-none focus:border-[#173f2c] focus:bg-white"
         />
       ) : null}
     </div>
@@ -239,7 +239,7 @@ export function ApplicationFormSettingsPc({ config, onChange }: Props) {
                         setCustom(next);
                       }}
                       placeholder="質問文"
-                      className="min-w-0 flex-1 rounded-md border border-[#e8e6e0] bg-[#fafaf8] px-2 py-1 text-[12px] outline-none focus:border-[#2B3A6B] focus:bg-white"
+                      className="min-w-0 flex-1 rounded-md border border-[#e8e6e0] bg-[#fafaf8] px-2 py-1 text-[12px] outline-none focus:border-[#173f2c] focus:bg-white"
                     />
                     <button
                       type="button"
@@ -293,7 +293,7 @@ export function ApplicationFormSettingsPc({ config, onChange }: Props) {
                         setCustom(next);
                       }}
                       placeholder="選択肢（読点区切り）"
-                      className="w-full rounded-md border border-[#e8e6e0] bg-[#fafaf8] px-2 py-1 text-[11px] outline-none focus:border-[#2B3A6B] focus:bg-white"
+                      className="w-full rounded-md border border-[#e8e6e0] bg-[#fafaf8] px-2 py-1 text-[11px] outline-none focus:border-[#173f2c] focus:bg-white"
                     />
                   ) : null}
                 </div>

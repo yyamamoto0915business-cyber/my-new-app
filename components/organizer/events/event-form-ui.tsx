@@ -655,11 +655,11 @@ export function EventFormPickerInput({
   placeholder,
   ...rest
 }: Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
-  type: "date" | "time";
+  type: "date" | "time" | "datetime-local";
   placeholder?: string;
 }) {
   const empty = !rest.value;
-  const label = placeholder ?? (type === "date" ? "日付を選ぶ" : "時刻を選ぶ");
+  const label = placeholder ?? (type === "date" ? "日付を選ぶ" : type === "time" ? "時刻を選ぶ" : "日時を選ぶ");
   return (
     <div className="mg-picker relative min-w-0" data-empty={empty ? "true" : undefined}>
       <input type={type} {...rest} className={`${className ?? ""} mg-picker-input pr-9`} />
@@ -672,7 +672,7 @@ export function EventFormPickerInput({
         </span>
       ) : null}
       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#5f6d64] min-[900px]:hidden" aria-hidden>
-        {type === "date" ? (
+        {type !== "time" ? (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <rect x="3" y="4" width="18" height="18" rx="2" />
             <line x1="16" y1="2" x2="16" y2="6" />

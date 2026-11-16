@@ -57,7 +57,7 @@ export function RecruitmentPublishSuccess({ recruitmentId, isPreview = false }: 
             className="relative mt-0.5 hidden h-10 w-7 shrink-0 rounded-[6px] border border-[#c8d9bc] bg-white sm:block"
             aria-hidden
           >
-            <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[#6BBF3E] px-0.5 text-[8px] font-bold text-white">
+            <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[#2f7d4e] px-0.5 text-[8px] font-bold text-white">
               1
             </span>
             <span className="absolute inset-x-1 top-2 h-1 rounded-sm bg-[#e8f0e2]" />

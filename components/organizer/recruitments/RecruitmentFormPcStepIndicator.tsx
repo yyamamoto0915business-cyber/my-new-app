@@ -29,15 +29,15 @@ export function RecruitmentFormPcStepIndicator({
         const allowed = canGoTo ? canGoTo(n) : true;
 
         const circleClass = isDone
-          ? "border-transparent bg-[#6BBF3E] text-white"
+          ? "border-transparent bg-[#2f7d4e] text-white"
           : isActive
-            ? "border-transparent bg-[#2B3A6B] text-white shadow-[0_0_0_3px_rgba(43,58,107,0.14)]"
+            ? "border-transparent bg-[#173f2c] text-white shadow-[0_0_0_3px_rgba(23,63,44,0.14)]"
             : "border-[#c8c4bc] bg-white text-[#5c5a54]";
 
         const labelClass = isDone
           ? "font-semibold text-[#3d8a24]"
           : isActive
-            ? "font-semibold text-[#2B3A6B]"
+            ? "font-semibold text-[#173f2c]"
             : "font-medium text-[#5c5a54]";
 
         return (
@@ -47,7 +47,7 @@ export function RecruitmentFormPcStepIndicator({
                 aria-hidden
                 className={[
                   "h-0.5 w-6 shrink-0 rounded-full sm:w-8",
-                  current > n - 1 ? "bg-[#6BBF3E]" : "bg-[#d8d4cc]",
+                  current > n - 1 ? "bg-[#2f7d4e]" : "bg-[#d8d4cc]",
                 ].join(" ")}
               />
             ) : null}
@@ -59,7 +59,7 @@ export function RecruitmentFormPcStepIndicator({
               }}
               className={[
                 "flex shrink-0 items-center gap-2 rounded-full px-2 py-0.5 transition-colors",
-                isActive ? "bg-[#EEF2FF]" : "hover:bg-[#f5f4f0]",
+                isActive ? "bg-[#eef5f0]" : "hover:bg-[#f5f4f0]",
                 !allowed && !isActive && !isDone ? "cursor-not-allowed opacity-50" : "cursor-pointer",
               ].join(" ")}
             >
