@@ -5,7 +5,8 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
-import { DraftSaveButton, DraftSaveHint } from "@/components/organizer/events/DraftSaveButtonWithHint";
+import { EventFormPickerInput } from "@/components/organizer/events/event-form-ui";
+import { DraftSaveHint } from "@/components/organizer/events/DraftSaveButtonWithHint";
 import { EventImageInput } from "@/components/organizer/events/EventImageInput";
 import { EventGalleryImagesInput } from "@/components/organizer/events/EventGalleryImagesInput";
 import { ApplicationFormSettingsPc } from "@/components/organizer/recruitments/ApplicationFormSettingsPc";
@@ -71,9 +72,9 @@ function toDatetimeLocal(iso: string | null | undefined): string {
 
 
 const inp =
-  "w-full min-w-0 rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[13px] py-[10px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
+  "w-full min-w-0 rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[13px] py-[10px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#173f2c] focus:bg-white";
 const inpSm =
-  "w-full min-w-0 rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-[12px] py-[9px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white";
+  "w-full min-w-0 rounded-[9px] border border-[#e8e6e0] bg-[#fafaf8] px-[12px] py-[9px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#173f2c] focus:bg-white";
 const inpErr = "!border-[#E8708A]";
 
 function Fl({
@@ -134,7 +135,7 @@ function StepIndicator({
               <div
                 className="flex h-[26px] w-[26px] items-center justify-center rounded-full text-[11px] font-[700] transition-all"
                 style={{
-                  background: isDone || isActive ? "#6BBF3E" : "#F3F2EF",
+                  background: isActive ? "#173f2c" : isDone ? "#2f7d4e" : "#F3F2EF",
                   color: isDone || isActive ? "#fff" : "#999",
                   border: isDone || isActive ? "none" : "1.5px solid #e8e6e0",
                 }}
@@ -154,9 +155,9 @@ function StepIndicator({
                 )}
               </div>
               <div
-                className="whitespace-nowrap text-[9px]"
+                className="whitespace-nowrap text-[10.5px]"
                 style={{
-                  color: isDone ? "#6BBF3E" : isActive ? "#2B3A6B" : "#999",
+                  color: isDone ? "#2f7d4e" : isActive ? "#173f2c" : "#999",
                   fontWeight: isActive ? 500 : 400,
                 }}
               >
@@ -166,7 +167,7 @@ function StepIndicator({
             {i < steps.length - 1 && (
               <div
                 className="mx-[4px] mb-[14px] h-[1.5px] flex-1"
-                style={{ background: current > n ? "#6BBF3E" : "#e8e6e0" }}
+                style={{ background: current > n ? "#2f7d4e" : "#e8e6e0" }}
               />
             )}
           </div>
@@ -201,14 +202,14 @@ function RoleList({
               value={role.name}
               onChange={(e) => onUpdate(i, "name", e.target.value)}
               placeholder="役割名（例：受付）"
-              className="min-w-0 flex-1 rounded-[8px] border border-[#e8e6e0] bg-white px-[10px] py-[7px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B]"
+              className="min-w-0 flex-1 rounded-[8px] border border-[#e8e6e0] bg-white px-[10px] py-[7px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#173f2c]"
             />
             <input
               type="number"
               min={1}
               value={role.count}
               onChange={(e) => onUpdate(i, "count", parseInt(e.target.value, 10) || 1)}
-              className="w-[58px] rounded-[8px] border border-[#e8e6e0] bg-white px-[8px] py-[7px] text-center text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#2B3A6B]"
+              className="w-[58px] rounded-[8px] border border-[#e8e6e0] bg-white px-[8px] py-[7px] text-center text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none focus:border-[#173f2c]"
             />
             <span className="whitespace-nowrap text-[12px] text-[#888]">名</span>
             <button
@@ -227,7 +228,7 @@ function RoleList({
       <button
         type="button"
         onClick={onAdd}
-        className="inline-flex items-center gap-[5px] rounded-[9px] border border-dashed border-[#e8e6e0] bg-transparent px-[12px] py-[8px] text-[13px] font-[500] text-[#2B3A6B] transition hover:border-[#2B3A6B] hover:bg-[#EEF2FF]"
+        className="inline-flex items-center gap-[5px] rounded-[9px] border border-dashed border-[#e8e6e0] bg-transparent px-[12px] py-[8px] text-[13px] font-[500] text-[#173f2c] transition hover:border-[#173f2c] hover:bg-[#eef5f0]"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -290,13 +291,13 @@ function PcSidePanel({
         <div className="rounded-[10px] border border-[#e8e6e0] bg-white p-2.5 shadow-sm">
           <div className="mb-2 flex items-center text-[12px] font-semibold text-[#1a1a1a]">
             入力の進捗
-            <span className="ml-auto tabular-nums text-[#2B3A6B]">
+            <span className="ml-auto tabular-nums text-[#173f2c]">
               {filled}/{prog.length}
             </span>
           </div>
           <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-[#f0eeea]">
             <div
-              className="h-full rounded-full bg-[#6BBF3E] transition-all duration-500"
+              className="h-full rounded-full bg-[#2f7d4e] transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -308,7 +309,7 @@ function PcSidePanel({
               <li key={key} className="flex items-center gap-2 rounded-[6px] px-1 py-0.5">
                 <div
                   className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                  style={{ background: done ? "#6BBF3E" : optional ? "#c9c5bb" : "#E8708A" }}
+                  style={{ background: done ? "#2f7d4e" : optional ? "#c9c5bb" : "#E8708A" }}
                   aria-hidden
                 >
                   {done ? "✓" : optional ? "−" : "!"}
@@ -712,6 +713,19 @@ function NewRecruitmentPageContent() {
     else router.push("/organizer/recruitments");
   };
 
+  /** 足りない項目を押したとき：1ページ目へ戻って、その入力欄まで移る */
+  const goToField = (field: "title" | "description") => {
+    setStep(1);
+    window.setTimeout(() => {
+      const el = Array.from(document.querySelectorAll<HTMLElement>(`[name="${field}"]`)).find(
+        (n) => n.offsetParent !== null
+      );
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus({ preventScroll: true });
+    }, 120);
+  };
+
   const handleNext = () => {
     if (step === 1) {
       const errs: Record<string, string> = {};
@@ -726,6 +740,10 @@ function NewRecruitmentPageContent() {
   const nextLabel =
     step === 1 ? "日時・条件へ" : step === 2 ? "応募フォームへ" : "確認へ進む";
   const hasErrors = !form.title.trim() || !form.description.trim();
+  const missingFields = [
+    ...(!form.title.trim() ? [{ field: "title" as const, label: "タイトル" }] : []),
+    ...(!form.description.trim() ? [{ field: "description" as const, label: "説明" }] : []),
+  ];
   const pcPrimaryLabel =
     pcStep === 1
       ? "応募フォームの設定へ"
@@ -752,7 +770,7 @@ function NewRecruitmentPageContent() {
         : "内容を確認して公開しましょう";
   const pageTitle = isEdit ? "スタッフ募集を編集" : "スタッフ募集を新規作成";
   const primaryLabel =
-    saving === "create" ? (isEdit ? "保存中…" : "作成中…") : isEdit ? "変更を保存" : "作成する";
+    saving === "create" ? (isEdit ? "保存中…" : "公開中…") : isEdit ? "変更を保存" : "公開する";
   const successPcPageTitle = "公開完了";
   const successPcPageSubtitle = "スタッフ募集の公開が完了しました";
   const successPublishedId = publishedId ?? "";
@@ -785,6 +803,7 @@ function NewRecruitmentPageContent() {
         <Fl label="タイトル" required />
         <input
           type="text"
+          name="title"
           value={form.title}
           onChange={(e) => update("title", e.target.value)}
           placeholder="例：フリマ受付スタッフ募集"
@@ -796,6 +815,7 @@ function NewRecruitmentPageContent() {
         <Fl label="説明" required />
         <textarea
           rows={2}
+          name="description"
           value={form.description}
           onChange={(e) => update("description", e.target.value)}
           placeholder="募集内容の詳細。どんな仕事か、やりがいや参加するメリットなどを伝えましょう。"
@@ -856,22 +876,22 @@ function NewRecruitmentPageContent() {
         <div className="grid grid-cols-1 gap-[12px] min-[900px]:grid-cols-2">
           <div className="min-w-0">
             <Fl label="開始日時" opt />
-            <input
+            <EventFormPickerInput
               type="datetime-local"
+              name="start_at"
               value={form.start_at}
               onChange={(e) => update("start_at", e.target.value)}
               className={`${inpSm} max-w-full`}
-              style={{ fontSize: 12 }}
             />
           </div>
           <div className="min-w-0">
             <Fl label="終了日時" opt />
-            <input
+            <EventFormPickerInput
               type="datetime-local"
+              name="end_at"
               value={form.end_at}
               onChange={(e) => update("end_at", e.target.value)}
               className={`${inpSm} max-w-full`}
-              style={{ fontSize: 12 }}
             />
           </div>
         </div>
@@ -897,8 +917,8 @@ function NewRecruitmentPageContent() {
             onChange={(e) =>
               update("capacity", e.target.value ? parseInt(e.target.value, 10) : null)
             }
-            placeholder="未入力で無制限"
-            className="w-[120px] rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[13px] py-[10px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#2B3A6B] focus:bg-white"
+            placeholder="例：10"
+            className="w-[120px] rounded-[10px] border border-[#e8e6e0] bg-[#fafaf8] px-[13px] py-[10px] text-[16px] min-[900px]:text-[13px] text-[#1a1a1a] outline-none transition focus:border-[#173f2c] focus:bg-white"
           />
           <span className="text-[13px] text-[#888]">名まで（未入力で無制限）</span>
         </div>
@@ -954,7 +974,7 @@ function NewRecruitmentPageContent() {
               else if (isEdit && editId) router.push(`/organizer/recruitments/${editId}`);
               else router.push("/organizer/recruitments");
             }}
-            className="flex w-[9rem] shrink-0 items-center gap-1 text-left text-[11px] font-medium text-[#4a4844] hover:text-[#2B3A6B]"
+            className="flex w-[9rem] shrink-0 items-center gap-1 text-left text-[11px] font-medium text-[#4a4844] hover:text-[#173f2c]"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0" aria-hidden>
               <line x1="19" y1="12" x2="5" y2="12" />
@@ -1017,7 +1037,7 @@ function NewRecruitmentPageContent() {
                 className={[
                   "min-w-[6rem] rounded-[8px] px-4 py-1.5 text-[11px] font-semibold transition",
                   !(pcStep === 1 && hasErrors) && !saving
-                    ? "bg-[#2B3A6B] text-white hover:bg-[#243159]"
+                    ? "bg-[#173f2c] text-white hover:bg-[#0e2a1d]"
                     : "cursor-not-allowed bg-[#ebe8e2] text-[#8a8680]",
                 ].join(" ")}
               >
@@ -1034,13 +1054,14 @@ function NewRecruitmentPageContent() {
           <button
             type="button"
             onClick={handleBack}
-            className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-[#F3F2EF]"
+            aria-label="戻る"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3F2EF]"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round">
               <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
             </svg>
           </button>
-          <div className="min-w-0 flex-1 truncate text-[13px] font-[600]">
+          <div className="min-w-0 flex-1 truncate text-[15px] font-[600]">
             {publishDone ? "公開完了" : pageTitle}
           </div>
         </div>
@@ -1114,7 +1135,7 @@ function NewRecruitmentPageContent() {
                   <button
                     type="button"
                     onClick={() => setPcStep(1)}
-                    className="text-[12px] font-medium text-[#2B3A6B] hover:underline"
+                    className="text-[12px] font-medium text-[#173f2c] hover:underline"
                   >
                     編集
                   </button>
@@ -1151,7 +1172,7 @@ function NewRecruitmentPageContent() {
                   <button
                     type="button"
                     onClick={() => setPcStep(2)}
-                    className="text-[12px] font-medium text-[#2B3A6B] hover:underline"
+                    className="text-[12px] font-medium text-[#173f2c] hover:underline"
                   >
                     編集
                   </button>
@@ -1201,7 +1222,7 @@ function NewRecruitmentPageContent() {
               title="基本情報"
               sub="募集のタイトルと内容を入力してください"
               icon={
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2B3A6B" strokeWidth="2" strokeLinecap="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#173f2c" strokeWidth="2" strokeLinecap="round">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
                 </svg>
               }
@@ -1217,7 +1238,7 @@ function NewRecruitmentPageContent() {
               title="日時・条件"
               sub="活動日時と参加条件を設定します"
               icon={
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2B3A6B" strokeWidth="2" strokeLinecap="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#173f2c" strokeWidth="2" strokeLinecap="round">
                   <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
               }
@@ -1249,7 +1270,7 @@ function NewRecruitmentPageContent() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="font-[500] text-[#2B3A6B]"
+                  className="font-[500] text-[#173f2c]"
                 >
                   編集
                 </button>
@@ -1280,7 +1301,7 @@ function NewRecruitmentPageContent() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="font-[500] text-[#2B3A6B]"
+                  className="font-[500] text-[#173f2c]"
                 >
                   編集
                 </button>
@@ -1315,7 +1336,7 @@ function NewRecruitmentPageContent() {
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="font-[500] text-[#2B3A6B]"
+                  className="font-[500] text-[#173f2c]"
                 >
                   編集
                 </button>
@@ -1336,23 +1357,21 @@ function NewRecruitmentPageContent() {
             </div>
 
             {hasErrors && (
-              <div className="mb-[10px] flex gap-[8px] rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-[13px] py-[11px]">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#E8708A"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  className="mt-[1px] shrink-0"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                <div className="text-[11px] leading-[1.6] text-[#c04060]">
-                  タイトルと説明が未入力です。作成するには必須項目を入力してください。
+              <div id="recruitment-missing" className="mb-[10px] scroll-mt-28 rounded-[14px] border border-[#f3d3c2] bg-[#fff7f2] p-3">
+                <p className="text-[13.5px] font-bold text-[#a8481c]">あと{missingFields.length}つ入れると{isEdit ? "保存" : "公開"}できます</p>
+                <p className="mt-0.5 text-[11.5px] text-[#9a6a52]">押すと、その入力欄へ移ります。下書き保存はいつでもできます。</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {missingFields.map((m) => (
+                    <button
+                      key={m.field}
+                      type="button"
+                      onClick={() => goToField(m.field)}
+                      className="inline-flex min-h-[36px] items-center gap-1 rounded-full border border-[#f0c2aa] bg-white px-3 text-[12.5px] font-bold text-[#a8481c]"
+                    >
+                      {m.label}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -1361,69 +1380,57 @@ function NewRecruitmentPageContent() {
         )}
       </div>
 
-      {/* ── Mobile: Footer nav ── */}
-      {!publishDone && step < 4 ? (
-        <div className="min-[900px]:hidden sticky bottom-0 z-10 border-t border-[#e8e6e0] bg-white px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
-          <DraftSaveHint
-            className="mb-2 whitespace-nowrap px-2 py-1 text-[10px] leading-normal tracking-tight"
-            destinationLabel="スタッフ募集"
-          />
-          <div className="flex items-center gap-1.5">
+      {/* ── Mobile: Footer nav（「次へ」をいちばん大きく。戻る・下書きは小さく） ── */}
+      {!publishDone ? (
+        <div className="min-[900px]:hidden sticky bottom-0 z-10 border-t border-[#e8e6e0] bg-white/95 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] backdrop-blur">
+          <div className="flex items-center gap-2">
             {step > 1 ? (
               <button
                 type="button"
                 onClick={handleBack}
-                className="inline-flex h-9 shrink-0 items-center gap-0.5 rounded-[9px] border border-[#e8e6e0] bg-white px-2.5 text-[12px] font-[500]"
+                aria-label="戻る"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] border border-[#e3ece5] bg-white text-[#2f4a3a]"
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-                戻る
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
               </button>
             ) : null}
-            <DraftSaveButton
+            <button
+              type="button"
               onClick={saveDraft}
-              submitting={saving === "draft"}
-              className="h-9 px-2.5 text-[12px]"
-            />
-            <button
-              type="button"
-              onClick={handleNext}
-              className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-1 rounded-[9px] border-none bg-[#2B3A6B] px-2.5 text-[12px] font-[600] text-white"
+              disabled={!!saving}
+              className="flex h-12 shrink-0 flex-col items-center justify-center rounded-[14px] border border-[#e3ece5] bg-white px-3 text-[#2f4a3a] disabled:opacity-50"
             >
-              <span className="truncate">{nextLabel}</span>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="shrink-0">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /></svg>
+              <span className="mt-0.5 text-[10px] font-bold leading-none">{saving === "draft" ? "保存中" : "下書き"}</span>
             </button>
-          </div>
-        </div>
-      ) : null}
-      {!publishDone && step >= 4 ? (
-        <div className="min-[900px]:hidden sticky bottom-0 z-10 border-t border-[#e8e6e0] bg-white px-[14px] pb-[14px] pt-[10px]">
-          <div className="flex gap-[8px]">
-            <button
-              type="button"
-              onClick={handleBack}
-              className="flex items-center gap-[5px] rounded-[10px] border border-[#e8e6e0] bg-white px-[18px] py-[11px] text-[13px] font-[500]"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              戻る
-            </button>
-            <button
-              type="button"
-              onClick={createRecruitment}
-              disabled={!!saving || hasErrors}
-              className="flex flex-1 items-center justify-center gap-[5px] rounded-[10px] py-[11px] text-[13px] font-[600] text-white transition disabled:opacity-50"
-              style={{ background: hasErrors ? "#bbb" : "#6BBF3E" }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              {primaryLabel}
-            </button>
+            {step < 4 ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1 rounded-[14px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] px-4 text-[15px] font-bold text-[#f6ebc8] shadow-[0_4px_12px_rgba(14,42,29,0.22)]"
+              >
+                <span className="truncate">{nextLabel}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="shrink-0"><polyline points="9 18 15 12 9 6" /></svg>
+              </button>
+            ) : hasErrors ? (
+              <button
+                type="button"
+                onClick={() => document.getElementById("recruitment-missing")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-[14px] border border-[#f0c2aa] bg-[#fff7f2] px-3 text-[14px] font-bold text-[#a8481c]"
+              >
+                あと{missingFields.length}つ入れると{isEdit ? "保存" : "公開"}できます
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={createRecruitment}
+                disabled={!!saving}
+                className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] px-4 text-[15px] font-bold text-[#f6ebc8] shadow-[0_4px_12px_rgba(14,42,29,0.22)] disabled:opacity-50"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                {primaryLabel}
+              </button>
+            )}
           </div>
         </div>
       ) : null}
