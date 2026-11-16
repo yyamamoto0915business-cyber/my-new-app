@@ -152,7 +152,10 @@ export async function POST(request: NextRequest) {
       onlinePasscode,
       onlineGuideMessage,
       onlineLinkDisplayTiming,
+      draft,
     } = body;
+    /** 下書き保存のときは「イベント名・開催日・開始時刻」だけあればよい（足りない分は公開のときに確かめる） */
+    const draftOnly = draft === true;
 
     const format = normalizeEventFormat(eventFormat);
     const onlineCapable = isOnlineCapableFormat(format);
@@ -164,9 +167,9 @@ export async function POST(request: NextRequest) {
         ? String(address ?? "").trim()
         : String(address ?? "").trim();
 
-    if (!title?.trim() || !description?.trim() || !date || !startTime) {
+    if (draftOnly ? !title?.trim() || !date || !startTime : !title?.trim() || !description?.trim() || !date || !startTime) {
       return NextResponse.json(
-        { error: "タイトル・説明・日付・開始時刻は必須です" },
+        { error: draftOnly ? "下書きの保存には、イベント名・開催日・開始時刻が必要です" : "タイトル・説明・日付・開始時刻は必須です" },
         { status: 400 }
       );
     }
@@ -181,7 +184,7 @@ export async function POST(request: NextRequest) {
       address: addressValue,
       startTime,
     });
-    if (Object.keys(onlineErrors).length > 0) {
+    if (!draftOnly && Object.keys(onlineErrors).length > 0) {
       return NextResponse.json(
         { error: Object.values(onlineErrors)[0], errors: onlineErrors },
         { status: 400 }
@@ -233,7 +236,7 @@ export async function POST(request: NextRequest) {
       title: String(title).trim(),
       imageUrl: imageUrl?.trim() || null,
       galleryImages: Array.isArray(galleryImages) ? galleryImages : [],
-      description: String(description).trim(),
+      description: String(description ?? "").trim(),
       date: String(date),
       endDate: normalizedEndDate,
       applicationQuestions: sanitizeEventQuestions(applicationQuestions),

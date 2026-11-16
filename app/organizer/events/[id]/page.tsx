@@ -73,6 +73,15 @@ function validateForm(data: EventFormData): FormErrors {
   return errors;
 }
 
+/** 下書きで確かめるのは「イベント名・開催日・開始時刻」と、入れた値の形だけ（足りない分は公開のときに確かめる） */
+const DRAFT_CHECK_KEYS: (keyof EventFormData)[] = ["title", "date", "startTime", "endTime", "price", "recurrenceCount", "endDate"];
+function validateDraft(data: EventFormData): FormErrors {
+  const all = validateForm(data);
+  const errors: FormErrors = {};
+  for (const key of DRAFT_CHECK_KEYS) if (all[key]) errors[key] = all[key];
+  return errors;
+}
+
 function formatDate(iso: string) {
   try {
     return new Date(iso).toLocaleDateString("ja-JP", {
@@ -249,7 +258,8 @@ export default function EditEventPage() {
 
   const saveChanges = async () => {
     if (!form || !id) return;
-    const formErrors = validateForm(form);
+    // 下書きは、足りない項目があっても保存できる（公開するときに確かめる）
+    const formErrors = event?.status === "draft" ? validateDraft(form) : validateForm(form);
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
       setSubmitError("入力内容をご確認ください");
@@ -374,7 +384,10 @@ export default function EditEventPage() {
           form.endDate
         )
       : "—";
-  const missingRequired = Object.keys(validateForm(form)).length > 0;
+  const isDraftEvent = event?.status === "draft";
+  const missingRequired = Object.keys(isDraftEvent ? validateDraft(form) : validateForm(form)).length > 0;
+  /** 下書きで、公開に足りない項目が残っている */
+  const missingForPublishing = isDraftEvent && Object.keys(validateForm(form)).length > 0;
 
   return (
     <div
@@ -717,6 +730,13 @@ export default function EditEventPage() {
                   <div className="mb-[16px] flex gap-[9px] rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] p-[14px]">
                     <p className="text-[13px] leading-[1.6] text-[#c04060]">
                       必須項目が未入力です。保存する前に入力内容をご確認ください。
+                    </p>
+                  </div>
+                )}
+                {!missingRequired && missingForPublishing && (
+                  <div className="mb-[16px] flex gap-[9px] rounded-[10px] border border-[#ecdcab] bg-[#fbf7ea] p-[14px]">
+                    <p className="text-[13px] leading-[1.6] text-[#7a5f1f]">
+                      まだ入っていない項目があります。下書きのまま保存できますが、公開するときには入れてください。
                     </p>
                   </div>
                 )}

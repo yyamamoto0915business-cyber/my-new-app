@@ -91,6 +91,15 @@ function validateForm(data: EventFormData): FormErrors {
   return errors;
 }
 
+/** 下書きで確かめるのは「イベント名・開催日・開始時刻」と、入れた値の形だけ（足りない分は公開のときに確かめる） */
+const DRAFT_CHECK_KEYS: (keyof EventFormData)[] = ["title", "date", "startTime", "endTime", "price", "recurrenceCount", "endDate"];
+function validateDraft(data: EventFormData): FormErrors {
+  const all = validateForm(data);
+  const errors: FormErrors = {};
+  for (const key of DRAFT_CHECK_KEYS) if (all[key]) errors[key] = all[key];
+  return errors;
+}
+
 /** 足りない項目の呼び名（確認の段階の「あと◯つ」に出す） */
 const FIELD_LABEL: Partial<Record<keyof EventFormData, string>> = {
   title: "イベント名",
@@ -351,7 +360,7 @@ function NewEventPageContent() {
   };
 
   const saveDraft = async () => {
-    const formErrors = validateForm(form);
+    const formErrors = validateDraft(form);
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
       setSubmitError("入力内容をご確認ください");
@@ -363,7 +372,7 @@ function NewEventPageContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ ...form, imageUrl: form.imageUrl?.trim() || undefined }),
+        body: JSON.stringify({ ...form, imageUrl: form.imageUrl?.trim() || undefined, draft: true }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
