@@ -553,8 +553,8 @@ function NewEventPageContent() {
       />
 
       {/* ── Mobile header ── */}
-      <div className="min-[900px]:hidden sticky top-0 z-20 -mx-4 border-b border-[#e8e6e0] bg-white pt-[env(safe-area-inset-top,0px)] sm:-mx-6">
-        <div className="flex items-center gap-2 px-4 py-2 sm:px-6">
+      <div className="min-[900px]:hidden sticky top-0 z-20 border-b border-[#ece8dc] bg-white pt-[env(safe-area-inset-top,0px)]">
+        <div className="flex items-center gap-2 px-3 py-2">
           <button type="button" onClick={goPrev} aria-label="戻る" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3F2EF]">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
@@ -570,7 +570,7 @@ function NewEventPageContent() {
                   : stepLabels[currentStep] + "を入力"}
           </div>
         </div>
-        <div className="flex items-center px-4 pb-2 sm:px-6">
+        <div className="flex items-center px-4 pb-2.5">
           {!showPassSettings && !publishDone ? (
             <EventFormStepIndicator current={currentStep} onGo={goToStep} />
           ) : null}
@@ -652,10 +652,10 @@ function NewEventPageContent() {
                 </div>
               ) : null}
               {/* 基本情報確認 */}
-              <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7">
+              <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7 max-[899px]:mb-3 max-[899px]:rounded-[16px] max-[899px]:border max-[899px]:border-[#e6e2d6] max-[899px]:bg-white max-[899px]:px-4 max-[899px]:pt-3 max-[899px]:pb-2 max-[899px]:shadow-[0_1px_4px_rgba(23,63,44,0.05)]">
                 <div className="mb-[10px] flex items-center justify-between">
-                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">基本情報</span>
-                  <button type="button" onClick={() => goToStep(1)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#173f2c] hover:bg-[#eef5f0]">編集</button>
+                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888] max-[899px]:text-[14px] max-[899px]:font-bold max-[899px]:text-[#173f2c]">基本情報</span>
+                  <button type="button" onClick={() => goToStep(1)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#173f2c] hover:bg-[#eef5f0] max-[899px]:mr-0 max-[899px]:rounded-full max-[899px]:border max-[899px]:border-[#e1d6b4] max-[899px]:px-3 max-[899px]:py-1 max-[899px]:font-semibold">編集</button>
                 </div>
                 {[
                   { label: "イベント名", val: form.title || null },
@@ -673,10 +673,10 @@ function NewEventPageContent() {
               </div>
 
               {/* 開催・詳細確認 */}
-              <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7">
+              <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7 max-[899px]:mb-3 max-[899px]:rounded-[16px] max-[899px]:border max-[899px]:border-[#e6e2d6] max-[899px]:bg-white max-[899px]:px-4 max-[899px]:pt-3 max-[899px]:pb-2 max-[899px]:shadow-[0_1px_4px_rgba(23,63,44,0.05)]">
                 <div className="mb-[10px] flex items-center justify-between">
-                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">開催情報</span>
-                  <button type="button" onClick={() => goToStep(2)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#173f2c] hover:bg-[#eef5f0]">編集</button>
+                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888] max-[899px]:text-[14px] max-[899px]:font-bold max-[899px]:text-[#173f2c]">開催情報</span>
+                  <button type="button" onClick={() => goToStep(2)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#173f2c] hover:bg-[#eef5f0] max-[899px]:mr-0 max-[899px]:rounded-full max-[899px]:border max-[899px]:border-[#e1d6b4] max-[899px]:px-3 max-[899px]:py-1 max-[899px]:font-semibold">編集</button>
                 </div>
                 {[
                   { label: "開催日時", val: dateStr !== "—" ? dateStr : null },
@@ -702,8 +702,8 @@ function NewEventPageContent() {
                   </div>
                 ))}
                 <div className="mt-[20px] mb-[10px] flex items-center justify-between">
-                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">詳細情報</span>
-                  <button type="button" onClick={() => goToStep(3)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#173f2c] hover:bg-[#eef5f0]">編集</button>
+                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888] max-[899px]:text-[14px] max-[899px]:font-bold max-[899px]:text-[#173f2c]">詳細情報</span>
+                  <button type="button" onClick={() => goToStep(3)} className="-my-1.5 -mr-2 rounded-[6px] px-2 py-1.5 text-[12px] font-[500] text-[#173f2c] hover:bg-[#eef5f0] max-[899px]:mr-0 max-[899px]:rounded-full max-[899px]:border max-[899px]:border-[#e1d6b4] max-[899px]:px-3 max-[899px]:py-1 max-[899px]:font-semibold">編集</button>
                 </div>
                 {[
                   { label: "定員", val: form.capacity ? `${form.capacity}人` : "未設定（無制限）" },
@@ -726,7 +726,7 @@ function NewEventPageContent() {
                   <p className="mb-[8px] text-[13px] leading-[1.7] text-[#555]">
                     保存は下書きとして行われます。
                     <br />
-                    下書きは「イベント管理」から編集できます。
+                    下書きは「掲載管理」から編集できます。
                   </p>
                   <label className="flex cursor-pointer items-start gap-[6px]">
                     <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="mt-[1px] h-[18px] w-[18px] shrink-0" style={{ accentColor: "#173f2c" }} />
@@ -747,7 +747,7 @@ function NewEventPageContent() {
                     {submitting === "publish" ? "公開中…" : "公開する"}
                   </button>
                 </div>
-                <p className="mt-[10px] text-center text-[12px] text-[#888]">下書きは「イベント管理」から編集できます</p>
+                <p className="mt-[10px] text-center text-[12px] text-[#888]">下書きは「掲載管理」から編集できます</p>
               </div>
             </div>
             )
@@ -819,14 +819,14 @@ function NewEventPageContent() {
             </button>
             {missingRequired ? (
               // 足りない項目があるときは、押すと上のお知らせへ（何が足りないか分かるように）
+              // 足りない項目があるときは、いちばん上の足りない項目へそのまま移る（上のお知らせと同じ文を2回出さない）
               <button
                 type="button"
-                onClick={() => {
-                  missingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[14px] border border-[#f0c2aa] bg-[#fff7f2] px-3 text-[14px] font-bold text-[#a8481c]"
+                onClick={() => goToField(missingList[0].field, missingList[0].step)}
+                className="flex h-12 min-w-0 flex-1 flex-col items-center justify-center rounded-[14px] border border-[#f0c2aa] bg-[#fff7f2] px-3 text-[#a8481c]"
               >
-                あと{missingCount}つ入れると公開できます
+                <span className="text-[10.5px] font-semibold leading-tight">あと{missingCount}つで公開できます</span>
+                <span className="max-w-full truncate text-[14px] font-bold leading-tight">{missingList[0].label}から入れる ›</span>
               </button>
             ) : (
               <button
