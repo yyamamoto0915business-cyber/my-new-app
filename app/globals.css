@@ -4184,10 +4184,27 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 
 /* イベント作成フォーム: モバイルで date/time 入力がはみ出さないよう制約 */
 @media (max-width: 899px) {
+  /*
+   * 外枠は画面の端から端まで（外側の余白 16px / 24px を打ち消し、内側に同じ余白をとる）。
+   * 前は 16px 内側で切っていたので、上の白い帯が端まで届かず、左右に背景が見えていた。
+   */
   [data-event-form] {
     min-width: 0;
-    max-width: 100%;
+    max-width: none;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
     overflow-x: clip;
+  }
+
+  @media (min-width: 640px) {
+    [data-event-form] {
+      margin-left: -1.5rem;
+      margin-right: -1.5rem;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
   }
 
   [data-event-form] input[type="date"],
