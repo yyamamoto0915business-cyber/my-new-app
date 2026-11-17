@@ -41,12 +41,12 @@ export function EventFormLabel({
   opt?: string;
 }) {
   return (
-    <div className="mb-0.5 flex items-center gap-[5px] text-[12.5px] font-[500]">
+    <div className="mb-1 flex items-center gap-[6px] text-[12.5px] font-[500] max-[899px]:mt-1 max-[899px]:text-[13px] max-[899px]:font-semibold max-[899px]:text-[#1f2a24]">
       {label}
       {required && (
-        <span className="text-[10px] font-[600] text-[#c8a84b]">必須</span>
+        <span className="text-[10px] font-[600] text-[#c8a84b] max-[899px]:rounded-full max-[899px]:bg-[#fbf3e1] max-[899px]:px-1.5 max-[899px]:py-px max-[899px]:font-bold max-[899px]:text-[#a3812f]">必須</span>
       )}
-      {opt && <span className="text-[10px] text-[#888]">{opt}</span>}
+      {opt && <span className="text-[10px] text-[#888] max-[899px]:font-medium max-[899px]:text-[#9aa29c]">{opt}</span>}
     </div>
   );
 }
@@ -175,8 +175,8 @@ export function EventFormCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-1.5 min-w-0 overflow-hidden rounded-[10px] border border-[#e8e6e0] bg-white p-2.5 min-[900px]:mb-2 min-[900px]:rounded-[10px] min-[900px]:p-3">
-      <div className="mb-0.5 flex items-center gap-1.5 text-[13px] font-[600]">
+    <div className="mb-1.5 min-w-0 overflow-hidden rounded-[16px] border border-[#e6e2d6] bg-white p-4 shadow-[0_1px_4px_rgba(23,63,44,0.05)] min-[900px]:mb-2 min-[900px]:rounded-[10px] min-[900px]:p-3 min-[900px]:shadow-none">
+      <div className="mb-2 flex items-center gap-1.5 text-[15px] font-bold text-[#173f2c] min-[900px]:mb-0.5 min-[900px]:text-[13px] min-[900px]:font-[600] min-[900px]:text-inherit">
         {icon}
         {title}
       </div>
@@ -299,17 +299,18 @@ export function EventFormStepIndicator({
         const isActive = current === n;
         const isUpcoming = !isDone && !isActive;
 
+        // 済んだ所は淡い緑に緑のチェック、いまの所は深い緑に金の縁、まだの所は白（色を減らして落ち着かせる）
         const circleClass = isDone
-          ? "border-transparent bg-[#2f7d4e] text-white"
+          ? "border-transparent bg-[#e3ede6] text-[#173f2c]"
           : isActive
-            ? "border-transparent bg-[#173f2c] text-white shadow-[0_0_0_3px_rgba(23,63,44,0.16)]"
-            : "border-[#c8c4bc] bg-white text-[#5c5a54]";
+            ? "border-transparent bg-[#173f2c] text-[#f6ebc8] shadow-[0_0_0_3px_#efe2bb]"
+            : "border-[#d8d4cc] bg-white text-[#9aa29c]";
 
         const labelClass = isDone
-          ? "font-semibold text-[#3d8a24]"
+          ? "font-semibold text-[#3f6250]"
           : isActive
-            ? "font-semibold text-[#173f2c]"
-            : "font-medium text-[#5c5a54]";
+            ? "font-bold text-[#173f2c]"
+            : "font-medium text-[#9aa29c]";
 
         return (
           // 最後（確認）は線がないので広げない。広げると右に空きができて、全体が左に寄って見えた
@@ -336,8 +337,8 @@ export function EventFormStepIndicator({
                     height="12"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#fff"
-                    strokeWidth="2.5"
+                    stroke="currentColor"
+                    strokeWidth="2.8"
                     strokeLinecap="round"
                   >
                     <polyline points="20 6 9 17 4 12" />
@@ -373,7 +374,7 @@ export function EventFormStepIndicator({
               <div
                 className={[
                   "mx-1 h-[2px] flex-1 min-[900px]:mx-3 min-[900px]:h-[2px]",
-                  current > n ? "bg-[#2f7d4e]" : "bg-[#d8d4cc]",
+                  current > n ? "bg-[#c9a54e]" : "bg-[#e6e2d6]",
                 ].join(" ")}
               />
             )}
