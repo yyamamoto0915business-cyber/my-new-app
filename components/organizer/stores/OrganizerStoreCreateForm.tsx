@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Infinity as InfinityIcon, Loader2, Store, Truck } from "lucide-react";
 import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
 import { organizerPathForKind } from "@/lib/stores/draft-shell";
 import type { StoreKind, StoreRecord } from "@/lib/stores/types";
@@ -75,6 +75,27 @@ export function OrganizerStoreCreateForm({ kind = "store" }: Props) {
         title={`${label}を作成`}
         subtitle="まずは基本情報を登録します。詳細は作成後に編集できます。"
       />
+
+      {/* 何を作るのか・いつまで載るのかを先に伝える（掲載管理の「期限なし・ずっと掲載」と同じ言い方） */}
+      <div className="flex items-center gap-2.5 rounded-[14px] border border-[#e6e2d6] bg-white px-3 py-2.5 min-[900px]:hidden">
+        <span
+          className={
+            isKitchen
+              ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#e6f1fa] text-[#2f6fae]"
+              : "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#e6f3ea] text-[#2f7d4e]"
+          }
+          aria-hidden
+        >
+          {isKitchen ? <Truck className="h-[18px] w-[18px]" /> : <Store className="h-[18px] w-[18px]" />}
+        </span>
+        <span className="min-w-0 flex-1 text-[12px] leading-snug text-[#6b776f]">
+          <span className="flex items-center gap-1 font-bold text-[#173f2c]">
+            <InfinityIcon className="h-3.5 w-3.5" aria-hidden />
+            期限なし・ずっと掲載
+          </span>
+          まず下書きで作ります。写真やメニューを入れてから公開できます。
+        </span>
+      </div>
 
       <form
         className="org-store-intro rounded-2xl border border-[#d5e2d8] bg-white p-4 min-[900px]:p-5"
