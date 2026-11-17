@@ -10,7 +10,7 @@ import {
   ArrowUpRight,
   BarChart3,
   Calendar,
-  FileText,
+  ChevronRight,
   Gamepad2,
   MapPin,
   MoreHorizontal,
@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import type { OrganizerGameTypeId } from "@/lib/organizer/game-types";
 import type { OrganizerGame } from "@/lib/organizer/games";
 import { GamePurposePicker } from "@/components/organizer/games/GamePurposePicker";
+import { OrgEyebrow, ORG_SERIF } from "@/components/organizer/mobile/organizer-theme";
 
 type HubTheme = "stamp" | "quiz" | "mystery" | "mission" | "photo" | "coupon" | "checkin" | "vote" | "lottery" | "survey" | "tournament";
 type GameFilter = "draft" | "published" | "archived";
@@ -184,35 +185,55 @@ function formatPeriod(startsAt: string | null, endsAt: string | null) {
   return start || end;
 }
 
+const STATUS_TAG: Record<OrganizerGame["status"], string> = {
+  draft: "bg-[#fdf1d8] text-[#a26a10]",
+  published: "bg-[#e3f2e7] text-[#1f7a4a]",
+  archived: "bg-[#eef0ec] text-[#6b776f]",
+};
+
+/** スマホ・タブレットの1件ぶんの行（掲載管理の行と同じ並び：左に絵・題名・期間・種類） */
 function GameCard({ game }: { game: OrganizerGame }) {
   const hubType = HUB_TYPE_BY_ID[game.type] ?? HUB_TYPES[0];
   const cover = COVER_BY_THEME[hubType.theme] ?? hubType.cover;
   const period = formatPeriod(game.startsAt, game.endsAt);
 
   return (
-    <Link href={`/organizer/games/${game.id}`} className={cn("org-hub__game", `is-${hubType.theme}`)}>
-      <span className="org-hub__game-cover">
-        <Image src={cover} alt="" fill sizes="240px" unoptimized />
-        <span className={cn("org-hub__game-status", `is-${game.status}`)}>{STATUS_LABEL[game.status]}</span>
+    <Link
+      href={`/organizer/games/${game.id}`}
+      className="flex items-center gap-3 rounded-[14px] border border-[#e6e2d6] bg-white p-2.5 no-underline shadow-[0_1px_4px_rgba(23,63,44,0.05)]"
+    >
+      <span className="relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[12px] bg-[#f4f1e8]">
+        <Image src={cover} alt="" fill sizes="52px" className="object-cover" unoptimized />
       </span>
-      <span className="org-hub__game-body">
-        <span className="org-hub__game-name">{game.name}</span>
-        {period ? (
-          <span className="org-hub__game-period">
-            <Calendar className="h-3 w-3" aria-hidden />
-            {period}
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className={cn("shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold leading-[16px]", STATUS_TAG[game.status])}>
+            {STATUS_LABEL[game.status]}
           </span>
-        ) : null}
-        <span className="org-hub__game-meta">
-          <span className="org-hub__game-type">{hubType.label}</span>
+          <span
+            className="truncate text-[14px] font-semibold leading-snug text-[#1f2a24]"
+            style={{ fontFeatureSettings: '"palt"' }}
+          >
+            {game.name}
+          </span>
+        </span>
+        <span className="mt-1 flex items-center gap-2 text-[12px] text-[#6b776f]">
+          <span className="truncate font-semibold text-[#3f6250]">{hubType.label}</span>
+          {period ? (
+            <span className="inline-flex shrink-0 items-center gap-0.5">
+              <Calendar className="h-3 w-3" aria-hidden />
+              {period}
+            </span>
+          ) : null}
           {game.spotCount > 0 ? (
-            <span className="org-hub__game-spots">
+            <span className="inline-flex shrink-0 items-center gap-0.5">
               <MapPin className="h-3 w-3" aria-hidden />
               {game.spotCount}
             </span>
           ) : null}
         </span>
       </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-[#c5c2ba]" aria-hidden />
     </Link>
   );
 }
@@ -321,7 +342,6 @@ export function OrganizerGamesHub() {
   const templatesRef = useRef<HTMLElement>(null);
   const [pcCreateOpen, setPcCreateOpen] = useState(false);
   const [picking, setPicking] = useState(false);
-  const [showGameList, setShowGameList] = useState(false);
   const [showAllTemplates, setShowAllTemplates] = useState(false);
   const [games, setGames] = useState<OrganizerGame[]>([]);
   const [loading, setLoading] = useState(true);
@@ -395,13 +415,6 @@ export function OrganizerGamesHub() {
 
   const mobileTemplates = HUB_TYPES;
 
-  const openGameList = () => {
-    setShowGameList(true);
-    window.setTimeout(() => {
-      listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 40);
-  };
-
   const focusTemplates = () => {
     setPicking(true);
     window.setTimeout(() => {
@@ -412,40 +425,48 @@ export function OrganizerGamesHub() {
   return (
     <div className="org-hub">
       <div className="org-hub__mobile-home">
-        <div className="org-hub__mobile-actions">
+        {/* 見出し・作るボタン（前は「ゲームを作る」「作成したゲーム」「データ」の大きな箱が3つ並んでいた。一覧はすぐ下にあるので1つにまとめた） */}
+        <header className="pt-1">
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0">
+              <OrgEyebrow>GAMES</OrgEyebrow>
+              <h1
+                className="mt-1 text-[21px] font-bold leading-tight tracking-[0.02em] text-[#173f2c]"
+                style={{ fontFamily: ORG_SERIF }}
+              >
+                ゲーム
+              </h1>
+            </div>
+            <Link
+              href={analyticsHref}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#e1d6b4] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#173f2c] no-underline"
+            >
+              <BarChart3 className="h-3.5 w-3.5" aria-hidden />
+              効果を見る
+            </Link>
+          </div>
           <button
             type="button"
-            className={cn("org-hub__mobile-create", picking && "is-picking")}
+            className={cn(
+              "mt-3 flex h-12 w-full items-center justify-center gap-1.5 rounded-[14px] text-[14px] font-bold shadow-[0_2px_8px_rgba(14,42,29,0.18)] active:scale-[0.98]",
+              picking
+                ? "border border-[#e1d6b4] bg-white text-[#173f2c] shadow-none"
+                : "border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] text-[#f6ebc8]"
+            )}
             aria-expanded={picking}
             aria-controls="mobile-templates"
             onClick={() => (picking ? setPicking(false) : focusTemplates())}
           >
-            <span className="org-hub__mobile-create-title">ゲームを作る</span>
-            <span className="org-hub__mobile-create-plus" aria-hidden>
-              <Plus className="h-5 w-5" strokeWidth={2.4} />
-            </span>
-            <span className="org-hub__mobile-create-label">
-              {picking ? "閉じる" : "種類を選ぶ"}
-            </span>
+            {picking ? (
+              "種類えらびを閉じる"
+            ) : (
+              <>
+                <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+                ゲームを作る
+              </>
+            )}
           </button>
-
-          <button type="button" className="org-hub__mobile-library" onClick={openGameList}>
-            <span className="org-hub__mobile-library-title">作成したゲーム</span>
-            <span className="org-hub__mobile-library-mark" aria-hidden>
-              <FileText className="h-5 w-5" strokeWidth={1.8} />
-              <span className="org-hub__mobile-count">{loading ? "–" : games.length}</span>
-            </span>
-            <span className="org-hub__mobile-library-label">一覧を見る</span>
-          </button>
-
-          <Link href={analyticsHref} className="org-hub__mobile-library org-hub__mobile-data">
-            <span className="org-hub__mobile-library-title">データ</span>
-            <span className="org-hub__mobile-library-mark" aria-hidden>
-              <BarChart3 className="h-5 w-5" strokeWidth={2} />
-            </span>
-            <span className="org-hub__mobile-library-label">効果を見る</span>
-          </Link>
-        </div>
+        </header>
         <style>{HUB_DATA_CSS}</style>
 
 
@@ -708,7 +729,7 @@ export function OrganizerGamesHub() {
         className={cn(
           "org-hub__section",
           // スマホでは一覧は is-list-open のときだけ出る。テンプレートを閉じているとき（作ったゲームがあるとき）は最初から出す
-          (showGameList || (!picking && !loading && games.length > 0)) && "is-list-open"
+          (!picking && !loading && games.length > 0) && "is-list-open"
         )}
         id="created-games"
         aria-labelledby="game-list-heading"
@@ -732,6 +753,7 @@ export function OrganizerGamesHub() {
                 }}
               >
                 {item.label}
+                {!loading ? <span className="org-hub__filter-count">{games.filter((g) => g.status === item.id).length}</span> : null}
               </button>
             ))}
           </div>
