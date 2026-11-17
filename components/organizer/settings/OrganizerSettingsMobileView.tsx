@@ -4,9 +4,7 @@ import { getOrganizerAccess } from "@/lib/organizer/team";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Crown, HelpCircle, Landmark, UserRound,
-  UsersRound,
-} from "lucide-react";
+import { ChevronRight, Crown, HelpCircle, Landmark, UserRound, UsersRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { ProfileBannerAvatar } from "@/components/profile/profile-banner-avatar";
@@ -15,11 +13,12 @@ import { cn } from "@/lib/utils";
 import { useOrganizerTeams } from "@/components/organizer/team/OrganizerTeamSwitcher";
 import { useOrganizerRole } from "@/hooks/use-organizer-role";
 import type { DashboardResponse } from "@/app/api/organizer/dashboard/route";
+import { OrgEyebrow, ORG_SERIF } from "@/components/organizer/mobile/organizer-theme";
 
 /** 利用者のマイページと同じ帯の絵（モードを切り替えても同じ形に見えるようにする） */
 const MYPAGE_BG = "/profile/mypage-bg.png";
-const ORG_GREEN = "#2f7d4e";
-const ORG_GREEN_DARK = "#1f5e3a";
+const ORG_GREEN = "#173f2c";
+const ORG_GREEN_DARK = "#173f2c";
 
 export type OrganizerSettingsMobileViewProps = {
   planLabel: string;
@@ -115,12 +114,14 @@ function StatCell({
   const className = cn(
     "flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 py-1.5",
     !first && "border-l border-[#eceae3]",
-    href && "transition-colors active:bg-[#eaf4ee]"
+    href && "transition-colors active:bg-[#f6ebc8]"
   );
   const body = (
     <>
-      <span className="text-[17px] font-semibold tabular-nums tracking-tight text-[#18181a]">{value}</span>
-      <span className="text-[11px] text-[#8c8a84]">{label}</span>
+      <span className="text-[18px] font-bold tabular-nums tracking-tight text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
+        {value}
+      </span>
+      <span className="text-[11px] font-semibold text-[#6b776f]">{label}</span>
     </>
   );
   return href ? (
@@ -148,10 +149,10 @@ function SettingRow({
   return (
     <Link
       href={href}
-      className="flex min-h-[52px] items-center gap-3 border-b border-[#eceae3] px-4 py-2.5 last:border-b-0 active:bg-[#fafaf8]"
+      className="flex min-h-[56px] items-center gap-3 border-b border-[#f0ede4] px-4 py-2.5 last:border-b-0 active:bg-[#f7f5ee]"
     >
       <span
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e6f3ea]"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#eef4ef]"
         style={{ color: ORG_GREEN }}
         aria-hidden
       >
@@ -159,7 +160,7 @@ function SettingRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="text-[14px] font-medium text-[#18181a]">{title}</span>
+          <span className="text-[14px] font-semibold text-[#1f2a24]">{title}</span>
           {badge ? (
             <span
               className={cn(
@@ -171,7 +172,7 @@ function SettingRow({
             </span>
           ) : null}
         </span>
-        {sub ? <span className="mt-0.5 block truncate text-[11.5px] text-[#8c8a84]">{sub}</span> : null}
+        {sub ? <span className="mt-0.5 block truncate text-[12px] text-[#6b776f]">{sub}</span> : null}
       </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-[#c5c2ba]" aria-hidden />
     </Link>
@@ -199,23 +200,16 @@ export function OrganizerSettingsMobileView({
 
   const orgName = organizationName || (orgLoading ? "" : "団体名が未設定です");
   const receivingOk = receiving === "設定済み";
-  // 売上の受け取りが「未設定」のときは、気づけるように最初から開いておく（「決済未対応」は本人の設定もれではないので開かない）
-  const needsPayoutSetup = !billingLoading && receiving === "未設定";
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const teams = useOrganizerTeams();
   /** 団体のプロフィールを変えられるのはオーナーだけ（メンバーには「編集」を出さない） */
   const canEditProfile = useOrganizerRole() === "owner";
   const currentTeam = teams && teams.teams.length > 1 ? teams.teams.find((t) => t.organizerId === teams.current) : undefined;
   const teamLine = currentTeam ? `使用中：${currentTeam.name}（ここで切りかえ）` : null;
 
-  useEffect(() => {
-    if (needsPayoutSetup) setSettingsOpen(true);
-  }, [needsPayoutSetup]);
-
   const num = (n: number | undefined, unit = "") => (stats ? `${n}${unit}` : "–");
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-3 pb-4 min-[900px]:hidden">
+    <div className="mx-auto mt-3 flex w-full max-w-xl flex-col gap-3 pb-4 sm:mt-6 min-[900px]:hidden">
       {/* 帯のカード（利用者のマイページと同じ形） */}
       <section
         className="relative overflow-hidden rounded-[14px] border border-[#e8e6e0] bg-white"
@@ -267,7 +261,7 @@ export function OrganizerSettingsMobileView({
                 ) : (
                   <h1
                     className="mt-px truncate text-[17px] font-bold leading-tight text-[#18181a]"
-                    style={{ fontFamily: "'Noto Serif JP', serif" }}
+                    style={{ fontFamily: ORG_SERIF }}
                   >
                     {orgName}
                   </h1>
@@ -304,91 +298,75 @@ export function OrganizerSettingsMobileView({
         </div>
       </section>
 
-      {/* 現在のプラン（プランの入口はここだけ。上の行のプラン名マークからも行ける） */}
+      {/* 現在のプラン（プランの入口はここだけ） */}
       <Link
         href="/organizer/settings/plan"
-        className="flex items-center gap-3 rounded-[14px] border border-[#f0dfb6] bg-[#fffaf0] px-4 py-3 active:scale-[0.99]"
+        className="relative flex items-center gap-3 overflow-hidden rounded-[16px] border border-[#e6e2d6] bg-white px-4 py-3.5 shadow-[0_1px_4px_rgba(23,63,44,0.05)]"
       >
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fdf0cf] text-[#b07a1c]" aria-hidden>
+        <span className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#c9a54e] via-[#e6d29b] to-[#c9a54e]" aria-hidden />
+        <span
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#245a3e] to-[#173f2c] text-[#e6d29b]"
+          aria-hidden
+        >
           <Crown className="h-5 w-5" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[12px] text-[#8a7650]">現在のプラン</span>
+          <span className="block text-[11px] font-semibold text-[#a3812f]">いまのプラン</span>
           {billingLoading ? (
-            <span className="mt-1 block h-6 w-28 animate-pulse rounded bg-[#f3e6c4]" />
+            <span className="mt-1 block h-6 w-28 animate-pulse rounded bg-[#f3ecd8]" />
           ) : (
             <>
-              <span className="block truncate text-[18px] font-bold text-[#3a2c10]">{planLabel}</span>
-              <span className="block truncate text-[12px] font-bold text-[#4a8a2e]">{slots}</span>
+              <span
+                className="block truncate text-[19px] font-bold leading-tight tracking-[0.03em] text-[#173f2c]"
+                style={{ fontFamily: ORG_SERIF }}
+              >
+                {planLabel}
+              </span>
+              <span className="mt-0.5 block truncate text-[12px] text-[#6b776f]">
+                {slots === "無制限" ? "掲載は無制限" : slots === "—" ? "" : `今月の掲載 ${slots}件`}
+              </span>
             </>
           )}
         </span>
-        <ChevronRight className="h-5 w-5 shrink-0 text-[#3a2c10]" aria-hidden />
+        <span className="inline-flex shrink-0 items-center text-[12px] font-bold text-[#173f2c]">
+          プランを見る
+          <ChevronRight className="h-4 w-4" aria-hidden />
+        </span>
       </Link>
 
-      {/* チーム・メンバー（TEAM。入口はここだけ） */}
-      <Link
-        href="/organizer/team"
-        className="flex items-center gap-3 rounded-[14px] border border-[#d9eadf] bg-white px-4 py-3 active:scale-[0.99]"
-      >
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#e6f3ea] text-[#2f7d4e]" aria-hidden>
-          <UsersRound className="h-5 w-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-bold text-[#163828]">チーム・メンバー</span>
-          <span className="block truncate text-[12px] text-[#5f6d64]">{teamLine ?? "メンバーを招待して、一緒に運営する"}</span>
-        </span>
-        <ChevronRight className="h-5 w-5 shrink-0 text-[#163828]" aria-hidden />
-      </Link>
-
-      {/* 設定・サポート（利用者のマイページと同じく開いて使う） */}
-      <section
-        className="overflow-hidden rounded-[14px] border border-[#e8e6e0] bg-white"
-        style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04)" }}
-      >
-        <button
-          type="button"
-          onClick={() => setSettingsOpen((v) => !v)}
-          className="flex min-h-[48px] w-full items-center justify-between px-4 py-3 text-left"
-          aria-expanded={settingsOpen}
-        >
-          <span className="flex items-center gap-2 text-[14px] font-semibold text-[#18181a]">
-            設定・サポート
-            {needsPayoutSetup ? (
-              <span className="rounded-full bg-[#fde9ef] px-2 py-0.5 text-[10.5px] font-bold text-[#b84060]">
-                要設定
-              </span>
-            ) : null}
-          </span>
-          <ChevronDown
-            className={cn("h-4 w-4 text-[#c5c2ba] transition-transform", settingsOpen && "rotate-180")}
-            aria-hidden
+      {/* 設定・サポート（項目は4つだけなので、たたまずに出す） */}
+      <section>
+        <div className="mb-1.5 px-1">
+          <OrgEyebrow>SETTINGS</OrgEyebrow>
+        </div>
+        <div className="overflow-hidden rounded-[16px] border border-[#e6e2d6] bg-white shadow-[0_1px_4px_rgba(23,63,44,0.05)]">
+          <SettingRow
+            href="/organizer/team"
+            icon={<UsersRound className="h-4 w-4" />}
+            title="チーム・メンバー"
+            sub={teamLine ?? "メンバーを招待して、一緒に運営する"}
           />
-        </button>
-        {settingsOpen ? (
-          <div className="border-t border-[#eceae3]">
-            <SettingRow
-              href="/organizer/settings/payouts"
-              icon={<Landmark className="h-4 w-4" />}
-              title="売上の受け取り"
-              sub="カード売上を口座で受け取る（プランとは別）"
-              badge={
-                billingLoading
-                  ? undefined
-                  : receivingOk
-                    ? { label: "設定済み", tone: "ok" }
-                    : { label: receiving ?? "未設定", tone: "warn" }
-              }
-            />
-            <SettingRow
-              href="/organizer/settings/account"
-              icon={<UserRound className="h-4 w-4" />}
-              title="アカウント・削除"
-              sub={`ログイン中：${displayEmail}`}
-            />
-            <SettingRow href="/contact" icon={<HelpCircle className="h-4 w-4" />} title="ヘルプ・お問い合わせ" />
-          </div>
-        ) : null}
+          <SettingRow
+            href="/organizer/settings/payouts"
+            icon={<Landmark className="h-4 w-4" />}
+            title="売上の受け取り"
+            sub="カード売上を口座で受け取る（プランとは別）"
+            badge={
+              billingLoading
+                ? undefined
+                : receivingOk
+                  ? { label: "設定済み", tone: "ok" }
+                  : { label: receiving ?? "未設定", tone: "warn" }
+            }
+          />
+          <SettingRow
+            href="/organizer/settings/account"
+            icon={<UserRound className="h-4 w-4" />}
+            title="アカウント・削除"
+            sub={`ログイン中：${displayEmail}`}
+          />
+          <SettingRow href="/contact" icon={<HelpCircle className="h-4 w-4" />} title="ヘルプ・お問い合わせ" />
+        </div>
       </section>
 
       <div className="flex justify-center pt-1">
