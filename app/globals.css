@@ -39001,3 +39001,43 @@ button.mg-album-place {
     display: none;
   }
 }
+
+/* 主催者：お店・キッチンカーの作成と管理（スマホ・タブレット）。ほかの主催者画面と同じ深い緑と金色にそろえる */
+@media (max-width: 899px) {
+  .org-store-mgmt__tab.is-active {
+    color: #173f2c;
+    border-bottom-color: #c9a54e;
+  }
+  .org-store-mgmt__create-btn {
+    min-height: 46px;
+    border: 1.5px solid #d9bc6e;
+    border-radius: 14px;
+    background: linear-gradient(to bottom, #245a3e, #173f2c);
+    color: #f6ebc8;
+    font-size: 0.86rem;
+    box-shadow: 0 2px 8px rgba(14, 42, 29, 0.18);
+  }
+  .org-store-mgmt__create-btn:hover {
+    background: linear-gradient(to bottom, #245a3e, #173f2c);
+  }
+  .org-store-mgmt__create-btn:active,
+  .org-store-intro__save:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  .org-store-intro__actions {
+    display: flex;
+  }
+  .org-store-intro__save {
+    flex: 1;
+    min-height: 48px;
+    border: 1.5px solid #d9bc6e;
+    border-radius: 14px;
+    background: linear-gradient(to bottom, #245a3e, #173f2c);
+    color: #f6ebc8;
+    font-size: 0.92rem;
+    box-shadow: 0 2px 8px rgba(14, 42, 29, 0.18);
+  }
+  .org-store-intro__save:hover:not(:disabled) {
+    background: linear-gradient(to bottom, #245a3e, #173f2c);
+  }
+}
