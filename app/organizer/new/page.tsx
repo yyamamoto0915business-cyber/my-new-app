@@ -4,6 +4,7 @@ import { ArrowRight, ChevronRight, Infinity as InfinityIcon, Timer } from "lucid
 import { LISTING_KIND_META, type ListingKind } from "@/components/organizer/mobile/listing-kinds";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
+import { PlanBadge } from "@/components/organizer/mobile/plan-badge";
 
 export const metadata: Metadata = {
   title: "新しく掲載する | MachiGlyph",
@@ -122,7 +123,10 @@ export default function OrganizerNewListingPage() {
                     </span>
                     <ChevronRight className="mt-1 h-4 w-4 text-[#b4bbb6]" aria-hidden />
                   </span>
-                  <span className="mt-2.5 block text-[15px] font-bold leading-snug text-[#173f2c]">{c.title}</span>
+                  <span className="mt-2.5 flex items-center gap-1.5 text-[15px] font-bold leading-snug text-[#173f2c]">
+                    {c.title}
+                    {c.kind === "game" ? <PlanBadge feature="games" /> : null}
+                  </span>
                   <span className="mt-0.5 block flex-1 text-[11.5px] leading-snug text-[#6b776f]">{c.desc}</span>
                   <span className="mt-2 block">
                     <TermChip term={c.term} always={c.always} />

@@ -550,6 +550,27 @@ export function OrganizerPlanPageBody() {
               </div>
             </section>
 
+            {/* いまのプランで使える機能へ、ここからすぐ行けるようにする（申し込んだあと迷わないように） */}
+            {paid ? (
+              <nav aria-label="いまのプランで使える機能" className="flex flex-wrap gap-2">
+                {[
+                  { href: "/organizer/pos", label: "レジを開く", show: true },
+                  { href: "/organizer/games", label: "ゲームを作る", show: currentId === "game" || currentId === "team" },
+                  { href: "/organizer/team", label: "メンバーを招待", show: currentId === "team" },
+                ]
+                  .filter((l) => l.show)
+                  .map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      className="inline-flex min-h-[40px] items-center gap-1 rounded-full border border-[#e1d6b4] bg-white px-3.5 text-[13px] font-bold text-[#173f2c] active:bg-[#f7f3e6]"
+                    >
+                      {l.label} ›
+                    </Link>
+                  ))}
+              </nav>
+            ) : null}
+
             <section className="org-plan-compare" aria-labelledby="plan-compare-heading">
               <h2 id="plan-compare-heading">プランを比較</h2>
               <p>活動が広がるほど、掲載・受付・イベント向けの機能が増えます。</p>

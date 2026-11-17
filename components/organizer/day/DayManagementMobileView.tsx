@@ -11,7 +11,10 @@ import {
   MessageCircle,
   AlertTriangle,
   FileText,
+  Wallet,
 } from "lucide-react";
+import Link from "next/link";
+import { PlanBadge } from "@/components/organizer/mobile/plan-badge";
 import { cn } from "@/lib/utils";
 import type { DayManageableEvent } from "@/lib/organizer/day-manageable-events";
 import {
@@ -302,6 +305,7 @@ export function DayManagementMobileView({
 
       {/* 受付リストは上の数字のすぐ下から開く（来場の数は上の箱と重なるので、くわしい数字はたたむ） */}
       {!emptyMode ? (
+        <div className="grid grid-cols-[1fr_auto] gap-2">
         <button
           type="button"
           onClick={() => onOpenModal("checkin_list")}
@@ -309,10 +313,20 @@ export function DayManagementMobileView({
         >
           <span className="flex items-center gap-2">
             <UserCheck size={16} aria-hidden />
-            受付リストを開く（来場・未来場）
+            受付リストを開く
           </span>
           <ChevronRight size={16} className="text-[#8a958d]" aria-hidden />
         </button>
+        {/* 当日はここからレジへ（このイベントの売上として開く） */}
+        <Link
+          href={`/organizer/pos?event=${encodeURIComponent(eventId)}`}
+          className="flex min-h-[44px] items-center gap-1.5 rounded-[12px] border border-[#dde8df] bg-white px-3.5 text-[13px] font-bold text-[#173f2c] active:bg-[#f5f8f5]"
+        >
+          <Wallet size={16} aria-hidden />
+          レジ
+          <PlanBadge feature="pos" />
+        </Link>
+        </div>
       ) : null}
 
       {/* タブレットでは2列：左にチケット・来場状況、右にスタッフとお知らせ */}
