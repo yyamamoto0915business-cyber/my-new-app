@@ -1384,3 +1384,44 @@
     transition: none;
   }
 }
+
+/* スマホ・タブレット：作ったゲームは横に流さず、1行ずつ縦に並べる（タブレットは2列）。色は深い緑と金色 */
+@media (max-width: 899px) {
+  .org-hub .org-hub__rail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+    overflow: visible;
+    padding: 0;
+  }
+  .org-hub .org-hub__rail > li {
+    min-width: 0;
+  }
+  .org-hub .org-hub__filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 2.1rem;
+    border-color: #e6e2d6;
+    padding: 0.2rem 0.75rem;
+    font-size: 0.75rem;
+    color: #3f6250;
+  }
+  .org-hub .org-hub__filter.is-on {
+    border-color: #173f2c;
+    background: #173f2c;
+    color: #f6ebc8;
+  }
+  .org-hub .org-hub__filter-count {
+    font-variant-numeric: tabular-nums;
+    opacity: 0.75;
+  }
+  .org-hub .org-hub__head h2 {
+    color: #173f2c;
+  }
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  .org-hub .org-hub__rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
