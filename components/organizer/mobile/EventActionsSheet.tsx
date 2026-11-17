@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { ChevronRight, Sparkles, X } from "lucide-react";
+import { ChevronRight, Sparkles, Wallet, X } from "lucide-react";
+import { PlanBadge } from "@/components/organizer/mobile/plan-badge";
 import type { BillingSummary, DashboardEvent } from "@/app/api/organizer/dashboard/route";
 import { OrganizerEventCard } from "@/components/organizer/events/OrganizerEventCard";
 
@@ -20,7 +21,7 @@ type Props = {
 /**
  * 掲載管理（スマホ）で、イベントの行を押したときに下から出る操作のシート。
  * 中身はイベント管理のカード（公開する・スタッフ募集・編集・⋯メニュー、確認の画面）をそのまま使い、
- * イベントポイントへの入口を足す（申込者はカードの中にある）。イベント管理の一覧はスマホでは掲載管理にまとめた。
+ * イベントポイントとこのイベントのレジへの入口を足す（申込者はカードの中にある）。イベント管理の一覧はスマホでは掲載管理にまとめた。
  *
  * body の直下に出す（z-50）。下のナビ（z-50）より後ろに置かれるので上に出て、
  * あとから開く「⋯」メニュー（z-50 の入れ物）はさらに上に出る。カードの確認の画面はこのシートの重なりの中で出る。
@@ -87,6 +88,20 @@ export function EventActionsSheet({ event, billingSummary, archiveBoxMode, onClo
                   <Sparkles className="h-4 w-4" />
                 </span>
                 <span className="min-w-0 flex-1 text-[13.5px] font-bold text-[#163828]">イベントポイント</span>
+                <ChevronRight className="h-4 w-4 text-[#a3ada6]" aria-hidden />
+              </Link>
+            </li>
+            {/* レジ（このイベントの売上として記録する）。当日の前でも、商品の登録や準備ができる */}
+            <li>
+              <Link
+                href={`/organizer/pos?event=${encodeURIComponent(event.id)}`}
+                className="flex min-h-[48px] items-center gap-3 px-3.5 py-2.5"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e6f1fa] text-[#2f6fae]" aria-hidden>
+                  <Wallet className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1 text-[13.5px] font-bold text-[#163828]">このイベントのレジ</span>
+                <PlanBadge feature="pos" />
                 <ChevronRight className="h-4 w-4 text-[#a3ada6]" aria-hidden />
               </Link>
             </li>

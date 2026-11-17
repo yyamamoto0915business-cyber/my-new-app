@@ -244,7 +244,9 @@ export function OrganizerPosPage() {
         if (cancelled) return;
         const list = (evJson.events ?? []) as DayEvent[];
         setEvents(list);
-        const initialEvent = list[0]?.id ?? "";
+        // ?event= で来たとき（掲載管理のイベントの操作・当日の受付から）は、そのイベントの売上として開く
+        const wanted = new URLSearchParams(window.location.search).get("event");
+        const initialEvent = (wanted && list.find((e) => e.id === wanted)?.id) || list[0]?.id || "";
         setEventId(initialEvent);
         await Promise.all([loadProducts(), loadSales(initialEvent), loadStripeStatus()]);
       } catch (e) {
