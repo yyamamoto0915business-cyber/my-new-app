@@ -422,6 +422,11 @@ export function OrganizerGamesHub() {
     }, 40);
   };
 
+  // 「新しく掲載 → ゲームを作る」から来たとき（?pick=1）は、種類えらびを開いておく
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("pick") === "1") setPicking(true);
+  }, []);
+
   return (
     <div className="org-hub">
       <div className="org-hub__mobile-home">
