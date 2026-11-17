@@ -4,9 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
-  CalendarDays,
   ChevronRight,
-  Heart,
   Plus,
   Search,
   ChevronDown,
@@ -15,8 +13,6 @@ import {
   MoreHorizontal,
   PenLine,
   X,
-  Store,
-  Truck,
   type LucideIcon,
   Archive,
   ArrowLeft,
@@ -29,9 +25,11 @@ import { cn } from "@/lib/utils";
 import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
 import { EventDateTile, eventTiming, todayJst } from "@/components/organizer/mobile/event-date";
 import { EventActionsSheet } from "@/components/organizer/mobile/EventActionsSheet";
+import { LISTING_KINDS, LISTING_KIND_META, type ListingKind } from "@/components/organizer/mobile/listing-kinds";
+import type { OrganizerGame } from "@/lib/organizer/games";
 
-/** まちに載せるものだけ。ゲームはイベントの中で使う道具なので「運営 → ゲーム」で管理する */
-type Kind = "event" | "store" | "kitchen" | "volunteer";
+/** 掲載の種類（ゲームも、ほかの掲載と同じ一覧で管理する） */
+type Kind = ListingKind;
 type Status = "public" | "draft" | "ended";
 type Tab = "all" | Status;
 
@@ -55,12 +53,7 @@ type Listing = {
 };
 
 /** 種類ごとの色（写真がないときのアイコンの丸と、種類の文字に使う） */
-const KIND_META: Record<Kind, { label: string; Icon: LucideIcon; color: string; bg: string }> = {
-  event: { label: "イベント", Icon: CalendarDays, color: "#c7742c", bg: "#fdf1e4" },
-  store: { label: "お店", Icon: Store, color: "#2f7d4e", bg: "#e6f3ea" },
-  kitchen: { label: "キッチンカー", Icon: Truck, color: "#2f6fae", bg: "#e6f1fa" },
-  volunteer: { label: "ボランティア募集", Icon: Heart, color: "#c0507a", bg: "#fbe9f0" },
-};
+const KIND_META = LISTING_KIND_META;
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "all", label: "すべて" },
@@ -154,6 +147,24 @@ function fromRecruitments(data: RecruitmentDashboardResponse | null): Listing[] 
       metric: `応募 ${r.applicationCount}件`,
       href: `/organizer/recruitments/${r.id}`,
       publicHref: `/recruitments/${r.id}`,
+    };
+  });
+}
+
+function fromGames(games: OrganizerGame[] | null): Listing[] {
+  return (games ?? []).map((g) => {
+    const status: Status = g.status === "published" ? "public" : g.status === "draft" ? "draft" : "ended";
+    return {
+      id: `game-${g.id}`,
+      kind: "game",
+      title: g.name,
+      imageUrl: null,
+      status,
+      statusLabel: status === "ended" ? "終了" : "",
+      sub: joinSub("ゲーム", g.typeLabel, g.startsAt ? shortDate(g.startsAt.slice(0, 10)) : null),
+      metric: g.eventTitle ? `${g.eventTitle}で使う` : null,
+      href: `/organizer/games/${g.id}`,
+      publicHref: g.joinPath || `/organizer/games/${g.id}`,
     };
   });
 }
@@ -338,15 +349,16 @@ function ListingMenu({ item, onClose }: { item: Listing | null; onClose: () => v
  * 一覧のまとまり。どれがどの種類か分かるよう、種類ごとに分ける：
  * イベント（開催中・これから）／お店／キッチンカー／ボランティア募集／終わったもの（種類が混ざるので行に種類を出す）
  */
-type GroupId = "upcoming" | "store" | "kitchen" | "volunteer" | "ended";
-// 期限のあるもの（イベント・ボランティア募集）→ ずっと載せるもの（お店・キッチンカー）→ 終わったもの
-const GROUP_ORDER: GroupId[] = ["upcoming", "volunteer", "store", "kitchen", "ended"];
+type GroupId = "upcoming" | "store" | "kitchen" | "volunteer" | "game" | "ended";
+// 期限のあるもの（イベント・ボランティア募集・ゲーム）→ ずっと載せるもの（お店・キッチンカー）→ 終わったもの
+const GROUP_ORDER: GroupId[] = ["upcoming", "volunteer", "game", "store", "kitchen", "ended"];
 /** note：見出しの横の札。期限があるか（いつまで載るか）が一目で分かるように */
 const GROUP_META: Record<GroupId, { title: string; en: string; kind: Kind | null; note: string | null; always?: boolean }> = {
   upcoming: { title: "イベント", en: "EVENTS", kind: "event", note: "開催日まで" },
   volunteer: { title: "ボランティア募集", en: "VOLUNTEERS", kind: "volunteer", note: "締切まで" },
   store: { title: "お店", en: "SHOPS", kind: "store", note: "期限なし・ずっと掲載", always: true },
   kitchen: { title: "キッチンカー", en: "KITCHEN CARS", kind: "kitchen", note: "期限なし・ずっと掲載", always: true },
+  game: { title: "ゲーム", en: "GAMES", kind: "game", note: "開催期間まで" },
   ended: { title: "終わったもの", en: "ARCHIVE", kind: null, note: null },
 };
 
@@ -365,6 +377,7 @@ const KIND_PAGES: { href: string; label: string; kind: Kind }[] = [
   { href: "/organizer/stores", label: "お店の管理", kind: "store" },
   { href: "/organizer/kitchen-cars", label: "キッチンカーの管理", kind: "kitchen" },
   { href: "/organizer/recruitments", label: "ボランティア募集の管理", kind: "volunteer" },
+  { href: "/organizer/games", label: "ゲームの管理", kind: "game" },
 ];
 
 /** 主催者：掲載管理（スマホ、見本「02_掲載管理」）。種類をまたいで1つの一覧にする */
@@ -395,8 +408,8 @@ export function OrganizerListingsMobile() {
   // イベント管理（スマホ）から移ってきたとき（?kind=event）は、イベントだけに絞って開く
   useEffect(() => {
     const kind = new URLSearchParams(window.location.search).get("kind");
-    if (kind === "event" || kind === "store" || kind === "kitchen" || kind === "volunteer") {
-      setKindFilter(kind);
+    if (kind && (LISTING_KINDS as string[]).includes(kind)) {
+      setKindFilter(kind as Kind);
     }
   }, []);
 
@@ -407,7 +420,8 @@ export function OrganizerListingsMobile() {
       getJson<DashboardResponse>("/api/organizer/dashboard", signal),
       getJson<{ stores?: StoreRecord[] }>("/api/organizer/stores", signal),
       getJson<RecruitmentDashboardResponse>("/api/organizer/recruitments-dashboard", signal),
-    ]).then(([events, stores, recruitments]) => {
+      getJson<{ games?: OrganizerGame[] }>("/api/organizer/games", signal),
+    ]).then(([events, stores, recruitments, games]) => {
       if (signal.aborted) return;
       setRawEvents(events?.events ?? []);
       setBillingSummary(events?.billingSummary ?? null);
@@ -415,6 +429,7 @@ export function OrganizerListingsMobile() {
         ...fromEvents((events?.events ?? []).filter((e) => !isArchivedEvent(e))),
         ...fromStores(stores?.stores ?? null),
         ...fromRecruitments(recruitments),
+        ...fromGames(games?.games ?? null),
       ];
       // 公開中→下書き→終了の順。同じ状態の中で、イベントは「開催中・これからの日付が近い順 → 日付の過ぎたもの（新しい順）」
       // （お店・募集など日付のないものは API の並びのまま）
@@ -481,7 +496,7 @@ export function OrganizerListingsMobile() {
   const kindCounts = useMemo(() => {
     // 状態のタブと検索の文字に合う、種類ごとの件数
     const q = query.trim().toLowerCase();
-    const c: Record<Kind | "all", number> = { all: 0, event: 0, store: 0, kitchen: 0, volunteer: 0 };
+    const c: Record<Kind | "all", number> = { all: 0, event: 0, store: 0, kitchen: 0, volunteer: 0, game: 0 };
     for (const i of items ?? []) {
       if (tab !== "all" && tabStatus(i) !== tab) continue;
       if (q && !i.title.toLowerCase().includes(q) && !i.sub.toLowerCase().includes(q)) continue;
@@ -494,7 +509,7 @@ export function OrganizerListingsMobile() {
 
   /** まとまりごとに分ける（中の並びは、これから＝日付の近い順・終わったもの＝新しい順） */
   const groups = useMemo(() => {
-    const g: Record<GroupId, Listing[]> = { upcoming: [], store: [], kitchen: [], volunteer: [], ended: [] };
+    const g: Record<GroupId, Listing[]> = { upcoming: [], store: [], kitchen: [], volunteer: [], game: [], ended: [] };
     for (const i of visible) g[groupOf(i, today)].push(i);
     const lastDay = (i: Listing) => (i.event ? (i.event.endDate ?? i.event.date).slice(0, 10) : "");
     g.upcoming.sort((a, b) => (a.event?.date ?? "").localeCompare(b.event?.date ?? ""));
@@ -505,7 +520,6 @@ export function OrganizerListingsMobile() {
   const searching = searchOpen || query.length > 0;
   /** 検索中・「終了」のタブ・終わったものしかないときは、たたまずに出す */
   const endedShown = endedOpen || searching || tab === "ended" || groups.every((gr) => gr.id === "ended");
-  const kindsInUse = (["event", "store", "kitchen", "volunteer"] as const).filter((k) => (items ?? []).some((i) => i.kind === k));
 
   return (
     <div className="mx-auto w-full max-w-xl pb-6 tablet:max-w-[860px]">
@@ -572,7 +586,7 @@ export function OrganizerListingsMobile() {
       {pagesOpen ? (
         <nav aria-label="種類ごとの管理画面" className="mt-3 rounded-[18px] border border-[#ebeee8] bg-white p-2 shadow-[0_3px_12px_rgba(22,56,40,0.05)]">
           <p className="px-1.5 pb-1.5 pt-0.5 text-[11.5px] font-bold text-[#6b776f]">種類ごとの管理画面（申込者の確認・CSV など）</p>
-          <ul className="grid grid-cols-3 gap-1.5">
+          <ul className="grid grid-cols-2 gap-1.5 tablet:grid-cols-4">
             {KIND_PAGES.map(({ href, label, kind }) => {
               const { Icon, color, bg } = KIND_META[kind];
               return (
@@ -624,7 +638,57 @@ export function OrganizerListingsMobile() {
         ref={barRef}
         className="sticky top-[calc(var(--mg-mobile-top-header-h,52px)+env(safe-area-inset-top,0px))] z-20 -mx-4 mt-3 space-y-2 bg-[#f9f9f6]/85 px-4 pb-2.5 pt-2 backdrop-blur-md min-[900px]:static min-[900px]:mx-0 min-[900px]:px-0"
       >
-        <div role="tablist" aria-label="掲載の状態" className="flex gap-1 rounded-full bg-[#eef3ef] p-1">
+        {/* 種類（いちばん上の切り替え）。5つとも1行に収め、どの種類があるか一目で分かるようにする */}
+        <div role="tablist" aria-label="種類" className="grid grid-cols-[44px_repeat(5,minmax(0,1fr))] gap-0.5 rounded-[18px] bg-white p-1 shadow-[0_2px_8px_rgba(22,56,40,0.05)] ring-1 ring-[#ebeee8]">
+          {(["all", ...LISTING_KINDS] as const).map((k) => {
+            const on = kindFilter === k;
+            const meta = k === "all" ? null : KIND_META[k];
+            const Icon = meta ? meta.Icon : LayoutGrid;
+            const n = kindCounts[k];
+            return (
+              <button
+                key={k}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => setKindFilter(k)}
+                className={cn(
+                  "relative flex min-h-[54px] min-w-0 flex-col items-center justify-center gap-1 rounded-[14px] transition active:scale-[0.96]",
+                  on ? "bg-[#173f2c] text-[#f6ebc8]" : n === 0 ? "text-[#b4bbb6]" : "text-[#3f5146]"
+                )}
+              >
+                <span
+                  className="flex h-6 w-6 items-center justify-center rounded-full"
+                  style={on ? { background: "rgba(246,235,200,0.14)" } : meta ? { background: meta.bg, color: n === 0 ? undefined : meta.color } : { background: "#eef3ef" }}
+                  aria-hidden
+                >
+                  <Icon className="h-[14px] w-[14px]" />
+                </span>
+                <span className="max-w-full text-center text-[10px] font-bold leading-[1.1] tracking-[-0.06em]">
+                  {/* せまい画面では「キッチン／カー」のように区切りの所でだけ折り返す */}
+                  {(meta ? meta.short : "すべて").split("\u200b").map((part) => (
+                    <span key={part} className="inline-block whitespace-nowrap">
+                      {part}
+                    </span>
+                  ))}
+                </span>
+                {items && n > 0 ? (
+                  <span
+                    className={cn(
+                      "absolute right-0.5 top-0.5 min-w-[15px] rounded-full px-1 text-[9px] font-bold leading-[15px] tabular-nums",
+                      on ? "bg-[#c9a54e] text-[#0e2a1d]" : "bg-[#eef1ec] text-[#5f6d64]"
+                    )}
+                  >
+                    {n}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 状態（選んだ種類の中での小さな切り替え） */}
+        <div role="tablist" aria-label="掲載の状態" className="flex items-center gap-1">
           {TABS.map((t) => {
             const active = tab === t.id;
             return (
@@ -635,21 +699,12 @@ export function OrganizerListingsMobile() {
                 aria-selected={active}
                 onClick={() => setTab(t.id)}
                 className={cn(
-                  "flex min-h-[36px] flex-1 items-center justify-center gap-1 rounded-full text-[12.5px] font-bold transition",
-                  active ? "bg-[#173f2c] text-[#f3e6bf] shadow-[0_3px_8px_rgba(14,42,29,0.25)]" : "text-[#5f6d64]"
+                  "flex min-h-[32px] items-center gap-1 rounded-full px-3 text-[12px] font-bold transition",
+                  active ? "bg-[#e9efe9] text-[#173f2c] ring-1 ring-[#c9d8cd]" : "text-[#6b776f]"
                 )}
               >
                 {t.label}
-                {items ? (
-                  <span
-                    className={cn(
-                      "min-w-[18px] rounded-full px-1 text-[10.5px] leading-[16px]",
-                      active ? "bg-[#c9a54e] text-[#0e2a1d]" : "bg-[#dfe8e1] text-[#5f6d64]"
-                    )}
-                  >
-                    {counts[t.id]}
-                  </span>
-                ) : null}
+                {items ? <span className={cn("tabular-nums text-[11px]", active ? "text-[#a3812f]" : "text-[#9aa49d]")}>{counts[t.id]}</span> : null}
               </button>
             );
           })}
@@ -669,32 +724,6 @@ export function OrganizerListingsMobile() {
             />
           </label>
         )}
-
-        {/* 種類（使っている種類が2つ以上のときだけ出す） */}
-        {kindsInUse.length > 1 ? (
-          <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 scrollbar-hide" role="group" aria-label="種類で絞り込む">
-            {(["all", ...kindsInUse] as const).map((k) => {
-              const on = kindFilter === k;
-              const meta = k === "all" ? null : KIND_META[k];
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setKindFilter(k)}
-                  aria-pressed={on}
-                  className={cn(
-                    "flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-bold transition",
-                    on ? "border-[#c9a54e] bg-[#fffaf0] text-[#173f2c]" : "border-[#e3ece5] bg-white text-[#4f5d54]"
-                  )}
-                >
-                  {meta ? <span className="h-2 w-2 rounded-full" style={{ background: meta.color }} aria-hidden /> : null}
-                  {meta ? meta.label : "すべての種類"}
-                  <span className={cn("text-[11px] tabular-nums", on ? "text-[#a3812f]" : "text-[#9aa49d]")}>{kindCounts[k]}</span>
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
       </div>
 
       <section aria-label="掲載一覧" className="mt-1">
@@ -720,7 +749,7 @@ export function OrganizerListingsMobile() {
                 <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
               </span>
               <span className="text-[14px] font-bold text-[#1f6a42]">最初の掲載をはじめる</span>
-              <span className="text-[12px] text-[#6b776f]">イベント・お店・キッチンカー・ボランティア募集を載せられます</span>
+              <span className="text-[12px] text-[#6b776f]">イベント・お店・キッチンカー・ボランティア募集・ゲームを載せられます</span>
             </Link>
           ) : (
             <p className="rounded-[20px] border border-dashed border-[#d6e3da] bg-white px-4 py-6 text-center text-[13px] text-[#6b776f]">

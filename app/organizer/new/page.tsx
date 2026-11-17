@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  CalendarDays,
-  ChevronRight,
-  Heart,
-  Plus,
-  Store,
-  Truck,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronRight, Plus, type LucideIcon } from "lucide-react";
+import { LISTING_KIND_META } from "@/components/organizer/mobile/listing-kinds";
 import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegistrationGate";
 import { OrganizerPageTitle } from "@/components/organizer/mobile/OrganizerPageTitle";
 
@@ -26,40 +19,19 @@ type Kind = {
   bg: string;
 };
 
-const KINDS: Kind[] = [
-  {
-    href: "/organizer/events/new",
-    title: "イベントを掲載",
-    desc: "お祭り・マルシェ・講座など",
-    Icon: CalendarDays,
-    color: "#2f7d4e",
-    bg: "#e6f3ea",
-  },
-  {
-    href: "/organizer/stores/new",
-    title: "お店を掲載",
-    desc: "カフェ・飲食店・商店など",
-    Icon: Store,
-    color: "#b07a1c",
-    bg: "#fdf3dc",
-  },
-  {
-    href: "/organizer/kitchen-cars/new",
-    title: "キッチンカーを掲載",
-    desc: "出店情報・メニュー・スケジュール",
-    Icon: Truck,
-    color: "#2f7ab0",
-    bg: "#e6f1fa",
-  },
-  {
-    href: "/organizer/recruitments/new",
-    title: "ボランティアを募集",
-    desc: "活動・スタッフ募集",
-    Icon: Heart,
-    color: "#d0567a",
-    bg: "#fde9ef",
-  },
-];
+const KINDS: Kind[] = (
+  [
+    { kind: "event", href: "/organizer/events/new", title: "イベントを掲載", desc: "お祭り・マルシェ・講座など" },
+    { kind: "store", href: "/organizer/stores/new", title: "お店を掲載", desc: "カフェ・飲食店・商店など" },
+    { kind: "kitchen", href: "/organizer/kitchen-cars/new", title: "キッチンカーを掲載", desc: "出店情報・メニュー・スケジュール" },
+    { kind: "volunteer", href: "/organizer/recruitments/new", title: "ボランティアを募集", desc: "活動・スタッフ募集" },
+    { kind: "game", href: "/organizer/games?pick=1", title: "ゲームを作る", desc: "スタンプラリー・クイズ・投票など" },
+  ] as const
+).map(({ kind, ...rest }) => {
+  // 色とアイコンは掲載管理の種類と同じにする
+  const { Icon, color, bg } = LISTING_KIND_META[kind];
+  return { ...rest, Icon, color, bg };
+});
 
 /** 主催者：新しく掲載する（見本「06_新規掲載」）。何を載せるかを選んで、それぞれの作成画面へ進む */
 export default function OrganizerNewListingPage() {
@@ -69,7 +41,7 @@ export default function OrganizerNewListingPage() {
         <OrganizerPageTitle title="新しく掲載する" subtitle="掲載したい情報の種類を選択" Icon={Plus} />
 
         <p className="rounded-[18px] border border-[#d9eadf] bg-gradient-to-br from-[#eef7f0] to-[#f8fbf5] px-5 py-4 text-[14px] leading-[1.8] text-[#3f5146]">
-          イベントからお店、ボランティアまで。
+          イベント・お店・ボランティア・ゲームまで。
           <br />
           地域に届けたい情報を登録しましょう。
         </p>
@@ -78,7 +50,7 @@ export default function OrganizerNewListingPage() {
           <h2 id="new-listing-kinds" className="text-[17px] font-bold text-[#163828]">
             掲載する内容を選ぶ
           </h2>
-          {/* タブレットでは2列×2段にして、4種類が一度に見えるようにする */}
+          {/* タブレットでは2列にして、5種類が一度に見えるようにする */}
           <ul className="space-y-3 tablet:grid tablet:grid-cols-2 tablet:gap-3 tablet:space-y-0">
             {KINDS.map(({ href, title, desc, Icon, color, bg }) => (
               <li key={href}>
@@ -104,14 +76,6 @@ export default function OrganizerNewListingPage() {
           </ul>
         </section>
 
-        {/* ゲームは掲載ではなくイベントで使う道具なので、作る場所はホームの「ゲーム」 */}
-        <p className="text-center text-[12.5px] leading-relaxed text-[#6b776f]">
-          スタンプラリーやくじなどのゲームは、ホームの
-          <Link href="/organizer/games" className="mx-0.5 font-bold text-[#1f7a4a] underline underline-offset-2">
-            ゲーム
-          </Link>
-          から作れます
-        </p>
       </div>
     </OrganizerRegistrationGate>
   );
