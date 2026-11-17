@@ -3,7 +3,7 @@ import { OrganizerRegistrationGate } from "@/components/organizer/OrganizerRegis
 import { OrganizerAnalyticsPage } from "@/components/organizer/dashboard/OrganizerAnalyticsPage";
 
 export const metadata: Metadata = {
-  title: "ダッシュボード | MachiGlyph",
+  title: "くわしい数字 | MachiGlyph",
 };
 
 export default function OrganizerDashboardPage() {
