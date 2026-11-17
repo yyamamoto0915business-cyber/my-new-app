@@ -460,7 +460,7 @@ export default function EditEventPage() {
         backLabelOverride={showPassSettings ? "詳細情報に戻る" : undefined}
       />
 
-      <div className="sticky top-0 z-20 border-b border-[#e8e6e0] bg-white pt-[env(safe-area-inset-top,0px)] min-[900px]:hidden">
+      <div className="sticky top-0 z-20 -mx-4 border-b border-[#e8e6e0] bg-white pt-[env(safe-area-inset-top,0px)] sm:-mx-6 min-[900px]:hidden">
         <div className="flex items-center gap-2 px-3 py-2">
           <button
             type="button"
@@ -889,7 +889,7 @@ export default function EditEventPage() {
       </div>
 
       {currentStep < 4 && !showPassSettings && (
-        <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between gap-2 border-t border-[#e8e6e0] bg-white px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] min-[900px]:hidden">
+        <div className="sticky bottom-0 z-10 -mx-4 flex shrink-0 items-center justify-between gap-2 border-t border-[#e8e6e0] bg-white px-3 py-2 sm:-mx-6 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] min-[900px]:hidden">
           <button
             type="button"
             onClick={goPrev}
@@ -912,7 +912,7 @@ export default function EditEventPage() {
         </div>
       )}
       {currentStep === 4 && (
-        <div className="min-[900px]:hidden sticky bottom-0 z-10 flex gap-[8px] border-t border-[#e8e6e0] bg-white px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
+        <div className="min-[900px]:hidden sticky bottom-0 z-10 -mx-4 flex gap-[8px] border-t border-[#e8e6e0] bg-white px-3 py-2 sm:-mx-6 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
           <button
             type="button"
             onClick={goPrev}

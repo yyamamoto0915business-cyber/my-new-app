@@ -553,7 +553,7 @@ function NewEventPageContent() {
       />
 
       {/* ── Mobile header ── */}
-      <div className="min-[900px]:hidden sticky top-0 z-20 border-b border-[#ece8dc] bg-white pt-[env(safe-area-inset-top,0px)]">
+      <div className="min-[900px]:hidden sticky top-0 z-20 -mx-4 border-b border-[#ece8dc] bg-white pt-[env(safe-area-inset-top,0px)] sm:-mx-6">
         <div className="flex items-center gap-2 px-3 py-2">
           <button type="button" onClick={goPrev} aria-label="戻る" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3F2EF]">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
