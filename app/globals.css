@@ -39041,3 +39041,143 @@ button.mg-album-place {
     background: linear-gradient(to bottom, #245a3e, #173f2c);
   }
 }
+
+/* 主催者：レジ（スマホ・タブレット）。商品を3列で多く並べ、編集・削除は「編集」のときだけ出す */
+.org-pos__edit-toggle {
+  display: none;
+}
+@media (max-width: 899px) {
+  .org-pos__edit-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 999px;
+    border: 1px solid #e1d6b4;
+    background: #fff;
+    padding: 0.42rem 0.8rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #173f2c;
+    cursor: pointer;
+  }
+  .org-pos__edit-toggle.is-active {
+    border-color: #173f2c;
+    background: #173f2c;
+    color: #f6ebc8;
+  }
+  .org-pos__edit-note {
+    margin: 0 0 0.5rem;
+    border-radius: 10px;
+    background: #fbf3e1;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #7a5d18;
+  }
+  .org-pos__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .org-pos__grid:not(.is-editing) .org-pos__product-tools {
+    display: none;
+  }
+  .org-pos__grid.is-editing .org-pos__product {
+    border-style: dashed;
+    border-color: #c9a54e;
+  }
+  .org-pos__product {
+    border-radius: 14px;
+    border-color: #e6e2d6;
+  }
+  .org-pos__product-main {
+    gap: 0.25rem;
+    padding: 0.4rem 0.4rem 0.5rem;
+  }
+  .org-pos__product-main:active {
+    background: #f6ebc8;
+  }
+  .org-pos__product-img {
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+    background: #f4f1e8;
+  }
+  .org-pos__product-placeholder {
+    font-size: 1.15rem;
+    color: #a3812f;
+  }
+  .org-pos__product-name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.4em;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    color: #1f2a24;
+  }
+  .org-pos__product-price {
+    font-size: 0.9rem;
+    color: #173f2c;
+  }
+  .org-pos__product.is-in-cart {
+    border-color: #173f2c;
+    box-shadow: 0 0 0 1.5px #173f2c inset;
+  }
+  .org-pos__product-qty {
+    background: #173f2c;
+    color: #f6ebc8;
+    border: 1.5px solid #d9bc6e;
+  }
+  .org-pos__product-tools button {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+  .org-pos__float-bar {
+    border: 1.5px solid #d9bc6e;
+    background: linear-gradient(to bottom, #245a3e, #173f2c);
+    color: #f6ebc8;
+  }
+}
+.org-pos__catalog-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+@media (max-width: 899px) {
+  .org-pos__catalog-title-row {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .org-pos__catalog-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+  }
+  .org-pos__catalog-actions .org-pos__search {
+    flex: 1;
+    min-width: 0;
+  }
+  .org-pos__catalog-actions .org-pos__add-product {
+    flex-shrink: 0;
+  }
+  /* カテゴリは1行で横に送る（2行になると商品が下がる） */
+  .org-pos__cats {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-left: -0.15rem;
+    margin-right: -0.15rem;
+    padding: 0 0.15rem 0.1rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .org-pos__cats::-webkit-scrollbar {
+    display: none;
+  }
+  .org-pos__cat {
+    flex-shrink: 0;
+  }
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  html:not([data-org-pos-focus="1"]) .org-pos__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
