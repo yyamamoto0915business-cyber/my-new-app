@@ -133,6 +133,11 @@ export function OrganizerPosPage() {
   const [stripeStatusReady, setStripeStatusReady] = useState(false);
   const [posTapConfigured, setPosTapConfigured] = useState(false);
   const [refundingSaleId, setRefundingSaleId] = useState<string | null>(null);
+  /**
+   * スマホ：商品を直す・消すときだけの状態。売っている最中に鉛筆やごみ箱を押し間違えないよう、ふだんは出さない。
+   * この状態のあいだは、商品を押すと注文に入れずに編集を開く。
+   */
+  const [editMode, setEditMode] = useState(false);
   const cartRef = useRef<HTMLElement | null>(null);
   const [cartInView, setCartInView] = useState(false);
   // イベントポイント：このイベントのレジで使えるか・読み取った人
@@ -951,7 +956,24 @@ export function OrganizerPosPage() {
       <div className="org-pos__layout">
         <section className="org-pos__catalog" aria-labelledby="pos-catalog-heading">
           <div className="org-pos__catalog-head">
-            <h2 id="pos-catalog-heading">商品を選択</h2>
+            <div className="org-pos__catalog-title-row">
+              <h2 id="pos-catalog-heading">商品を選択</h2>
+              {products.length > 0 && (
+                <button
+                  type="button"
+                  className={cn("org-pos__edit-toggle", editMode && "is-active")}
+                  aria-pressed={editMode}
+                  onClick={() => setEditMode((v) => !v)}
+                >
+                  {editMode ? "編集をおわる" : (
+                    <>
+                      <Pencil className="h-3.5 w-3.5" aria-hidden />
+                      編集
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
             <div className="org-pos__catalog-actions">
               {products.length > 0 && (
                 <label className="org-pos__search">
@@ -1006,7 +1028,11 @@ export function OrganizerPosPage() {
               )}
             </div>
           ) : (
-            <ul className="org-pos__grid">
+            <>
+            {editMode && (
+              <p className="org-pos__edit-note">商品を押すと編集できます。ごみ箱で削除します。</p>
+            )}
+            <ul className={cn("org-pos__grid", editMode && "is-editing")}>
               {filteredProducts.map((product) => (
                 <li key={product.id}>
                   <div
@@ -1018,7 +1044,7 @@ export function OrganizerPosPage() {
                     <button
                       type="button"
                       className="org-pos__product-main"
-                      onClick={() => addToCart(product)}
+                      onClick={() => (editMode ? openEditProduct(product) : addToCart(product))}
                     >
                       <div className="org-pos__product-img">
                         {qtyByProduct.has(product.id) && (
@@ -1062,6 +1088,7 @@ export function OrganizerPosPage() {
                 </li>
               ))}
             </ul>
+            </>
           )}
         </section>
 
