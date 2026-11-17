@@ -312,7 +312,8 @@ export function EventFormStepIndicator({
             : "font-medium text-[#5c5a54]";
 
         return (
-          <div key={n} className="flex min-w-0 flex-1 items-center">
+          // 最後（確認）は線がないので広げない。広げると右に空きができて、全体が左に寄って見えた
+          <div key={n} className={i < steps.length - 1 ? "flex min-w-0 flex-1 items-center" : "flex shrink-0 items-center"}>
             <button
               type="button"
               onClick={() => onGo(n)}

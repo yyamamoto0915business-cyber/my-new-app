@@ -25,7 +25,34 @@ const STATUS_LABELS: Record<string, string> = {
   draft: "下書き",
 };
 
-function validateForm(data: EventFormData): FormErrors {
+/** 保存に要る項目の名前（スマホの確認画面で、足りないものを出す） */
+const EDIT_FIELD_LABEL: Partial<Record<keyof EventFormData, string>> = {
+  title: "イベント名",
+  description: "イベント概要",
+  organizerName: "主催者名",
+  date: "開催日",
+  startTime: "開始時刻",
+  endTime: "終了時刻",
+  location: "開催場所",
+  address: "住所",
+  prefecture: "都道府県",
+  recurrenceCount: "繰り返し回数",
+  endDate: "終了日",
+  price: "参加費",
+};
+
+/** その項目がどのステップにあるか（書いていないものは開催情報） */
+const EDIT_FIELD_STEP: Partial<Record<keyof EventFormData, EventFormStep>> = {
+  title: 1,
+  description: 1,
+  organizerName: 1,
+  organizerContact: 1,
+};
+
+/** 読みこんだときの日程（変えていなければ「過去の日時」は問わない。サーバーも日程を変えたときだけ確かめる） */
+type OriginalSchedule = { date?: string | null; startTime?: string | null } | null | undefined;
+
+function validateForm(data: EventFormData, original?: OriginalSchedule): FormErrors {
   const errors: FormErrors = {};
   if (!data.title.trim()) errors.title = "イベント名を入力してください";
   if (!data.description.trim())
@@ -36,7 +63,13 @@ function validateForm(data: EventFormData): FormErrors {
     const startTs = toJstTimestamp(data.date, data.startTime);
     if (startTs == null) {
       errors.startTime = "開始時刻の形式が正しくありません";
-    } else if (startTs < Date.now()) {
+    } else if (
+      startTs < Date.now() &&
+      // 開催中・終わったイベントでも、日程を変えていなければ保存できる（前はここで止まって「変更を保存」が押せなかった）
+      !(original &&
+        (original.date ?? "").slice(0, 10) === data.date.slice(0, 10) &&
+        (original.startTime ?? "").slice(0, 5) === data.startTime.slice(0, 5))
+    ) {
       errors.startTime = "開始日時が過去になっています";
     }
   }
@@ -75,8 +108,8 @@ function validateForm(data: EventFormData): FormErrors {
 
 /** 下書きで確かめるのは「イベント名・開催日・開始時刻」と、入れた値の形だけ（足りない分は公開のときに確かめる） */
 const DRAFT_CHECK_KEYS: (keyof EventFormData)[] = ["title", "date", "startTime", "endTime", "price", "recurrenceCount", "endDate"];
-function validateDraft(data: EventFormData): FormErrors {
-  const all = validateForm(data);
+function validateDraft(data: EventFormData, original?: OriginalSchedule): FormErrors {
+  const all = validateForm(data, original);
   const errors: FormErrors = {};
   for (const key of DRAFT_CHECK_KEYS) if (all[key]) errors[key] = all[key];
   return errors;
@@ -259,7 +292,7 @@ export default function EditEventPage() {
   const saveChanges = async () => {
     if (!form || !id) return;
     // 下書きは、足りない項目があっても保存できる（公開するときに確かめる）
-    const formErrors = event?.status === "draft" ? validateDraft(form) : validateForm(form);
+    const formErrors = event?.status === "draft" ? validateDraft(form, event) : validateForm(form, event);
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
       setSubmitError("入力内容をご確認ください");
@@ -342,6 +375,23 @@ export default function EditEventPage() {
     setShowPassSettings(false);
     setCurrentStep(s);
   };
+  /** 足りない項目のステップへ移って、その入力欄へ */
+  const goToField = (field: keyof EventFormData) => {
+    goToStep(EDIT_FIELD_STEP[field] ?? 2);
+    window.setTimeout(() => {
+      const root = formTopRef.current;
+      if (!root) return;
+      const el = Array.from(root.querySelectorAll<HTMLElement>(`[name="${String(field)}"]`)).find(
+        (n) => n.offsetParent !== null
+      );
+      if (!el) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus({ preventScroll: true });
+    }, 120);
+  };
   const goNext = () => {
     setShowPassSettings(false);
     if (currentStep < 4) setCurrentStep((s) => (s + 1) as EventFormStep);
@@ -385,9 +435,14 @@ export default function EditEventPage() {
         )
       : "—";
   const isDraftEvent = event?.status === "draft";
-  const missingRequired = Object.keys(isDraftEvent ? validateDraft(form) : validateForm(form)).length > 0;
+  const saveErrors = isDraftEvent ? validateDraft(form, event) : validateForm(form, event);
+  const missingRequired = Object.keys(saveErrors).length > 0;
   /** 下書きで、公開に足りない項目が残っている */
-  const missingForPublishing = isDraftEvent && Object.keys(validateForm(form)).length > 0;
+  const missingForPublishing = isDraftEvent && Object.keys(validateForm(form, event)).length > 0;
+  /** 保存できない理由（足りない項目）。スマホの確認画面で、押せない保存ボタンの代わりに出す */
+  const missingFields = (Object.keys(saveErrors) as (keyof EventFormData)[]).filter(
+    (k) => EDIT_FIELD_LABEL[k]
+  );
 
   return (
     <div
@@ -405,8 +460,8 @@ export default function EditEventPage() {
         backLabelOverride={showPassSettings ? "詳細情報に戻る" : undefined}
       />
 
-      <div className="sticky top-0 z-20 -mx-4 border-b border-[#e8e6e0] bg-white pt-[env(safe-area-inset-top,0px)] sm:-mx-6 min-[900px]:hidden">
-        <div className="flex items-center gap-2 px-4 py-2 sm:px-6">
+      <div className="sticky top-0 z-20 border-b border-[#e8e6e0] bg-white pt-[env(safe-area-inset-top,0px)] min-[900px]:hidden">
+        <div className="flex items-center gap-2 px-3 py-2">
           <button
             type="button"
             onClick={goPrev}
@@ -441,7 +496,7 @@ export default function EditEventPage() {
             {submitting ? "保存中…" : "保存"}
           </button>
         </div>
-        <div className="flex items-center px-4 pb-2 sm:px-6">
+        <div className="flex items-center px-3 pb-2">
           {!showPassSettings ? (
             <EventFormStepIndicator current={currentStep} onGo={goToStep} />
           ) : null}
@@ -834,11 +889,11 @@ export default function EditEventPage() {
       </div>
 
       {currentStep < 4 && !showPassSettings && (
-        <div className="sticky bottom-0 z-10 shrink-0 -mx-4 flex items-center justify-between border-t border-[#e8e6e0] bg-white px-3 py-1.5 sm:-mx-6 min-[900px]:hidden">
+        <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between gap-2 border-t border-[#e8e6e0] bg-white px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] min-[900px]:hidden">
           <button
             type="button"
             onClick={goPrev}
-            className="flex items-center gap-1 rounded-[9px] border border-[#e8e6e0] bg-white px-3 py-2 text-[13px] font-[500] min-[900px]:gap-[6px] min-[900px]:px-5 min-[900px]:py-[9px]"
+            className="flex min-h-[44px] items-center gap-1 rounded-[12px] border border-[#e8e6e0] bg-white px-3 py-2 text-[13px] font-[500]"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             確認に戻る
@@ -849,7 +904,7 @@ export default function EditEventPage() {
           <button
             type="button"
             onClick={goNext}
-            className="flex items-center gap-1 rounded-[9px] border-none bg-[#173f2c] px-4 py-2 text-[13px] font-[600] text-white min-[900px]:gap-[6px] min-[900px]:px-6 min-[900px]:py-[9px]"
+            className="flex min-h-[44px] items-center gap-1 rounded-[12px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] px-5 py-2 text-[14px] font-[700] text-[#f6ebc8]"
           >
             {nextLabels[currentStep]}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -857,7 +912,7 @@ export default function EditEventPage() {
         </div>
       )}
       {currentStep === 4 && (
-        <div className="min-[900px]:hidden sticky bottom-0 z-10 border-t border-[#e8e6e0] bg-white px-4 py-2 flex gap-[8px]">
+        <div className="min-[900px]:hidden sticky bottom-0 z-10 flex gap-[8px] border-t border-[#e8e6e0] bg-white px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
           <button
             type="button"
             onClick={goPrev}
@@ -866,15 +921,31 @@ export default function EditEventPage() {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             一覧へ
           </button>
+          {missingRequired && missingFields.length > 0 ? (
+            // 前は灰色で押せないだけで、何が足りないのか分からなかった
+            <button
+              type="button"
+              onClick={() => goToField(missingFields[0])}
+              className="flex min-w-0 flex-1 flex-col items-center justify-center rounded-[10px] border border-[#f0c2aa] bg-[#fff7f2] px-2 py-[6px] text-[#a8481c]"
+            >
+              <span className="max-w-full truncate text-[11px] font-semibold">
+                {missingFields.length > 1 ? `あと${missingFields.length}か所直すと保存できます` : "ここを直すと保存できます"}
+              </span>
+              <span className="max-w-full truncate text-[13px] font-bold">
+                {saveErrors[missingFields[0]] ?? `${EDIT_FIELD_LABEL[missingFields[0]]}を入れる`} ›
+              </span>
+            </button>
+          ) : (
           <button
             type="button"
             onClick={saveChanges}
             disabled={submitting || missingRequired}
-            className="flex flex-1 items-center justify-center gap-[6px] rounded-[10px] bg-[#173f2c] py-[11px] text-[13px] font-[600] text-white disabled:opacity-50"
+            className="flex flex-1 items-center justify-center gap-[6px] rounded-[10px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] py-[11px] text-[14px] font-[700] text-[#f6ebc8] disabled:opacity-50"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
             {submitting ? "保存中…" : "変更を保存"}
           </button>
+          )}
         </div>
       )}
     </div>
