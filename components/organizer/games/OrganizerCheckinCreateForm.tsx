@@ -69,6 +69,11 @@ import { GameDraftLoading } from "@/components/organizer/games/GameDraftLoading"
 import { useGameDraft } from "@/components/organizer/games/useGameDraft";
 import { readGameLook } from "@/lib/organizer/game-look";
 
+/** 欄ははじめ空にし、例は薄い灰色の見本として出す（前は例の文が入っていて、消してから書く手間があった） */
+const EXAMPLE_NAME = "春のまち歩きチェックイン";
+const EXAMPLE_DESCRIPTION = "まちのスポットをめぐってチェックインしながら、春のまちの魅力を発見しましょう！すべてのスポットを巡って、素敵な特典をゲットしよう！";
+
+
 const STEPS = [
   { id: "basic", label: "基本設定" },
   { id: "pass", label: "参加パス" },
@@ -119,10 +124,8 @@ export function OrganizerCheckinCreateForm() {
   useEffect(() => {
     setPassPreview(step === "pass");
   }, [step]);
-  const [name, setName] = useState("春のまち歩きチェックイン");
-  const [description, setDescription] = useState(
-    "まちのスポットをめぐってチェックインしながら、春のまちの魅力を発見しましょう！すべてのスポットを巡って、素敵な特典をゲットしよう！"
-  );
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [eventId, setEventId] = useState("");
   /** まちの情報のカードに出す画像（空なら、対象イベントの画像 → 種類の絵）。 */
   const [cardImage, setCardImage] = useState("");
@@ -463,7 +466,7 @@ export function OrganizerCheckinCreateForm() {
                   <span>
                     ゲーム名 <em>必須</em>
                   </span>
-                  <input value={name} onChange={(e) => setName(e.target.value)} maxLength={50} required />
+                  <input placeholder={`例：${EXAMPLE_NAME}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={50} required />
                   <small>{name.length}/50</small>
                 </label>
                 <label className="org-checkin__field">
@@ -492,7 +495,7 @@ export function OrganizerCheckinCreateForm() {
                 </div>
                 <label className="org-checkin__field org-checkin__field--wide">
                   <span>説明文</span>
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={400} rows={3} />
+                  <textarea placeholder={`例：${EXAMPLE_DESCRIPTION}`} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={400} rows={3} />
                   <small>{description.length}/400</small>
                 </label>
                 <div className="org-checkin__field org-checkin__field--wide">

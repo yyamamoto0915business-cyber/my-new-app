@@ -67,6 +67,11 @@ import { readGameLook } from "@/lib/organizer/game-look";
 import { sanitizeMissionSettings } from "@/lib/organizer/mission";
 import { MissionAddSheet } from "@/components/organizer/games/MissionAddSheet";
 
+/** 欄ははじめ空にし、例は薄い灰色の見本として出す（前は例の文が入っていて、消してから書く手間があった） */
+const EXAMPLE_NAME = "まち巡り発見ミッション ～春のまちなかさんぽ～";
+const EXAMPLE_DESCRIPTION = "まちなかを巡って、スポットを発見したり、写真を撮ったり、クイズに挑戦しながら、このまちの魅力を再発見できるミッションゲームです。";
+
+
 const KIND_ICONS: Record<MissionKindId, LucideIcon> = {
   visit: MapPin,
   photo: Camera,
@@ -154,7 +159,7 @@ function toIsoFromDate(date: string): string | null {
 export function OrganizerMissionCreateForm() {
   const { look, lookEdit, setLook } = useGameLookEdit();
   const router = useRouter();
-  const [name, setName] = useState("まち巡り発見ミッション ～春のまちなかさんぽ～");
+  const [name, setName] = useState("");
   const [eventId, setEventId] = useState("");
   /** まちの情報のカードに出す画像（空なら、対象イベントの画像 → 種類の絵）。 */
   const [cardImage, setCardImage] = useState("");
@@ -166,9 +171,7 @@ export function OrganizerMissionCreateForm() {
   const [passDraft, setPassDraft] = useState<GamePassDraft>(EMPTY_GAME_PASS_DRAFT);
   /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
   const [passPreview, setPassPreview] = useState(false);
-  const [description, setDescription] = useState(
-    "まちなかを巡って、スポットを発見したり、写真を撮ったり、クイズに挑戦しながら、このまちの魅力を再発見できるミッションゲームです。"
-  );
+  const [description, setDescription] = useState("");
   // はじめは今日から1か月（過去の日付から始めない）。
   const [startDate, setStartDate] = useState(() => jstDate());
   const [endDate, setEndDate] = useState(() => jstDate(29));
@@ -176,13 +179,14 @@ export function OrganizerMissionCreateForm() {
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [formats, setFormats] = useState<MissionKindId[]>(MISSION_KINDS.map((kind) => kind.id));
   const [addSheetOpen, setAddSheetOpen] = useState(false);
-  const [missions, setMissions] = useState<MissionItem[]>(() => sampleMissions());
+  // まっさらから組み立てる入口なので、ミッションも空から始める（例は「例を入れる」で入る）
+  const [missions, setMissions] = useState<MissionItem[]>([]);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [clearCount, setClearCount] = useState(3);
   const [couponOn, setCouponOn] = useState(true);
   const [pointsOn, setPointsOn] = useState(false);
   const [stampOn, setStampOn] = useState(false);
-  const [prizePlace, setPrizePlace] = useState("中央観光案内所");
+  const [prizePlace, setPrizePlace] = useState("");
   // 「参加パス購入者のみ」は、参加できる人の設定から決める。
   const passOnly = audience === "pass";
   const [rankingOn, setRankingOn] = useState(true);
@@ -599,12 +603,26 @@ export function OrganizerMissionCreateForm() {
                   ゲーム名 <em>必須</em>
                 </span>
                 <input
-                  value={name}
+                  placeholder={`例：${EXAMPLE_NAME}`} value={name}
                   onChange={(e) => setName(e.target.value)}
                   maxLength={50}
                   required
                 />
-                <small>{name.length}/50</small>
+                <small>
+                  {name.length}/50
+                  {!name && !description ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setName(EXAMPLE_NAME);
+                        setDescription(EXAMPLE_DESCRIPTION);
+                      }}
+                      style={{ marginLeft: "0.6rem", border: 0, background: "none", padding: 0, color: "#a3812f", fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
+                    >
+                      例を入れる
+                    </button>
+                  ) : null}
+                </small>
               </label>
               <label className="org-mission__field">
                 <span>対象イベント（任意）</span>
@@ -694,7 +712,7 @@ export function OrganizerMissionCreateForm() {
               <label className="org-mission__field org-mission__field--wide">
                 <span>説明文</span>
                 <textarea
-                  value={description}
+                  placeholder={`例：${EXAMPLE_DESCRIPTION}`} value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   maxLength={300}
                   rows={3}
@@ -758,7 +776,16 @@ export function OrganizerMissionCreateForm() {
               </button>
             </div>
             {missions.length === 0 ? (
-              <p className="org-mission__empty">まだミッションがありません。まちを巡る課題を追加しましょう。</p>
+              <div className="org-mission__empty">
+              <p>まだミッションがありません。「部品を足す」から、行く・答える・集めるを自由に組み合わせられます。</p>
+              <button
+                type="button"
+                onClick={() => setMissions(sampleMissions())}
+                style={{ marginTop: "0.6rem", minHeight: "2.5rem", padding: "0 1rem", borderRadius: 999, border: "1px solid #e1d6b4", background: "#fffdf7", color: "#173f2c", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}
+              >
+                例のミッションを入れて始める
+              </button>
+            </div>
             ) : (
               <>
               <style>{OPEN_CARD_CSS}</style>
@@ -951,7 +978,7 @@ export function OrganizerMissionCreateForm() {
                   value={prizePlace}
                   maxLength={40}
                   onChange={(e) => setPrizePlace(e.target.value)}
-                  placeholder="中央観光案内所"
+                  placeholder="例：中央観光案内所"
                 />
               </label>
             </section>

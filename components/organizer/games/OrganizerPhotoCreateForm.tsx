@@ -59,6 +59,11 @@ import { GameDraftLoading } from "@/components/organizer/games/GameDraftLoading"
 import { useGameDraft } from "@/components/organizer/games/useGameDraft";
 import { readGameLook } from "@/lib/organizer/game-look";
 
+/** 欄ははじめ空にし、例は薄い灰色の見本として出す（前は例の文が入っていて、消してから書く手間があった） */
+const EXAMPLE_NAME = "春のまち歩きフォトラリー";
+const EXAMPLE_DESCRIPTION = "まちのスポットを巡って写真を撮りながら地域の魅力を見つけよう！";
+
+
 const STEPS = [
   { id: "basic", label: "基本設定" },
   { id: "pass", label: "参加パス" },
@@ -118,8 +123,8 @@ export function OrganizerPhotoCreateForm() {
   useEffect(() => {
     setPassPreview(step === "pass");
   }, [step]);
-  const [name, setName] = useState("春のまち歩きフォトラリー");
-  const [description, setDescription] = useState("まちのスポットを巡って写真を撮りながら地域の魅力を見つけよう！");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [eventId, setEventId] = useState("");
   /** まちの情報のカードに出す画像（空なら、対象イベントの画像 → 種類の絵）。 */
   const [cardImage, setCardImage] = useState("");
@@ -433,14 +438,14 @@ export function OrganizerPhotoCreateForm() {
                   <span>
                     タイトル <em>必須</em>
                   </span>
-                  <input value={name} onChange={(e) => setName(e.target.value)} maxLength={50} required />
+                  <input placeholder={`例：${EXAMPLE_NAME}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={50} required />
                   <small>{name.length}/50</small>
                 </label>
                 <label className="org-photo__field org-photo__field--wide">
                   <span>
                     説明文 <em>必須</em>
                   </span>
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={200} rows={3} />
+                  <textarea placeholder={`例：${EXAMPLE_DESCRIPTION}`} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={200} rows={3} />
                   <small>{description.length}/200</small>
                 </label>
                 <div className="org-photo__field">

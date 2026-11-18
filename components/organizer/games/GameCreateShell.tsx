@@ -130,6 +130,8 @@ export function GameCreateShell({
                 );
               })}
             </ol>
+            {/* 順番どおりでなくてよい（丸から好きな所を開ける。保存はゲーム名と期間があれば下書きでできる） */}
+            <p className="mt-2 text-center text-[11px] text-[#7b877f]">丸を押すと、好きな順に開けます。ゲーム名と期間だけで下書き保存できます。</p>
           </nav>
           {children}
           {error ? <p className="org-quiz__error">{error}</p> : null}
