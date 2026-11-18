@@ -96,14 +96,25 @@ function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
 }
 
+const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"] as const;
+
+/** 日付の区切り：「今日」「昨日」、それより前は「11月18日（水）」 */
 function formatDateSep(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   if (diff < 86400000 && d.getDate() === now.getDate()) return "今日";
   if (diff < 172800000) return "昨日";
-  return d.toLocaleDateString("ja-JP", { month: "long", day: "numeric" });
+  return `${d.getMonth() + 1}月${d.getDate()}日（${WEEKDAY_JA[d.getDay()]}）`;
 }
+
+/** 主催者がよく使う返事（押すと入力欄に入る。送る前に直せる） */
+const QUICK_REPLIES = [
+  "ありがとうございます！",
+  "当日お待ちしています。",
+  "確認して折り返しご連絡します。",
+  "くわしくはイベントのページをご覧ください。",
+];
 
 
 export default function ConversationPage() {
@@ -400,9 +411,15 @@ export default function ConversationPage() {
   }
 
   const canSend = (content.trim().length > 0 || staged.length > 0) && !sending;
-  const rel = relationLabel(conversationKind);
+  /** 主催者のチャットから開いたとき（色を主催者画面にそろえ、よく使う返事を出す） */
+  const org = listHref.startsWith("/organizer");
+  const OWN = org ? "#173f2c" : C.green;
+  const rel = org && conversationKind === "general" ? "ボランティア" : relationLabel(conversationKind);
   // 表示名にメールアドレスが入っている人がいるので、そのときは出さない
-  const name = safeDisplayName(counterpartName, "相手");
+  const name = safeDisplayName(
+    counterpartName,
+    myRole === "organizer" ? (conversationKind === "general" ? "応募者さん" : "参加者さん") : "相手"
+  );
   const nameInitial = name.slice(0, 1).toUpperCase() || "?";
 
   /** 相手が読んだ、自分のいちばん新しいメッセージ（ここに「既読」を出す） */
@@ -498,17 +515,28 @@ export default function ConversationPage() {
             <span className="ms-ctx-name" style={{ fontSize: 15, fontWeight: 700, color: C.t1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.2px", minWidth: 0 }}>
               {name}
             </span>
-            <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 600, color: C.green, background: C.greenL, borderRadius: 999, padding: "1px 7px" }}>
+            <span
+              style={
+                org
+                  ? conversationKind === "general"
+                    ? { flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: "#c0507a", background: "#fbe9f0", borderRadius: 999, padding: "1px 7px" }
+                    : { flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: "#b0641f", background: "#fdf1e4", borderRadius: 999, padding: "1px 7px" }
+                  : { flexShrink: 0, fontSize: 10.5, fontWeight: 600, color: C.green, background: C.greenL, borderRadius: 999, padding: "1px 7px" }
+              }
+            >
               {rel}
             </span>
           </div>
           {eventId ? (
             <Link
-              href={`/events/${eventId}`}
+              // 主催者は、イベント名からそのイベントの申込者の一覧へ（参加者の答えや連絡先を見ながら返事できる）
+              href={org ? `/organizer/events/${eventId}/answers` : `/events/${eventId}`}
               className="ms-ctx-ev"
-              style={{ display: "block", fontSize: 12, color: C.t2, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: "none" }}
+              style={{ display: "block", fontSize: 12, color: org ? "#3f6250" : C.t2, fontWeight: org ? 600 : 400, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: "none" }}
             >
-              📅 {eventTitle ?? "イベント"} ›
+              {org ? "" : "📅 "}
+              {eventTitle ?? "イベント"}
+              {org ? "　申込者を見る ›" : " ›"}
             </Link>
           ) : conversationKind === "follow_dm" ? null : (
             <div className="ms-ctx-ev" style={{ fontSize: 12, color: C.t3, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -530,8 +558,8 @@ export default function ConversationPage() {
       </div>
 
       {/* Messages */}
-      <div className="ms-msgs-scroll" style={{ flex: 1, overflowY: "auto", padding: "12px 14px 20px", display: "flex", flexDirection: "column", background: C.bg }}>
-        {eventId && !loading ? (
+      <div className="ms-msgs-scroll" style={{ flex: 1, overflowY: "auto", padding: "12px 14px 20px", display: "flex", flexDirection: "column", background: org ? "#f7f6f2" : C.bg }}>
+        {eventId && !loading && !org ? (
           <div style={{ margin: "4px auto 14px", maxWidth: 360, width: "100%", borderRadius: 16, border: `1px solid ${C.border}`, background: "#fafaf8", padding: "12px 14px", textAlign: "center" }}>
             <p style={{ fontSize: 12, color: C.t3 }}>この会話のテーマ</p>
             <p style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginTop: 2, lineHeight: 1.45 }}>{eventTitle ?? "イベント"}</p>
@@ -568,7 +596,7 @@ export default function ConversationPage() {
           if (item.type === "date") {
             return (
               <div key={`date-${idx}`} style={{ textAlign: "center", margin: "18px 0 12px" }}>
-                <span style={{ fontSize: 11.5, color: C.t2, fontWeight: 600, background: "#f2f2f0", borderRadius: 999, padding: "3px 10px" }}>{item.label}</span>
+                <span style={{ fontSize: 11.5, color: C.t2, fontWeight: 600, background: org ? "#ebe8df" : "#f2f2f0", borderRadius: 999, padding: "3px 10px" }}>{item.label}</span>
               </div>
             );
           }
@@ -594,8 +622,9 @@ export default function ConversationPage() {
                   lineHeight: 1.45,
                   wordBreak: "break-word",
                   borderRadius: bubbleRadius(isOwn, isFirst, isLast),
-                  background: isOwn ? C.green : C.received,
+                  background: isOwn ? OWN : org ? "#ffffff" : C.received,
                   color: isOwn ? "white" : C.t1,
+                  ...(org && !isOwn ? { boxShadow: "0 0 0 1px #ebe7dc" } : {}),
                   ...(msg.image_path ? { padding: 0, overflow: "hidden", background: "transparent" } : {}),
                 }}
               >
@@ -613,7 +642,7 @@ export default function ConversationPage() {
               {(showTime || msg.id === lastReadOwnId) && (
                 <span className="ms-mtime" style={{ fontSize: 11, color: C.t3, marginTop: 4, padding: "0 4px" }}>
                   {msg.id === lastReadOwnId ? (
-                    <span style={{ color: C.green, fontWeight: 600, marginRight: showTime ? 6 : 0 }}>既読</span>
+                    <span style={{ color: org ? "#3f6250" : C.green, fontWeight: 600, marginRight: showTime ? 6 : 0 }}>既読</span>
                   ) : null}
                   {showTime ? formatTime(msg.created_at) : null}
                 </span>
@@ -634,7 +663,7 @@ export default function ConversationPage() {
                 lineHeight: 1.45,
                 wordBreak: "break-word",
                 borderRadius: BUBBLE_R,
-                background: p.status === "failed" ? "#fde8e8" : C.green,
+                background: p.status === "failed" ? "#fde8e8" : OWN,
                 color: p.status === "failed" ? "#9b1c1c" : "white",
                 opacity: p.status === "sending" ? 0.6 : 1,
                 ...(p.previewUrl ? { padding: 0, overflow: "hidden", background: "transparent" } : {}),
@@ -692,6 +721,25 @@ export default function ConversationPage() {
                 ×
               </button>
             </div>
+          ))}
+        </div>
+      ) : null}
+
+      {/* よく使う返事（主催者だけ。入力が空のとき） */}
+      {org && !content && staged.length === 0 ? (
+        <div className="scrollbar-hide" style={{ display: "flex", gap: 6, padding: "8px 12px 0", overflowX: "auto", flexShrink: 0, background: C.surface, borderTop: "1px solid #f0ede4" }}>
+          {QUICK_REPLIES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => {
+                setContent(t);
+                window.setTimeout(() => inputRef.current?.focus(), 0);
+              }}
+              style={{ flexShrink: 0, border: "1px solid #e1d6b4", background: "#fffdf7", color: "#173f2c", borderRadius: 999, padding: "6px 12px", fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer" }}
+            >
+              {t}
+            </button>
           ))}
         </div>
       ) : null}
@@ -772,7 +820,8 @@ export default function ConversationPage() {
               border: "none",
               outline: "none",
               background: "transparent",
-              fontSize: 15,
+              // 16px より小さいと iPhone で入力するときに画面が拡大される
+              fontSize: 16,
               fontFamily: "inherit",
               color: C.t1,
               resize: "none",
@@ -800,7 +849,7 @@ export default function ConversationPage() {
             justifyContent: "center",
             cursor: canSend ? "pointer" : "default",
             flexShrink: 0,
-            background: C.green,
+            background: OWN,
             opacity: canSend ? 1 : 0.35,
             transition: "opacity .15s",
           }}

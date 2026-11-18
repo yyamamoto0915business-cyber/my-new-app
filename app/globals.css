@@ -39198,3 +39198,15 @@ button.mg-album-place {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/*
+ * iPhone は、入力欄の文字が16pxより小さいと、触ったときに画面を拡大してしまう（拡大したまま横にずれて見える）。
+ * 指で操作する端末では、文字を入れる欄だけ16pxにそろえる（見た目の小ささより、拡大されないことを優先する）。
+ */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
