@@ -481,6 +481,33 @@ export function WizardLivePreview({
       {edit && view === "start" ? (
         <p className="wizard-preview__edit-hint">タップで編集、押したままドラッグで移動</p>
       ) : null}
+      {/* スマホ：小さな所をねらって押さなくてよいように、直せるものを並べる（押すと下のシートが開く） */}
+      {edit && view === "start" ? (
+        <div className="wizard-preview__targets" role="toolbar" aria-label="直すものを選ぶ">
+          {(
+            [
+              ["text", "タイトル・説明"],
+              ["button", "ボタン"],
+              ["background", "背景"],
+              ["mascot", "キャラクター"],
+              ["info", "開催の情報"],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={selected === key}
+              className={cn("wizard-preview__target", selected === key && "is-on")}
+              onClick={() => {
+                setInserting(null);
+                setSelected(selected === key ? null : key);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <PreviewZoom scale={scale} zoomed={zoomed} setZoom={setZoom} />
       <div ref={stageRef} className={cn("wizard-preview__stage", zoomed && "is-actual")}>
         <div className="wizard-preview__fit" style={{ width: PHONE_W * scale, height: PHONE_H * scale }}>

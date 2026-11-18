@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { BarChart3, CalendarDays, ChevronLeft, Eye, Users, Wallet, type LucideIcon } from "lucide-react";
+import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, Eye, Gamepad2, Users, Wallet, type LucideIcon } from "lucide-react";
 import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
 import { cn } from "@/lib/utils";
 import {
@@ -205,6 +205,18 @@ export function OrganizerAnalyticsPage() {
     };
   }, [period, eventId]);
 
+  // ゲームの効果への入口（公開中のゲームがあるときだけ。いちばん新しい公開中のゲームの効果の画面へ）
+  const [games, setGames] = useState<{ id: string; name: string; status: string }[] | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/organizer/games", { cache: "no-store", signal: controller.signal })
+      .then(async (r) => (r.ok ? ((await r.json()) as { games?: { id: string; name: string; status: string }[] }) : null))
+      .then((json) => setGames(json?.games ?? []))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+  const publishedGames = (games ?? []).filter((g) => g.status === "published");
+
   const metric = METRICS.find((m) => m.id === metricId) ?? METRICS[0];
   const rangeLabel = useMemo(() => (data ? `${md(data.period.from)}〜${md(data.period.to)}` : ""), [data]);
 
@@ -333,6 +345,26 @@ export function OrganizerAnalyticsPage() {
               <TrendChart points={data.series} metric={metric} />
             </div>
           </section>
+
+          {publishedGames.length > 0 ? (
+            <Link
+              href={`/organizer/games/${publishedGames[0].id}/analytics`}
+              className="flex items-center gap-3 rounded-[16px] border border-[#e6e2d6] bg-white px-3.5 py-3 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:bg-[#f7f5ee]"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#efecfa] text-[#6b5bb5]" aria-hidden>
+                <Gamepad2 className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-bold text-[#173f2c]">ゲームの効果</span>
+                <span className="mt-0.5 block truncate text-[12px] text-[#6b776f]">
+                  {publishedGames.length > 1
+                    ? `${publishedGames[0].name} ほか${publishedGames.length - 1}件・参加やクリアの数`
+                    : `${publishedGames[0].name}・参加やクリアの数`}
+                </span>
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />
+            </Link>
+          ) : null}
 
           <details className="rounded-[14px] border border-[#ebeee8] bg-white px-3.5 py-2.5 text-[13px] text-[#3f5146]">
             <summary className="cursor-pointer text-[13.5px] font-semibold text-[#173f2c]">日ごとの数（表）</summary>
