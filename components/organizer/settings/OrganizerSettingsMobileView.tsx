@@ -32,7 +32,7 @@ export type OrganizerSettingsMobileViewProps = {
   billingLoading: boolean;
 };
 
-type Stats = { events: number; participants: number; games: number };
+type Stats = { listed: number; applications: number; games: number };
 
 /** 主催者の id とアイコン（主催者プロフィールの画像。なければ前の「主催者モードのアイコン」） */
 function useOrganizerIdentity(userId: string | undefined) {
@@ -82,13 +82,10 @@ function useOrganizerStats(): Stats | null {
         ]);
         const dash = dashRes.ok ? ((await dashRes.json()) as DashboardResponse) : null;
         const games = gamesRes.ok ? ((await gamesRes.json()) as { games?: unknown[] }) : null;
-        // 公開したことのあるイベント（公開中・終了）。下書き・アーカイブは数えない
-        const opened = (dash?.events ?? []).filter(
-          (e) => e.visibilityStatus === "published" && (e.status === "public" || e.status === "ended")
-        );
+        // 今を表す数：掲載中（公開中）・新しい申込・作ったゲーム（前の「開いたイベント」は下書きを数えず、0のままに見えた）
         setStats({
-          events: opened.length,
-          participants: opened.reduce((sum, e) => sum + (e.participantCount || 0), 0),
+          listed: dash?.kpis.hosting ?? 0,
+          applications: dash?.kpis.pendingApplications ?? 0,
           games: games?.games?.length ?? 0,
         });
       } catch {
@@ -188,7 +185,6 @@ export function OrganizerSettingsMobileView({
   planLabel,
   slots,
   receiving,
-  displayEmail,
   displayName,
   organizationName,
   orgLoading,
@@ -292,11 +288,28 @@ export function OrganizerSettingsMobileView({
 
         {/* 主催者としての実績（利用者側の「マイアルバム・フォロワー・フォロー中」の位置） */}
         <div className="relative z-[2] flex items-stretch border-t border-[#eceae3] bg-white">
-          <StatCell first value={num(stats?.events)} label="開いたイベント" href="/organizer/events" />
-          <StatCell value={num(stats?.participants, "人")} label="のべ参加者" />
-          <StatCell value={num(stats?.games)} label="作ったゲーム" href="/organizer/games" />
+          <StatCell first value={num(stats?.listed, "件")} label="掲載中" href="/organizer/listings" />
+          <StatCell value={num(stats?.applications, "件")} label="新しい申込" href="/organizer/listings?kind=event" />
+          <StatCell value={num(stats?.games, "件")} label="ゲーム" href="/organizer/listings?kind=game" />
         </div>
       </section>
+
+      {/* やり残し：売上の受け取りが未設定のときだけ、プランの上に出す */}
+      {receiving === "未設定" && !billingLoading ? (
+        <Link
+          href="/organizer/settings/payouts"
+          className="flex items-center gap-3 rounded-[16px] border border-[#e6d29b] bg-[#fbf3e1] px-4 py-3 active:bg-[#f6ebc8]"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#173f2c] text-[#f6ebc8]" aria-hidden>
+            <Landmark className="h-4 w-4" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[13.5px] font-bold text-[#173f2c]">売上の受け取りを設定しましょう</span>
+            <span className="mt-0.5 block text-[11.5px] leading-snug text-[#7a5d18]">カードやスマホ払いの売上を受け取るには、口座の登録が必要です</span>
+          </span>
+          <span className="shrink-0 text-[12px] font-bold text-[#173f2c]">設定する ›</span>
+        </Link>
+      ) : null}
 
       {/* 現在のプラン（プランの入口はここだけ） */}
       <Link
@@ -363,14 +376,14 @@ export function OrganizerSettingsMobileView({
             href="/organizer/settings/account"
             icon={<UserRound className="h-4 w-4" />}
             title="アカウント・削除"
-            sub={`ログイン中：${displayEmail}`}
+            sub="ログインの情報・アカウントの削除"
           />
           <SettingRow href="/contact" icon={<HelpCircle className="h-4 w-4" />} title="ヘルプ・お問い合わせ" />
         </div>
       </section>
 
       <div className="flex justify-center pt-1">
-        <OrganizerLogoutButton />
+        <OrganizerLogoutButton variant="quiet" />
       </div>
     </div>
   );
