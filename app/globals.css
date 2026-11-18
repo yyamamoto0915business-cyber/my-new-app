@@ -1006,7 +1006,7 @@ body:has([data-follows-page])::before {
      * 同じ base 内で 16px を維持しつつ zoom で見た目を小さくする。
      */
     .org-events-mgmt--compact .org-events-toolbar__search-wrap {
-      zoom: 0.75;
+      /* zoom で小さく見せると iPhone が拡大するので使わない */
     }
     .org-events-mgmt--compact .org-events-toolbar__search-wrap .org-events-toolbar__search {
       font-size: 16px !important;
@@ -1016,7 +1016,7 @@ body:has([data-follows-page])::before {
     .org-events-mgmt--compact .org-events-toolbar__select,
     .org-events-mgmt--compact .org-events-pagination__size-select {
       font-size: 16px !important;
-      zoom: 0.75;
+      /* zoom で小さく見せると iPhone が拡大するので使わない */
       padding: 8px 11px;
       border-radius: 10px;
     }
@@ -1027,10 +1027,12 @@ body:has([data-follows-page])::before {
       border-radius: 8px;
     }
 
-    /* まちの情報ヒーロー検索: 16px を維持しつつ見た目を 10px 相当に */
+    /*
+     * まちの情報ヒーロー検索：16px のまま（前は zoom: 0.625 で見た目を 10px にしていたが、
+     * iPhone は見た目の大きさで判断するので、触ると画面が拡大されていた）
+     */
     .mg-hero-search-input {
       font-size: 16px !important;
-      zoom: 0.625;
     }
   }
 }
@@ -39208,5 +39210,6 @@ button.mg-album-place {
   textarea,
   select {
     font-size: 16px !important;
+    zoom: 1 !important;
   }
 }
