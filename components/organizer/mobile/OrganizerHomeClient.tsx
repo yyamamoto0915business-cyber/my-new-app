@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Check, ChevronRight, Info, QrCode, Wallet, type LucideIcon } from "lucide-react";
+import { ArrowRight, BarChart3, Check, ChevronRight, Info, QrCode, Wallet } from "lucide-react";
 import type { DashboardResponse } from "@/app/api/organizer/dashboard/route";
 import type { PosSalesSummary } from "@/lib/pos/types";
 import { formatYen } from "@/lib/pos/types";
@@ -43,55 +43,6 @@ function usePlanUpgradeNotice() {
 import { organizerDayEventHref } from "@/components/organizer/day/day-management-shared";
 
 const SERIF = ORG_SERIF;
-
-/**
- * 運営の道具の大きなボタン（深い緑・横長）。左にアイコン、まんなかに名前と一言、右に今の数字。
- * ホームの主役なので、3つとも同じ強さで縦に並べる。
- */
-function BigTool({
-  href,
-  Icon,
-  label,
-  sub,
-  value,
-  badge,
-}: {
-  href: string;
-  Icon: LucideIcon;
-  label: string;
-  sub: string;
-  value?: string;
-  badge?: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="relative flex min-h-[84px] items-center gap-3.5 overflow-hidden rounded-[20px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-br from-[#245a3e] to-[#173f2c] px-4 py-3.5 text-[#f6ebc8] shadow-[0_6px_16px_rgba(14,42,29,0.2)] transition active:scale-[0.98]"
-    >
-      <span className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[#c9a54e]/10" aria-hidden />
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[#f6ebc8] text-[#173f2c]" aria-hidden>
-        <Icon className="h-6 w-6" strokeWidth={2} />
-      </span>
-      <span className="relative min-w-0 flex-1">
-        <span className="flex items-center gap-1.5 text-[17px] font-bold leading-tight text-white">
-          {label}
-          {badge}
-        </span>
-        {/* スマホは数字を2行目に（右に置くと説明が切れる）。タブレットは説明と数字を両方 */}
-        {value ? (
-          <span className="mt-1 block truncate text-[14px] font-bold tabular-nums leading-snug text-[#f6ebc8] tablet:hidden">{value}</span>
-        ) : null}
-        <span className={value ? "mt-1 hidden truncate text-[12px] leading-snug text-[#dfe8e1] tablet:block" : "mt-1 block truncate text-[12px] leading-snug text-[#dfe8e1]"}>
-          {sub}
-        </span>
-      </span>
-      {value ? (
-        <span className="relative hidden shrink-0 text-right text-[15px] font-bold tabular-nums text-[#f6ebc8] tablet:block">{value}</span>
-      ) : null}
-      <ChevronRight className="relative h-5 w-5 shrink-0 text-[#e6d29b]" aria-hidden />
-    </Link>
-  );
-}
 
 /**
  * 主催者ホーム：運営の道具の画面（イベントの一覧は掲載管理の役目。2026-11-18）。
@@ -253,32 +204,73 @@ export function OrganizerHomeClient() {
             </Link>
           ) : null}
 
-          {/* 運営の道具（ホームの主役）。深い緑の大きなボタンで縦に3つ */}
+          {/*
+            運営の道具。3つとも同じ深い緑だと重く見えたので、色で役目を分ける：
+            当日の受付＝深い緑の大きなカード（いちばん使う）、レジ＝金色がかったクリーム、ダッシュボード＝白
+          */}
           <nav aria-label="運営の道具" className="space-y-2.5">
             <OrgEyebrow>TOOLS</OrgEyebrow>
-            <BigTool
+            <Link
               href={dayEvent ? organizerDayEventHref(dayEvent.id) : "/organizer"}
-              Icon={QrCode}
-              label="当日の受付"
-              sub={dayEvent ? `${dayEvent.title}の受付・連絡` : "参加パスのQRを読んで受付・連絡"}
-            />
-            <BigTool
-              href={dayEvent ? `/organizer/pos?event=${encodeURIComponent(dayEvent.id)}` : "/organizer/pos"}
-              Icon={Wallet}
-              label="レジ"
-              sub="現金・スマホ払いで会計"
-              value={`今日の売上 ${formatYen(sales?.totalYen ?? 0)}`}
-              badge={<PlanBadge feature="pos" />}
-            />
-            {canSeeDashboard ? (
-              <BigTool
-                href="/organizer/dashboard"
-                Icon={BarChart3}
-                label="ダッシュボード"
-                sub="参加・閲覧・売上・申込をふり返る"
-                value={data ? `新しい申込 ${data.kpis.pendingApplications}件・公開中 ${data.kpis.hosting}件` : undefined}
-              />
-            ) : null}
+              className="relative flex min-h-[112px] items-center gap-4 overflow-hidden rounded-[22px] bg-gradient-to-br from-[#2a6346] via-[#1d4b34] to-[#123526] px-5 py-4 text-white shadow-[0_10px_24px_rgba(14,42,29,0.22)] transition active:scale-[0.98]"
+            >
+              <span className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full border border-[#e6d29b]/25" aria-hidden />
+              <span className="pointer-events-none absolute -right-2 -bottom-16 h-32 w-32 rounded-full bg-[#c9a54e]/10" aria-hidden />
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] bg-[#f6ebc8] text-[#173f2c] shadow-[0_3px_8px_rgba(0,0,0,0.15)]" aria-hidden>
+                <QrCode className="h-7 w-7" strokeWidth={2} />
+              </span>
+              <span className="relative min-w-0 flex-1">
+                <span className="block text-[11px] font-bold tracking-[0.18em] text-[#e6d29b]">CHECK-IN</span>
+                <span className="mt-0.5 block text-[19px] font-bold leading-tight">当日の受付</span>
+                <span className="mt-1 block truncate text-[12px] text-[#d6e3da]">
+                  {dayEvent ? `${dayEvent.title}の受付・連絡` : "参加パスのQRを読んで受付・連絡"}
+                </span>
+              </span>
+              <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/12 text-[#f6ebc8]" aria-hidden>
+                <ChevronRight className="h-5 w-5" />
+              </span>
+            </Link>
+
+            <div className={canSeeDashboard ? "grid grid-cols-2 gap-2.5" : "grid grid-cols-1"}>
+              <Link
+                href={dayEvent ? `/organizer/pos?event=${encodeURIComponent(dayEvent.id)}` : "/organizer/pos"}
+                className="relative flex min-h-[124px] flex-col justify-between overflow-hidden rounded-[20px] border border-[#ead9a8] bg-gradient-to-br from-[#fffaf0] to-[#f8edd2] p-3.5 shadow-[0_4px_12px_rgba(163,129,47,0.12)] transition active:scale-[0.97]"
+              >
+                <span className="flex items-start justify-between">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#173f2c] text-[#f6ebc8]" aria-hidden>
+                    <Wallet className="h-5 w-5" />
+                  </span>
+                  <PlanBadge feature="pos" />
+                </span>
+                <span>
+                  <span className="block text-[15px] font-bold text-[#173f2c]">レジ</span>
+                  <span className="mt-0.5 block text-[11px] font-semibold text-[#8a6d2b]">今日の売上</span>
+                  <span className="block text-[18px] font-bold leading-tight tabular-nums text-[#173f2c]" style={{ fontFamily: SERIF }}>
+                    {formatYen(sales?.totalYen ?? 0)}
+                  </span>
+                </span>
+              </Link>
+              {canSeeDashboard ? (
+                <Link
+                  href="/organizer/dashboard"
+                  className="relative flex min-h-[124px] flex-col justify-between overflow-hidden rounded-[20px] border border-[#e6e2d6] bg-white p-3.5 shadow-[0_4px_12px_rgba(22,56,40,0.07)] transition active:scale-[0.97]"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#eef4ef] text-[#173f2c]" aria-hidden>
+                    <BarChart3 className="h-5 w-5" />
+                  </span>
+                  <span>
+                    <span className="block text-[15px] font-bold text-[#173f2c]">ダッシュボード</span>
+                    <span className="mt-0.5 block text-[11px] font-semibold text-[#6b776f]">新しい申込</span>
+                    <span className="block text-[18px] font-bold leading-tight tabular-nums text-[#173f2c]" style={{ fontFamily: SERIF }}>
+                      {data ? `${data.kpis.pendingApplications}件` : "–"}
+                      {data ? (
+                        <span className="ml-1.5 font-sans text-[11px] font-semibold text-[#7b877f]">公開中 {data.kpis.hosting}</span>
+                      ) : null}
+                    </span>
+                  </span>
+                </Link>
+              ) : null}
+            </div>
           </nav>
 
           {/* イベントの一覧・下書きの続きは掲載管理で */}
