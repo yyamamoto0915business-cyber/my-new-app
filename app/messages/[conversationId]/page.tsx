@@ -7,6 +7,7 @@ import { messagesBasePath, messagesScopeFromPath } from "@/lib/messages-scope";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { createClient } from "@/lib/supabase/client";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { safeDisplayName } from "@/lib/safe-display-name";
 import { isAbortLikeError } from "@/lib/is-abort-like-error";
 import { ModerationMenu } from "@/components/moderation/ModerationMenu";
 import { shrinkPhotoForChat } from "@/lib/chat/shrink-photo";
@@ -400,7 +401,8 @@ export default function ConversationPage() {
 
   const canSend = (content.trim().length > 0 || staged.length > 0) && !sending;
   const rel = relationLabel(conversationKind);
-  const name = counterpartName?.trim() || "相手";
+  // 表示名にメールアドレスが入っている人がいるので、そのときは出さない
+  const name = safeDisplayName(counterpartName, "相手");
   const nameInitial = name.slice(0, 1).toUpperCase() || "?";
 
   /** 相手が読んだ、自分のいちばん新しいメッセージ（ここに「既読」を出す） */
