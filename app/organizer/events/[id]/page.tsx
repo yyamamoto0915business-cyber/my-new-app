@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import type { Event, EventFormData } from "@/lib/events";
 import { eventToForm } from "@/lib/organizer-event-to-form";
+import { cn } from "@/lib/utils";
 import { EVENT_TAGS } from "@/lib/db/types";
 import { EventFormStepContent } from "@/components/organizer/events/EventFormStepContent";
 import { PassSettingsPcView } from "@/components/organizer/events/PassSettingsPcView";
@@ -13,7 +14,6 @@ import { getJstNowHm, getJstTodayYmd, toJstTimestamp } from "@/lib/jst-date";
 import {
   EventFormPcStepIndicator,
   EventFormSidePanel,
-  EventFormStepIndicator,
   type EventFormStep,
 } from "@/components/organizer/events/event-form-ui";
 import { validateOnlineEventFormFields } from "@/lib/event-online-validation";
@@ -289,15 +289,15 @@ export default function EditEventPage() {
     }
   };
 
-  const saveChanges = async () => {
-    if (!form || !id) return;
+  const saveChanges = async (): Promise<boolean> => {
+    if (!form || !id) return false;
     // 下書きは、足りない項目があっても保存できる（公開するときに確かめる）
     const formErrors = event?.status === "draft" ? validateDraft(form, event) : validateForm(form, event);
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
       setSubmitError("入力内容をご確認ください");
       formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
+      return false;
     }
     setErrors({});
     setSubmitError(null);
@@ -319,16 +319,18 @@ export default function EditEventPage() {
           behavior: "smooth",
           block: "start",
         });
-        return;
+        return false;
       }
       setSubmitSuccess(true);
       const updated = await res.json();
       setEvent(updated);
       setForm(eventToForm(updated));
       formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return true;
     } catch {
       setSubmitError("通信に失敗しました");
       formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return false;
     } finally {
       setSubmitting(false);
     }
@@ -396,14 +398,22 @@ export default function EditEventPage() {
     setShowPassSettings(false);
     if (currentStep < 4) setCurrentStep((s) => (s + 1) as EventFormStep);
   };
+  /** 保存していない変更があるか（読みこんだ・保存した内容とくらべる） */
+  const dirty = event ? JSON.stringify(form) !== JSON.stringify(eventToForm(event)) : false;
   const goPrev = () => {
     if (showPassSettings) {
       setShowPassSettings(false);
       return;
     }
-    // 確認からは一覧へ、各ステップからは確認へ戻る（前のステップへ順に戻すと、確認まで何度も押すことになる）
-    if (currentStep === 4) router.push("/organizer/events");
-    else setCurrentStep(4);
+    // 内容の一覧からは一覧へ、各部分からは内容の一覧へ戻る（入れた内容はそのまま残る）
+    if (currentStep === 4) {
+      if (dirty && !window.confirm("保存していない変更があります。保存せずに戻りますか？")) return;
+      router.push("/organizer/events");
+    } else setCurrentStep(4);
+  };
+  /** スマホ：部分の編集から保存して、内容の一覧に戻る */
+  const saveAndBack = async () => {
+    if (await saveChanges()) setCurrentStep(4);
   };
 
   const stepLabels: Record<EventFormStep, string> = {
@@ -480,46 +490,24 @@ export default function EditEventPage() {
               <polyline points="12 19 5 12 12 5" />
             </svg>
           </button>
-          <div className="flex-1 truncate text-[13px] font-[600]">
+          <div className="min-w-0 flex-1 truncate text-[15px] font-bold text-[#173f2c]">
             {showPassSettings
               ? "参加パス設定"
               : currentStep === 4
                 ? "イベントを編集"
                 : `${stepLabels[currentStep]}を編集`}
           </div>
-          <button
-            type="button"
-            onClick={saveChanges}
-            disabled={submitting}
-            className="shrink-0 rounded-[8px] bg-[#173f2c] px-2.5 py-1 text-[11px] font-[500] text-white disabled:opacity-50"
+          {/* 編集はステップで進まないので、ステップの表示と上の保存は出さない（保存は下の1つだけ） */}
+          <span
+            className={cn(
+              "shrink-0 rounded-full px-2 py-[3px] text-[11px] font-bold",
+              event?.status === "published" ? "bg-[#e3f2e7] text-[#1f7a4a]" : event?.status === "draft" ? "bg-[#fdf1d8] text-[#a26a10]" : "bg-[#eef0ec] text-[#6b776f]"
+            )}
           >
-            {submitting ? "保存中…" : "保存"}
-          </button>
-        </div>
-        <div className="flex items-center px-3 pb-2">
-          {!showPassSettings ? (
-            <EventFormStepIndicator current={currentStep} onGo={goToStep} />
-          ) : null}
+            {statusLabel}
+          </span>
         </div>
       </div>
-
-      {/* スマホ：申込者と当日管理は確認の下のほうにしかなかったので、上にも出す */}
-      {currentStep === 4 && !showPassSettings && id ? (
-        <div className="mx-4 mt-3 grid grid-cols-2 gap-2 min-[900px]:hidden">
-          <Link
-            href={`/organizer/events/${encodeURIComponent(id)}/answers`}
-            className="flex h-11 items-center justify-center rounded-[12px] border border-[#e8e6e0] bg-white text-[13px] font-semibold text-[#1a1a1a] active:bg-[#f5f4f0]"
-          >
-            申込者を見る
-          </Link>
-          <Link
-            href={`/organizer?event=${encodeURIComponent(id)}`}
-            className="flex h-11 items-center justify-center rounded-[12px] border border-[#2D7A4F] bg-[#EAF4ED] text-[13px] font-semibold text-[#2D7A4F] active:bg-[#D0ECD7]"
-          >
-            当日管理へ
-          </Link>
-        </div>
-      ) : null}
 
       {toast && (
         <div
@@ -626,15 +614,15 @@ export default function EditEventPage() {
 
           {currentStep === 4 && (
             <div className="p-4 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden min-[900px]:p-0">
-              <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7">
+              <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7 max-[899px]:mb-3 max-[899px]:rounded-[16px] max-[899px]:border max-[899px]:border-[#e6e2d6] max-[899px]:bg-white max-[899px]:px-4 max-[899px]:pt-3 max-[899px]:pb-2 max-[899px]:shadow-[0_1px_4px_rgba(23,63,44,0.05)]">
                 <div className="mb-[10px] flex items-center justify-between">
-                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">
+                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888] max-[899px]:text-[14px] max-[899px]:font-bold max-[899px]:text-[#173f2c]">
                     基本情報
                   </span>
                   <button
                     type="button"
                     onClick={() => goToStep(1)}
-                    className="text-[12px] font-[500] text-[#173f2c]"
+                    className="text-[12px] font-[500] text-[#173f2c] max-[899px]:min-h-[34px] max-[899px]:rounded-full max-[899px]:border max-[899px]:border-[#e1d6b4] max-[899px]:px-3.5 max-[899px]:font-bold"
                   >
                     編集
                   </button>
@@ -670,15 +658,15 @@ export default function EditEventPage() {
                 ))}
               </div>
 
-              <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7">
+              <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-6 pb-4 min-[900px]:pb-7 max-[899px]:mb-3 max-[899px]:rounded-[16px] max-[899px]:border max-[899px]:border-[#e6e2d6] max-[899px]:bg-white max-[899px]:px-4 max-[899px]:pt-3 max-[899px]:pb-2 max-[899px]:shadow-[0_1px_4px_rgba(23,63,44,0.05)]">
                 <div className="mb-[10px] flex items-center justify-between">
-                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">
+                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888] max-[899px]:text-[14px] max-[899px]:font-bold max-[899px]:text-[#173f2c]">
                     開催情報
                   </span>
                   <button
                     type="button"
                     onClick={() => goToStep(2)}
-                    className="text-[12px] font-[500] text-[#173f2c]"
+                    className="text-[12px] font-[500] text-[#173f2c] max-[899px]:min-h-[34px] max-[899px]:rounded-full max-[899px]:border max-[899px]:border-[#e1d6b4] max-[899px]:px-3.5 max-[899px]:font-bold"
                   >
                     編集
                   </button>
@@ -724,14 +712,19 @@ export default function EditEventPage() {
                     </span>
                   </div>
                 ))}
-                <div className="mt-[20px] mb-[10px] flex items-center justify-between">
-                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888]">
+                {event?.status === "published" ? (
+                  <p className="mt-1 rounded-[10px] bg-[#f7f6f2] px-3 py-2 text-[11.5px] leading-relaxed text-[#6b776f]">
+                    公開済みのイベントは、日程（日付・時刻）を変えられません。変えるときは、複製して新しいイベントとして作ってください。
+                  </p>
+                ) : null}
+                <div className="mt-[20px] mb-[10px] flex items-center justify-between max-[899px]:-mx-4 max-[899px]:mt-3 max-[899px]:border-t-[10px] max-[899px]:border-[#f7f6f2] max-[899px]:px-4 max-[899px]:pt-3">
+                  <span className="text-[12px] font-[600] tracking-[.05em] text-[#888] max-[899px]:text-[14px] max-[899px]:font-bold max-[899px]:text-[#173f2c]">
                     詳細情報
                   </span>
                   <button
                     type="button"
                     onClick={() => goToStep(3)}
-                    className="text-[12px] font-[500] text-[#173f2c]"
+                    className="text-[12px] font-[500] text-[#173f2c] max-[899px]:min-h-[34px] max-[899px]:rounded-full max-[899px]:border max-[899px]:border-[#e1d6b4] max-[899px]:px-3.5 max-[899px]:font-bold"
                   >
                     編集
                   </button>
@@ -778,7 +771,7 @@ export default function EditEventPage() {
               </div>
 
               <div className="min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:p-6 pb-20 min-[900px]:pb-7">
-                <div className="mb-[10px] text-[12px] font-[600] tracking-[.05em] text-[#888]">
+                <div className="mb-[10px] text-[12px] font-[600] tracking-[.05em] text-[#888] max-[899px]:hidden">
                   保存の確認
                 </div>
                 {missingRequired && (
@@ -801,7 +794,7 @@ export default function EditEventPage() {
                     <strong className="ml-1 text-[#1a1a1a]">{statusLabel}</strong>
                   </p>
                   <p className="mt-2 text-[12px] text-[#888]">
-                    公開・非公開の切り替えはイベント一覧から行えます
+                    公開・非公開の切り替えは掲載管理から行えます
                   </p>
                   {event?.createdAt && (
                     <p className="mt-2 text-[12px] text-[#888]">
@@ -814,7 +807,7 @@ export default function EditEventPage() {
                     type="button"
                     onClick={saveChanges}
                     disabled={submitting || missingRequired}
-                    className="w-full rounded-[9px] bg-[#173f2c] py-[12px] text-[14px] font-[600] text-white transition hover:bg-[#0e2a1d] disabled:opacity-50"
+                    className="w-full rounded-[9px] bg-[#173f2c] py-[12px] text-[14px] font-[600] text-white transition hover:bg-[#0e2a1d] disabled:opacity-50 max-[899px]:hidden"
                   >
                     {submitting ? "保存中…" : "変更を保存"}
                   </button>
@@ -826,13 +819,13 @@ export default function EditEventPage() {
                   </Link>
                   <Link
                     href={`/organizer?event=${encodeURIComponent(id)}`}
-                    className="flex w-full items-center justify-center rounded-[9px] border border-[#2D7A4F] bg-[#EAF4ED] py-[12px] text-[14px] font-[500] text-[#2D7A4F] hover:bg-[#D0ECD7]"
+                    className="flex w-full items-center justify-center rounded-[9px] border border-[#2D7A4F] bg-[#EAF4ED] py-[12px] text-[14px] font-[500] text-[#2D7A4F] hover:bg-[#D0ECD7] max-[899px]:hidden"
                   >
                     当日管理へ →
                   </Link>
                   <Link
                     href={`/organizer/events/${encodeURIComponent(id)}/answers`}
-                    className="flex w-full items-center justify-center rounded-[9px] border border-[#e8e6e0] bg-white py-[12px] text-[14px] font-[500] text-[#1a1a1a] hover:bg-[#f5f4f0]"
+                    className="flex w-full items-center justify-center rounded-[9px] border border-[#e8e6e0] bg-white py-[12px] text-[14px] font-[500] text-[#1a1a1a] hover:bg-[#f5f4f0] max-[899px]:hidden"
                   >
                     申し込みと答えを見る
                   </Link>
@@ -896,31 +889,22 @@ export default function EditEventPage() {
             className="flex min-h-[44px] items-center gap-1 rounded-[12px] border border-[#e8e6e0] bg-white px-3 py-2 text-[13px] font-[500]"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-            確認に戻る
+            内容にもどる
           </button>
-          <div className="hidden min-[900px]:block text-center text-[12px] text-[#888]">
-            STEP {currentStep} / 4 — {stepLabels[currentStep]}
-          </div>
+          {/* 部分ごとの編集なので「次へ」ではなく、保存してもどる */}
           <button
             type="button"
-            onClick={goNext}
-            className="flex min-h-[44px] items-center gap-1 rounded-[12px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] px-5 py-2 text-[14px] font-[700] text-[#f6ebc8]"
+            onClick={() => void saveAndBack()}
+            disabled={submitting}
+            className="flex min-h-[44px] min-w-0 flex-1 items-center justify-center gap-1 rounded-[12px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] px-5 py-2 text-[14px] font-[700] text-[#f6ebc8] disabled:opacity-50"
           >
-            {nextLabels[currentStep]}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            {submitting ? "保存中…" : "保存してもどる"}
           </button>
         </div>
       )}
       {currentStep === 4 && (
         <div className="min-[900px]:hidden sticky bottom-0 z-10 -mx-4 flex gap-[8px] border-t border-[#e8e6e0] bg-white px-3 py-2 sm:-mx-6 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
-          <button
-            type="button"
-            onClick={goPrev}
-            className="flex items-center rounded-[10px] border border-[#e8e6e0] bg-white px-[18px] py-[11px] text-[13px] font-[500]"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-            一覧へ
-          </button>
           {missingRequired && missingFields.length > 0 ? (
             // 前は灰色で押せないだけで、何が足りないのか分からなかった
             <button
@@ -936,15 +920,22 @@ export default function EditEventPage() {
               </span>
             </button>
           ) : (
+          dirty || submitting ? (
           <button
             type="button"
-            onClick={saveChanges}
+            onClick={() => void saveChanges()}
             disabled={submitting || missingRequired}
-            className="flex flex-1 items-center justify-center gap-[6px] rounded-[10px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] py-[11px] text-[14px] font-[700] text-[#f6ebc8] disabled:opacity-50"
+            className="flex min-h-[46px] flex-1 items-center justify-center gap-[6px] rounded-[12px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] py-[11px] text-[14px] font-[700] text-[#f6ebc8] disabled:opacity-50"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
             {submitting ? "保存中…" : "変更を保存"}
           </button>
+          ) : (
+            // 何も変えていないときは押せない形にして、保存したか迷わないようにする
+            <div className="flex min-h-[46px] flex-1 items-center justify-center rounded-[12px] bg-[#f1f2ef] text-[13px] font-semibold text-[#8a958d]">
+              {submitSuccess ? "保存しました" : "変更はありません"}
+            </div>
+          )
           )}
         </div>
       )}

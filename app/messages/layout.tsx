@@ -6,7 +6,9 @@ import { usePathname } from "next/navigation";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { InboxItem } from "@/lib/inbox-queries";
-import { MessageCircle } from "lucide-react";
+import { ChevronDown, MessageCircle } from "lucide-react";
+import { safeDisplayName } from "@/lib/safe-display-name";
+import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
 import { LoginRequiredPanel } from "@/components/auth/LoginRequiredPanel";
 import { isAbortLikeError } from "@/lib/is-abort-like-error";
 import { resolveAvatarUrlByRole } from "@/lib/profile-avatar";
@@ -48,16 +50,15 @@ function formatRel(iso: string): string {
   return d.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" });
 }
 
+/** 相手の呼び名。メールアドレスは出さない（表示名がメールのままの人もいるので、そのときは「参加者さん」など） */
 function getName(item: InboxItem): string {
-  const n = item.other_display_name?.trim();
-  if (n) return n;
-  const e = item.other_email?.split("@")[0]?.trim();
-  if (e) return e;
-  return item.my_role === "organizer"
-    ? item.conversation_kind === "general"
-      ? "応募者"
-      : "参加者"
-    : "主催者";
+  const fallback =
+    item.my_role === "organizer"
+      ? item.conversation_kind === "general"
+        ? "応募者さん"
+        : "参加者さん"
+      : "主催者";
+  return safeDisplayName(item.other_display_name, fallback);
 }
 
 function relationLabel(item: InboxItem): string {
@@ -96,6 +97,56 @@ function avatarUrlFor(item: InboxItem): string | null {
 function initials(name: string): string {
   const compact = name.trim().replace(/\s+/g, "");
   return (compact.slice(0, 1) || "?").toUpperCase();
+}
+
+/** 主催者のチャットの1行：名前・最後のひとこと・何の会話か（イベント名の札）・未読の数 */
+function OrganizerPersonRow({ item, activeId, basePath }: { item: InboxItem; activeId?: string; basePath: string }) {
+  const name = getName(item);
+  const active = item.conversation_id === activeId;
+  const unread = item.unread_count > 0;
+  const photo = avatarUrlFor(item);
+  const volunteer = item.conversation_kind === "general";
+  return (
+    <Link
+      href={`${basePath}/${item.conversation_id}`}
+      className={`flex items-center gap-3 border-b border-[#f0ede4] px-4 py-3 no-underline active:bg-[#f7f5ee] ${active ? "bg-[#f4f8f5]" : ""}`}
+    >
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#eef4ef] text-[16px] font-bold text-[#173f2c]">
+        {photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photo} alt="" className="h-full w-full object-cover" />
+        ) : (
+          initials(name)
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline gap-2">
+          <span className={`min-w-0 flex-1 truncate text-[14.5px] text-[#1f2a24] ${unread ? "font-bold" : "font-semibold"}`}>{name}</span>
+          <span className={`shrink-0 text-[11px] ${unread ? "font-bold text-[#173f2c]" : "text-[#9aa29c]"}`}>
+            {item.last_message_at ? formatRel(item.last_message_at) : ""}
+          </span>
+        </span>
+        <span className="mt-0.5 flex items-center gap-2">
+          <span className={`min-w-0 flex-1 truncate text-[13px] ${unread ? "font-medium text-[#1f2a24]" : "text-[#7b877f]"}`}>
+            {item.last_message_content ?? "まだメッセージはありません"}
+          </span>
+          {unread ? (
+            <span className="min-w-[20px] shrink-0 rounded-full bg-[#173f2c] px-1.5 text-center text-[11px] font-bold leading-[20px] text-[#f6ebc8]">
+              {item.unread_count > 99 ? "99+" : item.unread_count}
+            </span>
+          ) : null}
+        </span>
+        <span className="mt-1 flex min-w-0 items-center gap-1.5">
+          <span
+            className={`shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold ${volunteer ? "bg-[#fbe9f0] text-[#c0507a]" : "bg-[#fdf1e4] text-[#b0641f]"}`}
+          >
+            {volunteer ? "ボランティア" : "参加"}
+          </span>
+          <span className="min-w-0 truncate text-[11.5px] font-medium text-[#5f6d64]">{item.event_title ?? "イベント"}</span>
+        </span>
+      </span>
+    </Link>
+  );
 }
 
 function PersonRow({ item, activeId, basePath }: { item: InboxItem; activeId?: string; basePath: string }) {
@@ -218,6 +269,8 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterId>("all");
   const [search, setSearch] = useState("");
+  /** 主催者のチャット：やり取りのない会話（たたんでおく）を開いているか */
+  const [quietOpen, setQuietOpen] = useState(false);
 
   // 主催者として（/organizer/messages）か、利用者として（/messages）か。会話の一覧もそれぞれの分だけ出す
   const scope = messagesScopeFromPath(pathname);
@@ -352,6 +405,14 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         }
       >
         <div className="ms-sidebar-header" style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+          {scope === "organizer" ? (
+            <div className="mb-2.5">
+              <OrgEyebrow>MESSAGES</OrgEyebrow>
+              <h1 className="mt-1 text-[21px] font-bold leading-tight tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
+                チャット
+              </h1>
+            </div>
+          ) : (
           <div
             className="ms-sidebar-title"
             style={{
@@ -363,8 +424,9 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               lineHeight: 1.2,
             }}
           >
-            {scope === "organizer" ? "主催者のチャット" : "メッセージ"}
+            メッセージ
           </div>
+          )}
           <div style={{ position: "relative" }}>
             <svg
               viewBox="0 0 24 24"
@@ -397,7 +459,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                 border: `1px solid ${C.border}`,
                 borderRadius: 100,
                 padding: "7px 12px 7px 30px",
-                fontSize: 13,
+                fontSize: 16,
                 fontFamily: "inherit",
                 color: C.t1,
                 outline: "none",
@@ -427,9 +489,9 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                     flexShrink: 0,
                     padding: "5px 12px",
                     borderRadius: 100,
-                    border: `1px solid ${on ? C.green : C.border}`,
-                    background: on ? C.green : "transparent",
-                    color: on ? "#fff" : C.t2,
+                    border: `1px solid ${on ? (scope === "organizer" ? "#173f2c" : C.green) : C.border}`,
+                    background: on ? (scope === "organizer" ? "#173f2c" : C.green) : "transparent",
+                    color: on ? (scope === "organizer" ? "#f6ebc8" : "#fff") : C.t2,
                     fontFamily: "inherit",
                     fontSize: 12,
                     fontWeight: on ? 600 : 500,
@@ -493,7 +555,41 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               <p style={{ fontSize: 13, color: C.t3 }}>条件に合う会話はありません</p>
             </div>
           )}
-          {!loading && !error && visible.map((item) => (
+          {!loading && !error && scope === "organizer" ? (
+            <>
+              {/* やり取りのある会話（未読が上） */}
+              {visible
+                .filter((item) => item.last_message_at || item.last_message_content)
+                .map((item) => (
+                  <OrganizerPersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
+                ))}
+              {/* まだやり取りのない会話は、下にたたんでおく */}
+              {(() => {
+                const quiet = visible.filter((item) => !item.last_message_at && !item.last_message_content);
+                if (quiet.length === 0) return null;
+                const open = quietOpen || !!q || visible.length === quiet.length;
+                return (
+                  <div className="border-t border-[#f0ede4]">
+                    <button
+                      type="button"
+                      onClick={() => setQuietOpen((v) => !v)}
+                      aria-expanded={open}
+                      className="flex min-h-[44px] w-full items-center justify-between px-4 text-[12.5px] font-bold text-[#6b776f]"
+                    >
+                      まだやり取りのない会話 {quiet.length}
+                      <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+                    </button>
+                    {open
+                      ? quiet.map((item) => (
+                          <OrganizerPersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
+                        ))
+                      : null}
+                  </div>
+                );
+              })()}
+            </>
+          ) : null}
+          {!loading && !error && scope !== "organizer" && visible.map((item) => (
             <PersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
           ))}
         </div>
