@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, ChevronRight, Info, MapPin, PenLine, QrCode, Users, Wallet } from "lucide-react";
+import { ArrowRight, BarChart3, Check, ChevronRight, Info, MapPin, PenLine, QrCode, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { DashboardEvent, DashboardResponse } from "@/app/api/organizer/dashboard/route";
 import type { PosSalesSummary } from "@/lib/pos/types";
 import { formatYen } from "@/lib/pos/types";
@@ -65,13 +65,49 @@ const STATUS_LABEL: Record<DashboardEvent["status"], { label: string; className:
 
 const SERIF = ORG_SERIF;
 
-/** 数字1つ（白いカードの中。数字だけ深い緑） */
-function Stat({ label, value }: { label: string; value: string }) {
+/** 運営の道具のボタン（3つ同じ大きさ）。strong のときは深い緑（開催の当日の受付・レジ） */
+function ToolTile({
+  href,
+  Icon,
+  label,
+  sub,
+  color,
+  bg,
+  strong = false,
+  badge,
+}: {
+  href: string;
+  Icon: LucideIcon;
+  label: string;
+  sub: string;
+  color: string;
+  bg: string;
+  strong?: boolean;
+  badge?: React.ReactNode;
+}) {
   return (
-    <div className="min-w-0 px-1 text-center">
-      <dt className="text-[10.5px] font-bold tracking-[0.06em] text-[#7b877f]">{label}</dt>
-      <dd className="mt-0.5 whitespace-nowrap text-[19px] font-bold leading-tight tracking-tight text-[#173f2c]">{value}</dd>
-    </div>
+    <Link
+      href={href}
+      className={cn(
+        "relative flex min-h-[104px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-[18px] px-1.5 py-3 text-center transition active:scale-[0.97]",
+        strong
+          ? "border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] text-[#f6ebc8] shadow-[0_4px_12px_rgba(14,42,29,0.22)]"
+          : "border border-[#e6e2d6] bg-white text-[#173f2c] shadow-[0_3px_10px_rgba(22,56,40,0.06)]"
+      )}
+    >
+      <span
+        className="flex h-11 w-11 items-center justify-center rounded-full"
+        style={strong ? { background: "rgba(246,235,200,0.16)", color: "#f6ebc8" } : { background: bg, color }}
+        aria-hidden
+      >
+        <Icon className="h-[22px] w-[22px]" />
+      </span>
+      <span className="whitespace-nowrap text-[13.5px] font-bold leading-tight tracking-[-0.01em]">{label}</span>
+      <span className={cn("max-w-full truncate text-[11px] font-medium leading-tight", strong ? "text-[#dfe8e1]" : "text-[#7b877f]")}>
+        {sub}
+      </span>
+      {badge ? <span className="absolute right-1.5 top-1.5">{badge}</span> : null}
+    </Link>
   );
 }
 
@@ -102,7 +138,7 @@ function CardButton({
 
 /**
  * 次のイベント（1件だけ大きく）。その日にやることのボタンをカードの中に置く。
- * 当日・開催中は「当日の受付」と「レジ」を大きく、それより前は「申込者・当日の受付・編集」、下書きは「続きを編集」。
+ * ボタンは「申込者・編集」（下書きは「続きを編集」）。当日の受付・レジは下の道具の段（当日は深い緑）にあるので、ここには出さない。
  */
 function NextEventCard({ e, today }: { e: DashboardEvent; today: string }) {
   const timing = eventTiming(today, e.date, e.endDate);
@@ -152,33 +188,11 @@ function NextEventCard({ e, today }: { e: DashboardEvent; today: string }) {
             続きを編集して公開する
           </CardButton>
         </div>
-      ) : isToday ? (
-        <>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <CardButton href={organizerDayEventHref(e.id)} primary>
-              <QrCode className="h-4 w-4" aria-hidden />
-              当日の受付
-            </CardButton>
-            <CardButton href={`/organizer/pos?event=${encodeURIComponent(e.id)}`} primary>
-              <Wallet className="h-4 w-4" aria-hidden />
-              レジ
-              <PlanBadge feature="pos" />
-            </CardButton>
-          </div>
-          <div className="mt-2 flex items-center justify-center gap-4 text-[12px] font-bold text-[#3f6250]">
-            <Link href={`/organizer/events/${e.id}/answers`} className="py-1">申込者 {e.participantCount ?? 0}人</Link>
-            <Link href={`/organizer/events/${e.id}`} className="py-1">編集</Link>
-          </div>
-        </>
       ) : (
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2">
           <CardButton href={`/organizer/events/${e.id}/answers`}>
             <Users className="h-4 w-4" aria-hidden />
-            申込者 {e.participantCount ?? 0}
-          </CardButton>
-          <CardButton href={organizerDayEventHref(e.id)}>
-            <QrCode className="h-4 w-4" aria-hidden />
-            受付
+            申込者 {e.participantCount ?? 0}人
           </CardButton>
           <CardButton href={`/organizer/events/${e.id}`}>
             <PenLine className="h-4 w-4" aria-hidden />
@@ -231,7 +245,7 @@ function EventRow({ e, today }: { e: DashboardEvent; today: string }) {
 
 /**
  * 主催者ホーム：「次に何をするか」の画面（全部の一覧は掲載管理の役目）。
- * 対応が必要なこと → 次のイベント（1件・その日のボタンつき）→ このあとの予定（2件まで）→ 数字 → 当日の道具（受付・レジ）
+ * 対応が必要なこと → 次のイベント（1件）→ 運営の道具（当日の受付・レジ・ダッシュボード）→ このあとの予定（2件まで）
  * ゲームは掲載管理・新しく掲載から入る（2026-11-18）
  */
 export function OrganizerHomeClient() {
@@ -272,6 +286,9 @@ export function OrganizerHomeClient() {
   const nextEvent = upcoming[0] ?? null;
   /** 次のイベントのあと、2週間以内のもの（2件まで）。すべては掲載管理で見る */
   const laterEvents = upcoming.slice(1).filter((e) => daysBetween(today, e.date) <= 14).slice(0, 2);
+  /** 開催の当日（開催中を含む）で公開中のイベント。道具の受付・レジをそのイベントで開く */
+  const dayEvent =
+    nextEvent && nextEvent.status === "public" && daysBetween(today, nextEvent.date) <= 0 ? nextEvent : null;
   // 未読メッセージは、主催者として参加している会話の分だけを数える（下のナビの「チャット」と同じ数）。
   // サーバーの数は利用者として参加している会話の未読も含むので、ここで置きかえる。
   const organizerUnread = useOrganizerUnreadCount();
@@ -378,33 +395,12 @@ export function OrganizerHomeClient() {
             )
           ) : null}
 
-          {/* 次のイベント（1件だけ大きく）と、このあとの予定（2週間以内・2件まで）。全部の一覧は掲載管理 */}
+          {/* 次のイベント（1件だけ大きく） */}
           {loading ? (
-            <div className="h-[170px] animate-pulse rounded-[20px] bg-[#e8ede4]" />
+            <div className="h-[150px] animate-pulse rounded-[20px] bg-[#e8ede4]" />
           ) : data ? (
             nextEvent ? (
-              <div className="space-y-2">
-                <NextEventCard e={nextEvent} today={today} />
-                {laterEvents.length > 0 ? (
-                  <section aria-label="このあとの予定">
-                    <p className="mb-1 mt-3 px-1 text-[11.5px] font-bold tracking-[0.06em] text-[#7b877f]">このあとの予定</p>
-                    <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
-                      {laterEvents.map((e) => (
-                        <li key={e.id}>
-                          <EventRow e={e} today={today} />
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                ) : null}
-                <Link
-                  href="/organizer/listings?kind=event"
-                  className="flex min-h-[40px] items-center justify-center gap-1 text-[12.5px] font-bold text-[#173f2c]"
-                >
-                  すべてのイベントは掲載管理で
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-                </Link>
-              </div>
+              <NextEventCard e={nextEvent} today={today} />
             ) : (
               <Link
                 href="/organizer/new"
@@ -415,61 +411,69 @@ export function OrganizerHomeClient() {
               </Link>
             )
           ) : null}
+
+          {/*
+            運営の道具（当日の受付・レジ・ダッシュボード）。次のイベントのすぐ下に、同じ大きさで並べる。
+            開催の当日（公開中）は、受付とレジを深い緑にして、そのイベントで開く。
+          */}
+          <nav aria-label="運営の道具" className={cn("grid gap-2", canSeeDashboard ? "grid-cols-3" : "grid-cols-2")}>
+            <ToolTile
+              href={dayEvent ? organizerDayEventHref(dayEvent.id) : "/organizer"}
+              Icon={QrCode}
+              label="当日の受付"
+              sub="QRで受付"
+              color="#2f7d4e"
+              bg="#e6f3ea"
+              strong={Boolean(dayEvent)}
+            />
+            <ToolTile
+              href={dayEvent ? `/organizer/pos?event=${encodeURIComponent(dayEvent.id)}` : "/organizer/pos"}
+              Icon={Wallet}
+              label="レジ"
+              sub={`今日 ${formatYen(sales?.totalYen ?? 0)}`}
+              color="#2f6fae"
+              bg="#e6f1fa"
+              strong={Boolean(dayEvent)}
+              badge={<PlanBadge feature="pos" />}
+            />
+            {canSeeDashboard ? (
+              <ToolTile
+                href="/organizer/dashboard"
+                Icon={BarChart3}
+                label="ダッシュボード"
+                sub={data ? `申込 ${data.kpis.pendingApplications}・公開 ${data.kpis.hosting}` : "申込・閲覧"}
+                color="#a3812f"
+                bg="#fbf3e1"
+              />
+            ) : null}
+          </nav>
         </div>
 
-        <div className="min-w-0 space-y-4">
-          {/* 数字（見るだけ）。押せるのは下の「くわしい数字を見る」の行だけ */}
-          {loading ? (
-            <div className="h-[100px] animate-pulse rounded-[18px] bg-[#e8ede4]" />
-          ) : data ? (
-            <div className="relative overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
-              <span className="pointer-events-none absolute inset-x-5 top-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-[#c9a54e] to-transparent" aria-hidden />
-              <dl aria-label="運営サマリー" className="grid grid-cols-2 divide-x divide-[#eef1ec] px-2 pb-2.5 pt-3">
-                <Stat label="公開中" value={`${data.kpis.hosting}件`} />
-                <Stat label="新規申込" value={`${data.kpis.pendingApplications}件`} />
-              </dl>
-              {canSeeDashboard ? (
-                <Link
-                  href="/organizer/dashboard"
-                  className="flex min-h-[40px] items-center justify-center gap-1 border-t border-[#eef1ec] text-[12px] font-bold text-[#173f2c] active:bg-[#f4f7f3]"
-                >
-                  くわしい数字を見る（参加・閲覧・売上）
-                  <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-                </Link>
+        <div className="min-w-0 space-y-2">
+          {/* このあとの予定（2週間以内・2件まで）。全部の一覧は掲載管理 */}
+          {data && nextEvent ? (
+            <>
+              {laterEvents.length > 0 ? (
+                <section aria-label="このあとの予定">
+                  <p className="mb-1 px-1 text-[11.5px] font-bold tracking-[0.06em] text-[#7b877f]">このあとの予定</p>
+                  <ul className="divide-y divide-[#eef1ec] overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
+                    {laterEvents.map((e) => (
+                      <li key={e.id}>
+                        <EventRow e={e} today={today} />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               ) : null}
-            </div>
+              <Link
+                href="/organizer/listings?kind=event"
+                className="flex min-h-[40px] items-center justify-center gap-1 text-[12.5px] font-bold text-[#173f2c]"
+              >
+                すべてのイベントは掲載管理で
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            </>
           ) : null}
-
-          {/* 当日の道具（2つ）。レジは今日の売上と1つにまとめる。使えないプランのときは金色の札でプラン名を出す */}
-          <nav aria-label="当日の道具" className="grid grid-cols-2 gap-2">
-            <Link
-              href="/organizer"
-              className="flex min-h-[64px] items-center gap-2.5 rounded-[16px] border border-[#ebeee8] bg-white px-3 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:scale-[0.97]"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e6f3ea] text-[#2f7d4e]" aria-hidden>
-                <QrCode className="h-[18px] w-[18px]" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[13.5px] font-bold text-[#163828]">当日の受付</span>
-                <span className="block text-[11px] text-[#7b877f]">QRで受付・連絡</span>
-              </span>
-            </Link>
-            <Link
-              href="/organizer/pos"
-              className="flex min-h-[64px] items-center gap-2.5 rounded-[16px] border border-[#ebeee8] bg-white px-3 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:scale-[0.97]"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e6f1fa] text-[#2f6fae]" aria-hidden>
-                <Wallet className="h-[18px] w-[18px]" />
-              </span>
-              <span className="min-w-0">
-                <span className="flex items-center gap-1 text-[13.5px] font-bold text-[#163828]">
-                  レジ
-                  <PlanBadge feature="pos" />
-                </span>
-                <span className="block truncate text-[11px] text-[#7b877f]">今日 {formatYen(sales?.totalYen ?? 0)}</span>
-              </span>
-            </Link>
-          </nav>
         </div>
       </div>
     </div>

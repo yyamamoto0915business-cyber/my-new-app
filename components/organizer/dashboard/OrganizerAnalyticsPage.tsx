@@ -52,12 +52,12 @@ function md(ymd: string): string {
  */
 function Change({ value, previous, unit }: { value: number; previous: number; unit: (n: number) => string }) {
   if (value === 0 && previous === 0) {
-    return <span className="text-[11px] font-semibold text-[#a3aaa5]">前の期間も 0</span>;
+    return <span className="text-[11.5px] font-medium text-[#9aa29c]">前の期間も 0</span>;
   }
   const diff = value - previous;
-  if (diff === 0) return <span className="text-[11px] font-semibold text-[#6b776f]">前の期間と同じ</span>;
+  if (diff === 0) return <span className="text-[11.5px] font-medium text-[#6b776f]">前の期間と同じ</span>;
   return (
-    <span className={cn("text-[11px] font-bold", diff > 0 ? "text-[#1f7a4a]" : "text-[#8a6d3b]")}>
+    <span className={cn("text-[11.5px] font-semibold", diff > 0 ? "text-[#1f7a4a]" : "text-[#8a6d3b]")}>
       前の期間より {diff > 0 ? "+" : "−"}
       {unit(Math.abs(diff))}
     </span>
@@ -168,7 +168,7 @@ function TrendChart({ points, metric }: { points: DayPoint[]; metric: (typeof ME
 }
 
 /**
- * 主催者の「くわしい数字」（見本 09・前の呼び名はダッシュボード）。入口はホームの数字の下（「くわしい数字を見る」）だけ。
+ * 主催者のダッシュボード（見本 09。ホームの「くわしい数字を見る」から開く）。入口はホームの数字の下（「くわしい数字を見る」）だけ。
  * 数字の決め方は lib/organizer/analytics.ts。
  */
 export function OrganizerAnalyticsPage() {
@@ -220,10 +220,11 @@ export function OrganizerAnalyticsPage() {
           <ChevronLeft className="h-5 w-5" aria-hidden />
         </Link>
         <div className="min-w-0 flex-1">
-          <OrgEyebrow>INSIGHTS</OrgEyebrow>
+          <OrgEyebrow>DASHBOARD</OrgEyebrow>
           <h1 className="mt-1 text-[21px] font-bold leading-tight tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
-            くわしい数字
+            ダッシュボード
           </h1>
+          <p className="mt-0.5 text-[12.5px] text-[#6b776f]">参加・閲覧・売上・申込の状況</p>
         </div>
       </header>
 
@@ -240,7 +241,7 @@ export function OrganizerAnalyticsPage() {
                 aria-selected={on}
                 onClick={() => setPeriod(p.id)}
                 className={cn(
-                  "min-h-[36px] whitespace-nowrap rounded-full text-[12.5px] font-bold transition",
+                  "min-h-[38px] whitespace-nowrap rounded-full text-[13px] font-semibold transition",
                   on ? "bg-[#173f2c] text-[#f6ebc8] shadow-[0_3px_8px_rgba(14,42,29,0.22)]" : "text-[#5f6d64]"
                 )}
               >
@@ -254,7 +255,7 @@ export function OrganizerAnalyticsPage() {
           <select
             value={eventId}
             onChange={(e) => setEventId(e.target.value)}
-            className="h-11 w-full truncate rounded-[14px] border border-[#e6e2d6] bg-white px-3 text-[16px] font-bold text-[#173f2c]"
+            className="h-11 w-full truncate rounded-[14px] border border-[#e6e2d6] bg-white px-3.5 text-[16px] font-medium text-[#3f5146]"
           >
             <option value="">すべてのイベント</option>
             {(data?.events ?? []).map((e) => (
@@ -303,15 +304,15 @@ export function OrganizerAnalyticsPage() {
                     )}
                   >
                     {selected ? <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-[#173f2c]" aria-hidden /> : null}
-                    <span className="flex items-center gap-1.5 text-[12px] font-bold text-[#5f6d64]">
+                    <span className="flex items-center gap-1.5 text-[12px] font-semibold text-[#5f6d64]">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: m.bg, color: m.color }} aria-hidden>
                         <m.Icon className="h-3.5 w-3.5" />
                       </span>
                       {m.label}
                     </span>
-                    <span className="text-[21px] font-bold leading-tight tracking-tight text-[#173f2c] tabular-nums">{m.unit(k.value)}</span>
+                    <span className="mt-0.5 text-[20px] font-bold leading-tight tracking-tight text-[#173f2c] tabular-nums">{m.unit(k.value)}</span>
                     {m.id === "views" && data.viewsSince == null ? (
-                      <span className="text-[11px] font-semibold text-[#a3aaa5]">準備中</span>
+                      <span className="text-[11.5px] font-medium text-[#9aa29c]">準備中</span>
                     ) : (
                       <Change value={k.value} previous={k.previous} unit={m.unit} />
                     )}
@@ -326,21 +327,15 @@ export function OrganizerAnalyticsPage() {
               <span className="text-[16px] font-bold text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
                 {metric.label}の推移
               </span>
-              <span className="text-[11px] text-[#9aa29c]">上の数字を押すと切りかわります</span>
+              <span className="text-[12px] tabular-nums text-[#7b877f]">{rangeLabel}</span>
             </h2>
             <div className="rounded-[18px] border border-[#ebeee8] bg-white p-3.5 shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
-              <div className="mb-1 flex items-baseline justify-between">
-                <span className="text-[13px] font-bold text-[#163828]">
-                  {ANALYTICS_PERIODS.find((p) => p.id === data.period.id)?.label}
-                </span>
-                <span className="text-[12px] text-[#8a958d]">{rangeLabel}</span>
-              </div>
               <TrendChart points={data.series} metric={metric} />
             </div>
           </section>
 
           <details className="rounded-[14px] border border-[#ebeee8] bg-white px-3.5 py-2.5 text-[13px] text-[#3f5146]">
-            <summary className="cursor-pointer font-bold text-[#173f2c]">日ごとの数（表）</summary>
+            <summary className="cursor-pointer text-[13.5px] font-semibold text-[#173f2c]">日ごとの数（表）</summary>
             <table className="mt-2 w-full text-right text-[12.5px]">
               <thead>
                 <tr className="text-[#6b776f]">
@@ -368,7 +363,7 @@ export function OrganizerAnalyticsPage() {
           </details>
 
           <details className="rounded-[14px] border border-[#ebeee8] bg-white px-3.5 py-2.5 text-[13px] text-[#3f5146]">
-            <summary className="cursor-pointer font-bold text-[#173f2c]">数字の数え方</summary>
+            <summary className="cursor-pointer text-[13.5px] font-semibold text-[#173f2c]">数字の数え方</summary>
           <ul className="mt-2 space-y-1 text-[11.5px] leading-relaxed text-[#6b776f]">
             <li>参加者数は、当日の受付でチェックインした人の数です。</li>
             <li>申込数は、イベントへの参加申し込みとボランティアへの応募の合計です。</li>
