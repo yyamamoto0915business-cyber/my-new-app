@@ -57,6 +57,11 @@ import { GameDraftLoading } from "@/components/organizer/games/GameDraftLoading"
 import { useGameDraft } from "@/components/organizer/games/useGameDraft";
 import { readGameLook } from "@/lib/organizer/game-look";
 
+/** 欄ははじめ空にし、例は薄い灰色の見本として出す（前は例の文が入っていて、消してから書く手間があった） */
+const EXAMPLE_NAME = "まちの魅力発見！春のまち歩きクイズラリー";
+const EXAMPLE_DESCRIPTION = "まち歩きながらクイズに挑戦して、地域の歴史やスポットの魅力を発見しよう！すべての問題に正解すると、素敵な特典がもらえます。";
+
+
 /** 画面に並べる順番（参加パスは基本情報のすぐあと）。中身は STEPS の番号で持つ。 */
 const ORDER = [0, 4, 1, 2, 3];
 
@@ -77,7 +82,7 @@ function toIsoFromDate(date: string): string | null {
 
 export function OrganizerQuizCreateForm() {
   const router = useRouter();
-  const [name, setName] = useState("まちの魅力発見！春のまち歩きクイズラリー");
+  const [name, setName] = useState("");
   const [eventId, setEventId] = useState("");
   /** まちの情報のカードに出す画像（空なら、対象イベントの画像 → 種類の絵）。 */
   const [cardImage, setCardImage] = useState("");
@@ -89,9 +94,7 @@ export function OrganizerQuizCreateForm() {
   const [passDraft, setPassDraft] = useState<GamePassDraft>(EMPTY_GAME_PASS_DRAFT);
   /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
   const [passPreview, setPassPreview] = useState(false);
-  const [description, setDescription] = useState(
-    "まち歩きながらクイズに挑戦して、地域の歴史やスポットの魅力を発見しよう！すべての問題に正解すると、素敵な特典がもらえます。"
-  );
+  const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [events, setEvents] = useState<OrganizerGameEventOption[]>([]);
@@ -413,7 +416,7 @@ export function OrganizerQuizCreateForm() {
                   ゲーム名 <em>必須</em>
                 </span>
                 <input
-                  value={name}
+                  placeholder={`例：${EXAMPLE_NAME}`} value={name}
                   onChange={(e) => setName(e.target.value)}
                   maxLength={80}
                   required
@@ -444,7 +447,7 @@ export function OrganizerQuizCreateForm() {
               <label className="org-quiz__field org-quiz__field--wide">
                 <span>説明文</span>
                 <textarea
-                  value={description}
+                  placeholder={`例：${EXAMPLE_DESCRIPTION}`} value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   maxLength={200}
                   rows={3}

@@ -78,9 +78,24 @@ export function GamePurposePicker({ className }: { className?: string }) {
 
   return (
     <div className={cn("space-y-3", className)}>
+      {/* テンプレートを使わずに作る入口（いちばん上に。前は一番下にあって見つけにくかった） */}
+      <Link
+        href="/organizer/games/new?type=mission"
+        className="flex min-h-[64px] items-center gap-3 rounded-[18px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-br from-[#245a3e] to-[#173f2c] px-4 py-3 text-[#f6ebc8] shadow-[0_4px_12px_rgba(14,42,29,0.18)] active:scale-[0.98]"
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#f6ebc8] text-[#173f2c]" aria-hidden>
+          <LayoutGrid className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-bold text-white">テンプレートを使わずに作る</span>
+          <span className="mt-0.5 block text-[11.5px] text-[#dfe8e1]">行く・答える・集める・ごほうびを自由に組み合わせる</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-[#e6d29b]" aria-hidden />
+      </Link>
+
       <div>
-        <p className="text-[17px] font-bold text-[#163828]">何をしたいですか？</p>
-        <p className="text-[12.5px] text-[#5f6d64]">選ぶと、合うひな形が出ます。</p>
+        <p className="text-[17px] font-bold text-[#163828]">テンプレートから作る</p>
+        <p className="text-[12.5px] text-[#5f6d64]">何をしたいかを選ぶと、合うひな形が出ます。</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 pc:grid-cols-4" role="radiogroup" aria-label="やりたいこと">
@@ -139,14 +154,6 @@ export function GamePurposePicker({ className }: { className?: string }) {
         </ul>
       </div>
 
-      {/* ひな形を使わず、部品を自分で並べて作る（今はミッションの部品で組み立てる） */}
-      <Link
-        href="/organizer/games/new?type=mission"
-        className="flex min-h-[50px] items-center justify-center gap-2 rounded-[16px] border-[1.5px] border-dashed border-[#9cc3aa] px-3 text-[14px] font-bold text-[#1f5e3a]"
-      >
-        <LayoutGrid className="h-[18px] w-[18px]" aria-hidden />
-        ひな形を使わず、まっさらから組み立てる
-      </Link>
     </div>
   );
 }

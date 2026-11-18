@@ -57,6 +57,11 @@ import { GameCardSetup, gameCardItem } from "@/components/organizer/games/GameCa
 import { GamePublishSuccess } from "@/components/organizer/games/GamePublishSuccess";
 import "./coupon-create.css";
 
+/** 欄ははじめ空にし、例は薄い灰色の見本として出す（前は例の文が入っていて、消してから書く手間があった） */
+const EXAMPLE_NAME = "まちなかグルメクーポンラリー";
+const EXAMPLE_DESCRIPTION = "まちなかの対象店舗をめぐってクーポンを集めよう！グルメ・ショッピング・体験など、さまざまなお店で使えるお得なクーポンがもらえます。";
+
+
 const STEPS = [
   { id: "basic", label: "基本設定" },
   { id: "pass", label: "参加パス" },
@@ -103,10 +108,8 @@ export function OrganizerCouponCreateForm() {
   useEffect(() => {
     setPassPreview(step === "pass");
   }, [step]);
-  const [name, setName] = useState("まちなかグルメクーポンラリー");
-  const [description, setDescription] = useState(
-    "まちなかの対象店舗をめぐってクーポンを集めよう！グルメ・ショッピング・体験など、さまざまなお店で使えるお得なクーポンがもらえます。"
-  );
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [eventId, setEventId] = useState("");
   const [startDate, setStartDate] = useState(() => jstDate());
   const [startTime, setStartTime] = useState("09:00");
@@ -446,12 +449,12 @@ export function OrganizerCouponCreateForm() {
                   <span>
                     ゲーム名 <em>必須</em>
                   </span>
-                  <input value={name} onChange={(e) => setName(e.target.value)} maxLength={50} required />
+                  <input placeholder={`例：${EXAMPLE_NAME}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={50} required />
                   <small>{name.length}/50</small>
                 </label>
                 <label className="org-coupon__field org-coupon__field--wide">
                   <span>説明文</span>
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={200} rows={3} />
+                  <textarea placeholder={`例：${EXAMPLE_DESCRIPTION}`} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={200} rows={3} />
                   <small>{description.length}/200</small>
                 </label>
                 <div className="org-coupon__field org-coupon__field--wide">

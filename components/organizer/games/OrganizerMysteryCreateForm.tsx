@@ -35,6 +35,11 @@ import { sanitizeMysterySettings } from "@/lib/organizer/mystery";
 import { MysteryTestPlay } from "@/components/organizer/games/MysteryTestPlay";
 import { createMysteryStep, sampleMysterySteps, type MysteryStep } from "@/lib/organizer/mystery";
 
+/** 欄ははじめ空にし、例は薄い灰色の見本として出す（前は例の文が入っていて、消してから書く手間があった） */
+const EXAMPLE_NAME = "春のまちの謎解き";
+const EXAMPLE_DESCRIPTION = "ヒントを順にたどって、三つの謎を解く短いさんぽです。";
+
+
 /** 画面に並べる順番（参加パスは基本情報のすぐあと）。中身は STEPS の番号で持つ。 */
 const ORDER = [0, 3, 1, 2];
 
@@ -48,8 +53,8 @@ const STEPS: GameCreateStep[] = [
 export function OrganizerMysteryCreateForm() {
   const { look, lookEdit, setLook } = useGameLookEdit();
   const router = useRouter();
-  const [name, setName] = useState("春のまちの謎解き");
-  const [description, setDescription] = useState("ヒントを順にたどって、三つの謎を解く短いさんぽです。");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [steps, setSteps] = useState<MysteryStep[]>(() => sampleMysterySteps());
   const [clearCount, setClearCount] = useState(3);
   const [couponOn, setCouponOn] = useState(true);
@@ -285,11 +290,11 @@ export function OrganizerMysteryCreateForm() {
             <h2>基本情報</h2>
             <label className="org-quiz__field org-quiz__field--wide">
               <span>名前</span>
-              <input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} />
+              <input placeholder={`例：${EXAMPLE_NAME}`} value={name} maxLength={80} onChange={(event) => setName(event.target.value)} />
             </label>
             <label className="org-quiz__field org-quiz__field--wide">
               <span>説明</span>
-              <textarea value={description} maxLength={400} rows={3} onChange={(event) => setDescription(event.target.value)} />
+              <textarea placeholder={`例：${EXAMPLE_DESCRIPTION}`} value={description} maxLength={400} rows={3} onChange={(event) => setDescription(event.target.value)} />
             </label>
             <label className="org-quiz__field org-quiz__field--wide">
               <span>対象イベント（任意）</span>
