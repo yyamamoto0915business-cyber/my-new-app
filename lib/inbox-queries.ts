@@ -14,6 +14,10 @@ export type InboxItem = {
   other_organizer_avatar_url: string | null;
   last_message_content: string | null;
   last_message_at: string | null;
+  /** 最後のメッセージを自分が送ったか（「返事待ち」「返信済み」の表示に使う） */
+  last_message_from_me?: boolean;
+  /** ボランティアの会話：相手が応募した募集の名前（会話に募集が結びついていないので、応募の記録から探す） */
+  topic_title?: string | null;
   unread_count: number;
   my_role: "organizer" | "volunteer";
 };
@@ -143,7 +147,7 @@ export async function fetchInboxByQueries(
       const [lastMsgResult, unreadResult] = await Promise.all([
         supabase
           .from("messages")
-          .select("content, created_at")
+          .select("content, created_at, sender_id")
           .eq("conversation_id", convId)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -158,7 +162,11 @@ export async function fetchInboxByQueries(
       return {
         convId,
         lastMsg: lastMsgResult.data
-          ? { content: lastMsgResult.data.content, created_at: lastMsgResult.data.created_at }
+          ? {
+              content: lastMsgResult.data.content,
+              created_at: lastMsgResult.data.created_at,
+              fromMe: lastMsgResult.data.sender_id === currentUserId,
+            }
           : null,
         unreadCount: unreadResult.count ?? 0,
       };
@@ -171,6 +179,37 @@ export async function fetchInboxByQueries(
   const unreadMap = new Map(
     messageResults.map((r) => [r.convId, r.unreadCount])
   );
+
+  // 5b. ボランティアの会話の「何の募集か」：相手がこの団体の募集に応募した記録から、いちばん新しい募集の名前
+  //     （取れなくても一覧は出す）
+  const topicMap = new Map<string, string>();
+  const generalConvs = (convs as ConvRow[]).filter((c) => c.kind === "general" && c.organizer_id);
+  if (generalConvs.length) {
+    try {
+      const applicantIds = [...new Set(generalConvs.map((c) => c.other_user_id).filter(Boolean))];
+      const { data: apps } = await supabase
+        .from("recruitment_applications")
+        .select("user_id, created_at, recruitments!inner(title, organizer_id)")
+        .in("user_id", applicantIds)
+        .order("created_at", { ascending: false });
+      type AppRow = {
+        user_id: string;
+        recruitments: { title: string | null; organizer_id: string | null } | { title: string | null; organizer_id: string | null }[] | null;
+      };
+      for (const c of generalConvs) {
+        for (const a of (apps ?? []) as AppRow[]) {
+          if (a.user_id !== c.other_user_id) continue;
+          const r = Array.isArray(a.recruitments) ? a.recruitments[0] : a.recruitments;
+          if (r?.organizer_id === c.organizer_id && r.title) {
+            topicMap.set(c.id, r.title);
+            break;
+          }
+        }
+      }
+    } catch {
+      /* 募集の名前は出せなくてもよい */
+    }
+  }
 
   // 6. 結果を組み立て（last_message_at 降順）
   const items: InboxItem[] = (convs as ConvRow[]).map((c) => {
@@ -203,6 +242,8 @@ export async function fetchInboxByQueries(
       other_organizer_avatar_url: prof?.organizer_avatar_url ?? null,
       last_message_content: lastMsg?.content ?? null,
       last_message_at: lastMsg?.created_at ?? null,
+      last_message_from_me: lastMsg?.fromMe ?? false,
+      topic_title: topicMap.get(c.id) ?? null,
       unread_count: unreadMap.get(c.id) ?? 0,
       my_role: myRole,
     };

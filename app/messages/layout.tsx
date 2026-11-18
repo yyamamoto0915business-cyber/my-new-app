@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { InboxItem } from "@/lib/inbox-queries";
-import { ChevronDown, MessageCircle } from "lucide-react";
+import { CalendarDays, ChevronDown, Heart, MessageCircle } from "lucide-react";
 import { safeDisplayName } from "@/lib/safe-display-name";
 import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
 import { LoginRequiredPanel } from "@/components/auth/LoginRequiredPanel";
@@ -109,14 +109,19 @@ function OrganizerPersonRow({ item, activeId, basePath }: { item: InboxItem; act
   return (
     <Link
       href={`${basePath}/${item.conversation_id}`}
-      className={`flex items-center gap-3 border-b border-[#f0ede4] px-4 py-3 no-underline active:bg-[#f7f5ee] ${active ? "bg-[#f4f8f5]" : ""}`}
+      className={`mx-3 mb-2 flex items-center gap-3 rounded-[18px] border px-3.5 py-3 no-underline shadow-[0_1px_4px_rgba(23,63,44,0.05)] active:bg-[#f7f5ee] ${unread ? "border-[#d9bc6e] bg-white" : "border-[#ece8dc] bg-white"} ${active ? "ring-1 ring-[#173f2c]" : ""}`}
     >
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#eef4ef] text-[16px] font-bold text-[#173f2c]">
+      {/* 顔写真がない人は、呼び名の頭の文字ではなく、会話の種類のアイコン（参加＝カレンダー、ボランティア＝ハート） */}
+      <span
+        className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full ${volunteer ? "bg-[#fbe9f0] text-[#c0507a]" : "bg-[#fdf1e4] text-[#c7742c]"}`}
+      >
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={photo} alt="" className="h-full w-full object-cover" />
+        ) : volunteer ? (
+          <Heart className="h-5 w-5" aria-hidden />
         ) : (
-          initials(name)
+          <CalendarDays className="h-5 w-5" aria-hidden />
         )}
       </span>
       <span className="min-w-0 flex-1">
@@ -142,7 +147,17 @@ function OrganizerPersonRow({ item, activeId, basePath }: { item: InboxItem; act
           >
             {volunteer ? "ボランティア" : "参加"}
           </span>
-          <span className="min-w-0 truncate text-[11.5px] font-medium text-[#5f6d64]">{item.event_title ?? "イベント"}</span>
+          <span className="min-w-0 flex-1 truncate text-[11.5px] font-medium text-[#5f6d64]">
+            {item.event_title ?? item.topic_title ?? (volunteer ? "ボランティアの相談" : "イベントの相談")}
+          </span>
+          {/* 返事のようす：相手からが最後なら「返事待ち」、自分からなら「返信済み」 */}
+          {item.last_message_at && !unread ? (
+            item.last_message_from_me ? (
+              <span className="shrink-0 text-[10.5px] font-semibold text-[#9aa29c]">返信済み</span>
+            ) : (
+              <span className="shrink-0 rounded-full bg-[#fbf3e1] px-1.5 py-px text-[10px] font-bold text-[#a3812f]">返事待ち</span>
+            )
+          ) : null}
         </span>
       </span>
     </Link>
@@ -417,6 +432,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               <h1 className="mt-1 text-[21px] font-bold leading-tight tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
                 チャット
               </h1>
+              <p className="mt-0.5 text-[12px] text-[#6b776f]">参加者・ボランティアからの質問や連絡がここに届きます</p>
             </div>
           ) : (
           <div
@@ -531,7 +547,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
           </div>
         </div>
 
-        <div className="ms-conv-scroll" style={{ flex: 1, overflowY: "auto" }}>
+        <div className="ms-conv-scroll" style={{ flex: 1, overflowY: "auto", background: scope === "organizer" ? "#f7f6f2" : undefined }}>
           {error && (
             <div style={{ padding: 16 }}>
               <div style={{ borderRadius: 12, border: "1px solid #fecaca", background: "#fef2f2", padding: "12px 16px" }}>
@@ -578,7 +594,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
             </div>
           )}
           {!loading && !error && scope === "organizer" ? (
-            <>
+            <div className="pt-3">
               {/* やり取りのある会話（未読が上） */}
               {visible
                 .filter((item) => item.last_message_at || item.last_message_content)
@@ -591,12 +607,12 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                 if (quiet.length === 0) return null;
                 const open = quietOpen || !!q || visible.length === quiet.length;
                 return (
-                  <div className="border-t border-[#f0ede4]">
+                  <div className="mt-2">
                     <button
                       type="button"
                       onClick={() => setQuietOpen((v) => !v)}
                       aria-expanded={open}
-                      className="flex min-h-[44px] w-full items-center justify-between px-4 text-[12.5px] font-bold text-[#6b776f]"
+                      className="flex min-h-[44px] w-full items-center justify-between px-5 text-[12.5px] font-bold text-[#6b776f]"
                     >
                       まだやり取りのない会話 {quiet.length}
                       <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
@@ -609,7 +625,16 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                   </div>
                 );
               })()}
-            </>
+              {/* 会話が少ないときは、下の空いた所に、どこから届くかの説明 */}
+              {visible.length > 0 && visible.length <= 4 && !q ? (
+                <div className="mx-3 mt-4 rounded-[16px] border border-dashed border-[#e1d6b4] bg-[#fffdf7] px-4 py-4 text-center">
+                  <p className="text-[12.5px] font-bold text-[#173f2c]">チャットはどこから届く？</p>
+                  <p className="mt-1 text-[11.5px] leading-relaxed text-[#6b776f]">
+                    イベントのページの「主催者に相談」や、ボランティアの応募から届きます。未読は上に並び、返事がまだの会話には「返事待ち」が付きます。
+                  </p>
+                </div>
+              ) : null}
+            </div>
           ) : null}
           {!loading && !error && scope !== "organizer" && visible.map((item) => (
             <PersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
