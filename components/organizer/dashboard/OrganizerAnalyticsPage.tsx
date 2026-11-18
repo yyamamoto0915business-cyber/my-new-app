@@ -168,7 +168,7 @@ function TrendChart({ points, metric }: { points: DayPoint[]; metric: (typeof ME
 }
 
 /**
- * 主催者の「くわしい数字」（見本 09・前の呼び名はダッシュボード）。入口はホームの数字の下（「くわしい数字を見る」）だけ。
+ * 主催者のダッシュボード（見本 09。ホームの「くわしい数字を見る」から開く）。入口はホームの数字の下（「くわしい数字を見る」）だけ。
  * 数字の決め方は lib/organizer/analytics.ts。
  */
 export function OrganizerAnalyticsPage() {
@@ -220,10 +220,11 @@ export function OrganizerAnalyticsPage() {
           <ChevronLeft className="h-5 w-5" aria-hidden />
         </Link>
         <div className="min-w-0 flex-1">
-          <OrgEyebrow>INSIGHTS</OrgEyebrow>
+          <OrgEyebrow>DASHBOARD</OrgEyebrow>
           <h1 className="mt-1 text-[21px] font-bold leading-tight tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
-            くわしい数字
+            ダッシュボード
           </h1>
+          <p className="mt-0.5 text-[12px] text-[#6b776f]">参加・閲覧・売上・申込の状況</p>
         </div>
       </header>
 
