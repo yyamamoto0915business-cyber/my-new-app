@@ -54,6 +54,8 @@ type Listing = {
 
 /** 種類ごとの色（写真がないときのアイコンの丸と、種類の文字に使う） */
 const KIND_META = LISTING_KIND_META;
+/** 種類のタイルに出す短い名前（3つ並べても切れないように） */
+const TILE_LABEL: Record<string, string> = { "ボランティア募集": "ボランティア" };
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "all", label: "すべて" },
@@ -638,8 +640,8 @@ export function OrganizerListingsMobile() {
         ref={barRef}
         className="sticky top-[calc(var(--mg-mobile-top-header-h,52px)+env(safe-area-inset-top,0px))] z-20 -mx-4 mt-3 space-y-2 bg-[#f9f9f6]/85 px-4 pb-2.5 pt-2 backdrop-blur-md min-[900px]:static min-[900px]:mx-0 min-[900px]:px-0"
       >
-        {/* 種類（いちばん上の切り替え）。5つとも1行に収め、どの種類があるか一目で分かるようにする */}
-        <div role="tablist" aria-label="種類" className="grid grid-cols-[44px_repeat(5,minmax(0,1fr))] gap-0.5 rounded-[18px] bg-white p-1 shadow-[0_2px_8px_rgba(22,56,40,0.05)] ring-1 ring-[#ebeee8]">
+        {/* 種類（いちばん上の切り替え）。6つを3つずつ2段のタイルにして、名前と件数を横に並べる（1行だと窮屈だった） */}
+        <div role="tablist" aria-label="種類" className="grid grid-cols-3 gap-1.5 tablet:grid-cols-6">
           {(["all", ...LISTING_KINDS] as const).map((k) => {
             const on = kindFilter === k;
             const meta = k === "all" ? null : KIND_META[k];
@@ -653,35 +655,30 @@ export function OrganizerListingsMobile() {
                 aria-selected={on}
                 onClick={() => setKindFilter(k)}
                 className={cn(
-                  "relative flex min-h-[54px] min-w-0 flex-col items-center justify-center gap-1 rounded-[14px] transition active:scale-[0.96]",
-                  on ? "bg-[#173f2c] text-[#f6ebc8]" : n === 0 ? "text-[#b4bbb6]" : "text-[#3f5146]"
+                  "flex min-h-[46px] min-w-0 items-center gap-1.5 overflow-hidden rounded-[14px] border pl-2 pr-1 text-left transition active:scale-[0.97]",
+                  on
+                    ? "border-[#173f2c] bg-[#173f2c] text-[#f6ebc8] shadow-[0_4px_10px_rgba(14,42,29,0.2)]"
+                    : "border-[#ebeee8] bg-white text-[#1f2a24] shadow-[0_1px_4px_rgba(22,56,40,0.04)]"
                 )}
               >
                 <span
-                  className="flex h-6 w-6 items-center justify-center rounded-full"
-                  style={on ? { background: "rgba(246,235,200,0.14)" } : meta ? { background: meta.bg, color: n === 0 ? undefined : meta.color } : { background: "#eef3ef" }}
+                  className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full"
+                  style={on ? { background: "rgba(246,235,200,0.16)", color: "#f6ebc8" } : meta ? { background: meta.bg, color: meta.color } : { background: "#eef3ef", color: "#173f2c" }}
                   aria-hidden
                 >
-                  <Icon className="h-[14px] w-[14px]" />
+                  <Icon className="h-[13px] w-[13px]" />
                 </span>
-                <span className="max-w-full text-center text-[10px] font-bold leading-[1.1] tracking-[-0.06em]">
-                  {/* せまい画面では「キッチン／カー」のように区切りの所でだけ折り返す */}
-                  {(meta ? meta.short : "すべて").split("\u200b").map((part) => (
-                    <span key={part} className="inline-block whitespace-nowrap">
-                      {part}
-                    </span>
-                  ))}
-                </span>
-                {items && n > 0 ? (
-                  <span
-                    className={cn(
-                      "absolute right-0.5 top-0.5 min-w-[15px] rounded-full px-1 text-[9px] font-bold leading-[15px] tabular-nums",
-                      on ? "bg-[#c9a54e] text-[#0e2a1d]" : "bg-[#eef1ec] text-[#5f6d64]"
-                    )}
-                  >
-                    {n}
+                {/* 名前は切らずに出し、件数はその下に小さく（横に並べると長い名前と重なった） */}
+                <span className="min-w-0 flex-1">
+                  <span className="block whitespace-nowrap text-[11.5px] font-bold leading-tight tracking-[-0.06em] max-[369px]:text-[10.5px] min-[400px]:text-[12.5px] min-[400px]:tracking-[-0.03em]">
+                    {meta ? TILE_LABEL[meta.label] ?? meta.label : "すべて"}
                   </span>
-                ) : null}
+                  {items ? (
+                    <span className={cn("block text-[10.5px] font-bold leading-tight tabular-nums", on ? "text-[#e6d29b]" : "text-[#9aa29c]")}>
+                      {n}件
+                    </span>
+                  ) : null}
+                </span>
               </button>
             );
           })}
