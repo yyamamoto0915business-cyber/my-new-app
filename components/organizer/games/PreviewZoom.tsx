@@ -52,7 +52,11 @@ export function usePreviewZoom(stageRef: RefObject<HTMLDivElement | null>, phone
       // PC では左右に追加ボタンの場所を空けるので、その分を除いて合わせる。
       const style = getComputedStyle(stage);
       const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-      const next = Math.min(1, (width - padX - 4) / phoneW, (height - 4) / phoneH);
+      // スマホの全画面では、横幅いっぱいに合わせる（高さで縮めると押す所が小さくなった。はみ出す分は上下にスクロール）
+      const phone = !window.matchMedia("(min-width: 900px)").matches;
+      const next = phone
+        ? Math.min(1, (width - padX - 4) / phoneW)
+        : Math.min(1, (width - padX - 4) / phoneW, (height - 4) / phoneH);
       if (next > 0) setFitScale(Math.round(next * 100) / 100);
     };
     measure();

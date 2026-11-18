@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 const MARGIN = 8;
@@ -24,9 +24,34 @@ const CSS = `
 .floating-panel .edit-panel__rows > .edit-panel__choice { align-self: flex-start; }
 `;
 
+/** スマホのシートでは、押す所を指の大きさに（PC の小さな窓の詰めた大きさを戻す） */
+const SHEET_CSS = `
+.floating-panel--sheet .edit-panel { max-height: none !important; padding: 0.1rem 1rem 0.9rem; }
+.floating-panel--sheet .edit-panel__head b { font-size: 0.95rem; }
+.floating-panel--sheet .edit-panel__head button { width: 2.4rem; height: 2.4rem; }
+.floating-panel--sheet .edit-panel__swatch { width: 2rem; height: 2rem; }
+.floating-panel--sheet .edit-panel__choice { min-height: 2.4rem; padding: 0 0.85rem; font-size: 0.85rem; }
+.floating-panel--sheet .edit-panel__media > div > div button { min-height: 2.4rem; font-size: 0.85rem; }
+`;
+
+/** スマホ（900px 未満）：浮いた窓ではなく、画面の下半分のシートにする */
+function useIsPhone() {
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 899px)");
+    const update = () => setPhone(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return phone;
+}
+
 /**
  * 選んだものの近くに出して、つまみをドラッグしてどこへでも動かせるポップアップ。
  * 下に出すと隠れるときは、自動で上に出す。
+ * スマホでは、下半分に固定したシートにする（浮いた窓は直したい所にかぶさりやすかった）。
+ * 開いている間は、選んだものが上半分に見えるようにスクロールする。
  */
 export function FloatingPanel({
   getAnchor,
@@ -41,6 +66,22 @@ export function FloatingPanel({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const phone = useIsPhone();
+
+  // スマホ：下のシートに隠れないよう、プレビューの下に余白をとり、選んだものを上半分へスクロールする
+  useEffect(() => {
+    if (!phone) return;
+    document.body.classList.add("has-edit-sheet");
+    // 下の余白がついてから動かす（すぐに動かすと、まだ下までスクロールできず、シートに隠れた）
+    const t = window.setTimeout(() => {
+      getAnchor()?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 250);
+    return () => {
+      window.clearTimeout(t);
+      document.body.classList.remove("has-edit-sheet");
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone, anchorKey]);
 
   useLayoutEffect(() => {
     const box = ref.current;
@@ -101,6 +142,36 @@ export function FloatingPanel({
     background: "rgba(255, 255, 255, 0.97)",
     boxShadow: "0 14px 36px rgba(23, 40, 30, 0.28)",
   };
+
+  if (phone) {
+    return createPortal(
+      <div
+        className="floating-panel floating-panel--sheet"
+        style={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1100,
+          maxHeight: "50dvh",
+          overflowY: "auto",
+          borderTop: "1px solid #e6e2d6",
+          borderRadius: "1.25rem 1.25rem 0 0",
+          background: "rgba(255, 255, 255, 0.98)",
+          boxShadow: "0 -12px 32px rgba(23, 40, 30, 0.2)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
+      >
+        <style>{CSS}</style>
+        <style>{SHEET_CSS}</style>
+        <div style={{ display: "flex", justifyContent: "center", padding: "0.45rem 0 0.15rem" }} aria-hidden>
+          <span style={{ width: "2.4rem", height: "0.28rem", borderRadius: 999, background: "#d6ddd7" }} />
+        </div>
+        {children}
+      </div>,
+      document.body,
+    );
+  }
 
   return createPortal(
     <div ref={ref} className="floating-panel" style={style}>

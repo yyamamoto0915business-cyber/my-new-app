@@ -261,8 +261,28 @@
   cursor: pointer;
 }
 
+/* スマホの全画面：枠をなくして横幅いっぱいに（押す所を大きく）。高さははみ出してよく、シートごとスクロールする */
 .wizard-preview-sheet .wizard-preview__stage {
-  height: calc(100dvh - 11rem);
+  height: auto;
+  min-height: calc(100dvh - 11rem);
+  width: 100%;
+  padding: 0;
+}
+.wizard-preview-sheet .wizard-preview__phone {
+  padding: 0 !important;
+  border-radius: 18px;
+  background: transparent;
+  box-shadow: 0 6px 20px rgba(20, 40, 28, 0.12);
+}
+.wizard-preview-sheet .wizard-preview__screen {
+  border-radius: 18px;
+}
+.wizard-preview-sheet .wizard-preview__zoom {
+  display: none;
+}
+/* 下の設定シートが開いている間は、プレビューの下に余白をとって、最後まで上半分に出せるようにする */
+body.has-edit-sheet .game-create-sheet .game-create-sheet__body {
+  padding-bottom: calc(52dvh + env(safe-area-inset-bottom, 0px));
 }
 
 .wizard-preview__edit-hint {
@@ -2545,4 +2565,62 @@ textarea.play-look-text.is-edit.is-selected {
   background: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.75);
   box-shadow: none;
+}
+
+/* スマホ：直すものを選ぶボタンの列（PC は小さな所を押しやすいので出さない） */
+.wizard-preview__targets {
+  display: none;
+}
+@media (max-width: 899px) {
+  .wizard-preview__targets {
+    display: flex;
+    gap: 0.4rem;
+    width: 100%;
+    max-width: 480px;
+    overflow-x: auto;
+    padding: 0.1rem 0.1rem 0.5rem;
+    scrollbar-width: none;
+  }
+  .wizard-preview__targets::-webkit-scrollbar {
+    display: none;
+  }
+  .wizard-preview__target {
+    flex-shrink: 0;
+    min-height: 2.4rem;
+    padding: 0 0.95rem;
+    border: 1px solid #e1d6b4;
+    border-radius: 999px;
+    background: #fff;
+    color: #173f2c;
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .wizard-preview__target.is-on {
+    border-color: #173f2c;
+    background: #173f2c;
+    color: #f6ebc8;
+  }
+  /* 長い説明より、直すものの列を見せる */
+  .wizard-preview-sheet .wizard-preview__edit-hint {
+    display: none;
+  }
+}
+
+/*
+ * スマホの全画面：プレビューは横幅いっぱい（押す所を大きく）。高さがはみ出す分は、プレビューの枠の中でスクロールする。
+ * 下の設定シートが開いている間は、枠の下に余白をとって、選んだものを上半分まで動かせるようにする。
+ */
+.wizard-preview-sheet .wizard-preview__views,
+.wizard-preview-sheet .wizard-preview__targets {
+  flex-shrink: 0;
+}
+.wizard-preview-sheet .wizard-preview__stage {
+  overflow-y: auto;
+  align-items: flex-start;
+  scrollbar-width: none;
+}
+body.has-edit-sheet .wizard-preview-sheet .wizard-preview__stage {
+  padding-bottom: 50dvh !important;
 }
