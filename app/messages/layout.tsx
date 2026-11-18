@@ -271,6 +271,8 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const [search, setSearch] = useState("");
   /** 主催者のチャット：やり取りのない会話（たたんでおく）を開いているか */
   const [quietOpen, setQuietOpen] = useState(false);
+  /** 主催者のチャット：イベントで絞りこむ（空＝すべて） */
+  const [eventFilter, setEventFilter] = useState("");
 
   // 主催者として（/organizer/messages）か、利用者として（/messages）か。会話の一覧もそれぞれの分だけ出す
   const scope = messagesScopeFromPath(pathname);
@@ -285,6 +287,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       setLoading(false);
       return;
     }
+
     if (AUTH_DISABLED) {
       setLoading(false);
       return;
@@ -348,8 +351,11 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   });
 
   const unreadThreadCount = sorted.filter((i) => i.unread_count > 0).length;
-  const opCount = sorted.filter((i) => itemMatchesFilter(i, "op") && i.unread_count > 0).length;
-  const ovCount = sorted.filter((i) => itemMatchesFilter(i, "ov") && i.unread_count > 0).length;
+  /** イベントごとの会話の数（イベントで絞りこむ選択肢） */
+  const eventCounts = new Map<string, number>();
+  for (const i of sorted) {
+    if (i.event_title) eventCounts.set(i.event_title, (eventCounts.get(i.event_title) ?? 0) + 1);
+  }
   const vCount = sorted.filter((i) => itemMatchesFilter(i, "v") && i.unread_count > 0).length;
   const pCount = sorted.filter((i) => itemMatchesFilter(i, "p") && i.unread_count > 0).length;
   const fCount = sorted.filter((i) => itemMatchesFilter(i, "f") && i.unread_count > 0).length;
@@ -357,6 +363,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const q = search.trim();
   const visible = sorted.filter((i) => {
     if (!itemMatchesFilter(i, filter)) return false;
+    if (scope === "organizer" && eventFilter && (i.event_title ?? "") !== eventFilter) return false;
     if (!q) return true;
     return getName(i).includes(q) || (i.event_title ?? "").includes(q);
   });
@@ -364,10 +371,9 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
   const chips: { id: FilterId; label: string; badge: number }[] =
     scope === "organizer"
       ? [
+          // 参加者かボランティアかは、行のイベント名の札で分かるので、絞りこみは2つだけ
           { id: "all", label: "すべて", badge: 0 },
           { id: "unread", label: "未読", badge: unreadThreadCount },
-          { id: "op", label: "参加者", badge: opCount },
-          { id: "ov", label: "ボランティア", badge: ovCount },
         ]
       : [
           { id: "all", label: "すべて", badge: 0 },
@@ -506,6 +512,22 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                 </button>
               );
             })}
+            {scope === "organizer" && eventCounts.size > 1 ? (
+              <select
+                value={eventFilter}
+                onChange={(e) => setEventFilter(e.target.value)}
+                aria-label="イベントで絞りこむ"
+                className="ml-auto min-w-0 max-w-[55%] shrink truncate rounded-full border border-[#e6e2d6] bg-white px-3 text-[16px] font-medium text-[#3f5146]"
+                style={{ height: 34 }}
+              >
+                <option value="">すべてのイベント</option>
+                {[...eventCounts.entries()].map(([title, n]) => (
+                  <option key={title} value={title}>
+                    {title}（{n}）
+                  </option>
+                ))}
+              </select>
+            ) : null}
           </div>
         </div>
 
