@@ -29,7 +29,7 @@ function clearOrganizerStorage() {
   });
 }
 
-type Variant = "header" | "subnav";
+type Variant = "header" | "subnav" | "quiet";
 
 type Props = {
   /** ボタンスタイル（header=ヘッダー用、subnav=サブナビピル用） */
@@ -42,6 +42,8 @@ function OrganizerLogoutButton({ variant = "header" }: Props) {
   const [loading, setLoading] = useState(false);
 
   const handleLogout = async () => {
+    // 押しまちがいで出ないように確かめる（マイページの一番下の控えめな文字のとき）
+    if (variant === "quiet" && !window.confirm("ログアウトしますか？")) return;
     try {
       setLoading(true);
 
@@ -64,6 +66,19 @@ function OrganizerLogoutButton({ variant = "header" }: Props) {
 
   const baseClass =
     "min-h-[44px] rounded-xl border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40 dark:focus:ring-red-700";
+
+  if (variant === "quiet") {
+    return (
+      <button
+        type="button"
+        onClick={handleLogout}
+        disabled={loading}
+        className="min-h-[44px] px-4 text-[13px] font-semibold text-[#8a958d] underline-offset-4 active:text-[#5f6d64] disabled:opacity-50"
+      >
+        {loading ? "ログアウト中..." : "ログアウト"}
+      </button>
+    );
+  }
 
   if (variant === "subnav") {
     return (
