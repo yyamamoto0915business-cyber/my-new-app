@@ -10,6 +10,7 @@ import { AuthPcHeroPanel } from "@/components/auth/pc/AuthPcHeroPanel";
 import { AuthPcFormContent } from "@/components/auth/pc/AuthPcFormContent";
 import { AuthMobileBackground } from "@/components/auth/mobile/AuthMobileBackground";
 import { AuthMobileFormContent } from "@/components/auth/mobile/AuthMobileFormContent";
+import { AuthMobileExitBar } from "@/components/auth/mobile/AuthMobileExitBar";
 import { isTurnstileEnabledOnClient } from "@/components/auth/TurnstileWidget";
 import { signInWithProvider } from "@/lib/native/oauth";
 
@@ -264,6 +265,7 @@ function AuthPageContent() {
             "calc(80px + 2.75rem + env(safe-area-inset-bottom, 0px))",
         }}
       >
+        <AuthMobileExitBar />
         <AuthMobileFormContent {...formProps} />
       </div>
     </>
