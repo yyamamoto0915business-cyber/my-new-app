@@ -198,7 +198,8 @@ function ProfileContent() {
             <MypageNextEvent event={data.nextEvent} />
 
             {/* 主催者として登録済みの人は、掲載は主催者モードで行う（マイページは利用者のことだけ）。まだの人には登録への案内として出す */}
-            {!data.profile.isOrganizerRegistered ? (
+            {/* 読みこみが終わるまで出さない（前は読みこみ中に「主催者ではない」と見なして一瞬出し、主催者の人にもちらついて見えた） */}
+            {summary && !summary.profile.isOrganizerRegistered ? (
               <MypageMobileOrganize isOrganizerRegistered={false} />
             ) : null}
 

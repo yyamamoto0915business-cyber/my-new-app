@@ -427,7 +427,8 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
       >
         <div className="ms-sidebar-header" style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
           {scope === "organizer" ? (
-            <div className="mb-2.5">
+            // スマホでは下のナビに「チャット」とあるので、見出しと説明は出さない（検索と絞りこみから始める）
+            <div className="mb-2.5 max-[899px]:hidden">
               <OrgEyebrow>MESSAGES</OrgEyebrow>
               <h1 className="mt-1 text-[21px] font-bold leading-tight tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
                 チャット
