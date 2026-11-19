@@ -2,7 +2,8 @@
 
 import { PreviewZoom, usePreviewZoom } from "@/components/organizer/games/PreviewZoom";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Award, ImagePlus, Palette, Plus, Shapes, Type, Video } from "lucide-react";
+import { Award, ImagePlus, Palette, Plus, Shapes, Sparkles, Type, Undo2, Video } from "lucide-react";
+import { GAME_LOOK_THEMES, applyGameLookTheme, lookHasCustomStyle, themeSwatch, type GameLookTheme } from "@/lib/organizer/game-look-themes";
 import { PlayLocaleSwitch } from "@/components/play/PlayLocaleSwitch";
 import { PlayCheckin } from "@/components/play/PlayCheckin";
 import { PlayCoupon } from "@/components/play/PlayCoupon";
@@ -420,6 +421,10 @@ export function GamePhonePreview({
   const [pickingIcon, setPickingIcon] = useState(false);
   /** 「挿入」で開く欄（図形か画像）。 */
   const [inserting, setInserting] = useState<"shape" | "image" | "video" | null>(null);
+  /** テーマのシートを開いているか・テーマを当てる前の見た目（「元に戻す」用）・いま当てたテーマ */
+  const [themeOpen, setThemeOpen] = useState(false);
+  const [beforeTheme, setBeforeTheme] = useState<GameLook | null>(null);
+  const [themeId, setThemeId] = useState<string | null>(null);
   /** ドラッグで動かす部品のうち、いま選んでいるもの（足した図形は shape:<id>）。 */
   const [activeMove, setActiveMove] = useState<string | null>(null);
   /** 設定パネルを出す側。選んだものが画面の下半分にあるときは上に出して、隠れないようにする。 */
@@ -452,6 +457,7 @@ export function GamePhonePreview({
     (activeMove === "button" ? stageRef.current?.querySelector(".play-dock") : null) ??
     null;
   const selectLook = (next: GameLookSelection | null, move: string | null = null) => {
+    setThemeOpen(false);
     setPickingIcon(false);
     setInserting(null);
     setLookSel(next);
@@ -642,6 +648,19 @@ export function GamePhonePreview({
         <div className="wizard-preview__fit" style={{ width: PHONE_W * scale, height: PHONE_H * scale }}>
           {lookEdit ? (
             <div className="wizard-preview__adds">
+              {/* テーマ：押すだけで、背景の色と見出しの書体などをまとめて変える */}
+              <button
+                type="button"
+                className="wizard-preview__add"
+                data-fab="theme"
+                onClick={() => {
+                  selectLook(null);
+                  setThemeOpen(true);
+                }}
+              >
+                <Sparkles aria-hidden />
+                テーマ
+              </button>
               <button type="button" className="wizard-preview__add" data-fab="icon" onClick={() => selectLook("icon", "icon")}>
                 <Award aria-hidden />
                 アイコン
@@ -873,6 +892,102 @@ export function GamePhonePreview({
             onClose={() => selectLook(null)}
           />
         </div>
+      ) : null}
+      {lookEdit && themeOpen ? (
+        <FloatingPanel anchorKey="theme" getAnchor={() => getFabAnchor("theme")}>
+          <div className="edit-panel" role="dialog" aria-label="テーマ">
+            <div className="edit-panel__head">
+              <b>テーマ</b>
+              <button type="button" onClick={() => setThemeOpen(false)} aria-label="閉じる">
+                ×
+              </button>
+            </div>
+            <p style={{ margin: "0 0 0.5rem", fontSize: "0.75rem", color: "#6b776f" }}>
+              押すと、背景の色と文字の書体がまとめて変わります。足した写真や文字はそのままです。
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.5rem" }}>
+              {GAME_LOOK_THEMES.map((theme: GameLookTheme) => {
+                const on = themeId === theme.id;
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => {
+                      const current = lookEdit.value;
+                      // 自分で変えた色や書体があるときは、変える前に確かめる（はじめて当てるときだけ）
+                      if (!beforeTheme && lookHasCustomStyle(current) && !window.confirm("いまの色や文字の設定を、テーマの見た目に変えますか？")) return;
+                      if (!beforeTheme) setBeforeTheme(current);
+                      setThemeId(theme.id);
+                      lookEdit.onChange(applyGameLookTheme(current, theme));
+                    }}
+                    aria-pressed={on}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "stretch",
+                      overflow: "hidden",
+                      padding: 0,
+                      borderRadius: "0.9rem",
+                      border: on ? "2px solid #173f2c" : "1px solid #e6e2d6",
+                      background: "#fff",
+                      textAlign: "left",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        alignSelf: "stretch",
+                        width: "100%",
+                        height: "3.4rem",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                        background: themeSwatch(theme),
+                        color: theme.bgTheme && theme.bgTheme !== "cream" ? "#fff" : "#1f2a24",
+                        fontSize: "1rem",
+                        fontWeight: theme.title.bold ? 900 : 700,
+                        fontFamily:
+                          theme.title.font === "serif"
+                            ? '"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif'
+                            : theme.title.font === "round"
+                              ? '"Hiragino Maru Gothic ProN", "Noto Sans JP", sans-serif'
+                              : '"Hiragino Sans", "Noto Sans JP", sans-serif',
+                        letterSpacing: theme.title.spacing ? `${theme.title.spacing / 100}em` : undefined,
+                        textShadow: theme.title.glow ? `0 0 10px ${theme.title.glow}` : undefined,
+                      }}
+                      aria-hidden
+                    >
+                      まちあるき
+                    </span>
+                    <span style={{ padding: "0.4rem 0.55rem 0.5rem" }}>
+                      <span style={{ display: "block", fontSize: "0.85rem", fontWeight: 800, color: "#173f2c" }}>{theme.label}</span>
+                      <span style={{ display: "block", fontSize: "0.68rem", color: "#7b877f" }}>{theme.note}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {beforeTheme ? (
+              <button
+                type="button"
+                onClick={() => {
+                  lookEdit.onChange(beforeTheme);
+                  setBeforeTheme(null);
+                  setThemeId(null);
+                }}
+                style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", marginTop: "0.7rem", minHeight: "2.4rem", padding: "0 0.9rem", borderRadius: 999, border: "1px solid #e6e2d6", background: "#fff", color: "#173f2c", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" }}
+              >
+                <Undo2 className="h-4 w-4" aria-hidden />
+                テーマを当てる前に戻す
+              </button>
+            ) : null}
+            <p style={{ margin: "0.6rem 0 0", fontSize: "0.72rem", color: "#7b877f" }}>
+              もっと細かく変えたいときは、プレビューのタイトルや説明を押すと、書体・大きさ・影などを1つずつ変えられます。
+            </p>
+          </div>
+        </FloatingPanel>
       ) : null}
       {lookEdit && inserting ? (
         <FloatingPanel anchorKey="insert" getAnchor={() => getFabAnchor("insert")}>
