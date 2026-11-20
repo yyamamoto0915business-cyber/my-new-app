@@ -1,5 +1,6 @@
 "use client";
 
+import { isLongGameDesc } from "@/lib/play/game-desc";
 import { PreviewZoom, usePreviewZoom } from "@/components/organizer/games/PreviewZoom";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Award, ImagePlus, Palette, Plus, Shapes, Sparkles, Type, Undo2, Video } from "lucide-react";
@@ -758,7 +759,7 @@ export function GamePhonePreview({
                               />
                             </p>
                           ) : description.trim() ? (
-                            <p className="play-game__desc">{description.trim()}</p>
+                            <p className={`play-game__desc${isLongGameDesc(description) ? " play-game__desc--long" : ""}`}>{description.trim()}</p>
                           ) : null,
                           meta: <p className="play-game__meta">{built ? built.meta : copy.spotsPreparing}</p>,
                         }}

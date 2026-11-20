@@ -16436,6 +16436,15 @@ a.org-games__card:hover {
   color: #6a7568;
 }
 
+/* 説明文は主催者が入れた改行をそのまま出す。長い文は真ん中ぞろえだと読みにくいので左ぞろえ */
+.play-game__desc {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.play-game__desc--long {
+  text-align: left;
+}
+
 .play-join {
   display: grid;
   gap: 0.75rem;
