@@ -39318,3 +39318,212 @@ button.mg-album-place {
     color: #f6ebc8 !important;
   }
 }
+
+/* ===== 投稿の作成（スマホ）：要るものだけの1画面 ===== */
+.posts-create-strip,
+.posts-create-strip__hint,
+.posts-create-actions__vis,
+.posts-create-actions__vis-hint,
+.posts-create-details__label--short {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  /* 写真：小さな四角の横並び（木の枠の大きな欄はスマホでは出さない） */
+  .posts-create-photo-area,
+  .posts-create-photo__actions {
+    display: none !important;
+  }
+  .posts-create-strip {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    margin: 0 -1rem;
+    padding: 0.15rem 1rem 0.2rem;
+    scrollbar-width: none;
+  }
+  .posts-create-strip::-webkit-scrollbar {
+    display: none;
+  }
+  .posts-create-strip__add,
+  .posts-create-strip__item {
+    position: relative;
+    flex: none;
+    width: 5.6rem;
+    height: 5.6rem;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .posts-create-strip__add {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    border: 1.5px dashed #c9b998;
+    background: #fbf7ec;
+    color: #173f2c;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .posts-create-strip__add small {
+    font-size: 10px;
+    font-weight: 600;
+    color: #8a7a68;
+  }
+  .posts-create-strip__item img,
+  .posts-create-strip__item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .posts-create-strip__badge {
+    position: absolute;
+    left: 0.3rem;
+    bottom: 0.3rem;
+    border-radius: 999px;
+    background: rgba(23, 63, 44, 0.85);
+    color: #f6ebc8;
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+  }
+  .posts-create-strip__remove {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    border: 0;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+  }
+  .posts-create-strip__hint {
+    display: block;
+    margin: 0.35rem 0 0;
+    font-size: 11px;
+    color: #8a7a68;
+  }
+
+  /* カテゴリー：見出しとアイコンをやめ、選んだものは深緑に */
+  .posts-create-block--cat > .posts-create-block__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .posts-create-category-pill svg {
+    display: none;
+  }
+  .posts-create-category-pill--active {
+    background-color: #173f2c !important;
+    border-color: #173f2c !important;
+    color: #f6ebc8 !important;
+  }
+
+  /* タイトル・本文：見出しのアイコンを外す */
+  .posts-create-row__label > svg {
+    display: none;
+  }
+
+  /* 詳細のたたみ：中身が分かる名前に */
+  .posts-create-details__label--full {
+    display: none;
+  }
+  .posts-create-details__label--short {
+    display: inline;
+  }
+
+  /* 公開範囲はバーへ移したので、下の欄は隠す */
+  .posts-create-visibility {
+    display: none !important;
+  }
+
+  /* 下のバー：[公開|非公開] [目] [投稿する] */
+  .posts-create-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .posts-create-actions__vis-hint {
+    display: block;
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 11px;
+    color: #6a5a48;
+  }
+  .posts-create-actions__vis {
+    display: inline-flex;
+    flex: none;
+    padding: 0.2rem;
+    border-radius: 999px;
+    border: 1px solid #e0d4c0;
+    background: #fff;
+  }
+  .posts-create-actions__vis button {
+    min-height: 2.3rem;
+    padding: 0 0.8rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #6a5a48;
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+  .posts-create-actions__vis button.is-on {
+    background: #173f2c;
+    color: #f6ebc8;
+  }
+  .posts-create-actions__preview {
+    flex: none;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0 !important;
+  }
+  .posts-create-actions__preview--nomedia {
+    display: none !important;
+  }
+  .posts-create-actions__preview-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .posts-create-actions__submit {
+    flex: 1 1 auto;
+    min-height: 2.75rem;
+  }
+
+  /* 上の「アルバム」は作っている途中には使わないので隠す（投稿のあとに「マイアルバムへ」がある） */
+  .posts-create-page__history {
+    display: none !important;
+  }
+}
+
+@media (max-width: 899px) {
+  /* 何も選んでいないときは、「＋」を横いっぱいの帯にして押しやすく */
+  .posts-create-strip__add:only-child {
+    width: 100%;
+    height: 4.6rem;
+    flex-direction: row;
+    gap: 0.45rem;
+    font-size: 13.5px;
+  }
+  .posts-create-strip__add:only-child small {
+    margin-left: 0.2rem;
+  }
+  .posts-create-block--cat {
+    margin-bottom: 0.85rem !important;
+  }
+  .posts-create-row__input--area {
+    min-height: 7.5rem;
+  }
+}

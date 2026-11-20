@@ -137,6 +137,55 @@ export function PostCreateMediaInput({
 
   return (
     <div className="posts-create-photo">
+      {/* スマホ：写真は小さな四角を横に並べる。先頭の「＋」で選び、選んだものはその右に並ぶ */}
+      <div className="posts-create-strip" aria-label="写真・動画">
+        {canAddMore || (!hasVideo && !hasPhotos) ? (
+          <button
+            type="button"
+            className="posts-create-strip__add"
+            onClick={openPicker}
+            disabled={busy}
+            aria-label="写真または動画を追加"
+          >
+            <Plus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
+            <span>{hasPhotos ? "追加" : "写真・動画"}</span>
+            <small>
+              {imagePreviewUrls.length}/{POST_PHOTO_MAX_COUNT}
+            </small>
+          </button>
+        ) : null}
+        {hasVideo && videoPreviewUrl ? (
+          <div className="posts-create-strip__item">
+            <video src={videoPreviewUrl} muted playsInline preload="metadata" />
+            {videoDurationSec != null ? (
+              <span className="posts-create-strip__badge">{formatVideoDuration(videoDurationSec)}</span>
+            ) : null}
+            <button type="button" className="posts-create-strip__remove" aria-label="動画を削除" onClick={handleClearAll}>
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ) : null}
+        {imagePreviewUrls.map((url, i) => (
+          <div key={url} className="posts-create-strip__item">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt="" />
+            {i === 0 ? <span className="posts-create-strip__badge">表紙</span> : null}
+            <button
+              type="button"
+              className="posts-create-strip__remove"
+              aria-label={`${i + 1}枚目を削除`}
+              onClick={() => onPhotoRemove(i)}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+      {!hasVideo && !hasPhotos ? (
+        <p className="posts-create-strip__hint">
+          写真は{POST_PHOTO_MAX_COUNT}枚まで・動画は{POST_VIDEO_MAX_DURATION_SEC}秒まで
+        </p>
+      ) : null}
       <div className="posts-create-photo-area">
         <div className="posts-create-photo-area__main-wrap">
           <button
