@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CalendarDays, MapPin } from "lucide-react";
@@ -12,7 +12,7 @@ import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
 import type { PublicOrganizerGame } from "@/lib/organizer/public-games";
 import { buildRecommendedFeed, type MachiFeedItem } from "@/lib/machi/feed";
 
-const BANNER_COUNT = 4;
+const BANNER_COUNT = 5;
 
 type Props = {
   events: Event[];
@@ -108,7 +108,7 @@ export function selectFeaturedItems(
   return [...withImage, ...without].slice(0, BANNER_COUNT);
 }
 
-/** まちの情報（スマホ）：「注目のまち情報」。2枚ずつ見えるカードを横にスクロールする */
+/** まちの情報（スマホ）：「注目のまち情報」。2枚ずつ見えるカードを横にスクロールする（5件まで） */
 export function MobileFeaturedBanner({
   events,
   stores,
@@ -122,6 +122,9 @@ export function MobileFeaturedBanner({
     () => selectFeaturedItems(events, stores, volunteers, games, areaPreference, categoryPrefs),
     [events, stores, volunteers, games, areaPreference, categoryPrefs]
   );
+
+  // いま見えている左端のカード（下の点で、横に続きがあることを知らせる）
+  const [first, setFirst] = useState(0);
 
   if (loading) {
     return (
@@ -137,11 +140,36 @@ export function MobileFeaturedBanner({
   return (
     <section aria-label="注目のまち情報">
       <MobileSectionHeading eyebrow="FEATURED" title="注目のまち情報" />
-      <div className="-mx-3 -my-2 flex snap-x scroll-px-3 gap-2.5 overflow-x-auto px-3 py-2 scrollbar-hide">
+      <div
+        className="-mx-3 -my-2 flex snap-x scroll-px-3 gap-2.5 overflow-x-auto px-3 py-2 scrollbar-hide"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const card = el.firstElementChild as HTMLElement | null;
+          if (!card) return;
+          const step = card.offsetWidth + 10;
+          // いちばん右まで来たら、最後の2枚を見ていることにする
+          const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+          setFirst(atEnd ? Math.max(0, items.length - 2) : Math.round(el.scrollLeft / step));
+        }}
+      >
         {items.map((item, i) => (
           <FeaturedCard key={item.id} item={item} priority={i < 2} />
         ))}
       </div>
+      {items.length > 2 ? (
+        <div className="mt-2.5 flex justify-center gap-1.5" aria-hidden>
+          {items.map((item, i) => (
+            <span
+              key={item.id}
+              className={
+                i === first || i === first + 1
+                  ? "h-1.5 w-4 rounded-full bg-[#2f6b4f] transition-all"
+                  : "h-1.5 w-1.5 rounded-full bg-[#cfdcd2] transition-all"
+              }
+            />
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

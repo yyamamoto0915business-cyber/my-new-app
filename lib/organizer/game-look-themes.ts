@@ -90,7 +90,9 @@ export function applyGameLookTheme(current: GameLook, theme: GameLookTheme): Gam
     const fine = (key === "title" ? theme.title : key === "kicker" ? theme.kicker : key === "desc" ? theme.desc : undefined) ?? {};
     // 色はテーマで決める（濃い背景なら明るい色、そうでなければ画面のもとの色）
     const color = dark ? (key === "title" ? "#ffffff" : "#f1ede2") : "";
-    texts[key] = { color, bg: "", ...FINE_DEFAULT, ...fine };
+    // 写真の背景は明るいところもあるので、文字の下に薄い影を敷いて読みやすくする
+    const photoShadow = theme.bgImageUrl ? { shadowX: 0, shadowY: 1, shadowBlur: 8, shadowAlpha: 60 } : {};
+    texts[key] = { color, bg: "", ...FINE_DEFAULT, ...photoShadow, ...fine };
   }
   return {
     ...current,
