@@ -2001,33 +2001,127 @@ body.has-edit-sheet .game-create-sheet .game-create-sheet__body {
   text-align: center;
 }
 
-/* スマホの全画面：追加ボタンは丸いアイコンだけにして、上のタブやスマホ枠の中身にかぶらないよう小さく。 */
+/* スマホの全画面：テーマ・アイコン・挿入・背景はプレビューの上に横1列で並べる。
+   前は画面の右に重ねていたので、JA/EN や白いカードが隠れていた。 */
 @media (max-width: 699px) {
+  .wizard-preview-sheet .wizard-preview__stage:has(.wizard-preview__adds) {
+    padding-top: 3.1rem;
+  }
+
   .wizard-preview-sheet .wizard-preview__adds {
-    top: 3.2rem;
-    right: 0.35rem;
+    top: -2.85rem;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
     gap: 0.4rem;
   }
 
-  /* アイコンだけだと何のボタンか分かりにくいので、下に小さく名前を出す。 */
   .wizard-preview-sheet .wizard-preview__adds .wizard-preview__add {
-    flex-direction: column;
+    flex: 1 1 0;
     justify-content: center;
-    width: 3.1rem;
-    min-height: 3.1rem;
-    padding: 0.3rem 0 0.25rem;
-    border-radius: 0.95rem;
-    font-size: 0.58rem;
-    line-height: 1;
+    min-width: 0;
+    min-height: 2.5rem;
+    padding: 0 0.4rem;
+    border: 1px solid #d9bc6e;
+    border-radius: 0.8rem;
+    background: #173f2c;
+    color: #f6ebc8;
+    font-size: 0.78rem;
     letter-spacing: 0;
-    gap: 0.2rem;
-    background: rgba(29, 42, 34, 0.88);
+    box-shadow: 0 3px 10px rgba(22, 56, 40, 0.16);
   }
 
   .wizard-preview-sheet .wizard-preview__adds .wizard-preview__add svg {
-    width: 1.1rem;
-    height: 1.1rem;
+    width: 1rem;
+    height: 1rem;
+    flex: none;
   }
+}
+
+/* テーマの棚：種類のタブ＋横にスワイプするカード。上半分のプレビューを見ながら選べるよう低く作る */
+.theme-shelf {
+  padding-top: 0 !important;
+}
+.theme-shelf__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0 0.5rem;
+  background: #fff;
+}
+.theme-shelf__head b {
+  margin-right: auto;
+  font-size: 0.98rem;
+  color: #173f2c;
+}
+.theme-shelf__undo,
+.theme-shelf__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.3rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.theme-shelf__undo {
+  border: 1px solid #e6e2d6;
+  background: #fff;
+  color: #173f2c;
+}
+.theme-shelf__done {
+  border: 1px solid #d9bc6e;
+  background: #173f2c;
+  color: #f6ebc8;
+}
+.theme-shelf__tabs {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding-bottom: 0.55rem;
+  scrollbar-width: none;
+}
+.theme-shelf__tabs::-webkit-scrollbar {
+  display: none;
+}
+.theme-shelf__tabs button {
+  flex: none;
+  min-height: 2.1rem;
+  padding: 0 0.85rem;
+  border: 1px solid #e6e2d6;
+  border-radius: 999px;
+  background: #fff;
+  color: #566358;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.theme-shelf__tabs button.is-on {
+  border-color: #173f2c;
+  background: #173f2c;
+  color: #f6ebc8;
+}
+.theme-shelf__row {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+  scroll-snap-type: x proximity;
+}
+.theme-shelf__row > button {
+  scroll-snap-align: start;
+}
+.theme-shelf__hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.7rem;
+  color: #7b877f;
 }
 
 /* ───────── クイズ：問題ごとの形式とチェックポイント（フォームとプレビュー共通） ───────── */

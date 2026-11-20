@@ -426,6 +426,8 @@ export function GamePhonePreview({
   const [themeOpen, setThemeOpen] = useState(false);
   const [beforeTheme, setBeforeTheme] = useState<GameLook | null>(null);
   const [themeId, setThemeId] = useState<string | null>(null);
+  /** テーマの棚で開いている種類（イベント・季節・ホラー・色と書体・キャラクター） */
+  const [themeTab, setThemeTab] = useState<"event" | "season" | "horror" | "color" | "character">("event");
   /** ドラッグで動かす部品のうち、いま選んでいるもの（足した図形は shape:<id>）。 */
   const [activeMove, setActiveMove] = useState<string | null>(null);
   /** 設定パネルを出す側。選んだものが画面の下半分にあるときは上に出して、隠れないようにする。 */
@@ -896,28 +898,78 @@ export function GamePhonePreview({
       ) : null}
       {lookEdit && themeOpen ? (
         <FloatingPanel anchorKey="theme" getAnchor={() => getFabAnchor("theme")}>
-          <div className="edit-panel" role="dialog" aria-label="テーマ">
-            <div className="edit-panel__head">
+          <div className="edit-panel theme-shelf" role="dialog" aria-label="テーマ">
+            {/* 見出しは上に固定：元に戻す・決定がいつでも押せる */}
+            <div className="theme-shelf__head">
               <b>テーマ</b>
-              <button type="button" onClick={() => setThemeOpen(false)} aria-label="閉じる">
-                ×
+              {beforeTheme ? (
+                <button
+                  type="button"
+                  className="theme-shelf__undo"
+                  onClick={() => {
+                    lookEdit.onChange(beforeTheme);
+                    setBeforeTheme(null);
+                    setThemeId(null);
+                  }}
+                >
+                  <Undo2 className="h-4 w-4" aria-hidden />
+                  元に戻す
+                </button>
+              ) : null}
+              <button type="button" className="theme-shelf__done" onClick={() => setThemeOpen(false)}>
+                決定
               </button>
             </div>
-            <p style={{ margin: "0 0 0.5rem", fontSize: "0.75rem", color: "#6b776f" }}>
-              押すと、背景の色と文字の書体がまとめて変わります。足した写真や文字はそのままです。
-            </p>
-            {(
-              [
-                ["event", "イベント"],
-                ["season", "季節"],
-                ["horror", "ホラー"],
-                ["color", "色と書体"],
-              ] as const
-            ).map(([group, groupLabel]) => (
-            <div key={group} style={{ marginBottom: "0.75rem" }}>
-            <p style={{ margin: "0 0 0.35rem", fontSize: "0.75rem", fontWeight: 800, color: "#a3812f", letterSpacing: "0.08em" }}>{groupLabel}</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.5rem" }}>
-              {GAME_LOOK_THEMES.filter((theme) => theme.group === group).map((theme: GameLookTheme) => {
+            <div className="theme-shelf__tabs" role="tablist" aria-label="テーマの種類">
+              {(
+                [
+                  ["event", "イベント"],
+                  ["season", "季節"],
+                  ["horror", "ホラー"],
+                  ["color", "色と書体"],
+                  ["character", "キャラクター"],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={themeTab === key}
+                  className={themeTab === key ? "is-on" : undefined}
+                  onClick={() => setThemeTab(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {themeTab === "character" ? (
+              <div className="theme-shelf__row">
+              {GAME_LOOK_CHARACTERS.map((c) => {
+                const on = (lookEdit.value.iconImageUrl || "") === c.url;
+                return (
+                  <button
+                    key={c.url || "none"}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => lookEdit.onChange({ ...lookEdit.value, iconImageUrl: c.url })}
+                    style={{ flexShrink: 0, width: "4.4rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", padding: "0.4rem 0.2rem", borderRadius: "0.9rem", border: on ? "2px solid #173f2c" : "1px solid #e6e2d6", background: "#fff", cursor: "pointer" }}
+                  >
+                    <span style={{ width: "2.8rem", height: "2.8rem", borderRadius: "999px", background: "#f4f1e8", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }} aria-hidden>
+                      {c.url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={c.url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      ) : (
+                        <Award className="h-5 w-5" style={{ color: "#173f2c" }} />
+                      )}
+                    </span>
+                    <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#173f2c", whiteSpace: "nowrap" }}>{c.label}</span>
+                  </button>
+                );
+              })}
+              </div>
+            ) : (
+              <div className="theme-shelf__row">
+              {GAME_LOOK_THEMES.filter((theme) => theme.group === themeTab).map((theme: GameLookTheme) => {
                 const on = themeId === theme.id;
                 return (
                   <button
@@ -936,6 +988,8 @@ export function GamePhonePreview({
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "stretch",
+                      flexShrink: 0,
+                      width: "8.4rem",
                       overflow: "hidden",
                       padding: 0,
                       borderRadius: "0.9rem",
@@ -952,7 +1006,7 @@ export function GamePhonePreview({
                         justifyContent: "center",
                         alignSelf: "stretch",
                         width: "100%",
-                        height: "3.4rem",
+                        height: "3rem",
                         overflow: "hidden",
                         whiteSpace: "nowrap",
                         background: themeSwatch(theme),
@@ -979,52 +1033,9 @@ export function GamePhonePreview({
                   </button>
                 );
               })}
-            </div>
-            </div>
-            ))}
-            {/* キャラクター：真ん中のアイコンを、アプリのマスコットに変える */}
-            <p style={{ margin: "0.2rem 0 0.35rem", fontSize: "0.75rem", fontWeight: 800, color: "#a3812f", letterSpacing: "0.08em" }}>キャラクター</p>
-            <div style={{ display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.25rem" }}>
-              {GAME_LOOK_CHARACTERS.map((c) => {
-                const on = (lookEdit.value.iconImageUrl || "") === c.url;
-                return (
-                  <button
-                    key={c.url || "none"}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => lookEdit.onChange({ ...lookEdit.value, iconImageUrl: c.url })}
-                    style={{ flexShrink: 0, width: "4.4rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", padding: "0.4rem 0.2rem", borderRadius: "0.9rem", border: on ? "2px solid #173f2c" : "1px solid #e6e2d6", background: "#fff", cursor: "pointer" }}
-                  >
-                    <span style={{ width: "2.8rem", height: "2.8rem", borderRadius: "999px", background: "#f4f1e8", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }} aria-hidden>
-                      {c.url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={c.url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                      ) : (
-                        <Award className="h-5 w-5" style={{ color: "#173f2c" }} />
-                      )}
-                    </span>
-                    <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#173f2c", whiteSpace: "nowrap" }}>{c.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {beforeTheme ? (
-              <button
-                type="button"
-                onClick={() => {
-                  lookEdit.onChange(beforeTheme);
-                  setBeforeTheme(null);
-                  setThemeId(null);
-                }}
-                style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", marginTop: "0.7rem", minHeight: "2.4rem", padding: "0 0.9rem", borderRadius: 999, border: "1px solid #e6e2d6", background: "#fff", color: "#173f2c", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" }}
-              >
-                <Undo2 className="h-4 w-4" aria-hidden />
-                テーマを当てる前に戻す
-              </button>
-            ) : null}
-            <p style={{ margin: "0.6rem 0 0", fontSize: "0.72rem", color: "#7b877f" }}>
-              もっと細かく変えたいときは、プレビューのタイトルや説明を押すと、書体・大きさ・影などを1つずつ変えられます。
-            </p>
+              </div>
+            )}
+            <p className="theme-shelf__hint">押すとすぐ上に反映されます。横にスワイプでほかも見られます。</p>
           </div>
         </FloatingPanel>
       ) : null}
