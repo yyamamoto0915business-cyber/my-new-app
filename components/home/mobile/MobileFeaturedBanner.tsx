@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays, MapPin } from "lucide-react";
 import { MobileSectionHeading } from "@/components/home/mobile/MobileSectionHeading";
 import type { Event } from "@/lib/db/types";
 import type { CategoryKey } from "@/lib/categories";
@@ -141,20 +141,6 @@ export function MobileFeaturedBanner({
         {items.map((item, i) => (
           <FeaturedCard key={item.id} item={item} priority={i < 2} />
         ))}
-        {/* 最後に「もっと見る」。載っているものが少ないときも、続きへ進める */}
-        <Link
-          href="/events"
-          className="flex w-[28%] min-w-[96px] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-[18px] border border-[#e6dcc0] bg-[#fbf7ec] px-2 text-center active:scale-[0.98]"
-        >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#173f2c] text-[#f6ebc8]" aria-hidden>
-            <ArrowRight className="h-4 w-4" />
-          </span>
-          <span className="text-[12px] font-bold leading-snug text-[#173f2c]">
-            イベントを
-            <br />
-            もっと見る
-          </span>
-        </Link>
       </div>
     </section>
   );
