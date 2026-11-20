@@ -61,7 +61,8 @@
 /* スマホ：3列の均等なグリッド。角を丸め、全部の写真にいいね数を重ねる */
 .gridUniform {
   gap: 4px;
-  margin: 0 -0.5rem;
+  /* 上の検索欄と左右の端をそろえる（前は画面の端近くまで広がって、ずれて見えた） */
+  margin: 0;
 }
 
 @media (min-width: 600px) {
@@ -82,12 +83,13 @@
   bottom: 0;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 1.6rem 0.55rem 0.45rem;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
+  gap: 0.2rem;
+  /* 大きいマスの「📍場所 ♥2」と同じ大きさにそろえる（前はハートと数字が大きすぎた） */
+  padding: 1.4rem 0.5rem 0.4rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.45), transparent);
   color: #fff;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   pointer-events: none;

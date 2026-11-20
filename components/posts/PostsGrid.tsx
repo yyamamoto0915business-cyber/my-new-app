@@ -80,9 +80,9 @@ function GridTile({
         </span>
       ) : null}
       {/* 大きいマスは上の場所といいね数のキャプションを出すので、ここでは出さない */}
-      {uniform && !side ? (
+      {uniform && !side && post.likeCount > 0 ? (
         <span className={styles.tileLikes}>
-          <Heart className="h-[18px] w-[18px]" strokeWidth={2.2} aria-hidden />
+          <Heart className="h-3 w-3" fill="currentColor" aria-hidden />
           <span>{post.likeCount}</span>
           <span className="sr-only">いいね</span>
         </span>
