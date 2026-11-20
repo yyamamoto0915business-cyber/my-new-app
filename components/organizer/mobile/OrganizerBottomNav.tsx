@@ -40,7 +40,11 @@ const ITEMS: Item[] = [
 export function OrganizerBottomNav() {
   const pathname = usePathname() ?? "";
   const hidden =
-    isEventFormRoute(pathname) || isMessagesConversationRoute(pathname) || isProfileEditRoute(pathname);
+    isEventFormRoute(pathname) ||
+    isMessagesConversationRoute(pathname) ||
+    isProfileEditRoute(pathname) ||
+    // ゲームの作成：下の「プレビュー・下書き・次へ」の帯だけにして、入力に集中させる
+    pathname === "/organizer/games/new";
   const unread = useOrganizerUnreadCount(!hidden);
   // TEAM：スタッフには「新しく掲載」を出さない。チャットは団体のアカウント本人だけ
   const role = useOrganizerRole();

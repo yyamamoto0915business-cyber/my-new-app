@@ -39213,3 +39213,17 @@ button.mg-album-place {
     zoom: 1 !important;
   }
 }
+
+/* ゲーム作成（スマホ）：日付の欄が画面からはみ出して、画面ぜんたいが縮んで見えないように */
+@media (max-width: 719px) {
+  .org-game-create input[type="date"],
+  .org-game-create input[type="datetime-local"],
+  .org-game-create input[type="time"] {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+  .org-game-create {
+    overflow-x: clip;
+  }
+}

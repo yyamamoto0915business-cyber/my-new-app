@@ -3,7 +3,7 @@
 import { PreviewZoom, usePreviewZoom } from "@/components/organizer/games/PreviewZoom";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Award, ImagePlus, Palette, Plus, Shapes, Sparkles, Type, Undo2, Video } from "lucide-react";
-import { GAME_LOOK_THEMES, applyGameLookTheme, lookHasCustomStyle, themeSwatch, type GameLookTheme } from "@/lib/organizer/game-look-themes";
+import { GAME_LOOK_CHARACTERS, GAME_LOOK_THEMES, applyGameLookTheme, lookHasCustomStyle, themeSwatch, type GameLookTheme } from "@/lib/organizer/game-look-themes";
 import { PlayLocaleSwitch } from "@/components/play/PlayLocaleSwitch";
 import { PlayCheckin } from "@/components/play/PlayCheckin";
 import { PlayCoupon } from "@/components/play/PlayCoupon";
@@ -905,8 +905,18 @@ export function GamePhonePreview({
             <p style={{ margin: "0 0 0.5rem", fontSize: "0.75rem", color: "#6b776f" }}>
               押すと、背景の色と文字の書体がまとめて変わります。足した写真や文字はそのままです。
             </p>
+            {(
+              [
+                ["event", "イベント"],
+                ["season", "季節"],
+                ["horror", "ホラー"],
+                ["color", "色と書体"],
+              ] as const
+            ).map(([group, groupLabel]) => (
+            <div key={group} style={{ marginBottom: "0.75rem" }}>
+            <p style={{ margin: "0 0 0.35rem", fontSize: "0.75rem", fontWeight: 800, color: "#a3812f", letterSpacing: "0.08em" }}>{groupLabel}</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.5rem" }}>
-              {GAME_LOOK_THEMES.map((theme: GameLookTheme) => {
+              {GAME_LOOK_THEMES.filter((theme) => theme.group === group).map((theme: GameLookTheme) => {
                 const on = themeId === theme.id;
                 return (
                   <button
@@ -965,6 +975,34 @@ export function GamePhonePreview({
                       <span style={{ display: "block", fontSize: "0.85rem", fontWeight: 800, color: "#173f2c" }}>{theme.label}</span>
                       <span style={{ display: "block", fontSize: "0.68rem", color: "#7b877f" }}>{theme.note}</span>
                     </span>
+                  </button>
+                );
+              })}
+            </div>
+            </div>
+            ))}
+            {/* キャラクター：真ん中のアイコンを、アプリのマスコットに変える */}
+            <p style={{ margin: "0.2rem 0 0.35rem", fontSize: "0.75rem", fontWeight: 800, color: "#a3812f", letterSpacing: "0.08em" }}>キャラクター</p>
+            <div style={{ display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.25rem" }}>
+              {GAME_LOOK_CHARACTERS.map((c) => {
+                const on = (lookEdit.value.iconImageUrl || "") === c.url;
+                return (
+                  <button
+                    key={c.url || "none"}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => lookEdit.onChange({ ...lookEdit.value, iconImageUrl: c.url })}
+                    style={{ flexShrink: 0, width: "4.4rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", padding: "0.4rem 0.2rem", borderRadius: "0.9rem", border: on ? "2px solid #173f2c" : "1px solid #e6e2d6", background: "#fff", cursor: "pointer" }}
+                  >
+                    <span style={{ width: "2.8rem", height: "2.8rem", borderRadius: "999px", background: "#f4f1e8", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }} aria-hidden>
+                      {c.url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={c.url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      ) : (
+                        <Award className="h-5 w-5" style={{ color: "#173f2c" }} />
+                      )}
+                    </span>
+                    <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#173f2c", whiteSpace: "nowrap" }}>{c.label}</span>
                   </button>
                 );
               })}
