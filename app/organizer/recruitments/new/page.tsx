@@ -404,11 +404,11 @@ function FieldWrap({ children }: { children: React.ReactNode }) {
 // ── Confirm summary row ──
 function SRow({ label, value, empty }: { label: string; value: string; empty?: boolean }) {
   return (
-    <div className="flex justify-between items-start gap-[10px] border-b border-[#f5f3ef] py-[8px] last:border-b-0">
-      <div className="w-[72px] shrink-0 text-[11px] text-[#888]">{label}</div>
+    <div className="flex justify-between items-start gap-[10px] border-b border-[#f3f0e8] py-[9px] last:border-b-0">
+      <div className="w-[108px] shrink-0 text-[12px] text-[#7b877f]">{label}</div>
       <div
-        className="flex-1 text-right text-[12px] font-[500] leading-[1.5]"
-        style={{ color: empty ? "#ccc" : "#1a1a1a", fontWeight: empty ? 400 : 500 }}
+        className="flex-1 text-right text-[13px] font-[500] leading-[1.5]"
+        style={{ color: empty ? "#a3aaa5" : "#1f2a24", fontWeight: empty ? 400 : 600 }}
       >
         {value}
       </div>
@@ -978,7 +978,7 @@ function NewRecruitmentPageContent() {
   );
 
   return (
-    <div className="relative z-[1] flex flex-col min-[900px]:-mx-8 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white">
+    <div data-recruit-form className="relative z-[1] flex flex-col min-[900px]:-mx-8 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white">
 
       {/* ── PC: Header（イベント作成と同型）── */}
       <header className="z-10 hidden shrink-0 border-b border-[#d8d4cc] bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)] min-[900px]:block">
@@ -1069,7 +1069,8 @@ function NewRecruitmentPageContent() {
       </header>
 
       {/* ── Mobile: Header + step indicator ── */}
-      <div className="min-[900px]:hidden sticky top-0 z-10 border-b border-[#e8e6e0] bg-white">
+      {/* 画面の端まで白く（外側の余白を打ち消す） */}
+      <div className="min-[900px]:hidden sticky top-0 z-10 -mx-4 border-b border-[#ece8dc] bg-white sm:-mx-6">
         <div className="flex items-center gap-[8px] px-[14px] py-[9px]">
           <button
             type="button"
@@ -1284,13 +1285,13 @@ function NewRecruitmentPageContent() {
             </div>
           ) : (
           <div className="px-[14px] py-[12px]">
-            <div className="mb-[10px] rounded-[12px] border border-[#e8e6e0] bg-white p-[16px]">
-              <div className="mb-[8px] flex justify-between text-[11px] font-[600] text-[#888]">
+            <div className="mb-[10px] rounded-[16px] border border-[#e6e2d6] bg-white px-4 pb-2 pt-3 shadow-[0_1px_4px_rgba(23,63,44,0.05)]">
+              <div className="mb-[6px] flex items-center justify-between text-[14px] font-bold text-[#173f2c]">
                 基本情報
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="font-[500] text-[#173f2c]"
+                  className="min-h-[34px] rounded-full border border-[#e1d6b4] px-3.5 text-[12px] font-bold text-[#173f2c]"
                 >
                   編集
                 </button>
@@ -1306,57 +1307,41 @@ function NewRecruitmentPageContent() {
                 }
                 empty={!form.description.trim()}
               />
-              <SRow
-                label="画像"
-                value={form.imageUrl.trim() ? "設定済み" : "未設定"}
-                empty={!form.imageUrl.trim()}
-              />
-              <SRow label="イベント" value={eventText ?? "未選択"} empty={!eventText} />
+              {/* 任意で入れていない項目は出さない（「未設定」「—」が並んで読みにくかった） */}
+              {form.imageUrl.trim() ? <SRow label="画像" value="設定済み" /> : null}
+              {eventText ? <SRow label="イベント" value={eventText} /> : null}
               <SRow label="役割" value={rolesText} />
             </div>
 
-            <div className="mb-[10px] rounded-[12px] border border-[#e8e6e0] bg-white p-[16px]">
-              <div className="mb-[8px] flex justify-between text-[11px] font-[600] text-[#888]">
+            <div className="mb-[10px] rounded-[16px] border border-[#e6e2d6] bg-white px-4 pb-2 pt-3 shadow-[0_1px_4px_rgba(23,63,44,0.05)]">
+              <div className="mb-[6px] flex items-center justify-between text-[14px] font-bold text-[#173f2c]">
                 日時・条件
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="font-[500] text-[#173f2c]"
+                  className="min-h-[34px] rounded-full border border-[#e1d6b4] px-3.5 text-[12px] font-bold text-[#173f2c]"
                 >
                   編集
                 </button>
               </div>
-              <SRow label="開始日時" value={startText ?? "—"} empty={!startText} />
-              <SRow label="終了日時" value={endText ?? "—"} empty={!endText} />
-              <SRow
-                label="集合場所"
-                value={form.meeting_place.trim() || "—"}
-                empty={!form.meeting_place.trim()}
-              />
+              <SRow label="日時" value={startText ? `${startText}${endText ? `〜${endText}` : ""}` : "未定"} empty={!startText} />
+              {form.meeting_place.trim() ? <SRow label="集合場所" value={form.meeting_place.trim()} /> : null}
               <SRow
                 label="募集人数"
                 value={form.capacity ? `${form.capacity}名まで` : "無制限"}
                 empty={!form.capacity}
               />
-              <SRow
-                label="持ち物"
-                value={form.items_to_bring.trim() || "—"}
-                empty={!form.items_to_bring.trim()}
-              />
-              <SRow
-                label="支給"
-                value={form.provisions.trim() || "—"}
-                empty={!form.provisions.trim()}
-              />
+              {form.items_to_bring.trim() ? <SRow label="持ち物" value={form.items_to_bring.trim()} /> : null}
+              {form.provisions.trim() ? <SRow label="支給" value={form.provisions.trim()} /> : null}
             </div>
 
-            <div className="mb-[10px] rounded-[12px] border border-[#e8e6e0] bg-white p-[16px]">
-              <div className="mb-[8px] flex justify-between text-[11px] font-[600] text-[#888]">
+            <div className="mb-[10px] rounded-[16px] border border-[#e6e2d6] bg-white px-4 pb-2 pt-3 shadow-[0_1px_4px_rgba(23,63,44,0.05)]">
+              <div className="mb-[6px] flex items-center justify-between text-[14px] font-bold text-[#173f2c]">
                 応募フォーム
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="font-[500] text-[#173f2c]"
+                  className="min-h-[34px] rounded-full border border-[#e1d6b4] px-3.5 text-[12px] font-bold text-[#173f2c]"
                 >
                   編集
                 </button>
@@ -1402,7 +1387,7 @@ function NewRecruitmentPageContent() {
 
       {/* ── Mobile: Footer nav（「次へ」をいちばん大きく。戻る・下書きは小さく） ── */}
       {!publishDone ? (
-        <div className="min-[900px]:hidden sticky bottom-0 z-10 border-t border-[#e8e6e0] bg-white/95 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] backdrop-blur">
+        <div className="min-[900px]:hidden sticky bottom-0 z-10 -mx-4 border-t border-[#e8e6e0] bg-white/95 px-3 sm:-mx-6 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] backdrop-blur">
           <div className="flex items-center gap-2">
             {step > 1 ? (
               <button

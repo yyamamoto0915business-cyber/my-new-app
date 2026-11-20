@@ -39227,3 +39227,9 @@ button.mg-album-place {
     overflow-x: clip;
   }
 }
+
+/* ボランティア募集の作成：チェックとスイッチの色を、ほかの主催者画面と同じ深い緑に */
+[data-recruit-form] input[type="checkbox"],
+[data-recruit-form] input[type="radio"] {
+  accent-color: #173f2c;
+}
