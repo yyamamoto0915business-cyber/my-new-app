@@ -39238,6 +39238,16 @@ button.mg-album-place {
   .org-game-create {
     overflow-x: clip;
   }
+  /* 開始日〜終了日：2つの欄を半分ずつに収める（前は終了日が右にはみ出していた） */
+  .org-game-create .org-mission__dates {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+  .org-game-create .org-mission__dates input[type="date"] {
+    padding-left: 0.6rem;
+    padding-right: 0.4rem;
+    overflow: hidden;
+  }
 }
 
 /* ボランティア募集の作成：チェックとスイッチの色を、ほかの主催者画面と同じ深い緑に */
