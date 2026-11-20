@@ -14,6 +14,9 @@ import {
   PenLine,
   X,
   Trash2,
+  Users,
+  Copy,
+  CircleStop,
   type LucideIcon,
   Archive,
   ArrowLeft,
@@ -53,6 +56,8 @@ type Listing = {
   event?: { id: string; date: string; endDate: string | null; status: DashboardEvent["status"] };
   /** イベント以外で期限のあるもの（募集・ゲーム）の最後の日（YYYY-MM-DD）。過ぎたら「終わったもの」へ */
   lastDay?: string | null;
+  /** ボランティア募集：承認を待っている応募の数 */
+  pending?: number;
 };
 
 /** 種類ごとの色（写真がないときのアイコンの丸と、種類の文字に使う） */
@@ -151,6 +156,7 @@ function fromRecruitments(data: RecruitmentDashboardResponse | null): Listing[] 
       sub: joinSub("ボランティア募集", shortDate(r.start_at)),
       lastDay: (r.end_at ?? r.start_at ?? null)?.slice(0, 10) ?? null,
       metric: `応募 ${r.applicationCount}件`,
+      pending: r.pendingCount ?? 0,
       href: `/organizer/recruitments/${r.id}`,
       publicHref: `/recruitments/${r.id}`,
     };
@@ -251,6 +257,11 @@ function ListingRow({
             <span className={cn("shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold", STATUS_STYLE[expired ? "ended" : item.status])}>
               {expired ? "期間終了" : statusText(item)}
             </span>
+            {item.pending ? (
+              <span className="shrink-0 rounded-full bg-[#fbe7dc] px-1.5 py-px text-[10px] font-bold text-[#b04c22]">
+                承認待ち {item.pending}
+              </span>
+            ) : null}
             <span className="min-w-0 truncate">
               {showKind ? (
                 <span className="font-bold" style={{ color }}>
@@ -265,7 +276,10 @@ function ListingRow({
                 </>
               ) : (
                 // 種類は見出し（または上の種類の名前）で分かるので、ここには書かない
-                <>{[sub, item.metric].filter(Boolean).join("・")}</>
+                <>
+                  {[sub, item.metric].filter(Boolean).join("・")}
+
+                </>
               )}
             </span>
           </span>
@@ -312,6 +326,27 @@ function ListingMenu({ item, onClose, onDeleted }: { item: Listing | null; onClo
   const [deleting, setDeleting] = useState(false);
   /** 下書きのゲームは、ここから消せる（下書きがたまっても一覧をすっきりさせる） */
   const canDelete = item?.kind === "game" && item.status === "draft";
+  const handleCloseRecruitment = async () => {
+    if (!item || deleting) return;
+    if (!window.confirm(`「${item.title}」の募集を終了しますか？`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/recruitments/${item.id.replace(/^recruitment-/, "")}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "closed" }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        window.alert(json.error ?? "終了に失敗しました");
+        return;
+      }
+      onClose();
+      onDeleted();
+    } finally {
+      setDeleting(false);
+    }
+  };
   const handleDelete = async () => {
     if (!item || deleting) return;
     if (!window.confirm(`「${item.title}」を削除しますか？元に戻せません。`)) return;
@@ -336,8 +371,17 @@ function ListingMenu({ item, onClose, onDeleted }: { item: Listing | null; onClo
     return () => window.removeEventListener("keydown", onKey);
   }, [item, onClose]);
   if (!item || typeof document === "undefined") return null;
+  const volunteer = item.kind === "volunteer";
+  const recruitmentId = volunteer ? item.id.replace(/^recruitment-/, "") : "";
   const actions: { href: string; label: string; sub: string; Icon: LucideIcon; tone: string; external?: boolean }[] = [
-    { href: item.href, label: "編集する", sub: "内容・写真・公開の設定", Icon: PenLine, tone: "bg-[#eaf4ed] text-[#1f6a42]" },
+    // ボランティア募集：前の「募集の管理」画面にあった操作をここにまとめる（スマホでは掲載管理が入口）
+    ...(volunteer
+      ? [
+          { href: item.href, label: "応募者を見る", sub: item.pending ? `承認待ち ${item.pending}件` : "応募の確認・承認", Icon: Users, tone: "bg-[#fbe9f0] text-[#c0507a]" },
+          { href: `/organizer/recruitments/new?editId=${recruitmentId}`, label: "編集する", sub: "内容・日時・応募フォーム", Icon: PenLine, tone: "bg-[#eaf4ed] text-[#1f6a42]" },
+          { href: `/organizer/recruitments/new?copyFrom=${recruitmentId}`, label: "複製して新しく作る", sub: "同じ内容から次の募集を作る", Icon: Copy, tone: "bg-[#fbf3e1] text-[#a3812f]" },
+        ]
+      : [{ href: item.href, label: "編集する", sub: "内容・写真・公開の設定", Icon: PenLine, tone: "bg-[#eaf4ed] text-[#1f6a42]" }]),
     ...(item.status === "public"
       ? [{ href: item.publicHref, label: "公開ページを見る", sub: "利用者に見えている画面", Icon: ExternalLink, tone: "bg-[#eef1f5] text-[#3d5a80]", external: true }]
       : []),
@@ -375,6 +419,22 @@ function ListingMenu({ item, onClose, onDeleted }: { item: Listing | null; onClo
             </li>
           ))}
         </ul>
+        {volunteer && item.status === "public" ? (
+          <button
+            type="button"
+            onClick={() => void handleCloseRecruitment()}
+            disabled={deleting}
+            className="mt-2 flex min-h-[52px] w-full items-center gap-3 rounded-[16px] border border-[#ebeee8] bg-white px-3.5 text-left active:bg-[#f6f9f5] disabled:opacity-50"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eef0ec] text-[#5f6d64]" aria-hidden>
+              <CircleStop className="h-[18px] w-[18px]" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14.5px] font-bold text-[#163828]">{deleting ? "終了しています…" : "募集を終了する"}</span>
+              <span className="block text-[11.5px] text-[#7b877f]">新しい応募を受け付けなくなります</span>
+            </span>
+          </button>
+        ) : null}
         {canDelete ? (
           <button
             type="button"
@@ -430,7 +490,6 @@ const SERIF = ORG_SERIF;
 const KIND_PAGES: { href: string; label: string; kind: Kind }[] = [
   { href: "/organizer/stores", label: "お店の管理", kind: "store" },
   { href: "/organizer/kitchen-cars", label: "キッチンカーの管理", kind: "kitchen" },
-  { href: "/organizer/recruitments", label: "ボランティア募集の管理", kind: "volunteer" },
   { href: "/organizer/games", label: "ゲームの管理", kind: "game" },
 ];
 
