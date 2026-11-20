@@ -1,5 +1,6 @@
 "use client";
 
+import { isLongGameDesc } from "@/lib/play/game-desc";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -577,7 +578,7 @@ export function PlayJoinClient() {
           <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 800, color: "#5d6b62" }}>{copy.msg(game.typeLabel)}</p>
           <h1 style={{ margin: 0, fontSize: "1.35rem", lineHeight: 1.4, color: "#1a2214" }}>{game.name}</h1>
           {game.description ? (
-            <p style={{ margin: 0, fontSize: "0.86rem", lineHeight: 1.7, color: "#5d6b62" }}>{game.description}</p>
+            <p style={{ margin: 0, fontSize: "0.86rem", lineHeight: 1.7, color: "#5d6b62", whiteSpace: "pre-line" }}>{game.description}</p>
           ) : null}
           {appliedPassHref ? (
             <>
@@ -675,7 +676,7 @@ export function PlayJoinClient() {
           <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 800, color: "#5d6b62" }}>{copy.msg(game.typeLabel)}</p>
           <h1 style={{ margin: 0, fontSize: "1.35rem", lineHeight: 1.4, color: "#1a2214" }}>{game.name}</h1>
           {game.description ? (
-            <p style={{ margin: 0, fontSize: "0.86rem", lineHeight: 1.7, color: "#5d6b62" }}>{game.description}</p>
+            <p style={{ margin: 0, fontSize: "0.86rem", lineHeight: 1.7, color: "#5d6b62", whiteSpace: "pre-line" }}>{game.description}</p>
           ) : null}
           <div
             style={{
@@ -993,7 +994,11 @@ export function PlayJoinClient() {
             icon: <GameLookIconMark look={look} />,
             kicker: <p className="play-game__kicker">{game.typeLabel}</p>,
             title: <h1>{game.name}</h1>,
-            desc: game.description ? <p className="play-game__desc">{game.description}</p> : null,
+            desc: game.description ? (
+              <p className={`play-game__desc${isLongGameDesc(game.description) ? " play-game__desc--long" : ""}`}>
+                {game.description.trim()}
+              </p>
+            ) : null,
             meta: (
               <p className="play-game__meta">
                 {game.type === "quiz" && game.quiz
