@@ -39527,3 +39527,36 @@ button.mg-album-place {
     min-height: 7.5rem;
   }
 }
+
+/* ===== レジの全画面（スマホ）：1画面に固定せず、ふつうにスクロールさせる =====
+   前は高さを画面ぴったりに固定してはみ出しを切っていたので、下の「会計する」が途中で切れていた。
+   上は iPhone の時計・カメラの部分と重ならないよう余白を取る。 */
+@media (max-width: 799px) {
+  html[data-org-pos-focus="1"] .org-pos-shell,
+  html[data-org-pos-focus="1"] .org-pos {
+    height: auto;
+    max-height: none;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  html[data-org-pos-focus="1"] .org-pos__layout {
+    display: flex;
+    flex-direction: column;
+  }
+  html[data-org-pos-focus="1"] .org-pos__catalog,
+  html[data-org-pos-focus="1"] .org-pos__cart {
+    overflow: visible;
+  }
+  html[data-org-pos-focus="1"] .org-pos__cart {
+    border-left: 0;
+    border-top: 1px solid #d4d0c8;
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  html[data-org-pos-focus="1"] .org-pos__topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding-top: calc(0.4rem + env(safe-area-inset-top, 0px));
+    background: #fff;
+  }
+}
