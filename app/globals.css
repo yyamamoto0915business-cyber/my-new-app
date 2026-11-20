@@ -3351,6 +3351,9 @@ body:has(.org-workspace-shell) { background: #f9f9f7 !important; }
 .mg-staff-status--mobile.mg-staff-status--filled {
   min-height: 240px;
 }
+.mg-staff-status--mobile.mg-staff-status--nomembers {
+  min-height: 0;
+}
 .mg-day-mgmt-pc--compact .mg-staff-status--empty,
 .mg-day-mgmt-pc--compact .mg-day-mgmt-pc__panel--notices-empty {
   min-height: 0;

@@ -295,6 +295,8 @@ export function StaffStatusCard({
       ? "mg-day-mgmt-m__panel mg-staff-status--mobile"
       : "mg-day-mgmt-pc__panel mg-day-mgmt-pc__panel--compact mg-staff-status--pc",
     emptyMode ? "mg-staff-status--empty" : "mg-staff-status--filled",
+    // スタッフがまだいないときは、高さをそろえる余白を取らない（下が大きく空くので）
+    members.length === 0 && "mg-staff-status--nomembers",
     "flex min-h-0 flex-col"
   );
 
