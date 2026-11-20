@@ -360,7 +360,7 @@ export function PostCreateForm({
           <p className="posts-create-block__hint">
             過去の旅行も残せます。日帰りなら開始だけ入れてください。
           </p>
-          <div className="posts-create-duo">
+          <div className="posts-create-duo posts-create-duo--dates">
             <label className="posts-create-row posts-create-row--half">
               <span className="posts-create-row__label">開始</span>
               <input
@@ -435,7 +435,7 @@ export function PostCreateForm({
             <span className="posts-create-row__optional">任意</span>
           </legend>
           <p className="posts-create-block__hint">
-            当てはまるものを選ぶ・自由に追加すると、見つけてもらいやすくなります
+            選ぶか自由に足すと、見つけてもらいやすくなります
           </p>
           <div className="posts-create-tagfield">
             <input

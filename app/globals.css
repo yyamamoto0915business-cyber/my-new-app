@@ -39295,3 +39295,26 @@ button.mg-album-place {
     padding: 0 1rem 0.1rem;
   }
 }
+
+/* ===== 投稿の作成（スマホ）：行った日を横に並べる・公開範囲の選んだ方をはっきり ===== */
+@media (max-width: 899px) {
+  .posts-create-duo.posts-create-duo--dates {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+  .posts-create-duo--dates .posts-create-row {
+    min-width: 0;
+  }
+  .posts-create-duo--dates input[type="date"] {
+    min-width: 0;
+    width: 100%;
+    padding-left: 0.6rem;
+    padding-right: 0.4rem;
+  }
+  .posts-create-visibility__chip.is-active {
+    border-color: #d9bc6e !important;
+    background: #173f2c !important;
+    color: #f6ebc8 !important;
+  }
+}
