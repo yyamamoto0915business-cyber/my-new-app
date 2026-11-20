@@ -543,6 +543,21 @@ export function OrganizerEventCard({
                   アーカイブ
                 </DropdownMenuItem>
               ) : null}
+              {/* 下書きは、アーカイブを通さずにそのまま消せる（下書きがたまっていくので） */}
+              {!isArchived && !archiveBoxMode && event.visibilityStatus === "draft" ? (
+                <DropdownMenuItem
+                  onClick={() => {
+                    closeAllMenus();
+                    setShowDeleteConfirm(true);
+                  }}
+                  disabled={actionLoading === "delete"}
+                  variant="destructive"
+                  className="min-h-10 cursor-pointer gap-2 px-3 py-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  下書きを削除
+                </DropdownMenuItem>
+              ) : null}
               {archiveBoxMode ? (
                 <>
                   <DropdownMenuItem

@@ -315,3 +315,39 @@ export async function PUT(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "保存に失敗しました" }, { status: 500 });
   }
 }
+
+/**
+ * DELETE: 下書きのゲームを消す（掲載管理の「…」から）。公開したことのあるゲームは、参加した人の記録が残るので消さない。
+ * スポット・参加の記録などは、ゲームを消すといっしょに消える（ON DELETE CASCADE）。
+ */
+export async function DELETE(_request: NextRequest, { params }: Params) {
+  const { id } = await params;
+  const auth = await requireOrganizerApi("editor");
+  if (!auth.ok) return auth.response;
+
+  const game = await getOwnedOrganizerGame(auth.supabase, auth.organizerId, id);
+  if (!game) {
+    return NextResponse.json({ error: "ゲームが見つかりません" }, { status: 404 });
+  }
+  if (game.status !== "draft") {
+    return NextResponse.json(
+      { error: "公開したことのあるゲームは削除できません。非公開にするか、終了にしてください。" },
+      { status: 400 }
+    );
+  }
+  const { data, error } = await auth.supabase
+    .from("organizer_games")
+    .delete()
+    .eq("id", game.id)
+    .eq("organizer_id", auth.organizerId)
+    .eq("status", "draft")
+    .select("id");
+  if (error) {
+    console.error("organizer game DELETE:", error);
+    return NextResponse.json({ error: "削除に失敗しました" }, { status: 500 });
+  }
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: "削除できませんでした（権限がないか、すでに消えています）" }, { status: 403 });
+  }
+  return NextResponse.json({ ok: true });
+}
