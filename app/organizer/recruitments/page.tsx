@@ -37,6 +37,10 @@ function OrganizerRecruitmentsContent() {
   const [kpiFilter, setKpiFilter] = useState<KpiFilter>("");
   const [sortBy, setSortBy] = useState<RecruitmentsSortOption>("created_desc");
   const needsActionRef = useRef<HTMLElement>(null);
+  // スマホ・タブレットでは、募集の一覧は掲載管理にまとめた（ボランティアだけに絞って開く）。PC はこの画面のまま
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 899px)").matches) router.replace("/organizer/listings?kind=volunteer");
+  }, [router]);
 
   useEffect(() => {
     const v = searchParams?.get(KPI_FILTER_PARAM);

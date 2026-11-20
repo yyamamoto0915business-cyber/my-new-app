@@ -44,7 +44,11 @@ export function OrganizerBottomNav() {
     isMessagesConversationRoute(pathname) ||
     isProfileEditRoute(pathname) ||
     // ゲームの作成：下の「プレビュー・下書き・次へ」の帯だけにして、入力に集中させる
-    pathname === "/organizer/games/new";
+    pathname === "/organizer/games/new" ||
+    // ボランティア募集の作成・編集も、下の「戻る・下書き・次へ」の帯だけにする
+    pathname === "/organizer/recruitments/new" ||
+    pathname === "/organizer/stores/new" ||
+    pathname === "/organizer/kitchen-cars/new";
   const unread = useOrganizerUnreadCount(!hidden);
   // TEAM：スタッフには「新しく掲載」を出さない。チャットは団体のアカウント本人だけ
   const role = useOrganizerRole();
