@@ -210,7 +210,9 @@ export function DayManagementMobileView({
         <section className="rounded-[14px] border border-[#e6dcc0] bg-[#fbf7ec] px-4 py-3.5">
           <p className="text-[14px] font-bold text-[#173f2c]">今日の開催はありません</p>
           <p className="mt-1 text-[12.5px] leading-relaxed text-[#566358]">
-            上でイベントを選ぶと、その日の受付を始められます。
+            {!eventsLoading && allEvents.length === 0
+              ? "イベントを公開すると、当日はここで受付できます。"
+              : "上でイベントを選ぶと、その日の受付を始められます。"}
           </p>
           <ul className="mt-2.5 grid grid-cols-3 gap-1.5 text-center">
             {[
@@ -229,7 +231,7 @@ export function DayManagementMobileView({
           </ul>
           <Link
             href="/organizer/listings?kind=event"
-            className="mt-3 flex min-h-[44px] items-center justify-center gap-1 rounded-[12px] bg-[#173f2c] text-[13px] font-bold text-[#f6ebc8] active:scale-[0.98]"
+            className="mt-3 flex min-h-[44px] items-center justify-center gap-1 rounded-[12px] border border-[#cfe3d5] bg-white text-[13px] font-bold text-[#173f2c] active:bg-[#f5f8f5]"
           >
             掲載管理でイベントを見る
             <ChevronRight size={15} aria-hidden />
