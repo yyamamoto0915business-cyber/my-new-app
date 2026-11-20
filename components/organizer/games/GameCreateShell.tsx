@@ -47,6 +47,15 @@ export function GameCreateShell({
   children: ReactNode;
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  /** スマホ（720px 未満）：下の帯を body の直下に出して、画面の下に固定する（親に動きの指定があると fixed がきかないため） */
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 719px)");
+    const update = () => setPhone(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
   const last = step >= steps.length - 1;
   /** 下へスクロールしているあいだは、右下のプレビューのボタンを隠す（スイッチや入力欄に重ならないように）。 */
   const [fabHidden, setFabHidden] = useState(false);
@@ -75,6 +84,53 @@ export function GameCreateShell({
     onStep(Math.min(Math.max(next, 0), steps.length - 1));
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  const footerBar = (
+  <div className={styles.footer}>
+    <p className={styles.footerStep}>
+      <b>STEP {step + 1} / {steps.length}</b>
+      {steps[step]?.label}
+      {!last ? <span>次：{steps[step + 1]?.label}</span> : null}
+    </p>
+    <div className={styles.footerQuiet}>
+      {step > 0 ? (
+        <button type="button" className={styles.textAction} disabled={saving} onClick={() => go(step - 1)}>
+          戻る
+        </button>
+      ) : null}
+      <button type="button" className={styles.textAction} disabled={saving} onClick={onTry}>
+        お試しで見る
+      </button>
+      <button type="button" className={styles.textAction} disabled={saving} onClick={onDraft}>
+        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
+        下書き保存
+      </button>
+    </div>
+    <div className={styles.footerMain}>
+    {/* スマホ：プレビューは下の帯の中に（前は右下に浮いて、入力欄にかぶっていた） */}
+    {preview ? (
+      <button type="button" className={styles.footerPreview} onClick={() => setPreviewOpen(true)}>
+        <Smartphone className="h-4 w-4" aria-hidden />
+        プレビュー
+      </button>
+    ) : null}
+    <button
+      type="button"
+      className={styles.primary}
+      disabled={saving}
+      onClick={() => {
+        if (last) onPublish();
+        else if (onNext) {
+          onNext();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else go(step + 1);
+      }}
+    >
+      {last ? "公開する" : `次へ：${steps[step + 1]?.label ?? ""}`}
+    </button>
+    </div>
+  </div>
+  );
 
   return (
     <div className={cn("org-game-create", styles.wizard)}>
@@ -131,45 +187,17 @@ export function GameCreateShell({
               })}
             </ol>
             {/* 順番どおりでなくてよい（丸から好きな所を開ける。保存はゲーム名と期間があれば下書きでできる） */}
-            <p className="mt-2 text-center text-[11px] text-[#7b877f]">丸を押すと、好きな順に開けます。ゲーム名と期間だけで下書き保存できます。</p>
+            <p className="mt-2 text-center text-[11px] text-[#7b877f] max-[719px]:hidden">丸を押すと、好きな順に開けます。ゲーム名と期間だけで下書き保存できます。</p>
           </nav>
           {children}
           {error ? <p className="org-quiz__error">{error}</p> : null}
-          <div className={styles.footer}>
-            <p className={styles.footerStep}>
-              <b>STEP {step + 1} / {steps.length}</b>
-              {steps[step]?.label}
-              {!last ? <span>次：{steps[step + 1]?.label}</span> : null}
-            </p>
-            <div className={styles.footerQuiet}>
-              {step > 0 ? (
-                <button type="button" className={styles.textAction} disabled={saving} onClick={() => go(step - 1)}>
-                  戻る
-                </button>
-              ) : null}
-              <button type="button" className={styles.textAction} disabled={saving} onClick={onTry}>
-                お試しで見る
-              </button>
-              <button type="button" className={styles.textAction} disabled={saving} onClick={onDraft}>
-                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-                下書き保存
-              </button>
-            </div>
-            <button
-              type="button"
-              className={styles.primary}
-              disabled={saving}
-              onClick={() => {
-                if (last) onPublish();
-                else if (onNext) {
-                  onNext();
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                } else go(step + 1);
-              }}
-            >
-              {last ? "公開する" : "次へ"}
-            </button>
-          </div>
+          {phone ? (
+            // 下の帯の分だけ空けておく
+            <div style={{ height: "calc(7.5rem + env(safe-area-inset-bottom, 0px))" }} aria-hidden />
+          ) : (
+            footerBar
+          )}
+          {phone && typeof document !== "undefined" ? createPortal(<div className={styles.footerFixed}>{footerBar}</div>, document.body) : null}
         </div>
         {preview ? (
           <aside className={styles.livePreview} aria-label="参加者画面プレビュー">
@@ -184,7 +212,7 @@ export function GameCreateShell({
       {preview ? (
         <button
           type="button"
-          className={cn("wizard-preview-fab", styles.previewFab)}
+          className={cn("wizard-preview-fab max-[719px]:!hidden", styles.previewFab)}
           onClick={() => setPreviewOpen(true)}
           style={{
             transition: "transform 0.2s ease, opacity 0.2s ease",

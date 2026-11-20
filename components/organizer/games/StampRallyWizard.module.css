@@ -2462,3 +2462,99 @@
     white-space: nowrap;
   }
 }
+
+/* ── ゲーム作成（スマホ）：入力しやすく ── */
+.footerMain {
+  display: flex;
+  gap: 0.45rem;
+}
+.footerPreview {
+  display: none;
+}
+@media (max-width: 719px) {
+  /* 上の「STEP 1/6・名前・次」の帯をやめ、丸の下に短い名前を出す */
+  .stepperHead {
+    display: none;
+  }
+  /* 名前は丸の幅の中で2行まで（ステップが7つでも重ならないように） */
+  .stepperLabel {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    max-width: 100%;
+    margin-top: 0.2rem;
+    overflow: hidden;
+    font-size: 0.58rem;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+  .stepperItem {
+    min-width: 0;
+  }
+  .stepperItem button {
+    flex-direction: column;
+    align-items: center;
+  }
+  .is-current .stepperDot {
+    background: #173f2c;
+    color: #f6ebc8;
+    box-shadow: 0 0 0 3px #efe2bb;
+  }
+  /* 下の帯（スタンプラリーは画面の中、ほかの種類は body の直下の .footerFixed の中） */
+  .footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 40;
+    margin: 0.75rem -1rem 0;
+    border-radius: 1.1rem 1.1rem 0 0;
+    border: 0;
+    border-top: 1px solid #e6e2d6;
+    background: rgba(255, 255, 255, 0.97);
+    padding: 0.35rem 0.75rem calc(0.55rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -6px 18px rgba(14, 42, 29, 0.08);
+  }
+  .footerPreview {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    min-height: 48px;
+    padding: 0 0.9rem;
+    border: 1px solid #e1d6b4;
+    border-radius: 14px;
+    background: #fff;
+    color: #173f2c;
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+  .footerMain .primary {
+    flex: 1;
+    min-width: 0;
+    border: 1.5px solid #d9bc6e;
+    border-radius: 14px;
+    background: linear-gradient(to bottom, #245a3e, #173f2c);
+    color: #f6ebc8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .wizard {
+    padding-bottom: 0;
+  }
+}
+
+.footerFixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+}
+.footerFixed .footer {
+  position: static;
+  margin: 0;
+}
