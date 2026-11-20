@@ -87,14 +87,14 @@ function Fl({
   opt?: boolean;
 }) {
   return (
-    <div className="mb-[5px] flex items-center gap-[5px] text-[13px] font-[500]">
+    <div className="mb-[6px] flex items-center gap-[6px] text-[13px] font-[500] max-[899px]:font-semibold max-[899px]:text-[#1f2a24]">
       {label}
       {required && (
-        <span className="rounded-[4px] bg-[#FEF2F2] px-[5px] py-[1px] text-[9px] font-[600] text-[#E8708A]">
+        <span className="rounded-full bg-[#fbf3e1] px-[7px] py-[1px] text-[10px] font-[700] text-[#a3812f]">
           必須
         </span>
       )}
-      {opt && <span className="text-[10px] text-[#888]">任意</span>}
+      {opt && <span className="text-[10px] text-[#9aa29c]">任意</span>}
     </div>
   );
 }
@@ -135,13 +135,15 @@ function StepIndicator({
               <div
                 className="flex h-[26px] w-[26px] items-center justify-center rounded-full text-[11px] font-[700] transition-all"
                 style={{
-                  background: isActive ? "#173f2c" : isDone ? "#2f7d4e" : "#F3F2EF",
-                  color: isDone || isActive ? "#fff" : "#999",
-                  border: isDone || isActive ? "none" : "1.5px solid #e8e6e0",
+                  // 済んだ所は淡い緑、いまの所は深い緑に金の縁（イベント作成と同じ）
+                  background: isActive ? "#173f2c" : isDone ? "#e3ede6" : "#fff",
+                  color: isActive ? "#f6ebc8" : isDone ? "#173f2c" : "#9aa29c",
+                  border: isDone || isActive ? "none" : "1.5px solid #d8d4cc",
+                  boxShadow: isActive ? "0 0 0 3px #efe2bb" : undefined,
                 }}
               >
                 {isDone ? (
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 ) : isActive ? (
@@ -157,8 +159,8 @@ function StepIndicator({
               <div
                 className="whitespace-nowrap text-[10.5px]"
                 style={{
-                  color: isDone ? "#2f7d4e" : isActive ? "#173f2c" : "#999",
-                  fontWeight: isActive ? 500 : 400,
+                  color: isDone ? "#3f6250" : isActive ? "#173f2c" : "#9aa29c",
+                  fontWeight: isActive ? 700 : 500,
                 }}
               >
                 {label}
@@ -167,7 +169,7 @@ function StepIndicator({
             {i < steps.length - 1 && (
               <div
                 className="mx-[4px] mb-[14px] h-[1.5px] flex-1"
-                style={{ background: current > n ? "#2f7d4e" : "#e8e6e0" }}
+                style={{ background: current > n ? "#c9a54e" : "#e6e2d6" }}
               />
             )}
           </div>
@@ -424,6 +426,9 @@ function NewRecruitmentPageContent() {
   const [step, setStep] = useState<Step>(previewSuccess ? 4 : 1);
   const [pcStep, setPcStep] = useState<PcStep>(previewSuccess ? 3 : 1);
   const [form, setForm] = useState<FormData>(initial);
+  /** スマホ：持ち物・支給・注意事項を開いているか（読みこんだ募集で入っていれば開く） */
+  const [moreOpenState, setMoreOpen] = useState(false);
+  const moreOpen = moreOpenState || Boolean(form.items_to_bring || form.provisions || form.notes);
   const [formConfig, setFormConfig] = useState<ApplicationFormConfig>(
     createDefaultApplicationFormConfig
   );
@@ -755,7 +760,7 @@ function NewRecruitmentPageContent() {
   const pcPageTitle =
     pcStep === 1
       ? isEdit
-        ? "スタッフ募集を編集"
+        ? "ボランティア募集を編集"
         : "スタッフ募集を作成"
       : pcStep === 2
         ? "応募フォームの設定"
@@ -768,7 +773,7 @@ function NewRecruitmentPageContent() {
       : pcStep === 2
         ? "応募者に入力してもらう内容と必須項目を設定しましょう"
         : "内容を確認して公開しましょう";
-  const pageTitle = isEdit ? "スタッフ募集を編集" : "スタッフ募集を新規作成";
+  const pageTitle = isEdit ? "ボランティア募集を編集" : "ボランティア募集を作る";
   const primaryLabel =
     saving === "create" ? (isEdit ? "保存中…" : "公開中…") : isEdit ? "変更を保存" : "公開する";
   const successPcPageTitle = "公開完了";
@@ -923,6 +928,20 @@ function NewRecruitmentPageContent() {
           <span className="text-[13px] text-[#888]">名まで（未入力で無制限）</span>
         </div>
       </FieldWrap>
+      {/* スマホ：持ち物・支給・注意事項は任意なので、たたんでおく（入れてあれば開いておく） */}
+      <button
+        type="button"
+        onClick={() => setMoreOpen((v) => !v)}
+        aria-expanded={moreOpen}
+        className="mt-1 flex min-h-[46px] w-full items-center justify-between rounded-[12px] border border-[#e6e2d6] bg-white px-3.5 text-[13.5px] font-bold text-[#173f2c] min-[900px]:hidden"
+      >
+        <span>
+          持ち物・支給・注意事項
+          <span className="ml-1.5 text-[11px] font-medium text-[#9aa29c]">任意</span>
+        </span>
+        <span aria-hidden className={`transition-transform ${moreOpen ? "rotate-180" : ""}`}>⌄</span>
+      </button>
+      <div className={moreOpen ? "" : "max-[899px]:hidden"}>
       <FieldWrap>
         <Fl label="持ち物・服装" opt />
         <input
@@ -954,6 +973,7 @@ function NewRecruitmentPageContent() {
           className={`${inp} resize-none`}
         />
       </FieldWrap>
+      </div>
     </>
   );
 
