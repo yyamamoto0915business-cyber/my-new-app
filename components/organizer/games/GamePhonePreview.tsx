@@ -907,7 +907,9 @@ export function GamePhonePreview({
             </p>
             {(
               [
+                ["event", "イベント"],
                 ["season", "季節"],
+                ["horror", "ホラー"],
                 ["color", "色と書体"],
               ] as const
             ).map(([group, groupLabel]) => (
