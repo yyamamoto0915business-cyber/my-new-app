@@ -13,6 +13,7 @@ import {
   MoreHorizontal,
   PenLine,
   X,
+  Trash2,
   type LucideIcon,
   Archive,
   ArrowLeft,
@@ -294,7 +295,27 @@ function ListingRow({
 }
 
 /** お店・キッチンカー・募集の行の「…」から出すメニュー（下から出る）。イベントは行を押すと操作のシート（EventActionsSheet） */
-function ListingMenu({ item, onClose }: { item: Listing | null; onClose: () => void }) {
+function ListingMenu({ item, onClose, onDeleted }: { item: Listing | null; onClose: () => void; onDeleted: () => void }) {
+  const [deleting, setDeleting] = useState(false);
+  /** 下書きのゲームは、ここから消せる（下書きがたまっても一覧をすっきりさせる） */
+  const canDelete = item?.kind === "game" && item.status === "draft";
+  const handleDelete = async () => {
+    if (!item || deleting) return;
+    if (!window.confirm(`「${item.title}」を削除しますか？元に戻せません。`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/organizer/games/${item.id.replace(/^game-/, "")}`, { method: "DELETE" });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        window.alert(json.error ?? "削除に失敗しました");
+        return;
+      }
+      onClose();
+      onDeleted();
+    } finally {
+      setDeleting(false);
+    }
+  };
   useEffect(() => {
     if (!item) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -341,6 +362,22 @@ function ListingMenu({ item, onClose }: { item: Listing | null; onClose: () => v
             </li>
           ))}
         </ul>
+        {canDelete ? (
+          <button
+            type="button"
+            onClick={() => void handleDelete()}
+            disabled={deleting}
+            className="mt-2 flex min-h-[52px] w-full items-center gap-3 rounded-[16px] border border-[#f3d6cc] bg-white px-3.5 text-left active:bg-[#fff7f2] disabled:opacity-50"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fde9e3] text-[#b5482a]" aria-hidden>
+              <Trash2 className="h-[18px] w-[18px]" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14.5px] font-bold text-[#a8481c]">{deleting ? "削除しています…" : "下書きを削除する"}</span>
+              <span className="block text-[11.5px] text-[#7b877f]">元に戻せません</span>
+            </span>
+          </button>
+        ) : null}
       </div>
     </div>,
     document.body
@@ -841,7 +878,7 @@ export function OrganizerListingsMobile() {
         </>
       )}
 
-      <ListingMenu item={menuItem} onClose={closeMenu} />
+      <ListingMenu item={menuItem} onClose={closeMenu} onDeleted={reload} />
       {sheetEvent ? (
         <EventActionsSheet
           event={sheetEvent}
