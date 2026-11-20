@@ -51,6 +51,8 @@ type Listing = {
   publicHref: string;
   /** イベントだけ：日付（左の日付のカレンダーと「あと◯日」）と、押したときに出す操作のシートの対象 */
   event?: { id: string; date: string; endDate: string | null; status: DashboardEvent["status"] };
+  /** イベント以外で期限のあるもの（募集・ゲーム）の最後の日（YYYY-MM-DD）。過ぎたら「終わったもの」へ */
+  lastDay?: string | null;
 };
 
 /** 種類ごとの色（写真がないときのアイコンの丸と、種類の文字に使う） */
@@ -147,6 +149,7 @@ function fromRecruitments(data: RecruitmentDashboardResponse | null): Listing[] 
       status,
       statusLabel: status === "ended" ? "締切" : "",
       sub: joinSub("ボランティア募集", shortDate(r.start_at)),
+      lastDay: (r.end_at ?? r.start_at ?? null)?.slice(0, 10) ?? null,
       metric: `応募 ${r.applicationCount}件`,
       href: `/organizer/recruitments/${r.id}`,
       publicHref: `/recruitments/${r.id}`,
@@ -164,7 +167,15 @@ function fromGames(games: OrganizerGame[] | null): Listing[] {
       imageUrl: null,
       status,
       statusLabel: status === "ended" ? "終了" : "",
-      sub: joinSub("ゲーム", g.typeLabel, g.startsAt ? shortDate(g.startsAt.slice(0, 10)) : null),
+      // 期間は「11/11（水）〜12/20（日）」（前は始まりの日だけで、いつまでか分からなかった）
+      sub: joinSub(
+        "ゲーム",
+        g.typeLabel,
+        g.startsAt || g.endsAt
+          ? `${g.startsAt ? shortDate(g.startsAt.slice(0, 10)) ?? "" : ""}〜${g.endsAt ? shortDate(g.endsAt.slice(0, 10)) ?? "" : ""}`
+          : null
+      ),
+      lastDay: g.endsAt ? g.endsAt.slice(0, 10) : null,
       metric: g.eventTitle ? `${g.eventTitle}で使う` : null,
       href: `/organizer/games/${g.id}`,
       publicHref: g.joinPath || `/organizer/games/${g.id}`,
@@ -205,7 +216,9 @@ function ListingRow({
   const { label: kindLabel, Icon, color, bg } = KIND_META[item.kind];
   const sub = item.sub.startsWith(kindLabel) ? item.sub.slice(kindLabel.length).replace(/^・/, "") : item.sub;
   const timing = item.event ? eventTiming(today, item.event.date, item.event.endDate) : null;
-  const dim = (timing?.past ?? false) || item.status === "ended";
+  /** 募集・ゲームで期間が過ぎたもの（公開中のままでも「期間終了」と出す） */
+  const expired = !item.event && Boolean(item.lastDay && item.lastDay < today);
+  const dim = (timing?.past ?? false) || item.status === "ended" || expired;
   const body = (
     <>
         {item.event && timing ? (
@@ -235,8 +248,8 @@ function ListingRow({
             {item.title}
           </span>
           <span className="mt-[3px] flex items-center gap-1.5 text-[12px] text-[#7b877f]">
-            <span className={cn("shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold", STATUS_STYLE[item.status])}>
-              {statusText(item)}
+            <span className={cn("shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold", STATUS_STYLE[expired ? "ended" : item.status])}>
+              {expired ? "期間終了" : statusText(item)}
             </span>
             <span className="min-w-0 truncate">
               {showKind ? (
@@ -406,6 +419,8 @@ function groupOf(item: Listing, today: string): GroupId {
   if (item.kind === "store" || item.kind === "kitchen") return item.kind;
   if (item.status === "ended") return "ended";
   if (item.event) return (item.event.endDate ?? item.event.date).slice(0, 10) < today ? "ended" : "upcoming";
+  // 募集・ゲームも、期間が過ぎたら「終わったもの」へ（前は公開中のまま上に残っていた）
+  if (item.lastDay && item.lastDay < today) return "ended";
   return item.kind === "event" ? "upcoming" : item.kind;
 }
 
@@ -550,8 +565,13 @@ export function OrganizerListingsMobile() {
   const groups = useMemo(() => {
     const g: Record<GroupId, Listing[]> = { upcoming: [], store: [], kitchen: [], volunteer: [], game: [], ended: [] };
     for (const i of visible) g[groupOf(i, today)].push(i);
-    const lastDay = (i: Listing) => (i.event ? (i.event.endDate ?? i.event.date).slice(0, 10) : "");
+    const lastDay = (i: Listing) => (i.event ? (i.event.endDate ?? i.event.date).slice(0, 10) : (i.lastDay ?? ""));
     g.upcoming.sort((a, b) => (a.event?.date ?? "").localeCompare(b.event?.date ?? ""));
+    // 募集・ゲームは、公開中 → 下書き、その中で期限の近い順（期限のないものは後ろ）
+    const byStatusThenDay = (a: Listing, b: Listing) =>
+      STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || (a.lastDay ?? "9999").localeCompare(b.lastDay ?? "9999");
+    g.volunteer.sort(byStatusThenDay);
+    g.game.sort(byStatusThenDay);
     g.ended.sort((a, b) => lastDay(b).localeCompare(lastDay(a)));
     return GROUP_ORDER.filter((id) => g[id].length > 0).map((id) => ({ id, items: g[id] }));
   }, [visible, today]);
