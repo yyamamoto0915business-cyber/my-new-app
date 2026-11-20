@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { CalendarDays, MapPin } from "lucide-react";
+import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
 import { MobileSectionHeading } from "@/components/home/mobile/MobileSectionHeading";
 import type { Event } from "@/lib/db/types";
 import type { CategoryKey } from "@/lib/categories";
@@ -12,7 +12,7 @@ import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
 import type { PublicOrganizerGame } from "@/lib/organizer/public-games";
 import { buildRecommendedFeed, type MachiFeedItem } from "@/lib/machi/feed";
 
-const BANNER_COUNT = 4;
+const BANNER_COUNT = 6;
 
 type Props = {
   events: Event[];
@@ -33,7 +33,7 @@ function whenLabel(item: MachiFeedItem): string {
 }
 
 /**
- * 注目のカード（2枚並ぶ幅）。写真は上に文字を重ねずに出し、タイトル・日付・場所は下に置く。
+ * 注目のカード（2枚と少し見える幅。右に次のカードがのぞくので、横にスワイプできると分かる）。写真は上に文字を重ねずに出し、タイトル・日付・場所は下に置く。
  * イベントの画像は文字入りのチラシが多いので、重ねると読めなくなるため。
  */
 function FeaturedCard({ item, priority }: { item: MachiFeedItem; priority: boolean }) {
@@ -41,17 +41,17 @@ function FeaturedCard({ item, priority }: { item: MachiFeedItem; priority: boole
   return (
     <Link
       href={item.href}
-      className="flex w-[calc(50%-5px)] min-w-[156px] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_4px_14px_rgba(22,56,40,0.08)] active:scale-[0.98]"
+      className="flex w-[44%] min-w-[148px] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_4px_14px_rgba(22,56,40,0.08)] active:scale-[0.98]"
       aria-label={`${item.title}を見る`}
     >
-      <span className="relative block aspect-[4/3] w-full bg-[#eef3ef]">
+      <span className="relative block aspect-[16/10] w-full bg-[#eef3ef]">
         {item.imageUrl ? (
           <Image
             src={item.imageUrl}
             alt=""
             fill
             priority={priority}
-            sizes="50vw"
+            sizes="45vw"
             className="object-cover"
           />
         ) : (
@@ -108,7 +108,7 @@ export function selectFeaturedItems(
   return [...withImage, ...without].slice(0, BANNER_COUNT);
 }
 
-/** まちの情報（スマホ）：「注目のまち情報」。2枚ずつ見えるカードを横にスクロールする */
+/** まちの情報（スマホ）：「注目のまち情報」。2枚と少し見えるカードを横にスクロールする */
 export function MobileFeaturedBanner({
   events,
   stores,
@@ -127,7 +127,7 @@ export function MobileFeaturedBanner({
     return (
       <div className="flex gap-2.5">
         {[0, 1].map((i) => (
-          <div key={i} className="h-[210px] flex-1 animate-pulse rounded-[18px] bg-[#e5ede6]" />
+          <div key={i} className="h-[185px] flex-1 animate-pulse rounded-[18px] bg-[#e5ede6]" />
         ))}
       </div>
     );
@@ -141,6 +141,20 @@ export function MobileFeaturedBanner({
         {items.map((item, i) => (
           <FeaturedCard key={item.id} item={item} priority={i < 2} />
         ))}
+        {/* 最後に「もっと見る」。載っているものが少ないときも、続きへ進める */}
+        <Link
+          href="/events"
+          className="flex w-[28%] min-w-[96px] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-[18px] border border-[#e6dcc0] bg-[#fbf7ec] px-2 text-center active:scale-[0.98]"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#173f2c] text-[#f6ebc8]" aria-hidden>
+            <ArrowRight className="h-4 w-4" />
+          </span>
+          <span className="text-[12px] font-bold leading-snug text-[#173f2c]">
+            イベントを
+            <br />
+            もっと見る
+          </span>
+        </Link>
       </div>
     </section>
   );
