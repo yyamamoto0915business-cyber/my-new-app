@@ -130,12 +130,6 @@ export function DayManagementMobileView({
     error: staffError,
     reload: reloadStaff,
   } = useStaffStatus({ eventId, emptyMode });
-  const isPast = dayPhase === "past";
-  const descText = emptyMode
-    ? "イベント当日の受付・進行状況をリアルタイムで確認できます。"
-    : isPast
-      ? "イベント当日の受付・進行状況を振り返れます。"
-      : "イベント当日の受付・進行状況をリアルタイムで確認できます。";
 
   const checkin = emptyMode ? EMPTY_CHECKIN : attendanceToCheckinKpi(dayOps);
   // 前は仮のスタッフ（MOCK_STAFF）から数えていた。本物の応募・出勤から数える
@@ -211,26 +205,38 @@ export function DayManagementMobileView({
         compact
       />
 
+      {/* 開催がない日は、使えない道具を並べずに「イベントを選ぶと何ができるか」だけを短く出す */}
       {emptyMode ? (
-        <header className="mg-day-mgmt-m__hero relative overflow-hidden">
-          <div className="relative z-10">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <h1 className="mg-day-mgmt-m__title">当日の運営</h1>
-              <span className="inline-flex rounded-full bg-[#EAF4ED] px-2 py-0.5 text-[11px] font-bold text-[#2D7A4F]">
-                本日の運営
-              </span>
-            </div>
-            <p className="mg-day-mgmt-m__desc mt-0.5">{descText}</p>
-            <div className="mg-day-mgmt-m__event-card mt-2">
-              <p className="text-[13px] font-semibold leading-snug text-[#1A2214]">本日の開催はありません</p>
-              <p className="mt-1 text-[11.5px] leading-snug text-[#566358]">
-                開催予定のイベントを選択してください
-              </p>
-            </div>
-          </div>
-        </header>
-      ) : null}
-
+        <section className="rounded-[14px] border border-[#e6dcc0] bg-[#fbf7ec] px-4 py-3.5">
+          <p className="text-[14px] font-bold text-[#173f2c]">今日の開催はありません</p>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-[#566358]">
+            上でイベントを選ぶと、その日の受付を始められます。
+          </p>
+          <ul className="mt-2.5 grid grid-cols-3 gap-1.5 text-center">
+            {[
+              { icon: <ScanLine size={16} aria-hidden />, label: "QRで受付" },
+              { icon: <Megaphone size={16} aria-hidden />, label: "一斉に連絡" },
+              { icon: <UserCheck size={16} aria-hidden />, label: "来場の数" },
+            ].map((x) => (
+              <li
+                key={x.label}
+                className="flex flex-col items-center gap-1 rounded-[10px] bg-white/80 px-1 py-2 text-[11px] font-bold text-[#173f2c]"
+              >
+                <span className="text-[#b08a2e]">{x.icon}</span>
+                {x.label}
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/organizer/listings?kind=event"
+            className="mt-3 flex min-h-[44px] items-center justify-center gap-1 rounded-[12px] bg-[#173f2c] text-[13px] font-bold text-[#f6ebc8] active:scale-[0.98]"
+          >
+            掲載管理でイベントを見る
+            <ChevronRight size={15} aria-hidden />
+          </Link>
+        </section>
+      ) : (
+        <>
       {/* 受付の操作。当日いちばん使うので、いちばん上に大きく置く（前は画面のいちばん下だった） */}
       <section aria-label="受付の操作" className="grid grid-cols-2 gap-2">
         {(["qr_scan", "qr"] as const)
@@ -329,6 +335,7 @@ export function DayManagementMobileView({
         </div>
       ) : null}
 
+
       {/* タブレットでは2列：左にチケット・来場状況、右にスタッフとお知らせ */}
       <div className="flex flex-col gap-2.5 tablet:grid tablet:grid-cols-2 tablet:items-start">
       <details className="group mg-day-mgmt-m__panel !p-0">
@@ -396,6 +403,8 @@ export function DayManagementMobileView({
       </section>
       </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
