@@ -39560,3 +39560,103 @@ button.mg-album-place {
     background: #fff;
   }
 }
+
+/* ===== レジ（スマホ）：混んでいる時間でも速く打てるように ===== */
+.org-pos__summary-title--short,
+.org-pos__points-note--intro-hide {
+  display: none;
+}
+@media (max-width: 799px) {
+  /* 全画面でも、ふだんと同じ3列の小さめのカードにする（前は2列で1画面に4つしか見えなかった） */
+  html[data-org-pos-focus="1"] .org-pos__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  html[data-org-pos-focus="1"] .org-pos__product {
+    border-width: 1px;
+    border-radius: 14px;
+  }
+  html[data-org-pos-focus="1"] .org-pos__product-main {
+    padding: 0.4rem 0.4rem 0.5rem;
+    gap: 0.25rem;
+  }
+  html[data-org-pos-focus="1"] .org-pos__product-name {
+    font-size: 0.8rem;
+  }
+  html[data-org-pos-focus="1"] .org-pos__product-price {
+    font-size: 0.92rem;
+  }
+
+  /* 写真のない商品は、大きな「あ」の四角を出さず、名前と値段だけにする */
+  .org-pos__product-main {
+    position: relative;
+  }
+  .org-pos__product-img.is-noimg {
+    position: static;
+    aspect-ratio: auto;
+    height: 0;
+    overflow: visible;
+    background: none;
+  }
+  .org-pos__product-img.is-noimg .org-pos__product-placeholder {
+    display: none;
+  }
+  .org-pos__product-img.is-noimg .org-pos__product-qty {
+    left: auto;
+    right: 0.35rem;
+    top: 0.35rem;
+  }
+  .org-pos__product-img.is-noimg ~ .org-pos__product-name {
+    min-height: 3.2em;
+    padding-top: 0.35rem;
+    padding-right: 1.6rem;
+    font-size: 0.86rem;
+    font-weight: 700;
+  }
+
+  /* 今日の数字は1行にたたむ（売上と件数だけ。「詳細」で現金・スマホも出る） */
+  .org-pos__summary-title--full {
+    display: none;
+  }
+  .org-pos__summary-title--short {
+    display: inline;
+  }
+  .org-pos__summary:not(.is-open) .org-pos__metric:nth-child(2),
+  .org-pos__summary:not(.is-open) .org-pos__metric:nth-child(3) {
+    display: none;
+  }
+  .org-pos__summary-head {
+    flex-wrap: nowrap !important;
+    align-items: center;
+  }
+  .org-pos__summary .org-pos__metrics {
+    flex-wrap: nowrap;
+  }
+
+  /* ポイント：読み取る前の長い説明は出さず、ボタンだけにする */
+  .org-pos__points-note--intro {
+    display: none;
+  }
+}
+@media (max-width: 799px) {
+  /* 同じ段のカードは高さをそろえ、値段は下にそろえる */
+  .org-pos__grid > li {
+    display: flex;
+  }
+  .org-pos__grid > li > .org-pos__product {
+    flex: 1 1 auto;
+    display: flex;
+  }
+  .org-pos__grid .org-pos__product-main {
+    flex: 1 1 auto;
+  }
+  .org-pos__grid .org-pos__product-price {
+    margin-top: auto;
+  }
+}
+@media (max-width: 799px) {
+  /* 写真のある商品も少し低くして、写真のない商品と並べたときの空きを減らす */
+  .org-pos__product-img:not(.is-noimg) {
+    aspect-ratio: 16 / 10;
+  }
+}

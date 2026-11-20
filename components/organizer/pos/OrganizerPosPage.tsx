@@ -850,10 +850,14 @@ export function OrganizerPosPage() {
         </div>
       )}
 
-      <section className="org-pos__summary" aria-labelledby="pos-summary-heading">
+      <section
+        className={cn("org-pos__summary", showSummaryDetail && "is-open")}
+        aria-labelledby="pos-summary-heading"
+      >
         <div className="org-pos__summary-head">
           <h2 id="pos-summary-heading" className="org-pos__summary-title">
-            本日のサマリー
+            <span className="org-pos__summary-title--full">本日のサマリー</span>
+            <span className="org-pos__summary-title--short">今日</span>
           </h2>
           <div className="org-pos__metrics">
             <div className="org-pos__metric">
@@ -1048,7 +1052,7 @@ export function OrganizerPosPage() {
                       className="org-pos__product-main"
                       onClick={() => (editMode ? openEditProduct(product) : addToCart(product))}
                     >
-                      <div className="org-pos__product-img">
+                      <div className={cn("org-pos__product-img", !product.imageUrl && "is-noimg")}>
                         {qtyByProduct.has(product.id) && (
                           <span className="org-pos__product-qty" aria-label="注文数">
                             {qtyByProduct.get(product.id)}
@@ -1277,7 +1281,7 @@ export function OrganizerPosPage() {
                       </>
                     ) : (
                       <>
-                        <p className="org-pos__points-note">
+                        <p className="org-pos__points-note org-pos__points-note--intro">
                           参加パスのQRを読み取ると、このイベントのポイントが出ます。
                           {isDiscount
                             ? `1pt＝${pointsAvail.yenPerPoint}円でお会計から引きます${pointsAvail.discountMaxYen != null ? `（1回 ${formatYen(pointsAvail.discountMaxYen)} まで）` : ""}。`
