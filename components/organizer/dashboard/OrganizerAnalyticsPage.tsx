@@ -206,11 +206,11 @@ export function OrganizerAnalyticsPage() {
   }, [period, eventId]);
 
   // ゲームの効果への入口（公開中のゲームがあるときだけ。いちばん新しい公開中のゲームの効果の画面へ）
-  const [games, setGames] = useState<{ id: string; name: string; status: string }[] | null>(null);
+  const [games, setGames] = useState<{ id: string; name: string; status: string; typeLabel?: string }[] | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/organizer/games", { cache: "no-store", signal: controller.signal })
-      .then(async (r) => (r.ok ? ((await r.json()) as { games?: { id: string; name: string; status: string }[] }) : null))
+      .then(async (r) => (r.ok ? ((await r.json()) as { games?: { id: string; name: string; status: string; typeLabel?: string }[] }) : null))
       .then((json) => setGames(json?.games ?? []))
       .catch(() => {});
     return () => controller.abort();
@@ -346,24 +346,32 @@ export function OrganizerAnalyticsPage() {
             </div>
           </section>
 
+          {/* ゲームの効果：上の「推移」と同じ見出しと白いカードにそろえ、公開中のゲームを1行ずつ（前は1枚だけ紫で浮いていた） */}
           {publishedGames.length > 0 ? (
-            <Link
-              href={`/organizer/games/${publishedGames[0].id}/analytics`}
-              className="flex items-center gap-3 rounded-[16px] border border-[#e6e2d6] bg-white px-3.5 py-3 shadow-[0_3px_10px_rgba(22,56,40,0.05)] active:bg-[#f7f5ee]"
-            >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#efecfa] text-[#6b5bb5]" aria-hidden>
-                <Gamepad2 className="h-5 w-5" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[14px] font-bold text-[#173f2c]">ゲームの効果</span>
-                <span className="mt-0.5 block truncate text-[12px] text-[#6b776f]">
-                  {publishedGames.length > 1
-                    ? `${publishedGames[0].name} ほか${publishedGames.length - 1}件・参加やクリアの数`
-                    : `${publishedGames[0].name}・参加やクリアの数`}
+            <section aria-labelledby="games-heading" className="space-y-2">
+              <h2 id="games-heading" className="flex items-baseline justify-between gap-2 px-1">
+                <span className="text-[16px] font-bold text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
+                  ゲームの効果
                 </span>
-              </span>
-              <ChevronRight className="h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />
-            </Link>
+                <span className="text-[12px] text-[#7b877f]">公開中 {publishedGames.length}件</span>
+              </h2>
+              <ul className="relative divide-y divide-[#f0ede4] overflow-hidden rounded-[18px] border border-[#e6e2d6] bg-white shadow-[0_3px_10px_rgba(22,56,40,0.05)]">
+                {publishedGames.slice(0, 3).map((g) => (
+                  <li key={g.id}>
+                    <Link href={`/organizer/games/${g.id}/analytics`} className="flex items-center gap-3 px-3.5 py-3 active:bg-[#f7f5ee]">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eef4ef] text-[#173f2c]" aria-hidden>
+                        <Gamepad2 className="h-[18px] w-[18px]" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[14px] font-semibold text-[#1f2a24]">{g.name}</span>
+                        <span className="block text-[11.5px] text-[#7b877f]">{g.typeLabel ? `${g.typeLabel}・` : ""}参加やクリアの数</span>
+                      </span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-[#a3ada6]" aria-hidden />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
 
           <details className="rounded-[14px] border border-[#ebeee8] bg-white px-3.5 py-2.5 text-[13px] text-[#3f5146]">
