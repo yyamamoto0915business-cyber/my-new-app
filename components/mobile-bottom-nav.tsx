@@ -110,6 +110,9 @@ export function MobileBottomNav() {
     isMessagesConversationRoute(pathname) ||
     isProfileEditRoute(pathname) ||
     isEventFormRoute(pathname) ||
+    // 投稿の作成・編集は、下の「投稿する」バーと重ならないよう隠す
+    pathname === "/posts/new" ||
+    /^\/posts\/[^/]+\/edit$/.test(pathname) ||
     pathname === "/application-form-preview" ||
     pathname === "/applications-confirm-preview" ||
     pathname.includes("/application-form")

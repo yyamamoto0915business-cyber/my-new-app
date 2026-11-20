@@ -175,11 +175,7 @@ export function PostCreateMediaInput({
                 </span>
                 <p className="posts-create-photo-area__title">写真・動画を追加</p>
                 <p className="posts-create-photo-area__hint">
-                  タップして写真や動画を選択
-                  <br />
-                  写真は最大10枚・一覧と同じ比率で整えられます
-                  <br />
-                  動画は{POST_VIDEO_MAX_DURATION_SEC}秒以内・大きな動画は自動で圧縮します
+                  写真は10枚まで・動画は{POST_VIDEO_MAX_DURATION_SEC}秒まで
                 </p>
               </>
             )}
