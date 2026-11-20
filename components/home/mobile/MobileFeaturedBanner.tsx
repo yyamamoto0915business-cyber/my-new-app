@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CalendarDays, MapPin } from "lucide-react";
@@ -12,7 +12,7 @@ import type { VolunteerRoleWithEvent } from "@/lib/volunteer-utils";
 import type { PublicOrganizerGame } from "@/lib/organizer/public-games";
 import { buildRecommendedFeed, type MachiFeedItem } from "@/lib/machi/feed";
 
-const BANNER_COUNT = 6;
+const BANNER_COUNT = 5;
 
 type Props = {
   events: Event[];
@@ -33,7 +33,7 @@ function whenLabel(item: MachiFeedItem): string {
 }
 
 /**
- * 注目のカード（2枚と少し見える幅。右に次のカードがのぞくので、横にスワイプできると分かる）。写真は上に文字を重ねずに出し、タイトル・日付・場所は下に置く。
+ * 注目のカード（2枚並ぶ幅）。写真は上に文字を重ねずに出し、タイトル・日付・場所は下に置く。
  * イベントの画像は文字入りのチラシが多いので、重ねると読めなくなるため。
  */
 function FeaturedCard({ item, priority }: { item: MachiFeedItem; priority: boolean }) {
@@ -41,17 +41,17 @@ function FeaturedCard({ item, priority }: { item: MachiFeedItem; priority: boole
   return (
     <Link
       href={item.href}
-      className="flex w-[44%] min-w-[148px] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_4px_14px_rgba(22,56,40,0.08)] active:scale-[0.98]"
+      className="flex w-[calc(50%-5px)] min-w-[156px] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_4px_14px_rgba(22,56,40,0.08)] active:scale-[0.98]"
       aria-label={`${item.title}を見る`}
     >
-      <span className="relative block aspect-[16/10] w-full bg-[#eef3ef]">
+      <span className="relative block aspect-[4/3] w-full bg-[#eef3ef]">
         {item.imageUrl ? (
           <Image
             src={item.imageUrl}
             alt=""
             fill
             priority={priority}
-            sizes="45vw"
+            sizes="50vw"
             className="object-cover"
           />
         ) : (
@@ -108,7 +108,7 @@ export function selectFeaturedItems(
   return [...withImage, ...without].slice(0, BANNER_COUNT);
 }
 
-/** まちの情報（スマホ）：「注目のまち情報」。2枚と少し見えるカードを横にスクロールする */
+/** まちの情報（スマホ）：「注目のまち情報」。2枚ずつ見えるカードを横にスクロールする（5件まで） */
 export function MobileFeaturedBanner({
   events,
   stores,
@@ -123,11 +123,14 @@ export function MobileFeaturedBanner({
     [events, stores, volunteers, games, areaPreference, categoryPrefs]
   );
 
+  // いま見えている左端のカード（下の点で、横に続きがあることを知らせる）
+  const [first, setFirst] = useState(0);
+
   if (loading) {
     return (
       <div className="flex gap-2.5">
         {[0, 1].map((i) => (
-          <div key={i} className="h-[185px] flex-1 animate-pulse rounded-[18px] bg-[#e5ede6]" />
+          <div key={i} className="h-[210px] flex-1 animate-pulse rounded-[18px] bg-[#e5ede6]" />
         ))}
       </div>
     );
@@ -137,11 +140,36 @@ export function MobileFeaturedBanner({
   return (
     <section aria-label="注目のまち情報">
       <MobileSectionHeading eyebrow="FEATURED" title="注目のまち情報" />
-      <div className="-mx-3 -my-2 flex snap-x scroll-px-3 gap-2.5 overflow-x-auto px-3 py-2 scrollbar-hide">
+      <div
+        className="-mx-3 -my-2 flex snap-x scroll-px-3 gap-2.5 overflow-x-auto px-3 py-2 scrollbar-hide"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const card = el.firstElementChild as HTMLElement | null;
+          if (!card) return;
+          const step = card.offsetWidth + 10;
+          // いちばん右まで来たら、最後の2枚を見ていることにする
+          const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+          setFirst(atEnd ? Math.max(0, items.length - 2) : Math.round(el.scrollLeft / step));
+        }}
+      >
         {items.map((item, i) => (
           <FeaturedCard key={item.id} item={item} priority={i < 2} />
         ))}
       </div>
+      {items.length > 2 ? (
+        <div className="mt-2.5 flex justify-center gap-1.5" aria-hidden>
+          {items.map((item, i) => (
+            <span
+              key={item.id}
+              className={
+                i === first || i === first + 1
+                  ? "h-1.5 w-4 rounded-full bg-[#2f6b4f] transition-all"
+                  : "h-1.5 w-1.5 rounded-full bg-[#cfdcd2] transition-all"
+              }
+            />
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
