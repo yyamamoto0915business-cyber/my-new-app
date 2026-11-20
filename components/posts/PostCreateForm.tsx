@@ -274,7 +274,8 @@ export function PostCreateForm({
           >
             <span className="posts-create-details__title">
               <Plus className="h-3.5 w-3.5" aria-hidden />
-              詳細を追加
+              <span className="posts-create-details__label--full">詳細を追加</span>
+              <span className="posts-create-details__label--short">場所・日付・タグ</span>
               <span className="posts-create-row__optional">任意</span>
             </span>
             {detailsFilledCount > 0 && !detailsOpen ? (
@@ -360,7 +361,7 @@ export function PostCreateForm({
           <p className="posts-create-block__hint">
             過去の旅行も残せます。日帰りなら開始だけ入れてください。
           </p>
-          <div className="posts-create-duo">
+          <div className="posts-create-duo posts-create-duo--dates">
             <label className="posts-create-row posts-create-row--half">
               <span className="posts-create-row__label">開始</span>
               <input
@@ -435,7 +436,7 @@ export function PostCreateForm({
             <span className="posts-create-row__optional">任意</span>
           </legend>
           <p className="posts-create-block__hint">
-            当てはまるものを選ぶ・自由に追加すると、見つけてもらいやすくなります
+            選ぶか自由に足すと、見つけてもらいやすくなります
           </p>
           <div className="posts-create-tagfield">
             <input
@@ -531,11 +532,36 @@ export function PostCreateForm({
         </div>
 
         <div className="posts-create-actions">
+          {/* スマホ：非公開を選んだときだけ、どこに載るかを一言 */}
+          {draft.visibility === "hidden" ? (
+            <p className="posts-create-actions__vis-hint">{visibilityHint(draft.visibility, albumTitle)}</p>
+          ) : null}
+          {/* スマホ：公開／非公開は「投稿する」の横で選ぶ（押す前に必ず目に入るように） */}
+          <div className="posts-create-actions__vis" role="radiogroup" aria-label="公開範囲">
+            {(
+              [
+                ["public", "公開"],
+                ["hidden", "非公開"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={draft.visibility === value}
+                className={draft.visibility === value ? "is-on" : undefined}
+                onClick={() => onChange({ visibility: value })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             disabled={!hasMedia}
             onClick={onPreview}
-            className="posts-create-actions__preview"
+            aria-label="プレビュー"
+            className={cn("posts-create-actions__preview", !hasMedia && "posts-create-actions__preview--nomedia")}
             title={
               hasMedia
                 ? "投稿プレビューを見る"
@@ -543,7 +569,7 @@ export function PostCreateForm({
             }
           >
             <Eye className="h-4 w-4" aria-hidden />
-            プレビュー
+            <span className="posts-create-actions__preview-label">プレビュー</span>
           </button>
           <button
             type="submit"
