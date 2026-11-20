@@ -28251,18 +28251,18 @@ button.posts-tab--active:not([disabled]):active {
 /* ===== 投稿作成：モバイル最適化（スクロール量削減） ===== */
 @media (max-width: 899px) {
   /* B: 「投稿する」バーをスティッキーにして常に見せる */
+  /* 下のナビは隠したので、画面のいちばん下に置く。後ろの入力欄が透けないよう地は塗る */
   .posts-create-actions {
     position: sticky;
-    bottom: calc(3.9rem + env(safe-area-inset-bottom, 0px));
+    bottom: 0;
     z-index: 40;
-    margin: 0.3rem -1.15rem 0;
-    padding: 0.7rem 1.15rem 0.7rem;
-    background: linear-gradient(
-      180deg,
-      rgba(246, 239, 228, 0) 0%,
-      #f6efe4 42%
-    );
-    border-top: 1px solid rgba(214, 203, 180, 0.55);
+    margin: 0.3rem -1rem 0;
+    padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom, 0px));
+    background: rgba(255, 253, 248, 0.97);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid #ece3d5;
+    box-shadow: 0 -6px 16px rgba(50, 35, 20, 0.06);
   }
 
   /* E: カテゴリーを1段の横スクロールに（折返し廃止） */
@@ -39254,4 +39254,44 @@ button.mg-album-place {
 [data-recruit-form] input[type="checkbox"],
 [data-recruit-form] input[type="radio"] {
   accent-color: #173f2c;
+}
+
+/* ===== 投稿の作成（スマホ）：二重の枠をやめて平らに・カテゴリーのはみ出しを直す ===== */
+@media (max-width: 899px) {
+  .posts-create-form > .posts-create__panel {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 0.2rem 0 0;
+  }
+  /* fieldset は中身の幅に広がるので、横スクロールのカテゴリーが枠ごとはみ出していた */
+  .posts-create-block {
+    min-width: 0;
+  }
+  .posts-create-block--cat {
+    border: 0;
+    background: transparent;
+    padding: 0;
+  }
+  .posts-create-block--cat > .posts-create-block__label {
+    float: left;
+    width: 100%;
+    margin: 0 0 0.45rem;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #2a2218;
+  }
+  .posts-create-block--cat {
+    margin-bottom: 0.5rem !important;
+  }
+  /* 下書きがまだないときは、件数の空き枠を出さない（「下書き」ボタンが横に間延びしていた） */
+  .posts-create-draftctl__toggle--placeholder {
+    display: none !important;
+  }
+  .posts-create-block--cat > .posts-create-cat__pills {
+    clear: both;
+    margin: 0 -1rem;
+    padding: 0 1rem 0.1rem;
+  }
 }
