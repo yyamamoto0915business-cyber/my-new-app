@@ -14,7 +14,9 @@ import {
   Camera,
   CircleHelp,
   Flag,
+  Flower2,
   Gift,
+  Heart,
   MapPin,
   Plus,
   Sparkles,
@@ -27,6 +29,7 @@ import { useMoveLayer } from "@/components/play/rally/useMoveLayer";
 import { usePlayCopy } from "@/components/play/usePlayCopy";
 import { BG_THEME_SWATCH, type StartOffset } from "@/lib/organizer/game-experience";
 import {
+  DEFAULT_GAME_BAND,
   DEFAULT_GAME_LOOK,
   fineIsDefault,
   fineStyle,
@@ -38,6 +41,7 @@ import {
   type GameLookMoveKey,
   type GameLookTextStyle,
   type GameClearWords,
+  type GameBand,
   CLEAR_WORD_MAX,
 } from "@/lib/organizer/game-look";
 import { cn } from "@/lib/utils";
@@ -513,8 +517,11 @@ export function GameSceneBand({
   congrats,
   progress,
   edit,
+  onSelectBand,
 }: {
   look: GameLook | null | undefined;
+  /** 作成画面のプレビュー：スタートの帯を押して編集する */
+  onSelectBand?: () => void;
   /** 作成画面のプレビュー：クリアの帯の言葉をその場で書き換え、帯やトロフィーをタップで選ぶ。 */
   edit?: GameSceneClearEdit;
   scene: "start" | "play" | "clear";
@@ -548,19 +555,76 @@ export function GameSceneBand({
       </div>
     );
   }
+  if (scene === "start") {
+    const band = look?.band ?? DEFAULT_GAME_BAND;
+    const Mark = BAND_MARK_ICON[band.mark];
+    return (
+      <div
+        className={cn(
+          "game-scene",
+          "game-scene--start",
+          `game-scene--motion-${band.motion}`,
+          `game-scene--h-${band.height}`,
+          custom && "has-custom-bg",
+          onSelectBand && "is-editable",
+        )}
+        style={band.color ? ({ ["--band-color" as string]: band.color } as CSSProperties) : undefined}
+        aria-hidden={!onSelectBand}
+        role={onSelectBand ? "button" : undefined}
+        aria-label={onSelectBand ? "上の帯を編集" : undefined}
+        onClick={
+          onSelectBand
+            ? (event) => {
+                event.stopPropagation();
+                onSelectBand();
+              }
+            : undefined
+        }
+      >
+        {band.pattern !== "none" ? (
+          <div className={cn("game-scene__pattern", `game-scene__pattern--${band.pattern}`)} aria-hidden />
+        ) : null}
+        {band.motion === "rays" ? <div className="rally-burst" aria-hidden /> : null}
+        {band.motion === "sparkle" || band.motion === "confetti" ? (
+          <div className={cn("game-scene__particles", `game-scene__particles--${band.motion}`)} aria-hidden>
+            {Array.from({ length: band.motion === "confetti" ? 16 : 12 }, (_, i) => (
+              <span
+                key={i}
+                style={
+                  {
+                    ["--i" as string]: i,
+                    left: `${(i * 37 + 7) % 96}%`,
+                    top: `${((i * 53) % 80) + 6}%`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+          </div>
+        ) : null}
+        {Mark ? (
+          <span className="game-scene__sparkle" aria-hidden>
+            <Mark />
+          </span>
+        ) : null}
+      </div>
+    );
+  }
   return (
-    <div className={cn("game-scene", `game-scene--${scene}`, custom && "has-custom-bg")} aria-hidden={scene === "start"}>
+    <div className={cn("game-scene", `game-scene--${scene}`, custom && "has-custom-bg")}>
       <div className="rally-burst" aria-hidden />
-      {scene === "clear" ? (
-        <ClearRibbons look={look} clearTitle={clearTitle} congrats={congrats} edit={edit} />
-      ) : (
-        <span className="game-scene__sparkle" aria-hidden>
-          <Sparkles />
-        </span>
-      )}
+      <ClearRibbons look={look} clearTitle={clearTitle} congrats={congrats} edit={edit} />
     </div>
   );
 }
+
+/** 帯の真ん中の絵 */
+export const BAND_MARK_ICON: Record<GameBand["mark"], LucideIcon | null> = {
+  sparkles: Sparkles,
+  star: Star,
+  heart: Heart,
+  flower: Flower2,
+  none: null,
+};
 
 
 export type GameSceneClearEdit = {

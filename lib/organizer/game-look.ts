@@ -251,9 +251,77 @@ export type GameLook = {
   clearWords: GameClearWords;
   /** クリア画面の真ん中の絵。空はトロフィー、none は出さない。 */
   clearIcon: GameLookIcon | "none" | "";
+  /** スタート画面の上の帯。 */
+  band: GameBand;
 };
 
 export type GameClearWords = { congrats: string; title: string };
+
+/** スタート画面の上の帯（動く光の部分）。 */
+export const GAME_BAND_MOTIONS = ["rays", "sparkle", "confetti", "still"] as const;
+export const GAME_BAND_MARKS = ["sparkles", "star", "heart", "flower", "none"] as const;
+export const GAME_BAND_HEIGHTS = ["low", "normal", "high"] as const;
+export const GAME_BAND_PATTERNS = ["none", "dots", "stripe", "gingham", "ichimatsu", "seigaiha"] as const;
+export type GameBand = {
+  /** 動き方：光が回る・キラキラが舞う・紙吹雪・動かない */
+  motion: (typeof GAME_BAND_MOTIONS)[number];
+  /** 光の色。空は背景の色に合わせる */
+  color: string;
+  /** 真ん中の絵 */
+  mark: (typeof GAME_BAND_MARKS)[number];
+  height: (typeof GAME_BAND_HEIGHTS)[number];
+  /** 模様（光の色で薄く描く） */
+  pattern: (typeof GAME_BAND_PATTERNS)[number];
+};
+export const DEFAULT_GAME_BAND: GameBand = { motion: "rays", color: "", mark: "sparkles", height: "normal", pattern: "none" };
+export const GAME_BAND_PATTERN_LABEL: Record<GameBand["pattern"], string> = {
+  none: "なし",
+  dots: "水玉",
+  stripe: "ストライプ",
+  gingham: "ギンガム",
+  ichimatsu: "市松",
+  seigaiha: "青海波",
+};
+/** 帯の見本（動き・色・模様・絵の組み合わせ）。押すだけで決まる */
+export const GAME_BAND_PRESETS: { id: string; label: string; band: GameBand }[] = [
+  { id: "classic", label: "光が回る", band: DEFAULT_GAME_BAND },
+  { id: "dots-heart", label: "水玉とハート", band: { motion: "sparkle", color: "#ff9ec4", mark: "heart", height: "normal", pattern: "dots" } },
+  { id: "seigaiha", label: "青海波", band: { motion: "still", color: "#8fd3ff", mark: "none", height: "normal", pattern: "seigaiha" } },
+  { id: "ichimatsu", label: "市松", band: { motion: "still", color: "#ffd36b", mark: "flower", height: "normal", pattern: "ichimatsu" } },
+  { id: "confetti", label: "紙吹雪", band: { motion: "confetti", color: "", mark: "star", height: "normal", pattern: "none" } },
+  { id: "starry", label: "キラキラ星", band: { motion: "sparkle", color: "#ffd36b", mark: "star", height: "high", pattern: "none" } },
+  { id: "gingham", label: "ギンガム", band: { motion: "still", color: "#ffffff", mark: "heart", height: "normal", pattern: "gingham" } },
+  { id: "stripe", label: "ストライプ", band: { motion: "rays", color: "#ffb36b", mark: "star", height: "normal", pattern: "stripe" } },
+  { id: "simple", label: "シンプル", band: { motion: "still", color: "", mark: "none", height: "low", pattern: "none" } },
+];
+export const GAME_BAND_MOTION_LABEL: Record<GameBand["motion"], string> = {
+  rays: "光が回る",
+  sparkle: "キラキラ",
+  confetti: "紙吹雪",
+  still: "動かない",
+};
+export const GAME_BAND_MARK_LABEL: Record<GameBand["mark"], string> = {
+  sparkles: "キラキラ",
+  star: "星",
+  heart: "ハート",
+  flower: "花",
+  none: "なし",
+};
+export const GAME_BAND_HEIGHT_LABEL: Record<GameBand["height"], string> = { low: "低い", normal: "ふつう", high: "高い" };
+/** 光の色の候補（空＝自動） */
+export const GAME_BAND_COLORS = ["", "#ffffff", "#ffd36b", "#ff9ec4", "#8fd3ff", "#b6f28a", "#ffb36b"] as const;
+
+function readBand(raw: unknown): GameBand {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return DEFAULT_GAME_BAND;
+  const r = raw as Record<string, unknown>;
+  return {
+    motion: oneOf(r.motion, GAME_BAND_MOTIONS, DEFAULT_GAME_BAND.motion),
+    color: lookColor(r.color),
+    mark: oneOf(r.mark, GAME_BAND_MARKS, DEFAULT_GAME_BAND.mark),
+    height: oneOf(r.height, GAME_BAND_HEIGHTS, DEFAULT_GAME_BAND.height),
+    pattern: oneOf(r.pattern, GAME_BAND_PATTERNS, DEFAULT_GAME_BAND.pattern),
+  };
+}
 export const CLEAR_WORD_MAX = 20;
 
 /** 見た目を編集できる画面。 */
@@ -274,6 +342,7 @@ export const DEFAULT_GAME_LOOK: GameLook = {
   blocks: {},
   clearWords: { congrats: "", title: "" },
   clearIcon: "",
+  band: DEFAULT_GAME_BAND,
 };
 
 /** 色は #rrggbb だけ通す（ワードのように自由に選べる）。 */
@@ -331,6 +400,7 @@ export function readGameLook(raw: unknown): GameLook {
     blocks: readBlockStyles(row.blocks),
     clearWords: readClearWords(row.clearWords),
     clearIcon: row.clearIcon === "none" ? "none" : oneOf(row.clearIcon, GAME_LOOK_ICONS, "" as GameLookIcon),
+    band: readBand(row.band),
   };
 }
 

@@ -1,10 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Circle, ImagePlus, RotateCcw, Trash2, X } from "lucide-react";
 import { FINE_HEAD_STYLE, FINE_PANEL_STYLE, FINE_ROWS_STYLE, TextFineControls } from "@/components/organizer/games/TextFineControls";
 import { BgThemes, Choice, Row, SHADE_LABEL, Swatch } from "@/components/organizer/games/StartLookToolbar";
-import { GAME_LOOK_ICON_COMPONENT } from "@/components/play/GameLook";
+import { BAND_MARK_ICON, GAME_LOOK_ICON_COMPONENT } from "@/components/play/GameLook";
 import {
   CARD_COLORS,
   START_IMAGE_SIZES,
@@ -12,8 +12,20 @@ import {
   type GameStartImage,
 } from "@/lib/organizer/game-experience";
 import {
+  DEFAULT_GAME_BAND,
   DEFAULT_GAME_LOOK,
   FINE_DEFAULT,
+  GAME_BAND_COLORS,
+  GAME_BAND_HEIGHTS,
+  GAME_BAND_HEIGHT_LABEL,
+  GAME_BAND_MARKS,
+  GAME_BAND_MARK_LABEL,
+  GAME_BAND_MOTIONS,
+  GAME_BAND_MOTION_LABEL,
+  GAME_BAND_PATTERNS,
+  GAME_BAND_PATTERN_LABEL,
+  GAME_BAND_PRESETS,
+  type GameBand,
   GAME_LOOK_ICONS,
   GAME_LOOK_ICON_LABEL,
   GAME_LOOK_TEXT_LABEL,
@@ -25,7 +37,7 @@ import {
 } from "@/lib/organizer/game-look";
 import { cn } from "@/lib/utils";
 
-export type GameLookSelection = "icon" | "background" | "text" | "clearIcon";
+export type GameLookSelection = "icon" | "background" | "text" | "clearIcon" | "band";
 
 /** プレビューでタップしたアイコン・背景の設定。スタンプラリーの設定パネルと同じ見た目。 */
 export function GameLookEditPanel({
@@ -58,7 +70,9 @@ export function GameLookEditPanel({
 }) {
   const set = (patch: Partial<GameLook>) => onLook({ ...look, ...patch });
   const title =
-    selection === "icon"
+    selection === "band"
+      ? "上の帯"
+      : selection === "icon"
       ? "アイコン"
       : selection === "clearIcon"
         ? "クリアの絵"
@@ -67,6 +81,8 @@ export function GameLookEditPanel({
           ? GAME_LOOK_TEXT_LABEL[textKey]
           : (partLabel ?? "文字")
         : "背景";
+  const band: GameBand = look.band ?? DEFAULT_GAME_BAND;
+  const setBand = (patch: Partial<GameBand>) => set({ band: { ...band, ...patch } });
   const textStyle: GameLookTextStyle = (textKey && look.texts[textKey]) || { color: "", bg: "", ...FINE_DEFAULT };
   const setText = (patch: Partial<GameLookTextStyle>) => {
     if (!textKey) return;
@@ -134,6 +150,70 @@ export function GameLookEditPanel({
           </button>
           <p className="edit-panel__note edit-panel__note--show">押したままドラッグで移動</p>
           {resetButton}
+        </div>
+      ) : selection === "band" ? (
+        <div className="edit-panel__rows">
+          {/* 見本から選ぶ：動き・色・模様・絵がもう組み合わさっている */}
+          <div className="band-presets" role="list" aria-label="帯の見本">
+            {GAME_BAND_PRESETS.map((preset) => {
+              const p = preset.band;
+              const on = JSON.stringify(p) === JSON.stringify(band);
+              const Mark = BAND_MARK_ICON[p.mark];
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  role="listitem"
+                  className={cn("band-preset", on && "is-on")}
+                  aria-pressed={on}
+                  onClick={() => set({ band: { ...p } })}
+                >
+                  <span
+                    className="band-preset__thumb"
+                    style={p.color ? ({ ["--band-color" as string]: p.color } as CSSProperties) : undefined}
+                    aria-hidden
+                  >
+                    {p.motion === "rays" ? <span className="rally-burst" /> : null}
+                    {p.pattern !== "none" ? <span className={cn("game-scene__pattern", `game-scene__pattern--${p.pattern}`)} /> : null}
+                    {Mark ? <Mark /> : null}
+                  </span>
+                  <span className="band-preset__label">{preset.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <details className="band-more">
+            <summary>細かく変える</summary>
+            <Row label="動き方">
+              {GAME_BAND_MOTIONS.map((id) => (
+                <Choice key={id} on={band.motion === id} label={GAME_BAND_MOTION_LABEL[id]} onClick={() => setBand({ motion: id })} />
+              ))}
+            </Row>
+            <Row label="模様">
+              {GAME_BAND_PATTERNS.map((id) => (
+                <Choice key={id} on={band.pattern === id} label={GAME_BAND_PATTERN_LABEL[id]} onClick={() => setBand({ pattern: id })} />
+              ))}
+            </Row>
+            <Row label="色">
+              {GAME_BAND_COLORS.map((color) =>
+                color ? (
+                  <Swatch key={color} color={color} on={band.color === color} label={color} onClick={() => setBand({ color })} />
+                ) : (
+                  <Choice key="auto" on={!band.color} label="自動" onClick={() => setBand({ color: "" })} />
+                ),
+              )}
+            </Row>
+            <Row label="真ん中の絵">
+              {GAME_BAND_MARKS.map((id) => (
+                <Choice key={id} on={band.mark === id} label={GAME_BAND_MARK_LABEL[id]} onClick={() => setBand({ mark: id })} />
+              ))}
+            </Row>
+            <Row label="高さ">
+              {GAME_BAND_HEIGHTS.map((id) => (
+                <Choice key={id} on={band.height === id} label={GAME_BAND_HEIGHT_LABEL[id]} onClick={() => setBand({ height: id })} />
+              ))}
+            </Row>
+          </details>
         </div>
       ) : selection === "clearIcon" ? (
         <div className="edit-panel__rows">

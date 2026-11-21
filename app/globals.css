@@ -39660,3 +39660,230 @@ button.mg-album-place {
     aspect-ratio: 16 / 10;
   }
 }
+
+/* ===== スタート画面の上の帯：動き方・光の色・真ん中の絵・高さ ===== */
+.game-scene--start {
+  overflow: hidden;
+}
+.game-scene--start[style*="--band-color"] .rally-burst {
+  background: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--band-color) 32%, transparent) 0deg 8deg,
+    transparent 8deg 22deg
+  );
+}
+.game-scene--start[style*="--band-color"] .game-scene__sparkle {
+  color: var(--band-color);
+}
+.game-scene--h-low {
+  min-height: 4.6rem !important;
+}
+.game-scene--h-high {
+  min-height: 10.5rem !important;
+}
+.game-scene--h-high .game-scene__sparkle svg {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+.game-scene--motion-still .game-scene__sparkle {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.35));
+}
+
+/* キラキラ：小さな光がまたたく */
+.game-scene__particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.game-scene__particles span {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--band-color, rgba(255, 255, 255, 0.9));
+  box-shadow: 0 0 8px var(--band-color, rgba(255, 255, 255, 0.8));
+  opacity: 0;
+  animation: game-band-twinkle 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.37s);
+}
+@keyframes game-band-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 紙吹雪：色とりどりの小さな紙が落ちる */
+.game-scene__particles--confetti span {
+  margin-top: -40%;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  box-shadow: none;
+  opacity: 0.9;
+  background: var(--band-color, #ffd36b);
+  animation: game-band-fall 4.2s linear infinite;
+  animation-delay: calc(var(--i) * -0.29s);
+}
+.game-scene__particles--confetti span:nth-child(4n + 1) {
+  background: var(--band-color, #ff9ec4);
+}
+.game-scene__particles--confetti span:nth-child(4n + 2) {
+  background: var(--band-color, #8fd3ff);
+}
+.game-scene__particles--confetti span:nth-child(4n + 3) {
+  background: var(--band-color, #b6f28a);
+}
+@keyframes game-band-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(240px) rotate(540deg);
+  }
+}
+
+/* 作成画面のプレビュー：押して編集できると分かるように */
+.game-scene--start.is-editable {
+  cursor: pointer;
+}
+.game-scene--start.is-editable::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.45);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+/* 動きを減らす設定の人には、帯の動きを止める */
+@media (prefers-reduced-motion: reduce) {
+  .game-scene__particles span {
+    animation: none;
+    opacity: 0.7;
+    transform: none;
+  }
+  .game-scene__particles--confetti span {
+    transform: none;
+  }
+}
+
+/* 帯の模様：光の色で薄く描く（色がないときは白） */
+.game-scene__pattern {
+  --pc: color-mix(in srgb, var(--band-color, #ffffff) 22%, transparent);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.game-scene__pattern--dots {
+  background-image: radial-gradient(var(--pc) 22%, transparent 24%);
+  background-size: 18px 18px;
+}
+.game-scene__pattern--stripe {
+  background-image: repeating-linear-gradient(135deg, var(--pc) 0 8px, transparent 8px 20px);
+}
+.game-scene__pattern--gingham {
+  background-image:
+    linear-gradient(90deg, var(--pc) 50%, transparent 50%),
+    linear-gradient(var(--pc) 50%, transparent 50%);
+  background-size: 22px 22px;
+}
+.game-scene__pattern--ichimatsu {
+  background-image: conic-gradient(var(--pc) 25%, transparent 0 50%, var(--pc) 0 75%, transparent 0);
+  background-size: 24px 24px;
+}
+.game-scene__pattern--seigaiha {
+  background-image:
+    radial-gradient(circle at 50% 100%, transparent 28%, var(--pc) 29% 34%, transparent 35% 46%, var(--pc) 47% 52%, transparent 53% 64%, var(--pc) 65% 70%, transparent 71%),
+    radial-gradient(circle at 0% 50%, transparent 28%, var(--pc) 29% 34%, transparent 35% 46%, var(--pc) 47% 52%, transparent 53% 64%, var(--pc) 65% 70%, transparent 71%),
+    radial-gradient(circle at 100% 50%, transparent 28%, var(--pc) 29% 34%, transparent 35% 46%, var(--pc) 47% 52%, transparent 53% 64%, var(--pc) 65% 70%, transparent 71%);
+  background-size: 44px 22px;
+}
+
+/* 帯の見本カード */
+.band-presets {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+  scrollbar-width: none;
+}
+.band-presets::-webkit-scrollbar {
+  display: none;
+}
+.band-preset {
+  flex: none;
+  width: 6.4rem;
+  padding: 0;
+  border: 1px solid #e6e2d6;
+  border-radius: 0.85rem;
+  background: #fff;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: center;
+}
+.band-preset.is-on {
+  border: 2px solid #173f2c;
+}
+.band-preset__thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 3rem;
+  overflow: hidden;
+  background: radial-gradient(90% 120% at 50% 0%, #3f9a68 0%, #1f6b45 55%, #164e33 100%);
+  color: rgba(255, 255, 255, 0.9);
+}
+.band-preset__thumb .rally-burst {
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.14) 0deg 8deg, transparent 8deg 22deg);
+  animation: none;
+}
+.band-preset__thumb[style*="--band-color"] {
+  color: var(--band-color);
+}
+.band-preset__thumb svg {
+  position: relative;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.band-preset__label {
+  display: block;
+  padding: 0.3rem 0.2rem 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #173f2c;
+  white-space: nowrap;
+}
+.band-more {
+  margin-top: 0.4rem;
+  border-top: 1px solid #eee9dc;
+  padding-top: 0.4rem;
+}
+.band-more > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.4rem;
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #173f2c;
+}
+.band-more > summary::-webkit-details-marker {
+  display: none;
+}
+.band-more > summary::before {
+  content: "▸";
+  font-size: 0.7rem;
+  transition: transform 0.15s;
+}
+.band-more[open] > summary::before {
+  transform: rotate(90deg);
+}
