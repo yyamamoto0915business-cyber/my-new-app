@@ -261,6 +261,7 @@ export type GameClearWords = { congrats: string; title: string };
 export const GAME_BAND_MOTIONS = ["rays", "sparkle", "confetti", "still"] as const;
 export const GAME_BAND_MARKS = ["sparkles", "star", "heart", "flower", "none"] as const;
 export const GAME_BAND_HEIGHTS = ["low", "normal", "high"] as const;
+export const GAME_BAND_PATTERNS = ["none", "dots", "stripe", "gingham", "ichimatsu", "seigaiha"] as const;
 export type GameBand = {
   /** 動き方：光が回る・キラキラが舞う・紙吹雪・動かない */
   motion: (typeof GAME_BAND_MOTIONS)[number];
@@ -269,8 +270,30 @@ export type GameBand = {
   /** 真ん中の絵 */
   mark: (typeof GAME_BAND_MARKS)[number];
   height: (typeof GAME_BAND_HEIGHTS)[number];
+  /** 模様（光の色で薄く描く） */
+  pattern: (typeof GAME_BAND_PATTERNS)[number];
 };
-export const DEFAULT_GAME_BAND: GameBand = { motion: "rays", color: "", mark: "sparkles", height: "normal" };
+export const DEFAULT_GAME_BAND: GameBand = { motion: "rays", color: "", mark: "sparkles", height: "normal", pattern: "none" };
+export const GAME_BAND_PATTERN_LABEL: Record<GameBand["pattern"], string> = {
+  none: "なし",
+  dots: "水玉",
+  stripe: "ストライプ",
+  gingham: "ギンガム",
+  ichimatsu: "市松",
+  seigaiha: "青海波",
+};
+/** 帯の見本（動き・色・模様・絵の組み合わせ）。押すだけで決まる */
+export const GAME_BAND_PRESETS: { id: string; label: string; band: GameBand }[] = [
+  { id: "classic", label: "光が回る", band: DEFAULT_GAME_BAND },
+  { id: "dots-heart", label: "水玉とハート", band: { motion: "sparkle", color: "#ff9ec4", mark: "heart", height: "normal", pattern: "dots" } },
+  { id: "seigaiha", label: "青海波", band: { motion: "still", color: "#8fd3ff", mark: "none", height: "normal", pattern: "seigaiha" } },
+  { id: "ichimatsu", label: "市松", band: { motion: "still", color: "#ffd36b", mark: "flower", height: "normal", pattern: "ichimatsu" } },
+  { id: "confetti", label: "紙吹雪", band: { motion: "confetti", color: "", mark: "star", height: "normal", pattern: "none" } },
+  { id: "starry", label: "キラキラ星", band: { motion: "sparkle", color: "#ffd36b", mark: "star", height: "high", pattern: "none" } },
+  { id: "gingham", label: "ギンガム", band: { motion: "still", color: "#ffffff", mark: "heart", height: "normal", pattern: "gingham" } },
+  { id: "stripe", label: "ストライプ", band: { motion: "rays", color: "#ffb36b", mark: "star", height: "normal", pattern: "stripe" } },
+  { id: "simple", label: "シンプル", band: { motion: "still", color: "", mark: "none", height: "low", pattern: "none" } },
+];
 export const GAME_BAND_MOTION_LABEL: Record<GameBand["motion"], string> = {
   rays: "光が回る",
   sparkle: "キラキラ",
@@ -296,6 +319,7 @@ function readBand(raw: unknown): GameBand {
     color: lookColor(r.color),
     mark: oneOf(r.mark, GAME_BAND_MARKS, DEFAULT_GAME_BAND.mark),
     height: oneOf(r.height, GAME_BAND_HEIGHTS, DEFAULT_GAME_BAND.height),
+    pattern: oneOf(r.pattern, GAME_BAND_PATTERNS, DEFAULT_GAME_BAND.pattern),
   };
 }
 export const CLEAR_WORD_MAX = 20;

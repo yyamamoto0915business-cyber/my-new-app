@@ -27,17 +27,19 @@ export type GameLookTheme = {
 
 /** テーマごとの帯。テーマの雰囲気に合わせて、選ぶ手間を減らす */
 const THEME_BANDS: Record<string, Partial<GameBand>> = {
-  cute: { motion: "sparkle", color: "#ff9ec4", mark: "heart" },
+  cute: { motion: "sparkle", color: "#ff9ec4", mark: "heart", pattern: "dots" },
+  wa: { motion: "still", color: "#ffd36b", mark: "flower", pattern: "ichimatsu" },
+  pop: { motion: "rays", color: "#ffffff", mark: "star", pattern: "stripe" },
   night: { motion: "sparkle", color: "#ffd36b", mark: "star" },
   spring: { motion: "sparkle", color: "#ff9ec4", mark: "flower" },
   summer: { motion: "rays", color: "#ffffff" },
   autumn: { motion: "confetti", color: "#ffb36b", mark: "none" },
   winter: { motion: "sparkle", color: "#ffffff", mark: "star" },
-  natsumatsuri: { motion: "sparkle", color: "#ffb36b", mark: "star" },
+  natsumatsuri: { motion: "sparkle", color: "#ffb36b", mark: "star", pattern: "seigaiha" },
   christmas: { motion: "sparkle", color: "#ffd36b", mark: "star" },
-  jokamachi: { motion: "still", color: "#ffd36b" },
-  kids: { motion: "confetti", color: "", mark: "star" },
-  gourmet: { motion: "rays", color: "#ffd36b" },
+  jokamachi: { motion: "still", color: "#ffd36b", pattern: "ichimatsu" },
+  kids: { motion: "confetti", color: "", mark: "star", pattern: "dots" },
+  gourmet: { motion: "still", color: "#ffffff", mark: "heart", pattern: "gingham" },
   kimodameshi: { motion: "still", color: "", mark: "none" },
   halloween: { motion: "sparkle", color: "#ffb36b", mark: "star" },
 };

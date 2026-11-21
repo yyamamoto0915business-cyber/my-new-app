@@ -581,6 +581,9 @@ export function GameSceneBand({
             : undefined
         }
       >
+        {band.pattern !== "none" ? (
+          <div className={cn("game-scene__pattern", `game-scene__pattern--${band.pattern}`)} aria-hidden />
+        ) : null}
         {band.motion === "rays" ? <div className="rally-burst" aria-hidden /> : null}
         {band.motion === "sparkle" || band.motion === "confetti" ? (
           <div className={cn("game-scene__particles", `game-scene__particles--${band.motion}`)} aria-hidden>
@@ -615,7 +618,7 @@ export function GameSceneBand({
 }
 
 /** 帯の真ん中の絵 */
-const BAND_MARK_ICON: Record<GameBand["mark"], LucideIcon | null> = {
+export const BAND_MARK_ICON: Record<GameBand["mark"], LucideIcon | null> = {
   sparkles: Sparkles,
   star: Star,
   heart: Heart,

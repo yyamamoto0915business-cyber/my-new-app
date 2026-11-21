@@ -39772,3 +39772,118 @@ button.mg-album-place {
     transform: none;
   }
 }
+
+/* 帯の模様：光の色で薄く描く（色がないときは白） */
+.game-scene__pattern {
+  --pc: color-mix(in srgb, var(--band-color, #ffffff) 22%, transparent);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.game-scene__pattern--dots {
+  background-image: radial-gradient(var(--pc) 22%, transparent 24%);
+  background-size: 18px 18px;
+}
+.game-scene__pattern--stripe {
+  background-image: repeating-linear-gradient(135deg, var(--pc) 0 8px, transparent 8px 20px);
+}
+.game-scene__pattern--gingham {
+  background-image:
+    linear-gradient(90deg, var(--pc) 50%, transparent 50%),
+    linear-gradient(var(--pc) 50%, transparent 50%);
+  background-size: 22px 22px;
+}
+.game-scene__pattern--ichimatsu {
+  background-image: conic-gradient(var(--pc) 25%, transparent 0 50%, var(--pc) 0 75%, transparent 0);
+  background-size: 24px 24px;
+}
+.game-scene__pattern--seigaiha {
+  background-image:
+    radial-gradient(circle at 50% 100%, transparent 28%, var(--pc) 29% 34%, transparent 35% 46%, var(--pc) 47% 52%, transparent 53% 64%, var(--pc) 65% 70%, transparent 71%),
+    radial-gradient(circle at 0% 50%, transparent 28%, var(--pc) 29% 34%, transparent 35% 46%, var(--pc) 47% 52%, transparent 53% 64%, var(--pc) 65% 70%, transparent 71%),
+    radial-gradient(circle at 100% 50%, transparent 28%, var(--pc) 29% 34%, transparent 35% 46%, var(--pc) 47% 52%, transparent 53% 64%, var(--pc) 65% 70%, transparent 71%);
+  background-size: 44px 22px;
+}
+
+/* 帯の見本カード */
+.band-presets {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+  scrollbar-width: none;
+}
+.band-presets::-webkit-scrollbar {
+  display: none;
+}
+.band-preset {
+  flex: none;
+  width: 6.4rem;
+  padding: 0;
+  border: 1px solid #e6e2d6;
+  border-radius: 0.85rem;
+  background: #fff;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: center;
+}
+.band-preset.is-on {
+  border: 2px solid #173f2c;
+}
+.band-preset__thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 3rem;
+  overflow: hidden;
+  background: radial-gradient(90% 120% at 50% 0%, #3f9a68 0%, #1f6b45 55%, #164e33 100%);
+  color: rgba(255, 255, 255, 0.9);
+}
+.band-preset__thumb .rally-burst {
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.14) 0deg 8deg, transparent 8deg 22deg);
+  animation: none;
+}
+.band-preset__thumb[style*="--band-color"] {
+  color: var(--band-color);
+}
+.band-preset__thumb svg {
+  position: relative;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.band-preset__label {
+  display: block;
+  padding: 0.3rem 0.2rem 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #173f2c;
+  white-space: nowrap;
+}
+.band-more {
+  margin-top: 0.4rem;
+  border-top: 1px solid #eee9dc;
+  padding-top: 0.4rem;
+}
+.band-more > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.4rem;
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #173f2c;
+}
+.band-more > summary::-webkit-details-marker {
+  display: none;
+}
+.band-more > summary::before {
+  content: "▸";
+  font-size: 0.7rem;
+  transition: transform 0.15s;
+}
+.band-more[open] > summary::before {
+  transform: rotate(90deg);
+}
