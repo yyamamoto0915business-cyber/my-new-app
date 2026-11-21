@@ -46,7 +46,8 @@ export function EventsMobileHero({ searchQuery, onSearchQueryChange, quickChips 
               className="text-[17px] font-normal leading-[1.5] tracking-[0.08em] text-[#3a2a18] tablet:text-[23px]"
               style={{ fontFamily: "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif" }}
             >
-              まちの出来事に、出会いにいく。
+              <span className="inline-block">まちの出来事に、</span>
+              <span className="inline-block">出会いにいく。</span>
             </h1>
 
             <form

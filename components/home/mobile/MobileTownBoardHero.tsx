@@ -42,7 +42,8 @@ export function MobileTownBoardHero({ searchQuery, onSearchQueryChange }: Props)
                   "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif",
               }}
             >
-              まちの魅力に、出会いにいく。
+              <span className="inline-block">まちの魅力に、</span>
+              <span className="inline-block">出会いにいく。</span>
             </h1>
 
             <form
