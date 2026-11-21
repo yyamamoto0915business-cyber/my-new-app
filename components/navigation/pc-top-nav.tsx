@@ -209,7 +209,7 @@ function PcTopNavInner() {
             return (
               <span
                 key={link.href}
-                className={`org-tab-plan-wrap org-tab-plan-wrap--${organizerPlan} relative z-10 inline-block overflow-visible`}
+                className={`org-tab-plan-wrap org-tab-plan-wrap--${organizerPlan} relative z-10 inline-block overflow-visible max-[1199px]:hidden`}
               >
                 <Link
                   href={link.href}
@@ -243,6 +243,8 @@ function PcTopNavInner() {
               prefetch
               onClick={() => syncModeCookieForNav(link.href)}
               className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[20px] px-[14px] py-[6px] text-[13px] font-medium transition-colors ${
+                isOrganizerEntryHref(link.href) ? "max-[1199px]:hidden " : ""
+              }${
                 active
                   ? "bg-[#1a2b3c] text-white"
                   : "text-[#3d5c48] hover:bg-[#f4f6f4]"
@@ -263,11 +265,11 @@ function PcTopNavInner() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* 右側: 参加パス・通知・ユーザー */}
+      {/* 右側: 参加パス・通知・ユーザー（iPad 横など 1199px までは「主催」「参加パス」を左のメニューに任せる） */}
       <div className="flex items-center gap-2">
         <Link
           href="/pass"
-          className="inline-flex h-9 items-center gap-1.5 rounded-[20px] border border-[#c8dcd0] bg-white px-3.5 text-[13px] font-medium text-[#1e3848] transition hover:bg-[#ecf6ee]"
+          className="max-[1199px]:hidden inline-flex h-9 items-center gap-1.5 rounded-[20px] border border-[#c8dcd0] bg-white px-3.5 text-[13px] font-medium text-[#1e3848] transition hover:bg-[#ecf6ee]"
         >
           <ParticipationPassIcon className="h-[22px] w-[22px]" stroke="currentColor" />
           参加パス
