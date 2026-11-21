@@ -93,12 +93,12 @@ const REWARD_OPTIONS: { id: "coupon" | "points" | "stamp"; label: string; blurb:
 const ORDER = [0, 4, 1, 2, 3, 5];
 
 const STEPS: GameCreateStep[] = [
-  { label: "基本情報", icon: PenLine },
-  { label: "ミッション形式", icon: Sparkles },
+  { label: "基本情報", short: "基本", icon: PenLine },
+  { label: "ミッション形式", short: "形式", icon: Sparkles },
   { label: "ミッション", icon: Flag },
-  { label: "達成条件・特典", icon: Gift },
+  { label: "達成条件・特典", short: "特典", icon: Gift },
   { label: "参加パス", icon: Ticket },
-  { label: "公開設定", icon: Rocket },
+  { label: "公開設定", short: "公開", icon: Rocket },
 ];
 
 /** 日本時間の今日から days 日あとの日付（YYYY-MM-DD）。 */
@@ -591,7 +591,7 @@ export function OrganizerMissionCreateForm() {
       {step === 0 ? (
           <section className="org-mission__card" aria-labelledby="mission-basic">
             <div className="org-mission__card-title">
-              <span>1</span>
+              <span>{ORDER.indexOf(0) + 1}</span>
               <div>
                 <h2 id="mission-basic">基本情報</h2>
                 <p>ゲームの基本情報を設定します。</p>
@@ -725,7 +725,7 @@ export function OrganizerMissionCreateForm() {
       {step === 1 ? (
           <section className="org-mission__card" aria-labelledby="mission-formats">
             <div className="org-mission__card-title">
-              <span>2</span>
+              <span>{ORDER.indexOf(1) + 1}</span>
               <div>
                 <h2 id="mission-formats">ミッション形式</h2>
                 <p>このゲームで使うミッションの形式を選びます。押すと ✓ が付きます（いくつでも選べます）。</p>
@@ -764,7 +764,7 @@ export function OrganizerMissionCreateForm() {
           <section className="org-mission__card" aria-labelledby="mission-list">
             <div className="org-mission__card-head">
               <div className="org-mission__card-title">
-                <span>3</span>
+                <span>{ORDER.indexOf(2) + 1}</span>
                 <div>
                   <h2 id="mission-list">ミッション一覧</h2>
                   <p>ミッションを追加して、達成条件や報酬を設定します。</p>
@@ -922,7 +922,7 @@ export function OrganizerMissionCreateForm() {
       {step === 3 ? (
             <section className="org-mission__card" aria-labelledby="mission-rewards">
               <div className="org-mission__card-title">
-                <span>4</span>
+                <span>{ORDER.indexOf(3) + 1}</span>
                 <div>
                   <h2 id="mission-rewards">達成条件・特典</h2>
                   <p>クリア条件と、参加者への特典を設定します。</p>
@@ -984,8 +984,14 @@ export function OrganizerMissionCreateForm() {
             </section>
       ) : null}
       {step === 4 ? (
-        <section className="org-quiz__card" aria-labelledby="mission-pass">
-          <h2 id="mission-pass">参加パス</h2>
+        <section className="org-mission__card" aria-labelledby="mission-pass">
+          <div className="org-mission__card-title">
+            <span>{ORDER.indexOf(4) + 1}</span>
+            <div>
+              <h2 id="mission-pass">参加パス</h2>
+              <p>だれが、何回遊べるかを決めます。</p>
+            </div>
+          </div>
           <GamePassStep
             audience={audience}
             onAudience={setAudience}
@@ -1006,7 +1012,7 @@ export function OrganizerMissionCreateForm() {
       {step === 5 ? (
             <section className="org-mission__card" aria-labelledby="mission-publish">
               <div className="org-mission__card-title">
-                <span>5</span>
+                <span>{ORDER.indexOf(5) + 1}</span>
                 <div>
                   <h2 id="mission-publish">公開設定</h2>
                   <p>参加の範囲や表示内容を選びます。</p>
