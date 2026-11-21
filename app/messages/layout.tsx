@@ -164,113 +164,55 @@ function OrganizerPersonRow({ item, activeId, basePath }: { item: InboxItem; act
   );
 }
 
+/** 利用者のチャットの1行：主催者のチャットと同じカードの形。会話の種類（参加・手伝い・フォロー）を色で見分ける */
 function PersonRow({ item, activeId, basePath }: { item: InboxItem; activeId?: string; basePath: string }) {
   const name = getName(item);
   const active = item.conversation_id === activeId;
   const unread = item.unread_count > 0;
   const photo = avatarUrlFor(item);
-  const eventLine = isFollowChat(item)
-    ? relationLabel(item)
-    : [item.event_title ?? "イベント", relationLabel(item)].join(" · ");
-
+  const kind = isFollowChat(item) ? "follow" : item.conversation_kind === "general" ? "help" : "join";
+  const tone =
+    kind === "follow"
+      ? { av: "bg-[#e8f1ec] text-[#2d6b4a]", chip: "bg-[#e8f1ec] text-[#2d6b4a]" }
+      : kind === "help"
+        ? { av: "bg-[#fbe9f0] text-[#c0507a]", chip: "bg-[#fbe9f0] text-[#c0507a]" }
+        : { av: "bg-[#fdf1e4] text-[#c7742c]", chip: "bg-[#fdf1e4] text-[#b0641f]" };
+  const topic = kind === "follow" ? null : (item.event_title ?? item.topic_title ?? null);
   return (
     <Link
       href={`${basePath}/${item.conversation_id}`}
-      className="ms-pitem"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "12px 16px",
-        cursor: "pointer",
-        textDecoration: "none",
-        background: active ? C.greenL : "transparent",
-        transition: "background .1s",
-        borderBottom: `1px solid ${C.border2}`,
-      }}
+      className={`mx-3 mb-2 flex items-center gap-3 rounded-[18px] border px-3.5 py-3 no-underline shadow-[0_1px_4px_rgba(23,63,44,0.05)] active:bg-[#f7f5ee] ${unread ? "border-[#d9bc6e] bg-white" : "border-[#ece8dc] bg-white"} ${active ? "ring-1 ring-[#173f2c]" : ""}`}
     >
-      <div
-        className="ms-av"
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 16,
-          fontWeight: 600,
-          flexShrink: 0,
-          background: C.greenL,
-          color: C.green,
-          overflow: "hidden",
-        }}
-      >
+      <span className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full text-[17px] font-bold ${tone.av}`}>
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={photo} alt="" className="h-full w-full object-cover" />
         ) : (
           initials(name)
         )}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <div
-            className="ms-pname"
-            style={{
-              fontSize: 14,
-              fontWeight: unread ? 700 : 500,
-              color: C.t1,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              flex: 1,
-            }}
-          >
-            {name}
-          </div>
-          <span className="ms-ptime" style={{ fontSize: 11, color: C.t3, flexShrink: 0 }}>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline gap-2">
+          <span className={`min-w-0 flex-1 truncate text-[14.5px] text-[#1f2a24] ${unread ? "font-bold" : "font-semibold"}`}>{name}</span>
+          <span className={`shrink-0 text-[11px] ${unread ? "font-bold text-[#173f2c]" : "text-[#9aa29c]"}`}>
             {item.last_message_at ? formatRel(item.last_message_at) : ""}
           </span>
-        </div>
-        <div
-          className="ms-pprev"
-          style={{
-            fontSize: 13,
-            color: unread ? C.t1 : C.t3,
-            fontWeight: unread ? 500 : 400,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            marginTop: 2,
-          }}
-        >
-          {item.last_message_content ?? "メッセージがありません"}
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            color: C.t3,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            marginTop: 2,
-          }}
-        >
-          {eventLine}
-        </div>
-      </div>
-      {unread && (
-        <div
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            flexShrink: 0,
-            background: C.green,
-          }}
-        />
-      )}
+        </span>
+        <span className="mt-0.5 flex items-center gap-2">
+          <span className={`min-w-0 flex-1 truncate text-[13px] ${unread ? "font-medium text-[#1f2a24]" : "text-[#7b877f]"}`}>
+            {item.last_message_content ?? "まだメッセージはありません"}
+          </span>
+          {unread ? (
+            <span className="min-w-[20px] shrink-0 rounded-full bg-[#173f2c] px-1.5 text-center text-[11px] font-bold leading-[20px] text-[#f6ebc8]">
+              {item.unread_count > 99 ? "99+" : item.unread_count}
+            </span>
+          ) : null}
+        </span>
+        <span className="mt-1 flex min-w-0 items-center gap-1.5">
+          <span className={`shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold ${tone.chip}`}>{relationLabel(item)}</span>
+          {topic ? <span className="min-w-0 flex-1 truncate text-[11.5px] font-medium text-[#5f6d64]">{topic}</span> : null}
+        </span>
+      </span>
     </Link>
   );
 }
@@ -436,19 +378,13 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               <p className="mt-0.5 text-[12px] text-[#6b776f] max-[899px]:hidden">参加者・ボランティアからの質問や連絡がここに届きます</p>
             </div>
           ) : (
-          <div
-            className="ms-sidebar-title"
-            style={{
-              fontSize: 17,
-              fontWeight: 700,
-              color: C.t1,
-              marginBottom: 10,
-              letterSpacing: "-.2px",
-              lineHeight: 1.2,
-            }}
-          >
-            メッセージ
-          </div>
+            // 利用者：主催者と同じ金色の英字ラベルと明朝の見出し
+            <div className="mb-2.5">
+              <OrgEyebrow>MESSAGES</OrgEyebrow>
+              <h1 className="mt-1 text-[21px] font-bold leading-tight tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
+                チャット
+              </h1>
+            </div>
           )}
           <div style={{ position: "relative" }}>
             <svg
@@ -512,9 +448,9 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                     flexShrink: 0,
                     padding: "5px 12px",
                     borderRadius: 100,
-                    border: `1px solid ${on ? (scope === "organizer" ? "#173f2c" : C.green) : C.border}`,
-                    background: on ? (scope === "organizer" ? "#173f2c" : C.green) : "transparent",
-                    color: on ? (scope === "organizer" ? "#f6ebc8" : "#fff") : C.t2,
+                    border: `1px solid ${on ? "#173f2c" : C.border}`,
+                    background: on ? "#173f2c" : "#fff",
+                    color: on ? "#f6ebc8" : C.t2,
                     fontFamily: "inherit",
                     fontSize: 12,
                     fontWeight: on ? 600 : 500,
@@ -548,7 +484,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
           </div>
         </div>
 
-        <div className="ms-conv-scroll" style={{ flex: 1, overflowY: "auto", background: scope === "organizer" ? "#f7f6f2" : undefined }}>
+        <div className="ms-conv-scroll" style={{ flex: 1, overflowY: "auto", background: "#f7f6f2" }}>
           {error && (
             <div style={{ padding: 16 }}>
               <div style={{ borderRadius: 12, border: "1px solid #fecaca", background: "#fef2f2", padding: "12px 16px" }}>
@@ -594,14 +530,18 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
               <p style={{ fontSize: 13, color: C.t3 }}>条件に合う会話はありません</p>
             </div>
           )}
-          {!loading && !error && scope === "organizer" ? (
+          {!loading && !error ? (
             <div className="pt-3">
               {/* やり取りのある会話（未読が上） */}
               {visible
                 .filter((item) => item.last_message_at || item.last_message_content)
-                .map((item) => (
-                  <OrganizerPersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
-                ))}
+                .map((item) =>
+                  scope === "organizer" ? (
+                    <OrganizerPersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
+                  ) : (
+                    <PersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
+                  ),
+                )}
               {/* まだやり取りのない会話は、下にたたんでおく */}
               {(() => {
                 const quiet = visible.filter((item) => !item.last_message_at && !item.last_message_content);
@@ -619,9 +559,13 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                       <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
                     </button>
                     {open
-                      ? quiet.map((item) => (
-                          <OrganizerPersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
-                        ))
+                      ? quiet.map((item) =>
+                          scope === "organizer" ? (
+                            <OrganizerPersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
+                          ) : (
+                            <PersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
+                          ),
+                        )
                       : null}
                   </div>
                 );
@@ -631,15 +575,14 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
                 <div className="mx-3 mt-4 rounded-[16px] border border-dashed border-[#e1d6b4] bg-[#fffdf7] px-4 py-4 text-center">
                   <p className="text-[12.5px] font-bold text-[#173f2c]">チャットはどこから届く？</p>
                   <p className="mt-1 text-[11.5px] leading-relaxed text-[#6b776f]">
-                    イベントのページの「主催者に相談」や、ボランティアの応募から届きます。未読は上に並び、返事がまだの会話には「返事待ち」が付きます。
+                    {scope === "organizer"
+                      ? "イベントのページの「主催者に相談」や、ボランティアの応募から届きます。未読は上に並び、返事がまだの会話には「返事待ち」が付きます。"
+                      : "イベントのページの「主催者に相談」や、ボランティアの応募、フォローした人とのやり取りがここに並びます。未読は上に出ます。"}
                   </p>
                 </div>
               ) : null}
             </div>
           ) : null}
-          {!loading && !error && scope !== "organizer" && visible.map((item) => (
-            <PersonRow key={item.conversation_id} item={item} activeId={conversationId} basePath={basePath} />
-          ))}
         </div>
       </aside>
 
