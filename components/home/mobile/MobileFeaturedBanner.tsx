@@ -41,7 +41,7 @@ function FeaturedCard({ item, priority }: { item: MachiFeedItem; priority: boole
   return (
     <Link
       href={item.href}
-      className="flex w-[calc(50%-5px)] min-w-[156px] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_4px_14px_rgba(22,56,40,0.08)] active:scale-[0.98]"
+      className="flex w-[calc(50%-5px)] min-w-[156px] tablet:w-[calc(33.333%-7px)] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-[#ebeee8] bg-white shadow-[0_4px_14px_rgba(22,56,40,0.08)] active:scale-[0.98]"
       aria-label={`${item.title}を見る`}
     >
       <span className="relative block aspect-[4/3] w-full bg-[#eef3ef]">
@@ -51,7 +51,7 @@ function FeaturedCard({ item, priority }: { item: MachiFeedItem; priority: boole
             alt=""
             fill
             priority={priority}
-            sizes="50vw"
+            sizes="(min-width: 600px) 33vw, 50vw"
             className="object-cover"
           />
         ) : (
