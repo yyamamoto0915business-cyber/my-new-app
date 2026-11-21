@@ -490,7 +490,6 @@ const SERIF = ORG_SERIF;
 const KIND_PAGES: { href: string; label: string; kind: Kind }[] = [
   { href: "/organizer/stores", label: "お店の管理", kind: "store" },
   { href: "/organizer/kitchen-cars", label: "キッチンカーの管理", kind: "kitchen" },
-  { href: "/organizer/games", label: "ゲームの管理", kind: "game" },
 ];
 
 /** 主催者：掲載管理（スマホ、見本「02_掲載管理」）。種類をまたいで1つの一覧にする */
