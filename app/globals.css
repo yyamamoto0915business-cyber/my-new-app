@@ -39660,3 +39660,115 @@ button.mg-album-place {
     aspect-ratio: 16 / 10;
   }
 }
+
+/* ===== スタート画面の上の帯：動き方・光の色・真ん中の絵・高さ ===== */
+.game-scene--start {
+  overflow: hidden;
+}
+.game-scene--start[style*="--band-color"] .rally-burst {
+  background: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--band-color) 32%, transparent) 0deg 8deg,
+    transparent 8deg 22deg
+  );
+}
+.game-scene--start[style*="--band-color"] .game-scene__sparkle {
+  color: var(--band-color);
+}
+.game-scene--h-low {
+  min-height: 4.6rem !important;
+}
+.game-scene--h-high {
+  min-height: 10.5rem !important;
+}
+.game-scene--h-high .game-scene__sparkle svg {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+.game-scene--motion-still .game-scene__sparkle {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.35));
+}
+
+/* キラキラ：小さな光がまたたく */
+.game-scene__particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.game-scene__particles span {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--band-color, rgba(255, 255, 255, 0.9));
+  box-shadow: 0 0 8px var(--band-color, rgba(255, 255, 255, 0.8));
+  opacity: 0;
+  animation: game-band-twinkle 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.37s);
+}
+@keyframes game-band-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 紙吹雪：色とりどりの小さな紙が落ちる */
+.game-scene__particles--confetti span {
+  margin-top: -40%;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  box-shadow: none;
+  opacity: 0.9;
+  background: var(--band-color, #ffd36b);
+  animation: game-band-fall 4.2s linear infinite;
+  animation-delay: calc(var(--i) * -0.29s);
+}
+.game-scene__particles--confetti span:nth-child(4n + 1) {
+  background: var(--band-color, #ff9ec4);
+}
+.game-scene__particles--confetti span:nth-child(4n + 2) {
+  background: var(--band-color, #8fd3ff);
+}
+.game-scene__particles--confetti span:nth-child(4n + 3) {
+  background: var(--band-color, #b6f28a);
+}
+@keyframes game-band-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(240px) rotate(540deg);
+  }
+}
+
+/* 作成画面のプレビュー：押して編集できると分かるように */
+.game-scene--start.is-editable {
+  cursor: pointer;
+}
+.game-scene--start.is-editable::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.45);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+/* 動きを減らす設定の人には、帯の動きを止める */
+@media (prefers-reduced-motion: reduce) {
+  .game-scene__particles span {
+    animation: none;
+    opacity: 0.7;
+    transform: none;
+  }
+  .game-scene__particles--confetti span {
+    transform: none;
+  }
+}

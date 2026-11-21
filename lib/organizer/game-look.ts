@@ -251,9 +251,53 @@ export type GameLook = {
   clearWords: GameClearWords;
   /** クリア画面の真ん中の絵。空はトロフィー、none は出さない。 */
   clearIcon: GameLookIcon | "none" | "";
+  /** スタート画面の上の帯。 */
+  band: GameBand;
 };
 
 export type GameClearWords = { congrats: string; title: string };
+
+/** スタート画面の上の帯（動く光の部分）。 */
+export const GAME_BAND_MOTIONS = ["rays", "sparkle", "confetti", "still"] as const;
+export const GAME_BAND_MARKS = ["sparkles", "star", "heart", "flower", "none"] as const;
+export const GAME_BAND_HEIGHTS = ["low", "normal", "high"] as const;
+export type GameBand = {
+  /** 動き方：光が回る・キラキラが舞う・紙吹雪・動かない */
+  motion: (typeof GAME_BAND_MOTIONS)[number];
+  /** 光の色。空は背景の色に合わせる */
+  color: string;
+  /** 真ん中の絵 */
+  mark: (typeof GAME_BAND_MARKS)[number];
+  height: (typeof GAME_BAND_HEIGHTS)[number];
+};
+export const DEFAULT_GAME_BAND: GameBand = { motion: "rays", color: "", mark: "sparkles", height: "normal" };
+export const GAME_BAND_MOTION_LABEL: Record<GameBand["motion"], string> = {
+  rays: "光が回る",
+  sparkle: "キラキラ",
+  confetti: "紙吹雪",
+  still: "動かない",
+};
+export const GAME_BAND_MARK_LABEL: Record<GameBand["mark"], string> = {
+  sparkles: "キラキラ",
+  star: "星",
+  heart: "ハート",
+  flower: "花",
+  none: "なし",
+};
+export const GAME_BAND_HEIGHT_LABEL: Record<GameBand["height"], string> = { low: "低い", normal: "ふつう", high: "高い" };
+/** 光の色の候補（空＝自動） */
+export const GAME_BAND_COLORS = ["", "#ffffff", "#ffd36b", "#ff9ec4", "#8fd3ff", "#b6f28a", "#ffb36b"] as const;
+
+function readBand(raw: unknown): GameBand {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return DEFAULT_GAME_BAND;
+  const r = raw as Record<string, unknown>;
+  return {
+    motion: oneOf(r.motion, GAME_BAND_MOTIONS, DEFAULT_GAME_BAND.motion),
+    color: lookColor(r.color),
+    mark: oneOf(r.mark, GAME_BAND_MARKS, DEFAULT_GAME_BAND.mark),
+    height: oneOf(r.height, GAME_BAND_HEIGHTS, DEFAULT_GAME_BAND.height),
+  };
+}
 export const CLEAR_WORD_MAX = 20;
 
 /** 見た目を編集できる画面。 */
@@ -274,6 +318,7 @@ export const DEFAULT_GAME_LOOK: GameLook = {
   blocks: {},
   clearWords: { congrats: "", title: "" },
   clearIcon: "",
+  band: DEFAULT_GAME_BAND,
 };
 
 /** 色は #rrggbb だけ通す（ワードのように自由に選べる）。 */
@@ -331,6 +376,7 @@ export function readGameLook(raw: unknown): GameLook {
     blocks: readBlockStyles(row.blocks),
     clearWords: readClearWords(row.clearWords),
     clearIcon: row.clearIcon === "none" ? "none" : oneOf(row.clearIcon, GAME_LOOK_ICONS, "" as GameLookIcon),
+    band: readBand(row.band),
   };
 }
 

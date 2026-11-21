@@ -12,8 +12,17 @@ import {
   type GameStartImage,
 } from "@/lib/organizer/game-experience";
 import {
+  DEFAULT_GAME_BAND,
   DEFAULT_GAME_LOOK,
   FINE_DEFAULT,
+  GAME_BAND_COLORS,
+  GAME_BAND_HEIGHTS,
+  GAME_BAND_HEIGHT_LABEL,
+  GAME_BAND_MARKS,
+  GAME_BAND_MARK_LABEL,
+  GAME_BAND_MOTIONS,
+  GAME_BAND_MOTION_LABEL,
+  type GameBand,
   GAME_LOOK_ICONS,
   GAME_LOOK_ICON_LABEL,
   GAME_LOOK_TEXT_LABEL,
@@ -25,7 +34,7 @@ import {
 } from "@/lib/organizer/game-look";
 import { cn } from "@/lib/utils";
 
-export type GameLookSelection = "icon" | "background" | "text" | "clearIcon";
+export type GameLookSelection = "icon" | "background" | "text" | "clearIcon" | "band";
 
 /** プレビューでタップしたアイコン・背景の設定。スタンプラリーの設定パネルと同じ見た目。 */
 export function GameLookEditPanel({
@@ -58,7 +67,9 @@ export function GameLookEditPanel({
 }) {
   const set = (patch: Partial<GameLook>) => onLook({ ...look, ...patch });
   const title =
-    selection === "icon"
+    selection === "band"
+      ? "上の帯"
+      : selection === "icon"
       ? "アイコン"
       : selection === "clearIcon"
         ? "クリアの絵"
@@ -67,6 +78,8 @@ export function GameLookEditPanel({
           ? GAME_LOOK_TEXT_LABEL[textKey]
           : (partLabel ?? "文字")
         : "背景";
+  const band: GameBand = look.band ?? DEFAULT_GAME_BAND;
+  const setBand = (patch: Partial<GameBand>) => set({ band: { ...band, ...patch } });
   const textStyle: GameLookTextStyle = (textKey && look.texts[textKey]) || { color: "", bg: "", ...FINE_DEFAULT };
   const setText = (patch: Partial<GameLookTextStyle>) => {
     if (!textKey) return;
@@ -134,6 +147,34 @@ export function GameLookEditPanel({
           </button>
           <p className="edit-panel__note edit-panel__note--show">押したままドラッグで移動</p>
           {resetButton}
+        </div>
+      ) : selection === "band" ? (
+        <div className="edit-panel__rows">
+          <Row label="動き方">
+            {GAME_BAND_MOTIONS.map((id) => (
+              <Choice key={id} on={band.motion === id} label={GAME_BAND_MOTION_LABEL[id]} onClick={() => setBand({ motion: id })} />
+            ))}
+          </Row>
+          <Row label="光の色">
+            {GAME_BAND_COLORS.map((color) =>
+              color ? (
+                <Swatch key={color} color={color} on={band.color === color} label={color} onClick={() => setBand({ color })} />
+              ) : (
+                <Choice key="auto" on={!band.color} label="自動" onClick={() => setBand({ color: "" })} />
+              ),
+            )}
+          </Row>
+          <Row label="真ん中の絵">
+            {GAME_BAND_MARKS.map((id) => (
+              <Choice key={id} on={band.mark === id} label={GAME_BAND_MARK_LABEL[id]} onClick={() => setBand({ mark: id })} />
+            ))}
+          </Row>
+          <Row label="高さ">
+            {GAME_BAND_HEIGHTS.map((id) => (
+              <Choice key={id} on={band.height === id} label={GAME_BAND_HEIGHT_LABEL[id]} onClick={() => setBand({ height: id })} />
+            ))}
+          </Row>
+          <p className="edit-panel__note edit-panel__note--show">スマホで「動きを減らす」にしている人には、動きを止めて見せます。</p>
         </div>
       ) : selection === "clearIcon" ? (
         <div className="edit-panel__rows">

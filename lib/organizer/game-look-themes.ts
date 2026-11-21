@@ -1,5 +1,5 @@
 import { BG_THEME_SWATCH, type GameBgTheme } from "@/lib/organizer/game-experience";
-import { FINE_DEFAULT, type GameLook, type GameLookFine, type GameLookTextKey } from "@/lib/organizer/game-look";
+import { DEFAULT_GAME_BAND, FINE_DEFAULT, type GameBand, type GameLook, type GameLookFine, type GameLookTextKey } from "@/lib/organizer/game-look";
 
 /**
  * 見た目のテーマ：背景の色と、見出しの書体などをまとめて変える組み合わせ。
@@ -21,6 +21,25 @@ export type GameLookTheme = {
   title: Partial<GameLookFine>;
   kicker?: Partial<GameLookFine>;
   desc?: Partial<GameLookFine>;
+  /** スタート画面の上の帯（動き方・光の色・真ん中の絵）。ないテーマはふつうの「光が回る」 */
+  band?: Partial<GameBand>;
+};
+
+/** テーマごとの帯。テーマの雰囲気に合わせて、選ぶ手間を減らす */
+const THEME_BANDS: Record<string, Partial<GameBand>> = {
+  cute: { motion: "sparkle", color: "#ff9ec4", mark: "heart" },
+  night: { motion: "sparkle", color: "#ffd36b", mark: "star" },
+  spring: { motion: "sparkle", color: "#ff9ec4", mark: "flower" },
+  summer: { motion: "rays", color: "#ffffff" },
+  autumn: { motion: "confetti", color: "#ffb36b", mark: "none" },
+  winter: { motion: "sparkle", color: "#ffffff", mark: "star" },
+  natsumatsuri: { motion: "sparkle", color: "#ffb36b", mark: "star" },
+  christmas: { motion: "sparkle", color: "#ffd36b", mark: "star" },
+  jokamachi: { motion: "still", color: "#ffd36b" },
+  kids: { motion: "confetti", color: "", mark: "star" },
+  gourmet: { motion: "rays", color: "#ffd36b" },
+  kimodameshi: { motion: "still", color: "", mark: "none" },
+  halloween: { motion: "sparkle", color: "#ffb36b", mark: "star" },
 };
 
 export const GAME_LOOK_THEMES: GameLookTheme[] = [
@@ -103,6 +122,7 @@ export function applyGameLookTheme(current: GameLook, theme: GameLookTheme): Gam
     shade: theme.bgImageUrl ? "strong" : current.shade,
     // キャラクターはテーマに組み合わせがあるときだけ変える（あとで「キャラクター」から変えられる）
     iconImageUrl: theme.character ?? current.iconImageUrl,
+    band: { ...DEFAULT_GAME_BAND, ...(theme.band ?? THEME_BANDS[theme.id] ?? {}) },
   };
 }
 

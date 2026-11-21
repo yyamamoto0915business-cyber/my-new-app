@@ -640,7 +640,7 @@ export function GamePhonePreview({
       ) : lookEdit ? (
         <p className="wizard-preview__edit-hint">
           {view === "start"
-            ? "アイコンや背景はタップして変えられます"
+            ? "上の帯・アイコン・背景はタップして変えられます"
             : view === "clear"
               ? "「おめでとう！」「クリア！」の言葉や色、真ん中の絵もタップで変えられます"
               : "部品はタップで選び、押したままドラッグで動かせます"}
@@ -725,7 +725,11 @@ export function GamePhonePreview({
                 ) : view === "start" || !built ? (
                   <main className={cn(mainClass, "play-game--scene")}>
                     <GameLookBackdrop look={look} />
-                    <GameSceneBand look={look} scene="start" />
+                    <GameSceneBand
+                      look={look}
+                      scene="start"
+                      onSelectBand={lookEdit ? () => selectLook("band") : undefined}
+                    />
                     <div className="play-game__card">
                       <GameStartHeader
                         look={lookForScreen(look, "start")}
@@ -856,8 +860,14 @@ export function GamePhonePreview({
       </div>
       {lookEdit && lookSel && !pickingIcon ? (
         <FloatingPanel
-          anchorKey={lookSel === "background" ? "background" : (activeMove ?? "")}
-          getAnchor={lookSel === "background" ? () => getFabAnchor("background") : getMoveAnchor}
+          anchorKey={lookSel === "background" ? "background" : lookSel === "band" ? "band" : (activeMove ?? "")}
+          getAnchor={
+            lookSel === "background"
+              ? () => getFabAnchor("background")
+              : lookSel === "band"
+                ? () => stageRef.current?.querySelector(".game-scene--start") ?? null
+                : getMoveAnchor
+          }
         >
           <GameLookEditPanel
             selection={lookSel}
