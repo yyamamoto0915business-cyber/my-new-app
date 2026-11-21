@@ -115,7 +115,7 @@ export function PcTownKindColumns({
   return (
     <section
       aria-label="種別ごとの新着"
-      className="grid grid-cols-5 gap-3 rounded-[16px] border border-[#ebe4dc] bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)]"
+      className="grid grid-cols-3 gap-x-3 gap-y-5 min-[1280px]:grid-cols-5 min-[1280px]:gap-3 rounded-[16px] border border-[#ebe4dc] bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)]"
     >
       {COLUMNS.map(({ key, label, Icon, color }) => {
         const items = byKind[key] ?? [];
