@@ -2718,3 +2718,18 @@ textarea.play-look-text.is-edit.is-selected {
 body.has-edit-sheet .wizard-preview-sheet .wizard-preview__stage {
   padding-bottom: 50dvh !important;
 }
+
+/* テーマの棚：ほかの設定と同じ丸い×で閉じる */
+.theme-shelf__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: #eff2ee;
+  color: #3d4a40;
+  cursor: pointer;
+}

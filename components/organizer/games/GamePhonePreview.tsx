@@ -3,7 +3,7 @@
 import { isLongGameDesc } from "@/lib/play/game-desc";
 import { PreviewZoom, usePreviewZoom } from "@/components/organizer/games/PreviewZoom";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Award, ImagePlus, Palette, Plus, Shapes, Sparkles, Type, Undo2, Video } from "lucide-react";
+import { Award, ImagePlus, Palette, Plus, Shapes, Sparkles, Type, Undo2, Video, X } from "lucide-react";
 import { GAME_LOOK_CHARACTERS, GAME_LOOK_THEMES, applyGameLookTheme, lookHasCustomStyle, themeSwatch, type GameLookTheme } from "@/lib/organizer/game-look-themes";
 import { PlayLocaleSwitch } from "@/components/play/PlayLocaleSwitch";
 import { PlayCheckin } from "@/components/play/PlayCheckin";
@@ -926,8 +926,9 @@ export function GamePhonePreview({
                   元に戻す
                 </button>
               ) : null}
-              <button type="button" className="theme-shelf__done" onClick={() => setThemeOpen(false)}>
-                決定
+              {/* ほかの設定と同じく右上の×で閉じる（当てたテーマはそのまま） */}
+              <button type="button" className="theme-shelf__close" onClick={() => setThemeOpen(false)} aria-label="閉じる">
+                <X className="h-4 w-4" aria-hidden />
               </button>
             </div>
             <div className="theme-shelf__tabs" role="tablist" aria-label="テーマの種類">

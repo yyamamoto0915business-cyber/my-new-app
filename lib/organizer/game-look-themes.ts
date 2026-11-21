@@ -82,7 +82,7 @@ GAME_LOOK_THEMES.push(
 
 /** キャラクター（真ん中のアイコンを、アプリのマスコットに変える）。空は「もとのアイコン」 */
 export const GAME_LOOK_CHARACTERS: { url: string; label: string }[] = [
-  { url: "", label: "もとのアイコン" },
+  { url: "", label: "もとの絵" },
   { url: "/organizer/games/hub-mascot.png", label: "旗" },
   { url: "/organizer/games/hub-mascot-stamp.png", label: "スタンプ" },
   { url: "/organizer/games/hub-mascot-mission.png", label: "地図" },

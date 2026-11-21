@@ -67,6 +67,9 @@ export function FloatingPanel({
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const phone = useIsPhone();
+  const [folded, setFolded] = useState(false);
+  // 別のものを選んだら、たたんだのを元に戻す
+  useEffect(() => setFolded(false), [anchorKey]);
 
   // スマホ：下のシートに隠れないよう、プレビューの下に余白をとり、選んだものを上半分へスクロールする
   useEffect(() => {
@@ -164,10 +167,30 @@ export function FloatingPanel({
       >
         <style>{CSS}</style>
         <style>{SHEET_CSS}</style>
-        <div style={{ display: "flex", justifyContent: "center", padding: "0.45rem 0 0.15rem" }} aria-hidden>
+        {/* 上のつまみを押すと、いったん小さくたたんで、プレビューを全部見られる */}
+        <button
+          type="button"
+          onClick={() => setFolded((v) => !v)}
+          aria-expanded={!folded}
+          aria-label={folded ? "設定を開く" : "設定をたたんでプレビューを見る"}
+          style={{
+            display: "flex",
+            width: "100%",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "0.2rem",
+            padding: "0.45rem 0 0.2rem",
+            border: 0,
+            background: "transparent",
+            cursor: "pointer",
+          }}
+        >
           <span style={{ width: "2.4rem", height: "0.28rem", borderRadius: 999, background: "#d6ddd7" }} />
-        </div>
-        {children}
+          <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#7b877f" }}>
+            {folded ? "▲ 設定を開く" : "▼ たたむ"}
+          </span>
+        </button>
+        <div style={folded ? { display: "none" } : undefined}>{children}</div>
       </div>,
       document.body,
     );
