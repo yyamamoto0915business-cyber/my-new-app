@@ -177,7 +177,7 @@ export function GamePassStep({
 
   return (
     <div style={{ display: "grid", gap: "0.9rem" }}>
-      <div style={card}>
+      <div style={card} className="game-pass-step__box">
         <p style={heading}>1. 申し込み</p>
         <ChoiceRow<"anyone" | "entry">
           name="申し込み"
@@ -292,7 +292,7 @@ export function GamePassStep({
         ) : null}
       </div>
 
-      <div style={card}>
+      <div style={card} className="game-pass-step__box">
         <p style={heading}>2. 参加のしかた</p>
         {onsiteOnly ? (
           <p style={{ margin: 0, display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.84rem", color: "#3c4a40" }}>
@@ -312,7 +312,7 @@ export function GamePassStep({
         )}
       </div>
 
-      <div style={card}>
+      <div style={card} className="game-pass-step__box">
         <p style={heading}>3. 参加パスの画像</p>
         <small style={{ fontSize: "0.74rem", lineHeight: 1.55, color: "#5d6b62" }}>
           参加パスと、まちの情報のカードに出ます。選ばないときは種類の絵になります。届く参加パスは、右のプレビューで確かめられます。

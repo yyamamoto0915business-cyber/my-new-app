@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import styles from "./StampRallyWizard.module.css";
 import "./wizard-preview.css";
 
-export type GameCreateStep = { label: string; icon: LucideIcon };
+export type GameCreateStep = { label: string; icon: LucideIcon; /** 上の段に出す短い名前（スマホで折れないように） */ short?: string };
 
 /**
  * スタンプラリー以外のゲーム作成で共通の枠。
@@ -180,7 +180,7 @@ export function GameCreateShell({
                       <span className={styles.stepperDot}>
                         {done ? <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> : <Icon className="h-4 w-4" aria-hidden />}
                       </span>
-                      <span className={styles.stepperLabel}>{item.label}</span>
+                      <span className={styles.stepperLabel}>{item.short ?? item.label}</span>
                     </button>
                   </li>
                 );
