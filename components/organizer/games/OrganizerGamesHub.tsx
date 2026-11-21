@@ -338,6 +338,10 @@ const HUB_DATA_CSS = `
 
 export function OrganizerGamesHub() {
   const router = useRouter();
+  // スマホでは、ゲームの一覧は「掲載管理」のゲーム、作るのは「新しく掲載」、効果はダッシュボードにあるので、掲載管理へ移す
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 899px)").matches) router.replace("/organizer/listings?kind=game");
+  }, [router]);
   const listRef = useRef<HTMLElement>(null);
   const templatesRef = useRef<HTMLElement>(null);
   const [pcCreateOpen, setPcCreateOpen] = useState(false);
