@@ -528,7 +528,7 @@ export function OrganizerPhotoCreateForm() {
                       </option>
                     ))}
                   </select>
-                  <small>{eventHint ?? "選ぶと、イベントのページからこのゲームに入れます。開催期間もイベントの日に合わせます。"}</small>
+                  <small>{eventHint ?? "選ぶと、イベントのページから参加でき、期間もイベントに合わせます。"}</small>
                 </label>
                 <label className="org-photo__field">
                   <span>カテゴリ</span>

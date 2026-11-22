@@ -98,7 +98,13 @@ export function GameCreateShell({
           戻る
         </button>
       ) : null}
-      <button type="button" className={styles.textAction} disabled={saving} onClick={onTry}>
+      {/* スマホは右の「プレビュー」と同じ働きなので、押せる所を減らすため出さない */}
+      <button
+        type="button"
+        className={`${styles.textAction}${preview ? " max-[899px]:!hidden" : ""}`}
+        disabled={saving}
+        onClick={onTry}
+      >
         お試しで見る
       </button>
       <button type="button" className={styles.textAction} disabled={saving} onClick={onDraft}>

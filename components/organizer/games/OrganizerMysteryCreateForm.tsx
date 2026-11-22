@@ -312,7 +312,7 @@ export function OrganizerMysteryCreateForm() {
                   ? "イベントを読み込み中です"
                   : events.length === 0
                     ? "先にイベントを掲載すると、対象を選べます"
-                    : "選ぶと、イベントのページからこのゲームに入れます。"}
+                    : "選ぶと、イベントのページから参加できます。"}
               </small>
             </label>
           </section>

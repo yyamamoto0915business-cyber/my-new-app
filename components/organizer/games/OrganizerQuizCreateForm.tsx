@@ -6,13 +6,11 @@ import { useRouter } from "next/navigation";
 import {
   Ticket,
   BookOpen,
-  Camera,
   ChevronDown,
   ChevronUp,
   CircleHelp,
   Copy,
   Gift,
-  MapPin,
   PenLine,
   Plus,
   Trash2,
@@ -63,7 +61,8 @@ const EXAMPLE_DESCRIPTION = "まち歩きながらクイズに挑戦して、地
 
 
 /** 画面に並べる順番（参加パスは基本情報のすぐあと）。中身は STEPS の番号で持つ。 */
-const ORDER = [0, 4, 1, 2, 3];
+// 「出題形式」（1）は出さない：問題ごとに形式を選べるので、先にまとめて選ぶ手順は要らない。
+const ORDER = [0, 4, 2, 3];
 
 const STEPS: GameCreateStep[] = [
   { label: "基本情報", short: "基本", icon: PenLine },
@@ -196,15 +195,7 @@ export function OrganizerQuizCreateForm() {
 
   const editing = questions.find((question) => question.key === editingKey) ?? null;
 
-  function toggleFormat(id: QuizFormatId) {
-    setFormats((current) => {
-      if (current.includes(id)) {
-        if (current.length === 1) return current;
-        return current.filter((item) => item !== id);
-      }
-      return [...current, id];
-    });
-  }
+
 
   function addQuestion() {
     const format = questions[questions.length - 1]?.format ?? formats[0] ?? "choice";
@@ -457,40 +448,6 @@ export function OrganizerQuizCreateForm() {
             </div>
           </section>
       ) : null}
-      {step === 1 ? (
-          <section className="org-quiz__card" aria-labelledby="quiz-formats">
-            <h2 id="quiz-formats">出題形式</h2>
-            <p>
-              使う形式を選んでください。いくつでも選べます。複数選ぶと、問題ごとに形式を切り替えて、1つのクイズの中で組み合わせられます。
-            </p>
-            <ul className="org-quiz__formats">
-              {QUIZ_FORMATS.map((format) => {
-                const on = formats.includes(format.id);
-                const Icon =
-                  format.id === "choice"
-                    ? BookOpen
-                    : format.id === "ox"
-                      ? CircleHelp
-                      : format.id === "photo"
-                        ? Camera
-                        : MapPin;
-                return (
-                  <li key={format.id}>
-                    <button
-                      type="button"
-                      className={cn("org-quiz__format", `is-${format.id}`, on && "is-on")}
-                      onClick={() => toggleFormat(format.id)}
-                    >
-                      <Icon className="h-5 w-5" aria-hidden />
-                      <strong>{format.label}</strong>
-                      <span>{format.blurb}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-      ) : null}
       {step === 2 ? (
           <section className="org-quiz__card" aria-labelledby="quiz-list">
             <div className="org-quiz__card-head">
@@ -558,7 +515,7 @@ export function OrganizerQuizCreateForm() {
                         <div className="org-quiz__editor">
                           <QuizFormatChips
                             question={question}
-                            allowed={formats}
+                            allowed={QUIZ_FORMATS.map((format) => format.id)}
                             onChange={(next) => updateQuestion(question.key, next)}
                           />
                           <QuizCheckpointFields
