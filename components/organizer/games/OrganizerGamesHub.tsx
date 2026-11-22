@@ -447,7 +447,7 @@ export function OrganizerGamesHub({ pickOnly = false }: { pickOnly?: boolean } =
           <h1 className="org-game-pick__title" style={{ fontFamily: ORG_SERIF }}>
             ゲームの種類を選ぶ
           </h1>
-          <p className="org-game-pick__lead">やりたいことを選ぶと、合うひな形が出ます。自由に組み合わせて作ることもできます。</p>
+          <p className="org-game-pick__lead">やりたいことを選ぶと、合うゲームが出ます。見本（夏祭り・商店街など）は、作りながら選べます。</p>
         </header>
       ) : null}
       <div className="org-hub__mobile-home">
@@ -510,7 +510,7 @@ export function OrganizerGamesHub({ pickOnly = false }: { pickOnly?: boolean } =
           <div className="org-hub__mobile-templates-head">
             <h2 id="mobile-templates-heading">
               <Sparkles className="h-4 w-4" aria-hidden />
-              ゲームテンプレート
+              ゲームの種類
             </h2>
             <button
               type="button"
@@ -654,7 +654,7 @@ export function OrganizerGamesHub({ pickOnly = false }: { pickOnly?: boolean } =
         <section className="org-hub-pc__section org-hub-pc__section--templates" aria-labelledby="org-hub-pc-templates-heading">
           <div className="org-hub-pc__head">
             <p className="org-hub-pc__kicker">TEMPLATES</p>
-            <h2 id="org-hub-pc-templates-heading">ゲームテンプレート</h2>
+            <h2 id="org-hub-pc-templates-heading">ゲームの種類</h2>
             <button
               type="button"
               className="org-hub-pc__more"

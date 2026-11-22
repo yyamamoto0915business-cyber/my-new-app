@@ -87,15 +87,15 @@ export function GamePurposePicker({ className }: { className?: string }) {
           <LayoutGrid className="h-5 w-5" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-bold text-white">テンプレートを使わずに作る</span>
+          <span className="block text-[15px] font-bold text-white">自由に組み合わせて作る</span>
           <span className="mt-0.5 block text-[11.5px] text-[#dfe8e1]">行く・答える・集める・ごほうびを自由に組み合わせる</span>
         </span>
         <ChevronRight className="h-5 w-5 shrink-0 text-[#e6d29b]" aria-hidden />
       </Link>
 
       <div>
-        <p className="text-[17px] font-bold text-[#163828]">テンプレートから作る</p>
-        <p className="text-[12.5px] text-[#5f6d64]">何をしたいかを選ぶと、合うひな形が出ます。</p>
+        <p className="text-[17px] font-bold text-[#163828]">種類を選んで作る</p>
+        <p className="text-[12.5px] text-[#5f6d64]">何をしたいかを選ぶと、合うゲームが出ます。見本は作りながら選べます。</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 pc:grid-cols-4" role="radiogroup" aria-label="やりたいこと">
@@ -128,7 +128,7 @@ export function GamePurposePicker({ className }: { className?: string }) {
       </div>
 
       <div className="space-y-2">
-        <p className="text-[13px] font-bold text-[#3f5146]">「{current.label}」のひな形</p>
+        <p className="text-[13px] font-bold text-[#3f5146]">「{current.label}」のゲーム</p>
         <ul className="space-y-2 pc:grid pc:grid-cols-2 pc:gap-2 pc:space-y-0">
           {current.types.map((id) => {
             const t = getOrganizerGameType(id);

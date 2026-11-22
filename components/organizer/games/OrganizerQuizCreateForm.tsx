@@ -56,7 +56,7 @@ import { useGameDraft } from "@/components/organizer/games/useGameDraft";
 import { readGameLook } from "@/lib/organizer/game-look";
 
 /** 欄ははじめ空にし、例は薄い灰色の見本として出す（前は例の文が入っていて、消してから書く手間があった） */
-const EXAMPLE_NAME = "まちの魅力発見！春のまち歩きクイズラリー";
+const EXAMPLE_NAME = "春のまち歩きクイズ";
 const EXAMPLE_DESCRIPTION = "まち歩きながらクイズに挑戦して、地域の歴史やスポットの魅力を発見しよう！すべての問題に正解すると、素敵な特典がもらえます。";
 
 
