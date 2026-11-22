@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useGamePickMode } from "@/hooks/use-game-pick-mode";
 import { useScopedUnreadCount } from "@/hooks/use-scoped-unread-count";
 import { useRegionPreference } from "@/hooks/use-region-preference";
 import { setModeCookie } from "@/lib/mode-preference";
@@ -54,8 +55,8 @@ const ORGANIZER_ICONS = {
 } as const;
 
 /** スマホの下のナビと同じ決まりで、いまのページがどの項目に入るかを決める */
-function isOrganizerItemActive(pathname: string, href: string): boolean {
-  const id = organizerBottomNavActive(pathname);
+function isOrganizerItemActive(pathname: string, href: string, gamePick: boolean): boolean {
+  const id = organizerBottomNavActive(pathname, gamePick);
   const item = ORGANIZER_NAV_ITEMS.find((i) => i.href === href);
   return Boolean(item && id === item.id);
 }
@@ -165,6 +166,7 @@ export function BottomNav() {
   const pathname = usePathname() ?? "";
   const hideOnAuth = shouldHidePcGlobalNav(pathname);
   const organizerArea = isOrganizerDashboardPath(pathname);
+  const gamePick = useGamePickMode();
   // 利用者モードでは利用者のチャット（/messages）、主催者モードでは主催者のチャットの未読
   const memberUnread = useScopedUnreadCount("member", !hideOnAuth && !organizerArea);
   const organizerUnread = useScopedUnreadCount("organizer", !hideOnAuth && organizerArea);
@@ -177,7 +179,7 @@ export function BottomNav() {
   }, [pathname]);
 
   const isActive = (href: string) => {
-    if (organizerArea) return isOrganizerItemActive(pathname, href);
+    if (organizerArea) return isOrganizerItemActive(pathname, href, gamePick);
     if (href === "/") return pathname === "/";
     if (href === "/organizer/listings") return pathname.startsWith("/organizer");
     if (href === "/profile/posts") return pathname.startsWith("/profile/posts");

@@ -13,8 +13,13 @@ export const ORGANIZER_TOOLS_HREF = "/organizer/tools";
 export type OrganizerBottomNavId = "home" | "listings" | "new" | "chat" | "mypage";
 
 /** スマホ下部ナビで、いまのページがどの項目に入るか */
-export function organizerBottomNavActive(pathname: string): OrganizerBottomNavId | null {
+export function organizerBottomNavActive(
+  pathname: string,
+  /** 「新しく掲載 → ゲーム」の種類えらび（/organizer/games?pick=1）を開いているか */
+  gamePick = false
+): OrganizerBottomNavId | null {
   if (pathname === ORGANIZER_MOBILE_HOME_HREF) return "home";
+  if (gamePick && pathname === "/organizer/games") return "new";
   if (pathname === ORGANIZER_NEW_LISTING_HREF || /^\/organizer\/[^/]+\/new\/?$/.test(pathname)) {
     return "new";
   }

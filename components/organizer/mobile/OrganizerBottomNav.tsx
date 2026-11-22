@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useGamePickMode } from "@/hooks/use-game-pick-mode";
 import { CalendarDays, Home, MessageCircle, Plus, User, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isEventFormRoute } from "@/lib/is-event-form-route";
@@ -57,9 +58,10 @@ export function OrganizerBottomNav() {
   );
 
   // 作成・編集フォーム・プロフィール編集と、会話を開いているときは入力に集中させる（利用者側と同じ）
+  const gamePick = useGamePickMode();
   if (hidden) return null;
 
-  const activeId = organizerBottomNavActive(pathname);
+  const activeId = organizerBottomNavActive(pathname, gamePick);
 
   return (
     <nav
