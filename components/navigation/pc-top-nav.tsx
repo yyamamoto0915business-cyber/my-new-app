@@ -13,12 +13,10 @@ import {
 } from "@/lib/profile-avatar";
 import { isAdmin } from "@/lib/admin";
 import { useOrganizerNavPlan } from "@/lib/organizer-pro-store";
-import {
-  OrganizerPlanTabBadge,
-  organizerPlanTabClass,
-} from "@/components/navigation/OrganizerPlanTabMark";
 import { isEventModePath, isMachiModePath, isOrganizerDashboardPath } from "@/lib/top-mode-active";
-import { CalendarDays, MapPinned } from "lucide-react";
+import { ArrowLeftRight, CalendarDays, MapPinned } from "lucide-react";
+import { getOrganizerCatalogPlan } from "@/lib/organizer-plans";
+import { ORGANIZER_MOBILE_HOME_HREF } from "@/lib/organizer/organizer-nav";
 import { setModeCookie } from "@/lib/mode-preference";
 import { shouldHidePcGlobalNav } from "@/lib/is-auth-route";
 import { ParticipationPassIcon } from "@/components/pass/ParticipationPassIcon";
@@ -32,15 +30,12 @@ function isMissingAvatarColumnsError(message: string): boolean {
 const NAV_LINKS = [
   { label: "まちの情報", href: "/", icon: "event" as const },
   { label: "みんなの投稿", href: "/posts", icon: "machi" as const },
-  { label: "主催", href: "/organizer/listings", icon: null },
 ] as const;
 
-function isOrganizerEntryHref(href: string) {
-  return href === "/organizer" || href === "/organizer/listings";
-}
+/** 利用者モード → 主催者モードの入口（スマホの「主催者モードへ」と同じ行き先） */
+const ORGANIZER_ENTRY_HREF = ORGANIZER_MOBILE_HOME_HREF;
 
 function isNavActive(pathname: string, href: string) {
-  if (isOrganizerEntryHref(href)) return pathname.startsWith("/organizer");
   if (href === "/posts") return isMachiModePath(pathname);
   if (href === "/pass") return pathname.startsWith("/pass");
   if (href === "/") return isEventModePath(pathname);
@@ -48,8 +43,7 @@ function isNavActive(pathname: string, href: string) {
 }
 
 function syncModeCookieForNav(href: string) {
-  if (isOrganizerEntryHref(href)) setModeCookie("ORGANIZER");
-  else if (href === "/posts") setModeCookie("VOLUNTEER");
+  if (href === "/posts") setModeCookie("VOLUNTEER");
   else if (href === "/") setModeCookie("EVENT");
 }
 
@@ -112,6 +106,7 @@ function PcTopNavInner() {
   const pathname = usePathname() ?? "";
   const { user } = useSupabaseUser();
   const organizerPlan = useOrganizerNavPlan();
+  const organizerArea = isOrganizerDashboardPath(pathname);
   const [participantAvatarUrl, setParticipantAvatarUrl] = useState<string | null>(null);
   const [organizerAvatarUrl, setOrganizerAvatarUrl] = useState<string | null>(null);
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
@@ -181,7 +176,7 @@ function PcTopNavInner() {
       organizer_avatar_url: organizerAvatarUrl,
     },
     // 主催者の画面では主催者のアイコン、それ以外では参加者のアイコン（表示モードの設定は使わない）
-    isOrganizerDashboardPath(pathname) ? "organizer" : "participant"
+    organizerArea ? "organizer" : "participant"
   );
 
   return (
@@ -198,76 +193,68 @@ function PcTopNavInner() {
         MachiGlyph
       </Link>
 
-      {/* Nav links */}
-      <nav className="flex items-center gap-1" aria-label="メインナビゲーション">
-        {NAV_LINKS.map((link) => {
-          const active = isNavActive(pathname, link.href);
-          const isOrganizerPlanLink =
-            isOrganizerEntryHref(link.href) && organizerPlan;
-
-          if (isOrganizerPlanLink && organizerPlan) {
-            return (
-              <span
-                key={link.href}
-                className={`org-tab-plan-wrap org-tab-plan-wrap--${organizerPlan} relative z-10 inline-block overflow-visible`}
-              >
-                <Link
-                  href={link.href}
-                  prefetch
-                  className={
-                    active
-                      ? organizerPlanTabClass(organizerPlan)
-                      : "whitespace-nowrap rounded-[20px] px-[12px] py-[5px] text-[13px] font-medium text-[#3a5848] transition-colors hover:text-[#1e3828]"
-                  }
-                  aria-current={active ? "page" : undefined}
-                  onClick={() => syncModeCookieForNav(link.href)}
-                >
-                  {link.label}
-                </Link>
-                <OrganizerPlanTabBadge plan={organizerPlan} />
-                {active ? (
-                  <>
-                    <span className="org-pro-star org-pro-star-1" aria-hidden />
-                    <span className="org-pro-star org-pro-star-2" aria-hidden />
-                    <span className="org-pro-star org-pro-star-3" aria-hidden />
-                  </>
-                ) : null}
-              </span>
-            );
-          }
-
-          return (
+      {/* 真ん中：利用者モードでは「まちの情報・みんなの投稿」、主催者モードではモード名とプラン */}
+      {organizerArea ? (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded-[20px] bg-[#173f2c] px-[14px] py-[6px] text-[13px] font-semibold text-white">
+            主催者モード
+          </span>
+          {organizerPlan ? (
             <Link
-              key={link.href}
-              href={link.href}
-              prefetch
-              onClick={() => syncModeCookieForNav(link.href)}
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[20px] px-[14px] py-[6px] text-[13px] font-medium transition-colors ${
-                active
-                  ? "bg-[#1a2b3c] text-white"
-                  : "text-[#3d5c48] hover:bg-[#f4f6f4]"
-              }`}
+              href="/organizer/settings/plan"
+              className={`org-plan-tab-badge org-plan-chip org-plan-tab-badge--${organizerPlan}`}
+              aria-label={`今のプラン：${getOrganizerCatalogPlan(organizerPlan).name}（プランの画面へ）`}
             >
-              {link.icon === "event" && (
-                <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-              )}
-              {link.icon === "machi" && (
-                <MapPinned className="h-3.5 w-3.5" aria-hidden />
-              )}
-              {link.label}
+              {getOrganizerCatalogPlan(organizerPlan).name}
             </Link>
-          );
-        })}
-      </nav>
+          ) : null}
+        </div>
+      ) : (
+        <nav className="flex items-center gap-1" aria-label="メインナビゲーション">
+          {NAV_LINKS.map((link) => {
+            const active = isNavActive(pathname, link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                prefetch
+                onClick={() => syncModeCookieForNav(link.href)}
+                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[20px] px-[14px] py-[6px] text-[13px] font-medium transition-colors ${
+                  active
+                    ? "bg-[#1a2b3c] text-white"
+                    : "text-[#3d5c48] hover:bg-[#f4f6f4]"
+                }`}
+              >
+                {link.icon === "event" && (
+                  <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+                )}
+                {link.icon === "machi" && (
+                  <MapPinned className="h-3.5 w-3.5" aria-hidden />
+                )}
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
 
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* 右側: 参加パス・通知・ユーザー（iPad 横など 1199px までは「参加パス」を左のメニューに任せる。「主催」は切りかえの入口なので残す） */}
+      {/* 右側: モードの切りかえ・参加パス・通知・ユーザー（iPad 横など 1199px までは「参加パス」を左のメニューに任せる） */}
       <div className="flex items-center gap-2">
         <Link
+          href={organizerArea ? "/" : ORGANIZER_ENTRY_HREF}
+          prefetch
+          onClick={() => setModeCookie(organizerArea ? "EVENT" : "ORGANIZER")}
+          className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-[20px] border border-[#c9a54e]/60 bg-[#fbf6e8] px-3.5 text-[13px] font-semibold text-[#173f2c] transition hover:bg-[#f6ebc8]"
+        >
+          <ArrowLeftRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          {organizerArea ? "利用者モードへ" : "主催者モードへ"}
+        </Link>
+        <Link
           href="/pass"
-          className="max-[1199px]:hidden inline-flex h-9 items-center gap-1.5 rounded-[20px] border border-[#c8dcd0] bg-white px-3.5 text-[13px] font-medium text-[#1e3848] transition hover:bg-[#ecf6ee]"
+          className={`${organizerArea ? "hidden" : "max-[1199px]:hidden inline-flex"} h-9 items-center gap-1.5 rounded-[20px] border border-[#c8dcd0] bg-white px-3.5 text-[13px] font-medium text-[#1e3848] transition hover:bg-[#ecf6ee]`}
         >
           <ParticipationPassIcon className="h-[22px] w-[22px]" stroke="currentColor" />
           参加パス
