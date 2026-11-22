@@ -35,9 +35,9 @@ export function GameBasicsExamples({
         </button>
       </div>
       {open ? (
-        <ul className="mt-2 grid gap-1.5">
+        <ul className="mt-2 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
           {examples.map((example) => (
-            <li key={example.label}>
+            <li key={example.label} className="shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -45,11 +45,10 @@ export function GameBasicsExamples({
                   onPick(example);
                   setOpen(false);
                 }}
-                className="flex w-full flex-col items-start gap-0.5 rounded-[12px] border border-[#e6e2d6] bg-white px-3.5 py-2.5 text-left transition hover:border-[#c9a54e]"
+                className="flex w-[11.5rem] flex-col items-start gap-0.5 rounded-[12px] border border-[#e6e2d6] bg-white px-3 py-2 text-left transition hover:border-[#c9a54e]"
               >
                 <span className="text-[11px] font-bold text-[#a3812f]">{example.label}</span>
-                <span className="text-[14px] font-bold text-[#163828]">{example.name}</span>
-                <span className="line-clamp-2 text-[12px] leading-snug text-[#6b776f]">{example.description}</span>
+                <span className="line-clamp-1 text-[13px] font-bold text-[#163828]">{example.name}</span>
               </button>
             </li>
           ))}

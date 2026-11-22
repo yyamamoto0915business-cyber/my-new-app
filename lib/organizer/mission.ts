@@ -216,3 +216,65 @@ export function sanitizeMissionSettings(raw: unknown): MissionSettings | null {
     },
   };
 }
+
+/** 「見本からまるごと始める」：ゲーム名・説明・ミッション・クリア条件・特典がまとめて入った見本 */
+export type MissionStarter = {
+  id: string;
+  label: string;
+  blurb: string;
+  name: string;
+  description: string;
+  missions: () => MissionItem[];
+  clearCount: number;
+  rewards: { coupon: boolean; points: boolean; stamp: boolean };
+};
+
+function m(kind: MissionKindId, name: string, condition: string, extra: Partial<MissionItem> = {}): MissionItem {
+  return { ...createMissionItem(kind), name, condition, ...extra };
+}
+
+export const MISSION_STARTERS: MissionStarter[] = [
+  {
+    id: "walk",
+    label: "まち歩き",
+    blurb: "行く・撮る・答えるの4つ",
+    name: "春のまち発見ミッション",
+    description: "まちを歩きながら、写真を撮ったりクイズに答えたりして、ミッションをクリアしよう！ぜんぶクリアすると特典がもらえます。",
+    missions: () => [
+      m("visit", "駅前の広場に行こう", "駅前の広場に着く", { place: "駅前の広場" }),
+      m("photo", "お気に入りの景色を撮ろう", "まちで見つけた好きな景色を撮って投稿"),
+      m("quiz", "まちのクイズに答えよう", "クイズに正解する", { question: "このまちの名物はどれ？", choices: ["ほうとう", "たこ焼き", "もみじまんじゅう"], correctIndex: 0 }),
+      m("keyword", "合言葉を見つけよう", "商店街の看板に書いてある合言葉を入れる", { keyword: "まちあるき" }),
+    ],
+    clearCount: 3,
+    rewards: { coupon: true, points: false, stamp: false },
+  },
+  {
+    id: "festival",
+    label: "お祭り",
+    blurb: "会場で楽しむ3つ",
+    name: "夏祭りチャレンジミッション",
+    description: "お祭り会場のあちこちに用意したミッションに挑戦しよう。屋台や会場の見どころを楽しみながら、特典を目指してください。",
+    missions: () => [
+      m("checkin", "本部テントでチェックイン", "本部テントでチェックインする", { place: "本部テント" }),
+      m("photo", "お祭りの一枚を撮ろう", "お祭りの楽しい瞬間を撮って投稿"),
+      m("text", "感想をひとこと", "お祭りの感想を送る", { question: "今日いちばん楽しかったことは？" }),
+    ],
+    clearCount: 3,
+    rewards: { coupon: true, points: false, stamp: false },
+  },
+  {
+    id: "kids",
+    label: "子ども向け",
+    blurb: "親子で楽しむ3つ",
+    name: "こども探検ミッション",
+    description: "親子で楽しめるミッションです。まちの「ふしぎ」を見つけて、ぜんぶクリアしたらごほうびがもらえるよ！",
+    missions: () => [
+      m("visit", "公園に行ってみよう", "公園に着く", { place: "まちの公園" }),
+      m("photo", "まちの「ふしぎ」を撮ろう", "ふしぎだと思ったものを撮って投稿"),
+      m("quiz", "まちクイズ", "クイズに正解する", { question: "公園にある大きな木は何の木？", choices: ["さくら", "まつ", "いちょう"], correctIndex: 0 }),
+    ],
+    clearCount: 3,
+    rewards: { coupon: false, points: false, stamp: true },
+  },
+];

@@ -1,7 +1,6 @@
 "use client";
 
 import { useGameBasicsCarry } from "@/components/organizer/games/GamePlayStyleSwitch";
-import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { POINTS_NEED_EVENT_HINT, POINTS_NEED_EVENT_MESSAGE } from "@/lib/organizer/points-need-event";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -39,6 +38,8 @@ import {
   missionKindLabel,
   missionRewardLabel,
   sampleMissions,
+  MISSION_STARTERS,
+  type MissionStarter,
   type MissionItem,
   type MissionKindId,
   type MissionReward,
@@ -185,6 +186,7 @@ export function OrganizerMissionCreateForm() {
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   // まっさらから組み立てる入口なので、ミッションも空から始める（例は「例を入れる」で入る）
   const [missions, setMissions] = useState<MissionItem[]>([]);
+  const [starterId, setStarterId] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [clearCount, setClearCount] = useState(3);
   const [couponOn, setCouponOn] = useState(true);
@@ -262,6 +264,23 @@ export function OrganizerMissionCreateForm() {
       ? Math.round((Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / 86400000) + 1
       : 0;
   const clearOptions = Math.max(missions.length, clearCount, 1);
+
+  function applyStarter(starter: MissionStarter) {
+    if (
+      (missions.length > 0 || name.trim() || description.trim()) &&
+      !window.confirm(`「${starter.label}」の見本に入れかえますか？いま入っているゲーム名・説明・ミッションは見本の内容になります。`)
+    ) {
+      return;
+    }
+    setName(starter.name);
+    setDescription(starter.description);
+    setMissions(starter.missions());
+    setClearCount(starter.clearCount);
+    setCouponOn(starter.rewards.coupon);
+    setPointsOn(starter.rewards.points);
+    setStampOn(starter.rewards.stamp);
+    setStarterId(starter.id);
+  }
 
   /** 「部品を足す」で選んだ種類のミッションを足す（画面案 ③）。選んだ種類はミッション形式にも入れる */
   function addMission(kind: MissionKindId) {
@@ -588,7 +607,27 @@ export function OrganizerMissionCreateForm() {
               <span>{ORDER.indexOf(0) + 1}</span>
               <div>
                 <h2 id="mission-basic">基本情報</h2>
-                <p>ゲームの基本情報を設定します。</p>
+                <p>ゲーム名と期間を決めます。ほかはあとからでも変えられます。</p>
+              </div>
+            </div>
+            {/* 見本からまるごと始める：ミッション・特典まで入った状態から、自分のまちに合わせて直す */}
+            <div className="org-mission__starters">
+              <p>
+                <b>見本からまるごと始める</b>
+                <small>ミッションと特典まで入ります。あとは自分のまちに合わせて直すだけ</small>
+              </p>
+              <div className="org-mission__starter-row">
+                {MISSION_STARTERS.map((starter) => (
+                  <button
+                    key={starter.id}
+                    type="button"
+                    className={starterId === starter.id ? "is-on" : undefined}
+                    onClick={() => applyStarter(starter)}
+                  >
+                    <strong>{starter.label}</strong>
+                    <span>{starter.blurb}</span>
+                  </button>
+                ))}
               </div>
             </div>
             <div className="org-mission__grid">
@@ -605,40 +644,6 @@ export function OrganizerMissionCreateForm() {
                 <small>
                   {name.length}/50
                 </small>
-              </label>
-              <GameBasicsExamples
-                examples={GAME_BASICS_EXAMPLES.mission}
-                hasInput={Boolean(name.trim() || description.trim())}
-                onPick={(example) => {
-                  setName(example.name);
-                  setDescription(example.description);
-                }}
-              />
-              <label className="org-mission__field">
-                <span>対象イベント（任意）</span>
-                <select
-                  value={eventId}
-                  disabled={loadingEvents}
-                  onChange={(e) => {
-                    setEventId(e.target.value);
-                    // イベントの日があれば、開催期間をその日に合わせる（あとで変えられる）。
-                    const picked = events.find((event) => event.id === e.target.value);
-                    const day = picked?.date?.slice(0, 10);
-                    if (day && /^\d{4}-\d{2}-\d{2}$/.test(day)) {
-                      setStartDate(day);
-                      setEndDate(day);
-                    }
-                  }}
-                >
-                  <option value="">あとで選ぶ</option>
-                  {events.map((event) => (
-                    <option key={event.id} value={event.id}>
-                      {event.title}
-                      {event.date ? `（${event.date}）` : ""}
-                    </option>
-                  ))}
-                </select>
-                <small>{eventHint ?? "選ぶと、イベントのページから参加でき、期間もイベントに合わせます。"}</small>
               </label>
               <fieldset className="org-mission__field">
                 <legend>
@@ -699,6 +704,35 @@ export function OrganizerMissionCreateForm() {
                   {periodError ?? `${periodDays}日間`}
                 </small>
               </fieldset>
+              <details className="org-mission__more org-mission__field--wide" open={Boolean(eventId || description)}>
+                <summary>くわしく決める（任意）<span>対象イベント・説明文</span></summary>
+                <div className="org-mission__more-body">
+              <label className="org-mission__field org-mission__field--wide">
+                <span>対象イベント（任意）</span>
+                <select
+                  value={eventId}
+                  disabled={loadingEvents}
+                  onChange={(e) => {
+                    setEventId(e.target.value);
+                    // イベントの日があれば、開催期間をその日に合わせる（あとで変えられる）。
+                    const picked = events.find((event) => event.id === e.target.value);
+                    const day = picked?.date?.slice(0, 10);
+                    if (day && /^\d{4}-\d{2}-\d{2}$/.test(day)) {
+                      setStartDate(day);
+                      setEndDate(day);
+                    }
+                  }}
+                >
+                  <option value="">あとで選ぶ</option>
+                  {events.map((event) => (
+                    <option key={event.id} value={event.id}>
+                      {event.title}
+                      {event.date ? `（${event.date}）` : ""}
+                    </option>
+                  ))}
+                </select>
+                <small>{eventHint ?? "選ぶと、イベントのページから参加でき、期間もイベントに合わせます。"}</small>
+              </label>
               <label className="org-mission__field org-mission__field--wide">
                 <span>説明文</span>
                 <textarea
@@ -709,6 +743,8 @@ export function OrganizerMissionCreateForm() {
                 />
                 <small>{description.length}/300</small>
               </label>
+                </div>
+              </details>
             </div>
           </section>
       ) : null}
@@ -722,14 +758,27 @@ export function OrganizerMissionCreateForm() {
                   <p>ミッションを追加して、達成条件や報酬を設定します。</p>
                 </div>
               </div>
-              <button type="button" className="org-mission__add" onClick={() => setAddSheetOpen(true)}>
-                <Plus className="h-4 w-4" aria-hidden />
-                部品を足す
-              </button>
             </div>
+            {/* 何をしてもらう？：押すとミッションが1つ足され、書く欄が開く（前は「部品を足す」から一覧を開いていた） */}
+            <p className="org-mission__kinds-title">何をしてもらう？（押すと足せます）</p>
+            <ul className="org-mission__kinds">
+              {MISSION_KINDS.map((kind) => {
+                const Icon = KIND_ICONS[kind.id];
+                return (
+                  <li key={kind.id}>
+                    <button type="button" className={`is-${kind.id}`} onClick={() => addMission(kind.id)}>
+                      <span aria-hidden>
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      {kind.label}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
             {missions.length === 0 ? (
               <div className="org-mission__empty">
-              <p>まだミッションがありません。「部品を足す」から、行く・答える・集めるを自由に組み合わせられます。</p>
+              <p>まだミッションがありません。上のボタンから足すか、見本を入れて始めましょう。</p>
               <button
                 type="button"
                 onClick={() => setMissions(sampleMissions())}

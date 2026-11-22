@@ -40187,3 +40187,29 @@ button.mg-album-place {
 .org-ga__panel { min-width: 0; }
 .org-ga__bars { min-width: 0; }
 .org-ga__bar span { overflow: hidden; max-width: 100%; white-space: nowrap; }
+
+/* ミッション作成：見本からまるごと始める */
+.org-mission__starters { margin: 0 0 0.9rem; border-radius: 1rem; border: 1px solid #e6dcc0; background: #fffbf0; padding: 0.75rem; }
+.org-mission__starters > p { display: grid; gap: 0.1rem; margin: 0 0 0.55rem; }
+.org-mission__starters > p b { font-size: 0.9rem; font-weight: 800; color: #173f2c; }
+.org-mission__starters > p small { font-size: 0.72rem; color: #6b776f; }
+.org-mission__starter-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; }
+.org-mission__starter-row button { display: grid; gap: 0.1rem; border-radius: 0.8rem; border: 1px solid #e1d6b4; background: #fff; padding: 0.55rem 0.5rem; text-align: left; }
+.org-mission__starter-row button strong { font-size: 0.84rem; font-weight: 800; color: #163828; }
+.org-mission__starter-row button span { font-size: 0.66rem; line-height: 1.35; color: #6b776f; }
+.org-mission__starter-row button.is-on { border-color: #2f7d4e; background: #eef7f1; box-shadow: 0 0 0 2px rgba(47, 125, 78, 0.15); }
+/* くわしく決める（任意） */
+.org-mission__more { border-radius: 0.9rem; border: 1px solid #e6e2d6; background: #fbfaf6; padding: 0.15rem 0.85rem; }
+.org-mission__more > summary { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; cursor: pointer; font-size: 0.86rem; font-weight: 800; color: #173f2c; list-style: none; }
+.org-mission__more > summary::-webkit-details-marker { display: none; }
+.org-mission__more > summary span { font-size: 0.72rem; font-weight: 600; color: #8a968c; }
+.org-mission__more > summary::after { content: "＋"; margin-left: auto; color: #2f7d4e; }
+.org-mission__more[open] > summary::after { content: "－"; }
+.org-mission__more-body { display: grid; gap: 0.9rem; padding: 0.2rem 0 0.85rem; }
+/* 何をしてもらう？ */
+.org-mission__kinds-title { margin: 0.8rem 0 0.4rem; font-size: 0.8rem; font-weight: 800; color: #a3812f; }
+.org-mission__kinds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 900px) { .org-mission__kinds { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.org-mission__kinds button { display: flex; width: 100%; align-items: center; gap: 0.45rem; min-height: 44px; border-radius: 0.8rem; border: 1px solid #e3ece5; background: #fff; padding: 0 0.6rem; font-size: 0.82rem; font-weight: 700; color: #163828; text-align: left; }
+.org-mission__kinds button span { display: flex; height: 1.8rem; width: 1.8rem; flex: none; align-items: center; justify-content: center; border-radius: 999px; background: #eef5f0; color: #1f6a42; }
+.org-mission__kinds button:active { background: #f4f8f5; }
