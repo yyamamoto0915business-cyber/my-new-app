@@ -55,7 +55,7 @@ export function MypageMobileAlbum() {
         className="group relative block overflow-hidden rounded-[14px] border border-[#e8e6e0] bg-[#f7f3ea] shadow-[0_2px_12px_rgba(0,0,0,.06),0_1px_3px_rgba(0,0,0,.04)]"
         aria-label={`${season.label}（${season.months}）の記録を残す`}
       >
-        <span className="relative block aspect-[16/7] w-full">
+        <span className="relative block aspect-[16/7] w-full min-[900px]:max-[1099px]:aspect-[3/1]">
           <Image
             src={SEASON_ART[season.key]}
             alt=""

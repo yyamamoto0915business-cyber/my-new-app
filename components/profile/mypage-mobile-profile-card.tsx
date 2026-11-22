@@ -242,7 +242,7 @@ export function MypageMobileProfileCard({
                 </span>
               </Link>
 
-              <div className="min-w-0 shrink min-[900px]:flex min-[900px]:min-w-0 min-[900px]:items-center min-[900px]:gap-2.5">
+              <div className="min-w-0 shrink min-[900px]:flex min-[900px]:min-w-[7.5rem] min-[900px]:flex-col min-[900px]:items-start min-[900px]:gap-0.5">
                 <p
                   className="text-[9px] font-semibold tracking-[0.22em] min-[900px]:hidden"
                   style={{ color: MG_GREEN_DARK }}
@@ -251,7 +251,7 @@ export function MypageMobileProfileCard({
                 </p>
                 <div className="flex min-w-0 items-center gap-1.5">
                   <h1
-                    className="mt-px min-w-0 truncate text-[17px] font-bold leading-tight text-[#18181a] min-[900px]:mt-0 min-[900px]:max-w-[9rem] min-[900px]:text-[18px]"
+                    className="mt-px min-w-0 truncate text-[17px] font-bold leading-tight text-[#18181a] min-[900px]:mt-0 min-[900px]:max-w-[12rem] min-[900px]:text-[18px]"
                     style={{ fontFamily: "'Noto Serif JP', serif" }}
                   >
                     {displayName}
