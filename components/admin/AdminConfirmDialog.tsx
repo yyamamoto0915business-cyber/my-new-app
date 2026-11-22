@@ -60,7 +60,7 @@ export function AdminConfirmDialog({
             className={`rounded-lg px-3.5 py-2 text-sm font-medium text-white disabled:opacity-50 ${
               danger
                 ? "bg-[#C81E1E] hover:bg-[#a31818]"
-                : "bg-[#1e3848] hover:bg-[#152836]"
+                : "bg-[#173f2c] hover:bg-[#0e2a1d]"
             }`}
           >
             {pending ? "処理中…" : confirmLabel}

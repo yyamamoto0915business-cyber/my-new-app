@@ -39,7 +39,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 function NavIcon({ icon, active }: { icon: NavIconId; active: boolean }) {
-  const stroke = active ? "#e0f8f0" : "rgba(255,255,255,0.55)";
+  const stroke = active ? "#f6ebc8" : "rgba(255,255,255,0.55)";
   const props = {
     className: "h-4 w-4",
     viewBox: "0 0 24 24",
@@ -120,7 +120,7 @@ export function AdminSidebar() {
   };
 
   return (
-    <aside className="hidden w-52 shrink-0 flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-[#a8ccb8] lg:flex" style={{ background: "#1e3848" }}>
+    <aside className="hidden w-56 shrink-0 self-start lg:sticky lg:top-[calc(var(--mg-pc-top-nav-h,52px)+3rem)] flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-[#e6e2d6] lg:flex" style={{ background: "#173f2c" }}>
       <div className="border-b border-white/10 px-3 py-3">
         <div
           className="text-[12px] font-semibold text-white"
@@ -140,9 +140,9 @@ export function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-2 rounded-lg px-2 py-2 text-[12px] transition-colors ${
+              className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-[14px] transition-colors ${
                 active
-                  ? "bg-[#152836] font-medium text-white"
+                  ? "bg-[#0e2a1d] font-medium text-white"
                   : "text-white/75 hover:bg-white/10 hover:text-white"
               }`}
             >
@@ -155,7 +155,7 @@ export function AdminSidebar() {
               </span>
               <span className="truncate">{item.label}</span>
               {active ? (
-                <span className="ml-auto h-3.5 w-0.5 rounded-full bg-[#70c8e0]" />
+                <span className="ml-auto h-3.5 w-0.5 rounded-full bg-[#d9bc6e]" />
               ) : null}
             </Link>
           );
@@ -180,16 +180,17 @@ export function AdminShell({
   adminDisplayName,
   children,
 }: AdminShellProps) {
+  const pathname = usePathname() ?? "";
   return (
-    <div className="min-h-screen-dvh" style={{ background: "#eaf2ec" }}>
+    <div className="mg-admin min-h-screen-dvh" style={{ background: "#f7f6f2" }}>
       <div
-        className="sticky top-0 z-[200] flex items-center justify-between gap-3 px-4 py-1.5 text-[10px] tracking-[0.06em]"
-        style={{ background: "#1e3848", color: "#e0f0f8" }}
+        className="sticky top-0 z-[90] flex items-center justify-between gap-3 px-4 py-2 text-[12px] font-semibold tracking-[0.06em] min-[900px]:top-[var(--mg-pc-top-nav-h,52px)]"
+        style={{ background: "#173f2c", color: "#f6ebc8" }}
       >
         <div className="flex items-center gap-2">
           <div
             className="h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{ background: "#70c8e0" }}
+            style={{ background: "#d9bc6e" }}
           />
           <span>管理者モード</span>
         </div>
@@ -197,31 +198,40 @@ export function AdminShell({
           <span className="truncate">
             {adminDisplayName ?? adminEmail ?? "開発者ユーザー"}
           </span>
-          <span className="hidden shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[9px] text-[#70c8e0] sm:inline">
+          <span className="hidden shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[9px] text-[#d9bc6e] sm:inline">
             {adminRole ?? "developer_admin"}
           </span>
         </div>
       </div>
 
       <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-2 py-2 md:px-3 md:py-3 lg:flex-row lg:gap-0">
-        <div className="w-full overflow-x-auto rounded-lg bg-[#1e3848] p-1.5 lg:hidden">
+        <div className="w-full overflow-x-auto rounded-lg bg-[#173f2c] p-1.5 lg:hidden">
           <div className="flex gap-1">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="shrink-0 rounded-md px-2.5 py-1 text-[11px] text-white/80 hover:bg-white/10"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {NAV_ITEMS.map((item) => {
+              const active =
+                item.href === "/admin"
+                  ? pathname === "/admin"
+                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-semibold ${
+                    active ? "bg-[#f6ebc8] text-[#173f2c]" : "text-white/85 hover:bg-white/10"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
         </div>
 
         <AdminSidebar />
 
         <div
-          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-[#a8ccb8] lg:ml-3"
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-[#e6e2d6] lg:ml-3"
           style={{ background: "#f4faf6" }}
         >
           <main className="flex-1 overflow-x-hidden px-3 py-3 md:px-5 md:py-4">

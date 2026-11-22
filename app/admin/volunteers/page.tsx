@@ -167,7 +167,7 @@ export default async function AdminVolunteersPage({
                     />
                     <Link
                       href={`/recruitments/${rec.id}`}
-                      className="whitespace-nowrap text-[11px] text-[#1e3848] hover:underline"
+                      className="whitespace-nowrap text-[11px] text-[#173f2c] hover:underline"
                       target="_blank"
                     >
                       詳細

@@ -17,7 +17,7 @@ export function AdminSearchInput({
       name={name}
       defaultValue={defaultValue}
       placeholder={placeholder}
-      className="h-8 w-full min-w-[180px] flex-1 rounded-md border border-[#c8dcd0] bg-white px-2.5 text-xs text-[#0e1610] outline-none ring-[#1e3848] placeholder:text-[#9ab0a0] focus:ring-2"
+      className="h-8 w-full min-w-[180px] flex-1 rounded-md border border-[#c8dcd0] bg-white px-2.5 text-xs text-[#0e1610] outline-none ring-[#173f2c] placeholder:text-[#9ab0a0] focus:ring-2"
     />
   );
 }
@@ -44,7 +44,7 @@ export function AdminFilterBar({
       {children}
       <button
         type="submit"
-        className="h-8 rounded-md bg-[#1e3848] px-3 text-xs font-medium text-white hover:bg-[#152836]"
+        className="h-8 rounded-md bg-[#173f2c] px-3 text-xs font-medium text-white hover:bg-[#0e2a1d]"
       >
         絞り込む
       </button>

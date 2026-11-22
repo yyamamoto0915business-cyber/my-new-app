@@ -131,7 +131,7 @@ export function OrganizersTable({
                 onClick={() => setFilter(tab.id as FilterTab)}
                 className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
                   active
-                    ? "bg-[#1e3848] text-white"
+                    ? "bg-[#173f2c] text-white"
                     : "bg-white text-[#3a5848] hover:bg-white/80"
                 }`}
               >
@@ -146,7 +146,7 @@ export function OrganizersTable({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-7 w-48 rounded-md border border-[#c8dcd0] bg-white pl-7 pr-2 text-[11px] text-[#0e1610] placeholder:text-[#9ab0a0] focus:outline-none focus:ring-1 focus:ring-[#1e3848]"
+            className="h-7 w-48 rounded-md border border-[#c8dcd0] bg-white pl-7 pr-2 text-[11px] text-[#0e1610] placeholder:text-[#9ab0a0] focus:outline-none focus:ring-1 focus:ring-[#173f2c]"
             placeholder="主催者名・メールで検索"
           />
           <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[#9ab0a0]">
@@ -279,7 +279,7 @@ export function OrganizersTable({
                       {canOpenDetail ? (
                         <Link
                           href={`/admin/organizers/${o.id}`}
-                          className="inline-flex items-center rounded-md bg-[#1e3848] px-2 py-0.5 text-[11px] font-medium text-white hover:bg-[#152836]"
+                          className="inline-flex items-center rounded-md bg-[#173f2c] px-2 py-0.5 text-[11px] font-medium text-white hover:bg-[#0e2a1d]"
                         >
                           詳細
                         </Link>

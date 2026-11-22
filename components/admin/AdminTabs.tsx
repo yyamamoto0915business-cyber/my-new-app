@@ -25,7 +25,7 @@ export function AdminTabs({
             href={tab.href}
             className={`-mb-px border-b-2 px-2.5 py-1.5 text-xs transition ${
               active
-                ? "border-[#1e3848] font-medium text-[#1e3848]"
+                ? "border-[#173f2c] font-medium text-[#173f2c]"
                 : "border-transparent text-[#5a7868] hover:text-[#0e1610]"
             }`}
           >

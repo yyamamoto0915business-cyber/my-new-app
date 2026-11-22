@@ -226,7 +226,7 @@ export default async function AdminSupportPage({
                   <td className="px-4 py-3.5 text-right">
                     <Link
                       href={`/admin/inquiries/${row.id}`}
-                      className="text-xs font-medium text-[#1e3848] hover:underline"
+                      className="text-xs font-medium text-[#173f2c] hover:underline"
                     >
                       詳細
                     </Link>
