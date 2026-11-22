@@ -49,7 +49,8 @@
   --mg-section-gap: 2rem;
   --mg-touch-min: 44px;
   /** PC 固定ヘッダー高（PcTopNav / BottomNav オフセット / メイン上余白で共通） */
-  --mg-pc-top-nav-h: 52px;
+  /* iPad をアプリ・ホーム画面から開くと画面の上端まで使うので、時刻・電池の帯の分を足す（ブラウザでは 0） */
+  --mg-pc-top-nav-h: calc(52px + env(safe-area-inset-top, 0px));
   --map-footprint-duration: 350ms;
 
   /* 和テイスト デザイントークン（主催管理ページ等） */
