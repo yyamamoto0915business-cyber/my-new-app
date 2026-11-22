@@ -540,13 +540,17 @@ export async function fetchMyParticipationPasses(
   attendeeName: string,
   now: Date = new Date()
 ): Promise<ParticipationPass[]> {
-  const [visitorPasses, volunteerPasses, gamePasses] = await Promise.all([
+  const [visitorPasses, volunteerPasses, gamePasses, playedPasses] = await Promise.all([
     fetchVisitorPasses(supabase, userId, attendeeName, now),
     fetchVolunteerPasses(supabase, userId, attendeeName, now),
     fetchGamePasses(userId, attendeeName, now),
+    fetchPlayedGamePasses(userId, attendeeName),
   ]);
+  // 申し込んだゲームと、遊んだだけのゲームが同じなら、申し込みのほうだけ出す
+  const enteredGameIds = new Set(gamePasses.map((p) => p.game?.gameId).filter(Boolean));
+  const played = playedPasses.filter((p) => !enteredGameIds.has(p.game?.gameId));
 
-  const passes = [...visitorPasses, ...volunteerPasses, ...gamePasses].sort(
+  const passes = [...visitorPasses, ...volunteerPasses, ...gamePasses, ...played].sort(
     (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
   );
   return withGameImages(passes);
@@ -620,6 +624,77 @@ async function fetchGamePasses(userId: string, attendeeName: string, now: Date):
         joinPath: organizerGameJoinPath(game.join_token),
         joinCode,
         note: gamePassFromSettings(game.settings)?.note || undefined,
+        periodLabel: gamePassPeriodLabel(game.starts_at, game.ends_at),
+      },
+    });
+  }
+  return passes;
+}
+
+type PlayedGameRow = {
+  id: string;
+  created_at: string;
+  last_seen_at: string | null;
+  organizer_games: {
+    id: string;
+    name: string | null;
+    type: string;
+    status: string;
+    starts_at: string | null;
+    ends_at: string | null;
+    join_token: string | null;
+    settings: unknown;
+    event_id: string | null;
+  } | null;
+};
+
+/**
+ * イベントにつながっていないゲームで、ログインして遊んだもの。参加パスの「参加履歴」に残し、
+ * あとから結果を見に戻れるようにする（イベントのゲームは、そのイベントの参加パスから入るので出さない）。
+ */
+async function fetchPlayedGamePasses(userId: string, attendeeName: string): Promise<ParticipationPass[]> {
+  const db = createAdminClient();
+  if (!db) return [];
+  const { data, error } = await db
+    .from("organizer_game_players")
+    .select("id, created_at, last_seen_at, organizer_games(id, name, type, status, starts_at, ends_at, join_token, settings, event_id)")
+    .eq("account_user_id", userId)
+    .order("last_seen_at", { ascending: false })
+    .limit(30);
+  if (error) {
+    if (!/account_user_id|schema cache|does not exist/i.test(error.message)) console.warn("fetchPlayedGamePasses:", error.message);
+    return [];
+  }
+  const passes: ParticipationPass[] = [];
+  for (const row of (data ?? []) as unknown as PlayedGameRow[]) {
+    const game = Array.isArray(row.organizer_games) ? row.organizer_games[0] : row.organizer_games;
+    if (!game || game.event_id || game.status !== "published" || !game.join_token) continue;
+    const type = isOrganizerGameTypeId(game.type) ? game.type : "stamp";
+    const participation = publicPlayParticipation(game.settings, type);
+    const playedAt = row.last_seen_at ?? row.created_at;
+    const image = coverFromSettings(game.settings, type) ?? defaultCover(type);
+    passes.push({
+      id: `played-${row.id}`,
+      eventId: game.id,
+      eventTitle: game.name ?? "ゲーム",
+      eventImage: isPassSafeImage(image) ? image : defaultCover(type),
+      startAt: playedAt,
+      endAt: playedAt,
+      venueName: "遊んだゲーム",
+      attendeeName,
+      receptionNumber: buildReceptionNumber(row.id),
+      paymentStatus: "free",
+      receptionType: "qr",
+      ticketLabel: "参加者",
+      quantity: 1,
+      status: "completed",
+      kind: "game",
+      game: {
+        gameId: game.id,
+        typeLabel: getOrganizerGameType(type).label,
+        participation,
+        joinPath: organizerGameJoinPath(game.join_token),
+        joinCode: null,
         periodLabel: gamePassPeriodLabel(game.starts_at, game.ends_at),
       },
     });
