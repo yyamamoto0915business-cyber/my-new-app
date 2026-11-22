@@ -40149,3 +40149,18 @@ button.mg-album-place {
   }
   .mg-admin .text-xl { font-size: 21px; }
 }
+/* 管理者画面（スマホ）：数字の3つの箱を低くまとめる */
+@media (max-width: 767px) {
+  .mg-admin .admin-stats > * {
+    padding: 0.5rem 0.65rem;
+  }
+  .mg-admin .admin-stats .text-xl {
+    font-size: 18px;
+  }
+  .mg-admin .admin-stats .text-\[11px\] {
+    font-size: 11.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
