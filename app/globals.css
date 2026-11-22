@@ -40059,3 +40059,31 @@ button.mg-album-place {
   flex: 1 1 0;
   min-width: 0;
 }
+
+/*
+ * イベント作成（PC・iPad 横）：前は入力を左右の列に分け、列ごとに別々にスクロールしていた。
+ * 中央の1列（720px）に縦に並べ、上から順に書けるようにする。スクロールは中身全体で1つ。
+ */
+@media (min-width: 900px) {
+  [data-event-form] .evf-main {
+    overflow-y: auto !important;
+    padding-inline: 1.5rem;
+  }
+  [data-event-form] .evf-cols {
+    flex: none !important;
+    flex-direction: column !important;
+    overflow: visible !important;
+    width: 100%;
+    max-width: 720px;
+    margin-inline: auto;
+    padding-bottom: 4rem;
+  }
+  [data-event-form] .evf-col {
+    flex: none !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    border-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}

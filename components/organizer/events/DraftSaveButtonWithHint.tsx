@@ -31,7 +31,7 @@ function SaveIcon({ size = 14 }: { size?: number }) {
 export function DraftSaveHint({
   className = "",
   multiline = false,
-  destinationLabel = "イベント管理",
+  destinationLabel = "掲載管理",
 }: {
   className?: string;
   /** PCサイドなど狭い幅向けに、意味の切れ目で改行する */
