@@ -188,8 +188,9 @@ export function OrganizerStoreManagement({
 
   const mostlyEmpty = isStoreMostlyEmpty(record);
   const nameUnset = isStoreNameUnset(record);
+  // 公開前は「紹介」から、公開後は「ニュース」から開く
   const [activeTab, setActiveTab] = useState<StoreTab>(
-    mostlyEmpty ? "intro" : "news",
+    mostlyEmpty || record.status !== "public" ? "intro" : "news",
   );
   const [newsFilter, setNewsFilter] = useState<NewsFilter>("all");
   const [statusBusy, setStatusBusy] = useState(false);
@@ -311,14 +312,19 @@ export function OrganizerStoreManagement({
         {isKitchen ? "公開ページを見る" : "店舗ページを見る"}
         <ExternalLink className="size-3.5" strokeWidth={2.2} aria-hidden />
       </Link>
-    ) : (
-      <p className="org-store-mgmt__view-link is-disabled">
-        <span className="org-store-mgmt__view-link-full">
-          公開後に{isKitchen ? "公開ページ" : "店舗ページ"}を確認できます
-        </span>
-        <span className="org-store-mgmt__view-link-short">公開後に確認</span>
-      </p>
-    );
+    ) : null;
+
+  const goIntro = () => setActiveTab("intro");
+  const checklist: { key: string; label: string; done: boolean; required?: boolean; onGo: () => void }[] = [
+    { key: "name", label: isKitchen ? "キッチンカー名" : "店舗名", done: !nameUnset, required: true, onGo: goIntro },
+    { key: "cover", label: "カバー写真", done: Boolean(record.coverImageUrl?.trim()), onGo: () => coverInputRef.current?.click() },
+    { key: "intro", label: "紹介文", done: Boolean(record.tagline?.trim() || record.description?.trim()), onGo: goIntro },
+    { key: "hours", label: "営業時間", done: Boolean(record.hoursLabel?.trim()), onGo: goIntro },
+    { key: "menu", label: "メニュー", done: menuRecords.length > 0, onGo: () => setActiveTab("menu") },
+    isKitchen
+      ? { key: "schedule", label: "出店の予定", done: scheduleRecords.length > 0, onGo: () => setActiveTab("schedule") }
+      : { key: "access", label: "アクセス", done: Boolean(record.address?.trim()), onGo: () => setActiveTab("access") },
+  ];
 
   const publishLabel = statusBusy
     ? "更新中…"
@@ -352,22 +358,52 @@ export function OrganizerStoreManagement({
         <h1 className="sr-only">{listingLabel}管理</h1>
       </div>
 
-      {mostlyEmpty ? (
-        <div className="org-store-mgmt__draft-banner" role="status">
-          <Info className="size-4 shrink-0" strokeWidth={2.2} aria-hidden />
-          <p>
-            <span className="org-store-mgmt__draft-banner-full">
-              いまは下書きの入力前状態です。
-              {isKitchen ? "キッチンカー紹介" : "店舗紹介"}
-              から名前・写真・紹介文を登録して、準備ができたら公開できます。
+      {record.status !== "public" ? (
+        /* 公開前：公開までにやることを並べる。押すとその入力へ移る */
+        <section className="rounded-[18px] border border-[#e6dcc0] bg-[#fffbf0] px-4 py-3.5 shadow-[0_1px_4px_rgba(120,90,30,0.05)]" aria-label="公開までにやること">
+          <div className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <p className="text-[13.5px] font-bold text-[#173f2c]">公開までにやること</p>
+            <span className="text-[12px] tabular-nums text-[#8a6d1f]">
+              {checklist.filter((c) => c.done).length}/{checklist.length} できました
             </span>
-            <span className="org-store-mgmt__draft-banner-short">
-              下書きです。
-              {isKitchen ? "キッチンカー紹介" : "店舗紹介"}
-              から基本情報を入力しましょう。
+            <span className="h-1.5 min-w-[80px] flex-1 overflow-hidden rounded-full bg-[#f1e6c8]">
+              <span
+                className="block h-full rounded-full bg-[#2f7d4e] transition-all"
+                style={{ width: `${Math.round((checklist.filter((c) => c.done).length / checklist.length) * 100)}%` }}
+              />
             </span>
-          </p>
-        </div>
+          </div>
+          <ul className="grid grid-cols-2 gap-1.5 min-[600px]:grid-cols-3 min-[1100px]:grid-cols-6">
+            {checklist.map((c) => (
+              <li key={c.key}>
+                <button
+                  type="button"
+                  onClick={c.onGo}
+                  className={cn(
+                    "flex w-full items-center gap-1.5 rounded-[10px] border px-2.5 py-2 text-left text-[12px] font-semibold transition",
+                    c.done
+                      ? "border-[#d4e6da] bg-white text-[#2f6b4a]"
+                      : "border-[#e6dcc0] bg-white text-[#3f5146] hover:border-[#c9a54e]",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold",
+                      c.done ? "bg-[#2f7d4e] text-white" : "border border-[#c9a54e] text-transparent",
+                    )}
+                    aria-hidden
+                  >
+                    ✓
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{c.label}</span>
+                  {c.required && !c.done ? (
+                    <span className="shrink-0 rounded-full bg-[#fbf3e1] px-1.5 text-[9.5px] font-bold text-[#a3812f]">必須</span>
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {publishHint ? (
@@ -667,7 +703,10 @@ export function OrganizerStoreManagement({
             {viewStoreControl}
             <button
               type="button"
-              className="org-store-mgmt__mobile-publish"
+              className={cn(
+                "org-store-mgmt__mobile-publish",
+                record.status !== "public" && "is-publish",
+              )}
               onClick={() => void togglePublish()}
               disabled={statusBusy}
             >
@@ -707,7 +746,10 @@ export function OrganizerStoreManagement({
               </dl>
               <button
                 type="button"
-                className="org-store-mgmt__unpublish-btn"
+                className={cn(
+                  "org-store-mgmt__unpublish-btn",
+                  record.status !== "public" && "is-publish",
+                )}
                 onClick={() => void togglePublish()}
                 disabled={statusBusy}
               >
@@ -976,6 +1018,32 @@ function NewsPanel({
         </button>
       </div>
 
+      {totalCount === 0 ? (
+        /* まだ1件もないとき：空の表やページ送りは出さず、最初の1件への案内だけ */
+        <div className="flex flex-col items-center gap-2.5 rounded-[14px] border border-dashed border-[#d8e2da] bg-[#fbfaf6] px-4 py-8 text-center">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eef5f0] text-[#1f6a42]" aria-hidden>
+            <Megaphone className="h-5 w-5" strokeWidth={2} />
+          </span>
+          <p className="text-[14px] font-bold text-[#163828]">まだニュースはありません</p>
+          <p className="max-w-[26rem] text-[12.5px] leading-relaxed text-[#6b776f]">
+            {isKitchen
+              ? "出店のお知らせや新メニューを書くと、公開ページに載ります。"
+              : "セールや新メニューのお知らせを書くと、店舗ページに載ります。"}
+          </p>
+          <button
+            type="button"
+            className="org-store-mgmt__create-btn mt-1"
+            onClick={() => {
+              setMode("create");
+              setEditingId(null);
+            }}
+          >
+            <Plus className="size-3.5" strokeWidth={2.6} aria-hidden />
+            最初のニュースを書く
+          </button>
+        </div>
+      ) : (
+        <>
       <div className="org-store-mgmt__filters" role="tablist" aria-label="ニュース種類">
         {filters.map((f) => (
           <button
@@ -1186,6 +1254,8 @@ function NewsPanel({
           </button>
         </div>
       </div>
+        </>
+      )}
     </section>
   );
 }

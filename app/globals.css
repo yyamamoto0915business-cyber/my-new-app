@@ -20721,8 +20721,8 @@ a.org-pos__setup-text-btn {
 }
 
 .org-store-mgmt__tab.is-active {
-  color: #E8783A;
-  border-bottom-color: #E8783A;
+  color: #173f2c;
+  border-bottom-color: #173f2c;
 }
 
 .org-store-mgmt__panel {
@@ -20778,7 +20778,7 @@ a.org-pos__setup-text-btn {
   gap: 0.3rem;
   border: none;
   border-radius: 0.5rem;
-  background: #E8783A;
+  background: #173f2c;
   padding: 0.4rem 0.7rem;
   font-size: 0.72rem;
   font-weight: 700;
@@ -20789,7 +20789,7 @@ a.org-pos__setup-text-btn {
 }
 
 .org-store-mgmt__create-btn:hover {
-  background: #d4682e;
+  background: #0e2a1d;
 }
 
 .org-store-mgmt__filters {
@@ -20816,9 +20816,9 @@ a.org-pos__setup-text-btn {
 }
 
 .org-store-mgmt__filter.is-active {
-  border-color: #E8783A;
-  background: #FFF5EE;
-  color: #C45C12;
+  border-color: #173f2c;
+  background: #eef5f0;
+  color: #173f2c;
 }
 
 .org-store-mgmt__table-wrap {
@@ -21064,9 +21064,9 @@ a.org-pos__setup-text-btn {
 }
 
 .org-store-mgmt__page-btn.is-active {
-  border-color: #E8783A;
-  background: #FFF5EE;
-  color: #C45C12;
+  border-color: #173f2c;
+  background: #eef5f0;
+  color: #173f2c;
   opacity: 1;
 }
 
@@ -22030,7 +22030,7 @@ a.org-pos__setup-text-btn {
 .org-store-news-form__field input:focus,
 .org-store-news-form__field textarea:focus,
 .org-store-news-form__field select:focus {
-  border-color: #E8783A;
+  border-color: #173f2c;
   box-shadow: 0 0 0 3px rgba(232, 120, 58, 0.12);
 }
 
@@ -22085,7 +22085,7 @@ a.org-pos__setup-text-btn {
   gap: 0.3rem;
   border: none;
   border-radius: 0.45rem;
-  background: #E8783A;
+  background: #173f2c;
   padding: 0.35rem 0.8rem;
   font-size: 0.72rem;
   font-weight: 700;
@@ -22094,7 +22094,7 @@ a.org-pos__setup-text-btn {
 }
 
 .org-store-news-form__save:hover:not(:disabled) {
-  background: #d4682e;
+  background: #0e2a1d;
 }
 
 .org-store-news-form__save:disabled,
@@ -40103,5 +40103,23 @@ button.mg-album-place {
     border-radius: 18px;
     padding: 18px 22px 20px !important;
     box-shadow: 0 1px 4px rgba(23, 63, 44, 0.05);
+  }
+}
+
+/* お店・キッチンカーの編集：公開前の「公開する」は緑の目立つボタンに */
+.org-store-mgmt__unpublish-btn.is-publish,
+.org-store-mgmt__mobile-publish.is-publish {
+  border-color: #c9a54e;
+  background: linear-gradient(to bottom, #245a3e, #173f2c);
+  color: #f6ebc8;
+  font-weight: 700;
+}
+.org-store-mgmt__unpublish-btn.is-publish:hover:not(:disabled) {
+  background: #0e2a1d;
+}
+/* PC：上の箱の高さを、右の掲載状況に引っぱられないように */
+@media (min-width: 900px) {
+  .org-store-mgmt__top {
+    align-items: start !important;
   }
 }
