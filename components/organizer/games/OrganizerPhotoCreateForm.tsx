@@ -437,6 +437,13 @@ export function OrganizerPhotoCreateForm() {
               </h2>
               <p>まずはフォトラリーの基本情報を設定しましょう。</p>
               <div className="org-photo__grid">
+                <label className="org-photo__field org-photo__field--wide">
+                  <span>
+                    タイトル <em>必須</em>
+                  </span>
+                  <input placeholder={`例：${EXAMPLE_NAME}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={50} required />
+                  <small>{name.length}/50</small>
+                </label>
                 <GameBasicsExamples
                   examples={GAME_BASICS_EXAMPLES.photo}
                   hasInput={Boolean(name.trim() || description.trim())}
@@ -445,13 +452,6 @@ export function OrganizerPhotoCreateForm() {
                     setDescription(example.description);
                   }}
                 />
-                <label className="org-photo__field org-photo__field--wide">
-                  <span>
-                    タイトル <em>必須</em>
-                  </span>
-                  <input placeholder={`例：${EXAMPLE_NAME}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={50} required />
-                  <small>{name.length}/50</small>
-                </label>
                 <label className="org-photo__field org-photo__field--wide">
                   <span>
                     説明文 <em>必須</em>
