@@ -127,7 +127,7 @@ const FIELD_STEP: Partial<Record<keyof EventFormData, Step>> = {
 
 // ── PC step bar ──
 function PcStepBar({
-  current, onGo, onBack, onDraft, onPublish, submitting, planSummary, publishDisabledReason, backLabelOverride, hideActions,
+  current, onGo, onBack, onDraft, onPublish, submitting, planSummary, publishDisabledReason, backLabelOverride, hideActions, onNext, nextLabel,
 }: {
   current: Step; onGo: (s: Step) => void; onBack: () => void;
   onDraft: () => void; onPublish: () => void;
@@ -136,6 +136,9 @@ function PcStepBar({
   publishDisabledReason: null | "required_missing" | "no_slots";
   backLabelOverride?: string;
   hideActions?: boolean;
+  /** 手順1〜3：上の帯の右に「次へ」を出す（「公開する」は確認の手順だけ） */
+  onNext?: () => void;
+  nextLabel?: string;
 }) {
   const backLabel = backLabelOverride ?? (current === 1 ? "掲載管理に戻る" : ["","基本情報に戻る","開催情報に戻る","詳細情報に戻る",""][current - 1]);
   const planLabel = planSummary
@@ -183,6 +186,16 @@ function PcStepBar({
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
             {submitting === "draft" ? "保存中…" : "下書き保存"}
           </button>
+          {current < 4 && onNext ? (
+            <button
+              type="button"
+              onClick={onNext}
+              className="flex min-w-[6rem] items-center justify-center gap-1 rounded-[8px] bg-[#173f2c] px-4 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#0e2a1d]"
+            >
+              次へ：{(nextLabel ?? "").replace(/へ$/, "")}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+          ) : (
           <button
             type="button"
             onClick={onPublish}
@@ -196,6 +209,7 @@ function PcStepBar({
           >
             {submitting === "publish" ? "公開中…" : "公開する"}
           </button>
+          )}
         </div>
           </div>
         ) : null}
@@ -541,7 +555,7 @@ function NewEventPageContent() {
     <div
       ref={formTopRef}
       data-event-form
-      className="relative z-[1] flex min-w-0 flex-col min-[900px]:-mx-6 min-[900px]:flex min-[900px]:h-full min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
+      className="relative z-[1] flex min-w-0 flex-col min-[900px]:-mx-6 min-[900px]:-my-2.5 min-[900px]:flex min-[900px]:h-[calc(100dvh-var(--mg-pc-top-nav-h,52px))] min-[900px]:max-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px))] min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white"
     >
 
       {/* ── PC step bar ── */}
@@ -550,6 +564,8 @@ function NewEventPageContent() {
         onDraft={saveDraft} onPublish={() => { if (!agreedToTerms) { showToast("error","利用規約への同意が必要です"); return; } setShowPublishConfirm(true); }}
         submitting={submitting} planSummary={planSummary} publishDisabledReason={publishDisabledReason}
         hideActions={publishDone}
+        onNext={goNext}
+        nextLabel={nextLabels[currentStep]}
         backLabelOverride={publishDone ? "掲載管理に戻る" : showPassSettings ? "詳細情報に戻る" : undefined}
       />
 
@@ -596,9 +612,9 @@ function NewEventPageContent() {
         <div className="evf-main flex min-h-0 min-w-0 flex-1 flex-col min-[900px]:overflow-hidden min-[900px]:bg-white">
           {/* PC の見出し（スマホの作成画面と同じ「英字の小見出し＋明朝体の見出し」） */}
           {currentStep < 4 && !showPassSettings ? (
-            <div className="mx-auto hidden w-full max-w-[720px] pt-5 pb-1 min-[900px]:block">
+            <div className="mx-auto hidden w-full max-w-[720px] items-baseline gap-3 pt-4 pb-2.5 min-[900px]:flex">
               <OrgEyebrow>EVENT</OrgEyebrow>
-              <h1 className="mt-1 text-[22px] font-semibold tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
+              <h1 className="text-[18px] font-semibold tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
                 {currentStep === 1 ? "イベントを作る" : `${stepLabels[currentStep]}を入力`}
               </h1>
             </div>
@@ -772,6 +788,8 @@ function NewEventPageContent() {
             onNext={goNext}
             onPrev={goPrev}
             nextLabel={nextLabels[currentStep]}
+            hideNav
+            focusCurrentStep
           />
         )}
       </div>
