@@ -98,6 +98,14 @@ const EDITOR_CSS = `
 .ge-players__count b { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
 .ge-players__count span { font-size: 0.8rem; font-weight: 700; }
 .ge-players p { flex: 1 1 14rem; margin: 0; font-size: 0.75rem; line-height: 1.6; color: #6a7568; }
+.ge-hero__name { margin: 0.15rem 0 0; font-family: "Shippori Mincho", "Noto Serif JP", serif; font-size: 1.12rem; font-weight: 600; line-height: 1.35; letter-spacing: 0.03em; color: #173f2c; }
+.ge-hero__name small { display: block; margin-bottom: 0.1rem; font-family: inherit; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; color: #a3812f; }
+.ge-qr-toggle { display: flex; width: 100%; align-items: center; justify-content: center; gap: 0.4rem; min-height: 44px; margin-top: 0.6rem; border-radius: 0.85rem; border: 1px solid #e1d6b4; background: #fff; font-size: 0.86rem; font-weight: 800; color: #173f2c; }
+@media (max-width: 899px) {
+  .ge-hero { gap: 0.75rem; padding: 0.9rem; }
+  .ge-hero__cover { width: 72px; height: 72px; border-radius: 0.85rem; }
+  .ge-hero__info { min-width: 0; }
+}
 @media (min-width: 640px) {
   .ge-hero { padding: 1.25rem; }
   .ge-hero__cover { width: 112px; height: 112px; }
@@ -145,6 +153,7 @@ export function OrganizerGameEditor() {
   const gameId = typeof params?.id === "string" ? params.id : "";
   const [game, setGame] = useState<OrganizerGame | null>(null);
   const [spots, setSpots] = useState<OrganizerGameSpot[]>([]);
+  const [qrOpen, setQrOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -393,10 +402,13 @@ export function OrganizerGameEditor() {
         掲載管理に戻る
       </Link>
 
-      <OrganizerWorkspacePageHeader
-        title={game.name}
-        subtitle={game.eventTitle ? `${game.typeLabel}・${game.eventTitle}` : game.typeLabel}
-      />
+      {/* スマホは名前を下のカードの中に出すので、大きな見出しは PC だけ */}
+      <div className="max-[899px]:hidden">
+        <OrganizerWorkspacePageHeader
+          title={game.name}
+          subtitle={game.eventTitle ? `${game.typeLabel}・${game.eventTitle}` : game.typeLabel}
+        />
+      </div>
 
       <style>{EDITOR_CSS}</style>
       {error ? <p className="org-store-intro__error">{error}</p> : null}
@@ -413,7 +425,11 @@ export function OrganizerGameEditor() {
               <i aria-hidden />
               {live ? "公開中" : "下書き"}
             </span>
-            <p className="ge-hero__lead">
+            <p className="ge-hero__name min-[900px]:hidden">
+              <small>{game.eventTitle ? `${game.typeLabel}・${game.eventTitle}` : game.typeLabel}</small>
+              {game.name}
+            </p>
+            <p className="ge-hero__lead max-[899px]:hidden">
               {live ? "参加者が遊べる状態です。" : "まだ参加者には見えません。"}
             </p>
             <p className="ge-hero__period">
@@ -467,14 +483,28 @@ export function OrganizerGameEditor() {
       {live ? (
         <section className="org-game-editor__panel">
           <h2>参加のしかた</h2>
-          <p>会場の入口やチラシにQRを貼ります。QRを読めない人には、参加コードを伝えてください。</p>
-          <GameQrCard
-            title="参加用QR"
-            caption="ニックネームと合言葉で参加・再開できます。"
-            path={game.joinPath}
-            filename={`game-join-${game.id}.png`}
-          />
-          <GameJoinCodePanel gameId={game.id} published={live} />
+          <p className="max-[899px]:hidden">会場の入口やチラシにQRを貼ります。QRを読めない人には、参加コードを伝えてください。</p>
+          {/* スマホ：参加コードを先に出し、大きなQRは「QRを表示」で開く（スクロールを減らす） */}
+          <div>
+            <GameJoinCodePanel gameId={game.id} published={live} />
+          </div>
+          <button
+            type="button"
+            onClick={() => setQrOpen((v) => !v)}
+            aria-expanded={qrOpen}
+            className="ge-qr-toggle min-[900px]:hidden"
+          >
+            <QrCode className="h-4 w-4" aria-hidden />
+            {qrOpen ? "QRを閉じる" : "参加用QRを表示・保存"}
+          </button>
+          <div className={qrOpen ? "" : "max-[899px]:hidden"}>
+            <GameQrCard
+              title="参加用QR"
+              caption="ニックネームと合言葉で参加・再開できます。"
+              path={game.joinPath}
+              filename={`game-join-${game.id}.png`}
+            />
+          </div>
         </section>
       ) : (
         <section className="ge-locked">
@@ -529,7 +559,7 @@ export function OrganizerGameEditor() {
             <b>{playerCount}</b>
             <span>人</span>
           </div>
-          <p>合言葉を忘れた人がいたら、リセットすると同じニックネームで入り直せます。記録は残ります。</p>
+          <p className="max-[899px]:hidden">合言葉を忘れた人がいたら、リセットすると同じニックネームで入り直せます。記録は残ります。</p>
           <button
             type="button"
             className="org-game-editor__reset"

@@ -40164,3 +40164,26 @@ button.mg-album-place {
     text-overflow: ellipsis;
   }
 }
+
+/* ゲームのデータ：クリアのないゲーム（投票など）は数字の箱を2つに */
+.org-ga__kpis.is-two { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+/* 投票などの結果への入口 */
+.org-ga__result-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid #e1d6b4;
+  background: linear-gradient(135deg, #fffdf6 0%, #fff6e2 100%);
+  padding: 0.85rem 1rem;
+  color: #173f2c;
+  text-decoration: none;
+}
+.org-ga__result-link span { display: grid; gap: 0.15rem; flex: 1; min-width: 0; }
+.org-ga__result-link strong { font-size: 0.95rem; font-weight: 800; }
+.org-ga__result-link em { font-style: normal; font-size: 0.74rem; color: #6b776f; }
+/* ゲームのデータ：30日分の棒グラフが画面の右にはみ出さないように（日付の文字で棒が縮まなかった） */
+.org-ga__panel { min-width: 0; }
+.org-ga__bars { min-width: 0; }
+.org-ga__bar span { overflow: hidden; max-width: 100%; white-space: nowrap; }
