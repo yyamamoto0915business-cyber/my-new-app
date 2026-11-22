@@ -149,6 +149,8 @@ import { cn } from "@/lib/utils";
 const DRAFT_KEY = "mg-stamp-rally-draft-v1";
 const STEPS = ["テンプレート", "基本設定", "スポット設定", "画面・演出設定", "達成条件・特典", "参加パス", "確認・公開"] as const;
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+/** 上の段に出す短い名前（ほかのゲームの作成と同じ呼び名にそろえる） */
+const STEP_SHORT = ["ひな形", "基本", "スポット", "演出", "特典", "参加パス", "公開"] as const;
 const STEP_ICONS = [LayoutTemplate, PenLine, MapPin, Palette, Gift, Ticket, Rocket] as const;
 /** 画面に並べる順番。参加パス（6）は基本設定のすぐあと（名前や期間が見本に出る）。中身のステップ番号は変えない。 */
 const STEP_ORDER: readonly Step[] = [1, 2, 6, 3, 4, 5, 7];
@@ -1036,6 +1038,7 @@ export function StampRallyWizard() {
             <ol className={styles.stepperTrack}>
               {STEP_ORDER.map((number, position) => {
                 const label = STEPS[number - 1];
+                const shortLabel = STEP_SHORT[number - 1];
                 const current = step === number;
                 const done = stepPosition(step) > position;
                 const Icon = STEP_ICONS[number - 1];
@@ -1057,7 +1060,7 @@ export function StampRallyWizard() {
                       <span className={styles.stepperDot}>
                         {done ? <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> : <Icon className="h-4 w-4" aria-hidden />}
                       </span>
-                      <span className={styles.stepperLabel}>{label}</span>
+                      <span className={styles.stepperLabel}>{shortLabel}</span>
                     </button>
                   </li>
                 );

@@ -25,17 +25,17 @@ import {
 } from "@/lib/organizer/tournament";
 
 const STEPS = [
+  { id: "basic", label: "基本情報" },
   { id: "entrants", label: "出場者と形式" },
-  { id: "basic", label: "基本設定" },
   { id: "publish", label: "確認・公開" },
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
 
 const SHELL_STEPS: GameCreateStep[] = [
-  { label: STEPS[0].label, icon: Trophy },
-  { label: STEPS[1].label, icon: PenLine },
-  { label: STEPS[2].label, icon: Rocket },
+  { label: STEPS[0].label, short: "基本", icon: PenLine },
+  { label: STEPS[1].label, short: "出場者", icon: Trophy },
+  { label: STEPS[2].label, short: "公開", icon: Rocket },
 ];
 
 function toIso(date: string, time: string): string | null {
@@ -95,7 +95,7 @@ function TournamentTryDemo({ format, entrants }: { format: TournamentFormat; ent
 /** トーナメント表の作成。出場者と形式 → 期間など → 公開。結果は公開後にゲームの管理画面で入れる */
 export function OrganizerTournamentCreateForm() {
   const router = useRouter();
-  const [step, setStep] = useState<StepId>("entrants");
+  const [step, setStep] = useState<StepId>("basic");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("対戦表と結果を、スマホでいつでも見られます。");
   const [eventId, setEventId] = useState("");

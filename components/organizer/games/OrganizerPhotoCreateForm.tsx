@@ -65,21 +65,21 @@ const EXAMPLE_DESCRIPTION = "まちのスポットを巡って写真を撮りな
 
 
 const STEPS = [
-  { id: "basic", label: "基本設定" },
+  { id: "basic", label: "基本情報" },
   { id: "pass", label: "参加パス" },
   { id: "spots", label: "スポット設定" },
   { id: "rules", label: "ルール設定" },
-  { id: "publish", label: "公開設定" },
+  { id: "publish", label: "確認・公開" },
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
 
 const SHELL_STEPS: GameCreateStep[] = [
-  { label: STEPS[0].label, icon: PenLine },
-  { label: STEPS[1].label, icon: Ticket },
-  { label: STEPS[2].label, icon: MapPin },
-  { label: STEPS[3].label, icon: ListChecks },
-  { label: STEPS[4].label, icon: Rocket },
+  { label: STEPS[0].label, short: "基本", icon: PenLine },
+  { label: STEPS[1].label, short: "参加パス", icon: Ticket },
+  { label: STEPS[2].label, short: "スポット", icon: MapPin },
+  { label: STEPS[3].label, short: "ルール", icon: ListChecks },
+  { label: STEPS[4].label, short: "公開", icon: Rocket },
 ];
 
 function toIsoFromDateTime(date: string, time: string): string | null {

@@ -23,17 +23,17 @@ import {
 } from "@/lib/organizer/vote";
 
 const STEPS = [
+  { id: "basic", label: "基本情報" },
   { id: "vote", label: "お題と決め方" },
-  { id: "basic", label: "基本設定" },
   { id: "publish", label: "確認・公開" },
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
 
 const SHELL_STEPS: GameCreateStep[] = [
-  { label: STEPS[0].label, icon: ListChecks },
-  { label: STEPS[1].label, icon: PenLine },
-  { label: STEPS[2].label, icon: Rocket },
+  { label: STEPS[0].label, short: "基本", icon: PenLine },
+  { label: STEPS[1].label, short: "お題", icon: ListChecks },
+  { label: STEPS[2].label, short: "公開", icon: Rocket },
 ];
 
 /** よくあるお題。押すとお題・ヒント・ゲーム名が入る */
@@ -278,7 +278,7 @@ function VoteTryDemo({ vote, name, preset = [] }: { vote: VoteSettings; name: st
 /** 投票ゲームの作成。お題 → 期間など → 公開。段階（案を集める・投票・結果）は公開後にゲームの管理画面から切りかえる */
 export function OrganizerVoteCreateForm() {
   const router = useRouter();
-  const [step, setStep] = useState<StepId>("vote");
+  const [step, setStep] = useState<StepId>("basic");
   const [name, setName] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
   const [description, setDescription] = useState("案を出し合って、いちばん人気の案を投票で決めます。");
@@ -358,7 +358,8 @@ export function OrganizerVoteCreateForm() {
   }
 
   function goNext() {
-    const message = validate(step);
+    // 基本は先頭の手順なので、ゲーム名が空でも先へ進める（次の手順で選ぶ例から名前が入る。公開のときに確かめる）
+    const message = step === "basic" ? periodProblem(startDate, endDate) : validate(step);
     if (message) {
       setError(message);
       return;

@@ -98,7 +98,7 @@ const STEPS: GameCreateStep[] = [
   { label: "ミッション", icon: Flag },
   { label: "達成条件・特典", short: "特典", icon: Gift },
   { label: "参加パス", icon: Ticket },
-  { label: "公開設定", short: "公開", icon: Rocket },
+  { label: "確認・公開", short: "公開", icon: Rocket },
 ];
 
 /** 日本時間の今日から days 日あとの日付（YYYY-MM-DD）。 */

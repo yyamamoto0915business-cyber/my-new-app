@@ -66,11 +66,11 @@ const EXAMPLE_DESCRIPTION = "まち歩きながらクイズに挑戦して、地
 const ORDER = [0, 4, 1, 2, 3];
 
 const STEPS: GameCreateStep[] = [
-  { label: "基本情報", icon: PenLine },
-  { label: "出題形式", icon: CircleHelp },
-  { label: "問題", icon: BookOpen },
-  { label: "達成条件・特典", icon: Gift },
-  { label: "参加パス", icon: Ticket },
+  { label: "基本情報", short: "基本", icon: PenLine },
+  { label: "出題形式", short: "形式", icon: CircleHelp },
+  { label: "問題", short: "問題", icon: BookOpen },
+  { label: "達成条件・特典", short: "特典", icon: Gift },
+  { label: "参加パス", short: "参加パス", icon: Ticket },
 ];
 
 function toIsoFromDate(date: string): string | null {

@@ -63,7 +63,7 @@ const EXAMPLE_DESCRIPTION = "まちなかの対象店舗をめぐってクーポ
 
 
 const STEPS = [
-  { id: "basic", label: "基本設定" },
+  { id: "basic", label: "基本情報" },
   { id: "pass", label: "参加パス" },
   { id: "stores", label: "店舗・クーポン" },
   { id: "rules", label: "取得・利用条件" },
@@ -73,11 +73,11 @@ const STEPS = [
 type StepId = (typeof STEPS)[number]["id"];
 
 const SHELL_STEPS: GameCreateStep[] = [
-  { label: STEPS[0].label, icon: PenLine },
-  { label: STEPS[1].label, icon: Ticket },
-  { label: STEPS[2].label, icon: Store },
-  { label: STEPS[3].label, icon: ListChecks },
-  { label: STEPS[4].label, icon: Rocket },
+  { label: STEPS[0].label, short: "基本", icon: PenLine },
+  { label: STEPS[1].label, short: "参加パス", icon: Ticket },
+  { label: STEPS[2].label, short: "クーポン", icon: Store },
+  { label: STEPS[3].label, short: "条件", icon: ListChecks },
+  { label: STEPS[4].label, short: "公開", icon: Rocket },
 ];
 
 
