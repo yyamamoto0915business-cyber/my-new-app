@@ -1,5 +1,6 @@
 "use client";
 
+import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -301,6 +302,14 @@ export function OrganizerMysteryCreateForm() {
       {page === 0 ? (
           <section className="org-quiz__card">
             <h2>基本情報</h2>
+            <GameBasicsExamples
+              examples={GAME_BASICS_EXAMPLES.mystery}
+              hasInput={Boolean(name.trim() || description.trim())}
+              onPick={(example) => {
+                setName(example.name);
+                setDescription(example.description);
+              }}
+            />
             <label className="org-quiz__field org-quiz__field--wide">
               <span>名前</span>
               <input placeholder={`例：${EXAMPLE_NAME}`} value={name} maxLength={80} onChange={(event) => setName(event.target.value)} />

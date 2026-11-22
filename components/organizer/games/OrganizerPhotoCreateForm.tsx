@@ -1,5 +1,6 @@
 "use client";
 
+import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { POINTS_NEED_EVENT_HINT, POINTS_NEED_EVENT_MESSAGE } from "@/lib/organizer/points-need-event";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
@@ -434,6 +435,14 @@ export function OrganizerPhotoCreateForm() {
               </h2>
               <p>まずはフォトラリーの基本情報を設定しましょう。</p>
               <div className="org-photo__grid">
+                <GameBasicsExamples
+                  examples={GAME_BASICS_EXAMPLES.photo}
+                  hasInput={Boolean(name.trim() || description.trim())}
+                  onPick={(example) => {
+                    setName(example.name);
+                    setDescription(example.description);
+                  }}
+                />
                 <label className="org-photo__field org-photo__field--wide">
                   <span>
                     タイトル <em>必須</em>

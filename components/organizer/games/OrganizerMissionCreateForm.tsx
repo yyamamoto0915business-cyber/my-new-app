@@ -1,5 +1,6 @@
 "use client";
 
+import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { POINTS_NEED_EVENT_HINT, POINTS_NEED_EVENT_MESSAGE } from "@/lib/organizer/points-need-event";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -67,7 +68,6 @@ import { sanitizeMissionSettings } from "@/lib/organizer/mission";
 import { MissionAddSheet } from "@/components/organizer/games/MissionAddSheet";
 
 /** 欄ははじめ空にし、例は薄い灰色の見本として出す（前は例の文が入っていて、消してから書く手間があった） */
-const EXAMPLE_NAME = "まち巡り発見ミッション ～春のまちなかさんぽ～";
 const EXAMPLE_DESCRIPTION = "まちなかを巡って、スポットを発見したり、写真を撮ったり、クイズに挑戦しながら、このまちの魅力を再発見できるミッションゲームです。";
 
 
@@ -590,6 +590,14 @@ export function OrganizerMissionCreateForm() {
               </div>
             </div>
             <div className="org-mission__grid">
+              <GameBasicsExamples
+                examples={GAME_BASICS_EXAMPLES.mission}
+                hasInput={Boolean(name.trim() || description.trim())}
+                onPick={(example) => {
+                  setName(example.name);
+                  setDescription(example.description);
+                }}
+              />
               <label className="org-mission__field org-mission__field--wide">
                 <span>
                   ゲーム名 <em>必須</em>
@@ -602,18 +610,6 @@ export function OrganizerMissionCreateForm() {
                 />
                 <small>
                   {name.length}/50
-                  {!name && !description ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setName(EXAMPLE_NAME);
-                        setDescription(EXAMPLE_DESCRIPTION);
-                      }}
-                      style={{ marginLeft: "0.6rem", border: 0, background: "none", padding: 0, color: "#a3812f", fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
-                    >
-                      例を入れる
-                    </button>
-                  ) : null}
                 </small>
               </label>
               <label className="org-mission__field">
