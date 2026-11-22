@@ -4,25 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import {
-  BarChart3,
-  Check,
-  ChevronDown,
-  Clock,
-  Flag,
-  HelpCircle,
-  LayoutDashboard,
-  Lightbulb,
-  MapPin,
-  MessageCircle,
-  Pencil,
-  Play,
-  Repeat2,
-  Sparkles,
-  Ticket,
-  Trophy,
-  Users,
-} from "lucide-react";
+import { BarChart3, Check, ChevronDown, Clock, Flag, HelpCircle, LayoutDashboard, Lightbulb, MapPin, MessageCircle, Pencil, Play, Repeat2, Sparkles, Trophy, Users, ChevronRight, Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import styles from "./OrganizerGameAnalytics.module.css";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
@@ -59,6 +41,30 @@ const TYPE_MARK: Partial<Record<OrganizerGame["type"], string>> = {
   lottery: "/organizer/games/loading-mascot-3.png",
   survey: "/organizer/games/loading-mascot-3.png",
   tournament: "/organizer/games/loading-mascot-3.png",
+};
+
+/** スポットを回るゲーム（スポット・回った順を見る） */
+const SPOT_TYPES = new Set<string>(["stamp", "checkin"]);
+/** 問題のあるゲーム（問題ごとの正解を見る） */
+const QUESTION_TYPES = new Set<string>(["quiz", "mystery"]);
+/** クリア・完走のないゲーム（投票・アンケート・抽選・トーナメント） */
+const NO_GOAL_TYPES = new Set<string>(["vote", "survey", "lottery", "tournament"]);
+
+/** ゲームの種類に合うタブだけを出す（前はどのゲームでも7つ並び、中身のないタブがあった） */
+function tabsForType(type: string): typeof TABS {
+  const ids: TabId[] = ["overview", "people"];
+  if (SPOT_TYPES.has(type)) ids.push("spots");
+  if (QUESTION_TYPES.has(type)) ids.push("questions");
+  ids.push("hours");
+  return TABS.filter((t) => ids.includes(t.id));
+}
+
+/** 投票などは、結果を管理画面で見る。ここではその入口を出す */
+const RESULT_LINK_LABEL: Record<string, string> = {
+  vote: "投票の結果・集まった案を見る",
+  survey: "アンケートの答えを見る",
+  lottery: "抽選の結果を見る",
+  tournament: "トーナメント表を見る",
 };
 
 function gameTypeMark(type: OrganizerGame["type"]) {
@@ -196,6 +202,11 @@ export function OrganizerGameAnalytics() {
   const { game, kpi } = data;
   const isQuiz = game.type === "quiz";
   const go = (id: TabId) => setTab(id);
+  const tabs = tabsForType(game.type);
+  const hasSpots = SPOT_TYPES.has(game.type);
+  const hasQuestions = QUESTION_TYPES.has(game.type);
+  const noGoal = NO_GOAL_TYPES.has(game.type);
+  const resultLabel = RESULT_LINK_LABEL[game.type];
 
   return (
     <div className="org-ga">
@@ -261,7 +272,7 @@ export function OrganizerGameAnalytics() {
       </header>
 
       <nav className="org-ga__tabs" aria-label="分析の種類">
-        {TABS.map((item) => {
+        {tabs.map((item) => {
           const Icon = item.icon;
           return (
             <button
@@ -277,7 +288,17 @@ export function OrganizerGameAnalytics() {
         })}
       </nav>
 
-      {tab === "overview" || tab === "people" ? <KpiGrid kpi={kpi} /> : null}
+      {tab === "overview" || tab === "people" ? <KpiGrid kpi={kpi} noGoal={noGoal} /> : null}
+
+      {tab === "overview" && resultLabel ? (
+        <Link href={`/organizer/games/${game.id}`} className="org-ga__result-link">
+          <span>
+            <strong>{resultLabel}</strong>
+            <em>ゲームの管理画面で、いちばん新しい結果を見られます</em>
+          </span>
+          <ChevronRight className="h-4 w-4" aria-hidden />
+        </Link>
+      ) : null}
 
       {tab === "overview" ? (
         <>
@@ -286,16 +307,16 @@ export function OrganizerGameAnalytics() {
             <MixCard kpi={kpi} compact />
             <HoursCard hours={data.hours} compact onMore={() => go("hours")} />
           </div>
-          <div className="org-ga__row3 is-mid">
-            <QuestionsCard questions={data.questions} isQuiz={isQuiz} compact onMore={() => go("questions")} />
-            <SpotsCard spots={data.spots} compact onMore={() => go("spots")} />
-            <FlowCard flow={data.flow} compact onMore={() => go("spots")} />
-          </div>
-          <div className="org-ga__row3 is-foot">
-            <VoicesCard compact onMore={() => go("survey")} />
-            <PostsCard compact onMore={() => go("survey")} />
-            <HintsCard hints={data.hints} compact />
-          </div>
+          {hasSpots || hasQuestions ? (
+            <div className="org-ga__row3 is-mid">
+              {hasQuestions ? (
+                <QuestionsCard questions={data.questions} isQuiz={isQuiz} compact onMore={() => go("questions")} />
+              ) : null}
+              {hasSpots ? <SpotsCard spots={data.spots} compact onMore={() => go("spots")} /> : null}
+              {hasSpots ? <FlowCard flow={data.flow} compact onMore={() => go("spots")} /> : null}
+            </div>
+          ) : null}
+          {data.hints.length > 0 ? <HintsCard hints={data.hints} compact /> : null}
         </>
       ) : null}
 
@@ -317,31 +338,34 @@ export function OrganizerGameAnalytics() {
 
       {tab === "questions" ? <QuestionsCard questions={data.questions} isQuiz={isQuiz} /> : null}
 
-      {tab === "rewards" ? (
-        <section className="org-ga__panel">
-          <header>
-            <h2>
-              <Ticket className="h-4 w-4" aria-hidden />
-              特典・クーポン
-            </h2>
-          </header>
-          <p className="org-ga__muted">
-            クリア特典やクーポンの利用状況は、準備中です。いまは歩いた跡の分析を先に見られます。
-          </p>
-        </section>
-      ) : null}
-
-      {tab === "survey" ? (
-        <div className="org-ga__row2">
-          <VoicesCard />
-          <PostsCard />
-        </div>
-      ) : null}
     </div>
   );
 }
 
-function KpiGrid({ kpi }: { kpi: GameAnalytics["kpi"] }) {
+function KpiGrid({ kpi, noGoal = false }: { kpi: GameAnalytics["kpi"]; noGoal?: boolean }) {
+  // 投票・アンケートなどはクリアがないので、完走・所要時間は出さない
+  if (noGoal) {
+    return (
+      <section className="org-ga__kpis is-two" aria-label="基本KPI">
+        <KpiCard
+          tone="pink"
+          icon={Users}
+          label="参加者数"
+          value={formatNumber(kpi.participants)}
+          unit="人"
+          wow={kpi.wow?.participants ?? null}
+        />
+        <KpiCard
+          tone="teal"
+          icon={Repeat2}
+          label="リピーター率"
+          value={`${kpi.repeaterRate}`}
+          unit="%"
+          wow={kpi.wow.repeaterRate}
+        />
+      </section>
+    );
+  }
   return (
     <section className="org-ga__kpis" aria-label="基本KPI">
       <KpiCard
@@ -707,49 +731,7 @@ function FlowCard({
   );
 }
 
-function VoicesCard({ compact, onMore }: { compact?: boolean; onMore?: () => void }) {
-  return (
-    <section className="org-ga__panel">
-      <header>
-        <h2>
-          <MessageCircle className="h-4 w-4" aria-hidden />
-          参加者の声
-        </h2>
-        {onMore ? <MoreLink onMore={onMore} /> : null}
-      </header>
-      <ul className="org-ga__voices">
-        <li>
-          <p>{compact ? "終了後の感想は、まだ届いていません。" : "ゲーム終了後の感想は、まだ届いていません。"}</p>
-          {compact ? null : <time>終了画面から残せるようにします</time>}
-        </li>
-      </ul>
-    </section>
-  );
-}
 
-function PostsCard({ compact, onMore }: { compact?: boolean; onMore?: () => void }) {
-  return (
-    <section className="org-ga__panel">
-      <header>
-        <h2>
-          <Sparkles className="h-4 w-4" aria-hidden />
-          人気のユーザー投稿
-        </h2>
-        {onMore ? (
-          <button type="button" className="org-ga__more" onClick={onMore}>
-            すべて見る
-          </button>
-        ) : null}
-      </header>
-      <ul className="org-ga__posts">
-        {Array.from({ length: compact ? 4 : 5 }).map((_, index) => (
-          <li key={index} aria-hidden />
-        ))}
-      </ul>
-      {compact ? null : <p className="org-ga__caption">投稿とゲームがつながると、ここに写真が並びます。</p>}
-    </section>
-  );
-}
 
 function HintsCard({ hints, compact }: { hints: GameAnalytics["hints"]; compact?: boolean }) {
   const shown = compact ? hints.slice(0, 2) : hints;
