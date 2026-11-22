@@ -28,15 +28,15 @@ export function OrganizerFollowButton({
         followed
           ? {
               background: "#fff",
-              color: "#3a8040",
-              border: "1.5px solid #3a8040",
+              color: "#173f2c",
+              border: "1.5px solid #c9d8cd",
               padding: mobileStyle || pcStyle ? "0" : "12px 0",
               fontSize: mobileStyle ? 13 : 14,
             }
           : {
-              background: "#3a8040",
-              color: "#fff",
-              border: "none",
+              background: "linear-gradient(to bottom, #245a3e, #173f2c)",
+              color: "#f6ebc8",
+              border: "1.5px solid #d9bc6e",
               padding: mobileStyle || pcStyle ? "0" : "12px 0",
               fontSize: mobileStyle ? 13 : 14,
             }

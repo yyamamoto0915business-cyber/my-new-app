@@ -106,8 +106,9 @@ export default async function OrganizerPublicPage({ params }: Props) {
       <div className="lg:max-w-[1100px] lg:mx-auto lg:px-6 pb-2 lg:pb-12 lg:pt-1">
 
         {/* ─── MOBILE ─── */}
-        <div className="flex flex-col gap-2 lg:hidden">
-              <div className="relative h-[120px] w-full overflow-hidden" style={{ background: "#c8ddb8" }}>
+        <div className="flex flex-col gap-2.5 lg:hidden">
+              {/* カバー：写真がないときは深緑の帯（前は薄い緑の無地で間延びしていた） */}
+              <div className="relative h-[112px] w-full overflow-hidden bg-gradient-to-br from-[#2f6b4a] to-[#173f2c]">
                 {organizer.coverImageUrl?.trim() ? (
                   <OrganizerRemoteImage
                     src={organizer.coverImageUrl}
@@ -115,37 +116,34 @@ export default async function OrganizerPublicPage({ params }: Props) {
                     className="object-cover"
                     sizes="100vw"
                     priority
-                    fallback={<div className="absolute inset-0 bg-gradient-to-br from-[#c8ddb8] to-[#9abf9a]" />}
+                    fallback={<div className="absolute inset-0 bg-gradient-to-br from-[#2f6b4a] to-[#173f2c]" />}
                   />
                 ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#c8ddb8] to-[#9abf9a]" />
+                  <div
+                    className="absolute inset-0 opacity-[0.12]"
+                    style={{ backgroundImage: "radial-gradient(#f6ebc8 1px, transparent 1px)", backgroundSize: "14px 14px" }}
+                    aria-hidden
+                  />
                 )}
               </div>
 
-              <div
-                className="relative z-10 mx-3 -mt-6 rounded-[16px] px-3.5 pb-3 pt-3"
-                style={{ background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
-              >
-                <div className="flex items-center gap-2.5">
+              <div className="relative z-10 mx-3 -mt-12 rounded-[20px] border border-[#e6e2d6] bg-white px-4 pb-4 pt-0 shadow-[0_4px_16px_rgba(23,63,44,0.08)]">
+                <div className="flex items-end justify-between">
                   <div
-                    className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full font-bold"
-                    style={{ background: "#c8ddb8", fontSize: 20, color: "#3a6030" }}
+                    className="relative -mt-8 flex h-[68px] w-[68px] shrink-0 items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-[#eef5f0] text-[26px] font-bold text-[#1f6a42] shadow-[0_2px_8px_rgba(23,63,44,0.15)] ring-2 ring-[#d9bc6e]"
                   >
                     {organizer.avatarUrl?.trim() ? (
                       <OrganizerRemoteImage
                         src={organizer.avatarUrl}
                         fill
                         className="object-cover"
-                        sizes="48px"
+                        sizes="68px"
                         fallback={<span>{initial}</span>}
                       />
                     ) : (
                       <span>{initial}</span>
                     )}
                   </div>
-                  <h1 className="min-w-0 flex-1 text-[17px] font-bold leading-snug" style={{ color: "#1a2818" }}>
-                    {organizer.organizationName}
-                  </h1>
                   {ownerProfileId ? (
                     <ModerationMenu
                       targetType="user"
@@ -153,42 +151,53 @@ export default async function OrganizerPublicPage({ params }: Props) {
                       authorId={ownerProfileId}
                       authorName={organizer.organizationName}
                       viewerId={viewerId}
-                      className="shrink-0 text-[#6a7a68]"
+                      className="mt-2 shrink-0 text-[#6a7a68]"
                       iconClassName="h-5 w-5"
                     />
                   ) : null}
                 </div>
 
-                {(profileDisplay.heroBio) && (
-                  <p className="mt-2 line-clamp-2 text-[12.5px] leading-[1.55]" style={{ color: "#3a4a38" }}>
-                    {profileDisplay.heroBio}
-                  </p>
-                )}
+                <p className="mt-2.5 text-[10.5px] font-bold tracking-[0.18em] text-[#a3812f]">ORGANIZER</p>
+                <h1
+                  className="mt-0.5 text-[21px] font-semibold leading-snug tracking-[0.02em] text-[#163828]"
+                  style={{ fontFamily: "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif" }}
+                >
+                  {organizer.organizationName}
+                </h1>
 
-                <div className="mt-2 grid grid-cols-2 gap-1.5">
-                  {profileDisplay.activityArea && (
-                    <StatChip icon={<LocationIcon size={12} />} label="活動地域" value={profileDisplay.activityArea} compact />
-                  )}
-                  {totalEventCount > 0 && (
-                    <StatChip icon={<CalendarIcon size={12} />} label="開催数" value={`${totalEventCount}件`} compact />
-                  )}
-                </div>
+                {/* 活動地域・開催数は、名前の下に小さな札で（前は「活動…」と切れていた） */}
+                {profileDisplay.activityArea || totalEventCount > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {profileDisplay.activityArea ? (
+                      <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-[#eef5f0] px-2.5 py-1 text-[12px] font-semibold text-[#1f6a42]">
+                        <LocationIcon size={12} color="#1f6a42" />
+                        <span className="truncate">{profileDisplay.activityArea}</span>
+                      </span>
+                    ) : null}
+                    {totalEventCount > 0 ? (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-[#e6dcc0] bg-[#fffbf0] px-2.5 py-1 text-[12px] font-semibold text-[#8a6d1f]">
+                        <CalendarIcon size={12} color="#a3812f" />
+                        開催 {totalEventCount}件
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
 
-                <div className="mt-3 flex flex-col gap-2">
+                {profileDisplay.heroBio ? (
+                  <p className="mt-2.5 line-clamp-3 text-[13.5px] leading-[1.75] text-[#3c4a40]">{profileDisplay.heroBio}</p>
+                ) : null}
+
+                {/* フォローと相談は横に並べる（縦に2つ並べていて場所をとっていた） */}
+                <div className="mt-3.5 grid grid-cols-2 gap-2">
                   <OrganizerFollowButton fullWidth mobileStyle />
                   <Link
                     href="/messages"
-                    className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold transition-all"
-                    style={{
-                      background: "#fff",
-                      color: "#3a8040",
-                      border: "1.5px solid #3a8040",
-                    }}
+                    className="flex h-11 w-full items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-[#c9d8cd] bg-white text-[13px] font-bold text-[#173f2c] transition-all"
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                       <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
                     </svg>
-                    主催者に相談する
+                    相談する
                   </Link>
                 </div>
               </div>
@@ -221,10 +230,7 @@ export default async function OrganizerPublicPage({ params }: Props) {
             </SectionCard>
 
             {profileDisplay.aboutBio && (
-              <div
-                className="mx-3 rounded-[16px] p-3"
-                style={{ background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
-              >
+              <div className="mx-3 rounded-[18px] border border-[#e6e2d6] bg-white p-3 shadow-[0_1px_4px_rgba(23,63,44,0.05)]">
                 <OrganizerAboutTeaser bio={profileDisplay.aboutBio} />
               </div>
             )}
@@ -351,33 +357,6 @@ export default async function OrganizerPublicPage({ params }: Props) {
 
 /* ─── Reusable sub-components ─── */
 
-function StatChip({
-  icon,
-  label,
-  value,
-  compact = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  compact?: boolean;
-}) {
-  return (
-    <div
-      className={`flex items-center gap-1 ${compact ? "min-w-0 rounded-lg px-2 py-1.5 text-[11px]" : "rounded-full px-3 py-1 text-[12px]"}`}
-      style={{ background: "#fff", border: "1px solid #e4ede4", color: "#607060" }}
-    >
-      <span className="shrink-0">{icon}</span>
-      <span className={compact ? "truncate" : undefined}>{label}</span>
-      <b
-        className={compact ? "truncate" : undefined}
-        style={{ color: "#1a2818", fontWeight: 600, marginLeft: compact ? 0 : 2 }}
-      >
-        {value}
-      </b>
-    </div>
-  );
-}
 
 function SectionCard({
   title,
@@ -394,15 +373,15 @@ function SectionCard({
 }) {
   return (
     <div
-      className={`rounded-[16px] p-3 ${pcOnly ? "mx-0 lg:p-4 lg:rounded-[16px]" : "mx-3 lg:mx-0 lg:p-4 lg:rounded-[16px]"}`}
-      style={{ background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
+      className={`rounded-[18px] border border-[#e6e2d6] p-4 ${pcOnly ? "mx-0 lg:p-4 lg:rounded-[16px]" : "mx-3 lg:mx-0 lg:p-4 lg:rounded-[16px]"}`}
+      style={{ background: "#fff", boxShadow: "0 1px 4px rgba(23,63,44,0.05)" }}
     >
       <div className="mb-2.5 flex items-center justify-between lg:mb-2.5">
         <div className="flex items-center gap-1.5 lg:gap-2">
           {icon}
           <span
-            className={`font-bold ${pcOnly ? "text-[14px]" : "text-[14px]"}`}
-            style={{ color: "#1a2818" }}
+            className="text-[14px] font-bold"
+            style={{ color: "#173f2c" }}
           >
             {title}
           </span>
@@ -428,8 +407,8 @@ function SectionCard({
 function EmptyState({ message, children }: { message: string; children?: React.ReactNode }) {
   return (
     <div
-      className="flex flex-col items-center gap-1.5 rounded-[12px] border border-dashed px-3 py-4 lg:gap-2 lg:rounded-[14px] lg:px-4 lg:py-7"
-      style={{ background: "#fafcf8", borderColor: "#dce5dc" }}
+      className="flex flex-col items-center gap-1 rounded-[12px] border border-dashed px-3 py-3 lg:gap-2 lg:rounded-[14px] lg:px-4 lg:py-7"
+      style={{ background: "#f7f6f2", borderColor: "#e6e2d6" }}
     >
       <CalendarIcon size={18} color="#98a898" strokeWidth={1.5} />
       <span className="text-center text-[12px] lg:text-[13px]" style={{ color: "#98a898" }}>{message}</span>

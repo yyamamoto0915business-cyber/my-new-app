@@ -445,9 +445,8 @@ export function OrganizerGamesHub({ pickOnly = false }: { pickOnly?: boolean } =
           </Link>
           <OrgEyebrow>NEW GAME</OrgEyebrow>
           <h1 className="org-game-pick__title" style={{ fontFamily: ORG_SERIF }}>
-            ゲームの種類を選ぶ
+            ゲームを作る
           </h1>
-          <p className="org-game-pick__lead">やりたいことを押すと、すぐ作りはじめられます。</p>
         </header>
       ) : null}
       <div className="org-hub__mobile-home">
@@ -524,6 +523,17 @@ export function OrganizerGamesHub({ pickOnly = false }: { pickOnly?: boolean } =
           </div>
           {/* まず「やりたいこと」から選ぶ（画面案 ①）。全部の種類は「すべての種類から選ぶ」で今までどおり */}
           {!showAllTemplates ? <GamePurposePicker className="pt-1" /> : null}
+          {pickOnly ? (
+            <button
+              type="button"
+              className="org-game-pick__all"
+              aria-expanded={showAllTemplates}
+              onClick={() => setShowAllTemplates((open) => !open)}
+            >
+              {showAllTemplates ? "やりたいことから選ぶ" : "種類の名前から選ぶ（すべての種類）"}
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          ) : null}
           {showAllTemplates ? (
           <ul className="org-hub__mobile-grid">
             {mobileTemplates.map((type) => (
@@ -666,6 +676,17 @@ export function OrganizerGamesHub({ pickOnly = false }: { pickOnly?: boolean } =
             </button>
           </div>
           {!pcShowAllTemplates ? <GamePurposePicker /> : null}
+          {pickOnly ? (
+            <button
+              type="button"
+              className="org-game-pick__all"
+              aria-expanded={pcShowAllTemplates}
+              onClick={() => setPcShowAllTemplates((open) => !open)}
+            >
+              {pcShowAllTemplates ? "やりたいことから選ぶ" : "種類の名前から選ぶ（すべての種類）"}
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          ) : null}
           {pcShowAllTemplates ? (
           <ul className="org-hub-pc__templates">
             {pcTemplates.map((item, index) => (
