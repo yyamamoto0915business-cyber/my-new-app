@@ -42,15 +42,16 @@ export function EventActionsSheet({ event, billingSummary, archiveBoxMode, onClo
 
   // 主催者画面の中身は重なりの順番が区切られている（main が z-[1]）ので、body の直下に出す
   return createPortal(
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={`${event.title}の操作`}>
+    <div className="fixed inset-0 z-50 min-[900px]:z-[120]" role="dialog" aria-modal="true" aria-label={`${event.title}の操作`}>
       <button
         type="button"
         aria-label="閉じる"
         onClick={onClose}
         className="absolute inset-0 bg-[#0e2a1d]/35 backdrop-blur-[2px]"
       />
-      <div className="absolute inset-x-0 bottom-0 mx-auto max-h-[85dvh] w-full max-w-xl overflow-y-auto rounded-t-[24px] bg-[#f7f8f5] px-4 pb-[calc(16px+env(safe-area-inset-bottom,0px))] pt-2 shadow-[0_-12px_32px_rgba(14,42,29,0.18)]">
-        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-[#d6ddd7]" aria-hidden />
+      {/* スマホは下から出るシート、PC・iPad 横は画面の中央に出す */}
+      <div className="absolute inset-x-0 bottom-0 mx-auto max-h-[85dvh] w-full max-w-xl overflow-y-auto rounded-t-[24px] bg-[#f7f8f5] px-4 pb-[calc(16px+env(safe-area-inset-bottom,0px))] pt-2 shadow-[0_-12px_32px_rgba(14,42,29,0.18)] min-[900px]:bottom-auto min-[900px]:top-1/2 min-[900px]:max-w-[640px] min-[900px]:-translate-y-1/2 min-[900px]:rounded-[24px] min-[900px]:px-5 min-[900px]:pb-5 min-[900px]:pt-4 min-[900px]:shadow-[0_24px_60px_rgba(14,42,29,0.25)]">
+        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-[#d6ddd7] min-[900px]:hidden" aria-hidden />
         <div className="mb-2 flex items-center justify-between">
           <p className="text-[12px] font-bold tracking-[0.08em] text-[#a3812f]">イベントの操作</p>
           <button
