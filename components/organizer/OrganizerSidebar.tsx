@@ -47,7 +47,15 @@ export default function OrganizerSidebar({
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
-    if (localStorage.getItem(SIDEBAR_OPEN_KEY) === "0") setOpen(false);
+    // 自分で開く・たたむを選んでいればそれに従う。選んでいなければ、iPad 横など幅の狭い画面（1200px 未満）では
+    // アプリの左メニュー・上のメニューと並んで本文が狭くなるため、最初はたたんでおく。
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(SIDEBAR_OPEN_KEY);
+    } catch {
+      /* storage 不可時は幅で決める */
+    }
+    if (saved === "0" || (saved === null && window.innerWidth < 1200)) setOpen(false);
   }, []);
 
   // 閉じているときに本文側の見た目（ゲーム作成のプレビューを大きくする など）を変えられるよう、html に印を付ける。
@@ -61,7 +69,11 @@ export default function OrganizerSidebar({
 
   function setSidebarOpen(next: boolean) {
     setOpen(next);
-    localStorage.setItem(SIDEBAR_OPEN_KEY, next ? "1" : "0");
+    try {
+      localStorage.setItem(SIDEBAR_OPEN_KEY, next ? "1" : "0");
+    } catch {
+      /* noop */
+    }
   }
 
   const asideClass = cn(
