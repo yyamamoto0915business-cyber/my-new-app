@@ -7,7 +7,20 @@ import { useScopedUnreadCount } from "@/hooks/use-scoped-unread-count";
 import { useRegionPreference } from "@/hooks/use-region-preference";
 import { setModeCookie } from "@/lib/mode-preference";
 import { RegionSettingModal } from "@/components/region/RegionSettingModal";
-import { MapPin, HelpCircle } from "lucide-react";
+import {
+  MapPin,
+  HelpCircle,
+  CalendarDays,
+  CalendarCheck,
+  Plus,
+  Wallet,
+  Gamepad2,
+  MessageCircle,
+  UserRound,
+} from "lucide-react";
+import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
+import { ORGANIZER_NEW_LISTING_HREF, organizerBottomNavActive } from "@/lib/organizer/organizer-nav";
+import { ORGANIZER_MESSAGES_HREF } from "@/lib/messages-scope";
 import { shouldHidePcGlobalNav } from "@/lib/is-auth-route";
 import { ParticipationPassIcon } from "@/components/pass/ParticipationPassIcon";
 import { MyAlbumIcon } from "@/components/profile/MyAlbumIcon";
@@ -18,12 +31,58 @@ const DESKTOP_NAV_ITEMS = [
   { href: "/pass", label: "参加パス", icon: "pass" },
   { href: "/profile/posts", label: "マイアルバム", icon: "album" },
   { href: "/messages", label: "メッセージ", icon: "messages" },
-  { href: "/organizer/listings", label: "主催", icon: "organizer" },
   { href: "/profile", label: "マイページ", icon: "profile" },
 ] as const;
 
+/** 主催者モードの左メニュー（スマホの下のナビと同じ考え方に、PC でよく使うレジ・ゲームを足す） */
+const ORGANIZER_NAV_ITEMS = [
+  { href: "/organizer/listings", label: "掲載管理", icon: "o-listings" },
+  { href: "/organizer", label: "当日の運営", icon: "o-day" },
+  { href: ORGANIZER_NEW_LISTING_HREF, label: "新しく掲載", icon: "o-new" },
+  { href: "/organizer/pos", label: "レジ", icon: "o-pos" },
+  { href: "/organizer/games", label: "ゲーム", icon: "o-game" },
+  { href: ORGANIZER_MESSAGES_HREF, label: "チャット", icon: "o-chat" },
+  { href: "/organizer/settings", label: "マイページ", icon: "o-settings" },
+] as const;
+
+const ORGANIZER_ICONS = {
+  "o-listings": CalendarDays,
+  "o-day": CalendarCheck,
+  "o-new": Plus,
+  "o-pos": Wallet,
+  "o-game": Gamepad2,
+  "o-chat": MessageCircle,
+  "o-settings": UserRound,
+} as const;
+
+/** 掲載管理の中の画面（イベント・お店・募集などの管理・編集）も「掲載管理」を光らせる */
+const ORGANIZER_LISTING_PREFIXES = [
+  "/organizer/listings",
+  "/organizer/events",
+  "/organizer/stores",
+  "/organizer/kitchen-cars",
+  "/organizer/recruitments",
+  "/organizer/stories",
+  "/organizer/articles",
+];
+
+function isOrganizerItemActive(pathname: string, href: string): boolean {
+  const isNew = organizerBottomNavActive(pathname) === "new";
+  if (href === ORGANIZER_NEW_LISTING_HREF) return isNew;
+  if (isNew) return false;
+  if (href === "/organizer") return pathname === "/organizer" || pathname === "/organizer/home";
+  if (href === "/organizer/listings") {
+    return ORGANIZER_LISTING_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function NavIcon({ icon, active }: { icon: string; active: boolean }) {
   const stroke = active ? "#4a9a68" : "currentColor";
+  if (icon in ORGANIZER_ICONS) {
+    const Icon = ORGANIZER_ICONS[icon as keyof typeof ORGANIZER_ICONS];
+    return <Icon className="h-6 w-6" stroke={stroke} strokeWidth={1.9} aria-hidden />;
+  }
   if (icon === "home") {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke={stroke} strokeWidth={2}>
@@ -122,8 +181,11 @@ function NavLink({
 export function BottomNav() {
   const pathname = usePathname() ?? "";
   const hideOnAuth = shouldHidePcGlobalNav(pathname);
-  // 利用者のチャット（/messages）に出る会話の分だけ
-  const unreadCount = useScopedUnreadCount("member", !hideOnAuth);
+  const organizerArea = isOrganizerDashboardPath(pathname);
+  // 利用者モードでは利用者のチャット（/messages）、主催者モードでは主催者のチャットの未読
+  const memberUnread = useScopedUnreadCount("member", !hideOnAuth && !organizerArea);
+  const organizerUnread = useScopedUnreadCount("organizer", !hideOnAuth && organizerArea);
+  const unreadCount = organizerArea ? organizerUnread : memberUnread;
 
   useEffect(() => {
     if (pathname.startsWith("/organizer")) {
@@ -132,6 +194,7 @@ export function BottomNav() {
   }, [pathname]);
 
   const isActive = (href: string) => {
+    if (organizerArea) return isOrganizerItemActive(pathname, href);
     if (href === "/") return pathname === "/";
     if (href === "/organizer/listings") return pathname.startsWith("/organizer");
     if (href === "/profile/posts") return pathname.startsWith("/profile/posts");
@@ -142,7 +205,8 @@ export function BottomNav() {
   };
 
   const showBadge = (icon: string) =>
-    (icon === "messages" || icon === "profile") && unreadCount > 0;
+    (icon === "messages" || icon === "profile" || icon === "o-chat") && unreadCount > 0;
+  const items = organizerArea ? ORGANIZER_NAV_ITEMS : DESKTOP_NAV_ITEMS;
 
   if (hideOnAuth) return null;
 
@@ -150,10 +214,10 @@ export function BottomNav() {
     <nav
       data-mg-chrome="pc-rail"
       className="fixed inset-y-0 left-0 z-50 hidden w-20 flex-col items-center border-r border-[#e8ebe6] bg-white py-5 pt-[calc(1.25rem+env(safe-area-inset-top,0px))] min-[900px]:flex"
-      aria-label="PCナビゲーション"
+      aria-label={organizerArea ? "主催者メニュー" : "PCナビゲーション"}
     >
       <div className="flex w-full flex-col items-center justify-start gap-0">
-        {DESKTOP_NAV_ITEMS.map((item) => (
+        {items.map((item) => (
           <NavLink
             key={item.href}
             item={item}
@@ -164,12 +228,12 @@ export function BottomNav() {
           />
         ))}
       </div>
-      <SidebarFooter />
+      <SidebarFooter showRegion={!organizerArea} />
     </nav>
   );
 }
 
-function SidebarFooter() {
+function SidebarFooter({ showRegion = true }: { showRegion?: boolean }) {
   const { label, preference, hydrated } = useRegionPreference();
   const [modalOpen, setModalOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -178,6 +242,8 @@ function SidebarFooter() {
 
   return (
     <div className="mt-auto flex w-full shrink-0 flex-col items-center gap-3 px-1 pb-3">
+      {showRegion ? (
+      <>
       <button
         ref={triggerRef}
         type="button"
@@ -208,6 +274,8 @@ function SidebarFooter() {
         onClose={() => setModalOpen(false)}
         anchorRef={triggerRef}
       />
+      </>
+      ) : null}
       <Link
         href="/guide"
         className="flex w-full flex-col items-center gap-1 rounded-lg px-1 py-2 text-[9px] font-medium text-[#3a5848] transition hover:bg-[#f4faf6]"
