@@ -32741,7 +32741,7 @@ button.posts-tab--active:not([disabled]):active {
 .my-album-monthpage__grid {
   display: grid;
   /* auto-fill で空トラックを残し、件数が少なくてもカードが伸びないようにする */
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
   gap: 0.55rem 0.45rem;
   align-items: start;
 }
@@ -40031,5 +40031,12 @@ button.mg-album-place {
   .org-mission__card .game-pass-step__box:first-child {
     border-top: 0 !important;
     padding-top: 0 !important;
+  }
+}
+
+/* レジ（PC・iPad 横）：商品は幅に合わせて列を増やす。横が広いときにカードだけ大きくならないように */
+@media (min-width: 900px) {
+  html:not([data-org-pos-focus="1"]) .org-pos__grid {
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
   }
 }
