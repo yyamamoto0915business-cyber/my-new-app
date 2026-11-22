@@ -2503,7 +2503,13 @@ export function StampRallyWizard() {
                   戻る
                 </button>
               ) : null}
-              <button type="button" className={styles.textAction} disabled={saving} onClick={() => setTesting(true)}>
+              {/* スマホは右下の「プレビュー」と同じ働きなので出さない（ほかのゲームの作成とそろえる） */}
+              <button
+                type="button"
+                className={`${styles.textAction} max-[899px]:!hidden`}
+                disabled={saving}
+                onClick={() => setTesting(true)}
+              >
                 お試しで見る
               </button>
               <button type="button" className={styles.textAction} disabled={saving} onClick={() => void saveDraft("stay")}>

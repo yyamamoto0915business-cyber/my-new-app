@@ -1,5 +1,6 @@
 "use client";
 
+import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { POINTS_NEED_EVENT_HINT, POINTS_NEED_EVENT_MESSAGE } from "@/lib/organizer/points-need-event";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
@@ -462,6 +463,14 @@ export function OrganizerCheckinCreateForm() {
               </h2>
               <p>まずはゲームの基本情報を設定しましょう。</p>
               <div className="org-checkin__grid">
+                <GameBasicsExamples
+                  examples={GAME_BASICS_EXAMPLES.checkin}
+                  hasInput={Boolean(name.trim() || description.trim())}
+                  onPick={(example) => {
+                    setName(example.name);
+                    setDescription(example.description);
+                  }}
+                />
                 <label className="org-checkin__field">
                   <span>
                     ゲーム名 <em>必須</em>

@@ -1,5 +1,6 @@
 "use client";
 
+import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -445,6 +446,14 @@ export function OrganizerCouponCreateForm() {
               {/* 見出しは上のステップ表示に出ているので、ここでは説明だけにする。 */}
               <p style={{ marginTop: 0 }}>クーポンラリーの基本的な情報を設定しましょう。</p>
               <div className="org-coupon__grid">
+                <GameBasicsExamples
+                  examples={GAME_BASICS_EXAMPLES.coupon}
+                  hasInput={Boolean(name.trim() || description.trim())}
+                  onPick={(example) => {
+                    setName(example.name);
+                    setDescription(example.description);
+                  }}
+                />
                 <label className="org-coupon__field org-coupon__field--wide">
                   <span>
                     ゲーム名 <em>必須</em>

@@ -1,5 +1,6 @@
 "use client";
 
+import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -404,6 +405,14 @@ export function OrganizerQuizCreateForm() {
           <section className="org-quiz__card" aria-labelledby="quiz-basic">
             <h2 id="quiz-basic">基本情報</h2>
             <div className="org-quiz__grid">
+              <GameBasicsExamples
+                examples={GAME_BASICS_EXAMPLES.quiz}
+                hasInput={Boolean(name.trim() || description.trim())}
+                onPick={(example) => {
+                  setName(example.name);
+                  setDescription(example.description);
+                }}
+              />
               <label className="org-quiz__field org-quiz__field--wide">
                 <span>
                   ゲーム名 <em>必須</em>
