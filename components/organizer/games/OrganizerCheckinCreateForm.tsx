@@ -465,6 +465,13 @@ export function OrganizerCheckinCreateForm() {
               </h2>
               <p>まずはゲームの基本情報を設定しましょう。</p>
               <div className="org-checkin__grid">
+                <label className="org-checkin__field">
+                  <span>
+                    ゲーム名 <em>必須</em>
+                  </span>
+                  <input placeholder={`例：${EXAMPLE_NAME}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={50} required />
+                  <small>{name.length}/50</small>
+                </label>
                 <GameBasicsExamples
                   examples={GAME_BASICS_EXAMPLES.checkin}
                   hasInput={Boolean(name.trim() || description.trim())}
@@ -473,13 +480,6 @@ export function OrganizerCheckinCreateForm() {
                     setDescription(example.description);
                   }}
                 />
-                <label className="org-checkin__field">
-                  <span>
-                    ゲーム名 <em>必須</em>
-                  </span>
-                  <input placeholder={`例：${EXAMPLE_NAME}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={50} required />
-                  <small>{name.length}/50</small>
-                </label>
                 <label className="org-checkin__field">
                   <span>対象イベント</span>
                   <select value={eventId} onChange={(e) => setEventId(e.target.value)} disabled={loadingEvents}>

@@ -304,6 +304,10 @@ export function OrganizerMysteryCreateForm() {
       {page === 0 ? (
           <section className="org-quiz__card">
             <h2>基本情報</h2>
+            <label className="org-quiz__field org-quiz__field--wide">
+              <span>名前</span>
+              <input placeholder={`例：${EXAMPLE_NAME}`} value={name} maxLength={80} onChange={(event) => setName(event.target.value)} />
+            </label>
             <GameBasicsExamples
               examples={GAME_BASICS_EXAMPLES.mystery}
               hasInput={Boolean(name.trim() || description.trim())}
@@ -312,10 +316,6 @@ export function OrganizerMysteryCreateForm() {
                 setDescription(example.description);
               }}
             />
-            <label className="org-quiz__field org-quiz__field--wide">
-              <span>名前</span>
-              <input placeholder={`例：${EXAMPLE_NAME}`} value={name} maxLength={80} onChange={(event) => setName(event.target.value)} />
-            </label>
             <label className="org-quiz__field org-quiz__field--wide">
               <span>説明</span>
               <textarea placeholder={`例：${EXAMPLE_DESCRIPTION}`} value={description} maxLength={400} rows={3} onChange={(event) => setDescription(event.target.value)} />

@@ -6,7 +6,7 @@ import { LayoutTemplate } from "lucide-react";
 export type GameBasicsExample = { label: string; name: string; description: string };
 
 /**
- * 基本の手順の「見本から選ぶ」。押すと見本が並び、選ぶとゲーム名と説明がまとめて入る（あとから変えられる）。
+ * 基本の手順の「見本から入れる」（小さな文字）。押すと見本が並び、選ぶとゲーム名と説明がまとめて入る（あとから変えられる）。
  * 前は「例を入れる」で1つだけ入った。スタンプラリーの「見本から選ぶ」と同じ見た目にそろえる。
  */
 export function GameBasicsExamples({
@@ -22,18 +22,18 @@ export function GameBasicsExamples({
   const [open, setOpen] = useState(false);
   return (
     <div style={{ gridColumn: "1 / -1" }}>
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2.5 rounded-[14px] border border-dashed border-[#c9a54e] bg-[#fffbf0] px-3.5 py-2.5 text-left text-[#173f2c]"
-      >
-        <LayoutTemplate className="h-4 w-4 shrink-0" aria-hidden />
-        <span className="grid min-w-0 gap-0.5">
-          <b className="text-[14px] font-extrabold">{open ? "見本を閉じる" : "見本から選ぶ"}</b>
-          <small className="text-[11.5px] text-[#6b776f]">選ぶと、ゲーム名と説明がまとめて入ります（あとから変えられます）</small>
-        </span>
-      </button>
+      {/* 基本の手順では目立たせない：使いたい人だけ押す小さな文字 */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="inline-flex items-center gap-1 text-[12.5px] font-bold text-[#a3812f] underline underline-offset-2"
+        >
+          <LayoutTemplate className="h-3.5 w-3.5" aria-hidden />
+          {open ? "見本を閉じる" : "見本から入れる"}
+        </button>
+      </div>
       {open ? (
         <ul className="mt-2 grid gap-1.5">
           {examples.map((example) => (

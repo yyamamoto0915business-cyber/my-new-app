@@ -407,14 +407,6 @@ export function OrganizerQuizCreateForm() {
           <section className="org-quiz__card" aria-labelledby="quiz-basic">
             <h2 id="quiz-basic">基本情報</h2>
             <div className="org-quiz__grid">
-              <GameBasicsExamples
-                examples={GAME_BASICS_EXAMPLES.quiz}
-                hasInput={Boolean(name.trim() || description.trim())}
-                onPick={(example) => {
-                  setName(example.name);
-                  setDescription(example.description);
-                }}
-              />
               <label className="org-quiz__field org-quiz__field--wide">
                 <span>
                   ゲーム名 <em>必須</em>
@@ -427,6 +419,14 @@ export function OrganizerQuizCreateForm() {
                 />
                 <small>{name.length}/80</small>
               </label>
+              <GameBasicsExamples
+                examples={GAME_BASICS_EXAMPLES.quiz}
+                hasInput={Boolean(name.trim() || description.trim())}
+                onPick={(example) => {
+                  setName(example.name);
+                  setDescription(example.description);
+                }}
+              />
               <label className="org-quiz__field">
                 <span>対象イベント</span>
                 <select value={eventId} onChange={(e) => setEventId(e.target.value)} disabled={loadingEvents}>
@@ -471,7 +471,16 @@ export function OrganizerQuizCreateForm() {
               </button>
             </div>
             {questions.length === 0 ? (
-              <p className="org-quiz__empty">まだ問題がありません。まちの魅力が伝わるクイズを追加しましょう。</p>
+              <div className="org-quiz__empty">
+                <p>まだ問題がありません。まちの魅力が伝わるクイズを追加しましょう。</p>
+                <button
+                  type="button"
+                  onClick={() => setQuestions(sampleQuizQuestions())}
+                  style={{ marginTop: "0.6rem", minHeight: "2.5rem", padding: "0 1rem", borderRadius: 999, border: "1px solid #e1d6b4", background: "#fffdf7", color: "#173f2c", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}
+                >
+                  見本の問題を入れて始める
+                </button>
+              </div>
             ) : (
               <ol className="org-quiz__questions">
                 {questions.map((question, index) => {

@@ -882,8 +882,9 @@ export function StampRallyWizard() {
     ) {
       return;
     }
-    setName(template.gameName);
-    setDescription(template.description);
+    // スポットの手順で選ぶので、基本で入れた名前と説明は残す（空のときだけ見本で埋める）
+    if (!name.trim()) setName(template.gameName);
+    if (!description.trim()) setDescription(template.description);
     // 参加パスの手順で先に決めた「申し込み」は、テンプレートで上書きしない。
     setExperience((current) => ({
       ...template.experience,
@@ -1074,9 +1075,9 @@ export function StampRallyWizard() {
             </ol>
           </nav>
           {step === 2 ? <GamePlayStyleSwitch /> : null}
-          {step === 2 && tplOpen ? (
+          {step === 3 && tplOpen ? (
             <section className={styles.card}>
-              <h2>見本から選ぶ</h2>
+              <h2>見本のスポットを入れる</h2>
               <p className={styles.lead}>
                 近いものを選ぶと、名前・スポット・画面の文章が入った状態で始まります。あとから全部変えられます。
               </p>
@@ -1159,26 +1160,6 @@ export function StampRallyWizard() {
             <section className={styles.card}>
               <h2>基本設定</h2>
               <p className={styles.lead}>ゲームの名前と期間を決めます。くわしい設定は、あとからでも変えられます。</p>
-              {/* 見本（夏祭り・商店街など）は、使いたい人だけここから開く */}
-              <button
-                type="button"
-                className={styles.tplOpener}
-                aria-expanded={tplOpen}
-                onClick={() => {
-                  setTplOpen((v) => !v);
-                  if (!tplOpen) window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              >
-                <LayoutTemplate className="h-4 w-4" aria-hidden />
-                <span>
-                  <b>{tplOpen ? "見本を閉じる" : "見本から選ぶ"}</b>
-                  <small>
-                    {templateId && templateId !== "blank"
-                      ? "見本の内容が入っています。別の見本にもできます"
-                      : "夏祭り・商店街・子ども向けなど。名前やスポットがまとめて入ります"}
-                  </small>
-                </span>
-              </button>
               <div className="org-store-intro__grid">
                 <label className="org-store-intro__field org-store-intro__field--full">
                   <span>
@@ -1365,6 +1346,26 @@ export function StampRallyWizard() {
               <p className={styles.lead}>
                 巡る場所を追加して、名前と場所を決めます。写真やチェックイン方法は「詳細」からあとで決められます。
               </p>
+              {/* 見本（夏祭り・商店街など）のスポットは、スポットを作るときに使いたい人だけ開く */}
+              <button
+                type="button"
+                className={styles.tplOpener}
+                aria-expanded={tplOpen}
+                onClick={() => {
+                  setTplOpen((v) => !v);
+                  if (!tplOpen) window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
+                <LayoutTemplate className="h-4 w-4" aria-hidden />
+                <span>
+                  <b>{tplOpen ? "見本を閉じる" : "見本のスポットを入れる"}</b>
+                  <small>
+                    {templateId && templateId !== "blank"
+                      ? "見本の内容が入っています。別の見本にもできます"
+                      : "夏祭り・商店街・子ども向けなど。スポットと画面の文章がまとめて入ります"}
+                  </small>
+                </span>
+              </button>
 
               <ol className={styles.spotRows}>
                 {spots.map((spot, index) => {

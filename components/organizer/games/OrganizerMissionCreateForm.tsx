@@ -592,14 +592,6 @@ export function OrganizerMissionCreateForm() {
               </div>
             </div>
             <div className="org-mission__grid">
-              <GameBasicsExamples
-                examples={GAME_BASICS_EXAMPLES.mission}
-                hasInput={Boolean(name.trim() || description.trim())}
-                onPick={(example) => {
-                  setName(example.name);
-                  setDescription(example.description);
-                }}
-              />
               <label className="org-mission__field org-mission__field--wide">
                 <span>
                   ゲーム名 <em>必須</em>
@@ -614,6 +606,14 @@ export function OrganizerMissionCreateForm() {
                   {name.length}/50
                 </small>
               </label>
+              <GameBasicsExamples
+                examples={GAME_BASICS_EXAMPLES.mission}
+                hasInput={Boolean(name.trim() || description.trim())}
+                onPick={(example) => {
+                  setName(example.name);
+                  setDescription(example.description);
+                }}
+              />
               <label className="org-mission__field">
                 <span>対象イベント（任意）</span>
                 <select
@@ -735,7 +735,7 @@ export function OrganizerMissionCreateForm() {
                 onClick={() => setMissions(sampleMissions())}
                 style={{ marginTop: "0.6rem", minHeight: "2.5rem", padding: "0 1rem", borderRadius: 999, border: "1px solid #e1d6b4", background: "#fffdf7", color: "#173f2c", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}
               >
-                例のミッションを入れて始める
+                見本のミッションを入れて始める
               </button>
             </div>
             ) : (
