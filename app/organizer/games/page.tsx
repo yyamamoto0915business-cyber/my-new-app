@@ -19,7 +19,7 @@ export default async function OrganizerGamesPage({
     <OrganizerRegistrationGate>
       <OrganizerPageShell variant="workspace" contentClassName="mx-auto w-full max-w-7xl pb-2">
         <OrganizerPlanFeatureGate feature="games">
-          <OrganizerGamesHub />
+          <OrganizerGamesHub pickOnly />
         </OrganizerPlanFeatureGate>
       </OrganizerPageShell>
     </OrganizerRegistrationGate>
