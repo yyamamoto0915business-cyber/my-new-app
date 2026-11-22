@@ -40213,3 +40213,13 @@ button.mg-album-place {
 .org-mission__kinds button { display: flex; width: 100%; align-items: center; gap: 0.45rem; min-height: 44px; border-radius: 0.8rem; border: 1px solid #e3ece5; background: #fff; padding: 0 0.6rem; font-size: 0.82rem; font-weight: 700; color: #163828; text-align: left; }
 .org-mission__kinds button span { display: flex; height: 1.8rem; width: 1.8rem; flex: none; align-items: center; justify-content: center; border-radius: 999px; background: #eef5f0; color: #1f6a42; }
 .org-mission__kinds button:active { background: #f4f8f5; }
+
+/* ミッション作成の見た目の調整（折り返し・色） */
+.org-mission__starters > p small { line-height: 1.55; color: #5f6d64; }
+.org-mission__starter-row button { gap: 0.2rem; padding: 0.6rem 0.65rem; }
+.org-mission__starter-row button strong { white-space: nowrap; font-size: 0.86rem; }
+.org-mission__starter-row button span { white-space: nowrap; font-size: 0.7rem; color: #8a6d1f; }
+.org-mission__more > summary { flex-wrap: nowrap; }
+.org-mission__more > summary b { white-space: nowrap; font-size: 0.88rem; font-weight: 800; color: #173f2c; }
+.org-mission__more > summary span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.org-mission__more-body small { line-height: 1.55; color: #6b776f; }

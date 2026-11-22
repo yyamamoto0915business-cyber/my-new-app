@@ -237,7 +237,7 @@ export const MISSION_STARTERS: MissionStarter[] = [
   {
     id: "walk",
     label: "まち歩き",
-    blurb: "行く・撮る・答えるの4つ",
+    blurb: "ミッション4つ",
     name: "春のまち発見ミッション",
     description: "まちを歩きながら、写真を撮ったりクイズに答えたりして、ミッションをクリアしよう！ぜんぶクリアすると特典がもらえます。",
     missions: () => [
@@ -252,7 +252,7 @@ export const MISSION_STARTERS: MissionStarter[] = [
   {
     id: "festival",
     label: "お祭り",
-    blurb: "会場で楽しむ3つ",
+    blurb: "ミッション3つ",
     name: "夏祭りチャレンジミッション",
     description: "お祭り会場のあちこちに用意したミッションに挑戦しよう。屋台や会場の見どころを楽しみながら、特典を目指してください。",
     missions: () => [
@@ -266,7 +266,7 @@ export const MISSION_STARTERS: MissionStarter[] = [
   {
     id: "kids",
     label: "子ども向け",
-    blurb: "親子で楽しむ3つ",
+    blurb: "ミッション3つ",
     name: "こども探検ミッション",
     description: "親子で楽しめるミッションです。まちの「ふしぎ」を見つけて、ぜんぶクリアしたらごほうびがもらえるよ！",
     missions: () => [

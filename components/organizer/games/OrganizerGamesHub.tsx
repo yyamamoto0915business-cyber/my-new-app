@@ -447,7 +447,7 @@ export function OrganizerGamesHub({ pickOnly = false }: { pickOnly?: boolean } =
           <h1 className="org-game-pick__title" style={{ fontFamily: ORG_SERIF }}>
             ゲームの種類を選ぶ
           </h1>
-          <p className="org-game-pick__lead">やりたいことを選ぶと、合うゲームが出ます。見本（夏祭り・商店街など）は、作りながら選べます。</p>
+          <p className="org-game-pick__lead">やりたいことを押すと、すぐ作りはじめられます。</p>
         </header>
       ) : null}
       <div className="org-hub__mobile-home">

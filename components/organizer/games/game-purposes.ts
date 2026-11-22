@@ -14,10 +14,10 @@ export const GAME_PURPOSES: {
   /** 先頭が、カードを押したときに選ばれている遊び方 */
   types: OrganizerGameTypeId[];
 }[] = [
-  { id: "walk", label: "まちを回ってもらう", sub: "スタンプ・チェックイン・クーポン", Icon: MapPin, color: "#2f7d4e", bg: "#e6f3ea", types: ["stamp", "checkin", "photo", "coupon", "mission"] },
+  { id: "walk", label: "まちを回ってもらう", sub: "スタンプ・チェックイン", Icon: MapPin, color: "#2f7d4e", bg: "#e6f3ea", types: ["stamp", "checkin", "photo", "coupon", "mission"] },
   { id: "answer", label: "問題に答えてもらう", sub: "クイズラリー・謎解き", Icon: HelpCircle, color: "#a26a10", bg: "#fdf3dc", types: ["quiz", "mystery"] },
   { id: "collect", label: "集める・聞く", sub: "写真・アンケート", Icon: Camera, color: "#2f6fae", bg: "#e6f1fa", types: ["photo", "survey"] },
-  { id: "decide", label: "みんなで決める", sub: "投票・抽選・トーナメント表", Icon: Trophy, color: "#6a4fb0", bg: "#efeaf9", types: ["vote", "lottery", "tournament"] },
+  { id: "decide", label: "みんなで決める", sub: "投票・抽選・トーナメント", Icon: Trophy, color: "#6a4fb0", bg: "#efeaf9", types: ["vote", "lottery", "tournament"] },
 ];
 
 /** 遊び方の小さな絵（専用の絵がない種類は共通のマスコット） */

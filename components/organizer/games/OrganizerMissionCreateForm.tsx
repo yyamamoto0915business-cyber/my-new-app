@@ -607,14 +607,14 @@ export function OrganizerMissionCreateForm() {
               <span>{ORDER.indexOf(0) + 1}</span>
               <div>
                 <h2 id="mission-basic">基本情報</h2>
-                <p>ゲーム名と期間を決めます。ほかはあとからでも変えられます。</p>
+                <p>ゲーム名と期間を決めます。</p>
               </div>
             </div>
             {/* 見本からまるごと始める：ミッション・特典まで入った状態から、自分のまちに合わせて直す */}
             <div className="org-mission__starters">
               <p>
                 <b>見本からまるごと始める</b>
-                <small>ミッションと特典まで入ります。あとは自分のまちに合わせて直すだけ</small>
+                <small>ミッションと特典まで入ります。あとは自分のまちに合わせて直すだけ。</small>
               </p>
               <div className="org-mission__starter-row">
                 {MISSION_STARTERS.map((starter) => (
@@ -705,7 +705,10 @@ export function OrganizerMissionCreateForm() {
                 </small>
               </fieldset>
               <details className="org-mission__more org-mission__field--wide" open={Boolean(eventId || description)}>
-                <summary>くわしく決める（任意）<span>対象イベント・説明文</span></summary>
+                <summary>
+                  <b>くわしく決める</b>
+                  <span>対象イベント・説明文（任意）</span>
+                </summary>
                 <div className="org-mission__more-body">
               <label className="org-mission__field org-mission__field--wide">
                 <span>対象イベント（任意）</span>
