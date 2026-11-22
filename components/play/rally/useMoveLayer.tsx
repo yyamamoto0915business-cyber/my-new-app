@@ -224,6 +224,11 @@ export function useMoveLayer({
     // 入力中の欄の上では、文字の選択を優先する。
     if (target.closest("textarea, input") && document.activeElement === target.closest("textarea, input")) return;
     if (target.closest("button:not(.is-editable), a")) return;
+    // 1回目のタップは選ぶだけ。選んである部品を押したときだけ動かす（少し触れただけで動かないように）
+    if (activeKey !== key) {
+      edit.onSelectKey?.(key);
+      return;
+    }
     const rect = main.getBoundingClientRect();
     const base = offsets[key] ?? { x: 0, y: 0 };
     const sx = event.clientX;
@@ -232,7 +237,7 @@ export function useMoveLayer({
     const onMove = (ev: PointerEvent) => {
       if (pinchRef.current) return;
       if (!started) {
-        if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 6) return;
+        if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 10) return;
         started = true;
         setDragging(key);
         edit.onSelectKey?.(key);
@@ -266,9 +271,11 @@ export function useMoveLayer({
     if (!edit) return;
     const touches = touchesRef.current;
     touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    // 1本目の指：選んである部品なら動かす。選んでいなければ選ぶだけ（少し触れただけで動かないように）
+    const wasActive = activeKey === key;
     edit.onSelectKey(key);
     if (touches.size === 1) {
-      startDrag(key, event);
+      if (wasActive) startDrag(key, event);
       const onMove = (ev: PointerEvent) => {
         if (!touches.has(ev.pointerId)) return;
         touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });

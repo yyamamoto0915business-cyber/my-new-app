@@ -3891,3 +3891,10 @@
 .rally-home.is-editing .rally-seal.is-selected .rally-seal__face {
   box-shadow: 0 0 0 4px #ffe08a;
 }
+
+/* スマホ（指で操作）では、大きさを変える角のつまみを少し大きくして押しやすく */
+@media (pointer: coarse) {
+  .rally-start__resize {
+    --grip: calc(34px / var(--preview-scale, 1));
+  }
+}

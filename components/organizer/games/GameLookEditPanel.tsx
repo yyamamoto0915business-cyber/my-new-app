@@ -148,7 +148,7 @@ export function GameLookEditPanel({
             <ImagePlus aria-hidden />
             イラスト・写真から選ぶ
           </button>
-          <p className="edit-panel__note edit-panel__note--show">押したままドラッグで移動</p>
+          <p className="edit-panel__note edit-panel__note--show">選んでいるものをドラッグで移動</p>
           {resetButton}
         </div>
       ) : selection === "band" ? (
@@ -258,7 +258,7 @@ export function GameLookEditPanel({
               onBg={(bg) => setText({ bg })}
             />
           ) : null}
-          {textKey ? null : <p className="edit-panel__note edit-panel__note--show">押したままドラッグで移動</p>}
+          {textKey ? null : <p className="edit-panel__note edit-panel__note--show">選んでいるものをドラッグで移動</p>}
           {resetButton}
         </div>
       ) : (

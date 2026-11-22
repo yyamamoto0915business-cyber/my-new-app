@@ -476,10 +476,10 @@ export function WizardLivePreview({
       ) : (
         <>
       {edit && (view === "stamp" || view === "reward" || view === "home") ? (
-        <p className="wizard-preview__edit-hint">タップで編集、押したままドラッグで移動</p>
+        <p className="wizard-preview__edit-hint">タップで選ぶ・選んだものはドラッグで移動</p>
       ) : null}
       {edit && view === "start" ? (
-        <p className="wizard-preview__edit-hint">タップで編集、押したままドラッグで移動</p>
+        <p className="wizard-preview__edit-hint">タップで選ぶ・選んだものはドラッグで移動</p>
       ) : null}
       {/* スマホ：小さな所をねらって押さなくてよいように、直せるものを並べる（押すと下のシートが開く） */}
       {edit && view === "start" ? (
