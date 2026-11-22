@@ -40223,3 +40223,20 @@ button.mg-album-place {
 .org-mission__more > summary b { white-space: nowrap; font-size: 0.88rem; font-weight: 800; color: #173f2c; }
 .org-mission__more > summary span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .org-mission__more-body small { line-height: 1.55; color: #6b776f; }
+
+/* イベント詳細（スマホ）：地図・カレンダー・相談のボタンを、ほかの画面と同じ白地＋深緑にそろえる */
+.mg-event-detail .ed-sub-btn-map,
+.mg-event-detail .ed-sub-btn-calendar,
+.mg-event-detail .ed-sub-btn-chat {
+  background: #fff;
+  border-color: #e6e2d6;
+  color: #173f2c;
+  box-shadow: 0 1px 4px rgba(23, 63, 44, 0.05);
+}
+.mg-event-detail .ed-sub-btn-map .ed-sub-btn-icon,
+.mg-event-detail .ed-sub-btn-calendar .ed-sub-btn-icon,
+.mg-event-detail .ed-sub-btn-chat .ed-sub-btn-icon {
+  background: #eef5f0;
+  color: #1f6a42;
+  box-shadow: none;
+}

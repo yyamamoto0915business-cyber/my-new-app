@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  HandHeart,
   MapPin,
   MapPinned,
   MessageCircle,
@@ -66,8 +67,8 @@ function InfoSectionBodyMobile({ sec }: { sec: InfoSection }) {
     return (
       <div className="flex flex-col gap-1">
         {sec.kvItems.map(({ k, v }) => (
-          <div key={k} className="flex gap-1.5 text-[11px] leading-snug text-[#566358]">
-            <span className="w-[3.25rem] shrink-0 font-medium text-[#1A2214]">{k}</span>
+          <div key={k} className="flex gap-2 text-[13px] leading-relaxed text-[#3c4a40]">
+            <span className="w-[4.5rem] shrink-0 font-semibold text-[#1A2214]">{k}</span>
             <span className="min-w-0">{v}</span>
           </div>
         ))}
@@ -79,9 +80,9 @@ function InfoSectionBodyMobile({ sec }: { sec: InfoSection }) {
       {sec.listItems.map((item) => (
         <li
           key={item}
-          className="flex items-start gap-1 text-[11px] leading-snug text-[#566358]"
+          className="flex items-start gap-1.5 text-[13px] leading-relaxed text-[#3c4a40]"
         >
-          <span className="mt-[3px] shrink-0 text-[10px] leading-none text-[#2D7A4F]">•</span>
+          <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#c9a54e]" aria-hidden />
           <span className="min-w-0">{item}</span>
         </li>
       ))}
@@ -101,6 +102,9 @@ export function VolunteerDetailMobileView({
 }: Props) {
   const [tab, setTab] = useState<Tab>("概要");
   const [avatarError, setAvatarError] = useState(false);
+  const [descOpen, setDescOpen] = useState(false);
+  const longDesc = (role.description ?? "").length > 160;
+  const hasImage = Boolean(role.thumbnailUrl?.trim() || (role.galleryImages?.length ?? 0) > 0);
 
   const { chips } = getDisplayBenefits(role);
   const categoryLabel = getCategoryLabel(role.roleType);
@@ -160,7 +164,7 @@ export function VolunteerDetailMobileView({
       <div className="border-b border-[#DDE8DF] bg-white px-3 py-2">
         <Link
           href="/?kind=volunteer"
-          className="flex w-fit items-center gap-1 text-[13px] font-medium text-[#2D7A4F]"
+          className="flex w-fit items-center gap-1 text-[13px] font-medium text-[#1f6a42]"
         >
           <ChevronLeft className="h-4 w-4" />
           まちの情報
@@ -168,8 +172,9 @@ export function VolunteerDetailMobileView({
       </div>
 
       {/* Compact hero header */}
-      <div className="mx-3 mt-2 overflow-hidden rounded-2xl border border-[#e8edd8] bg-white">
-        <div className="relative h-[120px] bg-[#f0f4f0]">
+      <div className="mx-3 mt-2 overflow-hidden rounded-[20px] border border-[#e6e2d6] bg-white shadow-[0_2px_12px_rgba(23,63,44,0.06)]">
+        {hasImage ? (
+        <div className="relative h-[180px] bg-[#f0f4f0]">
           <DetailImageSwitcher
             className="absolute inset-0"
             coverUrl={role.thumbnailUrl}
@@ -193,39 +198,69 @@ export function VolunteerDetailMobileView({
             </div>
           ) : null}
         </div>
-        <div className="px-3 py-2.5">
+        ) : (
+          /* 写真がないとき：深緑の帯に、ボランティアの印と種類を出す（前は絵の下が切れていた） */
+          <div className="relative flex h-[120px] items-center gap-3 overflow-hidden bg-gradient-to-br from-[#245a3e] to-[#173f2c] px-4">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-[#d9bc6e] bg-[#f6ebc8] text-[#173f2c]">
+              <HandHeart className="h-7 w-7" aria-hidden />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[10.5px] font-bold tracking-[0.18em] text-[#d9bc6e]">VOLUNTEER</span>
+              <span className="block text-[15px] font-bold text-white">{categoryLabel}のボランティア</span>
+            </span>
+            {isEmergency ? (
+              <span className="absolute right-3 top-3 flex items-center gap-1 rounded-[6px] bg-[#E53935] px-2.5 py-1 text-[10px] font-bold text-white">
+                <AlertTriangle className="h-3 w-3" />
+                緊急募集
+              </span>
+            ) : null}
+          </div>
+        )}
+        <div className="px-4 pb-4 pt-3">
           <div className="mb-1.5 flex flex-wrap gap-1.5">
             {isEmergency ? (
               <span className="rounded-full bg-[#fde8e8] px-2 py-0.5 text-[10px] font-medium text-[#c62828]">
                 緊急
               </span>
             ) : null}
-            <span className="rounded-full bg-[#eef5ef] px-2 py-0.5 text-[10px] font-medium text-[#348b38]">
-              {categoryLabel}
-            </span>
-            <span className="rounded-full border border-[#348b38]/35 px-2 py-0.5 text-[10px] font-semibold text-[#348b38]">
+            <span className="rounded-full bg-[#173f2c] px-2.5 py-0.5 text-[11px] font-bold text-[#f6ebc8]">
               募集中
+            </span>
+            <span className="rounded-full bg-[#eef5f0] px-2.5 py-0.5 text-[11px] font-semibold text-[#1f6a42]">
+              {categoryLabel}
             </span>
             {chips.map(({ benefit, label }) => (
               <span
                 key={benefit}
-                className="rounded-full border border-[#DDE8DF] bg-white px-2 py-0.5 text-[10px] text-[#566358]"
+                className="rounded-full border border-[#e6dcc0] bg-[#fffbf0] px-2.5 py-0.5 text-[11px] font-semibold text-[#8a6d1f]"
               >
                 {label}
               </span>
             ))}
           </div>
-          <h1 className="mb-1 text-[17px] font-bold leading-[1.3] tracking-[-0.3px] text-[#1A2214]">
+          <h1
+            className="mb-3 text-[19px] font-semibold leading-[1.45] tracking-[0.02em] text-[#163828]"
+            style={{ fontFamily: "var(--font-serif-display), 'Shippori Mincho', 'Noto Serif JP', serif" }}
+          >
             {role.title}
           </h1>
-          <p className="mb-1 flex items-center gap-1 text-[11px] text-[#566358]">
-            <CalendarDays className="h-3 w-3 shrink-0 text-[#2D7A4F]" />
-            {role.dateTime}
-          </p>
-          <p className="flex items-center gap-1 text-[11px] text-[#566358]">
-            <MapPin className="h-3 w-3 shrink-0 text-[#2D7A4F]" />
-            {role.location}
-          </p>
+          {/* 日時と場所は、ラベルつきの2つの欄に（前は小さな1行ずつで読みにくかった） */}
+          <dl className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
+            <div className="flex items-start gap-2 rounded-[12px] bg-[#f7f6f2] px-3 py-2.5">
+              <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-[#1f6a42]" aria-hidden />
+              <div className="min-w-0">
+                <dt className="text-[10.5px] font-bold text-[#8a968c]">日時</dt>
+                <dd className="text-[13px] font-semibold leading-snug text-[#1f2a24]">{role.dateTime}</dd>
+              </div>
+            </div>
+            <div className="flex items-start gap-2 rounded-[12px] bg-[#f7f6f2] px-3 py-2.5">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#1f6a42]" aria-hidden />
+              <div className="min-w-0">
+                <dt className="text-[10.5px] font-bold text-[#8a968c]">場所</dt>
+                <dd className="text-[13px] font-semibold leading-snug text-[#1f2a24]">{role.location}</dd>
+              </div>
+            </div>
+          </dl>
         </div>
       </div>
 
@@ -245,7 +280,7 @@ export function VolunteerDetailMobileView({
                     onError={() => setAvatarError(true)}
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-[15px] font-bold text-[#348b38]">
+                  <div className="flex h-full w-full items-center justify-center text-[15px] font-bold text-[#1f6a42]">
                     {organizerName.slice(0, 1)}
                   </div>
                 )}
@@ -260,7 +295,7 @@ export function VolunteerDetailMobileView({
                 {organizerId ? (
                   <Link
                     href={`/organizers/${organizerId}`}
-                    className="mt-1.5 inline-flex items-center gap-0.5 text-[12px] font-semibold text-[#348b38]"
+                    className="mt-1.5 inline-flex items-center gap-0.5 text-[12px] font-semibold text-[#1f6a42]"
                   >
                     主催者のプロフィールを見る
                     <ChevronRight className="h-3.5 w-3.5" />
@@ -286,7 +321,7 @@ export function VolunteerDetailMobileView({
               className={cn(
                 "-mb-[1.5px] flex-1 border-b-2 py-2.5 text-center text-[13px] transition-colors",
                 tab === t
-                  ? "border-[#348b38] font-semibold text-[#348b38]"
+                  ? "border-[#1f6a42] font-semibold text-[#1f6a42]"
                   : "border-transparent font-normal text-[#8a9e80]"
               )}
             >
@@ -297,22 +332,37 @@ export function VolunteerDetailMobileView({
 
         {tab === "概要" ? (
           <div className="space-y-2.5">
-            <div className="rounded-[12px] border border-[#DDE8DF] bg-white p-3">
-              <p className="whitespace-pre-wrap text-[12.5px] leading-[1.7] text-[#2c3c2a]">
+            <div className="rounded-[16px] border border-[#e6e2d6] bg-white p-4">
+              <p className="mb-2 text-[13px] font-bold text-[#173f2c]">募集の内容</p>
+              <p
+                className={cn(
+                  "whitespace-pre-wrap text-[14px] leading-[1.85] text-[#2c3c2a]",
+                  longDesc && !descOpen && "line-clamp-6"
+                )}
+              >
                 {role.description || "概要はありません。"}
               </p>
+              {longDesc ? (
+                <button
+                  type="button"
+                  onClick={() => setDescOpen((v) => !v)}
+                  className="mt-2 text-[13px] font-bold text-[#1f6a42] underline underline-offset-2"
+                >
+                  {descOpen ? "閉じる" : "続きを読む"}
+                </button>
+              ) : null}
             </div>
-            <div className="grid grid-cols-2 items-start gap-1.5">
+            <div className="grid grid-cols-1 items-start gap-2">
               {infoSections.map((sec) => (
                 <div
                   key={sec.title}
-                  className="rounded-[10px] border border-[#DDE8DF] bg-white px-2 py-2"
+                  className="rounded-[14px] border border-[#e6e2d6] bg-white px-3.5 py-3"
                 >
                   <div className="mb-1.5 flex items-center gap-1.5">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EAF4ED]">
-                      <sec.icon className="h-3 w-3 text-[#2D7A4F]" />
+                      <sec.icon className="h-3 w-3 text-[#1f6a42]" />
                     </div>
-                    <span className="text-[11px] font-semibold leading-none text-[#1A2214]">
+                    <span className="text-[13px] font-bold leading-none text-[#173f2c]">
                       {sec.title}
                     </span>
                   </div>
@@ -349,7 +399,7 @@ export function VolunteerDetailMobileView({
               </div>
               <div className="flex flex-col gap-2.5 p-3">
                 <div className="flex items-start gap-2">
-                  <MapPinned className="mt-0.5 h-4 w-4 shrink-0 text-[#348b38]" aria-hidden />
+                  <MapPinned className="mt-0.5 h-4 w-4 shrink-0 text-[#1f6a42]" aria-hidden />
                   <p className="text-[13px] font-semibold text-[#1a2818]">{role.location}</p>
                 </div>
                 {mapsHref ? (
@@ -384,7 +434,7 @@ export function VolunteerDetailMobileView({
                       onError={() => setAvatarError(true)}
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-base font-bold text-[#348b38]">
+                    <div className="flex h-full w-full items-center justify-center text-base font-bold text-[#1f6a42]">
                       {organizerName.slice(0, 1)}
                     </div>
                   )}
@@ -392,7 +442,7 @@ export function VolunteerDetailMobileView({
                 <div className="min-w-0 flex-1">
                   <p className="text-[14px] font-semibold text-[#1A2214]">{organizerName}</p>
                   {role.organizerVerified !== false ? (
-                    <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-[#B8DFC5] bg-[#EAF4ED] px-[9px] py-[2px] text-[11px] text-[#2D7A4F]">
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-[#B8DFC5] bg-[#EAF4ED] px-[9px] py-[2px] text-[11px] text-[#1f6a42]">
                       <CheckCircle2 className="h-3 w-3" />
                       本人確認済み
                     </span>
@@ -407,7 +457,7 @@ export function VolunteerDetailMobileView({
                   {organizerId ? (
                     <Link
                       href={`/organizers/${organizerId}`}
-                      className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-[#348b38]"
+                      className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-[#1f6a42]"
                     >
                       主催者のプロフィールを見る
                       <ChevronRight className="h-[13px] w-[13px]" />
@@ -443,7 +493,7 @@ export function VolunteerDetailMobileView({
           ) : null}
         </div>
         {hasApplied ? (
-          <div className="rounded-[10px] border border-[#B8DFC5] bg-[#EAF4ED] px-4 py-3 text-center text-[13px] font-semibold text-[#2D7A4F]">
+          <div className="rounded-[10px] border border-[#B8DFC5] bg-[#EAF4ED] px-4 py-3 text-center text-[13px] font-semibold text-[#1f6a42]">
             ✓ 応募済み（{statusLabel}）
           </div>
         ) : (
@@ -451,19 +501,19 @@ export function VolunteerDetailMobileView({
             type="button"
             onClick={onApply}
             disabled={applying}
-            className="flex w-full items-center justify-between rounded-[10px] bg-[#2D7A4F] px-4 py-3 text-[14px] font-semibold text-white transition hover:bg-[#3D8E61] disabled:opacity-50"
+            className="flex w-full items-center justify-between rounded-[14px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] px-4 py-3 text-[15px] font-bold text-[#f6ebc8] shadow-[0_4px_12px_rgba(14,42,29,0.2)] transition disabled:opacity-50"
           >
             <span>{applying ? "処理中..." : "この募集に応募する"}</span>
             <ChevronRight className="h-4 w-4" />
           </button>
         )}
         {applySuccessMessage ? (
-          <p className="mt-1.5 text-center text-[11px] text-[#2D7A4F]">{applySuccessMessage}</p>
+          <p className="mt-1.5 text-center text-[11px] text-[#1f6a42]">{applySuccessMessage}</p>
         ) : null}
         {role.event || organizerId ? (
           <Link
             href="/messages"
-            className="mt-1.5 flex w-full items-center justify-center gap-1.5 py-1.5 text-[12px] font-medium text-[#348b38]"
+            className="mt-1.5 flex w-full items-center justify-center gap-1.5 py-1.5 text-[12px] font-medium text-[#1f6a42]"
           >
             <MessageCircle className="h-3.5 w-3.5" />
             主催者に相談する
