@@ -216,8 +216,12 @@ body::before {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+/*
+ * 画面を移るたびに中身を透明から浮かび上がらせていたが、古い iPad などでは動きが重く、
+ * 移る途中に「背景だけの空っぽの画面」が見えていた。いまは演出なしで、すぐに中身を出す。
+ */
 .mg-page-enter {
-  animation: mg-page-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .mg-page-enter { animation: none; }
