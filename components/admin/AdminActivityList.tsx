@@ -66,7 +66,7 @@ export function AdminTodoCard({
   return (
     <Link
       href={href}
-      className={`flex min-w-[11rem] flex-1 items-center justify-between gap-3 rounded-xl border px-4 py-3 transition hover:opacity-90 ${
+      className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 transition hover:opacity-90 min-[768px]:min-w-[11rem] min-[768px]:gap-3 min-[768px]:px-4 min-[768px]:py-3 ${
         zero ? "border-[#e6e2d6] bg-white text-[#6b776f]" : `${tones[tone]} shadow-sm`
       }`}
     >

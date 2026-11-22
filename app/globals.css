@@ -40141,3 +40141,11 @@ button.mg-album-place {
   padding-top: 0.6rem;
   padding-bottom: 0.6rem;
 }
+/* 管理者画面（スマホ）：表の見出しが1文字ずつ折り返さないように。表は横にスクロール */
+@media (max-width: 899px) {
+  .mg-admin main table th,
+  .mg-admin main table td {
+    white-space: nowrap;
+  }
+  .mg-admin .text-xl { font-size: 21px; }
+}
