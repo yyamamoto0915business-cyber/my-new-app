@@ -25,6 +25,7 @@ import { validateOnlineEventFormFields } from "@/lib/event-online-validation";
 import { needsVenueFields, normalizeEventFormat } from "@/lib/event-online";
 import { EventPublishSuccess } from "@/components/organizer/events/EventPublishSuccess";
 import { isDevPreviewSuccessQuery } from "@/lib/dev-publish-success-preview";
+import { OrgEyebrow, ORG_SERIF } from "@/components/organizer/mobile/organizer-theme";
 
 type Step = EventFormStep;
 type FormErrors = Partial<Record<keyof EventFormData, string>>;
@@ -136,7 +137,7 @@ function PcStepBar({
   backLabelOverride?: string;
   hideActions?: boolean;
 }) {
-  const backLabel = backLabelOverride ?? (current === 1 ? "イベント一覧へ" : ["","基本情報に戻る","開催情報に戻る","詳細情報に戻る",""][current - 1]);
+  const backLabel = backLabelOverride ?? (current === 1 ? "掲載管理に戻る" : ["","基本情報に戻る","開催情報に戻る","詳細情報に戻る",""][current - 1]);
   const planLabel = planSummary
     ? planSummary.publishLimit === null
       ? "公開枠 無制限"
@@ -147,7 +148,7 @@ function PcStepBar({
 
   return (
     <header className="z-10 hidden shrink-0 border-b border-[#d8d4cc] bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)] min-[900px]:block">
-      {/* 1行目: 戻る + ステッパー */}
+      {/* 戻る・手順・下書き保存・公開を1段に */}
       <div className="flex items-center gap-4 px-6 py-1.5">
         <button
           type="button"
@@ -158,20 +159,18 @@ function PcStepBar({
           <span className="truncate">{backLabel}</span>
         </button>
         <EventFormPcStepIndicator current={current} onGo={onGo} />
-      </div>
-
-      {/* 2行目: プラン + アクション */}
-      {!hideActions ? (
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#edeae4] bg-[#fafaf8] px-6 py-1.5">
-        <div className="flex min-w-0 shrink-0 items-center gap-1.5 rounded-full border border-[#d0ccc4] bg-white px-3 py-1 text-[11px] text-[#5c5a54]">
+        {/* 下書き保存・公開は、手順の帯と同じ1段に置く（前は2段目に分かれていた） */}
+        {!hideActions ? (
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5 rounded-full max-[1279px]:!hidden border border-[#d0ccc4] bg-white px-3 py-1 text-[11px] text-[#5c5a54]">
           <strong className="font-semibold text-[#1a1a1a]">{planName}</strong>
           {planLabel && <span className="whitespace-nowrap">｜ {planLabel}</span>}
         </div>
 
-        <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2">
           <Link
-            href="/organizer/events"
-            className="rounded-[8px] border border-[#d0ccc4] bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#1a1a1a] hover:bg-[#f5f4f0]"
+            href="/organizer/listings?kind=event"
+            className="max-[1279px]:hidden rounded-[8px] border border-[#d0ccc4] bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#1a1a1a] hover:bg-[#f5f4f0]"
           >
             キャンセル
           </Link>
@@ -198,8 +197,10 @@ function PcStepBar({
             {submitting === "publish" ? "公開中…" : "公開する"}
           </button>
         </div>
+          </div>
+        ) : null}
       </div>
-      ) : null}
+
     </header>
   );
 }
@@ -379,9 +380,9 @@ function NewEventPageContent() {
         setSubmitError(typeof data.error === "string" && data.error.trim() ? data.error : "作成に失敗しました");
         return;
       }
-      showToast("success", "下書きを保存しました。イベント管理から編集できます");
+      showToast("success", "下書きを保存しました。掲載管理から編集できます");
       router.refresh();
-      setTimeout(() => router.push("/organizer/events"), 350);
+      setTimeout(() => router.push("/organizer/listings?kind=event"), 350);
     } catch {
       setSubmitError("通信に失敗しました");
     } finally {
@@ -471,14 +472,14 @@ function NewEventPageContent() {
   };
   const goPrev = () => {
     if (publishDone) {
-      router.push("/organizer/events");
+      router.push("/organizer/listings?kind=event");
       return;
     }
     if (showPassSettings) {
       setShowPassSettings(false);
       return;
     }
-    if (currentStep === 1) router.push("/organizer/events");
+    if (currentStep === 1) router.push("/organizer/listings?kind=event");
     else setCurrentStep(s => (s - 1) as Step);
   };
 
@@ -549,7 +550,7 @@ function NewEventPageContent() {
         onDraft={saveDraft} onPublish={() => { if (!agreedToTerms) { showToast("error","利用規約への同意が必要です"); return; } setShowPublishConfirm(true); }}
         submitting={submitting} planSummary={planSummary} publishDisabledReason={publishDisabledReason}
         hideActions={publishDone}
-        backLabelOverride={publishDone ? "イベント一覧へ" : showPassSettings ? "詳細情報に戻る" : undefined}
+        backLabelOverride={publishDone ? "掲載管理に戻る" : showPassSettings ? "詳細情報に戻る" : undefined}
       />
 
       {/* ── Mobile header ── */}
@@ -592,7 +593,16 @@ function NewEventPageContent() {
       <div className="flex min-h-0 flex-1 flex-col min-[900px]:flex-row min-[900px]:overflow-hidden min-[900px]:bg-white min-[900px]:border-t min-[900px]:border-[#e8e6e0]">
 
         {/* Left/main panels */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col min-[900px]:overflow-hidden min-[900px]:bg-white">
+        <div className="evf-main flex min-h-0 min-w-0 flex-1 flex-col min-[900px]:overflow-hidden min-[900px]:bg-white">
+          {/* PC の見出し（スマホの作成画面と同じ「英字の小見出し＋明朝体の見出し」） */}
+          {currentStep < 4 && !showPassSettings ? (
+            <div className="mx-auto hidden w-full max-w-[720px] pt-5 pb-1 min-[900px]:block">
+              <OrgEyebrow>EVENT</OrgEyebrow>
+              <h1 className="mt-1 text-[22px] font-semibold tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
+                {currentStep === 1 ? "イベントを作る" : `${stepLabels[currentStep]}を入力`}
+              </h1>
+            </div>
+          ) : null}
 
           {showPassSettings && currentStep === 3 ? (
             <PassSettingsPcView

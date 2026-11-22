@@ -105,8 +105,8 @@ export function EventFormStepContent({
 
   if (currentStep === 1) {
     return (
-      <div className="flex min-w-0 flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
-        <div className="min-w-0 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-4">
+      <div className="evf-cols flex min-w-0 flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
+        <div className="evf-col min-w-0 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:p-4">
           <div className={eventFormPcSectionHead}>
             <h3 className={`${eventFormPcSectionTitle} flex items-center gap-2`}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#173f2c" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -278,7 +278,7 @@ export function EventFormStepContent({
           </div>
         </div>
 
-        <div className="hidden min-[900px]:block min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:p-4">
+        <div className="evf-col hidden min-[900px]:block min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:p-4">
           <div className={eventFormPcSectionHead}>
             <h3 className={eventFormPcSectionTitle}>画像・タグ</h3>
             <p className={eventFormPcSectionSub}>アイキャッチとカテゴリーを設定します</p>
@@ -431,9 +431,9 @@ export function EventFormStepContent({
       : eventFormPcFieldStack;
 
     return (
-      <div className="flex min-w-0 flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
+      <div className="evf-cols flex min-w-0 flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
         <div
-          className={`min-w-0 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] ${pcPad}`}
+          className={`evf-col min-w-0 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] ${pcPad}`}
         >
           <div
             className={
@@ -642,7 +642,7 @@ export function EventFormStepContent({
         </div>
 
         <div
-          className={`hidden min-[900px]:block min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto ${pcPad}`}
+          className={`evf-col hidden min-[900px]:block min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:overflow-y-auto ${pcPad}`}
         >
           <div
             className={
@@ -779,8 +779,8 @@ export function EventFormStepContent({
     };
 
     return (
-      <div className="flex min-w-0 flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
-        <div className="min-w-0 min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:px-5 min-[900px]:py-4">
+      <div className="evf-cols flex min-w-0 flex-col min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-row min-[900px]:overflow-hidden">
+        <div className="evf-col min-w-0 min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-y-auto min-[900px]:border-r min-[900px]:border-[#e8e6e0] min-[900px]:px-5 min-[900px]:py-4">
           <div className={eventFormPcSectionHead}>
             <div className="mb-0.5 flex items-center gap-2 text-[15px] font-[600]">
               {infoIcon}
@@ -910,7 +910,7 @@ export function EventFormStepContent({
           </div>
         </div>
 
-        <div className="hidden min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-col min-[900px]:overflow-y-auto min-[900px]:px-5 min-[900px]:py-4">
+        <div className="evf-col hidden min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:flex-col min-[900px]:overflow-y-auto min-[900px]:px-5 min-[900px]:py-4">
           <div className="flex flex-col pb-1">
             <div className="mb-2.5 shrink-0 border-b border-[#e8e6e0] pb-2">
               <div className="mb-0.5 text-[14px] font-[600] text-[#888]">

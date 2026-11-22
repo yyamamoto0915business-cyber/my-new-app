@@ -15,6 +15,7 @@ import { RecruitmentPublishSuccess } from "@/components/organizer/recruitments/R
 import { isDevPreviewSuccessQuery } from "@/lib/dev-publish-success-preview";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { createClient } from "@/lib/supabase/client";
+import { OrgEyebrow, ORG_SERIF } from "@/components/organizer/mobile/organizer-theme";
 import {
   type ApplicationFormConfig,
   createDefaultApplicationFormConfig,
@@ -362,7 +363,7 @@ function PcSidePanel({
         ) : null}
 
         <div className="mt-2 space-y-2">
-          <DraftSaveHint multiline destinationLabel="スタッフ募集" />
+          <DraftSaveHint multiline />
         </div>
       </div>
 
@@ -978,7 +979,7 @@ function NewRecruitmentPageContent() {
   );
 
   return (
-    <div data-recruit-form className="relative z-[1] flex flex-col min-[900px]:-mx-8 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white">
+    <div data-recruit-form className="relative z-[1] flex flex-col min-[900px]:-mx-6 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white">
 
       {/* ── PC: Header（イベント作成と同型）── */}
       <header className="z-10 hidden shrink-0 border-b border-[#d8d4cc] bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)] min-[900px]:block">
@@ -987,12 +988,12 @@ function NewRecruitmentPageContent() {
             type="button"
             onClick={() => {
               if (publishDone) {
-                router.push("/organizer/recruitments");
+                router.push("/organizer/listings?kind=volunteer");
                 return;
               }
               if (pcStep > 1) setPcStep((s) => (s - 1) as PcStep);
               else if (isEdit && editId) router.push(`/organizer/recruitments/${editId}`);
-              else router.push("/organizer/recruitments");
+              else router.push("/organizer/listings?kind=volunteer");
             }}
             className="flex w-[9rem] shrink-0 items-center gap-1 text-left text-[11px] font-medium text-[#4a4844] hover:text-[#173f2c]"
           >
@@ -1002,9 +1003,11 @@ function NewRecruitmentPageContent() {
             </svg>
             <span className="truncate">
               {publishDone
-                ? "募集一覧へ"
+                ? "掲載管理に戻る"
                 : pcStep === 1
-                  ? "募集一覧へ"
+                  ? isEdit
+                    ? "募集の管理に戻る"
+                    : "掲載管理に戻る"
                   : pcStep === 2
                     ? "基本情報に戻る"
                     : "フォーム設定に戻る"}
@@ -1020,21 +1023,11 @@ function NewRecruitmentPageContent() {
               !publishDone && (s === 1 || (!!form.title.trim() && !!form.description.trim()))
             }
           />
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#edeae4] bg-[#fafaf8] px-6 py-1.5">
-          <div className="min-w-0">
-            <p className="truncate text-[13px] font-semibold text-[#1a1a1a]">
-              {publishDone ? successPcPageTitle : pcPageTitle}
-            </p>
-            <p className="truncate text-[11px] text-[#888]">
-              {publishDone ? successPcPageSubtitle : pcPageSubtitle}
-            </p>
-          </div>
           {!publishDone ? (
-            <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+            <div className="ml-auto flex shrink-0 flex-nowrap items-center justify-end gap-2">
               <Link
-                href={isEdit && editId ? `/organizer/recruitments/${editId}` : "/organizer/recruitments"}
-                className="rounded-[8px] border border-[#d0ccc4] bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#1a1a1a] hover:bg-[#f5f4f0]"
+                href={isEdit && editId ? `/organizer/recruitments/${editId}` : "/organizer/listings?kind=volunteer"}
+                className="max-[1279px]:hidden rounded-[8px] border border-[#d0ccc4] bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#1a1a1a] hover:bg-[#f5f4f0]"
               >
                 キャンセル
               </Link>
@@ -1053,13 +1046,8 @@ function NewRecruitmentPageContent() {
               <button
                 type="button"
                 onClick={handlePcPrimary}
-                disabled={!!saving || (pcStep === 1 && hasErrors)}
-                className={[
-                  "min-w-[6rem] rounded-[8px] px-4 py-1.5 text-[11px] font-semibold transition",
-                  !(pcStep === 1 && hasErrors) && !saving
-                    ? "bg-[#173f2c] text-white hover:bg-[#0e2a1d]"
-                    : "cursor-not-allowed bg-[#ebe8e2] text-[#8a8680]",
-                ].join(" ")}
+                disabled={!!saving}
+                className="min-w-[6rem] rounded-[8px] bg-[#173f2c] px-4 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#0e2a1d] disabled:opacity-60"
               >
                 {saving === "create" ? (isEdit ? "保存中…" : "作成中…") : pcPrimaryLabel}
               </button>
@@ -1114,9 +1102,17 @@ function NewRecruitmentPageContent() {
 
       {/* ── PC: stepped layout ── */}
       <div className="hidden min-h-0 min-[900px]:flex min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:border-t min-[900px]:border-[#e8e6e0]">
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-5 py-3">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 pt-5 pb-16">
+          {/* 見出し（スマホの作成画面と同じ「英字の小見出し＋明朝体の見出し」） */}
+          <div className="mx-auto mb-5 w-full max-w-[720px]">
+            <OrgEyebrow>VOLUNTEER</OrgEyebrow>
+            <h1 className="mt-1 text-[22px] font-semibold tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
+              {publishDone ? successPcPageTitle : pcPageTitle}
+            </h1>
+            <p className="mt-1 text-[12.5px] text-[#6a7568]">{publishDone ? successPcPageSubtitle : pcPageSubtitle}</p>
+          </div>
           {pcStep === 1 ? (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="mx-auto flex w-full max-w-[720px] flex-col gap-8">
               <div>
                 <div className="mb-3 border-b border-[#e8e6e0] pb-2">
                   <div className="mb-[2px] flex items-center gap-[7px] text-[14px] font-[600]">
@@ -1139,7 +1135,9 @@ function NewRecruitmentPageContent() {
           ) : null}
 
           {pcStep === 2 ? (
-            <ApplicationFormSettingsPc config={formConfig} onChange={setFormConfig} />
+            <div className="mx-auto w-full max-w-[960px]">
+              <ApplicationFormSettingsPc config={formConfig} onChange={setFormConfig} />
+            </div>
           ) : null}
 
           {pcStep === 3 ? (
@@ -1149,7 +1147,7 @@ function NewRecruitmentPageContent() {
                 isPreview={successIsPreview}
               />
             ) : (
-            <div className="mx-auto max-w-2xl space-y-4">
+            <div className="mx-auto w-full max-w-[720px] space-y-4">
               <div className="rounded-xl border border-[#e8e6e0] bg-white p-5">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-[14px] font-semibold text-[#1a2818]">基本情報・条件</h3>

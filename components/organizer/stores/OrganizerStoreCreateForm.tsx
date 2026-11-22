@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Infinity as InfinityIcon, Loader2, Store, Truck } from "lucide-react";
-import { OrganizerWorkspacePageHeader } from "@/components/organizer/OrganizerWorkspacePageHeader";
 import { ORG_SERIF, OrgEyebrow } from "@/components/organizer/mobile/organizer-theme";
 import { organizerPathForKind } from "@/lib/stores/draft-shell";
 import type { StoreKind, StoreRecord } from "@/lib/stores/types";
@@ -17,7 +16,6 @@ export function OrganizerStoreCreateForm({ kind = "store" }: Props) {
   const router = useRouter();
   const isKitchen = kind === "kitchen_car";
   const basePath = organizerPathForKind(kind);
-  const label = isKitchen ? "キッチンカー" : "店舗";
   const nameLabel = isKitchen ? "キッチンカー名" : "店舗名";
 
   const [name, setName] = useState("");
@@ -73,23 +71,15 @@ export function OrganizerStoreCreateForm({ kind = "store" }: Props) {
   return (
     <div className="mx-auto w-full max-w-xl space-y-4 pb-28 min-[900px]:pb-0">
       <Link
-        href="/organizer/listings"
+        href={isKitchen ? "/organizer/listings?kind=kitchen" : "/organizer/listings?kind=store"}
         className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline"
       >
         <ArrowLeft className="size-3.5" strokeWidth={2.4} aria-hidden />
         掲載管理に戻る
       </Link>
 
-      {/* PC は今までの見出し */}
-      <div className="hidden min-[900px]:block">
-        <OrganizerWorkspacePageHeader
-          title={`${label}を作成`}
-          subtitle="まずは基本情報を登録します。詳細は作成後に編集できます。"
-        />
-      </div>
-
-      {/* スマホ：見出しと「期限なし・ずっと掲載」を1枚にまとめる */}
-      <header className="flex items-center gap-3 min-[900px]:hidden">
+      {/* 見出しと「期限なし・ずっと掲載」を1枚にまとめる（スマホ・PC 共通。イベント・ボランティアの作成と同じ見出しの形） */}
+      <header className="flex items-center gap-3">
         <span
           className={
             isKitchen
