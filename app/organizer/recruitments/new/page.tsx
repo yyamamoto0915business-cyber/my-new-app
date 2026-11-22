@@ -756,9 +756,9 @@ function NewRecruitmentPageContent() {
   ];
   const pcPrimaryLabel =
     pcStep === 1
-      ? "応募フォームの設定へ"
+      ? "次へ：応募フォーム"
       : pcStep === 2
-        ? "確認へ進む"
+        ? "次へ：確認・公開"
         : isEdit
           ? "変更を保存"
           : "作成して公開する";
@@ -989,7 +989,7 @@ function NewRecruitmentPageContent() {
   );
 
   return (
-    <div data-recruit-form className="relative z-[1] flex flex-col min-[900px]:-mx-6 min-[900px]:flex min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:bg-white">
+    <div data-recruit-form className="relative z-[1] flex flex-col min-[900px]:-mx-6 min-[900px]:-my-2.5 min-[900px]:flex min-[900px]:h-[calc(100dvh-var(--mg-pc-top-nav-h,52px))] min-[900px]:max-h-[calc(100dvh-var(--mg-pc-top-nav-h,52px))] min-[900px]:min-h-0 min-[900px]:overflow-hidden min-[900px]:bg-white">
 
       {/* ── PC: Header（イベント作成と同型）── */}
       <header className="z-10 hidden shrink-0 border-b border-[#d8d4cc] bg-white shadow-[0_1px_0_rgba(15,23,42,0.04)] min-[900px]:block">
@@ -1112,14 +1112,14 @@ function NewRecruitmentPageContent() {
 
       {/* ── PC: stepped layout ── */}
       <div className="hidden min-h-0 min-[900px]:flex min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:border-t min-[900px]:border-[#e8e6e0]">
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-[#f7f6f2] px-6 pt-5 pb-16">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-[#f7f6f2] px-6 pt-4 pb-16">
           {/* 見出し（スマホの作成画面と同じ「英字の小見出し＋明朝体の見出し」） */}
-          <div className="mx-auto mb-5 w-full max-w-[720px]">
+          <div className="mx-auto mb-3 flex w-full max-w-[720px] flex-wrap items-baseline gap-x-3 gap-y-0.5">
             <OrgEyebrow>VOLUNTEER</OrgEyebrow>
-            <h1 className="mt-1 text-[22px] font-semibold tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
+            <h1 className="text-[18px] font-semibold tracking-[0.04em] text-[#173f2c]" style={{ fontFamily: ORG_SERIF }}>
               {publishDone ? successPcPageTitle : pcPageTitle}
             </h1>
-            <p className="mt-1 text-[12.5px] text-[#6a7568]">{publishDone ? successPcPageSubtitle : pcPageSubtitle}</p>
+            <p className="text-[12px] text-[#6a7568]">{publishDone ? successPcPageSubtitle : pcPageSubtitle}</p>
           </div>
           {pcStep === 1 ? (
             <div className="mx-auto flex w-full max-w-[720px] flex-col gap-3.5">

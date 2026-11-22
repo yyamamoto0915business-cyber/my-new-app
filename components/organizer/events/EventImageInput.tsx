@@ -148,7 +148,7 @@ export function EventImageInput({
         <div className="flex items-center gap-3">
           <div
             className={[
-              "relative w-[7.5rem] shrink-0 overflow-hidden rounded-[8px] bg-white min-[900px]:w-[9.5rem]",
+              "relative w-[7.5rem] shrink-0 overflow-hidden rounded-[8px] bg-white min-[900px]:w-[8rem]",
               hasImage
                 ? "border border-[#e0ddd6] shadow-[0_1px_2px_rgba(26,26,26,0.04)]"
                 : "border border-dashed border-[#d8d4cc]",

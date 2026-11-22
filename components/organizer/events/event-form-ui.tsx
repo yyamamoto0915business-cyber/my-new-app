@@ -494,6 +494,8 @@ export function EventFormSidePanel({
   onPrev,
   nextLabel,
   footerNote,
+  hideNav = false,
+  focusCurrentStep = false,
 }: {
   form: {
     title: string;
@@ -515,15 +517,21 @@ export function EventFormSidePanel({
   onPrev: () => void;
   nextLabel: string;
   footerNote?: React.ReactNode;
+  /** 戻る・次へを上の帯に置いたとき：下のボタンを出さない */
+  hideNav?: boolean;
+  /** 今の手順の項目だけを並べ、ほかの手順は「開催情報 1/4」の1行にまとめる */
+  focusCurrentStep?: boolean;
 }) {
   const format = normalizeEventFormat(form.eventFormat);
   const showVenue = needsVenueFields(format);
   const showOnline = isOnlineCapableFormat(format);
 
-  const prog = [
+  const step1 = [
     { key: "イベント名", done: !!form.title.trim() },
     { key: "概要", done: !!form.description.trim() },
     { key: "主催者名", done: !!form.organizerName?.trim() },
+  ];
+  const step2 = [
     { key: "開催日時", done: !!form.date && !!form.startTime },
     ...(showVenue
       ? [
@@ -543,6 +551,15 @@ export function EventFormSidePanel({
     { key: "参加費", done: true },
     ...(showVenue ? [{ key: "雨天時対応", done: true }] : []),
   ];
+  const prog = [...step1, ...step2];
+  const groups = [
+    { step: 1 as EventFormStep, label: "基本情報", items: step1 },
+    { step: 2 as EventFormStep, label: "開催情報", items: step2 },
+  ];
+  const shownItems = focusCurrentStep
+    ? groups.find((g) => g.step === currentStep)?.items ?? []
+    : prog;
+  const otherGroups = focusCurrentStep ? groups.filter((g) => g.step !== currentStep) : [];
   const filled = prog.filter((p) => p.done).length;
   const pct = Math.round((filled / prog.length) * 100);
 
@@ -563,7 +580,12 @@ export function EventFormSidePanel({
             />
           </div>
           <ul className="space-y-0.5">
-            {prog.map(({ key, done }) => (
+            {focusCurrentStep && shownItems.length === 0 ? (
+              <li className="px-1 py-0.5 text-[11.5px] leading-[1.5] text-[#6a7568]">
+                この手順は、すべて任意です。必要なところだけ入れてください。
+              </li>
+            ) : null}
+            {shownItems.map(({ key, done }) => (
               <li
                 key={key}
                 className="flex items-center gap-2 rounded-[6px] px-1 py-0.5"
@@ -585,6 +607,22 @@ export function EventFormSidePanel({
               </li>
             ))}
           </ul>
+          {otherGroups.length > 0 ? (
+            <ul className="mt-2 space-y-0.5 border-t border-[#f0eeea] pt-2">
+              {otherGroups.map((g) => {
+                const n = g.items.filter((i) => i.done).length;
+                const all = n === g.items.length;
+                return (
+                  <li key={g.step} className="flex items-center gap-2 px-1 py-0.5 text-[11.5px] text-[#6a7568]">
+                    <span className="flex-1">{g.label}</span>
+                    <span className={all ? "font-semibold text-[#3a7a10]" : "tabular-nums"}>
+                      {all ? "完了" : `${n}/${g.items.length}`}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
         </div>
 
         <div className="mt-2 space-y-2">
@@ -599,7 +637,7 @@ export function EventFormSidePanel({
         </div>
       </div>
 
-      <div className="shrink-0 space-y-1 border-t border-[#e8e6e0] bg-[#fafaf8] px-2.5 py-2">
+      <div className={`shrink-0 space-y-1 border-t border-[#e8e6e0] bg-[#fafaf8] px-2.5 py-2 ${hideNav ? "hidden" : ""}`}>
         {currentStep > 1 && (
           <button
             type="button"
