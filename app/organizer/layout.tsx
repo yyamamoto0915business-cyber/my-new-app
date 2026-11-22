@@ -67,7 +67,13 @@ export default async function OrganizerLayout({
       <OrganizerBottomNav />
 
       <div className="flex min-h-0 flex-1 min-[900px]:overflow-hidden">
-        <OrganizerSidebar variant={navVariant} showAdminLink={showAdminLink} />
+        {/*
+          PC・iPad 横：登録済みの主催者は、左のメニュー（アプリ全体の左端）が主催者用に切りかわるので、
+          別の欄は出さない（メニューが二重になり中身が狭くなっていた）。登録前の人だけ、登録・使い方の欄を出す。
+        */}
+        {navVariant === "lite" ? (
+          <OrganizerSidebar variant={navVariant} showAdminLink={showAdminLink} />
+        ) : null}
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col min-[900px]:overflow-y-auto">
           <OrganizerMainChrome variant={navVariant}>
