@@ -2,16 +2,26 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Gamepad2, KeyRound, MapPin } from "lucide-react";
 import type { EventLinkedGame } from "@/lib/organizer/public-games";
+import { EventGameJoinCta } from "@/components/events/detail/EventGameJoinCta";
 
 /**
  * イベントで遊べるゲーム。申し込むと、参加パスからゲームに参加できる。
  * 現地で参加するゲームはQRで、どこからでも参加できるゲームは参加コードで始める。
  */
-export function EventGamesSection({ games, className = "" }: { games: EventLinkedGame[]; className?: string }) {
+export function EventGamesSection({
+  games,
+  eventId,
+  className = "",
+}: {
+  games: EventLinkedGame[];
+  eventId?: string;
+  className?: string;
+}) {
   if (games.length === 0) return null;
   return (
     <section
-      className={`rounded-2xl border border-[#dfe9e1] bg-white p-4 shadow-[0_1px_4px_rgba(44,42,40,0.05)] ${className}`}
+      id="event-games"
+      className={`scroll-mt-24 rounded-2xl border border-[#dfe9e1] bg-white p-4 shadow-[0_1px_4px_rgba(44,42,40,0.05)] ${className}`}
       aria-labelledby="event-games-heading"
     >
       <h2 id="event-games-heading" className="flex items-center gap-1.5 text-[14px] font-bold text-[#1a2818]">
@@ -19,8 +29,9 @@ export function EventGamesSection({ games, className = "" }: { games: EventLinke
         このイベントで遊べるゲーム
       </h2>
       <p className="mt-1 text-[12px] leading-relaxed text-[#5d6b62]">
-        申し込むと、参加パスからゲームに参加できます。
+        申し込むと、参加パスやこのページからゲームに参加できます。
       </p>
+      {eventId ? <EventGameJoinCta eventId={eventId} className="mt-3" /> : null}
       <ul className="mt-3 grid gap-2 min-[900px]:grid-cols-2">
         {games.map((game) => (
           <li key={game.id}>

@@ -20,6 +20,8 @@ export type PublicOrganizerGame = {
   imageUrl: string;
   areaLabel: string;
   eventTitle: string | null;
+  /** 対象イベント。あるときは、カードを押すとイベントの詳細（申し込み→参加パスからゲーム）へ */
+  eventId: string | null;
 };
 
 export function coverFromSettings(settings: unknown, type: OrganizerGameTypeId): string | null {
@@ -60,7 +62,7 @@ export async function listPublishedOrganizerGames(
   const now = Date.now();
   const { data, error } = await supabase
     .from("organizer_games")
-    .select("id, type, name, description, starts_at, ends_at, join_token, settings, updated_at, events(title, prefecture, city, image_url)")
+    .select("id, type, name, description, starts_at, ends_at, join_token, settings, updated_at, event_id, events(title, prefecture, city, image_url)")
     .eq("status", "published")
     .order("updated_at", { ascending: false })
     .limit(capped);
@@ -70,7 +72,7 @@ export async function listPublishedOrganizerGames(
     if (/events|relationship|schema cache/i.test(error.message)) {
       const fallback = await supabase
         .from("organizer_games")
-        .select("id, type, name, description, starts_at, ends_at, join_token, settings, updated_at")
+        .select("id, type, name, description, starts_at, ends_at, join_token, settings, updated_at, event_id")
         .eq("status", "published")
         .order("updated_at", { ascending: false })
         .limit(capped);
@@ -123,6 +125,7 @@ export async function listPublishedOrganizerGames(
           defaultCover(type),
         areaLabel,
         eventTitle,
+        eventId: typeof row.event_id === "string" && row.event_id ? row.event_id : null,
       },
     ];
   });
