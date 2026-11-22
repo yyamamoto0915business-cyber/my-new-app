@@ -5,7 +5,9 @@ import Link from "next/link";
 import {
   ChevronDown,
   ChevronRight,
+  HandHeart,
   HelpCircle,
+  Lock,
   LogOut,
   UserRound,
 } from "lucide-react";
@@ -236,8 +238,13 @@ function ProfileContent() {
                     title="プロフィール設定"
                   />
                   <MobileRow
+                    href="/profile/volunteer"
+                    icon={<HandHeart className="h-4 w-4" />}
+                    title="ボランティア応募履歴"
+                  />
+                  <MobileRow
                     href="/profile/privacy"
-                    icon={<UserRound className="h-4 w-4" />}
+                    icon={<Lock className="h-4 w-4" />}
                     title="公開 / 非公開"
                   />
                   <MobileRow
