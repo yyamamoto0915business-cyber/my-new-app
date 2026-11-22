@@ -153,7 +153,8 @@ type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 const STEP_SHORT = ["ひな形", "基本", "スポット", "演出", "特典", "参加パス", "公開"] as const;
 const STEP_ICONS = [LayoutTemplate, PenLine, MapPin, Palette, Gift, Ticket, Rocket] as const;
 /** 画面に並べる順番。参加パス（6）は基本設定のすぐあと（名前や期間が見本に出る）。中身のステップ番号は変えない。 */
-const STEP_ORDER: readonly Step[] = [1, 2, 6, 3, 4, 5, 7];
+// テンプレート（1）は手順に出さない：基本の手順の中の「見本から選ぶ」で開く（ほかのゲームと同じく基本から始める）。
+const STEP_ORDER: readonly Step[] = [2, 6, 3, 4, 5, 7];
 const stepPosition = (value: Step) => STEP_ORDER.indexOf(value);
 const nextStep = (value: Step): Step => STEP_ORDER[Math.min(stepPosition(value) + 1, STEP_ORDER.length - 1)];
 const prevStep = (value: Step): Step => STEP_ORDER[Math.max(stepPosition(value) - 1, 0)];
@@ -240,6 +241,8 @@ export function StampRallyWizard() {
 
   const [ready, setReady] = useState(false);
   const [step, setStep] = useState<Step>(STEP_ORDER[0]);
+  /** 基本の手順の中で、見本（テンプレート）の一覧を開いているか */
+  const [tplOpen, setTplOpen] = useState(false);
   /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
   const [passPreview, setPassPreview] = useState(false);
   useEffect(() => {
@@ -896,7 +899,8 @@ export function StampRallyWizard() {
     );
     setSelectedIndex(0);
     setTemplateId(template.id);
-    setNotice(`${template.name}を入れました。文章はあとから変えられます。`);
+    setTplOpen(false);
+    setNotice(`${template.name}を入れました。名前・スポット・画面の文章が入りました。あとから全部変えられます。`);
   }
 
   function removeSpot(index: number) {
@@ -1028,10 +1032,10 @@ export function StampRallyWizard() {
             <div className={styles.stepperHead}>
               <span className={styles.stepperCount}>
                 STEP <b>{stepPosition(step) + 1}</b>
-                <i>/ {STEPS.length}</i>
+                <i>/ {STEP_ORDER.length}</i>
               </span>
               <span className={styles.stepperTitle}>{STEPS[step - 1]}</span>
-              {stepPosition(step) < STEPS.length - 1 ? (
+              {stepPosition(step) < STEP_ORDER.length - 1 ? (
                 <span className={styles.stepperNext}>次：{STEPS[nextStep(step) - 1]}</span>
               ) : null}
             </div>
@@ -1067,9 +1071,9 @@ export function StampRallyWizard() {
               })}
             </ol>
           </nav>
-          {step === 1 ? (
+          {step === 2 && tplOpen ? (
             <section className={styles.card}>
-              <h2>テンプレートを選ぶ</h2>
+              <h2>見本から選ぶ</h2>
               <p className={styles.lead}>
                 近いものを選ぶと、名前・スポット・画面の文章が入った状態で始まります。あとから全部変えられます。
               </p>
@@ -1152,6 +1156,26 @@ export function StampRallyWizard() {
             <section className={styles.card}>
               <h2>基本設定</h2>
               <p className={styles.lead}>ゲームの名前と期間を決めます。くわしい設定は、あとからでも変えられます。</p>
+              {/* 見本（夏祭り・商店街など）は、使いたい人だけここから開く */}
+              <button
+                type="button"
+                className={styles.tplOpener}
+                aria-expanded={tplOpen}
+                onClick={() => {
+                  setTplOpen((v) => !v);
+                  if (!tplOpen) window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
+                <LayoutTemplate className="h-4 w-4" aria-hidden />
+                <span>
+                  <b>{tplOpen ? "見本を閉じる" : "見本から選ぶ"}</b>
+                  <small>
+                    {templateId && templateId !== "blank"
+                      ? "見本の内容が入っています。別の見本にもできます"
+                      : "夏祭り・商店街・子ども向けなど。名前やスポットがまとめて入ります"}
+                  </small>
+                </span>
+              </button>
               <div className="org-store-intro__grid">
                 <label className="org-store-intro__field org-store-intro__field--full">
                   <span>
@@ -2460,10 +2484,10 @@ export function StampRallyWizard() {
           <div className={styles.footer}>
             <p className={styles.footerStep}>
               <b>
-                STEP {stepPosition(step) + 1} / {STEPS.length}
+                STEP {stepPosition(step) + 1} / {STEP_ORDER.length}
               </b>
               {STEPS[step - 1]}
-              {stepPosition(step) < STEPS.length - 1 ? <span>次：{STEPS[nextStep(step) - 1]}</span> : null}
+              {stepPosition(step) < STEP_ORDER.length - 1 ? <span>次：{STEPS[nextStep(step) - 1]}</span> : null}
             </p>
             <div className={styles.footerQuiet}>
               {stepPosition(step) > 0 ? (

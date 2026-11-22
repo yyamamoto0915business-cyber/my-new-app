@@ -2581,3 +2581,21 @@
     min-width: 15rem;
   }
 }
+
+/* 基本の手順の中の「見本から選ぶ」 */
+.tplOpener {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0.2rem 0 1rem;
+  border-radius: 0.9rem;
+  border: 1px dashed #c9a54e;
+  background: #fffbf0;
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  color: #173f2c;
+}
+.tplOpener span { display: grid; gap: 0.1rem; min-width: 0; }
+.tplOpener b { font-size: 0.9rem; font-weight: 800; }
+.tplOpener small { font-size: 0.74rem; color: #6b776f; }

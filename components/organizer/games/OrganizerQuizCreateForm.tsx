@@ -15,6 +15,7 @@ import {
   Plus,
   Trash2,
   Trophy,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
@@ -56,13 +57,13 @@ import { useGameDraft } from "@/components/organizer/games/useGameDraft";
 import { readGameLook } from "@/lib/organizer/game-look";
 
 /** 欄ははじめ空にし、例は薄い灰色の見本として出す（前は例の文が入っていて、消してから書く手間があった） */
-const EXAMPLE_NAME = "まちの魅力発見！春のまち歩きクイズラリー";
+const EXAMPLE_NAME = "春のまち歩きクイズ";
 const EXAMPLE_DESCRIPTION = "まち歩きながらクイズに挑戦して、地域の歴史やスポットの魅力を発見しよう！すべての問題に正解すると、素敵な特典がもらえます。";
 
 
 /** 画面に並べる順番（参加パスは基本情報のすぐあと）。中身は STEPS の番号で持つ。 */
 // 「出題形式」（1）は出さない：問題ごとに形式を選べるので、先にまとめて選ぶ手順は要らない。
-const ORDER = [0, 4, 2, 3];
+const ORDER = [0, 4, 2, 3, 5];
 
 const STEPS: GameCreateStep[] = [
   { label: "基本情報", short: "基本", icon: PenLine },
@@ -70,6 +71,7 @@ const STEPS: GameCreateStep[] = [
   { label: "問題", short: "問題", icon: BookOpen },
   { label: "達成条件・特典", short: "特典", icon: Gift },
   { label: "参加パス", short: "参加パス", icon: Ticket },
+  { label: "確認・公開", short: "公開", icon: Rocket },
 ];
 
 function toIsoFromDate(date: string): string | null {
@@ -665,6 +667,12 @@ export function OrganizerQuizCreateForm() {
                 onChange={setRankingOn}
               />
             </RewardList>
+          </section>
+      ) : null}
+      {step === 5 ? (
+          <section className="org-quiz__card" aria-labelledby="quiz-publish">
+            <h2 id="quiz-publish">確認・公開</h2>
+            <p>まちの情報に出るカードを確かめて、下の「公開する」で公開します。</p>
             <GameCardSetup
               type="quiz"
               typeLabel="クイズラリー"
