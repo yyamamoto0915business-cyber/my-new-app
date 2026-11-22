@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameBasicsCarry } from "@/components/organizer/games/GamePlayStyleSwitch";
 import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { POINTS_NEED_EVENT_HINT, POINTS_NEED_EVENT_MESSAGE } from "@/lib/organizer/points-need-event";
 import { useEffect, useMemo, useState } from "react";
@@ -126,6 +127,7 @@ export function OrganizerPhotoCreateForm() {
   }, [step]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  useGameBasicsCarry(name, description, setName, setDescription);
   const [eventId, setEventId] = useState("");
   /** まちの情報のカードに出す画像（空なら、対象イベントの画像 → 種類の絵）。 */
   const [cardImage, setCardImage] = useState("");

@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameBasicsCarry } from "@/components/organizer/games/GamePlayStyleSwitch";
 import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
@@ -111,6 +112,7 @@ export function OrganizerCouponCreateForm() {
   }, [step]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  useGameBasicsCarry(name, description, setName, setDescription);
   const [eventId, setEventId] = useState("");
   const [startDate, setStartDate] = useState(() => jstDate());
   const [startTime, setStartTime] = useState("09:00");

@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameBasicsCarry } from "@/components/organizer/games/GamePlayStyleSwitch";
 import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -69,6 +70,7 @@ export function OrganizerMysteryCreateForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  useGameBasicsCarry(name, description, setName, setDescription);
   const [steps, setSteps] = useState<MysteryStep[]>(() => sampleMysterySteps());
   const [clearCount, setClearCount] = useState(3);
   const [couponOn, setCouponOn] = useState(true);

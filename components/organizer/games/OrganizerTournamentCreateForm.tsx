@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameBasicsCarry } from "@/components/organizer/games/GamePlayStyleSwitch";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PenLine, Rocket, Shuffle, Trophy } from "lucide-react";
@@ -98,6 +99,7 @@ export function OrganizerTournamentCreateForm() {
   const [step, setStep] = useState<StepId>("basic");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("対戦表と結果を、スマホでいつでも見られます。");
+  useGameBasicsCarry(name, description, setName, setDescription);
   const [eventId, setEventId] = useState("");
   const [cardImage, setCardImage] = useState("");
   const [startDate, setStartDate] = useState(() => jstDate());

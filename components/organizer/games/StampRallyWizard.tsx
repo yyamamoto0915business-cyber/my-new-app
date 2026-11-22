@@ -1,5 +1,6 @@
 "use client";
 
+import { GamePlayStyleSwitch, useGameBasicsCarry } from "@/components/organizer/games/GamePlayStyleSwitch";
 import { POINTS_NEED_EVENT_HINT, POINTS_NEED_EVENT_MESSAGE } from "@/lib/organizer/points-need-event";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
@@ -256,6 +257,7 @@ export function StampRallyWizard() {
   const [passDraft, setPassDraft] = useState<GamePassDraft>(EMPTY_GAME_PASS_DRAFT);
   const [cardImage, setCardImage] = useState("");
   const [description, setDescription] = useState("");
+  useGameBasicsCarry(name, description, setName, setDescription);
   const [startDate, setStartDate] = useState("");
   const [startTime, setStartTime] = useState("09:00");
   const [endDate, setEndDate] = useState("");
@@ -1071,6 +1073,7 @@ export function StampRallyWizard() {
               })}
             </ol>
           </nav>
+          {step === 2 ? <GamePlayStyleSwitch /> : null}
           {step === 2 && tplOpen ? (
             <section className={styles.card}>
               <h2>見本から選ぶ</h2>

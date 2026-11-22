@@ -1,5 +1,6 @@
 "use client";
 
+import { GamePlayStyleSwitch } from "@/components/organizer/games/GamePlayStyleSwitch";
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -196,6 +197,7 @@ export function GameCreateShell({
             {/* 順番どおりでなくてよい（丸から好きな所を開ける。保存はゲーム名と期間があれば下書きでできる） */}
             <p className="mt-2 text-center text-[11px] text-[#7b877f] max-[719px]:hidden">丸を押すと、好きな順に開けます。ゲーム名と期間だけで下書き保存できます。</p>
           </nav>
+          {step === 0 ? <GamePlayStyleSwitch /> : null}
           {children}
           {error ? <p className="org-quiz__error">{error}</p> : null}
           {phone ? (
