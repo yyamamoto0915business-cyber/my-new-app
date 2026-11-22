@@ -33,8 +33,8 @@ export function GamePublishSuccess({ typeLabel, isPreview = false, card }: Props
       }
       primaryHref="/machi?kind=game"
       primaryLabel="まちの情報で見る"
-      secondaryHref="/organizer/games"
-      secondaryLabel="ゲーム機能に戻る"
+      secondaryHref="/organizer/listings?kind=game"
+      secondaryLabel="掲載管理に戻る"
       isPreview={isPreview}
     />
   );

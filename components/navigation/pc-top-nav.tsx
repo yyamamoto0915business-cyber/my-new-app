@@ -185,7 +185,7 @@ function PcTopNavInner() {
       className="fixed left-0 right-0 top-0 z-[100] hidden h-[var(--mg-pc-top-nav-h)] min-h-[var(--mg-pc-top-nav-h)] items-center gap-4 border-b border-[#e8ebe6] bg-[#ffffff] px-7 pt-[env(safe-area-inset-top,0px)] min-[900px]:left-20 min-[900px]:flex"
     >
       <Link
-        href="/"
+        href={organizerArea ? ORGANIZER_ENTRY_HREF : "/"}
         className="mr-3 shrink-0 whitespace-nowrap text-[18px] font-semibold tracking-[0.05em] text-[#0e1610]"
         style={{ fontFamily: "'Shippori Mincho', serif" }}
         aria-label="MachiGlyph ホームへ"

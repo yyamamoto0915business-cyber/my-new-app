@@ -136,17 +136,10 @@ export function GameCreateShell({
     <div className={cn("org-game-create", styles.wizard)}>
       <div className={styles.layout} style={preview ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}>
         <div className={styles.main}>
-          <Link
-            href="/organizer/games"
-            className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline max-[899px]:hidden"
-          >
-            <ArrowLeft className="size-3.5" strokeWidth={2.4} aria-hidden />
-            ゲーム機能に戻る
-          </Link>
           {/* スマホはゲームの一覧が掲載管理にあるので、そこへ戻る */}
           <Link
             href="/organizer/listings?kind=game"
-            className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline min-[900px]:hidden"
+            className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline"
           >
             <ArrowLeft className="size-3.5" strokeWidth={2.4} aria-hidden />
             掲載管理に戻る
