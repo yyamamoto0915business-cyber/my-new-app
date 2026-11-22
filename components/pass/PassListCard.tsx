@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, MapPin, CalendarDays } from "lucide-react";
+import { ArrowRight, MapPin, CalendarDays, Gamepad2 } from "lucide-react";
+import { gameStartHref, useEventPassGames } from "@/components/pass/PassGamesSection";
 import {
   formatDaysUntilLabel,
   formatPassDateRange,
@@ -62,6 +63,8 @@ export function PassListCard({
   onOpenPass,
 }: Props) {
   const isFeatured = size === "featured";
+  // 申し込んだイベントにゲームがあれば、一覧からすぐ始められるように（パスを開かなくてよい）
+  const eventGames = useEventPassGames(pass.kind === "game" ? "" : pass.eventId);
   const days = getDaysUntil(pass.startAt);
   const daysLabel = formatDaysUntilLabel(days);
   const formatLabel =
@@ -164,6 +167,12 @@ export function PassListCard({
             ) : (
               <PassReceptionBadge type={pass.receptionType} />
             )}
+            {eventGames.length > 0 ? (
+              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-[#173f2c] px-1.5 py-0.5 text-[10.5px] font-bold text-[#f6ebc8]">
+                <Gamepad2 className="h-3 w-3" aria-hidden />
+                ゲームあり
+              </span>
+            ) : null}
             {pass.kind === "game" ? null : (
               <span className="hidden min-[900px]:inline-flex">
                 <PassQuantityBadge label={formatTicketQuantity(pass)} />
@@ -212,6 +221,30 @@ export function PassListCard({
             パスを開く
             <ArrowRight className="h-3 w-3" aria-hidden />
           </button>
+          {eventGames.length > 0 ? (
+            eventGames.length === 1 ? (
+              <Link
+                href={gameStartHref(eventGames[0])}
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center justify-center gap-0.5 rounded-lg border border-[#c9a54e] bg-[#fbf6e8] px-1.5 py-1 text-[11px] font-bold text-[#173f2c] transition hover:bg-[#f6ebc8]"
+              >
+                <Gamepad2 className="h-3 w-3" aria-hidden />
+                ゲームを始める
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenPass();
+                }}
+                className="inline-flex items-center justify-center gap-0.5 rounded-lg border border-[#c9a54e] bg-[#fbf6e8] px-1.5 py-1 text-[11px] font-bold text-[#173f2c] transition hover:bg-[#f6ebc8]"
+              >
+                <Gamepad2 className="h-3 w-3" aria-hidden />
+                ゲームを選ぶ
+              </button>
+            )
+          ) : null}
           <Link
             href={pass.game ? pass.game.joinPath : `/events/${pass.eventId}`}
             onClick={(e) => e.stopPropagation()}

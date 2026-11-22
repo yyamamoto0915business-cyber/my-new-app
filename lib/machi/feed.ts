@@ -278,7 +278,8 @@ export function gameToMachiItem(game: PublicOrganizerGame): MachiFeedItem {
     id: `game:${game.id}`,
     kind: "game",
     title: game.name,
-    href: game.joinPath,
+    // イベントのゲームは、イベントの詳細へ（申し込むと参加パスやそのページからゲームに参加できる）。イベントなしのゲームはそのまま遊ぶ
+    href: game.eventId ? `/events/${game.eventId}#event-games` : game.joinPath,
     imageUrl: game.imageUrl,
     kindLabel: "ゲーム",
     statusLabel: upcoming ? "開催予定" : "開催中",

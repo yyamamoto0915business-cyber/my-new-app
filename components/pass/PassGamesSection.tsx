@@ -10,10 +10,16 @@ import type { EventPassGame } from "@/app/api/events/[id]/games/route";
 
 const SECTION_ID = "pass-event-games";
 
+/** ゲームを始めるリンク先。どこからでも参加なら参加コードを入れた画面、現地なら案内のページ。 */
+export function gameStartHref(game: Pick<EventPassGame, "joinCode" | "joinPath">): string {
+  return game.joinCode ? `/play/code?code=${encodeURIComponent(game.joinCode)}` : game.joinPath;
+}
+
 // パスの上の案内と下のゲーム欄で、同じイベントを二度読みに行かない。
 const cache = new Map<string, Promise<EventPassGame[]>>();
 
 function loadEventPassGames(eventId: string): Promise<EventPassGame[]> {
+  if (!eventId) return Promise.resolve([]);
   const hit = cache.get(eventId);
   if (hit) return hit;
   const request = fetch(`/api/events/${encodeURIComponent(eventId)}/games`, { cache: "no-store" })
@@ -23,7 +29,8 @@ function loadEventPassGames(eventId: string): Promise<EventPassGame[]> {
   return request;
 }
 
-function useEventPassGames(eventId: string): EventPassGame[] {
+/** 申し込んだイベントのゲーム（申し込んでいなければ空）。参加パスの一覧・イベント詳細でも使う。 */
+export function useEventPassGames(eventId: string): EventPassGame[] {
   const [games, setGames] = useState<EventPassGame[]>([]);
   useEffect(() => {
     let cancelled = false;

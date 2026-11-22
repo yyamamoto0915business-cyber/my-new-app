@@ -16,6 +16,7 @@ import { EventApplyConfirmPreviewOverlay } from "@/components/events/detail/Even
 import { formatEventScheduleLabel } from "@/lib/event-recurrence";
 import { Suspense } from "react";
 import { EventGamesSection } from "@/components/events/detail/EventGamesSection";
+import { EventGameJoinCta } from "@/components/events/detail/EventGameJoinCta";
 import { listPublishedGamesForEvent } from "@/lib/organizer/public-games";
 import { getPlayDb } from "@/lib/organizer/play";
 
@@ -54,7 +55,7 @@ export default async function EventDetailPage({ params }: Props) {
 
   const playDb = getPlayDb();
   const linkedGames = playDb ? await listPublishedGamesForEvent(playDb, id) : [];
-  const gamesSection = <EventGamesSection games={linkedGames} />;
+  const gamesSection = <EventGamesSection games={linkedGames} eventId={id} />;
 
   const status = getEventStatus(event);
   const isAvailable = status === "available";
@@ -97,7 +98,9 @@ export default async function EventDetailPage({ params }: Props) {
 
   /** 申込制のみ購入/申込CTA。任意・自由参加は参加予定のまま */
   const primaryActions = isAvailable ? (
-    <div className="w-full">
+    <div className="w-full space-y-2">
+      {/* 申し込み済みでゲームがあれば、いちばん上に「ゲームに参加する」 */}
+      {linkedGames.length > 0 ? <EventGameJoinCta eventId={id} /> : null}
       {participationModeProp === "required" ? (
         <EventPurchasePrimaryCta event={event} variant="mobile" />
       ) : (

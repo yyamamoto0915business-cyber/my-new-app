@@ -41,6 +41,8 @@ export function gameCardItem(input: {
     imageUrl: input.cardImage || input.event?.imageUrl || gameTypeCover(input.type),
     areaLabel: input.event?.area || input.event?.title || "地域のゲーム",
     eventTitle: input.event?.title ?? null,
+    // 見本のカードは押しても移らない
+    eventId: null,
   });
 }
 
