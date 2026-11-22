@@ -189,7 +189,7 @@ export default async function OrganizerPublicPage({ params }: Props) {
 
                 {/* フォローと相談は横に並べる（縦に2つ並べていて場所をとっていた） */}
                 <div className="mt-3.5 grid grid-cols-2 gap-2">
-                  <OrganizerFollowButton fullWidth mobileStyle />
+                  <OrganizerFollowButton fullWidth mobileStyle targetUserId={ownerProfileId} viewerId={viewerId} />
                   <Link
                     href="/messages"
                     className="flex h-11 w-full items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-[#c9d8cd] bg-white text-[13px] font-bold text-[#173f2c] transition-all"

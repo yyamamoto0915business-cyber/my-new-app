@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Props = {
+  /** フォローする相手（主催者のアカウントのプロフィール）。ないときはフォローできない */
+  targetUserId?: string | null;
+  /** 見ている人（ログインしていなければ null） */
+  viewerId?: string | null;
   className?: string;
   fullWidth?: boolean;
   mobileStyle?: boolean;
@@ -10,17 +15,66 @@ type Props = {
 };
 
 export function OrganizerFollowButton({
+  targetUserId = null,
+  viewerId = null,
   className = "",
   fullWidth = false,
   mobileStyle = false,
   pcStyle = false,
 }: Props) {
+  // 前は押しても見た目だけ変わり、保存されなかった。ユーザー同士のフォロー（/api/follows）で保存する
+  const router = useRouter();
   const [followed, setFollowed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const isSelf = Boolean(viewerId && targetUserId && viewerId === targetUserId);
+
+  useEffect(() => {
+    if (!viewerId || !targetUserId || isSelf) return;
+    let cancelled = false;
+    fetch(`/api/follows?userId=${encodeURIComponent(targetUserId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json: { status?: string } | null) => {
+        if (!cancelled && json) setFollowed(json.status === "accepted" || json.status === "pending");
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [viewerId, targetUserId, isSelf]);
+
+  async function toggle() {
+    if (!targetUserId || busy) return;
+    if (!viewerId) {
+      router.push(`/auth?next=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    setBusy(true);
+    const next = !followed;
+    setFollowed(next);
+    try {
+      const res = next
+        ? await fetch("/api/follows", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: targetUserId }),
+          })
+        : await fetch(`/api/follows?userId=${encodeURIComponent(targetUserId)}`, { method: "DELETE" });
+      if (!res.ok) setFollowed(!next);
+    } catch {
+      setFollowed(!next);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!targetUserId || isSelf) return null;
   const roundedClass = mobileStyle || pcStyle ? "rounded-xl" : "rounded-full";
 
   return (
     <button
-      onClick={() => setFollowed((v) => !v)}
+      onClick={() => void toggle()}
+      disabled={busy}
+      aria-pressed={followed}
       className={`flex items-center justify-center gap-2 font-semibold transition-all ${roundedClass} ${
         pcStyle ? "min-w-0 flex-1" : fullWidth ? "w-full" : "flex-1"
       } ${mobileStyle || pcStyle ? "h-11 text-[14px]" : ""} ${className}`}
