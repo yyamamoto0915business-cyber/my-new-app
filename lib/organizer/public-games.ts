@@ -230,7 +230,7 @@ export type PublicGameDetail = {
   participation: GameParticipation;
   /** だれが参加できるか（だれでも・イベント申込者・参加パス保有者・ゲームに申し込んだ人） */
   audience: "anyone" | "event" | "pass" | "entry";
-  organizer: { id: string; name: string; avatarUrl: string | null } | null;
+  organizer: { id: string; name: string } | null;
   event: { id: string; title: string; date: string | null; location: string | null; imageUrl: string | null } | null;
 };
 
@@ -252,13 +252,15 @@ export async function getPublicGameDetail(supabase: SupabaseClient, id: string):
 
   const [orgRes, eventRes] = await Promise.all([
     typeof row.organizer_id === "string"
-      ? supabase.from("organizers").select("id, organization_name, avatar_url").eq("id", row.organizer_id).maybeSingle()
+      ? supabase.from("organizers").select("id, organization_name").eq("id", row.organizer_id).maybeSingle()
       : Promise.resolve({ data: null }),
     typeof row.event_id === "string" && row.event_id
       ? supabase.from("events").select("id, title, date, location, image_url").eq("id", row.event_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
-  const org = orgRes.data as { id: string; organization_name: string | null; avatar_url: string | null } | null;
+  if ("error" in orgRes && orgRes.error) console.warn("getPublicGameDetail organizer:", orgRes.error.message);
+  if ("error" in eventRes && eventRes.error) console.warn("getPublicGameDetail event:", eventRes.error.message);
+  const org = orgRes.data as { id: string; organization_name: string | null } | null;
   const ev = eventRes.data as { id: string; title: string | null; date: string | null; location: string | null; image_url: string | null } | null;
 
   const start = publicPlayStart(row.settings);
@@ -278,7 +280,7 @@ export async function getPublicGameDetail(supabase: SupabaseClient, id: string):
     imageUrl: coverFromSettings(row.settings, type) || (ev?.image_url?.trim() ?? "") || defaultCover(type),
     participation: publicPlayParticipation(row.settings, type),
     audience: audienceRaw,
-    organizer: org ? { id: org.id, name: org.organization_name?.trim() || "主催者", avatarUrl: org.avatar_url } : null,
+    organizer: org ? { id: org.id, name: org.organization_name?.trim() || "主催者" } : null,
     event: ev ? { id: ev.id, title: ev.title ?? "イベント", date: ev.date, location: ev.location, imageUrl: ev.image_url } : null,
   };
 }
