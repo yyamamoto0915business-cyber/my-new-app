@@ -76,7 +76,7 @@ export function OrganizerProfilePcHero({
               )}
             </div>
             <div className="flex shrink-0 items-center gap-2 self-start">
-              <OrganizerFollowButton pcStyle className="!h-9 !min-w-0 !flex-none !text-[12.5px] !px-4" />
+              <OrganizerFollowButton pcStyle targetUserId={ownerProfileId} viewerId={viewerId} className="!h-9 !min-w-0 !flex-none !text-[12.5px] !px-4" />
               <Link
                 href="/messages"
                 className="flex h-9 items-center justify-center gap-1.5 rounded-xl px-3.5 text-[12.5px] font-semibold transition-all hover:bg-[#f5faf5]"

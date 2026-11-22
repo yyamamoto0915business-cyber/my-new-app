@@ -729,33 +729,20 @@ export async function fetchPublishedEventsByOrganizer(
 ): Promise<Event[]> {
   const today = getJstTodayYmd();
   const perSide = Math.max(5, Math.ceil(limit / 2));
-  const select = `
-      *,
-      organizers!inner (
-        organization_name,
-        contact_email,
-        contact_phone,
-        profile:profile_id (
-          display_name,
-          email
-        )
-      )
-    `;
+  // organizers 表は主催者本人しか読めない（RLS）。!inner でつなぐと、ほかの人が見たときに全部の行が消えていた。
+  // 名前は公開用の organizer_public_profiles から1回だけ読む。
+  const select = "*";
+  const { data: pub } = await supabase
+    .from("organizer_public_profiles")
+    .select("organization_name, public_email, public_phone")
+    .eq("organizer_id", organizerId)
+    .maybeSingle();
+  const pubRow = pub as { organization_name: string | null; public_email: string | null; public_phone: string | null } | null;
 
   const mapRows = (rows: Record<string, unknown>[] | null | undefined): Event[] =>
     (rows ?? []).map((row) => {
-      const org = row.organizers as {
-        organization_name: string | null;
-        contact_email: string | null;
-        contact_phone: string | null;
-        profile: { display_name: string | null; email: string | null };
-      };
-      const name =
-        org?.organization_name ??
-        org?.profile?.display_name ??
-        org?.profile?.email ??
-        "主催者";
-      const contact = org?.contact_phone ?? org?.contact_email ?? undefined;
+      const name = pubRow?.organization_name?.trim() || "主催者";
+      const contact = pubRow?.public_phone ?? pubRow?.public_email ?? undefined;
       return dbEventToEvent(row as unknown as DbEvent, name, contact);
     });
 
