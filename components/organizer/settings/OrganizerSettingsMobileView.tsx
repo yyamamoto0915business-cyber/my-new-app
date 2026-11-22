@@ -205,7 +205,7 @@ export function OrganizerSettingsMobileView({
   const num = (n: number | undefined, unit = "") => (stats ? `${n}${unit}` : "–");
 
   return (
-    <div className="mx-auto mt-3 flex w-full max-w-xl flex-col gap-3 pb-4 sm:mt-6 min-[900px]:hidden">
+    <div className="mx-auto mt-3 flex w-full max-w-xl flex-col gap-3 pb-4 sm:mt-6 min-[900px]:max-w-[720px] min-[900px]:pb-10">
       {/* 帯のカード（利用者のマイページと同じ形） */}
       <section
         className="relative overflow-hidden rounded-[14px] border border-[#e8e6e0] bg-white"
