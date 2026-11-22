@@ -176,7 +176,7 @@ function ProfileContent() {
       {user && (
         <>
           {/* スマホ・PC 共通：同じ形（PC は中央にまとめる。主催者のマイページと同じ考え方） */}
-          <div className="mx-auto flex w-full max-w-screen-sm flex-col gap-2.5 px-4 pt-1.5 pb-4 min-[900px]:max-w-[760px] min-[900px]:gap-3 min-[900px]:px-6 min-[900px]:pt-5 min-[900px]:pb-10">
+          <div className="mx-auto flex w-full max-w-screen-sm flex-col gap-2.5 px-4 pt-1.5 pb-4 min-[900px]:max-w-[760px] min-[900px]:gap-3 min-[900px]:px-6 min-[900px]:pt-5 min-[900px]:pb-10 min-[1100px]:max-w-[1080px]">
             <MypageMobileProfileCard
               displayName={displayName}
               avatarUrl={data.profile.avatarUrl}
@@ -192,6 +192,9 @@ function ProfileContent() {
               }}
             />
 
+            {/* 広い PC：左に「次の予定・マイアルバム」、右に「設定・サポート」を並べてスクロールを減らす */}
+            <div className="flex flex-col gap-2.5 min-[900px]:gap-3 min-[1100px]:grid min-[1100px]:grid-cols-[minmax(0,1fr)_320px] min-[1100px]:items-start min-[1100px]:gap-4">
+            <div className="flex min-w-0 flex-col gap-2.5 min-[900px]:gap-3">
             {/* 次に行くイベント（参加者がマイページでいちばん知りたいこと） */}
             <MypageNextEvent event={data.nextEvent} />
 
@@ -202,6 +205,8 @@ function ProfileContent() {
             ) : null}
 
             <MypageMobileAlbum />
+            </div>
+            <div className="flex min-w-0 flex-col gap-2.5 min-[900px]:gap-3 min-[1100px]:sticky min-[1100px]:top-[calc(var(--mg-pc-top-nav-h,52px)+1rem)]">
 
             {/* ポイントはイベントのゲームでたまり、そのイベントで使うものなので、マイページには出さずゲームの画面で見せる */}
 
@@ -259,6 +264,8 @@ function ProfileContent() {
             </section>
 
             <MypageMobileFooterLinks />
+            </div>
+            </div>
           </div>
 
         </>
