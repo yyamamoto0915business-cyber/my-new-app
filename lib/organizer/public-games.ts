@@ -6,7 +6,7 @@ import {
   type OrganizerGameTypeId,
 } from "@/lib/organizer/game-types";
 import { organizerGameJoinPath } from "@/lib/organizer/game-tokens";
-import { publicPlayParticipation, publicPlayStart, type GameParticipation } from "@/lib/organizer/game-experience";
+import { publicPlayAudience, publicPlayParticipation, publicPlayStart, type GameParticipation } from "@/lib/organizer/game-experience";
 
 export type PublicOrganizerGame = {
   id: string;
@@ -213,4 +213,74 @@ export async function gameImagesForEvents(
     images.set(row.event_id, coverFromSettings(row.settings, type) ?? defaultCover(type));
   }
   return images;
+}
+
+export type PublicGameDetail = {
+  id: string;
+  type: OrganizerGameTypeId;
+  typeLabel: string;
+  name: string;
+  catchCopy: string;
+  description: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  ended: boolean;
+  joinPath: string;
+  imageUrl: string;
+  participation: GameParticipation;
+  /** だれが参加できるか（だれでも・イベント申込者・参加パス保有者・ゲームに申し込んだ人） */
+  audience: "anyone" | "event" | "pass" | "entry";
+  organizer: { id: string; name: string } | null;
+  event: { id: string; title: string; date: string | null; location: string | null; imageUrl: string | null } | null;
+};
+
+/** ゲームの詳細ページに出す、公開中のゲーム1つ。見つからない・非公開なら null。 */
+export async function getPublicGameDetail(supabase: SupabaseClient, id: string): Promise<PublicGameDetail | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const { data, error } = await supabase
+    .from("organizer_games")
+    .select("id, organizer_id, event_id, type, name, description, starts_at, ends_at, status, join_token, settings")
+    .eq("id", id)
+    .maybeSingle();
+  if (error || !data) return null;
+  const row = data as Record<string, unknown>;
+  if (row.status !== "published") return null;
+  const joinToken = typeof row.join_token === "string" ? row.join_token.trim() : "";
+  if (!joinToken) return null;
+  const type = isOrganizerGameTypeId(String(row.type ?? "")) ? (row.type as OrganizerGameTypeId) : DEFAULT_ORGANIZER_GAME_TYPE_ID;
+  if (isHiddenFromPublic(row.settings, type)) return null;
+
+  const [orgRes, eventRes] = await Promise.all([
+    typeof row.organizer_id === "string"
+      ? supabase.from("organizers").select("id, organization_name").eq("id", row.organizer_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    typeof row.event_id === "string" && row.event_id
+      ? supabase.from("events").select("id, title, date, location, image_url").eq("id", row.event_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  if ("error" in orgRes && orgRes.error) console.warn("getPublicGameDetail organizer:", orgRes.error.message);
+  if ("error" in eventRes && eventRes.error) console.warn("getPublicGameDetail event:", eventRes.error.message);
+  const org = orgRes.data as { id: string; organization_name: string | null } | null;
+  const ev = eventRes.data as { id: string; title: string | null; date: string | null; location: string | null; image_url: string | null } | null;
+
+  const start = publicPlayStart(row.settings);
+  const endsAt = typeof row.ends_at === "string" ? row.ends_at : null;
+  const audienceRaw = publicPlayAudience(row.settings);
+  return {
+    id: String(row.id),
+    type,
+    typeLabel: getOrganizerGameType(type).label,
+    name: start.title.trim() || (typeof row.name === "string" ? row.name : "ゲーム"),
+    catchCopy: start.catchCopy.trim(),
+    description: (typeof row.description === "string" && row.description.trim()) || start.description.trim(),
+    startsAt: typeof row.starts_at === "string" ? row.starts_at : null,
+    endsAt,
+    ended: Boolean(endsAt) && Date.parse(endsAt as string) < Date.now(),
+    joinPath: organizerGameJoinPath(joinToken),
+    imageUrl: coverFromSettings(row.settings, type) || (ev?.image_url?.trim() ?? "") || defaultCover(type),
+    participation: publicPlayParticipation(row.settings, type),
+    audience: audienceRaw,
+    organizer: org ? { id: org.id, name: org.organization_name?.trim() || "主催者" } : null,
+    event: ev ? { id: ev.id, title: ev.title ?? "イベント", date: ev.date, location: ev.location, imageUrl: ev.image_url } : null,
+  };
 }
