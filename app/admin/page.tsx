@@ -63,7 +63,7 @@ export default async function AdminDashboardPage() {
 
       <section>
         <h2 className="mb-2 text-sm font-bold text-[#173f2c]">今すぐ対応すること</h2>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 min-[768px]:flex min-[768px]:flex-wrap">
           <AdminTodoCard
             href="/admin/support"
             label="未対応の問い合わせ"

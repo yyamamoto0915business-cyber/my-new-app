@@ -192,7 +192,7 @@ export function AdminShell({
             className="h-1.5 w-1.5 shrink-0 rounded-full"
             style={{ background: "#d9bc6e" }}
           />
-          <span>管理者モード</span>
+          <span className="whitespace-nowrap">管理者モード</span>
         </div>
         <div className="flex min-w-0 items-center gap-2 truncate text-white/80">
           <span className="truncate">
@@ -234,7 +234,7 @@ export function AdminShell({
           className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl shadow-sm ring-1 ring-[#e6e2d6] lg:ml-3"
           style={{ background: "#f4faf6" }}
         >
-          <main className="flex-1 overflow-x-hidden px-3 py-3 md:px-5 md:py-4">
+          <main className="flex-1 overflow-x-hidden px-3 py-3 pb-[calc(84px+env(safe-area-inset-bottom,0px))] md:px-5 md:py-4 min-[900px]:pb-4">
             {children}
           </main>
         </div>

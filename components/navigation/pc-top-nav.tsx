@@ -11,7 +11,7 @@ import {
   resolveAvatarUrlByRole,
   resolveProfileDisplayName,
 } from "@/lib/profile-avatar";
-import { isAdmin } from "@/lib/admin";
+import { OrganizerAccountMenu } from "@/components/organizer/OrganizerAccountMenu";
 import { useOrganizerNavPlan } from "@/lib/organizer-pro-store";
 import { isEventModePath, isMachiModePath, isOrganizerDashboardPath } from "@/lib/top-mode-active";
 import { ArrowLeftRight, CalendarDays, MapPinned } from "lucide-react";
@@ -264,23 +264,8 @@ function PcTopNavInner() {
         </Suspense>
         {user ? (
           <>
-            {isAdmin(user.email) && (
-            <Link
-              href="/admin"
-              style={{
-                padding: "3px 10px",
-                borderRadius: 20,
-                fontSize: 10,
-                background: "#1e3848",
-                color: "#70c8e0",
-                fontWeight: 500,
-                whiteSpace: "nowrap",
-                textDecoration: "none",
-              }}
-            >
-              🔐 管理者
-            </Link>
-          )}
+            {/* 開発者の管理者だけに出る「管理者画面」ボタン（スマホの上の盾ボタンと同じ判定） */}
+            <OrganizerAccountMenu compact />
           <span className="whitespace-nowrap text-[13px] text-[#3a5848]">
             {displayName}
           </span>
