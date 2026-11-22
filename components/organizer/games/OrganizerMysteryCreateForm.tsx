@@ -3,7 +3,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Ticket, ChevronDown, ChevronUp, Copy, Gift, PenLine, Plus, Search, Trash2, Trophy } from "lucide-react";
+import {
+  Ticket,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Gift,
+  PenLine,
+  Plus,
+  Search,
+  Trash2,
+  Trophy,
+  Rocket,
+} from "lucide-react";
 import { GameImageField } from "@/components/organizer/games/GameImageField";
 import { RewardFields } from "@/components/organizer/games/RewardFields";
 import { type GameAudienceChoice } from "@/components/organizer/games/AudienceField";
@@ -41,13 +53,14 @@ const EXAMPLE_DESCRIPTION = "ヒントを順にたどって、三つの謎を解
 
 
 /** 画面に並べる順番（参加パスは基本情報のすぐあと）。中身は STEPS の番号で持つ。 */
-const ORDER = [0, 3, 1, 2];
+const ORDER = [0, 3, 1, 2, 4];
 
 const STEPS: GameCreateStep[] = [
   { label: "基本情報", short: "基本", icon: PenLine },
   { label: "謎", short: "謎", icon: Search },
   { label: "クリア", short: "クリア", icon: Trophy },
   { label: "参加パス", short: "参加パス", icon: Ticket },
+  { label: "確認・公開", short: "公開", icon: Rocket },
 ];
 
 export function OrganizerMysteryCreateForm() {
@@ -506,6 +519,12 @@ export function OrganizerMysteryCreateForm() {
                 />
               </RewardCard>
             </RewardList>
+          </section>
+      ) : null}
+      {page === 4 ? (
+          <section className="org-quiz__card" aria-labelledby="mystery-publish">
+            <h2 id="mystery-publish">確認・公開</h2>
+            <p>まちの情報に出るカードを確かめて、下の「公開する」で公開します。</p>
             <GameCardSetup
               type="mystery"
               typeLabel="謎解き街歩き"
