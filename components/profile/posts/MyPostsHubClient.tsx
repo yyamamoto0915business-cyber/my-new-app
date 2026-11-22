@@ -386,7 +386,8 @@ export function MyPostsHubClient({ authorId }: { authorId?: string } = {}) {
 
         <div className="mg-album-controls">
           {showPostTools && (!isForeign || (!locked && !showSkeleton)) ? (
-            <div className="mg-album-toolbar">
+            // スマホ・タブレット縦では、写真の一覧をすぐ見せるため絞り込み・並び順は出さない（PC だけ）。
+            <div className="mg-album-toolbar max-[899px]:!hidden">
               <MyAlbumFilterBar
                 category={category}
                 onCategory={setCategory}
