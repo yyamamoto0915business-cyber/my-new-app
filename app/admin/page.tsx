@@ -8,6 +8,7 @@ import {
   AdminTodoCard,
 } from "@/components/admin/AdminActivityList";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
+import { AdminMobileMore } from "@/components/admin/AdminMobileMore";
 import { getPanelDashboard } from "@/lib/admin/panel-queries";
 import { contactCategoryLabel } from "@/lib/contact";
 
@@ -20,6 +21,11 @@ function actionLabel(type: string): string {
     unset_featured: "注目主催者を解除",
     update_event_status: "イベント公開状態を変更",
     update_inquiry_status: "問い合わせを更新",
+    grant_unlimited: "プランを無期限付与",
+    dismiss_report: "通報を対応済みに",
+    hide_reported_content: "通報された投稿を非表示",
+    update_reason: "理由を更新",
+    update_recruitment_status: "募集の公開状態を変更",
   };
   return map[type] ?? type;
 }
@@ -61,48 +67,56 @@ export default async function AdminDashboardPage() {
         description="サービス全体の状況と、優先対応項目を確認できます。"
       />
 
-      <section>
-        <h2 className="mb-2 text-sm font-bold text-[#173f2c]">今すぐ対応すること</h2>
-        <div className="grid grid-cols-2 gap-2 min-[768px]:flex min-[768px]:flex-wrap">
-          <AdminTodoCard
-            href="/admin/support"
-            label="未対応の問い合わせ"
-            count={data.openInquiries}
-            tone="danger"
-          />
-          <AdminTodoCard
-            href="/admin/reviews"
-            label="本人確認の審査"
-            count={data.todoIdentity}
-            tone="warning"
-          />
-          <AdminTodoCard
-            href="/admin/reviews?tab=events"
-            label="イベント承認待ち"
-            count={data.todoEventReview}
-            tone="info"
-          />
-          <AdminTodoCard
-            href="/admin/support?tab=reports"
-            label="通報・報告"
-            count={data.todoReports}
-            tone="danger"
-          />
-          <AdminTodoCard
-            href="/admin/passes?tab=refunds"
-            label="返金確認"
-            count={data.todoRefunds}
-            tone="warning"
-          />
-        </div>
-      </section>
+      {(() => {
+        const todos = [
+          { href: "/admin/support", label: "未対応の問い合わせ", count: data.openInquiries, tone: "danger" as const },
+          { href: "/admin/reviews", label: "本人確認の審査", count: data.todoIdentity, tone: "warning" as const },
+          { href: "/admin/reviews?tab=events", label: "イベント承認待ち", count: data.todoEventReview, tone: "info" as const },
+          { href: "/admin/support?tab=reports", label: "通報・報告", count: data.todoReports, tone: "danger" as const },
+          { href: "/admin/passes?tab=refunds", label: "返金確認", count: data.todoRefunds, tone: "warning" as const },
+        ];
+        const active = todos.filter((t) => t.count > 0);
+        const idle = todos.filter((t) => t.count === 0);
+        return (
+          <section>
+            <h2 className="mb-2 text-sm font-bold text-[#173f2c]">今すぐ対応すること</h2>
+            {/* スマホ：対応が要るものだけカードで出し、0件のものは1行にまとめる */}
+            <div className="space-y-2 min-[768px]:hidden">
+              {active.length === 0 ? (
+                <p className="rounded-xl border border-[#d4e6da] bg-white px-4 py-3 text-[13.5px] font-semibold text-[#2f6b4a]">
+                  ✓ いま対応が必要なことはありません
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {active.map((t) => (
+                    <AdminTodoCard key={t.href} href={t.href} label={t.label} count={t.count} tone={t.tone} />
+                  ))}
+                </div>
+              )}
+              {active.length > 0 && idle.length > 0 ? (
+                <p className="px-1 text-[12px] text-[#6b776f]">
+                  0件：{idle.map((t) => t.label).join("・")}
+                </p>
+              ) : null}
+            </div>
+            {/* PC：5つを横に並べる（0件は灰色） */}
+            <div className="hidden gap-2 min-[768px]:grid min-[768px]:grid-cols-3 min-[1200px]:grid-cols-5">
+              {todos.map((t) => (
+                <AdminTodoCard key={t.href} href={t.href} label={t.label} count={t.count} tone={t.tone} />
+              ))}
+            </div>
+          </section>
+        );
+      })()}
 
-      <section className="grid grid-cols-3 gap-2.5">
-        <AdminStatCard label="登録ユーザー数" value={data.usersTotal} />
+      <section className="admin-stats grid grid-cols-3 gap-2.5">
+        <AdminStatCard label="ユーザー数" value={data.usersTotal} />
         <AdminStatCard label="主催者数" value={data.organizersTotal} />
-        <AdminStatCard label="公開イベント数" value={data.publishedEvents} tone="success" />
+        <AdminStatCard label="公開イベント" value={data.publishedEvents} tone="success" />
       </section>
 
+      {/* スマホ：最近の動き・サービス状況・最近のイベントはたたんでおく */}
+      <AdminMobileMore label="最近の動き・サービス状況を見る">
       <section className="grid gap-3 lg:grid-cols-3">
         <div className="rounded-lg border border-[#d8e8dc] bg-white p-3 shadow-sm lg:col-span-1">
           <div className="mb-2 flex items-center justify-between">
@@ -263,6 +277,7 @@ export default async function AdminDashboardPage() {
           ) : null}
         </div>
       </section>
+      </AdminMobileMore>
     </div>
   );
 }
