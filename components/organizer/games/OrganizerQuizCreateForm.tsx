@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameBasicsCarry } from "@/components/organizer/games/GamePlayStyleSwitch";
 import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
@@ -97,6 +98,7 @@ export function OrganizerQuizCreateForm() {
   /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
   const [passPreview, setPassPreview] = useState(false);
   const [description, setDescription] = useState("");
+  useGameBasicsCarry(name, description, setName, setDescription);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [events, setEvents] = useState<OrganizerGameEventOption[]>([]);

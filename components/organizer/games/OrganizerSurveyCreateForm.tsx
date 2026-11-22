@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameBasicsCarry } from "@/components/organizer/games/GamePlayStyleSwitch";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ClipboardList, PenLine, Plus, Rocket, Sparkles, Trash2 } from "lucide-react";
@@ -245,6 +246,7 @@ export function OrganizerSurveyCreateForm() {
   const [name, setName] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
   const [description, setDescription] = useState("みなさんの感想や意見を聞かせてください。");
+  useGameBasicsCarry(name, description, setName, setDescription);
   const [eventId, setEventId] = useState("");
   const [cardImage, setCardImage] = useState("");
   const [startDate, setStartDate] = useState(() => jstDate());

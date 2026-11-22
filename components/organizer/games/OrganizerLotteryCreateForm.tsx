@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameBasicsCarry } from "@/components/organizer/games/GamePlayStyleSwitch";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dices, Gift, PartyPopper, PenLine, Plus, Rocket, Sparkles, Trash2 } from "lucide-react";
@@ -199,6 +200,7 @@ export function OrganizerLotteryCreateForm() {
   const [name, setName] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
   const [description, setDescription] = useState("参加した人の中から、抽選で当選者を選びます。");
+  useGameBasicsCarry(name, description, setName, setDescription);
   const [eventId, setEventId] = useState("");
   const [cardImage, setCardImage] = useState("");
   const [startDate, setStartDate] = useState(() => jstDate());

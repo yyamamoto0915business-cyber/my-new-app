@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameBasicsCarry } from "@/components/organizer/games/GamePlayStyleSwitch";
 import { GAME_BASICS_EXAMPLES, GameBasicsExamples } from "@/components/organizer/games/GameBasicsExamples";
 import { POINTS_NEED_EVENT_HINT, POINTS_NEED_EVENT_MESSAGE } from "@/lib/organizer/points-need-event";
 import { useEffect, useMemo, useState } from "react";
@@ -174,6 +175,7 @@ export function OrganizerMissionCreateForm() {
   /** プレビューで参加パスを見ているか。参加パスの手順に来たら開く。 */
   const [passPreview, setPassPreview] = useState(false);
   const [description, setDescription] = useState("");
+  useGameBasicsCarry(name, description, setName, setDescription);
   // はじめは今日から1か月（過去の日付から始めない）。
   const [startDate, setStartDate] = useState(() => jstDate());
   const [endDate, setEndDate] = useState(() => jstDate(29));

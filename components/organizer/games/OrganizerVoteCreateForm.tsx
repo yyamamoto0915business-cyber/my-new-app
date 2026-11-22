@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameBasicsCarry } from "@/components/organizer/games/GamePlayStyleSwitch";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ListChecks, PenLine, Rocket, Send, Sparkles, Trophy } from "lucide-react";
@@ -282,6 +283,7 @@ export function OrganizerVoteCreateForm() {
   const [name, setName] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
   const [description, setDescription] = useState("案を出し合って、いちばん人気の案を投票で決めます。");
+  useGameBasicsCarry(name, description, setName, setDescription);
   const [eventId, setEventId] = useState("");
   const [cardImage, setCardImage] = useState("");
   const [startDate, setStartDate] = useState(() => jstDate());
