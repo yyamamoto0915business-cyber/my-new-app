@@ -338,9 +338,11 @@ const HUB_DATA_CSS = `
 
 export function OrganizerGamesHub() {
   const router = useRouter();
-  // スマホでは、ゲームの一覧は「掲載管理」のゲーム、作るのは「新しく掲載」、効果はダッシュボードにあるので、掲載管理へ移す
+  // ゲームの一覧は「掲載管理」のゲーム、作るのは「新しく掲載」にまとめたので、掲載管理へ移す（スマホ・PC 共通）
   useEffect(() => {
-    if (window.matchMedia("(max-width: 899px)").matches) router.replace("/organizer/listings?kind=game");
+    // 「新しく掲載 → ゲーム」（?pick=1）は種類えらびとして使うので移さない
+    if (new URLSearchParams(window.location.search).get("pick") === "1") return;
+    router.replace("/organizer/listings?kind=game");
   }, [router]);
   const listRef = useRef<HTMLElement>(null);
   const templatesRef = useRef<HTMLElement>(null);
