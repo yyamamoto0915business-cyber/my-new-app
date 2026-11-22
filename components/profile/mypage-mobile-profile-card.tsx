@@ -85,6 +85,7 @@ function StatCell({ label, shortLabel, href, icon }: StatItem) {
       href={href}
       className="flex min-h-[64px] min-w-0 flex-1 flex-col items-center justify-start gap-1 bg-[#ffffff] px-1 py-2 text-center transition-colors hover:bg-[#f7faf8] active:bg-[#eaf4ee] min-[900px]:min-h-[36px] min-[900px]:flex-none min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-center min-[900px]:gap-1.5 min-[900px]:rounded-full min-[900px]:bg-white/70 min-[900px]:px-2 min-[900px]:py-1 min-[900px]:hover:bg-white"
       aria-label={label}
+      title={label}
     >
       <div
         className="flex h-9 w-9 items-center justify-center rounded-full min-[900px]:h-8 min-[900px]:w-8"
@@ -92,9 +93,9 @@ function StatCell({ label, shortLabel, href, icon }: StatItem) {
       >
         {icon}
       </div>
-      <p className="min-h-[2.4em] max-w-[4.75rem] text-[11px] font-medium leading-snug tracking-[0.02em] text-[#5c5a56] min-[900px]:min-h-0 min-[900px]:max-w-none min-[900px]:text-[12px]">
+      <p className="min-h-[2.4em] max-w-[4.75rem] text-[11px] font-medium leading-snug tracking-[0.02em] text-[#5c5a56] min-[900px]:min-h-0 min-[900px]:max-w-none min-[900px]:text-[12px] min-[900px]:max-[1279px]:hidden">
         <span className="min-[900px]:hidden">{label}</span>
-        <span className="hidden min-[900px]:inline">{shortLabel}</span>
+        <span className="hidden min-[1280px]:inline">{shortLabel}</span>
       </p>
     </Link>
   );
@@ -274,8 +275,9 @@ export function MypageMobileProfileCard({
                 </div>
               ) : null}
 
+              {/* iPad 横など 1280px 未満は、ボタンを絵だけにして1行に収める（前は右の欄ごと画面の外にはみ出していた） */}
               <nav
-                className="hidden min-w-0 shrink-0 items-center gap-0.5 min-[900px]:flex"
+                className="hidden shrink-0 items-center gap-0.5 min-[900px]:flex"
                 aria-label="マイページメニュー"
               >
                 {statItems.map((item) => (
