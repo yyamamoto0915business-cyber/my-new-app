@@ -2733,3 +2733,12 @@ body.has-edit-sheet .wizard-preview-sheet .wizard-preview__stage {
   color: #3d4a40;
   cursor: pointer;
 }
+
+/*
+ * プレビューの部品は、選んでいるものだけ指で動かせる（1回目のタップは選ぶだけ）。
+ * 選んでいない部品の上でも、画面のスクロールができるようにする。
+ */
+.game-phone.has-look-edit .play-look-head .rally-move:not(.is-active),
+.game-phone.has-look-edit .play-join > .rally-move:not(.is-active) {
+  touch-action: pan-y;
+}

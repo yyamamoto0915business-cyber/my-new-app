@@ -277,7 +277,7 @@ export function StartEditPanel({
 
       {selection === "mascot" || selection === "info" ? (
         <div className="edit-panel__rows">
-          <p className="edit-panel__note edit-panel__note--show">押したままドラッグで移動</p>
+          <p className="edit-panel__note edit-panel__note--show">選んでいるものをドラッグで移動</p>
           {resetButton}
         </div>
       ) : null}
@@ -625,7 +625,7 @@ export function MomentEditPanel({
       selection === "title" ||
       (selection === "msg" && screen === "clear") ? (
         <div className="edit-panel__rows">
-          <p className="edit-panel__note edit-panel__note--show">押したままドラッグで移動</p>
+          <p className="edit-panel__note edit-panel__note--show">選んでいるものをドラッグで移動</p>
           {resetButton}
         </div>
       ) : null}

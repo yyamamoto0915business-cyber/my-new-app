@@ -436,7 +436,8 @@ export function ClearLayer({
           set("outline", active ? "2px solid #1f7a4a" : "1.5px dashed rgba(29, 42, 34, 0.25)");
           set("outline-offset", "3px");
           set("cursor", "grab");
-          if (!el.matches(NO_DRAG) && !el.querySelector(NO_DRAG)) set("touch-action", "none");
+          // 選んでいる部品だけ、指で動かせるようにする（ほかは画面のスクロールを優先）
+          if (active && !el.matches(NO_DRAG) && !el.querySelector(NO_DRAG)) set("touch-action", "none");
           // ドラッグで文字が選択されて青くならないように。
           set("user-select", "none");
           set("-webkit-user-select", "none");
@@ -464,7 +465,10 @@ export function ClearLayer({
     const index = blocks.findIndex((el) => el.contains(event.target as Node));
     if (index < 0) return;
     const key = blockKeys(blocks, screen)[index];
+    // 1回目のタップは選ぶだけ。選んである部品を押したときだけ動かす（少し触れただけで動かないように）
+    const wasActive = handler.active === key;
     handler.onSelect(key);
+    if (!wasActive) return;
     if ((event.target as Element).closest(NO_DRAG)) return;
     const card = container.closest<HTMLElement>(".play-game__card") ?? container;
     const rect = card.getBoundingClientRect();
@@ -474,7 +478,7 @@ export function ClearLayer({
     let started = false;
     const onMove = (ev: PointerEvent) => {
       if (!started) {
-        if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 6) return;
+        if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 10) return;
         started = true;
       }
       ev.preventDefault();
