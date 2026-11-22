@@ -347,8 +347,8 @@ export function OrganizerGameEditor() {
     return (
       <div className="space-y-3">
         <p className="text-[13px] text-[#566358]">{error ?? "ゲームが見つかりません"}</p>
-        <Link href="/organizer/games" className="text-[13px] font-semibold text-[#2D7A4F]">
-          ゲーム機能に戻る
+        <Link href="/organizer/listings?kind=game" className="text-[13px] font-semibold text-[#2D7A4F]">
+          掲載管理に戻る
         </Link>
       </div>
     );
@@ -384,17 +384,10 @@ export function OrganizerGameEditor() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 min-[1100px]:max-w-none">
-      <Link
-        href="/organizer/games"
-        className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline max-[899px]:hidden"
-      >
-        <ArrowLeft className="size-3.5" strokeWidth={2.4} aria-hidden />
-        ゲーム機能に戻る
-      </Link>
       {/* スマホはゲームの一覧が掲載管理にあるので、そこへ戻る */}
       <Link
         href="/organizer/listings?kind=game"
-        className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline min-[900px]:hidden"
+        className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2D7A4F] hover:underline"
       >
         <ArrowLeft className="size-3.5" strokeWidth={2.4} aria-hidden />
         掲載管理に戻る

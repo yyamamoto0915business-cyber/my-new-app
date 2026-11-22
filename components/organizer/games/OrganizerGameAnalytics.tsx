@@ -186,8 +186,8 @@ export function OrganizerGameAnalytics() {
     return (
       <div className="org-ga__empty">
         <p>{error ?? "分析が見つかりません"}</p>
-        <Link href="/organizer/games" className="org-games__create">
-          ゲーム機能に戻る
+        <Link href="/organizer/listings?kind=game" className="org-games__create">
+          掲載管理に戻る
         </Link>
       </div>
     );

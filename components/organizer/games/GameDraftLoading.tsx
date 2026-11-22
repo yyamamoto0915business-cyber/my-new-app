@@ -10,8 +10,8 @@ export function GameDraftLoading({ error }: { error: string | null }) {
       {error ? (
         <>
           <p className="font-semibold text-[#b42318]">{error}</p>
-          <Link href="/organizer/games" className="mt-3 inline-block font-semibold text-[#2D7A4F] hover:underline">
-            ゲーム機能に戻る
+          <Link href="/organizer/listings?kind=game" className="mt-3 inline-block font-semibold text-[#2D7A4F] hover:underline">
+            掲載管理に戻る
           </Link>
         </>
       ) : (

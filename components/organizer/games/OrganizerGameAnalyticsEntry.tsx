@@ -33,8 +33,8 @@ export function OrganizerGameAnalyticsEntry() {
       <BarChart3 className="h-7 w-7" aria-hidden />
       <p>{missing ? "まだ分析できるゲームがありません" : "分析できるゲームを探しています…"}</p>
       <p>ゲームを作ると、参加者が地域をどう歩いたかが見えるようになります。</p>
-      <Link href="/organizer/games" className="org-games__create">
-        ゲーム機能に戻る
+      <Link href="/organizer/listings?kind=game" className="org-games__create">
+        掲載管理に戻る
       </Link>
     </div>
   );

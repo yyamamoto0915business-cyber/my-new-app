@@ -11,15 +11,17 @@ import {
   MapPin,
   HelpCircle,
   CalendarDays,
-  CalendarCheck,
+  House,
   Plus,
-  Wallet,
-  Gamepad2,
   MessageCircle,
   UserRound,
 } from "lucide-react";
 import { isOrganizerDashboardPath } from "@/lib/top-mode-active";
-import { ORGANIZER_NEW_LISTING_HREF, organizerBottomNavActive } from "@/lib/organizer/organizer-nav";
+import {
+  ORGANIZER_MOBILE_HOME_HREF,
+  ORGANIZER_NEW_LISTING_HREF,
+  organizerBottomNavActive,
+} from "@/lib/organizer/organizer-nav";
 import { ORGANIZER_MESSAGES_HREF } from "@/lib/messages-scope";
 import { shouldHidePcGlobalNav } from "@/lib/is-auth-route";
 import { ParticipationPassIcon } from "@/components/pass/ParticipationPassIcon";
@@ -34,47 +36,28 @@ const DESKTOP_NAV_ITEMS = [
   { href: "/profile", label: "マイページ", icon: "profile" },
 ] as const;
 
-/** 主催者モードの左メニュー（スマホの下のナビと同じ考え方に、PC でよく使うレジ・ゲームを足す） */
+/** 主催者モードの左メニュー。スマホの下のナビと同じ5つ（当日の運営・レジ・ゲームはホームから・ゲームは掲載管理に入る） */
 const ORGANIZER_NAV_ITEMS = [
-  { href: "/organizer/listings", label: "掲載管理", icon: "o-listings" },
-  { href: "/organizer", label: "当日の運営", icon: "o-day" },
-  { href: ORGANIZER_NEW_LISTING_HREF, label: "新しく掲載", icon: "o-new" },
-  { href: "/organizer/pos", label: "レジ", icon: "o-pos" },
-  { href: "/organizer/games", label: "ゲーム", icon: "o-game" },
-  { href: ORGANIZER_MESSAGES_HREF, label: "チャット", icon: "o-chat" },
-  { href: "/organizer/settings", label: "マイページ", icon: "o-settings" },
+  { href: ORGANIZER_MOBILE_HOME_HREF, label: "ホーム", icon: "o-home", id: "home" },
+  { href: "/organizer/listings", label: "掲載管理", icon: "o-listings", id: "listings" },
+  { href: ORGANIZER_NEW_LISTING_HREF, label: "新しく掲載", icon: "o-new", id: "new" },
+  { href: ORGANIZER_MESSAGES_HREF, label: "チャット", icon: "o-chat", id: "chat" },
+  { href: "/organizer/settings", label: "マイページ", icon: "o-settings", id: "mypage" },
 ] as const;
 
 const ORGANIZER_ICONS = {
+  "o-home": House,
   "o-listings": CalendarDays,
-  "o-day": CalendarCheck,
   "o-new": Plus,
-  "o-pos": Wallet,
-  "o-game": Gamepad2,
   "o-chat": MessageCircle,
   "o-settings": UserRound,
 } as const;
 
-/** 掲載管理の中の画面（イベント・お店・募集などの管理・編集）も「掲載管理」を光らせる */
-const ORGANIZER_LISTING_PREFIXES = [
-  "/organizer/listings",
-  "/organizer/events",
-  "/organizer/stores",
-  "/organizer/kitchen-cars",
-  "/organizer/recruitments",
-  "/organizer/stories",
-  "/organizer/articles",
-];
-
+/** スマホの下のナビと同じ決まりで、いまのページがどの項目に入るかを決める */
 function isOrganizerItemActive(pathname: string, href: string): boolean {
-  const isNew = organizerBottomNavActive(pathname) === "new";
-  if (href === ORGANIZER_NEW_LISTING_HREF) return isNew;
-  if (isNew) return false;
-  if (href === "/organizer") return pathname === "/organizer" || pathname === "/organizer/home";
-  if (href === "/organizer/listings") {
-    return ORGANIZER_LISTING_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-  }
-  return pathname === href || pathname.startsWith(`${href}/`);
+  const id = organizerBottomNavActive(pathname);
+  const item = ORGANIZER_NAV_ITEMS.find((i) => i.href === href);
+  return Boolean(item && id === item.id);
 }
 
 function NavIcon({ icon, active }: { icon: string; active: boolean }) {
