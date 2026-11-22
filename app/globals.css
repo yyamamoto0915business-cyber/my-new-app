@@ -40240,3 +40240,16 @@ button.mg-album-place {
   color: #1f6a42;
   box-shadow: none;
 }
+
+/* イベント詳細（スマホ）：地図・カレンダー・相談のボタンを横向きの低いボタンにして、縦の長さを減らす */
+.mg-event-detail .ed-sub-btn {
+  flex-direction: row;
+  gap: 0.35rem;
+  padding: 0.5rem 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.mg-event-detail .ed-sub-btn .ed-sub-btn-icon {
+  height: 1.6rem;
+  width: 1.6rem;
+}
