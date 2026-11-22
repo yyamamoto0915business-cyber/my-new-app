@@ -40040,3 +40040,17 @@ button.mg-album-place {
     grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
   }
 }
+
+/* ゲーム作成：開催期間の日付の欄が、列の幅を越えて白いカードからはみ出さないように */
+@media (min-width: 721px) {
+  .org-mission__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.org-mission__dates {
+  min-width: 0;
+}
+.org-mission__dates input[type="date"] {
+  flex: 1 1 0;
+  min-width: 0;
+}
