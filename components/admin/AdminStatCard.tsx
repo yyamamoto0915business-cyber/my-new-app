@@ -34,7 +34,7 @@ export function AdminStatCard({
       <div className="flex items-center justify-between gap-2">
         <div className="text-[11px] font-medium text-[#7a9888]">{label}</div>
         {icon ? (
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#eaf2ec] text-[#1e3848]">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#eaf2ec] text-[#173f2c]">
             {icon}
           </div>
         ) : null}

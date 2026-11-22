@@ -27,7 +27,7 @@ export function AdminActivityList({
     <ul className="divide-y divide-[#eef4f0]">
       {items.map((item) => (
         <li key={item.id} className="flex gap-2 py-1.5 first:pt-0 last:pb-0">
-          <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1e3848]" />
+          <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#173f2c]" />
           <div className="min-w-0 flex-1">
             <p className="text-xs text-[#0e1610]">{item.actionLabel}</p>
             <p className="mt-0.5 text-[10px] text-[#7a9888]">
@@ -61,13 +61,17 @@ export function AdminTodoCard({
     success: "border-emerald-200 bg-emerald-50 text-emerald-900",
   } as const;
 
+  // 0件のときは目立たせない（対応が要るものだけ色をつける）
+  const zero = count === 0;
   return (
     <Link
       href={href}
-      className={`flex min-w-[9rem] flex-1 items-center justify-between gap-2 rounded-lg border px-3 py-2 transition hover:opacity-90 ${tones[tone]}`}
+      className={`flex min-w-[11rem] flex-1 items-center justify-between gap-3 rounded-xl border px-4 py-3 transition hover:opacity-90 ${
+        zero ? "border-[#e6e2d6] bg-white text-[#6b776f]" : `${tones[tone]} shadow-sm`
+      }`}
     >
-      <span className="text-[11px] font-medium opacity-80">{label}</span>
-      <span className="text-lg font-semibold tabular-nums">
+      <span className="text-[13px] font-semibold">{label}</span>
+      <span className={`text-2xl font-bold tabular-nums ${zero ? "text-[#b8beb9]" : ""}`}>
         {count.toLocaleString("ja-JP")}
       </span>
     </Link>

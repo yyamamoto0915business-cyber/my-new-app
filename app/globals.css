@@ -40123,3 +40123,21 @@ button.mg-album-place {
     align-items: start !important;
   }
 }
+
+/*
+ * 管理者画面：文字が小さく読みにくかったので、管理者画面の中だけひと回り大きくする。
+ * （部品ごとの text-[10px] などを、ここでまとめて読み替える）
+ */
+.mg-admin .text-\[9px\] { font-size: 11px; }
+.mg-admin .text-\[10px\] { font-size: 12px; }
+.mg-admin .text-\[11px\] { font-size: 13px; }
+.mg-admin .text-xs { font-size: 13.5px; line-height: 1.5; }
+.mg-admin .text-sm { font-size: 14.5px; line-height: 1.6; }
+.mg-admin .text-base { font-size: 16.5px; }
+.mg-admin .text-lg { font-size: 21px; }
+.mg-admin .text-xl { font-size: 24px; }
+.mg-admin main table td,
+.mg-admin main table th {
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}

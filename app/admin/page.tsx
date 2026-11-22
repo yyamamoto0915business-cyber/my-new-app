@@ -61,32 +61,15 @@ export default async function AdminDashboardPage() {
         description="サービス全体の状況と、優先対応項目を確認できます。"
       />
 
-      <section className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
-        <AdminStatCard label="登録ユーザー数" value={data.usersTotal} />
-        <AdminStatCard label="主催者数" value={data.organizersTotal} />
-        <AdminStatCard label="公開イベント数" value={data.publishedEvents} tone="success" />
-        <AdminStatCard
-          label="本人確認待ち"
-          value={data.identityPending}
-          helper="準備中"
-          tone="warning"
-        />
-        <AdminStatCard
-          label="イベント審査待ち"
-          value={data.eventReviewPending}
-          helper="準備中"
-          tone="warning"
-        />
-        <AdminStatCard
-          label="未対応問い合わせ"
-          value={data.openInquiries}
-          tone={data.openInquiries > 0 ? "danger" : "default"}
-        />
-      </section>
-
       <section>
-        <h2 className="mb-1.5 text-xs font-semibold text-[#0e1610]">要対応</h2>
+        <h2 className="mb-2 text-sm font-bold text-[#173f2c]">今すぐ対応すること</h2>
         <div className="flex flex-wrap gap-2">
+          <AdminTodoCard
+            href="/admin/support"
+            label="未対応の問い合わせ"
+            count={data.openInquiries}
+            tone="danger"
+          />
           <AdminTodoCard
             href="/admin/reviews"
             label="本人確認の審査"
@@ -114,6 +97,12 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
+      <section className="grid grid-cols-3 gap-2.5">
+        <AdminStatCard label="登録ユーザー数" value={data.usersTotal} />
+        <AdminStatCard label="主催者数" value={data.organizersTotal} />
+        <AdminStatCard label="公開イベント数" value={data.publishedEvents} tone="success" />
+      </section>
+
       <section className="grid gap-3 lg:grid-cols-3">
         <div className="rounded-lg border border-[#d8e8dc] bg-white p-3 shadow-sm lg:col-span-1">
           <div className="mb-2 flex items-center justify-between">
@@ -122,7 +111,7 @@ export default async function AdminDashboardPage() {
             </h2>
             <Link
               href="/admin/support"
-              className="text-[11px] text-[#1e3848] hover:underline"
+              className="text-[11px] text-[#173f2c] hover:underline"
             >
               すべて
             </Link>
@@ -198,7 +187,7 @@ export default async function AdminDashboardPage() {
             </h2>
             <Link
               href="/admin/settings?tab=logs"
-              className="text-[11px] text-[#1e3848] hover:underline"
+              className="text-[11px] text-[#173f2c] hover:underline"
             >
               ログ
             </Link>
@@ -222,7 +211,7 @@ export default async function AdminDashboardPage() {
           </h2>
           <Link
             href="/admin/events"
-            className="text-[11px] text-[#1e3848] hover:underline"
+            className="text-[11px] text-[#173f2c] hover:underline"
           >
             イベント管理
           </Link>
@@ -258,7 +247,7 @@ export default async function AdminDashboardPage() {
                   <td className="px-2 py-2 text-right">
                     <Link
                       href={`/admin/events?focus=${ev.id}`}
-                      className="text-[11px] text-[#1e3848] hover:underline"
+                      className="text-[11px] text-[#173f2c] hover:underline"
                     >
                       詳細
                     </Link>

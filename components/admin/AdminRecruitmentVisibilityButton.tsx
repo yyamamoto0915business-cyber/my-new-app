@@ -58,8 +58,8 @@ export function AdminRecruitmentVisibilityButton({
         onClick={() => setOpen(true)}
         className={
           compact
-            ? "rounded-md border border-[#c8dcd0] bg-white px-2 py-0.5 text-[11px] text-[#1e3848] hover:bg-[#eaf2ec]"
-            : "rounded-lg border border-[#c8dcd0] bg-white px-2.5 py-1.5 text-xs text-[#1e3848] hover:bg-[#eaf2ec]"
+            ? "rounded-md border border-[#c8dcd0] bg-white px-2 py-0.5 text-[11px] text-[#173f2c] hover:bg-[#eaf2ec]"
+            : "rounded-lg border border-[#c8dcd0] bg-white px-2.5 py-1.5 text-xs text-[#173f2c] hover:bg-[#eaf2ec]"
         }
       >
         {compact ? label : fullLabel}

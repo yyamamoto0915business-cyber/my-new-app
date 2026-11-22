@@ -133,7 +133,7 @@ export default async function AdminReviewsPage({
                     <td className="px-4 py-3.5 text-right">
                       <Link
                         href="/admin/events"
-                        className="text-xs text-[#1e3848] hover:underline"
+                        className="text-xs text-[#173f2c] hover:underline"
                       >
                         イベント管理へ
                       </Link>
