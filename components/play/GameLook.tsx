@@ -555,7 +555,9 @@ export function GameSceneBand({
       </div>
     );
   }
-  if (scene === "start") {
+  // 進み具合のないプレイ中（投票・抽選・アンケートなど）は、スタートと同じ帯にする。
+  // 前はここを通らずにクリアの帯（「おめでとう！」「クリア！」）が出てしまっていた。
+  if (scene === "start" || scene === "play") {
     const band = look?.band ?? DEFAULT_GAME_BAND;
     const Mark = BAND_MARK_ICON[band.mark];
     return (
