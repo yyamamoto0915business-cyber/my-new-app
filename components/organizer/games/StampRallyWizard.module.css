@@ -2417,7 +2417,7 @@
 
 /* PC でサイドバーを閉じたとき：空いた横幅で、右の半分をプレビューに使う。 */
 @media (min-width: 1080px) {
-  :global(html[data-org-sidebar="closed"]) .layout {
+  :global(html:not([data-org-sidebar="open"])) .layout {
     grid-template-columns: minmax(0, 1fr) 50%;
   }
 }
@@ -2565,7 +2565,7 @@
  */
 @media (min-width: 1080px) and (max-width: 1279px) {
   .layout,
-  :global(html[data-org-sidebar="closed"]) .layout {
+  :global(html:not([data-org-sidebar="open"])) .layout {
     grid-template-columns: minmax(0, 1fr) 22rem;
   }
 }
