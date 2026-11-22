@@ -1483,3 +1483,28 @@
     font-size: 26px;
   }
 }
+
+/* 種類えらび：重なっていた見出し（「ゲームの種類」の行）を出さず、全部の種類への入口は下に小さく */
+.org-hub.is-pick-only .org-hub__mobile-templates-head,
+.org-hub.is-pick-only .org-hub-pc__section--templates > .org-hub-pc__head {
+  display: none !important;
+}
+.org-game-pick__all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.9rem auto 0.2rem;
+  border: 0;
+  background: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #5f6d64;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.org-hub.is-pick-only .org-hub__mobile-templates,
+.org-hub.is-pick-only .org-hub-pc__section--templates {
+  display: flex;
+  flex-direction: column;
+}
+.org-hub.is-pick-only .org-game-pick__head { padding-bottom: 0.2rem; }
