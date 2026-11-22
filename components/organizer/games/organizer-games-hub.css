@@ -1425,3 +1425,61 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/*
+ * 「新しく掲載 → ゲーム」（?pick=1）：種類を選ぶ部分だけ。
+ * 見出し・大きな帯・データ・作ったゲームの一覧は、掲載管理・各ゲームの画面と重なるので隠す。
+ */
+.org-game-pick__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-top: 0.25rem;
+}
+
+.org-game-pick__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.4rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2d7a4f;
+  text-decoration: none;
+}
+
+.org-game-pick__title {
+  margin: 0.15rem 0 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #173f2c;
+}
+
+.org-game-pick__lead {
+  margin: 0.2rem 0 0;
+  font-size: 13px;
+  color: #6a7568;
+}
+
+.org-hub.is-pick-only .org-hub__mobile-home > header,
+.org-hub.is-pick-only .org-hub-pc__intro,
+.org-hub.is-pick-only .org-hub-pc__hero,
+.org-hub.is-pick-only .org-hub-pc__section:not(.org-hub-pc__section--templates),
+.org-hub.is-pick-only > .org-hub__section {
+  display: none !important;
+}
+
+.org-hub.is-pick-only .org-hub-pc__section--templates .org-hub-pc__kicker {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .org-hub.is-pick-only {
+    max-width: 1040px;
+    margin-inline: auto;
+  }
+  .org-game-pick__title {
+    font-size: 26px;
+  }
+}

@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   BarChart3,
@@ -336,7 +337,7 @@ const HUB_DATA_CSS = `
 }
 `;
 
-export function OrganizerGamesHub() {
+export function OrganizerGamesHub({ pickOnly = false }: { pickOnly?: boolean } = {}) {
   const router = useRouter();
   // ゲームの一覧は「掲載管理」のゲーム、作るのは「新しく掲載」にまとめたので、掲載管理へ移す（スマホ・PC 共通）
   useEffect(() => {
@@ -434,7 +435,21 @@ export function OrganizerGamesHub() {
   }, []);
 
   return (
-    <div className="org-hub">
+    <div className={cn("org-hub", pickOnly && "is-pick-only")}>
+      {/* 「新しく掲載 → ゲーム」から来たとき：種類を選ぶ部分だけを出す（見出し・大きな帯・作ったゲームの一覧は掲載管理などと重なるので隠す） */}
+      {pickOnly ? (
+        <header className="org-game-pick__head">
+          <Link href="/organizer/new" className="org-game-pick__back">
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+            新しく掲載に戻る
+          </Link>
+          <OrgEyebrow>NEW GAME</OrgEyebrow>
+          <h1 className="org-game-pick__title" style={{ fontFamily: ORG_SERIF }}>
+            ゲームの種類を選ぶ
+          </h1>
+          <p className="org-game-pick__lead">やりたいことを選ぶと、合うひな形が出ます。自由に組み合わせて作ることもできます。</p>
+        </header>
+      ) : null}
       <div className="org-hub__mobile-home">
         {/* 見出し・作るボタン（前は「ゲームを作る」「作成したゲーム」「データ」の大きな箱が3つ並んでいた。一覧はすぐ下にあるので1つにまとめた） */}
         <header className="pt-1">
@@ -636,7 +651,7 @@ export function OrganizerGamesHub() {
           />
         </section>
 
-        <section className="org-hub-pc__section" aria-labelledby="org-hub-pc-templates-heading">
+        <section className="org-hub-pc__section org-hub-pc__section--templates" aria-labelledby="org-hub-pc-templates-heading">
           <div className="org-hub-pc__head">
             <p className="org-hub-pc__kicker">TEMPLATES</p>
             <h2 id="org-hub-pc-templates-heading">ゲームテンプレート</h2>
