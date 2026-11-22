@@ -181,10 +181,11 @@ export function getThisWeekendEvents(events: Event[], limit = 8): Event[] {
 /**
  * ホーム「過去のイベント」用。直近に終了したイベントを日付降順で返す。
  */
+/** ホームの「過去のイベント」：終わってから1年以内を、新しい順に（イベントが少ないうちも、まちの活動が伝わるように） */
 export function getPastEvents(
   events: Event[],
   limit = 5,
-  pastDays = 180
+  pastDays = 365
 ): Event[] {
   const pastCutoff = getPastCutoffYmd(pastDays);
   return events
