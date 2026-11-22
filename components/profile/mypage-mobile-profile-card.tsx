@@ -93,9 +93,9 @@ function StatCell({ label, shortLabel, href, icon }: StatItem) {
       >
         {icon}
       </div>
-      <p className="min-h-[2.4em] max-w-[4.75rem] text-[11px] font-medium leading-snug tracking-[0.02em] text-[#5c5a56] min-[900px]:min-h-0 min-[900px]:max-w-none min-[900px]:text-[12px] min-[900px]:max-[1279px]:hidden">
+      <p className="min-h-[2.4em] max-w-[4.75rem] text-[11px] font-medium leading-snug tracking-[0.02em] text-[#5c5a56] min-[900px]:min-h-0 min-[900px]:max-w-none min-[900px]:text-[12px] min-[900px]:hidden">
         <span className="min-[900px]:hidden">{label}</span>
-        <span className="hidden min-[1280px]:inline">{shortLabel}</span>
+        <span className="hidden">{shortLabel}</span>
       </p>
     </Link>
   );
@@ -275,7 +275,7 @@ export function MypageMobileProfileCard({
                 </div>
               ) : null}
 
-              {/* iPad 横など 1280px 未満は、ボタンを絵だけにして1行に収める（前は右の欄ごと画面の外にはみ出していた） */}
+              {/* PC：マイページは中央の細い列なので、ボタンは絵だけにして1行に収める（マウスを重ねると名前が出る） */}
               <nav
                 className="hidden shrink-0 items-center gap-0.5 min-[900px]:flex"
                 aria-label="マイページメニュー"

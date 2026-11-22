@@ -13,14 +13,12 @@ import { createClient } from "@/lib/supabase/client";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 import { useRouter } from "next/navigation";
 import { SupabaseSetupGuide } from "@/components/supabase-setup-guide";
-import { useScopedUnreadCount } from "@/hooks/use-scoped-unread-count";
 import { ProfilePageSkeleton } from "@/components/profile/ProfilePageSkeleton";
 import { MypageMobileProfileCard } from "@/components/profile/mypage-mobile-profile-card";
 import { MypageMobileOrganize } from "@/components/profile/mypage-mobile-organize";
 import { MypageMobileAlbum } from "@/components/profile/mypage-mobile-album";
 import { MypageNextEvent } from "@/components/profile/mypage-next-event";
 import { MypageMobileFooterLinks } from "@/components/profile/mypage-mobile-footer-links";
-import { MypagePcView } from "@/components/profile/mypage-pc-view";
 import {
   prefetchMypageSummary,
   resetMypageSummaryPrefetch,
@@ -114,7 +112,6 @@ function ProfileContent() {
   const [summary, setSummary] = useState<MypageSummaryResponse | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(true);
   const [noSupabase] = useState(() => createClient() === null);
-  const unreadCount = useScopedUnreadCount("member", !!user);
 
   useEffect(() => {
     if (!user) return;
@@ -178,7 +175,8 @@ function ProfileContent() {
 
       {user && (
         <>
-          <div className="mx-auto flex w-full max-w-screen-sm flex-col gap-2.5 px-4 pt-1.5 pb-4 min-[900px]:hidden">
+          {/* スマホ・PC 共通：同じ形（PC は中央にまとめる。主催者のマイページと同じ考え方） */}
+          <div className="mx-auto flex w-full max-w-screen-sm flex-col gap-2.5 px-4 pt-1.5 pb-4 min-[900px]:max-w-[760px] min-[900px]:gap-3 min-[900px]:px-6 min-[900px]:pt-5 min-[900px]:pb-10">
             <MypageMobileProfileCard
               displayName={displayName}
               avatarUrl={data.profile.avatarUrl}
@@ -263,24 +261,6 @@ function ProfileContent() {
             <MypageMobileFooterLinks />
           </div>
 
-          <MypagePcView
-            displayName={displayName}
-            avatarUrl={data.profile.avatarUrl}
-            bio={data.profile.bio}
-            region={data.profile.region}
-            counts={data.counts}
-            nextEvent={data.nextEvent}
-            nextVolunteer={data.nextVolunteer}
-            activity={data.activity}
-            unreadCount={unreadCount}
-            isOrganizerRegistered={data.profile.isOrganizerRegistered}
-            social={{
-              album: data.stats.posts,
-              followers: data.stats.followers,
-              following: data.stats.following,
-            }}
-            onLogout={handleLogout}
-          />
         </>
       )}
     </div>
