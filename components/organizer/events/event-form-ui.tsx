@@ -429,7 +429,7 @@ export function EventFormPcStepIndicator({
               <div
                 aria-hidden
                 className={[
-                  "h-0.5 w-6 shrink-0 rounded-full sm:w-8 max-[1279px]:!w-3",
+                  "h-0.5 w-6 shrink-0 rounded-full sm:w-8 max-[1439px]:!w-3",
                   current > n - 1 ? "bg-[#2f7d4e]" : "bg-[#d8d4cc]",
                 ].join(" ")}
               />

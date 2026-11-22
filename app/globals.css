@@ -40083,7 +40083,25 @@ button.mg-album-place {
     min-height: auto !important;
     overflow: visible !important;
     border-right: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+  }
+}
+
+/*
+ * 作成画面（PC・iPad 横）：区切りごとに白いカードにして、背景（生成り）との差で見やすく。
+ * 余白を少し詰めて、スクロールを減らす。
+ */
+@media (min-width: 900px) {
+  [data-event-form] .evf-main {
+    background: #f7f6f2 !important;
+  }
+  [data-event-form] .evf-cols {
+    gap: 14px;
+  }
+  [data-event-form] .evf-col {
+    background: #fff;
+    border: 1px solid #e6e2d6 !important;
+    border-radius: 18px;
+    padding: 18px 22px 20px !important;
+    box-shadow: 0 1px 4px rgba(23, 63, 44, 0.05);
   }
 }

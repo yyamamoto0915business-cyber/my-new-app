@@ -162,7 +162,7 @@ function PcStepBar({
         {/* 下書き保存・公開は、手順の帯と同じ1段に置く（前は2段目に分かれていた） */}
         {!hideActions ? (
           <div className="ml-auto flex shrink-0 items-center gap-2">
-        <div className="flex min-w-0 shrink-0 items-center gap-1.5 rounded-full max-[1279px]:!hidden border border-[#d0ccc4] bg-white px-3 py-1 text-[11px] text-[#5c5a54]">
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5 rounded-full max-[1439px]:!hidden border border-[#d0ccc4] bg-white px-3 py-1 text-[11px] text-[#5c5a54]">
           <strong className="font-semibold text-[#1a1a1a]">{planName}</strong>
           {planLabel && <span className="whitespace-nowrap">｜ {planLabel}</span>}
         </div>
@@ -170,7 +170,7 @@ function PcStepBar({
         <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2">
           <Link
             href="/organizer/listings?kind=event"
-            className="max-[1279px]:hidden rounded-[8px] border border-[#d0ccc4] bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#1a1a1a] hover:bg-[#f5f4f0]"
+            className="max-[1439px]:hidden rounded-[8px] border border-[#d0ccc4] bg-white px-3.5 py-1.5 text-[11px] font-medium text-[#1a1a1a] hover:bg-[#f5f4f0]"
           >
             キャンセル
           </Link>
