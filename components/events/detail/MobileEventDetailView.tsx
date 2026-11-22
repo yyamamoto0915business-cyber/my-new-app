@@ -240,7 +240,7 @@ export function MobileEventDetailView({
         </h1>
 
         {event.description ? (
-          <p className="line-clamp-3 text-[13.5px] leading-[1.7] text-[var(--ed-muted)]">
+          <p className="line-clamp-2 text-[13.5px] leading-[1.7] text-[var(--ed-muted)]">
             {event.description}
           </p>
         ) : null}
@@ -325,14 +325,14 @@ export function MobileEventDetailView({
               <span className="ed-sub-btn-icon">
                 <MapPin className="h-[18px] w-[18px]" aria-hidden />
               </span>
-              地図を開く
+              地図
             </a>
           ) : (
             <span className="ed-sub-btn ed-sub-btn-map opacity-40" aria-disabled>
               <span className="ed-sub-btn-icon">
                 <MapPin className="h-[18px] w-[18px]" aria-hidden />
               </span>
-              地図を開く
+              地図
             </span>
           )}
           <a
@@ -344,7 +344,7 @@ export function MobileEventDetailView({
             <span className="ed-sub-btn-icon">
               <CalendarDays className="h-[18px] w-[18px]" aria-hidden />
             </span>
-            カレンダーに追加
+            予定に追加
           </a>
           <button
             type="button"
@@ -355,7 +355,7 @@ export function MobileEventDetailView({
             <span className="ed-sub-btn-icon">
               <MessageCircle className="h-[18px] w-[18px]" aria-hidden />
             </span>
-            {consultOpening ? "準備中..." : "主催者に相談"}
+            {consultOpening ? "準備中..." : "相談する"}
           </button>
         </div>
 
