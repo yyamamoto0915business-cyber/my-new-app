@@ -487,10 +487,6 @@ function groupOf(item: Listing, today: string): GroupId {
 const SERIF = ORG_SERIF;
 
 /** 種類ごとの管理画面（申込者の確認・CSV など、一覧より細かい操作はここから） */
-const KIND_PAGES: { href: string; label: string; kind: Kind }[] = [
-  { href: "/organizer/stores", label: "お店の管理", kind: "store" },
-  { href: "/organizer/kitchen-cars", label: "キッチンカーの管理", kind: "kitchen" },
-];
 
 /** 主催者：掲載管理（スマホ、見本「02_掲載管理」）。種類をまたいで1つの一覧にする */
 export function OrganizerListingsMobile() {
@@ -498,7 +494,6 @@ export function OrganizerListingsMobile() {
   const [tab, setTab] = useState<Tab>("all");
   const [query, setQuery] = useState("");
   const [kindFilter, setKindFilter] = useState<Kind | "all">("all");
-  const [pagesOpen, setPagesOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   /** お店・募集の行の「…」で開いているもの */
   const [menuItem, setMenuItem] = useState<Listing | null>(null);
@@ -684,42 +679,9 @@ export function OrganizerListingsMobile() {
           >
             <Search className="h-[18px] w-[18px]" aria-hidden />
           </button>
-          <button
-            type="button"
-            onClick={() => setPagesOpen((v) => !v)}
-            aria-expanded={pagesOpen}
-            aria-label="種類ごとの管理画面"
-            className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-full border border-[#e3ece5] bg-white text-[#1f5e3a] shadow-[0_2px_6px_rgba(22,56,40,0.05)]",
-              pagesOpen && "border-[#1f6a42] bg-[#eaf4ed]"
-            )}
-          >
-            <LayoutGrid className="h-[18px] w-[18px]" aria-hidden />
-          </button>
         </div>
       </header>
 
-      {/* 種類ごとの管理画面（申込者の確認・CSV など、一覧より細かい操作）。右上のボタンで開く */}
-      {pagesOpen ? (
-        <nav aria-label="種類ごとの管理画面" className="mt-3 rounded-[18px] border border-[#ebeee8] bg-white p-2 shadow-[0_3px_12px_rgba(22,56,40,0.05)]">
-          <p className="px-1.5 pb-1.5 pt-0.5 text-[11.5px] font-bold text-[#6b776f]">種類ごとの管理画面（申込者の確認・CSV など）</p>
-          <ul className="grid grid-cols-2 gap-1.5 tablet:grid-cols-4">
-            {KIND_PAGES.map(({ href, label, kind }) => {
-              const { Icon, color, bg } = KIND_META[kind];
-              return (
-                <li key={href}>
-                  <Link href={href} className="flex min-h-[44px] flex-col items-start gap-1 rounded-[12px] bg-[#f7f9f6] px-2.5 py-2 active:bg-[#eef3ef] tablet:flex-row tablet:items-center tablet:gap-2">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ background: bg, color }}>
-                      <Icon className="h-[15px] w-[15px]" aria-hidden />
-                    </span>
-                    <span className="min-w-0 text-[12px] font-bold leading-tight text-[#163828]">{label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-      ) : null}
 
       {archiveMode ? (
         <section aria-label="アーカイブしたイベント" className="mt-3">
