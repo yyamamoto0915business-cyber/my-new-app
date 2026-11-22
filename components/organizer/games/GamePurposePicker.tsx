@@ -24,14 +24,14 @@ export function GamePurposePicker({ className }: { className?: string }) {
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] font-bold text-white">自由に組み合わせて作る</span>
-          <span className="mt-0.5 block text-[11.5px] text-[#dfe8e1]">行く・答える・集める・ごほうびを自由に組み合わせる</span>
+          <span className="mt-0.5 block text-[12px] leading-snug text-[#e4ece6]">好きな遊びを組み合わせて作る</span>
         </span>
         <ChevronRight className="h-5 w-5 shrink-0 text-[#e6d29b]" aria-hidden />
       </Link>
 
       <div>
-        <p className="text-[17px] font-bold text-[#163828]">やりたいことから作る</p>
-        <p className="text-[12.5px] text-[#5f6d64]">やりたいことを押すと、すぐ作りはじめられます。遊び方（スタンプ・チェックインなど）と見本は、作りながら選べます。</p>
+        <p className="text-[16px] font-bold text-[#163828]">やりたいことから作る</p>
+        <p className="text-[12.5px] leading-relaxed text-[#4f5d54]">遊び方と見本は、作りながら選べます。</p>
       </div>
 
       {/* カードを押すと、そのまま作成に入る。遊び方（スタンプ・チェックインなど）は基本の手順で選ぶ */}
