@@ -24,6 +24,10 @@ import {
 } from "@/lib/recruitment-application-form";
 
 type Step = 1 | 2 | 3 | 4;
+/** PC の作成画面：区切りごとの白いカード */
+const PC_CARD =
+  "rounded-[18px] border border-[#e6e2d6] bg-white px-[22px] pt-[18px] pb-5 shadow-[0_1px_4px_rgba(23,63,44,0.05)]";
+
 type PcStep = 1 | 2 | 3;
 
 type FormData = {
@@ -831,7 +835,7 @@ function NewRecruitmentPageContent() {
       </FieldWrap>
       <FieldWrap>
         <Fl label="アイキャッチ画像" opt />
-        <div className="space-y-2 rounded-[10px] border border-[#ebe8e2] bg-[#fafaf8] p-2">
+        <div className="space-y-2 rounded-[10px] border border-[#ebe8e2] bg-[#fafaf8] p-2 min-[900px]:grid min-[900px]:grid-cols-2 min-[900px]:items-start min-[900px]:gap-3 min-[900px]:space-y-0 min-[900px]:rounded-[12px] min-[900px]:p-3">
           <EventImageInput
             url={form.imageUrl}
             onChangeUrl={(url) => update("imageUrl", url)}
@@ -840,7 +844,7 @@ function NewRecruitmentPageContent() {
             bare
             hint="一覧は代表画像のみ"
           />
-          <div className="border-t border-[#ebe8e2] pt-2">
+          <div className="border-t border-[#ebe8e2] pt-2 min-[900px]:border-t-0 min-[900px]:border-l min-[900px]:pt-0 min-[900px]:pl-3">
             <EventGalleryImagesInput
               compact
               urls={form.galleryImages}
@@ -902,6 +906,8 @@ function NewRecruitmentPageContent() {
           </div>
         </div>
       </FieldWrap>
+      {/* PC：集合場所と定員を横に並べて、縦の長さを減らす */}
+      <div className="min-[900px]:grid min-[900px]:grid-cols-[minmax(0,1fr)_auto] min-[900px]:gap-4">
       <FieldWrap>
         <Fl label="集合場所" opt />
         <input
@@ -929,6 +935,7 @@ function NewRecruitmentPageContent() {
           <span className="text-[13px] text-[#888]">名まで（未入力で無制限）</span>
         </div>
       </FieldWrap>
+      </div>
       {/* スマホ：持ち物・支給・注意事項は任意なので、たたんでおく（入れてあれば開いておく） */}
       <button
         type="button"
@@ -943,6 +950,8 @@ function NewRecruitmentPageContent() {
         <span aria-hidden className={`transition-transform ${moreOpen ? "rotate-180" : ""}`}>⌄</span>
       </button>
       <div className={moreOpen ? "" : "max-[899px]:hidden"}>
+      {/* PC：持ち物と支給を横に並べる */}
+      <div className="min-[900px]:grid min-[900px]:grid-cols-2 min-[900px]:gap-4">
       <FieldWrap>
         <Fl label="持ち物・服装" opt />
         <input
@@ -964,6 +973,7 @@ function NewRecruitmentPageContent() {
         />
         <Fh text="スタッフへの支給内容があれば記載してください" />
       </FieldWrap>
+      </div>
       <FieldWrap>
         <Fl label="注意事項" opt />
         <textarea
@@ -1102,7 +1112,7 @@ function NewRecruitmentPageContent() {
 
       {/* ── PC: stepped layout ── */}
       <div className="hidden min-h-0 min-[900px]:flex min-[900px]:flex-1 min-[900px]:overflow-hidden min-[900px]:border-t min-[900px]:border-[#e8e6e0]">
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 pt-5 pb-16">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-[#f7f6f2] px-6 pt-5 pb-16">
           {/* 見出し（スマホの作成画面と同じ「英字の小見出し＋明朝体の見出し」） */}
           <div className="mx-auto mb-5 w-full max-w-[720px]">
             <OrgEyebrow>VOLUNTEER</OrgEyebrow>
@@ -1112,8 +1122,8 @@ function NewRecruitmentPageContent() {
             <p className="mt-1 text-[12.5px] text-[#6a7568]">{publishDone ? successPcPageSubtitle : pcPageSubtitle}</p>
           </div>
           {pcStep === 1 ? (
-            <div className="mx-auto flex w-full max-w-[720px] flex-col gap-8">
-              <div>
+            <div className="mx-auto flex w-full max-w-[720px] flex-col gap-3.5">
+              <div className={PC_CARD}>
                 <div className="mb-3 border-b border-[#e8e6e0] pb-2">
                   <div className="mb-[2px] flex items-center gap-[7px] text-[14px] font-[600]">
                     基本情報
@@ -1122,7 +1132,7 @@ function NewRecruitmentPageContent() {
                 </div>
                 {basicFields}
               </div>
-              <div>
+              <div className={PC_CARD}>
                 <div className="mb-3 border-b border-[#e8e6e0] pb-2">
                   <div className="mb-[2px] flex items-center gap-[7px] text-[14px] font-[600]">
                     日時・条件

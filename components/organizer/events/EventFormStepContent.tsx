@@ -252,7 +252,7 @@ export function EventFormStepContent({
               />
               <EventFormError msg={errors.description} />
             </div>
-            <div className="space-y-2.5 border-t border-[#e8e6e0] pt-3">
+            <div className="grid grid-cols-2 gap-3 border-t border-[#e8e6e0] pt-3">
               <div>
                 <EventFormLabel label="主催者名" required />
                 <input
@@ -286,7 +286,7 @@ export function EventFormStepContent({
           <div className={eventFormPcFieldStack}>
             <div>
               <EventFormLabel label="アイキャッチ画像" opt="任意" />
-              <div className="space-y-2 rounded-[10px] border border-[#ebe8e2] bg-[#fafaf8] p-2">
+              <div className="grid grid-cols-2 items-start gap-3 rounded-[12px] border border-[#ebe8e2] bg-[#fafaf8] p-3">
                 <EventImageInput
                   compact
                   bare
@@ -295,7 +295,7 @@ export function EventFormStepContent({
                   alt={form.title || "プレビュー"}
                   hint="一覧は代表画像のみ"
                 />
-                <div className="border-t border-[#ebe8e2] pt-2">
+                <div className="border-l border-[#ebe8e2] pl-3">
                   <EventGalleryImagesInput
                     compact
                     urls={form.galleryImages ?? []}
@@ -806,6 +806,8 @@ export function EventFormStepContent({
               </p>
             </div>
 
+            {/* PC：定員と締め切りを横に並べて、縦の長さを減らす */}
+            <div className="space-y-3.5 min-[900px]:grid min-[900px]:grid-cols-2 min-[900px]:gap-4 min-[900px]:space-y-0">
             <div className="min-w-0 overflow-hidden">
               <EventFormLabel label="定員" opt="任意" />
               <input
@@ -845,6 +847,7 @@ export function EventFormStepContent({
                 className={eventFormInp}
               />
               <EventFormHint text="未入力の場合は開催日まで受け付けます" />
+            </div>
             </div>
             <div className="min-w-0 overflow-hidden">
               <EventFormLabel label="持ち物・服装" opt="任意" />
