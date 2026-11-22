@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   Ticket,
   Camera,
-  Check,
   CircleHelp,
   Copy,
   Flag,
@@ -89,8 +88,11 @@ const REWARD_OPTIONS: { id: "coupon" | "points" | "stamp"; label: string; blurb:
   { id: "stamp", label: "スタンプラリー", blurb: "スタンプを集める達成にします" },
 ];
 
-/** 画面に並べる順番（参加パスは基本情報のすぐあと）。中身は STEPS の番号で持つ。 */
-const ORDER = [0, 4, 1, 2, 3, 5];
+/**
+ * 画面に並べる順番（参加パスは基本情報のすぐあと）。中身は STEPS の番号で持つ。
+ * 「ミッション形式」（1）は出さない：ミッションを足すときに形式を選ぶので、先にまとめて選ぶ手順は要らない。
+ */
+const ORDER = [0, 4, 2, 3, 5];
 
 const STEPS: GameCreateStep[] = [
   { label: "基本情報", short: "基本", icon: PenLine },
@@ -98,7 +100,7 @@ const STEPS: GameCreateStep[] = [
   { label: "ミッション", icon: Flag },
   { label: "達成条件・特典", short: "特典", icon: Gift },
   { label: "参加パス", icon: Ticket },
-  { label: "公開設定", short: "公開", icon: Rocket },
+  { label: "確認・公開", short: "公開", icon: Rocket },
 ];
 
 /** 日本時間の今日から days 日あとの日付（YYYY-MM-DD）。 */
@@ -259,16 +261,6 @@ export function OrganizerMissionCreateForm() {
       : 0;
   const clearOptions = Math.max(missions.length, clearCount, 1);
 
-  function toggleFormat(id: MissionKindId) {
-    setFormats((current) => {
-      if (current.includes(id)) {
-        if (current.length === 1) return current;
-        return current.filter((item) => item !== id);
-      }
-      return [...current, id];
-    });
-  }
-
   /** 「部品を足す」で選んだ種類のミッションを足す（画面案 ③）。選んだ種類はミッション形式にも入れる */
   function addMission(kind: MissionKindId) {
     const next = createMissionItem(kind);
@@ -416,7 +408,7 @@ export function OrganizerMissionCreateForm() {
                       value={editing.kind}
                       onChange={(e) => updateMission(editing.key, { kind: e.target.value as MissionKindId })}
                     >
-                      {MISSION_KINDS.filter((kind) => formats.includes(kind.id) || kind.id === editing.kind).map(
+                      {MISSION_KINDS.map(
                         (kind) => (
                           <option key={kind.id} value={kind.id}>
                             {kind.label}
@@ -603,7 +595,7 @@ export function OrganizerMissionCreateForm() {
                   ゲーム名 <em>必須</em>
                 </span>
                 <input
-                  placeholder={`例：${EXAMPLE_NAME}`} value={name}
+                  placeholder="例：春のまち発見ミッション" value={name}
                   onChange={(e) => setName(e.target.value)}
                   maxLength={50}
                   required
@@ -648,7 +640,7 @@ export function OrganizerMissionCreateForm() {
                     </option>
                   ))}
                 </select>
-                <small>{eventHint ?? "選ぶと、イベントのページからこのゲームに入れます。開催期間もイベントの日に合わせます。"}</small>
+                <small>{eventHint ?? "選ぶと、イベントのページから参加でき、期間もイベントに合わせます。"}</small>
               </label>
               <fieldset className="org-mission__field">
                 <legend>
@@ -706,7 +698,7 @@ export function OrganizerMissionCreateForm() {
                   </button>
                 </div>
                 <small style={{ color: periodError ? "#c0392b" : undefined }}>
-                  {periodError ?? `${periodDays}日間。この期間だけ参加できます。`}
+                  {periodError ?? `${periodDays}日間`}
                 </small>
               </fieldset>
               <label className="org-mission__field org-mission__field--wide">
@@ -720,44 +712,6 @@ export function OrganizerMissionCreateForm() {
                 <small>{description.length}/300</small>
               </label>
             </div>
-          </section>
-      ) : null}
-      {step === 1 ? (
-          <section className="org-mission__card" aria-labelledby="mission-formats">
-            <div className="org-mission__card-title">
-              <span>{ORDER.indexOf(1) + 1}</span>
-              <div>
-                <h2 id="mission-formats">ミッション形式</h2>
-                <p>このゲームで使うミッションの形式を選びます。押すと ✓ が付きます（いくつでも選べます）。</p>
-              </div>
-            </div>
-            <ul className="org-mission__formats">
-              {MISSION_KINDS.map((kind) => {
-                const on = formats.includes(kind.id);
-                const Icon = KIND_ICONS[kind.id];
-                return (
-                  <li key={kind.id}>
-                    <button
-                      type="button"
-                      className={cn("org-mission__format", `is-${kind.id}`, on && "is-on")}
-                      aria-pressed={on}
-                      onClick={() => toggleFormat(kind.id)}
-                    >
-                      <span className="org-mission__format-icon" aria-hidden>
-                        <Icon className="h-5 w-5" />
-                      </span>
-                      <span className="org-mission__format-text">
-                        <strong>{kind.label}</strong>
-                        <span>{kind.blurb}</span>
-                      </span>
-                      <span className="org-mission__format-check" aria-hidden>
-                        {on ? <Check className="h-4 w-4" strokeWidth={3} /> : null}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
           </section>
       ) : null}
       {step === 2 ? (

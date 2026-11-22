@@ -44,10 +44,10 @@ const EXAMPLE_DESCRIPTION = "ヒントを順にたどって、三つの謎を解
 const ORDER = [0, 3, 1, 2];
 
 const STEPS: GameCreateStep[] = [
-  { label: "基本情報", icon: PenLine },
-  { label: "謎", icon: Search },
-  { label: "クリア", icon: Trophy },
-  { label: "参加パス", icon: Ticket },
+  { label: "基本情報", short: "基本", icon: PenLine },
+  { label: "謎", short: "謎", icon: Search },
+  { label: "クリア", short: "クリア", icon: Trophy },
+  { label: "参加パス", short: "参加パス", icon: Ticket },
 ];
 
 export function OrganizerMysteryCreateForm() {
@@ -312,7 +312,7 @@ export function OrganizerMysteryCreateForm() {
                   ? "イベントを読み込み中です"
                   : events.length === 0
                     ? "先にイベントを掲載すると、対象を選べます"
-                    : "選ぶと、イベントのページからこのゲームに入れます。"}
+                    : "選ぶと、イベントのページから参加できます。"}
               </small>
             </label>
           </section>

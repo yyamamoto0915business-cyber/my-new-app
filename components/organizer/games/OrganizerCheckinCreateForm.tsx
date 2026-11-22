@@ -75,7 +75,7 @@ const EXAMPLE_DESCRIPTION = "まちのスポットをめぐってチェックイ
 
 
 const STEPS = [
-  { id: "basic", label: "基本設定" },
+  { id: "basic", label: "基本情報" },
   { id: "pass", label: "参加パス" },
   { id: "spots", label: "スポット設定" },
   { id: "rewards", label: "達成条件・特典" },
@@ -85,11 +85,11 @@ const STEPS = [
 type StepId = (typeof STEPS)[number]["id"];
 
 const SHELL_STEPS: GameCreateStep[] = [
-  { label: STEPS[0].label, icon: PenLine },
-  { label: STEPS[1].label, icon: Ticket },
-  { label: STEPS[2].label, icon: MapPin },
-  { label: STEPS[3].label, icon: Gift },
-  { label: STEPS[4].label, icon: Rocket },
+  { label: STEPS[0].label, short: "基本", icon: PenLine },
+  { label: STEPS[1].label, short: "参加パス", icon: Ticket },
+  { label: STEPS[2].label, short: "スポット", icon: MapPin },
+  { label: STEPS[3].label, short: "特典", icon: Gift },
+  { label: STEPS[4].label, short: "公開", icon: Rocket },
 ];
 
 

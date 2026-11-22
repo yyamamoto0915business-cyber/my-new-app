@@ -26,17 +26,17 @@ import {
 } from "@/lib/organizer/lottery";
 
 const STEPS = [
+  { id: "basic", label: "基本情報" },
   { id: "prizes", label: "賞と案内" },
-  { id: "basic", label: "基本設定" },
   { id: "publish", label: "確認・公開" },
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
 
 const SHELL_STEPS: GameCreateStep[] = [
-  { label: STEPS[0].label, icon: Gift },
-  { label: STEPS[1].label, icon: PenLine },
-  { label: STEPS[2].label, icon: Rocket },
+  { label: STEPS[0].label, short: "基本", icon: PenLine },
+  { label: STEPS[1].label, short: "賞", icon: Gift },
+  { label: STEPS[2].label, short: "公開", icon: Rocket },
 ];
 
 /** よくある抽選。押すと賞・案内・ゲーム名が入る */
@@ -195,7 +195,7 @@ function LotteryTryDemo({ lottery }: { lottery: LotterySettings }) {
 /** 抽選ゲームの作成。賞 → 期間など → 公開。抽選と結果発表は、公開後にゲームの管理画面から行う */
 export function OrganizerLotteryCreateForm() {
   const router = useRouter();
-  const [step, setStep] = useState<StepId>("prizes");
+  const [step, setStep] = useState<StepId>("basic");
   const [name, setName] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
   const [description, setDescription] = useState("参加した人の中から、抽選で当選者を選びます。");
@@ -269,7 +269,8 @@ export function OrganizerLotteryCreateForm() {
   }
 
   function goNext() {
-    const message = validate(step);
+    // 基本は先頭の手順なので、ゲーム名が空でも先へ進める（次の手順で選ぶ例から名前が入る。公開のときに確かめる）
+    const message = step === "basic" ? periodProblem(startDate, endDate) : validate(step);
     if (message) {
       setError(message);
       return;
