@@ -176,8 +176,11 @@ export function GameStartHeader({
   const order: GameLookMoveKey[] = ["icon", "kicker", "title", "desc", "meta"];
   const dockStyle = moveStyle("button");
   const slots: GameStartFormSlots = {
-    fields: (children) =>
-      value.offsets.form || edit ? movable("form", <div className="play-join__fields">{children}</div>) : children,
+    // 入力欄は白い板（.play-join__fields）ごと包むので、動かすと板もいっしょに動く。
+    fields: (children) => {
+      const board = <div className="play-join__fields">{children}</div>;
+      return value.offsets.form || edit ? movable("form", board) : board;
+    },
     dock: {
       className: cn(
         "play-dock",
