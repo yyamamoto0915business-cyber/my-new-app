@@ -73,6 +73,8 @@ export default function OnboardingPage() {
     typeof window === "undefined" ? "/" : safeInAppPath(new URLSearchParams(window.location.search).get("next")),
   );
   const fromTeamInvite = next.startsWith("/team/join/");
+  // 運営が代わりに作った主催者ページの受け取りから来た人も、自分の団体は作らない（作ると受け取れなくなる）
+  const fromClaim = next.startsWith("/claim/");
 
   const currentRole = user?.user_metadata?.role as string | undefined;
   const selectedChoice = CHOICES.find((c) => c.role === selected);
@@ -158,14 +160,16 @@ export default function OnboardingPage() {
   const busy = submitting !== null;
 
   // チームの招待から来た人：自分の団体はいらないので、選ばせずに利用者として始めて招待の画面へ戻す
-  if (fromTeamInvite) {
+  if (fromTeamInvite || fromClaim) {
     return (
       <div className="flex min-h-screen-dvh items-center justify-center bg-[var(--mg-paper)] px-5 dark:bg-zinc-950">
         <div className="w-full max-w-md rounded-3xl border border-zinc-200/70 bg-white p-6 text-center shadow-xl shadow-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-900">
           <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--accent)] uppercase">MachiGlyph</p>
-          <h1 className="mt-3 text-[20px] font-bold leading-snug text-zinc-900 dark:text-zinc-50">チームの招待に参加します</h1>
+          <h1 className="mt-3 text-[20px] font-bold leading-snug text-zinc-900 dark:text-zinc-50">{fromClaim ? "主催者ページを受け取ります" : "チームの招待に参加します"}</h1>
           <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-            団体の情報の登録はいりません。参加すると、招待してくれた団体の主催者の画面を、一緒に使えるようになります。
+            {fromClaim
+              ? "団体の情報の登録はいりません。運営が用意した主催者ページを、このアカウントで受け取ります。"
+              : "団体の情報の登録はいりません。参加すると、招待してくれた団体の主催者の画面を、一緒に使えるようになります。"}
           </p>
           {error ? (
             <p className="mt-3 text-sm font-bold text-red-600" role="alert">
@@ -179,7 +183,7 @@ export default function OnboardingPage() {
             className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] text-[15px] font-bold text-white disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-            招待の画面へ進む
+            {fromClaim ? "受け取りの画面へ進む" : "招待の画面へ進む"}
             {busy ? null : <ArrowRight className="h-4 w-4" aria-hidden />}
           </button>
         </div>

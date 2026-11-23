@@ -35,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/volunteers", label: "ボランティア管理", icon: "volunteers" },
   { href: "/admin/passes", label: "参加パス・決済", icon: "passes" },
   { href: "/admin/support", label: "問い合わせ・通報", icon: "support" },
+  { href: "/admin/proxy", label: "代わりに掲載", icon: "accounts" },
   { href: "/admin/settings", label: "管理ログ・設定", icon: "settings" },
 ];
 
