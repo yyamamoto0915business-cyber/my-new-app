@@ -72,19 +72,21 @@ type StoreTab = "intro" | "news" | "menu" | "access" | "schedule";
 type NewsFilter = "all" | StoreNewsCategory;
 
 function tabsForKind(kind: StoreRecord["kind"]) {
-  const base: { id: StoreTab; label: string; Icon: typeof Store }[] = [
-    { id: "news", label: kind === "kitchen_car" ? "ニュース" : "店舗ニュース", Icon: Megaphone },
+  // short：スマホで1列に並べるための短い名前
+  const base: { id: StoreTab; label: string; short: string; Icon: typeof Store }[] = [
+    { id: "news", label: kind === "kitchen_car" ? "ニュース" : "店舗ニュース", short: "ニュース", Icon: Megaphone },
     {
       id: "intro",
       label: kind === "kitchen_car" ? "キッチンカー紹介" : "店舗紹介",
+      short: "紹介",
       Icon: kind === "kitchen_car" ? Truck : Store,
     },
-    { id: "menu", label: "メニュー・商品", Icon: UtensilsCrossed },
+    { id: "menu", label: "メニュー・商品", short: "メニュー", Icon: UtensilsCrossed },
   ];
   if (kind === "kitchen_car") {
-    base.push({ id: "schedule", label: "出店スケジュール", Icon: CalendarDays });
+    base.push({ id: "schedule", label: "出店スケジュール", short: "出店予定", Icon: CalendarDays });
   }
-  base.push({ id: "access", label: "アクセス", Icon: MapPin });
+  base.push({ id: "access", label: "アクセス", short: "アクセス", Icon: MapPin });
   return base;
 }
 
@@ -764,8 +766,9 @@ export function OrganizerStoreManagement({
       <nav
         className="org-store-mgmt__tabs"
         aria-label={`${listingLabel}管理タブ`}
+        style={{ ["--store-tab-count" as string]: tabs.length }}
       >
-        {tabs.map(({ id, label, Icon }) => (
+        {tabs.map(({ id, label, short, Icon }) => (
           <button
             key={id}
             type="button"
@@ -774,7 +777,10 @@ export function OrganizerStoreManagement({
             aria-current={activeTab === id ? "page" : undefined}
           >
             <Icon className="size-4" strokeWidth={2.2} aria-hidden />
-            {label}
+            <span className="org-store-mgmt__tab-long">{label}</span>
+            <span className="org-store-mgmt__tab-short" aria-hidden>
+              {short}
+            </span>
           </button>
         ))}
       </nav>
