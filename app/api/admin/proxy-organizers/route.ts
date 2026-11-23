@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     adminProfileId: g.profileId,
   });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
-  // 作り込むあいだ、チームの機能（メンバーでの編集）が使えるように TEAM を付ける。受け取ったときに外す
+  // 作り込むあいだ、チームの機能（メンバーでの編集）が使えるように TEAM を付ける。受け取ったときに外し、相手には GAME を半年つける
   await grantOrganizerPlan(g.supabase, {
     organizerId: result.organizerId,
     grantType: "90_days",

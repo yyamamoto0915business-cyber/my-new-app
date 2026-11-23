@@ -1,6 +1,6 @@
 /**
  * 主催者プラン画面の表示用カタログ。
- * 課金が動くのは STANDARD（月額980円）と GAME（月額2,980円）。TEAM は準備中で表示のみ。
+ * 課金が動くのは STANDARD（月額980円）・GAME（月額2,980円）・TEAM（月額5,980円）。
  * 機能の出し分けは lib/billing.ts の canUseOrganizerFeature。
  */
 import type { OrganizerPlanTier } from "@/lib/billing";

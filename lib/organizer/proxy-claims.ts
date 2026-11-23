@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { CLAIM_GIFT_DAYS, CLAIM_GIFT_PLAN } from "@/lib/organizer/claim-gift";
 
 /**
  * 運営が代わりに作る主催者ページ（受け取りリンクで相手に渡す）。
@@ -210,10 +211,11 @@ export async function acceptClaim(
 
   const { data: claim } = await admin
     .from("organizer_claims")
-    .select("placeholder_profile_id")
+    .select("placeholder_profile_id, created_by")
     .eq("organizer_id", organizerId)
     .maybeSingle();
-  const placeholderId = (claim as { placeholder_profile_id: string | null } | null)?.placeholder_profile_id ?? null;
+  const claimRow = claim as { placeholder_profile_id: string | null; created_by: string | null } | null;
+  const placeholderId = claimRow?.placeholder_profile_id ?? null;
 
   // 先に印をつけて、同じリンクで2回受け取れないようにする
   const now = new Date().toISOString();
@@ -232,16 +234,30 @@ export async function acceptClaim(
     return { ok: false, error: "受け取れませんでした。時間をおいてもう一度お試しください" };
   }
 
-  // 運営のメンバーを外す・運営の「使うチーム」を戻す・代わりに作るあいだだけの TEAM を外す
+  // 運営のメンバーを外す・運営の「使うチーム」を戻す
   await admin.from("organizer_members").delete().eq("organizer_id", organizerId);
   await admin.from("organizer_choices").delete().eq("organizer_id", organizerId);
-  await admin
-    .from("organizer_plan_state")
-    .update({ manual_grant_active: false, manual_grant_plan: null, manual_grant_expires_at: null })
-    .eq("organizer_id", organizerId);
+
+  // 代わりに作るあいだだけの TEAM を外し、受け取った日から半年の GAME にする（期限が来たら FREE に戻るだけで、料金はかからない）
+  const expiresAt = new Date(Date.now() + CLAIM_GIFT_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const { error: grantError } = claimRow?.created_by
+    ? await admin.rpc("grant_organizer_plan", {
+        p_target_organizer_id: organizerId,
+        p_grant_days: CLAIM_GIFT_DAYS,
+        p_reason: "代わりに掲載：受け取り特典（GAME 半年）",
+        p_admin_user_id: claimRow.created_by,
+        p_plan: CLAIM_GIFT_PLAN,
+      })
+    : { error: new Error("no admin") };
+  if (grantError) {
+    await admin
+      .from("organizer_plan_state")
+      .update({ current_plan: CLAIM_GIFT_PLAN, manual_grant_active: true, manual_grant_plan: CLAIM_GIFT_PLAN, manual_grant_expires_at: expiresAt })
+      .eq("organizer_id", organizerId);
+  }
   await admin
     .from("organizers")
-    .update({ manual_grant_active: false, manual_grant_plan: null, manual_grant_expires_at: null })
+    .update({ manual_grant_active: true, manual_grant_plan: CLAIM_GIFT_PLAN, manual_grant_expires_at: expiresAt })
     .eq("id", organizerId);
 
   // 相手が主催者の画面に入れるように（はじめの設定に飛ばされないように）

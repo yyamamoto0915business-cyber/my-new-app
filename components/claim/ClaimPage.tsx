@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, CheckCircle2, Loader2, Store } from "lucide-react";
+import { CalendarDays, CheckCircle2, Gift, Loader2, Store } from "lucide-react";
+import { CLAIM_GIFT_LABEL } from "@/lib/organizer/claim-gift";
 import { useSupabaseUser } from "@/hooks/use-supabase-user";
 
 type Info =
@@ -96,6 +97,9 @@ export function ClaimPage({ token }: { token: string }) {
               <p className="text-[13px] leading-relaxed text-[#5f6d64]">
                 「{info.organizerName}」の主催者ページは、このアカウントのものになりました。主催者モードから、内容の確認や変更ができます。
               </p>
+              <p className="rounded-[12px] bg-[#fbf5e3] px-3 py-2 text-[12.5px] font-semibold leading-relaxed text-[#7a5f1c]">
+                {CLAIM_GIFT_LABEL}でお使いいただけます。まち歩きのスタンプラリーなども開催できます。
+              </p>
               <a
                 href="/organizer/home"
                 className="flex h-12 w-full items-center justify-center rounded-[14px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] text-[15px] font-bold text-[#f6ebc8]"
@@ -120,6 +124,14 @@ export function ClaimPage({ token }: { token: string }) {
                     イベント {info.events}件
                   </span>
                 </div>
+              </div>
+              <div className="flex items-start gap-2 rounded-[12px] border border-[#ecdcae] bg-[#fbf5e3] px-3 py-2.5">
+                <Gift className="mt-0.5 h-4 w-4 shrink-0 text-[#a3812f]" aria-hidden />
+                <p className="text-[12.5px] leading-relaxed text-[#5b4a1c]">
+                  <span className="font-bold">受け取り特典：{CLAIM_GIFT_LABEL}</span>
+                  <br />
+                  半年後は無料プランに戻るだけで、自動で料金がかかることはありません。
+                </p>
               </div>
               <p className="text-[13px] leading-relaxed text-[#3c4a40]">
                 受け取ると、このページはあなたのアカウントのものになります。パスワードはご自身で決めたものだけを使い、運営が知ることはありません。
