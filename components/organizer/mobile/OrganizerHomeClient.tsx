@@ -106,6 +106,7 @@ export function OrganizerHomeClient() {
 
   const canSeeDashboard = role !== "staff";
   const upgrade = usePlanUpgradeNotice();
+  const navPlan = useOrganizerNavPlan();
   return (
     <div className="mx-auto w-full max-w-xl space-y-4 pb-6 tablet:max-w-[860px]">
       {/* 誰の主催者ホームか */}
@@ -272,6 +273,23 @@ export function OrganizerHomeClient() {
               ) : null}
             </div>
           </nav>
+
+          {/* 今のプランと、プランの画面への入口（上の小さな印だけだと見つけにくいため。変更できるのはオーナーだけ） */}
+          {role === "owner" && navPlan ? (
+            <Link
+              href="/organizer/settings/plan"
+              className="flex min-h-[52px] items-center gap-3 rounded-[16px] border border-[#e6e2d6] bg-white px-3.5 py-2.5 shadow-[0_2px_8px_rgba(22,56,40,0.04)] active:bg-[#f7f6f2]"
+            >
+              <span className="text-[12px] font-bold text-[#6b776f]">今のプラン</span>
+              <span className={`org-plan-tab-badge org-plan-chip org-plan-tab-badge--${navPlan}`}>
+                {getOrganizerCatalogPlan(navPlan).name}
+              </span>
+              <span className="ml-auto flex items-center gap-0.5 text-[12.5px] font-bold text-[#173f2c]">
+                {navPlan === "free" ? "有料プランを見る" : "プランの確認・変更"}
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </span>
+            </Link>
+          ) : null}
 
           {/* イベントの一覧・下書きの続きは掲載管理で */}
           <Link
