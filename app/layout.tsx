@@ -7,6 +7,7 @@ import { APP_NAME, APP_SUBTITLE, APP_TAGLINE1 } from "@/lib/brand-copy";
 import { BottomNav } from "@/components/bottom-nav";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { MobileTopHeader } from "@/components/navigation/mobile-top-header";
+import { NavCommitGate, PageTransitions } from "@/components/navigation/PageTransitions";
 import { MobileMainShell } from "@/components/navigation/mobile-main-shell";
 import { PcTopNav } from "@/components/navigation/pc-top-nav";
 import { ImmersiveAwareFooter } from "@/components/navigation/immersive-aware-footer";
@@ -107,6 +108,8 @@ export default function RootLayout({
         <LanguageProvider>
           <AbortErrorRecovery />
           <TouchTapGuard />
+          <PageTransitions />
+          <NavCommitGate />
           <NativeAppBridge />
           <PushRegistration />
           <OrganizerProGlobalSyncer />
