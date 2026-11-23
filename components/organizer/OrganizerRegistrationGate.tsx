@@ -1,11 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { isAbortLikeError } from "@/lib/is-abort-like-error";
 
 type GateState = "loading" | "registered" | "unregistered" | "error";
+
+/**
+ * 主催者の画面の外枠（app/organizer/layout.tsx）がサーバーで確かめた「登録済みか」。
+ * 登録済みと分かっていれば、ページを移るたびに確かめ直さない（「確認中...」が毎回出て遅く感じていた）。
+ */
+const OrganizerRegisteredContext = createContext(false);
+
+export function OrganizerRegisteredProvider({ registered, children }: { registered: boolean; children: React.ReactNode }) {
+  return <OrganizerRegisteredContext.Provider value={registered}>{children}</OrganizerRegisteredContext.Provider>;
+}
 
 const STATUS_TIMEOUT_MS = 6000;
 
@@ -21,12 +31,16 @@ export function OrganizerRegistrationGate({
   const router = useRouter();
   const pathname = usePathname();
   const routerRef = useRef(router);
-  routerRef.current = router;
+  useEffect(() => {
+    routerRef.current = router;
+  }, [router]);
 
-  const [state, setState] = useState<GateState>("loading");
+  const knownRegistered = useContext(OrganizerRegisteredContext);
+  const [state, setState] = useState<GateState>(knownRegistered ? "registered" : "loading");
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
+    if (knownRegistered) return;
     let cancelled = false;
     let timedOut = false;
     const controller = new AbortController();
@@ -67,7 +81,7 @@ export function OrganizerRegistrationGate({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [pathname, retryKey]);
+  }, [pathname, retryKey, knownRegistered]);
 
   if (state === "registered") {
     return <>{children}</>;
@@ -108,9 +122,12 @@ export function OrganizerRegistrationGate({
     );
   }
 
+  // 確かめているあいだは、文字ではなく画面の形だけを薄く出す
   return (
-    <div className="flex min-h-[240px] items-center justify-center">
-      <p className="text-sm text-slate-500">確認中...</p>
+    <div className="space-y-3 pt-2 motion-safe:animate-pulse" aria-busy aria-label="読み込み中">
+      <div className="h-6 w-40 rounded-lg bg-[#e6ece6]" />
+      <div className="h-16 rounded-2xl border border-[#e8ede8] bg-white" />
+      <div className="h-24 rounded-2xl border border-[#e8ede8] bg-white" />
     </div>
   );
 }
