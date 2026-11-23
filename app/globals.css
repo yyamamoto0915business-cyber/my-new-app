@@ -20720,6 +20720,11 @@ a.org-pos__setup-text-btn {
   color: #1a2214;
 }
 
+/* 短い名前はスマホだけ */
+.org-store-mgmt__tab-short {
+  display: none;
+}
+
 .org-store-mgmt__tab.is-active {
   color: #173f2c;
   border-bottom-color: #173f2c;
@@ -21546,12 +21551,21 @@ a.org-pos__setup-text-btn {
     font-size: 0.72rem;
   }
 
-  /* スマホ（600px 未満）：4つのタブが横にはみ出さないよう、アイコンを上・文字を下にして等分に並べる */
+  /* スマホ（600px 未満）：タブ（お店は4つ・キッチンカーは5つ）が1列に収まるよう、アイコンを上・短い名前を下にして等分に並べる */
   @media (max-width: 599px) {
     .org-store-mgmt__tabs {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(var(--store-tab-count, 4), minmax(0, 1fr));
       overflow: visible;
+    }
+
+    .org-store-mgmt__tab-long {
+      display: none;
+    }
+
+    .org-store-mgmt__tab-short {
+      display: inline !important;
+      white-space: nowrap;
     }
 
     .org-store-mgmt__tab {
