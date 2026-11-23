@@ -4,6 +4,7 @@ import { OrganizerBottomNav } from "@/components/organizer/mobile/OrganizerBotto
 import { OrganizerMainChrome } from "@/components/organizer/OrganizerMainChrome";
 import { OrganizerRoleGate } from "@/components/organizer/OrganizerRoleGate";
 import { OrganizerProSyncer } from "@/components/organizer/OrganizerProSyncer";
+import { OrganizerRegisteredProvider } from "@/components/organizer/OrganizerRegistrationGate";
 import { getOrganizerNavState } from "@/lib/organizer/get-organizer-nav-state";
 import { getDeveloperAdminContext } from "@/lib/admin-auth";
 import { getOrganizerPlanTierWithPlanState, type OrganizerPlanTier } from "@/lib/billing";
@@ -79,7 +80,9 @@ export default async function OrganizerLayout({
           <OrganizerMainChrome variant={navVariant}>
             <main className="relative z-[1] flex min-h-0 flex-1 flex-col px-4 py-2 pb-[calc(12px+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-3 sm:pb-4 min-[900px]:px-6 min-[900px]:py-2.5 min-[900px]:pb-2.5">
               {/* TEAM：役割が足りない画面は、中身の代わりに案内を出す */}
-              <OrganizerRoleGate>{children}</OrganizerRoleGate>
+              <OrganizerRegisteredProvider registered={organizerRegistered}>
+                <OrganizerRoleGate>{children}</OrganizerRoleGate>
+              </OrganizerRegisteredProvider>
             </main>
           </OrganizerMainChrome>
         </div>

@@ -70,6 +70,8 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    // 一度開いた画面は30秒のあいだ手元のものを使い、タブを行き来したときにすぐ出す
+    staleTimes: { dynamic: 30 },
   },
 };
 
