@@ -317,6 +317,15 @@ export function OrganizerStoreManagement({
     ) : null;
 
   const goIntro = () => setActiveTab("intro");
+  const checklistIcons: Record<string, typeof Store> = {
+    name: isKitchen ? Truck : Store,
+    cover: ImageIcon,
+    intro: FileText,
+    hours: Clock,
+    menu: UtensilsCrossed,
+    schedule: CalendarDays,
+    access: MapPin,
+  };
   const checklist: { key: string; label: string; done: boolean; required?: boolean; onGo: () => void }[] = [
     { key: "name", label: isKitchen ? "キッチンカー名" : "店舗名", done: !nameUnset, required: true, onGo: goIntro },
     { key: "cover", label: "カバー写真", done: Boolean(record.coverImageUrl?.trim()), onGo: () => coverInputRef.current?.click() },
@@ -362,7 +371,7 @@ export function OrganizerStoreManagement({
 
       {record.status !== "public" ? (
         /* 公開前：公開までにやることを並べる。押すとその入力へ移る */
-        <section className="rounded-[18px] border border-[#e6dcc0] bg-[#fffbf0] px-4 py-3.5 shadow-[0_1px_4px_rgba(120,90,30,0.05)]" aria-label="公開までにやること">
+        <section className="rounded-[18px] border border-[#e6dcc0] bg-[#fffbf0] px-4 py-3.5 shadow-[0_1px_4px_rgba(120,90,30,0.05)] max-[899px]:hidden" aria-label="公開までにやること">
           <div className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
             <p className="text-[13.5px] font-bold text-[#173f2c]">公開までにやること</p>
             <span className="text-[12px] tabular-nums text-[#8a6d1f]">
@@ -700,8 +709,8 @@ export function OrganizerStoreManagement({
         </section>
 
         <aside className="org-store-mgmt__aside">
-          {/* モバイル: 2ボタン横並び */}
-          <div className="org-store-mgmt__mobile-actions">
+          {/* モバイル: 2ボタン横並び（公開中だけ。公開前は「公開まで」のカードに公開ボタンを置く） */}
+          <div className={cn("org-store-mgmt__mobile-actions", record.status !== "public" && "max-[899px]:!hidden")}>
             {viewStoreControl}
             <button
               type="button"
@@ -761,6 +770,82 @@ export function OrganizerStoreManagement({
           </div>
         </aside>
       </div>
+
+      {record.status !== "public" ? (
+        /* スマホ：公開までのカード。残りの項目だけを横に並べ、押すとその入力へ。下に公開ボタン */
+        <section
+          className="relative overflow-hidden rounded-[20px] border border-[#e6dcc0] bg-gradient-to-br from-[#fffdf6] to-[#fbf3df] p-4 shadow-[0_2px_10px_rgba(120,90,30,0.07)] min-[900px]:hidden"
+          aria-label="公開までにやること"
+        >
+          {(() => {
+            const doneCount = checklist.filter((c) => c.done).length;
+            const left = checklist.length - doneCount;
+            const pct = Math.round((doneCount / checklist.length) * 100);
+            const todo = checklist.filter((c) => !c.done);
+            return (
+              <>
+                <div className="flex items-center gap-3">
+                  <span
+                    className="relative grid h-12 w-12 shrink-0 place-items-center rounded-full"
+                    style={{ background: `conic-gradient(#2f7d4e ${pct * 3.6}deg, #efe3c2 0deg)` }}
+                    aria-hidden
+                  >
+                    <span className="grid h-[38px] w-[38px] place-items-center rounded-full bg-[#fffdf6] text-[12px] font-bold tabular-nums text-[#173f2c]">
+                      {doneCount}/{checklist.length}
+                    </span>
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[10.5px] font-bold tracking-[0.14em] text-[#a3812f]">BEFORE PUBLISH</p>
+                    <p className="text-[15px] font-bold text-[#173f2c]">
+                      {left === 0 ? "公開の準備ができました" : `公開まで、あと${left}つ`}
+                    </p>
+                  </div>
+                </div>
+                {todo.length > 0 ? (
+                  <ul className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {todo.map((c) => {
+                      const Icon = checklistIcons[c.key] ?? Pencil;
+                      return (
+                        <li key={c.key} className="shrink-0">
+                          <button
+                            type="button"
+                            onClick={c.onGo}
+                            className="flex h-10 items-center gap-1.5 rounded-full border border-[#e6d6a8] bg-white pl-2 pr-3 text-[12.5px] font-bold text-[#3f5146] shadow-[0_1px_3px_rgba(120,90,30,0.06)] active:bg-[#fbf5e3]"
+                          >
+                            <span className="grid h-6 w-6 place-items-center rounded-full bg-[#f6ebc8] text-[#8a6d1f]">
+                              <Icon className="size-3.5" strokeWidth={2.3} aria-hidden />
+                            </span>
+                            {c.label}
+                            {c.required ? (
+                              <span className="rounded-full bg-[#fbe4e4] px-1.5 text-[9.5px] font-bold text-[#b5483b]">必須</span>
+                            ) : (
+                              <ChevronRight className="size-3.5 text-[#b9a36a]" strokeWidth={2.4} aria-hidden />
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => void togglePublish()}
+                  disabled={statusBusy}
+                  className="mt-3 flex h-12 w-full items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] text-[15px] font-bold text-[#f6ebc8] shadow-[0_4px_12px_rgba(14,42,29,0.22)] disabled:opacity-60"
+                >
+                  {statusBusy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+                  {publishLabel}
+                </button>
+                {left > 0 ? (
+                  <p className="mt-1.5 text-center text-[11px] text-[#8a7a55]">
+                    名前があれば公開できます。あとから足しても大丈夫です
+                  </p>
+                ) : null}
+              </>
+            );
+          })()}
+        </section>
+      ) : null}
 
       {/* タブ */}
       <nav
