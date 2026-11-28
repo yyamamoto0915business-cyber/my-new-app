@@ -40179,6 +40179,17 @@ button.mg-album-place {
   }
   .mg-admin .text-xl { font-size: 21px; }
 }
+/* 管理者画面（スマホ）：PC 用にひと回り大きくした文字・ボタンが、スマホでは大きすぎたので元の大きさに近づける */
+@media (max-width: 767px) {
+  .mg-admin .text-\[9px\] { font-size: 10px; }
+  .mg-admin .text-\[10px\] { font-size: 11px; }
+  .mg-admin .text-\[11px\] { font-size: 12px; }
+  .mg-admin .text-xs { font-size: 12.5px; line-height: 1.5; }
+  .mg-admin .text-sm { font-size: 13.5px; line-height: 1.55; }
+  .mg-admin .text-base { font-size: 15px; }
+  .mg-admin .text-lg { font-size: 18px; }
+  .mg-admin .text-xl { font-size: 19px; }
+}
 /* 管理者画面（スマホ）：数字の3つの箱を低くまとめる */
 @media (max-width: 767px) {
   .mg-admin .admin-stats > * {

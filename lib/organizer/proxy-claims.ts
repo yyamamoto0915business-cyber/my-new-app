@@ -22,6 +22,12 @@ export type ProxyOrganizerRow = {
   hasLink: boolean;
   stores: number;
   events: number;
+  /** 主催者のアイコン（プロフィールで入れたもの） */
+  avatarUrl: string | null;
+  /** 今使える受け取りリンクの path（/claim/<token>）。運営の管理者画面だけに出す */
+  claimPath: string | null;
+  /** 今使えるプレビューリンク（お店ごと）。path は /preview/<token> */
+  previews: { storeId: string; name: string; status: string; path: string; expiresAt: string }[];
 };
 
 export async function createProxyOrganizer(
@@ -114,6 +120,28 @@ export async function listProxyOrganizers(admin: SupabaseClient): Promise<ProxyO
   };
   const [stores, events] = await Promise.all([count("stores"), count("events")]);
   const now = Date.now();
+  const avatarMap = new Map<string, string>();
+  if (ids.length > 0) {
+    const { data: av } = await admin.from("organizer_profiles").select("organizer_id, avatar_url").in("organizer_id", ids);
+    for (const a of (av ?? []) as { organizer_id: string; avatar_url: string | null }[]) {
+      if (a.avatar_url) avatarMap.set(a.organizer_id, a.avatar_url);
+    }
+  }
+  const previewMap = new Map<string, ProxyOrganizerRow["previews"]>();
+  if (ids.length > 0) {
+    const { data: pv } = await admin
+      .from("stores")
+      .select("id, organizer_id, name, status, preview_token, preview_expires_at")
+      .in("organizer_id", ids)
+      .not("preview_token", "is", null)
+      .order("created_at");
+    for (const s of (pv ?? []) as { id: string; organizer_id: string; name: string; status: string; preview_token: string; preview_expires_at: string | null }[]) {
+      if (!s.preview_expires_at || Date.parse(s.preview_expires_at) <= now) continue;
+      const list = previewMap.get(s.organizer_id) ?? [];
+      list.push({ storeId: s.id, name: s.name, status: s.status, path: `/preview/${s.preview_token}`, expiresAt: s.preview_expires_at });
+      previewMap.set(s.organizer_id, list);
+    }
+  }
   return rows.map((r) => {
     const org = Array.isArray(r.organizers) ? r.organizers[0] : r.organizers;
     const live = Boolean(r.token && r.token_expires_at && Date.parse(r.token_expires_at) > now);
@@ -127,6 +155,9 @@ export async function listProxyOrganizers(admin: SupabaseClient): Promise<ProxyO
       hasLink: live,
       stores: stores.get(r.organizer_id) ?? 0,
       events: events.get(r.organizer_id) ?? 0,
+      previews: previewMap.get(r.organizer_id) ?? [],
+      avatarUrl: avatarMap.get(r.organizer_id) ?? null,
+      claimPath: live && r.token ? `/claim/${r.token}` : null,
     };
   });
 }
