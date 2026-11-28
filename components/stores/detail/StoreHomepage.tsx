@@ -255,6 +255,26 @@ export function StoreHomepage({ store, news, menu, events = [], schedules = [], 
     }
   }
 
+  // ひと目で分かる情報：営業時間・場所（市町村まで）・料金の目安・設備
+  const area = (() => {
+    const src = isKitchen ? (featuredSchedule ? formatScheduleLocationOnly(featuredSchedule) : null) : store.address;
+    if (!src) return null;
+    const t = src.replace(/〒?\s*\d{3}-?\d{4}\s*/, "").trim();
+    const m = t.match(/^(.+?[都道府県])?(.+?[市区町村郡])/);
+    return m ? `${m[1] ?? ""}${m[2]}` : t.slice(0, 16);
+  })();
+  const minPrice = menu.length > 0 ? Math.min(...menu.map((m) => m.priceYen)) : null;
+  const facts: { label: string; value: string; icon: React.ReactNode }[] = [];
+  if (store.hoursLabel) facts.push({ label: "営業時間", value: store.hoursLabel, icon: <Clock className="size-3.5" aria-hidden /> });
+  if (area) facts.push({ label: isKitchen ? "出店場所" : "場所", value: area, icon: <MapPin className="size-3.5" aria-hidden /> });
+  if (minPrice != null) facts.push({ label: "料金の目安", value: `¥${minPrice.toLocaleString("ja-JP")}〜`, icon: <CreditCard className="size-3.5" aria-hidden /> });
+  if (features.length > 0)
+    facts.push({
+      label: "設備・特徴",
+      value: features.slice(0, 3).map((k) => (featureDefs.find((d) => d.key === k)?.label ?? k).replace(/あり$/, "")).join("・"),
+      icon: <Wifi className="size-3.5" aria-hidden />,
+    });
+
   const actionBase =
     "flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[14px] border text-[13px] font-bold transition active:scale-[0.97]";
 
@@ -325,118 +345,148 @@ export function StoreHomepage({ store, news, menu, events = [], schedules = [], 
 
   return (
     <div className="pb-12 min-[900px]:pb-16">
-      {/* ── カバー ─────────────────────────────── */}
+      {/* ── 写真（スマホは1枚、タブレット・PC は大1枚＋小4枚） ───────────── */}
       <section aria-label={store.name} className="mx-auto w-full max-w-[1120px] tablet:px-5 tablet:pt-4 min-[900px]:px-8 min-[900px]:pt-6">
-        <div className="relative h-[min(68vw,360px)] overflow-hidden bg-[#dfe8de] tablet:h-[380px] tablet:rounded-[24px] min-[900px]:h-[440px]">
-          {cover ? (
-            <button type="button" onClick={() => setLightbox(0)} className="absolute inset-0" aria-label="写真を大きく見る">
-              <Image src={cover} alt="" fill priority sizes="(max-width: 1120px) 100vw, 1120px" className="object-cover" unoptimized />
-            </button>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_30%_20%,#f6ebc8_0,transparent_45%),linear-gradient(135deg,#245a3e,#0e2a1d)]">
-              {isKitchen ? <Truck className="size-16 text-[#d9bc6e]/70" aria-hidden /> : <Store className="size-16 text-[#d9bc6e]/70" aria-hidden />}
+        <div className="relative">
+          {photos.length >= 5 ? (
+            <div className="hidden h-[300px] grid-cols-4 grid-rows-2 gap-1.5 overflow-hidden rounded-[22px] tablet:grid min-[900px]:h-[360px]">
+              {photos.slice(0, 5).map((src, i) => (
+                <button
+                  key={src + i}
+                  type="button"
+                  onClick={() => setLightbox(i)}
+                  className={cn("relative overflow-hidden bg-[#dfe8de]", i === 0 && "col-span-2 row-span-2")}
+                  aria-label={`写真${i + 1}を大きく見る`}
+                >
+                  <Image src={src} alt="" fill priority={i === 0} sizes={i === 0 ? "560px" : "280px"} className="object-cover transition duration-500 hover:scale-[1.03]" unoptimized />
+                </button>
+              ))}
             </div>
-          )}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[72%] bg-gradient-to-t from-[#0b2117]/88 via-[#0b2117]/45 to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 px-5 pb-5 tablet:px-8 tablet:pb-7">
-            {category ? (
-              <p className="text-[11px] font-bold tracking-[0.18em] text-[#e9d495]">{category}</p>
-            ) : null}
-            <h1
-              className="mt-1 text-[27px] font-semibold leading-tight text-white [text-wrap:balance] tablet:text-[34px] min-[900px]:text-[40px]"
-              style={{ fontFamily: SERIF, textShadow: "0 2px 12px rgba(0,0,0,0.35)" }}
-            >
-              {store.name}
-            </h1>
-            {store.tagline ? (
-              <p className="mt-1.5 max-w-[640px] text-[13.5px] leading-relaxed text-white/90 tablet:text-[15px]">{store.tagline}</p>
-            ) : null}
+          ) : null}
+          <div className={cn("relative h-[min(62vw,300px)] overflow-hidden bg-[#dfe8de] tablet:h-[320px] tablet:rounded-[22px] min-[900px]:h-[360px]", photos.length >= 5 && "tablet:hidden")}>
+            {cover ? (
+              <button type="button" onClick={() => setLightbox(0)} className="absolute inset-0" aria-label="写真を大きく見る">
+                <Image src={cover} alt="" fill priority sizes="(max-width: 1120px) 100vw, 1120px" className="object-cover" unoptimized />
+              </button>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_30%_20%,#f6ebc8_0,transparent_45%),linear-gradient(135deg,#245a3e,#0e2a1d)]">
+                {isKitchen ? <Truck className="size-16 text-[#d9bc6e]/70" aria-hidden /> : <Store className="size-16 text-[#d9bc6e]/70" aria-hidden />}
+              </div>
+            )}
           </div>
           {photos.length > 1 ? (
             <button
               type="button"
               onClick={() => setLightbox(0)}
-              className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black/45 px-3 py-1.5 text-[12px] font-bold text-white backdrop-blur-sm tablet:right-5 tablet:top-5"
+              className="absolute bottom-10 right-3 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[12px] font-bold text-[#173f2c] shadow-[0_2px_10px_rgba(0,0,0,0.18)] backdrop-blur-sm tablet:bottom-auto tablet:right-4 tablet:top-4"
             >
               <Images className="size-3.5" aria-hidden />
-              {photos.length}枚
+              すべての写真（{photos.length}枚）
             </button>
           ) : null}
         </div>
 
-        {/* 営業の様子とボタン */}
-        <div className="px-4 tablet:px-0">
-          <div className="mt-3.5 flex flex-wrap items-center gap-2">
-            {isOpen === true ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e6f4ea] px-2.5 py-1 text-[12px] font-bold text-[#1f6a42]">
-                <span className="size-1.5 rounded-full bg-[#2f9a5a]" aria-hidden />
-                {isKitchen ? "本日出店" : "営業中"}
-              </span>
-            ) : isOpen === false ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f1ee] px-2.5 py-1 text-[12px] font-bold text-[#6b776f]">
-                <span className="size-1.5 rounded-full bg-[#a9b3ac]" aria-hidden />
-                営業時間外
-              </span>
-            ) : null}
-            {isKitchen && featuredSchedule ? (
-              <span className="inline-flex min-w-0 items-center gap-1 text-[13px] font-semibold text-[#2f4a3b]">
-                <MapPin className="size-3.5 shrink-0 text-[#b0913f]" aria-hidden />
-                <span className="truncate">
-                  {todaySchedule ? "今日：" : `${scheduleDateShortLabel(featuredSchedule.eventDate)}：`}
-                  {formatScheduleLocationOnly(featuredSchedule)}
-                </span>
-              </span>
-            ) : store.hoursLabel ? (
-              <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#2f4a3b]">
-                <Clock className="size-3.5 text-[#b0913f]" aria-hidden />
-                {store.hoursLabel}
-              </span>
-            ) : null}
-          </div>
+        {/* ── お店のカード（写真に少し重ねる） ───────────── */}
+        <div className="relative z-[1] -mt-7 px-3 tablet:-mt-10 tablet:px-6 min-[900px]:px-10">
+          <div className="rounded-[22px] border border-[#e6ebe5] bg-white px-4 py-4 shadow-[0_10px_30px_rgba(22,56,40,0.10)] tablet:px-6 tablet:py-5">
+            <div className="flex flex-col gap-4">
+              <div className="min-w-0">
+                {category ? <p className="text-[11px] font-bold tracking-[0.18em] text-[#b0913f]">{category}</p> : null}
+                <h1
+                  className="mt-1 text-[24px] font-semibold leading-snug text-[#163828] [overflow-wrap:anywhere] [text-wrap:balance] [word-break:keep-all] tablet:text-[30px] min-[900px]:text-[34px]"
+                  style={{ fontFamily: SERIF }}
+                >
+                  {store.name}
+                </h1>
+                {store.tagline ? <p className="mt-1 text-[13.5px] leading-relaxed text-[#56645b] tablet:text-[14.5px]">{store.tagline}</p> : null}
+              </div>
+              <div className="flex flex-col gap-3 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  {isOpen === true ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e6f4ea] px-2.5 py-1 text-[12px] font-bold text-[#1f6a42]">
+                      <span className="size-1.5 rounded-full bg-[#2f9a5a]" aria-hidden />
+                      {isKitchen ? "本日出店" : "営業中"}
+                    </span>
+                  ) : isOpen === false ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f1ee] px-2.5 py-1 text-[12px] font-bold text-[#6b776f]">
+                      <span className="size-1.5 rounded-full bg-[#a9b3ac]" aria-hidden />
+                      営業時間外
+                    </span>
+                  ) : null}
+                  {isKitchen && featuredSchedule ? (
+                    <span className="inline-flex min-w-0 items-center gap-1 text-[13px] font-semibold text-[#2f4a3b]">
+                      <MapPin className="size-3.5 shrink-0 text-[#b0913f]" aria-hidden />
+                      <span className="truncate">
+                        {todaySchedule ? "今日：" : `${scheduleDateShortLabel(featuredSchedule.eventDate)}：`}
+                        {formatScheduleLocationOnly(featuredSchedule)}
+                      </span>
+                    </span>
+                  ) : null}
+                </div>
 
-          <div className="mt-3 flex gap-2 tablet:max-w-[560px]">
-            {mapsUrl ? (
-              <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className={cn(actionBase, "border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] text-[#f6ebc8] shadow-[0_3px_10px_rgba(14,42,29,0.18)]")}>
-                <Navigation className="size-4" aria-hidden />
-                ルート
-              </a>
+              <div className="flex shrink-0 gap-2 min-[900px]:w-[440px]">
+                {mapsUrl ? (
+                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className={cn(actionBase, "border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] text-[#f6ebc8] shadow-[0_3px_10px_rgba(14,42,29,0.18)]")}>
+                    <Navigation className="size-4" aria-hidden />
+                    ルート
+                  </a>
+                ) : null}
+                {store.phone ? (
+                  <a href={`tel:${store.phone.replace(/-/g, "")}`} className={cn(actionBase, "border-[#dbe5dd] bg-white text-[#173f2c]")}>
+                    <Phone className="size-4" aria-hidden />
+                    電話
+                  </a>
+                ) : null}
+                {instagram ? (
+                  <a href={instagram} target="_blank" rel="noopener noreferrer" className={cn(actionBase, "border-[#dbe5dd] bg-white text-[#173f2c]")}>
+                    <Instagram className="size-4" aria-hidden />
+                    Instagram
+                  </a>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setFav((v) => !v)}
+                  aria-pressed={fav}
+                  aria-label={fav ? "お気に入り解除" : "お気に入りに追加"}
+                  className={cn("flex size-11 shrink-0 items-center justify-center rounded-[14px] border bg-white transition active:scale-[0.95]", fav ? "border-[#f0c4cf] text-[#d0567a]" : "border-[#dbe5dd] text-[#173f2c]")}
+                >
+                  <Heart className="size-[18px]" fill={fav ? "currentColor" : "none"} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void share()}
+                  aria-label="このページを共有"
+                  className="flex size-11 shrink-0 items-center justify-center rounded-[14px] border border-[#dbe5dd] bg-white text-[#173f2c] transition active:scale-[0.95]"
+                >
+                  {copied ? <Check className="size-[18px] text-[#2f9a5a]" aria-hidden /> : <Share2 className="size-[18px]" aria-hidden />}
+                </button>
+              </div>
+              </div>
+            </div>
+            {copied ? <p className="mt-1.5 text-right text-[12px] font-bold text-[#2f9a5a]">ページのURLをコピーしました</p> : null}
+
+            {/* ── ひと目で分かる情報 ───────────── */}
+            {facts.length > 0 ? (
+              <dl className={cn("mt-4 grid gap-2 border-t border-[#eef1ec] pt-4", facts.length >= 3 ? "grid-cols-2 tablet:grid-cols-4" : "grid-cols-2")}>
+                {facts.map((f) => (
+                  <div key={f.label} className="min-w-0 rounded-[14px] bg-[#f7f9f6] px-3 py-2.5">
+                    <dt className="flex items-center gap-1 text-[11px] font-bold text-[#8a7a55]">
+                      <span className="text-[#b0913f]">{f.icon}</span>
+                      {f.label}
+                    </dt>
+                    <dd className="mt-0.5 line-clamp-2 text-[13.5px] font-bold leading-snug text-[#163828]" title={f.value}>
+                      {f.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             ) : null}
-            {store.phone ? (
-              <a href={`tel:${store.phone.replace(/-/g, "")}`} className={cn(actionBase, "border-[#dbe5dd] bg-white text-[#173f2c]")}>
-                <Phone className="size-4" aria-hidden />
-                電話
-              </a>
-            ) : null}
-            {instagram ? (
-              <a href={instagram} target="_blank" rel="noopener noreferrer" className={cn(actionBase, "border-[#dbe5dd] bg-white text-[#173f2c]")}>
-                <Instagram className="size-4" aria-hidden />
-                Instagram
-              </a>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setFav((v) => !v)}
-              aria-pressed={fav}
-              aria-label={fav ? "お気に入り解除" : "お気に入りに追加"}
-              className={cn("flex size-11 shrink-0 items-center justify-center rounded-[14px] border bg-white transition active:scale-[0.95]", fav ? "border-[#f0c4cf] text-[#d0567a]" : "border-[#dbe5dd] text-[#173f2c]")}
-            >
-              <Heart className="size-[18px]" fill={fav ? "currentColor" : "none"} aria-hidden />
-            </button>
-            <button
-              type="button"
-              onClick={() => void share()}
-              aria-label="このページを共有"
-              className="flex size-11 shrink-0 items-center justify-center rounded-[14px] border border-[#dbe5dd] bg-white text-[#173f2c] transition active:scale-[0.95]"
-            >
-              {copied ? <Check className="size-[18px] text-[#2f9a5a]" aria-hidden /> : <Share2 className="size-[18px]" aria-hidden />}
-            </button>
           </div>
-          {copied ? <p className="mt-1.5 text-right text-[12px] font-bold text-[#2f9a5a]">ページのURLをコピーしました</p> : null}
         </div>
       </section>
 
       {/* ── 見出しの帯（ついてくる） ───────────────── */}
-      <div className="sticky top-[calc(var(--mg-mobile-top-header-h,52px)+env(safe-area-inset-top,0px))] z-30 mt-5 border-y border-[#e7ece5] bg-[#f7f9f6]/95 backdrop-blur-md min-[900px]:top-[var(--mg-pc-top-nav-h)]">
+      <div className="sticky top-[calc(var(--mg-mobile-top-header-h,52px)+env(safe-area-inset-top,0px))] z-30 mt-6 border-y border-[#e7ece5] bg-[#f7f9f6]/95 backdrop-blur-md min-[900px]:top-[var(--mg-pc-top-nav-h)]">
         <div ref={navRef} className="mx-auto flex max-w-[1120px] gap-1 overflow-x-auto px-3 [scrollbar-width:none] tablet:px-5 min-[900px]:px-8 [&::-webkit-scrollbar]:hidden">
           {sections.map((s) => (
             <a
