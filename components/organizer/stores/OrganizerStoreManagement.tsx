@@ -30,6 +30,9 @@ import {
   ArrowLeft,
   Truck,
   Zap,
+  Eye,
+  Check,
+  Images,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StoreIntroEditForm } from "@/components/organizer/stores/StoreIntroEditForm";
@@ -337,6 +340,9 @@ export function OrganizerStoreManagement({
       : { key: "access", label: "アクセス", done: Boolean(record.address?.trim()), onGo: () => setActiveTab("access") },
   ];
 
+  const tabCount = (id: StoreTab): number =>
+    id === "news" ? newsRecords.length : id === "menu" ? menuRecords.length : id === "schedule" ? scheduleRecords.length : 0;
+
   const publishLabel = statusBusy
     ? "更新中…"
     : record.status === "public"
@@ -357,20 +363,75 @@ export function OrganizerStoreManagement({
         <h1 className="sr-only">{listingLabel}管理</h1>
       </div>
 
-      {/* PC: 戻るのみ（見出しは出さない） */}
+      {/* PC：ついてくる帯（戻る・店名・状態・プレビュー・公開） */}
       <div className="org-store-mgmt__pc-head">
-        <Link
-          href={listingsBackHref}
-          className="org-store-mgmt__pc-back"
-        >
-          <ArrowLeft className="size-3.5" strokeWidth={2.4} aria-hidden />
-          掲載管理に戻る
-        </Link>
-        <h1 className="sr-only">{listingLabel}管理</h1>
+        <div className="flex items-center gap-3 rounded-[16px] border border-[#e3e8e2] bg-white/95 px-3 py-2 shadow-[0_4px_16px_rgba(22,56,40,0.06)] backdrop-blur-md">
+          <Link
+            href={listingsBackHref}
+            aria-label="掲載管理に戻る"
+            title="掲載管理に戻る"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e1e7e2] text-[#173f2c] hover:bg-[#f4f8f5]"
+          >
+            <ArrowLeft className="size-4" strokeWidth={2.4} aria-hidden />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-[15px] font-bold text-[#163828]" style={{ fontFamily: "var(--font-serif-display), serif" }}>
+              {nameUnset ? `${listingLabel}名未設定` : store.name}
+            </h1>
+            <p className="flex items-center gap-2 text-[11.5px] font-semibold">
+              {record.status === "public" ? (
+                <span className="inline-flex items-center gap-1 text-[#1f6a42]">
+                  <span className="size-1.5 rounded-full bg-[#2f9a5a]" aria-hidden />
+                  公開中
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[#8a968c]">
+                  <span className="size-1.5 rounded-full bg-[#b9c4bc]" aria-hidden />
+                  {record.status === "draft" ? "下書き" : "非公開"}
+                </span>
+              )}
+              {record.status !== "public" ? (
+                checklist.every((c) => c.done) ? (
+                  <span className="inline-flex items-center gap-0.5 text-[#2f6b47]">
+                    <Check className="size-3" strokeWidth={3} aria-hidden />
+                    公開の準備ができました
+                  </span>
+                ) : (
+                  <span className="text-[#8a6d1f]">公開まで、あと{checklist.filter((c) => !c.done).length}つ</span>
+                )
+              ) : store.updatedAt ? (
+                <span className="text-[#8a968c]">最終更新 {store.updatedAt}</span>
+              ) : null}
+            </p>
+          </div>
+          <a
+            href={record.status === "public" ? publicPathForKind(record.kind, store.id) : `/stores/${record.id}/preview`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] border border-[#d9bc6e] bg-[#fbf5e3] px-3.5 text-[13px] font-bold text-[#7a5f1c] hover:bg-[#f7edd0]"
+          >
+            {record.status === "public" ? <ExternalLink className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
+            {record.status === "public" ? "公開ページを見る" : "プレビューを見る"}
+          </a>
+          <button
+            type="button"
+            onClick={() => void togglePublish()}
+            disabled={statusBusy}
+            className={cn(
+              "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] px-4 text-[13px] font-bold transition disabled:opacity-60",
+              record.status === "public"
+                ? "border border-[#e1e7e2] bg-white text-[#56645b] hover:bg-[#f4f8f5]"
+                : "border-[1.5px] border-[#d9bc6e] bg-gradient-to-b from-[#245a3e] to-[#173f2c] text-[#f6ebc8] shadow-[0_3px_10px_rgba(14,42,29,0.18)]",
+            )}
+          >
+            {statusBusy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : record.status === "public" ? <EyeOff className="size-4" aria-hidden /> : null}
+            {publishLabel}
+          </button>
+        </div>
       </div>
 
-      {record.status !== "public" ? (
-        /* 公開前：公開までにやることを並べる。押すとその入力へ移る */
+      {record.status !== "public" && !checklist.every((c) => c.done) ? (
+        /* 公開前：公開までにやることを並べる。押すとその入力へ移る（全部できたら上の帯の1行だけ） */
         <section className="rounded-[18px] border border-[#e6dcc0] bg-[#fffbf0] px-4 py-3.5 shadow-[0_1px_4px_rgba(120,90,30,0.05)] max-[899px]:hidden" aria-label="公開までにやること">
           <div className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
             <p className="text-[13.5px] font-bold text-[#173f2c]">公開までにやること</p>
@@ -385,7 +446,7 @@ export function OrganizerStoreManagement({
             </span>
           </div>
           <ul className="grid grid-cols-2 gap-1.5 min-[600px]:grid-cols-3 min-[1100px]:grid-cols-6">
-            {checklist.map((c) => (
+            {checklist.filter((c) => !c.done).map((c) => (
               <li key={c.key}>
                 <button
                   type="button"
@@ -424,7 +485,7 @@ export function OrganizerStoreManagement({
       ) : null}
 
       {/* ヒーロー＋掲載状況 */}
-      <div className="org-store-mgmt__top">
+      <div className="org-store-mgmt__top is-wide">
         <section
           className={cn(
             "org-store-mgmt__hero",
@@ -436,6 +497,16 @@ export function OrganizerStoreManagement({
           {hasCover ? (
             <>
               <div className="org-store-mgmt__hero-media">
+                {/* 縦長の写真でも左右が灰色にならないよう、同じ写真をぼかして敷く */}
+                <Image
+                  src={heroSrc}
+                  alt=""
+                  fill
+                  aria-hidden
+                  className="scale-110 object-cover opacity-70 blur-2xl"
+                  sizes="40vw"
+                  unoptimized
+                />
                 <Image
                   src={heroSrc}
                   alt=""
@@ -565,6 +636,34 @@ export function OrganizerStoreManagement({
                   {store.tagline?.trim() ||
                     "紹介文を入力すると、ここに表示されます"}
                 </p>
+
+                {/* ひと目で中身が分かる札：住所・メニュー・写真 */}
+                <ul className="mt-2.5 flex flex-wrap gap-1.5 text-[12px] font-semibold text-[#3f5146]">
+                  {record.address?.trim() ? (
+                    <li className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#e3e8e2] bg-[#f7f9f6] px-2.5 py-1">
+                      <MapPin className="size-3.5 shrink-0 text-[#b0913f]" aria-hidden />
+                      <span className="truncate">{record.address}</span>
+                    </li>
+                  ) : null}
+                  <li>
+                    <button type="button" onClick={() => setActiveTab("menu")} className="inline-flex items-center gap-1 rounded-full border border-[#e3e8e2] bg-[#f7f9f6] px-2.5 py-1 hover:border-[#c9a54e]">
+                      <UtensilsCrossed className="size-3.5 text-[#b0913f]" aria-hidden />
+                      メニュー {menuRecords.length}件
+                    </button>
+                  </li>
+                  <li className="inline-flex items-center gap-1 rounded-full border border-[#e3e8e2] bg-[#f7f9f6] px-2.5 py-1">
+                    <Images className="size-3.5 text-[#b0913f]" aria-hidden />
+                    写真 {heroImages.length}枚
+                  </li>
+                  {isKitchen ? (
+                    <li>
+                      <button type="button" onClick={() => setActiveTab("schedule")} className="inline-flex items-center gap-1 rounded-full border border-[#e3e8e2] bg-[#f7f9f6] px-2.5 py-1 hover:border-[#c9a54e]">
+                        <CalendarDays className="size-3.5 text-[#b0913f]" aria-hidden />
+                        出店予定 {scheduleRecords.length}件
+                      </button>
+                    </li>
+                  ) : null}
+                </ul>
 
                 {featureChips.length > 0 ? (
                   <ul className="org-store-mgmt__features">
@@ -728,8 +827,8 @@ export function OrganizerStoreManagement({
             </button>
           </div>
 
-          {/* PC: 店舗ページ＋掲載状況カード */}
-          <div className="org-store-mgmt__pc-aside">
+          {/* PC: 店舗ページ＋掲載状況カード（いまは上の帯にまとめたので出さない） */}
+          <div className="org-store-mgmt__pc-aside min-[900px]:!hidden">
             {viewStoreControl}
             <div className="org-store-mgmt__status-card">
               <h3 className="org-store-mgmt__status-title">掲載状況</h3>
@@ -836,6 +935,15 @@ export function OrganizerStoreManagement({
                   {statusBusy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
                   {publishLabel}
                 </button>
+                <a
+                  href={`/stores/${record.id}/preview`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 flex h-10 w-full items-center justify-center gap-1.5 rounded-[12px] border border-[#e6d6a8] bg-white text-[13px] font-bold text-[#7a5f1c]"
+                >
+                  <Eye className="size-4" aria-hidden />
+                  公開したときの見た目を見る（プレビュー）
+                </a>
                 {left > 0 ? (
                   <p className="mt-1.5 text-center text-[11px] text-[#8a7a55]">
                     名前があれば公開できます。あとから足しても大丈夫です
@@ -863,6 +971,9 @@ export function OrganizerStoreManagement({
           >
             <Icon className="size-4" strokeWidth={2.2} aria-hidden />
             <span className="org-store-mgmt__tab-long">{label}</span>
+            {tabCount(id) > 0 ? (
+              <span className="rounded-full bg-[#eef4ef] px-1.5 text-[10.5px] font-bold tabular-nums text-[#2f6b47] max-[599px]:hidden">{tabCount(id)}</span>
+            ) : null}
             <span className="org-store-mgmt__tab-short" aria-hidden>
               {short}
             </span>

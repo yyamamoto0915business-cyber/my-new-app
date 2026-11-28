@@ -39,6 +39,27 @@ export type StorePreviewData = {
   expiresAt: string;
 };
 
+/** お店の id から、プレビューに出す中身を集める（公開前でも。呼ぶ前に見てよい人か確かめること） */
+export async function loadStorePreviewById(admin: SupabaseClient, storeId: string): Promise<Omit<StorePreviewData, "expiresAt"> | null> {
+  const store = await fetchStoreById(admin, storeId);
+  if (!store) return null;
+  const [menu, news, schedules, org] = await Promise.all([
+    listStoreMenuByStoreId(admin, store.id),
+    listStoreNewsByStoreId(admin, store.id),
+    store.kind === "kitchen_car" ? listStoreSchedules(admin, store.id) : Promise.resolve([] as StoreScheduleRecord[]),
+    getOrganizerById(admin, store.organizerId),
+  ]);
+  return {
+    store,
+    menu: menu.filter((m) => m.status === "public"),
+    news: news.filter((n) => n.status === "public"),
+    schedules: listUpcomingSchedules(schedules),
+    organizer: org
+      ? { id: org.id, name: org.organizationName, avatarUrl: org.avatarUrl, shortBio: org.shortBio, instagramUrl: org.instagramUrl }
+      : null,
+  };
+}
+
 export async function readStorePreview(admin: SupabaseClient, token: string): Promise<StorePreviewData | null> {
   if (!/^[A-Za-z0-9_-]{16,64}$/.test(token)) return null;
   const { data } = await admin.from("stores").select("id, preview_expires_at").eq("preview_token", token).maybeSingle();
