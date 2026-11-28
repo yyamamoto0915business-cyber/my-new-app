@@ -24388,6 +24388,18 @@ button.sd-highlight:hover {
   }
 }
 
+/* 写真がないメニュー：写真の列をなくして、文字を左から並べる */
+.org-store-menu-list__item.is-no-thumb {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-left: 0.75rem;
+}
+
+@media (max-width: 899px) {
+  .org-store-menu-list__item.is-no-thumb {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .org-store-menu-list__thumb {
   width: 3.35rem;
   height: 3.35rem;
