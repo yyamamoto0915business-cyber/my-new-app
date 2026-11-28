@@ -1,8 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { StorePublicDetail } from "@/components/stores/detail/StorePublicDetail";
+import { StoreHomepage } from "@/components/stores/detail/StoreHomepage";
+import { getStoreHomepageOrganizer } from "@/lib/stores/store-homepage-organizer";
 import { getStoreForPublicPage } from "@/lib/stores/get-store-for-public-page";
-import { storeMenuRecordsToItems } from "@/lib/stores/demo-menu";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -26,15 +26,17 @@ export default async function PublicStorePage({ params }: Props) {
   if (data.store.kind === "kitchen_car") {
     redirect(`/kitchen-cars/${id}`);
   }
+  const organizer = await getStoreHomepageOrganizer(data.store.organizerId);
 
   return (
     <main className="min-h-[70vh] bg-[#f7f9f6]">
       <ListingViewBeacon kind="store" id={id} />
-      <StorePublicDetail
+      <StoreHomepage
         store={data.store}
         news={data.news}
-        menu={storeMenuRecordsToItems(data.menu)}
+        menu={data.menu}
         events={data.events}
+        organizer={organizer}
       />
     </main>
   );
