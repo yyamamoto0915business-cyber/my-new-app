@@ -90,20 +90,13 @@ export function StoreMenuPanel({ storeId, menu, onMenuChange }: Props) {
       ) : (
         <ul className="org-store-menu-list">
           {menu.map((item) => (
-            <li key={item.id} className="org-store-menu-list__item">
-              <div className="org-store-menu-list__thumb">
-                <Image
-                  src={
-                    item.imageUrl ||
-                    "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=200&q=80"
-                  }
-                  alt=""
-                  width={54}
-                  height={54}
-                  className="h-full w-full object-cover"
-                  unoptimized
-                />
-              </div>
+            <li key={item.id} className={cn("org-store-menu-list__item", !item.imageUrl && "is-no-thumb")}>
+              {/* 写真がないメニューは、見本の写真を出さずに文字だけにする */}
+              {item.imageUrl ? (
+                <div className="org-store-menu-list__thumb">
+                  <Image src={item.imageUrl} alt="" width={54} height={54} className="h-full w-full object-cover" unoptimized />
+                </div>
+              ) : null}
               <div className="org-store-menu-list__body">
                 <div className="flex min-w-0 items-center gap-1.5">
                   <span

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, Loader2, Pencil, Plus, Link2, UserRound } from "lucide-react";
+import { Check, Copy, Eye, Loader2, Pencil, Plus, Link2, UserRound } from "lucide-react";
 import { AdminProxyProfileEditor } from "@/components/admin/AdminProxyProfileEditor";
 
 type Row = {
@@ -31,6 +31,7 @@ export function AdminProxyOrganizers() {
   const [links, setLinks] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState<string | null>(null);
   const [openProfile, setOpenProfile] = useState<string | null>(null);
+  const [previews, setPreviews] = useState<Record<string, { name: string; url: string }[]>>({});
 
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/proxy-organizers", { cache: "no-store" });
@@ -103,6 +104,33 @@ export function AdminProxyOrganizers() {
       await load();
     } finally {
       setBusy(null);
+    }
+  }
+
+  /** 下書きのお店を公開前に見てもらうリンク（PC・スマホ同じリンク。14日間） */
+  async function issuePreview(organizerId: string) {
+    setBusy(`preview:${organizerId}`);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/proxy-organizers/${organizerId}/preview-link`, { method: "POST" });
+      const json = (await res.json().catch(() => ({}))) as { links?: { name: string; url: string }[]; error?: string };
+      if (!res.ok || !json.links) {
+        setError(json.error ?? "プレビューリンクを作れませんでした");
+        return;
+      }
+      setPreviews((m) => ({ ...m, [organizerId]: json.links! }));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function copyText(key: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
+      window.setTimeout(() => setCopied(null), 1500);
+    } catch {
+      /* noop */
     }
   }
 
@@ -199,6 +227,16 @@ export function AdminProxyOrganizers() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => void issuePreview(r.organizerId)}
+                      disabled={busy === `preview:${r.organizerId}` || r.stores === 0}
+                      title={r.stores === 0 ? "お店・キッチンカーを作ると使えます" : undefined}
+                      className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#d9bc6e] bg-[#fbf5e3] px-3 text-xs font-bold text-[#7a5f1c] disabled:opacity-50"
+                    >
+                      <Eye className="h-3.5 w-3.5" aria-hidden />
+                      プレビューリンク
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => void issue(r.organizerId)}
                       disabled={busy === `link:${r.organizerId}`}
                       className="inline-flex h-9 items-center gap-1 rounded-lg bg-[#173f2c] px-3 text-xs font-bold text-[#f6ebc8]"
@@ -211,6 +249,25 @@ export function AdminProxyOrganizers() {
                 {!r.claimedAt && openProfile === r.organizerId ? (
                   <AdminProxyProfileEditor organizerId={r.organizerId} onSaved={() => void load()} />
                 ) : null}
+                {(previews[r.organizerId] ?? []).map((p, i) => (
+                  <div key={p.url} className="mt-2 rounded-lg border border-[#ecdcae] bg-[#fffdf6] px-3 py-2">
+                    <p className="text-[11px] font-bold text-[#7a5f1c]">プレビュー（14日間・PCでもスマホでも同じリンク）：{p.name}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <code className="min-w-0 flex-1 truncate text-xs text-[#163828]">{p.url}</code>
+                      <a href={p.url} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-md border border-[#c9d8cd] bg-white px-2 py-1 text-xs font-bold text-[#173f2c]">
+                        開く
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => void copyText(`pv:${r.organizerId}:${i}`, p.url)}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[#c9d8cd] bg-white px-2 py-1 text-xs font-bold text-[#173f2c]"
+                      >
+                        {copied === `pv:${r.organizerId}:${i}` ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+                        {copied === `pv:${r.organizerId}:${i}` ? "コピーしました" : "コピー"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
                 {links[r.organizerId] ? (
                   <div className="mt-2 flex items-center gap-2 rounded-lg bg-[#f7f6f2] px-3 py-2">
                     <code className="min-w-0 flex-1 truncate text-xs text-[#163828]">{links[r.organizerId]}</code>
@@ -229,7 +286,7 @@ export function AdminProxyOrganizers() {
           </ul>
         )}
         <p className="mt-3 text-xs leading-relaxed text-[#6b776f]">
-          受け取りリンクは7日間・1回だけ使えます。相手がログイン（または登録）して利用規約に同意すると、このページは相手のものになり、運営のメンバーからは外れます。受け取った日から半年、GAMEプランが無料でつきます（期限後は FREE に戻るだけ）。
+          プレビューリンクは、公開前のお店を見てもらうためのもので、14日間・何度でも見られます（ログイン不要、検索には出ません）。受け取りリンクは7日間・1回だけ使えます。相手がログイン（または登録）して利用規約に同意すると、このページは相手のものになり、運営のメンバーからは外れます。受け取った日から半年、GAMEプランが無料でつきます（期限後は FREE に戻るだけ）。
         </p>
       </section>
     </div>
