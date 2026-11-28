@@ -40147,6 +40147,20 @@ button.mg-album-place {
 .org-store-mgmt__unpublish-btn.is-publish:hover:not(:disabled) {
   background: #0e2a1d;
 }
+/* PC：上の帯（戻る・店名・プレビュー・公開）はスクロールしてもついてくる */
+@media (min-width: 900px) {
+  .org-store-mgmt__pc-head {
+    position: sticky;
+    top: 0.5rem;
+    z-index: 20;
+  }
+}
+/* PC：掲載状況は上の帯にまとめたので、写真と情報を横いっぱいに */
+@media (min-width: 900px) {
+  .org-store-mgmt__top.is-wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 /* PC：上の箱の高さを、右の掲載状況に引っぱられないように */
 @media (min-width: 900px) {
   .org-store-mgmt__top {
